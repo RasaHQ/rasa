@@ -23,6 +23,7 @@ import structlog
 from jinja2 import Template
 
 import rasa.shared.utils.common
+import rasa.shared.utils.io
 from rasa.core.constants import DOMAIN_GROUND_TRUTH_METADATA_KEY
 from rasa.core.policies.enterprise_search_policy import SEARCH_RESULTS_METADATA_KEY
 from rasa.dialogue_understanding.patterns.clarify import FLOW_PATTERN_CLARIFICATION
@@ -68,6 +69,8 @@ if TYPE_CHECKING:
 structlogger = structlog.get_logger()
 
 DEFAULT_THRESHOLD = 0.5
+OPERATOR_KEY = "operator"
+FLOW_IDS_KEY = "flow_ids"
 
 
 class AssertionType(Enum):
@@ -82,6 +85,11 @@ class AssertionType(Enum):
     BOT_DID_NOT_UTTER = "bot_did_not_utter"
     GENERATIVE_RESPONSE_IS_RELEVANT = "generative_response_is_relevant"
     GENERATIVE_RESPONSE_IS_GROUNDED = "generative_response_is_grounded"
+
+
+class AssertionOperator(Enum):
+    ANY = "any"
+    ALL = "all"
 
 
 @lru_cache(maxsize=1)
@@ -126,6 +134,8 @@ class Assertion:
         """
         data = dataclasses.asdict(self)
         data["type"] = self.type()
+        if OPERATOR_KEY in data and data[OPERATOR_KEY] is not None:
+            data[OPERATOR_KEY] = data[OPERATOR_KEY].value
         return data
 
     @staticmethod
@@ -176,6 +186,21 @@ class Assertion:
         """
         raise NotImplementedError
 
+    def generate_test_failure(
+        self,
+        error_message: str,
+        assertion_order_error_message: str,
+        prior_events: List[Event],
+        turn_events: List[Event],
+        line: Optional[int] = None,
+    ) -> Tuple[AssertionFailure, None]:
+        """Generate an assertion failure with the given error message."""
+        error_message += assertion_order_error_message
+
+        return self._generate_assertion_failure(
+            error_message, prior_events, turn_events, line
+        )
+
     def _generate_assertion_failure(
         self,
         error_message: str,
@@ -197,8 +222,10 @@ class Assertion:
 class FlowStartedAssertion(Assertion):
     """Class for storing the flow started assertion."""
 
-    flow_id: str
+    flow_id: Optional[str] = None
     line: Optional[int] = None
+    operator: Optional[AssertionOperator] = None
+    flow_ids: List[str] = dataclasses.field(default_factory=list)
 
     @classmethod
     def type(cls) -> str:
@@ -206,9 +233,22 @@ class FlowStartedAssertion(Assertion):
 
     @staticmethod
     def from_dict(assertion_dict: Dict[Text, Any]) -> FlowStartedAssertion:
+        assertion_value = assertion_dict.get(AssertionType.FLOW_STARTED.value)
+        operator = (
+            assertion_value.get(OPERATOR_KEY, "").lower()
+            if isinstance(assertion_value, dict)
+            else None
+        )
+        flow_ids = (
+            assertion_value.get(FLOW_IDS_KEY, [])
+            if isinstance(assertion_value, dict)
+            else []
+        )
         return FlowStartedAssertion(
-            flow_id=assertion_dict.get(AssertionType.FLOW_STARTED.value),
+            flow_id=assertion_value if isinstance(assertion_value, str) else None,
             line=assertion_dict.lc.line + 1 if hasattr(assertion_dict, "lc") else None,
+            operator=AssertionOperator(operator) if operator else None,
+            flow_ids=flow_ids,
         )
 
     def run(
@@ -219,21 +259,98 @@ class FlowStartedAssertion(Assertion):
         **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the flow started assertion on the given events for that user turn."""
+        if self.flow_id is not None:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"'{AssertionType.FLOW_STARTED.value}' assertions defining "
+                f"a single 'flow_id' value are "
+                f"deprecated and will be removed in a future Rasa version. "
+                f"Please use the '{FLOW_IDS_KEY}' field with an "
+                f"'{OPERATOR_KEY}' instead.",
+            )
+            return self._run_single_flow_id_check(
+                self.flow_id,
+                turn_events,
+                prior_events,
+                assertion_order_error_message,
+            )
+
+        if self.operator == AssertionOperator.ALL:
+            flow_id = next(
+                iter(self.flow_ids)
+            )  # there should be exactly one flow ID when using 'all' operator
+            return self._run_single_flow_id_check(
+                flow_id,
+                turn_events,
+                prior_events,
+                assertion_order_error_message,
+            )
+
+        if self.operator == AssertionOperator.ANY:
+            return self._run_any_flow_id_check(
+                turn_events,
+                prior_events,
+                assertion_order_error_message,
+            )
+
+        raise RasaException(
+            f"Invalid operator '{self.operator}' for 'flow_started' assertion. "
+            "Supported operators are 'any' and 'all'."
+        )
+
+    def _run_single_flow_id_check(
+        self,
+        flow_id: str,
+        turn_events: List[Event],
+        prior_events: List[Event],
+        assertion_order_error_message: str = "",
+    ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
+        """Run the deprecated flow_id check for backward compatibility."""
         try:
             matching_event = next(
                 event
                 for event in turn_events
-                if isinstance(event, FlowStarted) and event.flow_id == self.flow_id
+                if isinstance(event, FlowStarted) and event.flow_id == flow_id
             )
         except StopIteration:
-            error_message = f"Flow with id '{self.flow_id}' did not start."
-            error_message += assertion_order_error_message
-
-            return self._generate_assertion_failure(
-                error_message, prior_events, turn_events, self.line
+            error_message = f"Flow with id '{flow_id}' did not start."
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+                self.line,
             )
 
         return None, matching_event
+
+    def _run_any_flow_id_check(
+        self,
+        turn_events: List[Event],
+        prior_events: List[Event],
+        assertion_order_error_message: str = "",
+    ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
+        """Run the 'any' operator flow_id check."""
+        for flow_id in self.flow_ids:
+            try:
+                matching_event = next(
+                    event
+                    for event in turn_events
+                    if isinstance(event, FlowStarted) and event.flow_id == flow_id
+                )
+                return None, matching_event
+            except StopIteration:
+                continue
+
+        error_message = (
+            f"None of the flows with ids '{', '.join(self.flow_ids)}' started."
+        )
+        return self.generate_test_failure(
+            error_message,
+            assertion_order_error_message,
+            prior_events,
+            turn_events,
+            self.line,
+        )
 
     def __hash__(self) -> int:
         return hash(json.dumps(self.as_dict()))
@@ -278,10 +395,12 @@ class FlowCompletedAssertion(Assertion):
             )
         except StopIteration:
             error_message = f"Flow with id '{self.flow_id}' did not complete."
-            error_message += assertion_order_error_message
-
-            return self._generate_assertion_failure(
-                error_message, prior_events, turn_events, self.line
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+                self.line,
             )
 
         if (
@@ -293,9 +412,12 @@ class FlowCompletedAssertion(Assertion):
                 f"at expected step id '{self.flow_step_id}'. The actual "
                 f"step id was '{matching_event.step_id}'."
             )
-            error_message += assertion_order_error_message
-            return self._generate_assertion_failure(
-                error_message, prior_events, turn_events, self.line
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+                self.line,
             )
 
         return None, matching_event
@@ -343,10 +465,12 @@ class FlowCancelledAssertion(Assertion):
             )
         except StopIteration:
             error_message = f"Flow with id '{self.flow_id}' was not cancelled."
-            error_message += assertion_order_error_message
-
-            return self._generate_assertion_failure(
-                error_message, prior_events, turn_events, self.line
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+                self.line,
             )
 
         if (
@@ -358,10 +482,12 @@ class FlowCancelledAssertion(Assertion):
                 f"at expected step id '{self.flow_step_id}'. The actual "
                 f"step id was '{matching_event.step_id}'."
             )
-            error_message += assertion_order_error_message
-
-            return self._generate_assertion_failure(
-                error_message, prior_events, turn_events, self.line
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+                self.line,
             )
 
         return None, matching_event
@@ -376,6 +502,8 @@ class PatternClarificationContainsAssertion(Assertion):
 
     flow_names: Set[str]
     line: Optional[int] = None
+    operator: Optional[AssertionOperator] = None
+    flow_ids: List[str] = dataclasses.field(default_factory=list)
 
     @classmethod
     def type(cls) -> str:
@@ -385,13 +513,29 @@ class PatternClarificationContainsAssertion(Assertion):
     def from_dict(
         assertion_dict: Dict[Text, Any],
     ) -> PatternClarificationContainsAssertion:
+        assertion_value = assertion_dict.get(
+            AssertionType.PATTERN_CLARIFICATION_CONTAINS.value
+        )
+
+        operator = (
+            assertion_value.get(OPERATOR_KEY, "").lower()
+            if isinstance(assertion_value, dict)
+            else None
+        )
+
+        flow_ids = (
+            assertion_value.get("flow_ids", [])
+            if isinstance(assertion_value, dict)
+            else []
+        )
+
         return PatternClarificationContainsAssertion(
-            flow_names=set(
-                assertion_dict.get(
-                    AssertionType.PATTERN_CLARIFICATION_CONTAINS.value, []
-                )
-            ),
+            flow_names=set(assertion_value)
+            if isinstance(assertion_value, list)
+            else set(),
             line=assertion_dict.lc.line + 1 if hasattr(assertion_dict, "lc") else None,
+            operator=AssertionOperator(operator) if operator else None,
+            flow_ids=flow_ids,
         )
 
     def run(
@@ -411,11 +555,62 @@ class PatternClarificationContainsAssertion(Assertion):
             )
         except StopIteration:
             error_message = f"'{FLOW_PATTERN_CLARIFICATION}' pattern did not trigger."
-            error_message += assertion_order_error_message
-
-            return self._generate_assertion_failure(
-                error_message, prior_events, turn_events, self.line
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+                self.line,
             )
+
+        if self.operator is None and self.flow_names:
+            return self._run_flow_names_check(
+                matching_event,
+                turn_events,
+                prior_events,
+                assertion_order_error_message,
+            )
+
+        actual_flow_ids = set(matching_event.metadata.get("clarification_ids", []))
+
+        if self.operator == AssertionOperator.ALL:
+            return self._run_all_flow_id_check(
+                actual_flow_ids,
+                matching_event,
+                turn_events,
+                prior_events,
+                assertion_order_error_message,
+            )
+
+        if self.operator == AssertionOperator.ANY:
+            return self._run_any_flow_id_check(
+                actual_flow_ids,
+                matching_event,
+                turn_events,
+                prior_events,
+                assertion_order_error_message,
+            )
+
+        raise RasaException(
+            f"Invalid operator '{self.operator}' for "
+            f"'{FLOW_PATTERN_CLARIFICATION}' assertion. "
+            "Supported operators are 'any' and 'all'."
+        )
+
+    def _run_flow_names_check(
+        self,
+        matching_event: Event,
+        turn_events: List[Event],
+        prior_events: List[Event],
+        assertion_order_error_message: str = "",
+    ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
+        """Run the flow names check."""
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"'{AssertionType.PATTERN_CLARIFICATION_CONTAINS.value}' "
+            f"assertions defining a list of flow names are deprecated "
+            f"and will be removed in a future Rasa version. "
+            f"Please use the '{FLOW_IDS_KEY}' field with an '{OPERATOR_KEY}' instead.",
+        )
 
         actual_flow_names = set(matching_event.metadata.get("names", set()))
         if actual_flow_names != self.flow_names:
@@ -423,13 +618,64 @@ class PatternClarificationContainsAssertion(Assertion):
                 f"'{FLOW_PATTERN_CLARIFICATION}' pattern did not contain "
                 f"the expected options. Expected options: {self.flow_names}. "
             )
-            error_message += assertion_order_error_message
-
-            return self._generate_assertion_failure(
-                error_message, prior_events, turn_events, self.line
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+                self.line,
             )
 
         return None, matching_event
+
+    def _run_all_flow_id_check(
+        self,
+        actual_flow_ids: Set[str],
+        matching_event: Event,
+        turn_events: List[Event],
+        prior_events: List[Event],
+        assertion_order_error_message: str = "",
+    ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
+        if actual_flow_ids != set(self.flow_ids):
+            error_message = (
+                f"'{FLOW_PATTERN_CLARIFICATION}' pattern did not contain all of "
+                f"the expected options '{', '.join(self.flow_ids)}'. "
+                f"Actual options: '{', '.join(actual_flow_ids)}'."
+            )
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+                self.line,
+            )
+
+        return None, matching_event
+
+    def _run_any_flow_id_check(
+        self,
+        actual_flow_ids: Set[str],
+        matching_event: Event,
+        turn_events: List[Event],
+        prior_events: List[Event],
+        assertion_order_error_message: str = "",
+    ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
+        """Run the 'any' operator flow_id check."""
+        for flow_id in self.flow_ids:
+            if flow_id in actual_flow_ids:
+                return None, matching_event
+
+        error_message = (
+            f"'{FLOW_PATTERN_CLARIFICATION}' pattern did not contain "
+            f"any of the expected options '{', '.join(self.flow_ids)}'."
+        )
+        return self.generate_test_failure(
+            error_message,
+            assertion_order_error_message,
+            prior_events,
+            turn_events,
+            self.line,
+        )
 
     def __hash__(self) -> int:
         return hash(json.dumps(self.as_dict(), cls=SetEncoder))
@@ -475,10 +721,12 @@ class ActionExecutedAssertion(Assertion):
             )
         except StopIteration:
             error_message = f"Action '{self.action_name}' did not execute."
-            error_message += assertion_order_error_message
-
-            return self._generate_assertion_failure(
-                error_message, prior_events, original_turn_events, self.line
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                original_turn_events,
+                self.line,
             )
 
         return None, matching_event
@@ -546,10 +794,12 @@ class SlotWasSetAssertion(Assertion):
             ]
             if not matching_events:
                 error_message = f"Slot '{slot.name}' was not set."
-                error_message += assertion_order_error_message
-
-                return self._generate_assertion_failure(
-                    error_message, prior_events, turn_events, slot.line
+                return self.generate_test_failure(
+                    error_message,
+                    assertion_order_error_message,
+                    prior_events,
+                    original_turn_events,
+                    slot.line,
                 )
 
             if slot.value == "value key is undefined":
@@ -573,10 +823,12 @@ class SlotWasSetAssertion(Assertion):
                     f"'{matching_events[-1].value}' than the "
                     f"expected '{slot.value}' value."
                 )
-                error_message += assertion_order_error_message
-
-                return self._generate_assertion_failure(
-                    error_message, prior_events, original_turn_events, slot.line
+                return self.generate_test_failure(
+                    error_message,
+                    assertion_order_error_message,
+                    prior_events,
+                    original_turn_events,
+                    slot.line,
                 )
 
         return None, matching_event
@@ -640,10 +892,12 @@ class SlotWasNotSetAssertion(Assertion):
                     f"Slot '{slot.name}' was set to '{matching_event.value}' but "
                     f"it should not have been set."
                 )
-                error_message += assertion_order_error_message
-
-                return self._generate_assertion_failure(
-                    error_message, prior_events, turn_events, slot.line
+                return self.generate_test_failure(
+                    error_message,
+                    assertion_order_error_message,
+                    prior_events,
+                    turn_events,
+                    slot.line,
                 )
 
             if matching_event.value == slot.value:
@@ -651,10 +905,12 @@ class SlotWasNotSetAssertion(Assertion):
                     f"Slot '{slot.name}' was set to '{slot.value}' "
                     f"but it should not have been set."
                 )
-                error_message += assertion_order_error_message
-
-                return self._generate_assertion_failure(
-                    error_message, prior_events, original_turn_events, slot.line
+                return self.generate_test_failure(
+                    error_message,
+                    assertion_order_error_message,
+                    prior_events,
+                    original_turn_events,
+                    slot.line,
                 )
 
         return None, matching_event
@@ -795,11 +1051,13 @@ class BotUtteredAssertion(Assertion):
 
         if error_messages:
             error_message = " ".join(error_messages)
-            error_message += assertion_order_error_message
-            return self._generate_assertion_failure(
-                error_message, prior_events, original_turn_events, self.line
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                original_turn_events,
+                self.line,
             )
-
         return None, matching_event
 
     def _buttons_match(self, event: BotUttered) -> bool:
@@ -898,9 +1156,12 @@ class BotDidNotUtterAssertion(Assertion):
 
                 if error_messages:
                     error_message = " ".join(error_messages)
-                    error_message += assertion_order_error_message
-                    return self._generate_assertion_failure(
-                        error_message, prior_events, original_turn_events, self.line
+                    return self.generate_test_failure(
+                        error_message,
+                        assertion_order_error_message,
+                        prior_events,
+                        original_turn_events,
+                        self.line,
                     )
         return None, None
 
@@ -1033,10 +1294,12 @@ class GenerativeResponseMixin(Assertion):
                 f"but was '{round(score,2)}'. The LLM Judge model has justified its "
                 f"score like so: {error_justification}."
             )
-            error_message += assertion_order_error_message
-
-            return self._generate_assertion_failure(
-                error_message, prior_events, turn_events, self.line
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+                self.line,
             )
 
         return None, matching_event
@@ -1081,10 +1344,12 @@ class GenerativeResponseMixin(Assertion):
             )
         except StopIteration:
             error_message = f"Bot did not utter '{self.utter_name}' response."
-            error_message += assertion_order_error_message
-
-            return self._generate_assertion_failure(
-                error_message, prior_events, turn_events, self.line
+            return self.generate_test_failure(
+                error_message,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+                self.line,
             )
 
         return self._run_llm_evaluation(

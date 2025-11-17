@@ -783,6 +783,15 @@ test_cases:
     - user: "Hi!"
       assertions:
        - flow_started: transfer_money
+       - flow_started:
+            operator: any
+            flow_ids:
+                - greet
+                - welcome_back
+       - flow_started:
+              operator: all
+              flow_ids:
+                - greet
        - flow_completed:
            flow_id: transfer_money
            flow_step_id: execute_transfer
@@ -790,9 +799,21 @@ test_cases:
            flow_id: transfer_money
            flow_step_id: execute_transfer
        - pattern_clarification_contains:
-           - list_contacts
-           - add_contacts
-           - remove_contacts
+           - list contacts
+           - add contacts
+           - remove contacts
+       - pattern_clarification_contains:
+            operator: any
+            flow_ids:
+                - list_contacts
+                - add_contacts
+                - remove_contacts
+       - pattern_clarification_contains:
+            operator: all
+            flow_ids:
+                - list_contacts
+                - add_contacts
+                - remove_contacts
        - action_executed: execute_transfer
        - slot_was_set:
            - name: recipient
@@ -840,6 +861,12 @@ test_cases:
         {"flow_id": "transfer_money"},
         True,
         False,
+        {"flow_ids": ["greet"]},
+        {"operator": "all"},
+        {"operator": "and", "flow_ids": ["greet"]},
+        {"operator": "all", "flow_ids": ["greet", "welcome_back"]},
+        {"operator": "any", "flow_ids": "greet"},
+        {"operator": "all", "flow_ids": []},
     ],
 )
 def test_e2e_test_case_schema_assertion_flow_started_invalid_type(
@@ -989,6 +1016,11 @@ test_cases:
         [False],
         True,
         False,
+        {"flow_ids": ["greet"]},
+        {"operator": "all"},
+        {"operator": "and", "flow_ids": ["greet"]},
+        {"operator": "any", "flow_ids": "greet"},
+        {"operator": "all", "flow_ids": []},
     ],
 )
 def test_e2e_test_case_schema_assertion_pattern_clarification_invalid_type(

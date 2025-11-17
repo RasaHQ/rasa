@@ -47,6 +47,7 @@ async def test_clarify_pattern_flow_stack_frame_from_dict() -> None:
             "step_id": "test_step_id",
             "names": "foo",
             "clarification_options": "",
+            "clarification_ids": ["foo_flow"],
         }
     )
     assert frame.frame_id == "test_id"
@@ -55,6 +56,7 @@ async def test_clarify_pattern_flow_stack_frame_from_dict() -> None:
     assert frame.clarification_options == ""
     assert frame.flow_id == "pattern_clarification"
     assert frame.type() == "pattern_clarification"
+    assert frame.clarification_ids == ["foo_flow"]
 
 
 async def test_action_clarify_flows_no_active_flow(capsys: CaptureFixture) -> None:

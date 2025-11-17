@@ -34,6 +34,8 @@ class ClarifyPatternFlowStackFrame(PatternFlowStackFrame):
     """The names of the flows that the user can choose from."""
     clarification_options: str = ""
     """The options that the user can choose from as a string."""
+    clarification_ids: List[str] = field(default_factory=list)
+    """The IDs of the flows that the user can choose from."""
 
     @classmethod
     def type(cls) -> str:
@@ -55,6 +57,7 @@ class ClarifyPatternFlowStackFrame(PatternFlowStackFrame):
             step_id=data["step_id"],
             names=data["names"],
             clarification_options=data["clarification_options"],
+            clarification_ids=data.get("clarification_ids", []),
         )
 
 

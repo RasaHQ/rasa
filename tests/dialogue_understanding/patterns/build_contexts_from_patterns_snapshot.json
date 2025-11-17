@@ -95,6 +95,12 @@
         ],
         "type": "text"
     },
+    "clarification_ids": {
+        "patterns": [
+            "pattern_clarification"
+        ],
+        "type": "any"
+    },
     "previous_flow_name": {
         "patterns": [
             "pattern_completed"

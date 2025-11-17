@@ -47,7 +47,7 @@ def test_from_dict_fails_if_options_is_missing():
         ClarifyCommand.from_dict({})
 
 
-def test_run_command_ignores_non_existant_flows():
+def test_run_command_ignores_non_existent_flows():
     all_flows = flows_from_str(
         """
         flows:
@@ -77,6 +77,7 @@ def test_run_command_ignores_non_existant_flows():
     assert frame["step_id"] == "START"
     assert frame["names"] == ["foo"]
     assert frame["clarification_options"] == ""
+    assert frame["clarification_ids"] == ["foo"]
 
 
 def test_run_command_uses_name_of_flow():
@@ -107,6 +108,7 @@ def test_run_command_uses_name_of_flow():
     frame = dialogue_stack_dump[0]
     assert frame["type"] == "pattern_clarification"
     assert frame["names"] == ["some foo"]
+    assert frame["clarification_ids"] == ["foo"]
 
 
 def test_clarify_command_hash_equal():

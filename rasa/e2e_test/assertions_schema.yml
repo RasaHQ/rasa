@@ -8,7 +8,7 @@ schema;assertions:
   - type: map
     mapping:
        flow_started:
-         type: str
+         type: any
          nullable: false
        flow_completed:
          type: map
@@ -27,12 +27,8 @@ schema;assertions:
            flow_step_id:
              type: str
        pattern_clarification_contains:
-         type: seq
-         matching: "all"
+         type: any
          nullable: false
-         sequence:
-         - type: str
-           nullable: false
        action_executed:
          type: str
          nullable: false

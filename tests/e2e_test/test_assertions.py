@@ -1,4 +1,6 @@
+import contextlib
 import math
+import re
 from pathlib import Path
 from typing import Any, Dict, List
 from unittest.mock import AsyncMock, Mock, call, patch
@@ -15,6 +17,7 @@ from rasa.e2e_test.assertions import (
     AssertedSlot,
     Assertion,
     AssertionFailure,
+    AssertionOperator,
     AssertionType,
     BotDidNotUtterAssertion,
     BotUtteredAssertion,
@@ -72,6 +75,24 @@ def llm_judge_config() -> LLMJudgeConfig:
             FlowStartedAssertion(flow_id="transfer_money"),
         ),
         (
+            {"flow_started": {"operator": "all", "flow_ids": ["transfer_money"]}},
+            FlowStartedAssertion(
+                operator=AssertionOperator.ALL, flow_ids=["transfer_money"]
+            ),
+        ),
+        (
+            {
+                "flow_started": {
+                    "operator": "any",
+                    "flow_ids": ["transfer_money", "check_balance"],
+                }
+            },
+            FlowStartedAssertion(
+                operator=AssertionOperator.ANY,
+                flow_ids=["transfer_money", "check_balance"],
+            ),
+        ),
+        (
             {
                 "flow_completed": {
                     "flow_id": "transfer_money",
@@ -103,6 +124,32 @@ def llm_judge_config() -> LLMJudgeConfig:
             },
             PatternClarificationContainsAssertion(
                 flow_names={"list_contacts", "add_contacts", "remove_contacts"}
+            ),
+        ),
+        (
+            {
+                "pattern_clarification_contains": {
+                    "operator": "all",
+                    "flow_ids": ["list_contacts", "add_contacts"],
+                }
+            },
+            PatternClarificationContainsAssertion(
+                flow_names=set(),
+                flow_ids=["list_contacts", "add_contacts"],
+                operator=AssertionOperator.ALL,
+            ),
+        ),
+        (
+            {
+                "pattern_clarification_contains": {
+                    "operator": "any",
+                    "flow_ids": ["list_contacts", "add_contacts"],
+                }
+            },
+            PatternClarificationContainsAssertion(
+                flow_names=set(),
+                flow_ids=["list_contacts", "add_contacts"],
+                operator=AssertionOperator.ANY,
             ),
         ),
         (
@@ -227,14 +274,31 @@ def test_empty_bot_uttered_raises_exception():
         Assertion.create_typed_assertion({"bot_uttered": {}})
 
 
-def test_pattern_clarification_contains_assertion_test():
+def test_pattern_clarification_contains_assertion_test_for_type_error():
     assertion = PatternClarificationContainsAssertion(
         flow_names={"add a card", "add a contact"}, line=12
     )
-    try:
-        assertion.__hash__()
-    except TypeError:
-        pytest.fail("Unexpected TypeError")
+    with contextlib.nullcontext():
+        assert isinstance(assertion.__hash__(), int)
+
+
+def test_pattern_clarification_contains_assertion_test_for_type_error_with_operator():
+    assertion = PatternClarificationContainsAssertion(
+        flow_names=set(),
+        line=12,
+        operator=AssertionOperator.ALL,
+        flow_ids=["add a card", "add a contact"],
+    )
+    with contextlib.nullcontext():
+        assert isinstance(assertion.__hash__(), int)
+
+
+def test_flow_started_assertion_test_for_type_error():
+    assertion = FlowStartedAssertion(
+        operator=AssertionOperator.ANY, flow_ids=["add a card", "add a contact"]
+    )
+    with contextlib.nullcontext():
+        assert isinstance(assertion.__hash__(), int)
 
 
 @pytest.mark.parametrize(
@@ -242,6 +306,19 @@ def test_pattern_clarification_contains_assertion_test():
     [
         (
             FlowStartedAssertion(flow_id="transfer_money"),
+            [FlowStarted(flow_id="transfer_money")],
+        ),
+        (
+            FlowStartedAssertion(
+                operator=AssertionOperator.ANY,
+                flow_ids=["transfer_money", "check_balance"],
+            ),
+            [FlowStarted(flow_id="check_balance")],
+        ),
+        (
+            FlowStartedAssertion(
+                operator=AssertionOperator.ALL, flow_ids=["transfer_money"]
+            ),
             [FlowStarted(flow_id="transfer_money")],
         ),
         (
@@ -266,6 +343,32 @@ def test_pattern_clarification_contains_assertion_test():
                     metadata={
                         "names": ["list_contacts", "add_contacts", "remove_contacts"]
                     },
+                )
+            ],
+        ),
+        (
+            PatternClarificationContainsAssertion(
+                flow_names=set(),
+                flow_ids=["add_card", "add_contacts"],
+                operator=AssertionOperator.ANY,
+            ),
+            [
+                FlowStarted(
+                    flow_id=FLOW_PATTERN_CLARIFICATION,
+                    metadata={"clarification_ids": ["list_contacts", "add_contacts"]},
+                )
+            ],
+        ),
+        (
+            PatternClarificationContainsAssertion(
+                flow_names=set(),
+                flow_ids=["add_card", "add_contacts"],
+                operator=AssertionOperator.ALL,
+            ),
+            [
+                FlowStarted(
+                    flow_id=FLOW_PATTERN_CLARIFICATION,
+                    metadata={"clarification_ids": ["add_card", "add_contacts"]},
                 )
             ],
         ),
@@ -385,6 +488,37 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
             ),
         ),
         (
+            FlowStartedAssertion(
+                operator=AssertionOperator.ALL, flow_ids=["transfer_money"]
+            ),
+            AssertionFailure(
+                assertion=FlowStartedAssertion(
+                    operator=AssertionOperator.ALL,
+                    flow_ids=["transfer_money"],
+                    line=None,
+                ),
+                error_message="Flow with id 'transfer_money' did not start.",
+                actual_events_transcript=[],
+                error_line=None,
+            ),
+        ),
+        (
+            FlowStartedAssertion(
+                operator=AssertionOperator.ANY,
+                flow_ids=["transfer_money", "check_balance"],
+            ),
+            AssertionFailure(
+                assertion=FlowStartedAssertion(
+                    operator=AssertionOperator.ANY,
+                    flow_ids=["transfer_money", "check_balance"],
+                    line=None,
+                ),
+                error_message="None of the flows with ids 'transfer_money, check_balance' started.",  # noqa: E501
+                actual_events_transcript=[],
+                error_line=None,
+            ),
+        ),
+        (
             FlowCompletedAssertion(
                 flow_id="transfer_money", flow_step_id="utter_confirm_transfer"
             ),
@@ -421,6 +555,42 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
             AssertionFailure(
                 assertion=PatternClarificationContainsAssertion(
                     flow_names={"list_contacts", "add_contacts", "remove_contacts"},
+                    line=None,
+                ),
+                error_message="'pattern_clarification' pattern did not " "trigger.",
+                actual_events_transcript=[],
+                error_line=None,
+            ),
+        ),
+        (
+            PatternClarificationContainsAssertion(
+                flow_names=set(),
+                operator=AssertionOperator.ANY,
+                flow_ids=["list_contacts", "add_contacts", "remove_contacts"],
+            ),
+            AssertionFailure(
+                assertion=PatternClarificationContainsAssertion(
+                    flow_names=set(),
+                    operator=AssertionOperator.ANY,
+                    flow_ids=["list_contacts", "add_contacts", "remove_contacts"],
+                    line=None,
+                ),
+                error_message="'pattern_clarification' pattern did not " "trigger.",
+                actual_events_transcript=[],
+                error_line=None,
+            ),
+        ),
+        (
+            PatternClarificationContainsAssertion(
+                flow_names=set(),
+                operator=AssertionOperator.ALL,
+                flow_ids=["list_contacts", "add_contacts", "remove_contacts"],
+            ),
+            AssertionFailure(
+                assertion=PatternClarificationContainsAssertion(
+                    flow_names=set(),
+                    operator=AssertionOperator.ALL,
+                    flow_ids=["list_contacts", "add_contacts", "remove_contacts"],
                     line=None,
                 ),
                 error_message="'pattern_clarification' pattern did not " "trigger.",
@@ -668,7 +838,13 @@ def test_slot_was_not_set_assertions_returns_assertion_failure(
     [
         (
             FlowStartedAssertion(flow_id="transfer_money"),
-            {"flow_id": "transfer_money", "type": "flow_started", "line": None},
+            {
+                "flow_id": "transfer_money",
+                "type": "flow_started",
+                "line": None,
+                "flow_ids": [],
+                "operator": None,
+            },
         ),
         (
             FlowCompletedAssertion(
@@ -698,6 +874,22 @@ def test_slot_was_not_set_assertions_returns_assertion_failure(
             ),
             {
                 "flow_names": {"list_contacts", "add_contacts", "remove_contacts"},
+                "flow_ids": [],
+                "operator": None,
+                "type": "pattern_clarification_contains",
+                "line": None,
+            },
+        ),
+        (
+            PatternClarificationContainsAssertion(
+                flow_names=set(),
+                operator=AssertionOperator.ANY,
+                flow_ids=["list_contacts", "add_contacts", "remove_contacts"],
+            ),
+            {
+                "flow_names": set(),
+                "flow_ids": ["list_contacts", "add_contacts", "remove_contacts"],
+                "operator": AssertionOperator.ANY.value,
                 "type": "pattern_clarification_contains",
                 "line": None,
             },
@@ -2060,3 +2252,82 @@ def test_generative_response_answer_relevance_assertion_run_custom_action_no_sou
             "to specify which generative response to evaluate."
         )
     )
+
+
+def test_pattern_clarification_assertion_run_all_flow_id_check_failure() -> None:
+    assertion = PatternClarificationContainsAssertion(
+        flow_names=set(), flow_ids=["flow_1", "flow_2"], operator=AssertionOperator.ALL
+    )
+    turn_events = [
+        FlowStarted(
+            flow_id="pattern_clarification",
+            metadata={"clarification_ids": ["flow_1", "flow_3"]},
+        )
+    ]
+    assertion_failure, matching_event = assertion.run(turn_events, [])
+    assert (
+        "'pattern_clarification' pattern did not contain "
+        "all of the expected options 'flow_1, flow_2'. "
+        in assertion_failure.error_message
+    )
+    assert matching_event is None
+
+
+def test_pattern_clarification_assertion_run_any_flow_id_check_failure() -> None:
+    assertion = PatternClarificationContainsAssertion(
+        flow_names=set(), flow_ids=["flow_1", "flow_2"], operator=AssertionOperator.ANY
+    )
+    turn_events = [
+        FlowStarted(
+            flow_id="pattern_clarification", metadata={"clarification_ids": ["flow_3"]}
+        )
+    ]
+    assertion_failure, matching_event = assertion.run(turn_events, [])
+    assert (
+        assertion_failure.error_message == "'pattern_clarification' pattern did not "
+        "contain any of the expected options 'flow_1, flow_2'."
+    )
+    assert matching_event is None
+
+
+def test_pattern_clarification_assertion_run_flow_names_raise_deprecation_warning() -> (
+    None
+):
+    assertion = PatternClarificationContainsAssertion(
+        flow_names={"flow_1", "flow_2"},
+    )
+    turn_events = [
+        FlowStarted(
+            flow_id="pattern_clarification", metadata={"names": ["flow_1", "flow_2"]}
+        )
+    ]
+
+    message = re.escape(
+        "'pattern_clarification_contains' assertions defining a "
+        "list of flow names are deprecated and will be removed in a future Rasa "
+        "version. Please use the 'flow_ids' field with an 'operator' instead. "
+        "(will be removed in 4.0.0)"
+    )
+    with pytest.warns(FutureWarning, match=message):
+        assertion.run(turn_events, [])
+
+
+def test_flow_started_assertion_run_flow_id_raises_deprecation_warning() -> None:
+    assertion = FlowStartedAssertion(
+        flow_id="flow_1",
+    )
+    turn_events = [
+        FlowStarted(
+            flow_id="flow_1",
+        )
+    ]
+
+    message = re.escape(
+        "'flow_started' assertions defining "
+        "a single 'flow_id' value are "
+        "deprecated and will be removed in a future Rasa version. "
+        "Please use the 'flow_ids' field with an "
+        "'operator' instead."
+    )
+    with pytest.warns(FutureWarning, match=message):
+        assertion.run(turn_events, [])

@@ -89,6 +89,8 @@ class ClarifyCommand(Command):
             if flow is not None
         ]
 
+        clarification_ids = [flow.id for flow in relevant_flows if flow is not None]
+
         applied_events: List[Event] = []
 
         # if pattern_completed is active, we need to remove it from the stack
@@ -107,7 +109,11 @@ class ClarifyCommand(Command):
                 )
                 top_stack_frame.state = AgentState.INTERRUPTED
 
-        stack.push(ClarifyPatternFlowStackFrame(names=names))
+        stack.push(
+            ClarifyPatternFlowStackFrame(
+                names=names, clarification_ids=clarification_ids
+            )
+        )
         return applied_events + tracker.create_stack_updated_events(stack)
 
     def __hash__(self) -> int:
