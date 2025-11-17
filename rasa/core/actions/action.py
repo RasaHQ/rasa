@@ -115,7 +115,6 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
     """List default actions."""
     from rasa.core.actions.action_clean_stack import ActionCleanStack
     from rasa.core.actions.action_hangup import ActionHangup
-    from rasa.core.actions.action_llm_streaming import ActionLLMStreamingResponse
     from rasa.core.actions.action_repeat_bot_messages import ActionRepeatBotMessages
     from rasa.core.actions.action_run_slot_rejections import ActionRunSlotRejections
     from rasa.core.actions.action_trigger_chitchat import ActionTriggerChitchat
@@ -156,7 +155,6 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionRepeatBotMessages(),
         ActionContinueInterruptedFlow(),
         ActionCancelInterruptedFlows(),
-        ActionLLMStreamingResponse(),
     ]
 
 

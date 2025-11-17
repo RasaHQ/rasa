@@ -178,6 +178,7 @@ nodes:
       tracker: __tracker__
       domain: domain_provider
       rule_only_data: rule_only_data_provider
+      output_channel: __output_channel__
     uses: rasa.core.policies.memoization.MemoizationPolicy
     constructor_name: load
     fn: predict_action_probabilities
@@ -192,6 +193,7 @@ nodes:
       tracker: __tracker__
       domain: domain_provider
       rule_only_data: rule_only_data_provider
+      output_channel: __output_channel__
     uses: rasa.core.policies.rule_policy.RulePolicy
     constructor_name: load
     fn: predict_action_probabilities
@@ -206,6 +208,7 @@ nodes:
       tracker: __tracker__
       domain: domain_provider
       rule_only_data: rule_only_data_provider
+      output_channel: __output_channel__
     uses: rasa.core.policies.ted_policy.TEDPolicy
     constructor_name: load
     fn: predict_action_probabilities

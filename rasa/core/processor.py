@@ -49,6 +49,7 @@ from rasa.engine import loader
 from rasa.engine.constants import (
     PLACEHOLDER_ENDPOINTS,
     PLACEHOLDER_MESSAGE,
+    PLACEHOLDER_OUTPUT_CHANNEL,
     PLACEHOLDER_TRACKER,
 )
 from rasa.engine.runner.dask import DaskGraphRunner
@@ -1583,12 +1584,8 @@ class MessageProcessor:
         inputs: Dict[str, Any] = {
             PLACEHOLDER_TRACKER: tracker,
             PLACEHOLDER_ENDPOINTS: self.endpoints,
+            PLACEHOLDER_OUTPUT_CHANNEL: output_channel,
         }
-        # Add output_channel if provided
-        if output_channel is not None:
-            from rasa.engine.constants import PLACEHOLDER_OUTPUT_CHANNEL
-
-            inputs[PLACEHOLDER_OUTPUT_CHANNEL] = output_channel
 
         results = await self.graph_runner.run(
             inputs=inputs,

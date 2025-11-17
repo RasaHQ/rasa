@@ -64,9 +64,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
-    ACTION_METADATA_LLM_CONFIG_KEY,
     ACTION_METADATA_MESSAGE_KEY,
-    ACTION_METADATA_PROMPT_KEY,
     ACTION_METADATA_TEXT_KEY,
     ACTION_SEND_TEXT_NAME,
     DEFAULT_SLOT_NAMES,
@@ -108,6 +106,7 @@ from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheck
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     LLMInput,
+    acompletion_with_streaming,
     embedder_factory,
     get_prompt_template,
     llm_factory,
@@ -123,6 +122,7 @@ from rasa.telemetry import (
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
 
+    from rasa.core.channels.channel import OutputChannel
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
 from rasa.utils.log_utils import log_llm
@@ -526,11 +526,16 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 should be ignored by this policy.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
+                Includes `output_channel` for streaming responses.
 
         Returns:
              The prediction.
         """
         logger_key = "enterprise_search_policy.predict_action_probabilities"
+
+        # Get output_channel from kwargs to support streaming responses.
+        # This is not in the signature to avoid breaking changes.
+        output_channel = kwargs.get("output_channel")
 
         if not self.supports_current_stack_frame(
             tracker, False, False
@@ -570,43 +575,62 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         # Prepare the prompt for LLM
         prompt = self._render_prompt(tracker, documents.results)
 
+        self._telemetry_policy_prediction()
+
         if self.use_llm:
-            # If relevancy check or citation is enabled, we need to process the response
-            # before returning it, so we can't use streaming
-            if self.relevancy_check_enabled or self.citation_enabled:
-                # Call LLM directly (non-streaming) for processing
-                return await self._return_non_streaming_response(
-                    domain, tracker, search_query, prompt, documents
-                )
-            else:
-                # No post-processing needed, use streaming action
-                # Store prompt info in tracker for debugging/logging purposes
-                return self._return_streaming_response(
-                    domain, tracker, search_query, prompt, documents
-                )
+            # Use unified method that handles both streaming and non-streaming
+            return await self._return_llm_response(
+                domain, tracker, search_query, prompt, documents, output_channel
+            )
         else:
             # No LLM, use static response with action_send_text from search results
             return self._return_text_response(domain, tracker, search_query, documents)
 
-    async def _return_non_streaming_response(
+    async def _return_llm_response(
         self,
         domain: Domain,
         tracker: DialogueStateTracker,
         search_query: Text,
         prompt: Text,
         documents: SearchResultList,
+        output_channel: Optional["OutputChannel"],
     ) -> PolicyPrediction:
-        """Returns a non-streaming response from the search results.
+        """Returns an LLM response, with streaming support when available.
+
+        This method handles both streaming and non-streaming cases. If output_channel
+        is provided and no post-processing (relevancy check or citation) is needed,
+        it will stream the response. Otherwise, it falls back to non-streaming.
 
         Args:
-            documents: The documents retrieved from search
+            domain: The model's domain.
+            tracker: The tracker containing the conversation history up to now.
+            search_query: The search query used.
+            prompt: The prompt to send to the LLM.
+            documents: The documents retrieved from search.
+            output_channel: Optional output channel for streaming the response.
+
         Returns:
-            The policy prediction with the non-streaming response.
+            The policy prediction.
         """
-        logger_key = "enterprise_search_policy._return_static_response"
-        llm_response = await self._invoke_llm(
-            LLMInput(prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker))
+        logger_key = "enterprise_search_policy._return_llm_response"
+
+        # Determine if we can use streaming (no post-processing needed)
+        can_stream = (
+            output_channel is not None
+            and not self.relevancy_check_enabled
+            and not self.citation_enabled
         )
+
+        llm_input = LLMInput(
+            prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker)
+        )
+        if can_stream:
+            llm_response = await self._invoke_llm_with_streaming(
+                llm_input, output_channel, tracker.sender_id
+            )
+        else:
+            llm_response = await self._invoke_llm(llm_input)
+
         self._add_prompt_and_llm_response_to_latest_message(
             tracker=tracker,
             prompt_name="enterprise_search_prompt",
@@ -616,69 +640,31 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
         if llm_response is None or not llm_response.choices:
             structlogger.debug(f"{logger_key}.no_llm_response")
-            response = None
-        else:
-            llm_answer = llm_response.choices[0]
-
-            if self.relevancy_check_enabled:
-                relevancy_response = self._parse_llm_relevancy_check_response(
-                    llm_answer
-                )
-                if not relevancy_response.relevant:
-                    structlogger.debug(f"{logger_key}.answer_not_relevant")
-                    return self._create_prediction_cannot_handle(
-                        domain,
-                        tracker,
-                        RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
-                    )
-
-            if self.citation_enabled:
-                llm_answer = self.post_process_citations(llm_answer)
-
-            structlogger.debug(
-                f"{logger_key}.llm_answer", prompt=prompt, llm_answer=llm_answer
-            )
-            response = llm_answer
-
-        if response is None:
             return self._create_prediction_internal_error(domain, tracker)
 
-        action_metadata = self._get_action_metadata(search_query, documents, response)
-        self._telemetry_policy_prediction()
+        llm_answer = llm_response.choices[0]
+
+        # Apply post-processing if needed (only for non-streaming cases)
+        if self.relevancy_check_enabled:
+            relevancy_response = self._parse_llm_relevancy_check_response(llm_answer)
+            if not relevancy_response.relevant:
+                structlogger.debug(f"{logger_key}.answer_not_relevant")
+                return self._create_prediction_cannot_handle(
+                    domain,
+                    tracker,
+                    RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
+                )
+
+        if self.citation_enabled:
+            llm_answer = self.post_process_citations(llm_answer)
+
+        structlogger.debug(
+            f"{logger_key}.llm_answer", prompt=prompt, llm_answer=llm_answer
+        )
+
+        action_metadata = self._get_action_metadata(search_query, documents, llm_answer)
+
         return self._create_prediction(
-            domain=domain, tracker=tracker, action_metadata=action_metadata
-        )
-
-    def _return_streaming_response(
-        self,
-        domain: Domain,
-        tracker: DialogueStateTracker,
-        search_query: Text,
-        prompt: Text,
-        documents: SearchResultList,
-    ) -> PolicyPrediction:
-        """Returns a streaming response from the search results.
-
-        Args:
-            documents: The documents retrieved from search
-        Returns:
-            The policy prediction with the streaming response.
-        """
-        self._add_prompt_and_llm_response_to_latest_message(
-            tracker=tracker,
-            prompt_name="enterprise_search_prompt",
-            user_prompt=prompt,
-            llm_response=None,  # Will be populated during streaming
-        )
-
-        # Create metadata for the streaming action
-        action_metadata = self._get_action_metadata(search_query, documents, None)
-        action_metadata[ACTION_METADATA_LLM_CONFIG_KEY] = self.llm_config
-        action_metadata[ACTION_METADATA_PROMPT_KEY] = prompt
-
-        # Predict ACTION_LLM_STREAMING_RESPONSE to handle streaming
-        self._telemetry_policy_prediction()
-        return self._create_prediction_streaming(
             domain=domain, tracker=tracker, action_metadata=action_metadata
         )
 
@@ -711,9 +697,11 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         )
 
         action_metadata = self._get_action_metadata(search_query, documents, response)
-        self._telemetry_policy_prediction()
+
         return self._create_prediction(
-            domain=domain, tracker=tracker, action_metadata=action_metadata
+            domain=domain,
+            tracker=tracker,
+            action_metadata=action_metadata,
         )
 
     def _telemetry_policy_prediction(self) -> None:
@@ -819,6 +807,36 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             )
             return None
 
+    async def _invoke_llm_with_streaming(
+        self, llm_input: LLMInput, output_channel: "OutputChannel", recipient_id: str
+    ) -> Optional[LLMResponse]:
+        """Fetches an LLM completion for the provided prompt with streaming support.
+
+        Args:
+            llm_input: The LLM input containing the prompt and metadata.
+            output_channel: Output channel for streaming the response.
+            recipient_id: Recipient ID for the output channel.
+
+        Returns:
+            An LLMResponse object, or None if the call fails.
+        """
+        llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
+        try:
+            response = await acompletion_with_streaming(
+                llm_client=llm,
+                messages=llm_input.prompt,
+                output_channel=output_channel,
+                recipient_id=recipient_id,
+                metadata=llm_input.metadata,
+            )
+            return LLMResponse.ensure_llm_response(response)
+        except Exception as e:
+            structlogger.error(
+                "enterprise_search_policy._invoke_llm_with_streaming.error",
+                error=e,
+            )
+            return None
+
     def _parse_llm_relevancy_check_response(
         self, llm_answer: str
     ) -> _RelevancyCheckResponse:
@@ -838,7 +856,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         tracker: DialogueStateTracker,
         action_metadata: Dict[Text, Any],
     ) -> PolicyPrediction:
-        """Create a policy prediction result with ACTION_SEND_TEXT_NAME.
+        """Create a policy prediction result with the given action name.
 
         Args:
             domain: The model's domain.
@@ -849,35 +867,6 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             The prediction.
         """
         result = self._prediction_result(ACTION_SEND_TEXT_NAME, domain)
-        stack = tracker.stack
-        if not stack.is_empty():
-            stack.pop()
-            events: List[Event] = tracker.create_stack_updated_events(stack)
-        else:
-            events = []
-
-        return self._prediction(result, action_metadata=action_metadata, events=events)
-
-    def _create_prediction_streaming(
-        self,
-        domain: Domain,
-        tracker: DialogueStateTracker,
-        action_metadata: Dict[Text, Any],
-    ) -> PolicyPrediction:
-        """Create a policy prediction result with ACTION_LLM_STREAMING_RESPONSE.
-
-        Args:
-            domain: The model's domain.
-            tracker: The tracker containing the conversation history up to now.
-            action_metadata: The metadata for the predicted action containing
-                llm_config and prompt.
-
-        Returns:
-            The prediction.
-        """
-        from rasa.shared.core.constants import ACTION_LLM_STREAMING_RESPONSE
-
-        result = self._prediction_result(ACTION_LLM_STREAMING_RESPONSE, domain)
         stack = tracker.stack
         if not stack.is_empty():
             stack.pop()

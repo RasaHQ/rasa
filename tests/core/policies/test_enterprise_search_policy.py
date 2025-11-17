@@ -13,6 +13,7 @@ from langchain_community.llms.fake import FakeListLLM
 from pytest import MonkeyPatch
 
 import rasa.shared.utils.io
+from rasa.core.channels import OutputChannel
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.information_retrieval import (
     InformationRetrieval,
@@ -62,7 +63,12 @@ from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
     TIMEZONE_CONFIG_KEY,
 )
-from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
+from rasa.shared.core.constants import (
+    ACTION_METADATA_MESSAGE_KEY,
+    ACTION_METADATA_TEXT_KEY,
+    ACTION_SEND_TEXT_NAME,
+    MOCKED_DATETIME_SLOT,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slots import BooleanSlot
@@ -2352,17 +2358,16 @@ async def test_enterprise_search_policy_prediction_varied_configs(
         assert prediction.action_metadata["message"]["text"] == expected_text
 
 
+@patch.object(
+    EnterpriseSearchPolicy,
+    "_invoke_llm_with_streaming",
+)
 async def test_enterprise_search_policy_prediction_streaming_response(
+    mock_invoke_llm_with_streaming: Mock,
     mocked_enterprise_search_policy: EnterpriseSearchPolicy,
     enterprise_search_tracker: DialogueStateTracker,
+    vector_store: InformationRetrieval,
 ) -> None:
-    """Test that streaming response is used."""
-    from rasa.shared.core.constants import (
-        ACTION_LLM_STREAMING_RESPONSE,
-        ACTION_METADATA_LLM_CONFIG_KEY,
-        ACTION_METADATA_PROMPT_KEY,
-    )
-
     # Given: both relevancy check and citation are disabled
     mocked_enterprise_search_policy.relevancy_check_enabled = False
     mocked_enterprise_search_policy.citation_enabled = False
@@ -2370,22 +2375,117 @@ async def test_enterprise_search_policy_prediction_streaming_response(
     domain = Domain.empty()
     tracker = enterprise_search_tracker
 
+    # Mock vector store search
+    mock_search_result = SearchResultList(
+        results=[
+            SearchResult(
+                text="Test document",
+                score=0.9,
+                metadata={"answer": "Test answer"},
+            )
+        ],
+        metadata={},
+    )
+    vector_store.search = AsyncMock(return_value=mock_search_result)
+    vector_store.connect = MagicMock()
+
+    # Mock streaming response
+    mock_llm_response = LLMResponse(
+        id="test-id",
+        created=123456,
+        choices=["Streamed response text"],
+        model="test-model",
+    )
+    mock_invoke_llm_with_streaming.return_value = mock_llm_response
+
+    # Create a mock output channel
+    mock_output_channel = MagicMock(spec=OutputChannel)
+    mock_output_channel.send_response_chunk_start = AsyncMock()
+    mock_output_channel.send_response_chunk = AsyncMock()
+    mock_output_channel.send_response_chunk_end = AsyncMock()
+
     # When
     prediction = await mocked_enterprise_search_policy.predict_action_probabilities(
         tracker=tracker,
         domain=domain,
         endpoints=None,
+        output_channel=mock_output_channel,
     )
 
-    # Then: should predict ACTION_LLM_STREAMING_RESPONSE action
+    # Then: should predict ACTION_SEND_TEXT_NAME action
     predicted_action_index = prediction.probabilities.index(
         max(prediction.probabilities)
     )
     predicted_action = domain.action_names_or_texts[predicted_action_index]
 
-    assert predicted_action == ACTION_LLM_STREAMING_RESPONSE
-    assert ACTION_METADATA_PROMPT_KEY in prediction.action_metadata
-    assert ACTION_METADATA_LLM_CONFIG_KEY in prediction.action_metadata
+    assert predicted_action == ACTION_SEND_TEXT_NAME
+    assert ACTION_METADATA_TEXT_KEY in prediction.action_metadata.get(
+        ACTION_METADATA_MESSAGE_KEY, {}
+    )
+    # Verify streaming was called
+    mock_invoke_llm_with_streaming.assert_called_once()
+
+
+@patch.object(
+    EnterpriseSearchPolicy,
+    "_invoke_llm",
+)
+async def test_ES_policy_prediction_non_streaming_response_no_output_channel(
+    mock_invoke_llm: Mock,
+    mocked_enterprise_search_policy: EnterpriseSearchPolicy,
+    enterprise_search_tracker: DialogueStateTracker,
+    vector_store: InformationRetrieval,
+) -> None:
+    # Given: both relevancy check and citation are disabled
+    mocked_enterprise_search_policy.relevancy_check_enabled = False
+    mocked_enterprise_search_policy.citation_enabled = False
+
+    domain = Domain.empty()
+    tracker = enterprise_search_tracker
+
+    # Mock vector store search
+    mock_search_result = SearchResultList(
+        results=[
+            SearchResult(
+                text="Test document",
+                score=0.9,
+                metadata={"answer": "Test answer"},
+            )
+        ],
+        metadata={},
+    )
+    vector_store.search = AsyncMock(return_value=mock_search_result)
+    vector_store.connect = MagicMock()
+
+    # Mock non-streaming response
+    mock_llm_response = LLMResponse(
+        id="test-id",
+        created=123456,
+        choices=["Non-streamed response text"],
+        model="test-model",
+    )
+    mock_invoke_llm.return_value = mock_llm_response
+
+    # When: output_channel is None
+    prediction = await mocked_enterprise_search_policy.predict_action_probabilities(
+        tracker=tracker,
+        domain=domain,
+        endpoints=None,
+        output_channel=None,
+    )
+
+    # Then: should predict ACTION_SEND_TEXT_NAME action (non-streaming)
+    predicted_action_index = prediction.probabilities.index(
+        max(prediction.probabilities)
+    )
+    predicted_action = domain.action_names_or_texts[predicted_action_index]
+
+    assert predicted_action == ACTION_SEND_TEXT_NAME
+    assert ACTION_METADATA_TEXT_KEY in prediction.action_metadata.get(
+        ACTION_METADATA_MESSAGE_KEY, {}
+    )
+    # Verify non-streaming was called
+    mock_invoke_llm.assert_called_once()
 
 
 @pytest.mark.parametrize(

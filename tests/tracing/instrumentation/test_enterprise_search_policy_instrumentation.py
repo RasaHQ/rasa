@@ -222,7 +222,7 @@ async def test_tracing_enterprise_search_policy_invoke_llm_custom_config(
         mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
         mock_llm_factory.return_value = mock_llm_client
 
-        await policy._invoke_llm("")
+        await policy._invoke_llm(LLMInput(prompt="", metadata={}))
         captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
         num_captured_spans = len(captured_spans) - previous_num_captured_spans

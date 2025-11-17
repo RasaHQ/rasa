@@ -54,7 +54,6 @@ ACTION_TRIGGER_CHITCHAT = "action_trigger_chitchat"
 ACTION_RESET_ROUTING = "action_reset_routing"
 ACTION_HANGUP = "action_hangup"
 ACTION_REPEAT_BOT_MESSAGES = "action_repeat_bot_messages"
-ACTION_LLM_STREAMING_RESPONSE = "action_llm_streaming_response"
 
 # pattern continue interrupted flows
 ACTION_CONTINUE_INTERRUPTED_FLOW = "action_continue_interrupted_flow"
@@ -96,7 +95,6 @@ DEFAULT_ACTION_NAMES = [
     ACTION_RESET_ROUTING,
     ACTION_HANGUP,
     ACTION_REPEAT_BOT_MESSAGES,
-    ACTION_LLM_STREAMING_RESPONSE,
     ACTION_CONTINUE_INTERRUPTED_FLOW,
     ACTION_CANCEL_INTERRUPTED_FLOWS,
 ]

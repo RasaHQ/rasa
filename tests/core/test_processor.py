@@ -1703,10 +1703,10 @@ async def test_predict_next_with_tracker_includes_output_channel(
         assert inputs[PLACEHOLDER_TRACKER] == tracker
 
 
-async def test_predict_next_with_tracker_excludes_output_channel_when_none(
+async def test_predict_next_with_tracker_includes_output_channel_even_when_none(
     default_processor: MessageProcessor,
 ):
-    """Test that output_channel is not included in inputs when None."""
+    """Test that output_channel is always included in inputs, even when None."""
     from rasa.core.policies.policy import PolicyPrediction
     from rasa.engine.constants import PLACEHOLDER_OUTPUT_CHANNEL, PLACEHOLDER_TRACKER
 
@@ -1728,13 +1728,14 @@ async def test_predict_next_with_tracker_excludes_output_channel_when_none(
 
         await default_processor._predict_next_with_tracker(tracker, None)
 
-        # Verify graph runner was called without output_channel in inputs
+        # Verify graph runner was called with output_channel in inputs (even if None)
         mock_run.assert_called_once()
         call_args = mock_run.call_args
         inputs = call_args.kwargs.get(
             "inputs", call_args.args[0] if call_args.args else {}
         )
-        assert PLACEHOLDER_OUTPUT_CHANNEL not in inputs
+        assert PLACEHOLDER_OUTPUT_CHANNEL in inputs
+        assert inputs[PLACEHOLDER_OUTPUT_CHANNEL] is None
         assert PLACEHOLDER_TRACKER in inputs
         assert inputs[PLACEHOLDER_TRACKER] == tracker
 

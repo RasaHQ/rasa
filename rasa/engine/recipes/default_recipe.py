@@ -1080,6 +1080,11 @@ class DefaultV1Recipe(Recipe):
             ):
                 needs["precomputations"] = node_with_e2e_features
 
+            # Always add output_channel to needs so it can be passed via kwargs
+            # This allows policies to receive output_channel even if it's not
+            # in the signature
+            needs["output_channel"] = PLACEHOLDER_OUTPUT_CHANNEL
+
             predict_nodes[node_name] = dataclasses.replace(
                 train_nodes[train_node_name],
                 **DEFAULT_PREDICT_KWARGS,
