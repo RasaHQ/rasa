@@ -477,13 +477,21 @@ jobs:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Set stack name
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "STACK_NAME=pr-${{ github.event.number }}" >> $GITHUB_ENV
+          else
+            echo "STACK_NAME=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          fi
+
       - name: Destroy Pulumi resources
         uses: ./.github/actions/destroy-pulumi-resources
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
           pulumi-access-token: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
-          stack-name: ${{ github.event.inputs.image_tag }}
+          stack-name: ${{ env.STACK_NAME }}
 
 
   check_inspector_build:
@@ -1357,6 +1365,9 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Free up disk-space
+        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
 
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
