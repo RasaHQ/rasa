@@ -1,0 +1,115 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - thank
+  - search_product
+  - compare_products
+  - ask_price
+  - ask_specifications
+  - ask_stock
+  - ask_warranty
+  - ask_promotion
+  - technical_support
+  - recommend_product
+  - ask_category
+  - out_of_scope
+
+entities:
+  - product_type
+  - product_name
+  - brand
+  - price_range
+  - specification
+  - use_case
+  - quantity
+
+slots:
+  product_type:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: product_type
+
+  product_name:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: product_name
+
+  brand:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: brand
+
+  price_range:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: price_range
+
+  use_case:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: use_case
+
+  quantity:
+    type: float
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: quantity
+
+responses:
+  utter_greet:
+    - text: "Xin chào! Tôi là trợ lý AI của TechStore. Tôi có thể giúp bạn tìm kiếm và tư vấn sản phẩm IT như máy tính, máy chủ, switch, camera, và phần mềm. Bạn cần tìm sản phẩm gì hôm nay?"
+
+  utter_goodbye:
+    - text: "Cảm ơn bạn đã liên hệ TechStore! Chúc bạn một ngày tốt lành. Hẹn gặp lại!"
+    - text: "Rất vui được hỗ trợ bạn! Nếu cần thêm thông tin, đừng ngại liên hệ lại nhé. Tạm biệt!"
+
+  utter_thank:
+    - text: "Rất vui được giúp đỡ bạn! 😊"
+    - text: "Không có gì! Tôi luôn sẵn sàng hỗ trợ bạn."
+
+  utter_ask_product_type:
+    - text: "Bạn đang tìm kiếm loại sản phẩm nào?\n• Máy tính/Laptop\n• Máy chủ (Server)\n• Switch mạng\n• Camera an ninh\n• Phần mềm"
+
+  utter_ask_budget:
+    - text: "Bạn có ngân sách dự kiến bao nhiêu cho sản phẩm này?"
+
+  utter_ask_use_case:
+    - text: "Bạn sẽ sử dụng sản phẩm cho mục đích gì?\n• Văn phòng\n• Gaming\n• Doanh nghiệp\n• Thiết kế đồ họa\n• Khác"
+
+  utter_default:
+    - text: "Xin lỗi, tôi chưa hiểu rõ yêu cầu của bạn. Bạn có thể nói rõ hơn được không?"
+    - text: "Tôi có thể giúp bạn tìm kiếm sản phẩm, so sánh giá, hoặc tư vấn giải pháp IT. Bạn cần gì?"
+
+  utter_out_of_scope:
+    - text: "Xin lỗi, câu hỏi này nằm ngoài phạm vi tư vấn sản phẩm IT của tôi. Tôi chỉ có thể hỗ trợ về máy tính, máy chủ, thiết bị mạng, camera và phần mềm. Bạn có câu hỏi nào khác không?"
+
+actions:
+  - action_search_product
+  - action_compare_products
+  - action_show_price
+  - action_show_specifications
+  - action_check_stock
+  - action_show_warranty
+  - action_show_promotions
+  - action_recommend_product
+  - action_provide_support
+  - action_show_category
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
