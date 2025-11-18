@@ -1,0 +1,7 @@
+template_prompts:
+  finance: |
+    Build me a friendly and trustworthy banking agent that can help customers check their account balances, manage their cards, set up automatic bill pay reminders, and update their contact details when they move or change phone numbers.
+  telco: |
+    Build me a knowledgeable and approachable customer support agent for our telecom company that can walk users through common network troubleshooting steps, help them understand different data plans, and guide them through plan upgrades based on their usage patterns.
+  basic: |
+    Build me a flexible customer support agent that comes with built-in FAQs, basic conversation flows, and human handover. It should be easy to customise for any industry, expand with new skills, and connect to external APIs or tools.

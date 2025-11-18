@@ -27,6 +27,7 @@ from rasa.builder.job_manager import JobInfo, job_manager
 from rasa.builder.jobs import (
     _safe_tar_members,
     run_backup_to_bot_job,
+    run_copilot_template_prompt_job,
     run_copilot_training_error_analysis_job,
     run_copilot_training_success_job,
     run_copilot_welcome_message_job,
@@ -571,10 +572,17 @@ class TestCopilotWelcomeMessage:
         self.mock_push_event = AsyncMock()
         self.mock_job_manager = MagicMock()
 
-        # Create welcome job mock
-        welcome_job = MagicMock()
-        welcome_job.id = "welcome_job_123"
-        self.mock_job_manager.create_job.return_value = welcome_job
+        # Create different job mocks for template prompt and welcome jobs
+        self.template_prompt_job = MagicMock()
+        self.template_prompt_job.id = "template_prompt_job_123"
+        self.welcome_job = MagicMock()
+        self.welcome_job.id = "welcome_job_123"
+
+        # Set up side_effect to return different jobs on successive calls
+        self.mock_job_manager.create_job.side_effect = [
+            self.template_prompt_job,
+            self.welcome_job,
+        ]
 
         # Create training mocks
         self.mock_train = AsyncMock(return_value=MagicMock())
@@ -712,8 +720,16 @@ class TestCopilotWelcomeMessage:
             mock_template_app, job, ProjectTemplateName.FINANCE
         )
 
-        self.mock_job_manager.create_job.assert_called_once()
-        assert mock_template_app.add_task.called
+        assert self.mock_job_manager.create_job.call_count == 2
+        assert mock_template_app.add_task.call_count == 2
+
+        task_calls = mock_template_app.add_task.call_args_list
+
+        first_call_args = task_calls[0][0][0]
+        assert "run_copilot_template_prompt_job" in str(first_call_args)
+
+        second_call_args = task_calls[1][0][0]
+        assert "run_copilot_welcome_message_job" in str(second_call_args)
 
     @pytest.mark.asyncio
     async def test_prompt_job_creates_welcome_job(self, mock_prompt_app):
@@ -733,8 +749,15 @@ class TestCopilotWelcomeMessage:
             mock_template_app, job, ProjectTemplateName.FINANCE
         )
 
-        self.mock_job_manager.create_job.assert_not_called()
-        mock_template_app.add_task.assert_not_called()
+        # Template prompt job should still be created (happens before training)
+        # But welcome job should NOT be created (happens after successful training)
+        assert self.mock_job_manager.create_job.call_count == 1
+        assert mock_template_app.add_task.call_count == 1
+
+        # Verify only the template prompt job was created
+        task_calls = mock_template_app.add_task.call_args_list
+        first_call_args = task_calls[0][0][0]
+        assert "run_copilot_template_prompt_job" in str(first_call_args)
 
     @pytest.mark.asyncio
     async def test_done_event_includes_welcome_job_id(self, mock_template_app):
@@ -752,6 +775,199 @@ class TestCopilotWelcomeMessage:
         assert (
             done_calls[0][1]["payload"]["copilot_welcome_job_id"] == "welcome_job_123"
         )
+
+
+class TestCopilotTemplatePromptJob:
+    @pytest.fixture(autouse=True)
+    def setup_mocks(self, monkeypatch):
+        # Mock push_job_status_event
+        self.mock_push_event = AsyncMock()
+        monkeypatch.setattr(
+            "rasa.builder.jobs.push_job_status_event", self.mock_push_event
+        )
+
+        # Mock job_manager
+        self.mock_job_manager = MagicMock()
+        template_prompt_job = MagicMock()
+        template_prompt_job.id = "template_prompt_job_123"
+        self.mock_job_manager.create_job.return_value = template_prompt_job
+        self.mock_job_manager.mark_done = MagicMock()
+        monkeypatch.setattr("rasa.builder.jobs.job_manager", self.mock_job_manager)
+
+        # Mock history store
+        self.mock_history_store = MagicMock()
+        self.mock_history_store.append = AsyncMock()
+
+        # Mock llm_service with history_store property
+        mock_llm_service = MagicMock()
+        mock_llm_service.history_store = self.mock_history_store
+
+        # Patch llm_service
+        monkeypatch.setattr("rasa.builder.llm_service.llm_service", mock_llm_service)
+        monkeypatch.setattr("rasa.builder.jobs.llm_service", mock_llm_service)
+
+    @staticmethod
+    def _verify_template_prompt_call(mock_push_event, expected_content_snippets):
+        template_prompt_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if call[0][1] == JobStatus.copilot_template_prompt
+        ]
+        assert len(template_prompt_calls) == 1
+
+        template_prompt_payload = template_prompt_calls[0][1]["payload"]
+        assert "content" in template_prompt_payload
+        assert "completeness" in template_prompt_payload
+        assert template_prompt_payload["completeness"] == "complete"
+        for snippet in expected_content_snippets:
+            assert snippet in template_prompt_payload["content"]
+
+    @staticmethod
+    def _verify_done_event_sent(mock_push_event):
+        done_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if call[0][1] == JobStatus.done
+        ]
+        assert len(done_calls) == 1
+
+    @pytest.mark.parametrize(
+        "template_name,expected_snippets",
+        [
+            (
+                ProjectTemplateName.FINANCE,
+                ["banking agent", "account balances", "manage their cards"],
+            ),
+            (
+                ProjectTemplateName.TELCO,
+                ["telecom company", "network troubleshooting", "data plans"],
+            ),
+            (
+                ProjectTemplateName.BASIC,
+                ["customer support agent", "FAQs", "human handover"],
+            ),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_template_prompt_message(
+        self, mock_app, mock_job, template_name, expected_snippets
+    ):
+        await run_copilot_template_prompt_job(mock_app, mock_job, template_name)
+        self._verify_template_prompt_call(self.mock_push_event, expected_snippets)
+        self._verify_done_event_sent(self.mock_push_event)
+
+    @pytest.mark.asyncio
+    async def test_template_prompt_persisted_to_history(self, mock_app, mock_job):
+        await run_copilot_template_prompt_job(
+            mock_app, mock_job, ProjectTemplateName.FINANCE
+        )
+
+        # Verify history store append was called
+        self.mock_history_store.append.assert_called_once()
+
+        # Verify the conversation key is correct
+        call_args = self.mock_history_store.append.call_args
+        conversation_key = call_args[0][0]
+        assert conversation_key.chat_id == "default"
+
+        # Verify the message content
+        message = call_args[0][1]
+        assert message.role == "user"
+        assert len(message.content) == 1
+        assert message.content[0].type == "text"
+        assert "banking agent" in message.content[0].text.lower()
+
+    @pytest.mark.asyncio
+    async def test_template_job_creates_template_prompt_job(self):
+        # Setup mocks for template to bot job
+        mock_app = MagicMock()
+        project_generator = Mock(spec=ProjectGenerator)
+        mock_app.ctx = SimpleNamespace()
+        mock_app.ctx.project_generator = project_generator
+        mock_app.add_task = MagicMock()
+
+        project_generator.init_from_template = AsyncMock()
+        project_generator.get_bot_files.return_value = {"config.yml": "test"}
+        project_generator.get_training_input.return_value = Mock()
+        project_generator.project_folder = "/tmp/test_project"
+
+        with patch(
+            "rasa.builder.jobs.try_load_existing_agent", AsyncMock(return_value=None)
+        ):
+            with patch("rasa.builder.jobs.train_and_load_agent", AsyncMock()):
+                with patch("rasa.builder.jobs.update_agent", MagicMock()):
+                    job = job_manager.create_job()
+                    await run_template_to_bot_job(
+                        mock_app, job, ProjectTemplateName.FINANCE
+                    )
+
+        # Verify template prompt job and welcome job were created (2 total)
+        assert self.mock_job_manager.create_job.call_count == 2
+        # Verify both jobs were added as tasks
+        assert mock_app.add_task.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_received_event_includes_template_prompt_job_id(self):
+        # Setup mocks for template to bot job
+        mock_app = MagicMock()
+        project_generator = Mock(spec=ProjectGenerator)
+        mock_app.ctx = SimpleNamespace()
+        mock_app.ctx.project_generator = project_generator
+        mock_app.add_task = MagicMock()
+
+        project_generator.init_from_template = AsyncMock()
+        project_generator.get_bot_files.return_value = {"config.yml": "test"}
+        project_generator.get_training_input.return_value = Mock()
+        project_generator.project_folder = "/tmp/test_project"
+
+        job = MagicMock(spec=JobInfo)
+        job.put = AsyncMock()
+
+        with patch(
+            "rasa.builder.jobs.try_load_existing_agent", AsyncMock(return_value=None)
+        ):
+            with patch("rasa.builder.jobs.train_and_load_agent", AsyncMock()):
+                with patch("rasa.builder.jobs.update_agent", MagicMock()):
+                    await run_template_to_bot_job(
+                        mock_app, job, ProjectTemplateName.BASIC
+                    )
+
+        # Find the received event call
+        # The call args are positional, with job as first arg and status as second
+        received_calls = [
+            call
+            for call in self.mock_push_event.call_args_list
+            if len(call[0]) > 1 and call[0][1] == JobStatus.received
+        ]
+        assert len(received_calls) == 1
+        # Check the payload keyword argument
+        assert "payload" in received_calls[0][1]
+        assert (
+            received_calls[0][1]["payload"]["copilot_template_prompt_job_id"]
+            == "template_prompt_job_123"
+        )
+
+    @pytest.mark.asyncio
+    async def test_no_prompt_for_unknown_template(self, mock_app, mock_job):
+        # Test with a template name that doesn't have a prompt
+        with patch(
+            "rasa.builder.jobs.load_copilot_template_prompts",
+            return_value={},
+        ):
+            await run_copilot_template_prompt_job(
+                mock_app, mock_job, ProjectTemplateName.FINANCE
+            )
+
+        # Should complete without sending template prompt
+        template_prompt_calls = [
+            call
+            for call in self.mock_push_event.call_args_list
+            if call[0][1] == JobStatus.copilot_template_prompt
+        ]
+        assert len(template_prompt_calls) == 0
+
+        # But should still send done event
+        self._verify_done_event_sent(self.mock_push_event)
 
 
 class TestCopilotTrainingSuccessJob:

@@ -617,3 +617,41 @@ async def persist_training_error_analysis_to_history(
         chat_id=chat_id,
         response_category=response_category,
     )
+
+
+async def persist_user_message_to_history(
+    text: str,
+    chat_id: str = DEFAULT_COPILOT_CHAT_ID,
+) -> None:
+    """Persist a user message to conversation history.
+
+    Args:
+        text: The text content of the user message
+        chat_id: The chat ID to persist the message to
+    """
+    if not text:
+        return
+
+    try:
+        # Import here to avoid circular dependency
+        from rasa.builder.llm_service import llm_service
+
+        conversation_key = ConversationKey(chat_id=chat_id)
+
+        user_message = UserChatMessage(
+            role=ROLE_USER,
+            content=[TextContent(type="text", text=text)],
+        )
+
+        await llm_service.history_store.append(conversation_key, user_message)
+
+        structlogger.debug(
+            "user_message_persisted",
+            chat_id=chat_id,
+        )
+    except Exception as persist_exc:
+        structlogger.error(
+            "user_message_persist_failed",
+            error=str(persist_exc),
+            chat_id=chat_id,
+        )

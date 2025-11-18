@@ -15,6 +15,7 @@ COPILOT_MESSAGE_TEMPLATES_DIR = "builder.copilot.templated_messages"
 RASA_INTERNAL_MESSAGES_TEMPLATES_FILE = "copilot_internal_messages_templates.yml"
 COPILOT_HANDLER_RESPONSES_FILE = "copilot_templated_responses.yml"
 COPILOT_WELCOME_MESSAGES_FILE = "copilot_welcome_messages.yml"
+COPILOT_TEMPLATE_PROMPTS_FILE = "copilot_template_prompts.yml"
 
 # OpenAI roles copilot utilizes - Use literal types to avoid type errors with OpenAI
 ROLE_USER: Literal["user"] = "user"

@@ -226,6 +226,7 @@ class JobStatus(str, Enum):
     copilot_analysis_success = "copilot_analysis_success"
     copilot_analysis_error = "copilot_analysis_error"
 
+    copilot_template_prompt = "copilot_template_prompt"
     copilot_welcome_message = "copilot_welcome_message"
 
 

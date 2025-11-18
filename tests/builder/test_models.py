@@ -37,6 +37,7 @@ def test_job_status_members():
         JobStatus.copilot_analyzing.value,
         JobStatus.copilot_analysis_success.value,
         JobStatus.copilot_analysis_error.value,
+        JobStatus.copilot_template_prompt.value,
         JobStatus.copilot_welcome_message.value,
         JobStatus.train_success_message.value,
     }

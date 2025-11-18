@@ -16,11 +16,13 @@ from rasa.builder.copilot.constants import (
 )
 from rasa.builder.copilot.copilot_templated_message_provider import (
     load_copilot_handler_default_responses,
+    load_copilot_template_prompts,
     load_copilot_welcome_messages,
 )
 from rasa.builder.copilot.history_store import (
     persist_copilot_message_to_history,
     persist_training_error_analysis_to_history,
+    persist_user_message_to_history,
 )
 from rasa.builder.copilot.models import (
     CopilotContext,
@@ -177,16 +179,25 @@ async def run_template_to_bot_job(
     """
     project_generator: ProjectGenerator = app.ctx.project_generator
 
-    await push_job_status_event(job, JobStatus.received)
+    copilot_template_prompt_job = job_manager.create_job()
+    await push_job_status_event(
+        job,
+        JobStatus.received,
+        payload={"copilot_template_prompt_job_id": copilot_template_prompt_job.id},
+    )
 
     try:
-        # 1) Generating
+        app.add_task(
+            run_copilot_template_prompt_job(
+                app, copilot_template_prompt_job, template_name
+            )
+        )
+
         await push_job_status_event(job, JobStatus.generating)
         await project_generator.init_from_template(template_name)
         bot_files = project_generator.get_bot_files()
         await push_job_status_event(job, JobStatus.generation_success)
 
-        # 2) Training
         await push_job_status_event(job, JobStatus.training)
         agent = await try_load_existing_agent(project_generator.project_folder)
         if agent is None:
@@ -198,16 +209,15 @@ async def run_template_to_bot_job(
         update_agent(agent, app)
         await push_job_status_event(job, JobStatus.train_success)
 
-        # 3) Create copilot welcome message job
         copilot_welcome_job = job_manager.create_job()
         app.add_task(
             run_copilot_welcome_message_job(app, copilot_welcome_job, template_name)
         )
 
-        # 4) Done - include welcome job ID in payload
         structlogger.info(
             "bot_builder_service.template_to_bot.success",
             files_generated=list(bot_files.keys()),
+            copilot_template_prompt_job_id=copilot_template_prompt_job.id,
             copilot_welcome_job_id=copilot_welcome_job.id,
         )
         await push_job_status_event(
@@ -645,6 +655,65 @@ async def run_copilot_training_success_job(
     except Exception as exc:
         structlogger.exception(
             "copilot_training_success_job.error",
+            job_id=job.id,
+            error=str(exc),
+        )
+        await push_job_status_event(job, JobStatus.error, message=str(exc))
+        job_manager.mark_done(job, error=str(exc))
+
+
+async def run_copilot_template_prompt_job(
+    app: "Sanic",
+    job: JobInfo,
+    template_name: ProjectTemplateName,
+) -> None:
+    """Run the template prompt job in the background.
+
+    This job sends the template prompt as a user message at the start
+    of a template-based bot creation.
+
+    Args:
+        app: The Sanic application instance.
+        job: The job information instance.
+        template_name: The template name to get the prompt for.
+    """
+    try:
+        template_prompts = load_copilot_template_prompts()
+        template_prompt = template_prompts.get(template_name.value)
+
+        if not template_prompt:
+            structlogger.warning(
+                "copilot_template_prompt_job.no_prompt_found",
+                job_id=job.id,
+                template=template_name.value,
+            )
+            await push_job_status_event(job, JobStatus.done)
+            job_manager.mark_done(job)
+            return
+
+        await push_job_status_event(
+            job,
+            JobStatus.copilot_template_prompt,
+            payload={
+                "content": template_prompt,
+                "completeness": "complete",
+            },
+        )
+
+        await persist_user_message_to_history(text=template_prompt)
+
+        await push_job_status_event(job, JobStatus.done)
+        job_manager.mark_done(job)
+
+        structlogger.info(
+            "copilot_template_prompt_job.success",
+            job_id=job.id,
+            template=template_name.value,
+        )
+
+    except Exception as exc:
+        structlogger.exception(
+            "copilot_template_prompt_job.error",
             job_id=job.id,
             error=str(exc),
         )
