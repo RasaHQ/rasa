@@ -1,0 +1,160 @@
+# Domain for Hybrid Flight Booking Bot
+
+version: "3.1"
+
+# ============================================================================
+# Intents
+# ============================================================================
+intents:
+  # Greetings & closings
+  - greet
+  - goodbye
+  - affirm
+  - deny
+
+  # Core booking intents
+  - book_flight
+  - cancel_booking
+  - reschedule_flight
+  - check_booking
+
+  # Information requests
+  - ask_price
+  - ask_flight_status
+  - provide_departure
+  - provide_destination
+  - provide_date
+  - provide_passenger_info
+
+  # Help & support
+  - ask_help
+  - chitchat
+
+  # Fallback
+  - nlu_fallback
+  - out_of_scope
+
+# ============================================================================
+# Entities
+# ============================================================================
+entities:
+  - departure
+  - destination
+  - travel_date
+  - num_passengers
+  - passenger_name
+  - booking_code
+  - flight_number
+
+# ============================================================================
+# Slots
+# ============================================================================
+slots:
+  departure:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: departure
+
+  destination:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: destination
+
+  travel_date:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: travel_date
+
+  num_passengers:
+    type: float
+    mappings:
+      - type: from_entity
+        entity: num_passengers
+
+  passenger_name:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: passenger_name
+
+  booking_code:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: booking_code
+
+  # Internal slots
+  flight_search_done:
+    type: bool
+    initial_value: false
+    mappings:
+      - type: custom
+
+  booking_confirmed:
+    type: bool
+    initial_value: false
+    mappings:
+      - type: custom
+
+  last_fallback_used:
+    type: bool
+    initial_value: false
+    mappings:
+      - type: custom
+
+  clarified_intent:
+    type: text
+    mappings:
+      - type: custom
+
+# ============================================================================
+# Responses (Templates)
+# ============================================================================
+responses:
+  utter_greet:
+    - text: "Xin chào! Tôi là trợ lý đặt vé máy bay. Tôi có thể giúp gì bạn? ✈️"
+
+  utter_goodbye:
+    - text: "Tạm biệt! Chúc bạn có chuyến bay tốt! 🛫"
+
+  utter_ask_departure:
+    - text: "Bạn muốn bay từ đâu ạ?"
+
+  utter_ask_destination:
+    - text: "Bạn muốn bay đến đâu ạ?"
+
+  utter_ask_date:
+    - text: "Bạn muốn bay vào ngày nào? 📅"
+
+  utter_ask_passengers:
+    - text: "Bạn đặt vé cho bao nhiêu người?"
+
+  utter_ask_confirm:
+    - text: "Bạn có chắc muốn đặt vé này không?"
+
+  utter_default:
+    - text: "Xin lỗi, tôi không hiểu. Bạn có thể nói rõ hơn không?"
+
+  utter_iamabot:
+    - text: "Tôi là chatbot hỗ trợ đặt vé máy bay, được xây dựng bằng Rasa và AI. 🤖"
+
+# ============================================================================
+# Actions
+# ============================================================================
+actions:
+  # LLM-powered actions
+  - action_llm_fallback
+  - action_show_flights
+  - action_confirm_booking
+  - action_clarify_intent
+  - action_handle_out_of_scope
+
+# ============================================================================
+# Session Config
+# ============================================================================
+session_config:
+  session_expiration_time: 60  # minutes
+  carry_over_slots_to_new_session: true

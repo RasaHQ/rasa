@@ -1,0 +1,68 @@
+# Configuration for Hybrid Bot (Rasa + LLM)
+# This demonstrates best practices for combining Rasa with LLM
+
+recipe: default.v1
+language: vi  # Vietnamese
+assistant_id: hybrid_flight_booking_bot
+
+# ============================================================================
+# NLU Pipeline
+# ============================================================================
+pipeline:
+  # Tokenization
+  - name: WhitespaceTokenizer
+
+  # Featurizers
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+
+  # Character n-grams (good for Vietnamese)
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 2
+    max_ngram: 5
+
+  # Word n-grams
+  - name: CountVectorsFeaturizer
+    analyzer: word
+    min_ngram: 1
+    max_ngram: 2
+
+  # Intent Classifier + Entity Extractor
+  - name: DIETClassifier
+    epochs: 200
+    entity_recognition: true
+    intent_classification: true
+    use_masked_language_model: true
+    # Return top 5 intents for clarification
+    ranking_length: 5
+
+  # Fallback Classifier
+  - name: FallbackClassifier
+    threshold: 0.7  # Match with LLM fallback threshold
+    ambiguity_threshold: 0.1
+
+  # Entity Synonym Mapper
+  - name: EntitySynonymMapper
+
+# ============================================================================
+# Dialogue Policies
+# ============================================================================
+policies:
+  # Memorize exact patterns
+  - name: MemoizationPolicy
+    max_history: 5
+
+  # Transformer-based dialogue
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 200
+    batch_size: [32, 64]
+
+  # Rule-based policy
+  - name: RulePolicy
+    # IMPORTANT: Core fallback triggers LLM
+    core_fallback_threshold: 0.3
+    core_fallback_action_name: "action_llm_fallback"
+    # Also handle NLU fallback
+    enable_fallback_prediction: true

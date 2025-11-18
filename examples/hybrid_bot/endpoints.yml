@@ -1,0 +1,34 @@
+# Endpoints configuration for Hybrid Bot
+
+# ============================================================================
+# Action Server (Custom Actions with LLM)
+# ============================================================================
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+# ============================================================================
+# Optional: Tracker Store (MongoDB)
+# ============================================================================
+# Uncomment to persist conversations
+# tracker_store:
+#   type: mongod
+#   url: mongodb://localhost:27017
+#   db: rasa_hybrid
+#   username: rasa
+#   password: your_password
+
+# ============================================================================
+# Optional: Event Broker (for analytics)
+# ============================================================================
+# event_broker:
+#   type: kafka
+#   url: localhost
+#   port: 9092
+#   topic: rasa_events
+
+# ============================================================================
+# Optional: Model Server
+# ============================================================================
+# models:
+#   url: http://localhost:5002
+#   wait_time_between_pulls: 10

@@ -1,0 +1,22 @@
+# LLM Integration Dependencies
+# Install with: pip install -r config/llm_requirements.txt
+
+# Core Rasa SDK
+rasa-sdk>=3.6.0
+
+# OpenAI
+openai>=1.0.0
+
+# Anthropic Claude
+anthropic>=0.7.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Optional: Caching
+redis>=5.0.0  # For distributed caching
+diskcache>=5.6.0  # For local caching
+
+# Optional: Monitoring
+sentry-sdk>=1.40.0  # Error tracking
+prometheus-client>=0.19.0  # Metrics
