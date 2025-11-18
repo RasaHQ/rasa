@@ -1,0 +1,333 @@
+version: "3.1"
+
+# ========================================
+# TEMPLATE: E-Commerce Stories
+# Common conversation flows
+# ========================================
+
+stories:
+
+  # ============ BASIC FLOWS ============
+
+  - story: greet and search product
+    steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: search_product
+        entities:
+          - product_type: "laptop"
+      - action: action_search_product
+
+  - story: direct search without greeting
+    steps:
+      - intent: search_product
+        entities:
+          - product_type: "laptop"
+          - brand: "Dell"
+      - action: action_search_product
+
+  - story: browse category then select
+    steps:
+      - intent: browse_category
+      - action: action_show_categories
+      - intent: search_product
+        entities:
+          - product_type: "laptop"
+      - action: action_search_product
+
+  # ============ PRODUCT DISCOVERY ============
+
+  - story: search with price filter
+    steps:
+      - intent: search_product
+        entities:
+          - product_type: "laptop"
+          - price_range: "20 triệu"
+      - slot_was_set:
+          - product_type: "laptop"
+          - price_range: "20 triệu"
+      - action: action_search_product
+      - intent: ask_specifications
+      - action: action_show_specifications
+
+  - story: search by use case
+    steps:
+      - intent: search_product
+        entities:
+          - product_type: "laptop"
+          - use_case: "gaming"
+      - action: action_search_product
+      - intent: ask_price
+      - action: action_show_price
+
+  - story: recommendation flow
+    steps:
+      - intent: recommend_product
+        entities:
+          - product_type: "laptop"
+          - use_case: "sinh viên"
+      - action: action_recommend_product
+      - intent: affirm
+      - action: utter_ask_add_to_cart
+      - intent: affirm
+      - action: action_add_to_cart
+
+  # ============ PRODUCT COMPARISON ============
+
+  - story: compare then choose
+    steps:
+      - intent: compare_products
+        entities:
+          - product_type: "laptop"
+      - action: action_compare_products
+      - intent: search_product
+        entities:
+          - product_name: "Dell Latitude"
+      - action: action_show_product_details
+      - intent: add_to_cart
+      - action: action_add_to_cart
+
+  - story: ask specs then compare
+    steps:
+      - intent: search_product
+        entities:
+          - product_type: "server"
+      - action: action_search_product
+      - intent: ask_specifications
+      - action: action_show_specifications
+      - intent: compare_products
+      - action: action_compare_products
+
+  # ============ PURCHASE FLOW ============
+
+  - story: complete purchase flow
+    steps:
+      - intent: search_product
+        entities:
+          - product_type: "laptop"
+      - action: action_search_product
+      - intent: add_to_cart
+        entities:
+          - quantity: "1"
+      - action: action_add_to_cart
+      - action: utter_ask_continue_shopping
+      - intent: deny
+      - action: utter_ask_checkout
+      - intent: affirm
+      - action: checkout_form
+      - active_loop: checkout_form
+      - active_loop: null
+      - action: action_process_checkout
+
+  - story: add multiple items
+    steps:
+      - intent: search_product
+        entities:
+          - product_type: "laptop"
+      - action: action_search_product
+      - intent: add_to_cart
+      - action: action_add_to_cart
+      - action: utter_ask_continue_shopping
+      - intent: affirm
+      - intent: search_product
+        entities:
+          - product_type: "chuột"
+      - action: action_search_product
+      - intent: add_to_cart
+      - action: action_add_to_cart
+      - intent: checkout
+      - action: checkout_form
+
+  - story: view cart and modify
+    steps:
+      - intent: view_cart
+      - action: action_show_cart
+      - intent: remove_from_cart
+        entities:
+          - product_name: "laptop Dell"
+      - action: action_remove_from_cart
+      - intent: checkout
+      - action: checkout_form
+
+  # ============ INFORMATION QUERIES ============
+
+  - story: check stock before buying
+    steps:
+      - intent: search_product
+        entities:
+          - product_name: "ASUS ROG"
+      - action: action_search_product
+      - intent: ask_stock
+      - action: action_check_stock
+      - intent: ask_price
+      - action: action_show_price
+      - intent: add_to_cart
+      - action: action_add_to_cart
+
+  - story: ask warranty and promotion
+    steps:
+      - intent: search_product
+      - action: action_search_product
+      - intent: ask_warranty
+      - action: action_show_warranty
+      - intent: ask_promotion
+      - action: action_show_promotions
+      - intent: affirm
+      - action: action_add_to_cart
+
+  - story: price comparison
+    steps:
+      - intent: search_product
+        entities:
+          - product_type: "laptop"
+      - action: action_search_product
+      - intent: ask_price
+      - action: action_show_price
+      - intent: search_product
+        entities:
+          - brand: "HP"
+      - action: action_search_product
+      - intent: ask_price
+      - action: action_show_price
+
+  # ============ ORDER TRACKING ============
+
+  - story: track existing order
+    steps:
+      - intent: track_order
+        entities:
+          - order_id: "#12345"
+      - action: action_track_order
+      - intent: ask_delivery
+      - action: action_show_delivery_info
+
+  - story: cancel order
+    steps:
+      - intent: cancel_order
+        entities:
+          - order_id: "#12345"
+      - action: utter_ask_cancel_confirmation
+      - intent: affirm
+      - action: action_cancel_order
+      - action: utter_order_cancelled
+
+  # ============ CUSTOMER SUPPORT ============
+
+  - story: technical support request
+    steps:
+      - intent: technical_support
+      - action: action_provide_support_options
+      - intent: contact_agent
+      - action: action_transfer_to_agent
+
+  - story: complaint handling
+    steps:
+      - intent: complaint
+      - action: utter_apologize
+      - action: action_create_ticket
+      - action: utter_ticket_created
+
+  # ============ ERROR HANDLING ============
+
+  - story: out of stock alternative
+    steps:
+      - intent: search_product
+      - action: action_search_product
+      - intent: add_to_cart
+      - action: action_check_stock
+      - slot_was_set:
+          - stock_available: false
+      - action: utter_out_of_stock
+      - action: action_suggest_alternatives
+
+  - story: handle unclear request
+    steps:
+      - intent: search_product
+      - action: action_search_product
+      - slot_was_set:
+          - products_found: 0
+      - action: utter_no_products_found
+      - action: utter_ask_rephrase
+      - intent: search_product
+        entities:
+          - product_type: "laptop"
+      - action: action_search_product
+
+  # ============ MULTI-TURN CONVERSATIONS ============
+
+  - story: detailed product inquiry
+    steps:
+      - intent: search_product
+        entities:
+          - product_type: "máy chủ"
+      - action: action_search_product
+      - intent: ask_specifications
+      - action: action_show_specifications
+      - intent: ask_price
+      - action: action_show_price
+      - intent: ask_warranty
+      - action: action_show_warranty
+      - intent: ask_promotion
+      - action: action_show_promotions
+      - intent: ask_stock
+      - action: action_check_stock
+      - intent: affirm
+      - action: action_add_to_cart
+
+  - story: from recommendation to purchase
+    steps:
+      - intent: recommend_product
+        entities:
+          - use_case: "doanh nghiệp"
+          - product_type: "máy chủ"
+      - action: action_recommend_product
+      - intent: compare_products
+      - action: action_compare_products
+      - intent: ask_price
+      - action: action_show_price
+      - intent: add_to_cart
+        entities:
+          - product_name: "Dell R740"
+          - quantity: "2"
+      - action: action_add_to_cart
+      - intent: checkout
+      - action: checkout_form
+
+  # ============ EDGE CASES ============
+
+  - story: change mind during checkout
+    steps:
+      - intent: checkout
+      - action: checkout_form
+      - active_loop: checkout_form
+      - intent: deny
+      - action: action_deactivate
+      - active_loop: null
+      - action: utter_checkout_cancelled
+
+  - story: ask delivery during search
+    steps:
+      - intent: search_product
+      - action: action_search_product
+      - intent: ask_delivery
+      - action: action_show_delivery_info
+      - intent: add_to_cart
+      - action: action_add_to_cart
+
+  # ============ GOODBYE ============
+
+  - story: thank and goodbye
+    steps:
+      - intent: thank
+      - action: utter_thank
+      - intent: goodbye
+      - action: utter_goodbye
+
+  - story: goodbye after purchase
+    steps:
+      - action: action_process_checkout
+      - action: utter_order_confirmation
+      - intent: thank
+      - action: utter_thank
+      - intent: goodbye
+      - action: utter_goodbye
