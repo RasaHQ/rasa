@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from typing import Any, Dict, Iterator, List, Optional, Tuple, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -6,6 +7,7 @@ from pytest import MonkeyPatch
 
 from rasa.agents.constants import (
     A2A_AGENT_CONTEXT_ID_KEY,
+    A2A_AGENT_TASK_ID_KEY,
     AGENT_METADATA_AGENT_ID_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
     AGENT_METADATA_SENDER_ID_KEY,
@@ -13,10 +15,22 @@ from rasa.agents.constants import (
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentOutput
 from rasa.agents.schemas.agent_input import AgentInput, AgentInputSlot
+from rasa.core.constants import (
+    ACTIVE_FLOW_METADATA_KEY,
+    BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY,
+    BOT_UTTERANCE_AGENT_NAME_KEY,
+    BOT_UTTERANCE_AGENT_TASK_ID_KEY,
+    BOT_UTTERANCE_CONTEXT_ID_KEY,
+    BOT_UTTERANCE_MESSAGE_ID_KEY,
+    STEP_ID_METADATA_KEY,
+    UTTER_SOURCE_METADATA_KEY,
+)
 from rasa.core.policies.flows.agent_executor import (
     AGENT_METADATA_AGENT_RESPONSE_KEY,
     MAX_AGENT_RETRIES,
     SLOTS_EXCLUDED_FOR_AGENT,
+    _build_default_agent_message_metadata,
     _call_agent_with_retry,
     _cancel_flow,
     _create_action_prediction,
@@ -204,6 +218,10 @@ async def test_run_agent_continue_with_user_input(
     assert mock_run_agent.call_count == 1
     # AgentStackFrame should be removed from stack after successful completion
     assert not any(isinstance(frame, AgentStackFrame) for frame in stack.frames)
+    # Ensure flow/step metadata are forwarded to message payload
+    payload = flow_step_result.action_prediction.metadata[ACTION_METADATA_MESSAGE_KEY]
+    assert payload[ACTIVE_FLOW_METADATA_KEY] == "my_flow"
+    assert payload[STEP_ID_METADATA_KEY] == "my-call-step"
 
 
 @pytest.mark.asyncio
@@ -818,6 +836,70 @@ async def test_run_agent_request_user_input(
         == agent_message
     )
     assert mock_run_agent.call_count == 1
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_run_agent_completed_forwards_agent_metadata_in_message_payload(
+    mock_run_agent: AsyncMock,
+    mock_available_agents: MagicMock,
+) -> None:
+    """Ensure metadata is forwarded when COMPLETED returns a response_message."""
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    agent_stack_frame = AgentStackFrame(
+        frame_id="agent-frame-id",
+        state=AgentState.WAITING_FOR_INPUT,
+        agent_id="car-research",
+        flow_id="my_flow",
+    )
+    stack = DialogueStack(frames=[user_stack_frame, agent_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    agent_message = "Agent completed with a final response."
+    agent_metadata = {
+        UTTER_SOURCE_METADATA_KEY: "CustomA2AAgent",
+        "custom_key": "custom_value",
+    }
+    mock_run_agent.return_value = AgentOutput(
+        id="car-research",
+        status=AgentStatus.COMPLETED,
+        response_message=agent_message,
+        metadata=agent_metadata,
+        events=[],
+    )
+
+    flow_step_result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    # Should produce a bot message prediction with metadata coming from the agent
+    assert isinstance(flow_step_result, PauseFlowReturnPrediction)
+    payload = flow_step_result.action_prediction.metadata[ACTION_METADATA_MESSAGE_KEY]
+    assert payload[UTTER_SOURCE_METADATA_KEY] == "CustomA2AAgent"
+    # Flow context should also be present
+    assert payload[ACTIVE_FLOW_METADATA_KEY] == "my_flow"
+    assert payload[STEP_ID_METADATA_KEY] == "my-call-step"
 
 
 @pytest.mark.asyncio
@@ -1483,8 +1565,7 @@ def test_prepare_agent_input_events_populated() -> None:
 
 
 def test_prepare_agent_input_tracker_metadata_with_ids() -> None:
-    """Test _prepare_agent_input includes tracker metadata with assistant_id and
-    model_id."""
+    """Test _prepare_agent_input includes assistant_id and model_id."""
     step = CallFlowStep(
         custom_id="test_call",
         idx=0,
@@ -1568,6 +1649,24 @@ def test_create_action_prediction() -> None:
         == message
     )
     assert result.events == events
+
+
+def test_create_action_prediction_maps_agent_task_id_and_source() -> None:
+    """Verify that agent metadata is forwarded into the message payload."""
+    message = "Test message"
+    events = []
+    metadata = {
+        A2A_AGENT_TASK_ID_KEY: "task-123",
+        UTTER_SOURCE_METADATA_KEY: "A2AAgent",
+    }
+
+    result = _create_action_prediction(ACTION_SEND_TEXT_NAME, message, events, metadata)
+
+    payload = result.metadata[ACTION_METADATA_MESSAGE_KEY]
+    assert payload[BOT_UTTERANCE_AGENT_TASK_ID_KEY] == "task-123"
+    assert payload[UTTER_SOURCE_METADATA_KEY] == "A2AAgent"
+    # Original A2A key should not be duplicated inside the payload
+    assert A2A_AGENT_TASK_ID_KEY not in payload
 
 
 def test_create_agent_request_user_input_prediction() -> None:
@@ -1726,6 +1825,59 @@ def test_handle_agent_input_required() -> None:
         ]
         == "What is your budget?"
     )
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_run_agent_input_required_forwards_agent_metadata_in_message_payload(
+    mock_run_agent: AsyncMock,
+    mock_available_agents: MagicMock,
+) -> None:
+    """Ensure metadata is forwarded when INPUT_REQUIRED returns a response."""
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    agent_message = "Please provide more details."
+    agent_metadata = {UTTER_SOURCE_METADATA_KEY: "CustomTaskAgent", "extra": 123}
+    mock_run_agent.return_value = AgentOutput(
+        id="car-research",
+        status=AgentStatus.INPUT_REQUIRED,
+        response_message=agent_message,
+        metadata=agent_metadata,
+        events=[],
+    )
+
+    flow_step_result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    assert isinstance(flow_step_result, PauseFlowReturnPrediction)
+    payload = flow_step_result.action_prediction.metadata[ACTION_METADATA_MESSAGE_KEY]
+    assert payload[UTTER_SOURCE_METADATA_KEY] == "CustomTaskAgent"
+    assert payload[ACTIVE_FLOW_METADATA_KEY] == "my_flow"
+    assert payload[STEP_ID_METADATA_KEY] == "my-call-step"
 
 
 def test_handle_agent_completed() -> None:
@@ -2123,3 +2275,56 @@ def test_cancel_flow_with_different_flows(
     assert isinstance(flow_cancelled_event, FlowCancelled)
     assert flow_cancelled_event.flow_id == flow_id
     assert flow_cancelled_event.step_id == "test_call"
+
+
+def test_build_default_agent_message_metadata_with_type() -> None:
+    step = SimpleNamespace(call="agent-1", flow_id="flow-1", id="step-1")
+    metadata = _build_default_agent_message_metadata(step, "final_response")
+
+    assert metadata[BOT_UTTERANCE_AGENT_NAME_KEY] == "agent-1"
+    assert metadata[ACTIVE_FLOW_METADATA_KEY] == "flow-1"
+    assert metadata[STEP_ID_METADATA_KEY] == "step-1"
+    assert metadata[BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY] == "final_response"
+
+
+def test_build_default_agent_message_metadata_without_type() -> None:
+    step = SimpleNamespace(call="agent-2", flow_id="flow-2", id="step-2")
+    metadata = _build_default_agent_message_metadata(step, None)
+
+    assert metadata[BOT_UTTERANCE_AGENT_NAME_KEY] == "agent-2"
+    assert metadata[ACTIVE_FLOW_METADATA_KEY] == "flow-2"
+    assert metadata[STEP_ID_METADATA_KEY] == "step-2"
+    assert BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY not in metadata
+
+
+def test_create_action_prediction_maps_all_metadata() -> None:
+    # Build rich metadata including protocol IDs and flow/step info
+    metadata = {
+        UTTER_SOURCE_METADATA_KEY: "CustomA2AAgent",
+        BOT_UTTERANCE_AGENT_NAME_KEY: "agent-x",
+        A2A_AGENT_TASK_ID_KEY: "task-123",
+        A2A_AGENT_CONTEXT_ID_KEY: "ctx-123",
+        BOT_UTTERANCE_MESSAGE_ID_KEY: "m-123",
+        BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY: "final_response",
+        BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY: "2023-10-27T10:00:00Z",
+        ACTIVE_FLOW_METADATA_KEY: "flow-1",
+        STEP_ID_METADATA_KEY: "step-1",
+    }
+
+    pred = _create_action_prediction(
+        ACTION_SEND_TEXT_NAME, "hello", events=[], metadata=metadata
+    )
+
+    payload = pred.metadata[ACTION_METADATA_MESSAGE_KEY]
+    # Text present
+    assert payload[ACTION_METADATA_TEXT_KEY] == "hello"
+    # Mapped/preserved metadata present
+    assert payload[UTTER_SOURCE_METADATA_KEY] == "CustomA2AAgent"
+    assert payload[BOT_UTTERANCE_AGENT_NAME_KEY] == "agent-x"
+    assert payload[BOT_UTTERANCE_AGENT_TASK_ID_KEY] == "task-123"
+    assert payload[BOT_UTTERANCE_CONTEXT_ID_KEY] == "ctx-123"
+    assert payload[BOT_UTTERANCE_MESSAGE_ID_KEY] == "m-123"
+    assert payload[BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY] == "final_response"
+    assert payload[BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY] == "2023-10-27T10:00:00Z"
+    assert payload[ACTIVE_FLOW_METADATA_KEY] == "flow-1"
+    assert payload[STEP_ID_METADATA_KEY] == "step-1"

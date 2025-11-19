@@ -19,8 +19,17 @@ from rasa.agents.constants import (
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentInput, AgentOutput
 from rasa.agents.schemas.agent_input import AgentInputSlot
+from rasa.agents.utils import map_agent_metadata_to_bot_uttered
 from rasa.core.channels.channel import OutputChannel
 from rasa.core.config.configuration import Configuration
+from rasa.core.constants import (
+    ACTIVE_FLOW_METADATA_KEY,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FINAL_RESPONSE,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_INPUT_REQUIRED,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY,
+    BOT_UTTERANCE_AGENT_NAME_KEY,
+    STEP_ID_METADATA_KEY,
+)
 from rasa.core.policies.flows.flow_step_result import (
     ContinueFlowWithNextStep,
     FlowActionPrediction,
@@ -158,6 +167,11 @@ async def run_agent(
         max_retries=MAX_AGENT_RETRIES,
         output_channel=output_channel,
     )
+
+    # Ensure baseline metadata for agent name if the agent didn't provide it.
+    # Prefer agent-provided metadata if present.
+    output.metadata = output.metadata or {}
+    output.metadata.setdefault(BOT_UTTERANCE_AGENT_NAME_KEY, step.call)
 
     structlogger.debug(
         "flow.step.run_agent.agent_response",
@@ -304,7 +318,9 @@ def _handle_resume_interrupted_agent(
     )
     final_events.append(AgentResumed(agent_id=step.call, flow_id=step.flow_id))
     return PauseFlowReturnPrediction(
-        _create_agent_request_user_input_prediction(utterance, final_events)
+        _create_agent_request_user_input_prediction(
+            utterance, final_events, agent_stack_frame.metadata
+        )
     )
 
 
@@ -379,7 +395,10 @@ def _handle_agent_input_required(
     Returns:
         FlowStepResult indicating to pause for user input
     """
-    output.metadata = output.metadata or {}
+    defaults = _build_default_agent_message_metadata(
+        step, BOT_UTTERANCE_AGENT_MESSAGE_TYPE_INPUT_REQUIRED
+    )
+    output.metadata = {**defaults, **(output.metadata or {})}
     output.metadata[AGENT_METADATA_AGENT_RESPONSE_KEY] = output.response_message or ""
     output.metadata[AGENT_METADATA_STRUCTURED_RESULTS_KEY] = (
         output.structured_results or []
@@ -407,7 +426,7 @@ def _handle_agent_input_required(
         )
 
     action_prediction = _create_agent_request_user_input_prediction(
-        output.response_message, final_events
+        output.response_message, final_events, output.metadata
     )
     return PauseFlowReturnPrediction(action_prediction)
 
@@ -429,7 +448,10 @@ def _handle_agent_completed(
     Returns:
         FlowStepResult indicating to continue with next step or pause for response
     """
-    output.metadata = output.metadata or {}
+    defaults = _build_default_agent_message_metadata(
+        step, BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FINAL_RESPONSE
+    )
+    output.metadata = {**defaults, **(output.metadata or {})}
     _update_agent_events(final_events, output.metadata)
     structlogger.debug(
         "flow.step.run_agent.completed",
@@ -443,7 +465,9 @@ def _handle_agent_completed(
     if output.response_message:
         # for open-ended agents we want to utter the last agent message
         return PauseFlowReturnPrediction(
-            _create_send_text_prediction(output.response_message, final_events)
+            _create_send_text_prediction(
+                output.response_message, final_events, output.metadata
+            )
         )
     else:
         return ContinueFlowWithNextStep(events=final_events)
@@ -546,14 +570,22 @@ def _cancel_flow(
 
 
 def _create_action_prediction(
-    action_name: str, message: Optional[str], events: Optional[List[Event]]
+    action_name: str,
+    message: Optional[str],
+    events: Optional[List[Event]],
+    metadata: Optional[Dict[str, Any]] = None,
 ) -> FlowActionPrediction:
     """Create a prediction for an action with a text message."""
-    action_metadata = {
-        ACTION_METADATA_MESSAGE_KEY: {
-            ACTION_METADATA_TEXT_KEY: message,
-        }
-    }
+    # Build message payload, filtering out None values
+    message_payload: dict[str, Any] = {}
+    if message is not None:
+        message_payload[ACTION_METADATA_TEXT_KEY] = message
+    action_metadata: dict[str, Any] = {ACTION_METADATA_MESSAGE_KEY: message_payload}
+
+    if metadata:
+        mapped = map_agent_metadata_to_bot_uttered(metadata)
+        action_metadata[ACTION_METADATA_MESSAGE_KEY].update(mapped)
+
     return FlowActionPrediction(
         action_name,
         1.0,
@@ -563,22 +595,26 @@ def _create_action_prediction(
 
 
 def _create_agent_request_user_input_prediction(
-    message: Optional[str], events: Optional[List[Event]]
+    message: Optional[str],
+    events: Optional[List[Event]],
+    metadata: Optional[Dict[str, Any]] = None,
 ) -> FlowActionPrediction:
     """Create a prediction for requesting user input from the agent and waiting for it.
 
     This function creates a prediction that will pause the flow and wait for user input.
     """
     return _create_action_prediction(
-        ACTION_AGENT_REQUEST_USER_INPUT_NAME, message, events
+        ACTION_AGENT_REQUEST_USER_INPUT_NAME, message, events, metadata
     )
 
 
 def _create_send_text_prediction(
-    message: Optional[str], events: Optional[List[Event]]
+    message: Optional[str],
+    events: Optional[List[Event]],
+    metadata: Optional[Dict[str, Any]] = None,
 ) -> FlowActionPrediction:
     """Create a prediction for sending a text message to the user."""
-    return _create_action_prediction(ACTION_SEND_TEXT_NAME, message, events)
+    return _create_action_prediction(ACTION_SEND_TEXT_NAME, message, events, metadata)
 
 
 ################################################################################
@@ -733,3 +769,22 @@ def _reset_slots_covered_by_exit_if(
     for slot_name in reset_slot_names:
         if tracker.slots.get(slot_name) is not None:
             tracker.update(SlotSet(slot_name, None))
+
+
+def _build_default_agent_message_metadata(
+    step: CallFlowStep, message_type: Optional[str] = None
+) -> Dict[str, Any]:
+    """Construct default metadata for agent-generated bot messages.
+
+    Populates fields that can be derived from the flow step itself, so customers
+    customizing agents still get baseline metadata even if they don't attach it
+    to AgentOutput explicitly.
+    """
+    base: Dict[str, Any] = {
+        BOT_UTTERANCE_AGENT_NAME_KEY: step.call,
+        ACTIVE_FLOW_METADATA_KEY: step.flow_id,
+        STEP_ID_METADATA_KEY: step.id,
+    }
+    if message_type:
+        base[BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY] = message_type
+    return base

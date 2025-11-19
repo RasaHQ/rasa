@@ -8,6 +8,7 @@ from rasa.agents.core.types import AgentIdentifier, ProtocolType
 from rasa.agents.schemas import AgentInput, AgentOutput
 from rasa.core.available_agents import AgentConfig
 from rasa.core.channels.channel import OutputChannel
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.exceptions import AgentInitializationException
 from rasa.utils.singleton import Singleton
@@ -170,6 +171,11 @@ class AgentManager(metaclass=Singleton):
             )
             raise
 
+        # Ensure metadata contains the concrete agent class name
+        processed_output.metadata = processed_output.metadata or {}
+        processed_output.metadata.setdefault(
+            UTTER_SOURCE_METADATA_KEY, agent.__class__.__name__
+        )
         return processed_output
 
     async def disconnect_agent(

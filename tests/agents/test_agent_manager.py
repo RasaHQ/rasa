@@ -8,6 +8,7 @@ from rasa.agents.agent_manager import AgentManager
 from rasa.agents.core.types import AgentIdentifier, AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentOutput
 from rasa.core.available_agents import AgentConfig, AgentInfo, ProtocolConfig
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.core.events import SlotSet
 from rasa.shared.exceptions import AgentInitializationException
@@ -306,6 +307,8 @@ async def test_run_agent_success(
 
     # Verify result
     assert result == mock_agent_output
+    # Ensure AgentManager added utter_source
+    assert UTTER_SOURCE_METADATA_KEY in (result.metadata or {})
 
 
 @pytest.mark.asyncio

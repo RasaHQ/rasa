@@ -50,15 +50,15 @@ from rasa.agents.constants import (
 from rasa.agents.core.agent_protocol import AgentProtocol
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentInput, AgentOutput
+from rasa.agents.utils import map_agent_metadata_to_bot_uttered
 from rasa.core.available_agents import AgentConfig
 from rasa.core.channels import OutputChannel
 from rasa.core.constants import (
-    AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE,
-    AGENT_MESSAGE_TYPE_KEY,
-    INTERMEDIATE_MESSAGE_AGENT_NAME_KEY,
-    INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY,
-    INTERMEDIATE_MESSAGE_ID_KEY,
-    INTERMEDIATE_MESSAGE_TIMESTAMP_KEY,
+    BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY,
+    BOT_UTTERANCE_AGENT_NAME_KEY,
+    BOT_UTTERANCE_MESSAGE_ID_KEY,
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.shared.agents.auth.agent_auth_manager import AgentAuthManager
@@ -427,8 +427,9 @@ class A2AAgent(AgentProtocol):
             message=message.model_dump(),
             json_formatting=["message"],
         )
-        metadata = agent_input.metadata or {}
-        metadata[A2A_AGENT_CONTEXT_ID_KEY] = message.context_id
+        metadata = self._create_a2a_specific_metadata(
+            base_metadata=agent_input.metadata or {}, message=message
+        )
 
         return AgentOutput(
             id=agent_input.id,
@@ -473,9 +474,9 @@ class A2AAgent(AgentProtocol):
         """
         state = task.status.state
 
-        metadata = agent_input.metadata or {}
-        metadata[A2A_AGENT_CONTEXT_ID_KEY] = task.context_id
-        metadata[A2A_AGENT_TASK_ID_KEY] = task.id
+        metadata = self._create_a2a_specific_metadata(
+            base_metadata=agent_input.metadata or {}, task=task
+        )
 
         if state == TaskState.input_required:
             response_message = (
@@ -572,6 +573,7 @@ class A2AAgent(AgentProtocol):
         output_channel: Optional[OutputChannel] = None,
     ) -> None:
         """Send an intermediate message to the user if the task is in progress.
+
         This allows the user to see that the agent is working on their request,
         providing better UX for long-running operations.
 
@@ -663,7 +665,9 @@ class A2AAgent(AgentProtocol):
                     generated_events.append(
                         BotUttered(
                             text=message,
-                            metadata=self.create_bot_uttered_event_metadata(task),
+                            metadata=self._create_intermediate_message_bot_uttered_event_metadata(
+                                task, agent_input.metadata or {}
+                            ),
                         )
                     )
                     if sent_intermediate_messages is not None:
@@ -679,22 +683,65 @@ class A2AAgent(AgentProtocol):
                 error=str(e),
             )
 
-    def create_bot_uttered_event_metadata(self, task: Task) -> Dict[str, str]:
-        bot_uttered_metadata = {
-            UTTER_SOURCE_METADATA_KEY: self.__class__.__name__,
-            INTERMEDIATE_MESSAGE_AGENT_NAME_KEY: self._name,
-            INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY: task.id,
-            AGENT_MESSAGE_TYPE_KEY: AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE,
-        }
-        if task.status.timestamp:
-            bot_uttered_metadata[INTERMEDIATE_MESSAGE_TIMESTAMP_KEY] = (
-                task.status.timestamp
-            )
-        if task.status.message:
-            bot_uttered_metadata[INTERMEDIATE_MESSAGE_ID_KEY] = (
-                task.status.message.message_id
-            )
-        return bot_uttered_metadata
+    def _create_intermediate_message_bot_uttered_event_metadata(
+        self, task: Task, base_metadata: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, str]:
+        # Intermediate messages are emitted directly by the agent to the output
+        # channel (not via predicted Actions from the policy), so we must include
+        # both the generic source info and the A2A-specific IDs here
+        raw = self._create_a2a_specific_metadata(base_metadata or {}, task=task)
+        mapped = map_agent_metadata_to_bot_uttered(raw)
+        mapped.setdefault(UTTER_SOURCE_METADATA_KEY, self.__class__.__name__)
+        mapped.setdefault(BOT_UTTERANCE_AGENT_NAME_KEY, self._name)
+        mapped.setdefault(
+            BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY,
+            BOT_UTTERANCE_AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE,
+        )
+        return mapped
+
+    @staticmethod
+    def _create_a2a_specific_metadata(
+        base_metadata: Optional[Dict[str, Any]] = None,
+        message: Optional[Message] = None,
+        task: Optional[Task] = None,
+    ) -> Dict[str, Any]:
+        # Build only A2A-specific metadata to be forwarded upstream.
+        # We avoid setting UTTER_SOURCE_METADATA_KEY or message type here,
+        # as those are centrally handled by AgentManager and the agent executor.
+
+        # Start from a shallow copy to avoid mutating the input metadata
+        metadata: Dict[str, Any] = dict(base_metadata) if base_metadata else {}
+
+        # Avoid carrying over stale message IDs or timestamps from previous outputs.
+        # Only add them when the current message/task provides fresh values.
+        metadata.pop(BOT_UTTERANCE_MESSAGE_ID_KEY, None)
+        metadata.pop(BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY, None)
+
+        if message is not None:
+            # IDs from a direct message response
+            if message.message_id:
+                metadata[BOT_UTTERANCE_MESSAGE_ID_KEY] = message.message_id
+            if message.task_id:
+                metadata[A2A_AGENT_TASK_ID_KEY] = message.task_id
+            if message.context_id:
+                metadata[A2A_AGENT_CONTEXT_ID_KEY] = message.context_id
+
+        if task is not None:
+            # IDs from a task-based response
+            metadata[A2A_AGENT_TASK_ID_KEY] = task.id
+            # Prefer message-provided context id if available,
+            # otherwise fall back to task
+            metadata[A2A_AGENT_CONTEXT_ID_KEY] = task.context_id
+            status_message = task.status.message
+            if status_message:
+                metadata[BOT_UTTERANCE_MESSAGE_ID_KEY] = status_message.message_id
+            if status_message and status_message.context_id:
+                metadata[A2A_AGENT_CONTEXT_ID_KEY] = status_message.context_id
+            if task.status.timestamp:
+                metadata[BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY] = (
+                    task.status.timestamp
+                )
+        return metadata
 
     # ============================================================================
     # Message Preparation & Formatting

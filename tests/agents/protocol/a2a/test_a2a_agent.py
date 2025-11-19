@@ -41,11 +41,13 @@ from rasa.core.available_agents import (
     ProtocolConfig,
 )
 from rasa.core.constants import (
-    AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE,
-    AGENT_MESSAGE_TYPE_KEY,
-    INTERMEDIATE_MESSAGE_AGENT_NAME_KEY,
-    INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY,
-    INTERMEDIATE_MESSAGE_ID_KEY,
+    BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY,
+    BOT_UTTERANCE_AGENT_NAME_KEY,
+    BOT_UTTERANCE_AGENT_TASK_ID_KEY,
+    BOT_UTTERANCE_CONTEXT_ID_KEY,
+    BOT_UTTERANCE_MESSAGE_ID_KEY,
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.shared.core.events import BotUttered
@@ -479,11 +481,12 @@ async def test_pooling_sends_intermediate_messages(mock_init_client):
     for event in bot_uttered_events:
         assert event.metadata is not None
         assert event.metadata.get(UTTER_SOURCE_METADATA_KEY) == "A2AAgent"
-        assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_NAME_KEY) == "test_agent"
-        assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY) == "abc-123"
+        assert event.metadata.get(BOT_UTTERANCE_AGENT_NAME_KEY) == "test_agent"
+        assert event.metadata.get(BOT_UTTERANCE_AGENT_TASK_ID_KEY) == "abc-123"
+        assert event.metadata.get(BOT_UTTERANCE_CONTEXT_ID_KEY) == "abc"
 
-    assert bot_uttered_events[0].metadata.get(INTERMEDIATE_MESSAGE_ID_KEY) == "m2"
-    assert bot_uttered_events[1].metadata.get(INTERMEDIATE_MESSAGE_ID_KEY) == "m3"
+    assert bot_uttered_events[0].metadata.get(BOT_UTTERANCE_MESSAGE_ID_KEY) == "m2"
+    assert bot_uttered_events[1].metadata.get(BOT_UTTERANCE_MESSAGE_ID_KEY) == "m3"
 
 
 @pytest.mark.asyncio
@@ -581,16 +584,17 @@ async def test_streaming_duplicate_intermediate_messages_not_deduped(
     assert bot_uttered_events[0].text == "Same message"
     assert bot_uttered_events[1].text == "Same message"
     # Metadata assertions
-    ids = {e.metadata.get(INTERMEDIATE_MESSAGE_ID_KEY) for e in bot_uttered_events}
+    ids = {e.metadata.get(BOT_UTTERANCE_MESSAGE_ID_KEY) for e in bot_uttered_events}
     assert ids == {"m1", "m2"}
     for event in bot_uttered_events:
         assert event.metadata.get(UTTER_SOURCE_METADATA_KEY) == "A2AAgent"
         assert (
-            event.metadata.get(AGENT_MESSAGE_TYPE_KEY)
-            == AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE
+            event.metadata.get(BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY)
+            == BOT_UTTERANCE_AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE
         )
-        assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_NAME_KEY) == "test_agent"
-        assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY) == "abc-123"
+        assert event.metadata.get(BOT_UTTERANCE_AGENT_NAME_KEY) == "test_agent"
+        assert event.metadata.get(BOT_UTTERANCE_AGENT_TASK_ID_KEY) == "abc-123"
+        assert event.metadata.get(BOT_UTTERANCE_CONTEXT_ID_KEY) == "abc"
 
 
 @pytest.mark.asyncio
@@ -756,6 +760,9 @@ async def test_pooling_dedups_submitted_messages(mock_init_client: MagicMock):
     assert bot_uttered_events[0].text == "Submitted message"
     # Final status is COMPLETED
     assert output.status == AgentStatus.COMPLETED
+    # For intermediate messages from polling, context id should
+    # reflect the task's context
+    assert bot_uttered_events[0].metadata.get(BOT_UTTERANCE_CONTEXT_ID_KEY) == "abc"
 
 
 @pytest.mark.asyncio
@@ -844,12 +851,12 @@ async def test_pooling_preserves_events_on_client_error_after_intermediate(
     events = bot_uttered_events[0]
     assert events.metadata.get(UTTER_SOURCE_METADATA_KEY) == "A2AAgent"
     assert (
-        events.metadata.get(AGENT_MESSAGE_TYPE_KEY)
-        == AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE
+        events.metadata.get(BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY)
+        == BOT_UTTERANCE_AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE
     )
-    assert events.metadata.get(INTERMEDIATE_MESSAGE_AGENT_NAME_KEY) == "test_agent"
-    assert events.metadata.get(INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY) == "abc-123"
-    assert events.metadata.get(INTERMEDIATE_MESSAGE_ID_KEY) == "m2"
+    assert events.metadata.get(BOT_UTTERANCE_AGENT_NAME_KEY) == "test_agent"
+    assert events.metadata.get(BOT_UTTERANCE_AGENT_TASK_ID_KEY) == "abc-123"
+    assert events.metadata.get(BOT_UTTERANCE_MESSAGE_ID_KEY) == "m2"
 
 
 def test_handle_task_returns_none_for_unknown_state():
@@ -2633,12 +2640,12 @@ async def test_intermediate_message_events_preserved_after_jsonrpc_error(
     event = bot_uttered_events[0]
     assert event.metadata.get(UTTER_SOURCE_METADATA_KEY) == "A2AAgent"
     assert (
-        event.metadata.get(AGENT_MESSAGE_TYPE_KEY)
-        == AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE
+        event.metadata.get(BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY)
+        == BOT_UTTERANCE_AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE
     )
-    assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_NAME_KEY) == "test_agent"
-    assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY) == "task-1"
-    assert event.metadata.get(INTERMEDIATE_MESSAGE_ID_KEY) == "m2"
+    assert event.metadata.get(BOT_UTTERANCE_AGENT_NAME_KEY) == "test_agent"
+    assert event.metadata.get(BOT_UTTERANCE_AGENT_TASK_ID_KEY) == "task-1"
+    assert event.metadata.get(BOT_UTTERANCE_MESSAGE_ID_KEY) == "m2"
 
 
 @pytest.mark.asyncio
@@ -2875,3 +2882,210 @@ async def test_streaming_intermediate_send_immediate_failure_does_not_stop_execu
     assert len(bot_uttered_events) == 0
     # Immediate call attempted once
     assert mock_output_channel.send_text_message.call_count == 1
+
+
+def test_intermediate_metadata_omits_timestamp_when_absent() -> None:
+    """Intermediate BotUttered metadata excludes timestamp if task has none."""
+    task = Task(
+        context_id="ctx-xyz",
+        id="task-xyz",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="msg"))],
+                message_id="m-xyz",
+            ),
+        ),
+    )
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    meta = agent._create_intermediate_message_bot_uttered_event_metadata(task)
+    assert BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY not in meta
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_intermediate_metadata_includes_timestamp_when_present(
+    mock_init_client: MagicMock, immediate_create_task
+) -> None:
+    """Intermediate event should include timestamp when provided by task."""
+    working_with_msg = Task(
+        context_id="ctx-t",
+        id="task-t",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Timed msg"))],
+                message_id="m-t",
+            ),
+            timestamp="2023-10-27T10:00:00Z",
+        ),
+    )
+
+    async def stream():
+        yield working_with_msg, None
+        yield (
+            Task(
+                context_id="ctx-t",
+                id="task-t",
+                status=TaskStatus(state=TaskState.completed),
+            ),
+            None,
+        )
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_load_card.return_value = MagicMock()
+        await agent.connect()
+
+    mock_output_channel = MagicMock()
+    mock_output_channel.send_text_message = AsyncMock()
+
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test",
+            slots=[],
+            conversation_history="",
+            events=[],
+            recipient_id="user-1",
+        ),
+        output_channel=mock_output_channel,
+    )
+
+    await asyncio.sleep(0)
+    assert output.events is not None
+    bot_uttered_events = [
+        e for e in output.events if isinstance(e, BotUttered) and e.text == "Timed msg"
+    ]
+    assert len(bot_uttered_events) == 1
+    assert (
+        bot_uttered_events[0].metadata.get(BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY)
+        == "2023-10-27T10:00:00Z"
+    )
+
+
+def test_create_a2a_specific_metadata_from_message_only() -> None:
+    base = {
+        "keep": "x",
+        BOT_UTTERANCE_MESSAGE_ID_KEY: "old-id",
+        BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY: "oldts",
+    }
+    msg = Message(
+        role=Role.user,
+        parts=[Part(root=TextPart(text="hello"))],
+        message_id="m-msg",
+        context_id="ctx-msg",
+        task_id="task-msg",
+    )
+    result = A2AAgent._create_a2a_specific_metadata(base, message=msg)
+    # base preserved (except stale keys removed)
+    assert result["keep"] == "x"
+    assert result[BOT_UTTERANCE_MESSAGE_ID_KEY] == "m-msg"
+    assert result[A2A_AGENT_TASK_ID_KEY] == "task-msg"
+    assert result[A2A_AGENT_CONTEXT_ID_KEY] == "ctx-msg"
+    # stale timestamp removed since not provided by message/task
+    assert BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY not in result
+
+
+def test_create_a2a_specific_metadata_from_task_only() -> None:
+    task = Task(
+        context_id="ctx-task",
+        id="task-1",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="hi"))],
+                message_id="m-task",
+            ),
+            timestamp="2023-10-27T10:00:00Z",
+        ),
+    )
+    result = A2AAgent._create_a2a_specific_metadata({}, task=task)
+    assert result[A2A_AGENT_TASK_ID_KEY] == "task-1"
+    assert result[A2A_AGENT_CONTEXT_ID_KEY] == "ctx-task"
+    # message id from task.status.message
+    assert result[BOT_UTTERANCE_MESSAGE_ID_KEY] == "m-task"
+    assert result[BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY] == "2023-10-27T10:00:00Z"
+
+
+def test_create_a2a_specific_metadata_precedence_and_stale_removal() -> None:
+    base = {
+        BOT_UTTERANCE_MESSAGE_ID_KEY: "old",
+        BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY: 111.0,
+    }
+    message = Message(
+        role=Role.user,
+        parts=[Part(root=TextPart(text="m"))],
+        message_id="m-msg",
+        context_id="ctx-msg",
+        task_id="task-msg",
+    )
+    task = Task(
+        context_id="ctx-task",
+        id="task-new",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="from-status"))],
+                message_id="m-status",
+                context_id="ctx-status",
+            ),
+            timestamp="2023-10-27T10:00:00Z",
+        ),
+    )
+    result = A2AAgent._create_a2a_specific_metadata(base, message=message, task=task)
+    # Task id overrides message task_id
+    assert result[A2A_AGENT_TASK_ID_KEY] == "task-new"
+    # Status message context overrides task context and message context
+    assert result[A2A_AGENT_CONTEXT_ID_KEY] == "ctx-status"
+    # Status message id overrides message id (and removes stale base)
+    assert result[BOT_UTTERANCE_MESSAGE_ID_KEY] == "m-status"
+    # Timestamp present and not stale
+    assert result[BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY] == "2023-10-27T10:00:00Z"
+
+
+def test_create_a2a_specific_metadata_removes_stale_when_absent() -> None:
+    base = {
+        BOT_UTTERANCE_MESSAGE_ID_KEY: "old",
+        BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY: "oldts",
+    }
+    message = Message(
+        role=Role.user, parts=[Part(root=TextPart(text="x"))], message_id="new"
+    )
+    task = Task(
+        context_id="ctx",
+        id="t",
+        status=TaskStatus(state=TaskState.working, message=None, timestamp=None),
+    )
+    result = A2AAgent._create_a2a_specific_metadata(base, message=message, task=task)
+    assert result[BOT_UTTERANCE_MESSAGE_ID_KEY] == "new"
+    assert BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY not in result

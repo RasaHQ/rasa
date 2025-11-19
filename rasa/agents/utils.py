@@ -1,11 +1,23 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from rasa.agents.constants import A2A_AGENT_CONTEXT_ID_KEY, A2A_AGENT_TASK_ID_KEY
 from rasa.core.available_agents import (
     AgentConfig,
     AgentMCPServerConfig,
 )
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
+from rasa.core.constants import (
+    ACTIVE_FLOW_METADATA_KEY,
+    BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY,
+    BOT_UTTERANCE_AGENT_NAME_KEY,
+    BOT_UTTERANCE_AGENT_TASK_ID_KEY,
+    BOT_UTTERANCE_CONTEXT_ID_KEY,
+    BOT_UTTERANCE_MESSAGE_ID_KEY,
+    STEP_ID_METADATA_KEY,
+    UTTER_SOURCE_METADATA_KEY,
+)
 from rasa.shared.core.events import AgentCompleted, AgentStarted
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -155,3 +167,39 @@ def get_slot_value_from_agent_input(
         if slot.name == slot_name and slot.value is not None:
             return slot.value
     return None
+
+
+def map_agent_metadata_to_bot_uttered(source: Dict[str, Any]) -> Dict[str, Any]:
+    """Map agent metadata into BotUttered metadata keys, skipping None values.
+
+    - Maps protocol-specific keys (e.g. context_id, task_id) to agent-prefixed keys
+      for BotUttered events
+    - Passes through standard BotUttered keys when present
+    - Includes flow/step identifiers if provided by caller
+    """
+    mapped: Dict[str, Any] = {}
+
+    pairs: Dict[str, Any] = {
+        # Standard BotUttered fields (pass-through)
+        UTTER_SOURCE_METADATA_KEY: source.get(UTTER_SOURCE_METADATA_KEY),
+        BOT_UTTERANCE_AGENT_NAME_KEY: source.get(BOT_UTTERANCE_AGENT_NAME_KEY),
+        BOT_UTTERANCE_MESSAGE_ID_KEY: source.get(BOT_UTTERANCE_MESSAGE_ID_KEY),
+        BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY: source.get(
+            BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY
+        ),
+        BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY: source.get(
+            BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY
+        ),
+        # Protocol-specific identifiers mapped to agent-prefixed keys
+        BOT_UTTERANCE_AGENT_TASK_ID_KEY: source.get(A2A_AGENT_TASK_ID_KEY),
+        BOT_UTTERANCE_CONTEXT_ID_KEY: source.get(A2A_AGENT_CONTEXT_ID_KEY),
+        # Flow/step context (pass-through)
+        ACTIVE_FLOW_METADATA_KEY: source.get(ACTIVE_FLOW_METADATA_KEY),
+        STEP_ID_METADATA_KEY: source.get(STEP_ID_METADATA_KEY),
+    }
+
+    for key, value in pairs.items():
+        if value is not None:
+            mapped[key] = value
+
+    return mapped
