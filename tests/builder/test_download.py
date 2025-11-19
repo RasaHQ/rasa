@@ -125,6 +125,75 @@ def test_create_bot_project_archive_without_copilot_db(
         assert ".rasa/copilot.db" not in names
 
 
+def test_create_bot_project_archive_includes_git_dir_if_exists(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    """Test that .git directory is included in archive when it exists."""
+    monkeypatch.setenv("RASA_PRO_LICENSE", "testlicense")
+
+    # Create a mock .git directory with some files
+    git_dir = tmp_path / ".git"
+    git_dir.mkdir(parents=True)
+    (git_dir / "config").write_text("mock git config")
+    (git_dir / "HEAD").write_text("ref: refs/heads/main")
+
+    # Create subdirectories
+    refs_dir = git_dir / "refs" / "heads"
+    refs_dir.mkdir(parents=True)
+    (refs_dir / "main").write_text("abc123def456")
+
+    objects_dir = git_dir / "objects"
+    objects_dir.mkdir(parents=True)
+    (objects_dir / "pack").mkdir()
+    (objects_dir / "info").mkdir()
+
+    bot_files = {"config.yml": "config", "domain.yml": "domain"}
+    archive = download.create_bot_project_archive(bot_files, "projid", tmp_path)
+    tar_buffer = io.BytesIO(archive)
+
+    with tarfile.open(fileobj=tar_buffer, mode="r:gz") as tar:
+        names = tar.getnames()
+        # Check that .git directory and its files are included
+        assert ".git" in names
+        assert ".git/config" in names
+        assert ".git/HEAD" in names
+        assert ".git/refs/heads/main" in names
+
+        # Verify the content of git files
+        config_file = tar.extractfile(".git/config")
+        assert config_file.read().decode() == "mock git config"
+
+        head_file = tar.extractfile(".git/HEAD")
+        assert head_file.read().decode() == "ref: refs/heads/main"
+
+
+def test_create_bot_project_archive_without_git_dir(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    """Test that archive is created successfully when .git doesn't exist."""
+    monkeypatch.setenv("RASA_PRO_LICENSE", "testlicense")
+    bot_files = {"config.yml": "config", "domain.yml": "domain"}
+
+    archive = download.create_bot_project_archive(bot_files, "projid", tmp_path)
+    tar_buffer = io.BytesIO(archive)
+
+    with tarfile.open(fileobj=tar_buffer, mode="r:gz") as tar:
+        names = tar.getnames()
+        # Should include all other files
+        for fname in [
+            "config.yml",
+            "domain.yml",
+            ".env",
+            ".python-version",
+            "pyproject.toml",
+            "README.md",
+        ]:
+            assert fname in names
+        # .git directory should not be present
+        git_files = [name for name in names if name.startswith(".git")]
+        assert len(git_files) == 0
+
+
 def test_valid_s3_url_standard_region() -> None:
     url = "https://my-bucket.s3.us-east-1.amazonaws.com/path/to/file.tar.gz"
     # Should not raise any exception

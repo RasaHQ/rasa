@@ -146,6 +146,11 @@ def create_bot_project_archive(
             with open(copilot_db_path, "rb") as db_file:
                 _add_file_to_tar(tar, COPILOT_DB_RELATIVE_PATH, db_file.read())
 
+        # Add .git directory if it exists
+        git_dir = project_folder / ".git"
+        if git_dir.exists() and git_dir.is_dir():
+            tar.add(git_dir, arcname=".git", recursive=True)
+
         # Add additional project files
         _add_file_to_tar(tar, ".env", _get_env_content())
         _add_file_to_tar(tar, ".python-version", _get_python_version_content())

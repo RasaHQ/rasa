@@ -49,6 +49,45 @@ class TemplateRequest(BaseModel):
         return v
 
 
+class ChangeBranchRequest(BaseModel):
+    """Request model for change branch endpoint."""
+
+    branch_name: str = Field(
+        ..., min_length=1, max_length=200, description="The branch name to checkout"
+    )
+    create_if_not_exists: bool = Field(
+        False, description="Whether to create the branch if it doesn't exist"
+    )
+
+    @field_validator("branch_name")
+    @classmethod
+    def validate_branch_name(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("Branch name cannot be empty or whitespace only")
+        v = v.strip()
+        # Basic validation for branch names
+        if any(char in v for char in [" ", "\t", "\n", "\r"]):
+            raise ValueError("Branch name cannot contain whitespace")
+        return v
+
+
+class GitStatusResponse(BaseModel):
+    """Response model for Git status information."""
+
+    current_branch: str = Field(..., description="Current Git branch")
+    uncommitted_changes: bool = Field(
+        ..., description="Whether there are uncommitted changes"
+    )
+
+
+class GitCommitInfo(BaseModel):
+    """Author and message for a commit."""
+
+    author: str = Field(..., description="Author of the commit")
+    email: str = Field(..., description="Email of the author")
+    message: Optional[str] = Field(None, description="Message of the commit")
+
+
 class RestoreFromBackupRequest(BaseModel):
     """Request model for backup-to-bot endpoint."""
 
@@ -207,6 +246,7 @@ class JobStatus(str, Enum):
     received = "received"
     done = "done"
     error = "error"
+    commit = "commit"
 
     generating = "generating"
     generation_success = "generation_success"
@@ -220,6 +260,25 @@ class JobStatus(str, Enum):
     validating = "validating"
     validation_success = "validation_success"
     validation_error = "validation_error"
+
+    # Git-specific statuses
+    cloning = "cloning"
+    clone_success = "clone_success"
+    clone_error = "clone_error"
+
+    switching_branch = "switching_branch"
+    branch_switch_success = "branch_switch_success"
+    branch_switch_error = "branch_switch_error"
+
+    rolling_back = "rolling_back"
+    rollback_success = "rollback_success"
+    rollback_success_message = "rollback_success_message"
+    rollback_error = "rollback_error"
+
+    reverting = "reverting"
+    revert_success = "revert_success"
+    revert_success_message = "revert_success_message"
+    revert_error = "revert_error"
 
     copilot_analysis_start = "copilot_analysis_start"
     copilot_analyzing = "copilot_analyzing"

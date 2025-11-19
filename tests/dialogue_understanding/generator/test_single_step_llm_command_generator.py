@@ -901,6 +901,21 @@ class TestSingleStepLLMCommandGenerator:
             "rasa.core.config.configuration.Configuration.get_instance",
             Mock(return_value=mock_configuration_instance),
         )
+        if agents_present:
+            monkeypatch.setattr(
+                "rasa.core.available_agents.AvailableAgents.get_agent_config",
+                staticmethod(
+                    lambda agent_id: (
+                        Mock(
+                            agent=Mock(
+                                name=f"{agent_id}_name", description=f"{agent_id}_desc"
+                            )
+                        )
+                        if agent_id in ["test-agent", "test-agent-2"]
+                        else None
+                    )
+                ),
+            )
 
         # Use a minimal prompt that checks for variables being defined
         command_generator.prompt_template = (

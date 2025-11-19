@@ -225,6 +225,39 @@ class LLMService:
         except asyncio.TimeoutError:
             raise LLMGenerationError("LLM request timed out")
 
+    async def generate_text(self, prompt: str, max_tokens: int = 100) -> str:
+        """Generate simple text using OpenAI.
+
+        Args:
+            prompt: The text prompt to send to the model
+            max_tokens: Maximum tokens to generate
+
+        Returns:
+            Generated text response
+
+        Raises:
+            LLMGenerationError: If generation fails
+        """
+        try:
+            async with self._get_client() as client:
+                response = await client.chat.completions.create(
+                    model=config.OPENAI_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1,  # Lower temperature for consistent messages
+                    max_tokens=max_tokens,
+                )
+
+                content = response.choices[0].message.content
+                if not content:
+                    raise LLMGenerationError("Empty response from LLM")
+
+                return content.strip()
+
+        except openai.OpenAIError as e:
+            raise LLMGenerationError(f"OpenAI API error: {e}")
+        except asyncio.TimeoutError:
+            raise LLMGenerationError("LLM request timed out")
+
 
 # Schema preparation functions (stateless)
 def _prepare_domain_schema() -> Dict[str, Any]:

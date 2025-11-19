@@ -15,6 +15,7 @@ class JobInfo(BaseModel):
     status: str = ""
     error: Optional[str] = None
     created_at: float = Field(default_factory=time.time)
+    commit_sha: Optional[str] = None
 
     _history: List[JobStatusEvent] = PrivateAttr(default_factory=list)
     _queue: asyncio.Queue = PrivateAttr(default_factory=asyncio.Queue)
@@ -62,9 +63,9 @@ class JobManager:
 
     _jobs: ClassVar[Dict[str, JobInfo]] = {}
 
-    def create_job(self) -> JobInfo:
+    def create_job(self, commit_sha: Optional[str] = None) -> JobInfo:
         job_id = uuid.uuid4().hex
-        job = JobInfo(id=job_id)
+        job = JobInfo(id=job_id, commit_sha=commit_sha)
         self._jobs[job_id] = job
         return job
 

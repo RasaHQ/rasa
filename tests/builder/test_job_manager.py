@@ -116,3 +116,25 @@ async def test_live_events_are_forwarded_and_added_to_history():
 
     assert len(job._history) == 3
     assert job._history[-1].event == ServerSentEventType._EOF.value
+
+
+@pytest.mark.asyncio
+async def test_create_job_with_commit_sha():
+    jm = JobManager()
+    commit_sha = "abc123def456"
+    job = jm.create_job(commit_sha=commit_sha)
+
+    assert job.commit_sha == commit_sha
+
+    # Verify it's still retrievable
+    same_job = jm.get_job(job.id)
+    assert same_job.commit_sha == commit_sha
+
+
+@pytest.mark.asyncio
+async def test_create_job_without_commit_sha():
+    jm = JobManager()
+    job = jm.create_job()
+
+    # Should default to None
+    assert job.commit_sha is None

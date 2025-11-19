@@ -21,6 +21,7 @@ from rasa.builder.copilot.models import (
     ButtonContent,
     ChatMessage,
     CodeContent,
+    CommitContent,
     ContentBlock,
     ConversationKey,
     CopilotChatMessage,
@@ -202,6 +203,7 @@ class SQLiteCopilotHistoryStore(CopilotHistoryStore):
             "button": ButtonContent,
             "references": ReferencesContent,
             "logs": LogsContent,
+            "commit": CommitContent,
         }
 
         if content_type in constructors:
@@ -507,6 +509,7 @@ async def persist_copilot_message_to_history(
     references: Optional[List[ReferenceEntry]] = None,
     chat_id: str = DEFAULT_COPILOT_CHAT_ID,
     response_category: ResponseCategory = ResponseCategory.COPILOT,
+    commit: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Persist a copilot message to conversation history.
 
@@ -519,6 +522,7 @@ async def persist_copilot_message_to_history(
         references: Optional list of ReferenceEntry objects to include
         chat_id: The chat ID to persist the message to
         response_category: The response category for the message
+        commit: Optional commit information to include
     """
     # If neither content nor text provided, nothing to persist
     if not content and not text:
@@ -545,6 +549,10 @@ async def persist_copilot_message_to_history(
                 message_content.append(
                     ReferencesContent(type="references", references=reference_items)
                 )
+
+            # Add commit as a content block if provided
+            if commit:
+                message_content.append(CommitContent(type="commit", commit=commit))
 
         copilot_message = CopilotChatMessage(
             role="copilot",
@@ -574,6 +582,7 @@ async def persist_training_error_analysis_to_history(
     references: Optional[List[ReferenceEntry]] = None,
     chat_id: str = DEFAULT_COPILOT_CHAT_ID,
     response_category: ResponseCategory = ResponseCategory.TRAINING_ERROR_LOG_ANALYSIS,
+    commit: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Persist training error analysis as a single message with all content types.
 
@@ -583,6 +592,7 @@ async def persist_training_error_analysis_to_history(
         references: Optional list of reference entries
         chat_id: The chat ID to persist the message to
         response_category: The response category for the message
+        commit: Optional commit information to include
     """
     if not text and not logs and not references:
         return
@@ -611,6 +621,9 @@ async def persist_training_error_analysis_to_history(
             for ref in references
         ]
         content.append(ReferencesContent(type="references", references=reference_items))
+
+    if commit:
+        content.append(CommitContent(type="commit", commit=commit))
 
     await persist_copilot_message_to_history(
         content=content,

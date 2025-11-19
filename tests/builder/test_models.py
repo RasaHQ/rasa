@@ -40,6 +40,22 @@ def test_job_status_members():
         JobStatus.copilot_template_prompt.value,
         JobStatus.copilot_welcome_message.value,
         JobStatus.train_success_message.value,
+        JobStatus.commit.value,
+        # Git-specific statuses
+        JobStatus.cloning.value,
+        JobStatus.clone_success.value,
+        JobStatus.clone_error.value,
+        JobStatus.switching_branch.value,
+        JobStatus.branch_switch_success.value,
+        JobStatus.branch_switch_error.value,
+        JobStatus.rolling_back.value,
+        JobStatus.rollback_success.value,
+        JobStatus.rollback_success_message.value,
+        JobStatus.rollback_error.value,
+        JobStatus.reverting.value,
+        JobStatus.revert_success.value,
+        JobStatus.revert_success_message.value,
+        JobStatus.revert_error.value,
     }
     assert {s.value for s in JobStatus} == expected
 

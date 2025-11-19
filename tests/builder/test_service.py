@@ -482,8 +482,13 @@ class TestFilesEndpointIntegration:
                 "rasa.builder.jobs.validate_project", new_callable=AsyncMock
             ) as mock_validate,
             patch(
-                "rasa.builder.jobs.train_and_load_agent", new_callable=AsyncMock
+                "rasa.builder.job_helpers.train_and_load_agent",
+                new_callable=AsyncMock,
             ) as mock_train,
+            patch(
+                "rasa.builder.job_helpers.link_model_to_commit",
+                new_callable=AsyncMock,
+            ),
             patch("rasa.builder.jobs.update_agent"),
         ):
             mock_validate.return_value = None
@@ -540,8 +545,13 @@ class TestFilesEndpointIntegration:
                 "rasa.builder.jobs.validate_project", new_callable=AsyncMock
             ) as mock_validate,
             patch(
-                "rasa.builder.jobs.train_and_load_agent", new_callable=AsyncMock
+                "rasa.builder.job_helpers.train_and_load_agent",
+                new_callable=AsyncMock,
             ) as mock_train,
+            patch(
+                "rasa.builder.job_helpers.link_model_to_commit",
+                new_callable=AsyncMock,
+            ),
             patch("rasa.builder.jobs.update_agent"),
         ):
             mock_validate.return_value = None

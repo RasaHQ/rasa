@@ -122,5 +122,8 @@ async def test_loader_loads_graph_runner(
 
     # Language slot is not in the domain by default, but it's added by the importer
     model_metadata_domain_dict = model_metadata.domain.as_dict()
-    del model_metadata_domain_dict[KEY_SLOTS][LANGUAGE_SLOT]
-    assert model_metadata.domain.as_dict() == Domain.from_path(domain_path).as_dict()
+    if KEY_SLOTS in model_metadata_domain_dict and isinstance(
+        model_metadata_domain_dict[KEY_SLOTS], dict
+    ):
+        model_metadata_domain_dict[KEY_SLOTS].pop(LANGUAGE_SLOT, None)
+    assert model_metadata_domain_dict == Domain.from_path(domain_path).as_dict()

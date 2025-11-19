@@ -174,3 +174,8 @@ def protected(*, always_required: bool = False) -> ProtectedDecorator:
         return decorated_function
 
     return decorator
+
+
+def email_from_auth(request: Request) -> Optional[str]:
+    """Retrieve user email from authentication information."""
+    return (getattr(request.ctx, "auth_payload", None) or {}).get("sub")

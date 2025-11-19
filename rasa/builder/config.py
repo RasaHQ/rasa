@@ -96,6 +96,8 @@ if HELLO_LLM_PROXY_BASE_URL:
 # Default kept small for development; adjust as needed.
 AUTH_REQUIRED_AFTER_MINUTES = int(os.getenv("AUTH_REQUIRED_AFTER_MINUTES", "480"))
 
+DEFAULT_BOT_BUILDER_EMAIL = "noreply@rasa.com"
+
 
 def get_default_credentials() -> Dict[str, Any]:
     """Get default credentials configuration."""

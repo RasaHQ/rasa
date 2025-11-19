@@ -3,6 +3,7 @@
 import json
 import os
 import shutil
+import subprocess
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Generator, List, Optional
@@ -11,9 +12,14 @@ import structlog
 
 from rasa.builder import config
 from rasa.builder.exceptions import ProjectGenerationError, ValidationError
+from rasa.builder.git_service import (
+    DEFAULT_COMMIT_INFO,
+    GitOperationInProgressError,
+    GitService,
+)
 from rasa.builder.llm_service import get_skill_generation_messages, llm_service
 from rasa.builder.logging_utils import capture_exception_with_context
-from rasa.builder.models import BotFiles
+from rasa.builder.models import BotFiles, GitCommitInfo
 from rasa.builder.project_info import ProjectInfo, ensure_first_used, load_project_info
 from rasa.builder.template_cache import copy_cache_for_template_if_available
 from rasa.builder.training_service import TrainingInput
@@ -39,6 +45,12 @@ class ProjectGenerator:
         """
         self.project_folder = Path(project_folder)
         self.project_folder.mkdir(parents=True, exist_ok=True)
+        self.git_service = GitService(project_folder)
+
+        # Migration: if existing projects don't have a git repo, initialize one
+        # and create an initial snapshot commit synchronously to capture the
+        # current state before any writes happen in this process.
+        self.migrate_git_repository_if_needed()
 
     @property
     def project_info(self) -> ProjectInfo:
@@ -56,23 +68,41 @@ class ProjectGenerator:
             if not file.name.startswith(".")
         )
 
-    async def init_from_template(self, template: ProjectTemplateName) -> None:
-        """Create the initial project files."""
-        self.cleanup()
-        create_initial_project(self.project_folder.as_posix(), template)
-        # If a local cache for this template exists, copy it into the project.
-        # We no longer download here to avoid blocking project creation.
-        await copy_cache_for_template_if_available(template, self.project_folder)
-        # needs to happen after caching, as we download/copy .rasa and that would
-        # overwrite the project info file in .rasa
-        ensure_first_used(self.project_folder)
+    async def init_from_template(self, template: ProjectTemplateName) -> str:
+        """Create the initial project files.
+
+        Raises:
+            GitOperationInProgressError: If another git operation is in progress
+        """
+        # Acquire lock for entire operation (cleanup + file creation + commit)
+        async with self.git_service.git_operation():
+            self.cleanup()
+            create_initial_project(self.project_folder.as_posix(), template)
+            # If a local cache for this template exists, copy it into the project.
+            # We no longer download here to avoid blocking project creation.
+            await copy_cache_for_template_if_available(template, self.project_folder)
+            # needs to happen after caching, as we download/copy .rasa and that would
+            # overwrite the project info file in .rasa
+            ensure_first_used(self.project_folder)
+
+            self._ensure_git_repository()
+
+            # Create initial Git commit
+            # Note: Use internal commit method since we already hold the lock
+            return await self.git_service._commit_changes_internal(
+                DEFAULT_COMMIT_INFO.model_copy(
+                    update={
+                        "message": f"Initialize project from {template.value} template"
+                    }
+                )
+            )
 
     async def generate_project_with_retries(
         self,
         skill_description: str,
         template: ProjectTemplateName,
         max_retries: Optional[int] = None,
-    ) -> Dict[str, Optional[str]]:
+    ) -> str:
         """Generate a Rasa project with retry logic for validation failures.
 
         Args:
@@ -82,7 +112,7 @@ class ProjectGenerator:
             max_retries: Maximum number of retry attempts
 
         Returns:
-            Dictionary of generated file contents (filename -> content)
+            Commit sha of the generated files
 
         Raises:
             ProjectGenerationError: If generation fails after all retries
@@ -102,19 +132,17 @@ class ProjectGenerator:
 
         async def _generate_with_retry(
             messages: List[Dict[str, Any]], attempts_left: int
-        ) -> Dict[str, Optional[str]]:
+        ) -> None:
             try:
                 # Generate project data using LLM
                 project_data = await llm_service.generate_rasa_project(messages)
 
                 # Update stored bot data
-                self._update_bot_files_from_llm_response(project_data)
+                await self._update_bot_files_from_llm_response(project_data)
 
-                bot_files = self.get_bot_files()
                 structlogger.info(
                     "project_generator.generated_project",
                     attempts_left=attempts_left,
-                    files=list(bot_files.keys()),
                 )
 
                 # Validate the generated project
@@ -123,8 +151,6 @@ class ProjectGenerator:
                 structlogger.info(
                     "project_generator.validation_success", attempts_left=attempts_left
                 )
-
-                return bot_files
 
             except ValidationError as e:
                 structlogger.error(
@@ -159,9 +185,7 @@ class ProjectGenerator:
                     },
                 ]
 
-                return await _generate_with_retry(
-                    error_feedback_messages, attempts_left - 1
-                )
+                await _generate_with_retry(error_feedback_messages, attempts_left - 1)
 
             except Exception as e:
                 structlogger.error(
@@ -176,9 +200,14 @@ class ProjectGenerator:
                     )
 
                 # For non-validation errors, retry with original messages
-                return await _generate_with_retry(initial_messages, attempts_left - 1)
+                await _generate_with_retry(initial_messages, attempts_left - 1)
 
-        return await _generate_with_retry(initial_messages, max_retries)
+        await _generate_with_retry(initial_messages, max_retries)
+        return await self.git_service.commit_changes(
+            DEFAULT_COMMIT_INFO.model_copy(
+                update={"message": "Generated initial project files"}
+            )
+        )
 
     async def _validate_generated_project(self) -> None:
         """Validate the generated project using the validation service."""
@@ -291,6 +320,222 @@ class ProjectGenerator:
 
         return False
 
+    def _ensure_git_repository(self) -> None:
+        """Ensure the project folder is a Git repository on main branch."""
+        # Initialize synchronously to avoid event loop conflicts in __init__
+        if self.git_service.git_dir.exists():
+            return
+
+        structlogger.info(
+            "project_generator.init_git_repository",
+            project_folder=self.project_folder.as_posix(),
+        )
+
+        # Initialize Git repository synchronously
+        self.git_service._initialize_git_repository()
+        self.git_service._setup_git_configuration()
+        self.git_service._create_gitignore()
+
+        structlogger.info(
+            "project_generator.git_repository_initialized",
+            project_folder=self.project_folder.as_posix(),
+        )
+
+    def migrate_git_repository_if_needed(self) -> None:
+        """Initialize Git and create an initial commit for existing projects.
+
+        This migrates pre-existing builder instances that were created before
+        Git integration existed. If the project folder contains files and no
+        `.git` directory, we initialize a repo and create an initial commit
+        capturing the current state. Hidden files and folders like `.rasa/` and
+        large artifacts like `models/` are excluded via `.gitignore`.
+        """
+        try:
+            if self.git_service.git_dir.exists():
+                return
+
+            # Only migrate if there is something to snapshot. Hidden files are
+            # ignored by is_empty().
+            if self.is_empty():
+                return
+
+            structlogger.info(
+                "project_generator.migration_git_repository_start",
+                project_folder=self.project_folder.as_posix(),
+            )
+
+            # Initialize repo and basic config + .gitignore (sync, safe in __init__)
+            self.git_service._initialize_git_repository()
+            self.git_service._setup_git_configuration()
+            self.git_service._create_gitignore()
+
+            # Stage and create an initial snapshot commit synchronously
+            # It's fine if commit fails because nothing is staged.
+            self.git_service.run_git_command_sync(["add", "."])
+            try:
+                self.git_service.run_git_command_sync(
+                    [
+                        "commit",
+                        "-m",
+                        "Initialize Git history from existing project state",
+                    ]
+                )
+                structlogger.info(
+                    "project_generator.migration_git_repository_completed",
+                    project_folder=self.project_folder.as_posix(),
+                )
+            except subprocess.CalledProcessError as e:
+                # No staged changes or commit failed; log and continue
+                structlogger.warning(
+                    "project_generator.migration_git_repository_commit_failed",
+                    error=str(e),
+                    project_folder=self.project_folder.as_posix(),
+                )
+        except Exception as e:
+            structlogger.warning(
+                "project_generator.migration_git_repository_failed",
+                error=str(e),
+                project_folder=self.project_folder.as_posix(),
+            )
+
+    async def _commit_changes(self, commit_info: GitCommitInfo) -> str:
+        """Commit all changes.
+
+        Note: This method assumes the git operation lock is already held by the caller.
+        It uses the internal commit implementation to avoid deadlock.
+
+        Args:
+            commit_info: info about the commit
+
+        Returns:
+            Commit SHA of the created commit
+
+        Raises:
+            GitOperationInProgressError: If another git operation is in progress
+        """
+        try:
+            # Ensure git repository exists (defensive in case migration didn't run)
+            if not self.git_service.git_dir.exists():
+                self._ensure_git_repository()
+            # Generate commit message if not provided
+            if commit_info.message is None:
+                commit_info.message = await self._generate_commit_message()
+
+            # Commit changes using GitService internal method
+            # (assumes lock is already held by caller)
+            commit_sha = await self.git_service._commit_changes_internal(commit_info)
+
+            return commit_sha
+
+        except GitOperationInProgressError:
+            # Re-raise this exception so it can be handled by the caller
+            raise
+        except Exception as e:
+            structlogger.error(
+                "project_generator.git_commit_failed",
+                error=str(e),
+                project_folder=self.project_folder.as_posix(),
+            )
+            # Don't fail the operation if Git commit fails, return current commit
+            return await self.git_service.get_current_commit_sha()
+
+    async def _generate_commit_message(self) -> str:
+        """Generate a meaningful commit message using AI based on the changes.
+
+        Returns:
+            A descriptive commit message based on the Git diff
+        """
+        try:
+            # Get the diff of staged changes
+            diff_output = (
+                await self.git_service.run_git_command(
+                    ["diff", "--cached", "--name-status"], check_output=True
+                )
+                or ""
+            )
+
+            if not diff_output:
+                return "Update bot files"
+
+            # Get a more detailed diff for context (limited to avoid token limits)
+            detailed_diff = (
+                await self.git_service.run_git_command(
+                    ["diff", "--cached", "--unified=2"], check_output=True
+                )
+                or ""
+            )
+
+            # Limit the diff size to avoid token limits
+            if detailed_diff and len(detailed_diff) > 2000:
+                detailed_diff = detailed_diff[:2000] + "\n... (diff truncated)"
+
+            # Prepare the prompt for the LLM
+            prompt = (
+                f"Generate a concise, descriptive Git commit message for the "
+                f"following changes to a Rasa chatbot project.\n\n"
+                f"The commit message should:\n"
+                f"- Be in imperative mood (e.g., 'Add', 'Update', 'Fix', 'Remove')\n"
+                f"- Be specific about what changed\n"
+                f"- Be under 72 characters\n"
+                f"- Focus on the most significant changes\n\n"
+                f"File changes:\n{diff_output}\n\n"
+                f"Detailed diff:\n{detailed_diff}\n\n"
+                f"Generate only the commit message, nothing else:"
+            )
+
+            # Use the existing LLM service to generate the commit message
+            response = await llm_service.generate_text(prompt, max_tokens=50)
+
+            # Clean up the response
+            commit_message = response.strip().strip('"').strip("'")
+
+            # Fallback to a reasonable default if generation fails or is too long
+            if not commit_message or len(commit_message) > 72:
+                # Try to infer from file changes
+                if "domain.yml" in diff_output:
+                    return "Update domain configuration"
+                elif any(f in diff_output for f in ["flows/", "data/flows/"]):
+                    return "Update conversation flows"
+                elif any(f in diff_output for f in ["nlu.yml", "data/nlu"]):
+                    return "Update NLU training data"
+                elif "config.yml" in diff_output:
+                    return "Update model configuration"
+                else:
+                    return "Update bot files"
+
+            return commit_message
+
+        except Exception:
+            structlogger.warning(
+                "project_generator.commit_message_generation_failed",
+                project_folder=self.project_folder.as_posix(),
+            )
+            # Fallback to generic message
+            return "Update bot files"
+
+    async def _get_current_branch(self) -> str:
+        """Get the current Git branch name."""
+        return await self.git_service.get_current_branch()
+
+    async def checkout_branch(
+        self, branch_name: str, create_if_not_exists: bool = False
+    ) -> str:
+        """Checkout a Git branch.
+
+        Args:
+            branch_name: Name of the branch to checkout
+            create_if_not_exists: Whether to create the branch if it doesn't exist
+
+        Raises:
+            GitOperationInProgressError: If another git operation is in progress
+            subprocess.CalledProcessError: If the checkout fails
+        """
+        # Ensure repository exists before branch operations
+        if not self.git_service.git_dir.exists():
+            self._ensure_git_repository()
+        await self.git_service.checkout_branch(branch_name, create_if_not_exists)
+        return await self.git_service.get_current_commit_sha()
+
     def bot_file_paths(
         self, exclude_models_directory: bool = True
     ) -> Generator[Path, None, None]:
@@ -325,7 +570,9 @@ class ProjectGenerator:
         else:
             return f"data/flows/{flow_id}.yml"
 
-    def _update_bot_files_from_llm_response(self, project_data: Dict[str, Any]) -> None:
+    async def _update_bot_files_from_llm_response(
+        self, project_data: Dict[str, Any]
+    ) -> None:
         """Update the bot files with generated data by writing to disk."""
         files = {"domain.yml": dump_obj_as_yaml_to_string(project_data["domain"])}
         # split up flows into one file per flow in the /flows folder
@@ -336,7 +583,10 @@ class ProjectGenerator:
 
         # removes any other flows that the LLM didn't generate
         self._cleanup_flows()
-        self.update_bot_files(files)
+        commit_info = DEFAULT_COMMIT_INFO.model_copy(
+            update={"message": "Update bot files"}
+        )
+        await self.update_bot_files(files, commit_info)
 
     def _cleanup_flows(self) -> None:
         """Cleanup the flows folder."""
@@ -345,19 +595,32 @@ class ProjectGenerator:
             shutil.rmtree(flows_folder)
         flows_folder.mkdir(parents=True, exist_ok=True)
 
-    def update_bot_files(self, files: Dict[str, Optional[str]]) -> None:
-        """Update bot files with new content by writing to disk."""
-        for filename, content in files.items():
-            file_path = Path(subpath(str(self.project_folder), filename))
-            # Disallow updates inside .rasa project metadata directory
-            if any(
-                part.startswith(".")
-                for part in file_path.relative_to(self.project_folder).parts
-            ):
-                # silently ignore hidden paths
-                continue
-            file_path.parent.mkdir(parents=True, exist_ok=True)
-            file_path.write_text(content, encoding="utf-8")
+    async def update_bot_files(
+        self, files: Dict[str, Optional[str]], commit_info: GitCommitInfo
+    ) -> None:
+        """Update bot files with new content by writing to disk.
+
+        Raises:
+            GitOperationInProgressError: If another git operation is in progress
+        """
+        # Acquire lock for entire operation (file writes + commit)
+        async with self.git_service.git_operation():
+            for filename, content in files.items():
+                file_path = Path(subpath(str(self.project_folder), filename))
+                # Disallow updates inside .rasa project metadata directory
+                if any(
+                    part.startswith(".")
+                    for part in file_path.relative_to(self.project_folder).parts
+                ):
+                    # silently ignore hidden paths
+                    continue
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                file_path.write_text(content or "", encoding="utf-8")
+
+            # Commit changes to Git with AI-generated message
+            # Note: _commit_changes uses the internal commit method which assumes
+            # the lock is already held (which it is, by this context manager)
+            await self._commit_changes(commit_info)
 
     def ensure_all_files_are_writable(self, files: Dict[str, Optional[str]]) -> None:
         """Ensure all files are writable."""
@@ -368,61 +631,75 @@ class ProjectGenerator:
                     f"This file or folder is restricted from editing: {file_path}"
                 )
 
-    def replace_all_bot_files(self, files: Dict[str, Optional[str]]) -> None:
+    async def replace_all_bot_files(
+        self, files: Dict[str, Optional[str]], commit_info: GitCommitInfo
+    ) -> str:
         """Replace all bot files with new content, deleting files not in the request.
 
         Files/folders starting with .rasa/ or models/ are excluded from deletion.
 
         Args:
             files: Dictionary mapping file names to their content
+            commit_info: info about the commit
+
+        Returns:
+            Commit SHA of the created commit
+
+        Raises:
+            GitOperationInProgressError: If another git operation is in progress
         """
         self.ensure_all_files_are_writable(files)
-        # Collect all existing files - any files not in the new `files` dict will be
-        # deleted from this set
-        existing_files = set(
-            path.as_posix()
-            for path in self.bot_file_paths(exclude_models_directory=True)
-        )
 
-        # Write all new files
-        for filename, content in files.items():
-            if content is None:
-                continue
+        # Acquire lock for entire operation (file writes/deletes + commit)
+        async with self.git_service.git_operation():
+            # Collect all existing files - any files not in the new `files` dict will be
+            # deleted from this set
+            existing_files = set(
+                path.as_posix()
+                for path in self.bot_file_paths(exclude_models_directory=True)
+            )
 
-            file_path = Path(subpath(str(self.project_folder), filename))
-            file_path.parent.mkdir(parents=True, exist_ok=True)
+            # Write all new files
+            for filename, content in files.items():
+                file_path = Path(subpath(str(self.project_folder), filename))
+                file_path.parent.mkdir(parents=True, exist_ok=True)
 
-            try:
-                file_path.write_text(content, encoding="utf-8")
-            except Exception as e:
-                # Log write failure and avoid deleting an existing file by mistake
-                capture_exception_with_context(
-                    e,
-                    "project_generator.replace_all_bot_files.write_error",
-                    extra={"file_path": file_path},
-                )
-                if file_path.as_posix() in existing_files:
-                    # Keep the original file if it already existed
-                    existing_files.discard(file_path.as_posix())
-                continue
+                try:
+                    file_path.write_text(content or "", encoding="utf-8")
+                except Exception as e:
+                    # Log write failure and avoid deleting an existing file by mistake
+                    capture_exception_with_context(
+                        e,
+                        "project_generator.replace_all_bot_files.write_error",
+                        extra={"file_path": file_path},
+                    )
+                    if file_path.as_posix() in existing_files:
+                        # Keep the original file if it already existed
+                        existing_files.discard(file_path.as_posix())
+                    continue
 
-            # Remove from deletion set since this file is in the new set of files
-            existing_files.discard(file_path.as_posix())
+                # Remove from deletion set since this file is in the new set of files
+                existing_files.discard(file_path.as_posix())
 
-        # Delete files that weren't in the request
-        for file_to_delete in existing_files:
-            file_path = Path(file_to_delete)
-            try:
-                file_path.unlink()
-            except Exception as e:
-                capture_exception_with_context(
-                    e,
-                    "project_generator.replace_all_bot_files.delete_error",
-                    extra={"file_path": file_path},
-                )
+            # Delete files that weren't in the request
+            for file_to_delete in existing_files:
+                file_path = Path(file_to_delete)
+                try:
+                    file_path.unlink()
+                except Exception as e:
+                    capture_exception_with_context(
+                        e,
+                        "project_generator.replace_all_bot_files.delete_error",
+                        extra={"file_path": file_path},
+                    )
 
-        # Clean up empty directories (except excluded ones)
-        self._cleanup_empty_directories()
+            # Clean up empty directories (except excluded ones)
+            self._cleanup_empty_directories()
+
+            # Commit changes to Git with AI-generated message
+            # Note: _commit_changes uses the internal commit method which assumes
+            # the lock is already held (which it is, by this context manager)
+            return await self._commit_changes(commit_info)
 
     def _cleanup_empty_directories(self) -> None:
         """Remove empty directories from the project folder.

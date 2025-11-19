@@ -143,6 +143,11 @@ class ReferencesContent(BaseContent):
     references: List[ReferenceItem]
 
 
+class CommitContent(BaseContent):
+    type: Literal["commit"]
+    commit: Dict[str, Any]
+
+
 class LogItem(BaseModel):
     type: Literal["log"] = "log"
     content: str
@@ -166,6 +171,7 @@ ContentBlock = Annotated[
         ButtonContent,
         ReferencesContent,
         LogsContent,
+        CommitContent,
     ],
     Field(
         discriminator="type",

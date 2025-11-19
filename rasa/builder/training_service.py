@@ -67,11 +67,14 @@ async def train_and_load_agent(input: TrainingInput) -> Agent:
         raise TrainingError(f"SystemExit during training: {e}")
 
 
-async def try_load_existing_agent(project_folder: str) -> Optional[Agent]:
+async def try_load_existing_agent(
+    project_folder: str, model_file: Optional[Path] = None
+) -> Optional[Agent]:
     """Try to load an existing agent from the project's models directory.
 
     Args:
         project_folder: Path to the project folder
+        model_file: Path to the model file to load
 
     Returns:
         Loaded Agent instance if successful, None otherwise
@@ -84,15 +87,18 @@ async def try_load_existing_agent(project_folder: str) -> Optional[Agent]:
 
     try:
         # Find the latest model in the models directory
-        latest_model_path = get_latest_model(models_dir)
-        if not latest_model_path:
+        model_path_to_load = (
+            str(model_file) if model_file else get_latest_model(models_dir)
+        )
+
+        if not model_path_to_load:
             structlogger.debug(
                 "No models found in models directory", models_dir=models_dir
             )
             return None
 
         structlogger.info(
-            "Found existing model, attempting to load", model_path=latest_model_path
+            "Found existing model, attempting to load", model_path=model_path_to_load
         )
 
         # Get available endpoints for agent loading
@@ -106,19 +112,19 @@ async def try_load_existing_agent(project_folder: str) -> Optional[Agent]:
 
         # Load the agent
         agent = await load_agent(
-            model_path=latest_model_path,
+            model_path=model_path_to_load,
             endpoints=available_endpoints,
             sub_agents=_sub_agents,
         )
 
         if agent and agent.is_ready():
             structlogger.info(
-                "Successfully loaded existing agent", model_path=latest_model_path
+                "Successfully loaded existing agent", model_path=model_path_to_load
             )
             return agent
         else:
             structlogger.warning(
-                "Agent loaded but not ready", model_path=latest_model_path
+                "Agent loaded but not ready", model_path=model_path_to_load
             )
             return None
 

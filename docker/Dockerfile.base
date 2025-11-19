@@ -10,10 +10,15 @@ RUN apt-get update -qq && \
   libpq-dev \
   # required for health check
   curl \
+  # required for git operations in builder service
+  git \
   && apt-get autoremove -y
 
 # Make sure that all security updates are installed
-RUN apt-get dist-upgrade -y --no-install-recommends
+RUN apt-get update -qq && \
+  apt-get dist-upgrade -y --no-install-recommends && \
+  apt-get autoremove -y && \
+  rm -rf /var/lib/apt/lists/*
 
 # Create rasa user and group
 RUN useradd -rm -d /app -s /sbin/nologin -g root -u 1001 rasa && groupadd -g 1001 rasa

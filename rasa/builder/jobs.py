@@ -1,3 +1,4 @@
+import subprocess
 import tarfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -39,40 +40,32 @@ from rasa.builder.exceptions import (
     TrainingError,
     ValidationError,
 )
+from rasa.builder.git_service import GitOperationInProgressError
+from rasa.builder.job_helpers import (
+    handle_revert_error,
+    handle_rollback_error,
+    load_or_train_agent_for_commit,
+    perform_revert,
+    perform_rollback,
+    push_error_and_start_copilot_analysis,
+    push_job_status_event,
+    train_and_load_and_link_agent,
+)
 from rasa.builder.job_manager import JobInfo, job_manager
 from rasa.builder.llm_service import llm_service
 from rasa.builder.models import (
+    GitCommitInfo,
     JobStatus,
-    JobStatusEvent,
 )
 from rasa.builder.project_generator import ProjectGenerator
 from rasa.builder.training_service import (
-    train_and_load_agent,
     try_load_existing_agent,
     update_agent,
 )
 from rasa.builder.validation_service import validate_project
 from rasa.cli.scaffold import ProjectTemplateName
-from rasa.core.agent import load_agent
-from rasa.core.config.configuration import Configuration
-from rasa.exceptions import ModelNotFound
-from rasa.model import get_local_model
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 
 structlogger = structlog.get_logger()
-
-
-async def push_job_status_event(
-    job: JobInfo,
-    status: JobStatus,
-    message: Optional[str] = None,
-    payload: Optional[Dict[str, Any]] = None,
-) -> None:
-    event = JobStatusEvent.from_status(
-        status=status.value, message=message, payload=payload
-    )
-    job.status = status.value
-    await job.put(event)
 
 
 async def run_prompt_to_bot_job(
@@ -94,20 +87,21 @@ async def run_prompt_to_bot_job(
     try:
         # 1. Generating
         await push_job_status_event(job, JobStatus.generating)
-        bot_files = await project_generator.generate_project_with_retries(
+        commit_sha = await project_generator.generate_project_with_retries(
             prompt,
             template=ProjectTemplateName.BASIC,
         )
+        bot_files = project_generator.get_bot_files()
         await push_job_status_event(job, JobStatus.generation_success)
 
         # 2. Training
         await push_job_status_event(job, JobStatus.training)
-        agent = await train_and_load_agent(project_generator.get_training_input())
+        agent = await train_and_load_and_link_agent(project_generator, commit_sha)
         update_agent(agent, app)
         await push_job_status_event(job, JobStatus.train_success)
 
         # 3. Create copilot welcome message job
-        copilot_welcome_job = job_manager.create_job()
+        copilot_welcome_job = job_manager.create_job(commit_sha)
         app.add_task(run_copilot_welcome_message_job(app, copilot_welcome_job))
 
         structlogger.info(
@@ -194,14 +188,14 @@ async def run_template_to_bot_job(
         )
 
         await push_job_status_event(job, JobStatus.generating)
-        await project_generator.init_from_template(template_name)
+        commit_sha = await project_generator.init_from_template(template_name)
         bot_files = project_generator.get_bot_files()
         await push_job_status_event(job, JobStatus.generation_success)
 
         await push_job_status_event(job, JobStatus.training)
         agent = await try_load_existing_agent(project_generator.project_folder)
         if agent is None:
-            agent = await train_and_load_agent(project_generator.get_training_input())
+            agent = await train_and_load_and_link_agent(project_generator, commit_sha)
         else:
             structlogger.info(
                 "bot_builder_service.template_to_bot.agent_loaded_from_cache",
@@ -209,7 +203,7 @@ async def run_template_to_bot_job(
         update_agent(agent, app)
         await push_job_status_event(job, JobStatus.train_success)
 
-        copilot_welcome_job = job_manager.create_job()
+        copilot_welcome_job = job_manager.create_job(commit_sha)
         app.add_task(
             run_copilot_welcome_message_job(app, copilot_welcome_job, template_name)
         )
@@ -279,6 +273,7 @@ async def run_replace_all_files_job(
     app: "Sanic",
     job: JobInfo,
     bot_files: Dict[str, Any],
+    commit_info: GitCommitInfo,
 ) -> None:
     """Run the replace-all-files job in the background.
 
@@ -289,13 +284,16 @@ async def run_replace_all_files_job(
         app: The Sanic application instance.
         job: The job information instance.
         bot_files: Dictionary of file names to content for replacement.
+        commit_info: Optional arguments for the commit
     """
-    project_generator = app.ctx.project_generator
+    project_generator: ProjectGenerator = app.ctx.project_generator
     await push_job_status_event(job, JobStatus.received)
 
+    commit_sha: Optional[str] = None
     try:
-        project_generator.replace_all_bot_files(bot_files)
-
+        commit_sha = await project_generator.replace_all_bot_files(
+            bot_files, commit_info
+        )
         # Validating
         await push_job_status_event(job, JobStatus.validating)
         training_input = project_generator.get_training_input()
@@ -306,12 +304,13 @@ async def run_replace_all_files_job(
 
         # Training
         await push_job_status_event(job, JobStatus.training)
-        agent = await train_and_load_agent(training_input)
+        agent = await train_and_load_and_link_agent(project_generator, commit_sha)
         update_agent(agent, app)
+
         await push_job_status_event(job, JobStatus.train_success)
 
         # Send final done event with copilot training success response job ID
-        copilot_training_success_job = job_manager.create_job()
+        copilot_training_success_job = job_manager.create_job(commit_sha=commit_sha)
         app.add_task(
             run_copilot_training_success_job(app, copilot_training_success_job)
         )
@@ -324,6 +323,16 @@ async def run_replace_all_files_job(
             },
         )
         job_manager.mark_done(job)
+
+    except GitOperationInProgressError as exc:
+        error_message = str(exc)
+        structlogger.debug(
+            "replace_all_files_job.operation_in_progress",
+            job_id=job.id,
+            error=error_message,
+        )
+        await push_job_status_event(job, JobStatus.error, message=error_message)
+        job_manager.mark_done(job, error=error_message)
 
     except ValidationError as exc:
         log_levels = ["error"]
@@ -344,6 +353,7 @@ async def run_replace_all_files_job(
             JobStatus.validation_error,
             error_message,
             bot_files,
+            commit_sha,
         )
 
         # After error mark job as done
@@ -363,6 +373,7 @@ async def run_replace_all_files_job(
             JobStatus.train_error,
             error_message,
             bot_files,
+            commit_sha,
         )
 
         # After error mark job as done
@@ -384,56 +395,11 @@ async def run_replace_all_files_job(
             JobStatus.error,
             error_message,
             bot_files,
+            commit_sha,
         )
 
         # After error mark job as done
         job_manager.mark_done(job, error=str(exc))
-
-
-async def push_error_and_start_copilot_analysis(
-    app: "Sanic",
-    original_job: JobInfo,
-    original_job_status: JobStatus,
-    error_message: str,
-    bot_files: Dict[str, Any],
-) -> None:
-    """Start a copilot analysis job and notify the client.
-
-    Creates a copilot analysis job and sends the new job ID to the client. The new
-    job runs in the background.
-
-    Args:
-        app: The Sanic application instance
-        original_job: The original job that failed
-        original_job_status: The status of the job that failed
-        error_message: The error message to analyze
-        bot_files: The bot files to include in analysis
-    """
-    # Create a copilot analysis job. Send the new job ID to the client and
-    # run the Copilot Analysis job in the background.
-    message = "Failed to train the assistant. Starting copilot analysis."
-
-    copilot_job = job_manager.create_job()
-    # Push the error status event for the original job
-    await push_job_status_event(
-        original_job,
-        original_job_status,
-        message=message,
-        payload={"copilot_job_id": copilot_job.id},
-    )
-    # Run the copilot analysis job in the background
-    app.add_task(
-        run_copilot_training_error_analysis_job(
-            app, copilot_job, error_message, bot_files
-        )
-    )
-    structlogger.debug(
-        f"update_files_job.{original_job_status.value}.copilot_analysis_start",
-        event_info=message,
-        job_id=original_job.id,
-        error=error_message,
-        copilot_job_id=copilot_job.id,
-    )
 
 
 async def run_copilot_training_error_analysis_job(
@@ -499,6 +465,26 @@ async def run_copilot_training_error_analysis_job(
             job, JobStatus.copilot_analyzing, payload=training_error_log.sse_data
         )
 
+        commit_info = None
+        if job.commit_sha:
+            # Get commit info
+            commit_info = await app.ctx.project_generator.git_service.get_commit_info(
+                job.commit_sha
+            )
+
+            commit_info["training_success"] = False
+
+            # Send commit
+            await push_job_status_event(
+                job,
+                JobStatus.copilot_analyzing,
+                payload={
+                    "response_category": "copilot",
+                    "commit": commit_info,
+                    "completeness": "complete",
+                },
+            )
+
         # Persist the training error analysis to history
         full_text, _ = copilot_response_handler.extract_full_text_and_category()
 
@@ -517,6 +503,7 @@ async def run_copilot_training_error_analysis_job(
             logs=[log_content_block] if log_content_block else None,
             references=references,
             response_category=ResponseCategory.TRAINING_ERROR_LOG_ANALYSIS,
+            commit=commit_info,
         )
 
         # Send success status
@@ -577,8 +564,30 @@ async def run_copilot_welcome_message_job(
             },
         )
 
+        commit_info = None
+        if job.commit_sha:
+            # Get commit info
+            commit_info = await app.ctx.project_generator.git_service.get_commit_info(
+                job.commit_sha
+            )
+
+            commit_info["training_success"] = True
+
+            # Send commit
+            await push_job_status_event(
+                job,
+                JobStatus.copilot_welcome_message,
+                payload={
+                    "response_category": "copilot",
+                    "commit": commit_info,
+                    "completeness": "complete",
+                },
+            )
+
         # Persist the welcome message to conversation history
-        await persist_copilot_message_to_history(text=welcome_message)
+        await persist_copilot_message_to_history(
+            text=welcome_message, commit=commit_info
+        )
 
         # Mark job as done
         await push_job_status_event(job, JobStatus.done)
@@ -630,18 +639,30 @@ async def run_copilot_training_success_job(
             },
         )
 
-        # Send the training success category
-        await push_job_status_event(
-            job,
-            JobStatus.train_success_message,
-            payload={
-                "response_category": "copilot_training_success",
-                "completeness": "complete",
-            },
-        )
+        commit_info = None
+        if job.commit_sha:
+            # Get commit info
+            commit_info = await app.ctx.project_generator.git_service.get_commit_info(
+                job.commit_sha
+            )
 
-        # Persist the training success message to conversation history
-        await persist_copilot_message_to_history(text=training_success_message)
+            # Add training success
+            commit_info["training_success"] = True
+
+            # Send the training success message
+            await push_job_status_event(
+                job,
+                JobStatus.train_success_message,
+                payload={
+                    "response_category": "copilot",
+                    "commit": commit_info,
+                    "completeness": "complete",
+                },
+            )
+
+        await persist_copilot_message_to_history(
+            text=training_success_message, commit=commit_info
+        )
 
         # Mark job as done
         await push_job_status_event(job, JobStatus.done)
@@ -660,6 +681,307 @@ async def run_copilot_training_success_job(
         )
         await push_job_status_event(job, JobStatus.error, message=str(exc))
         job_manager.mark_done(job, error=str(exc))
+
+
+async def run_copilot_go_back_in_time_success_job(
+    app: "Sanic",
+    job: JobInfo,
+    internal_message_key: str,
+    status: JobStatus,
+) -> None:
+    """Run the rollback success job in the background.
+
+    This job sends a rollback success message to the user after successful rollback.
+
+    Args:
+        app: The Sanic application instance.
+        job: The job information instance.
+        internal_message_key: The key of the internal message to send.
+        status: The status of the job.
+
+    Returns:
+        None
+    """
+    try:
+        # Load copilot default messages from YAML
+        internal_messages = load_copilot_handler_default_responses()
+
+        # Get the appropriate rollback success message
+        success_message = internal_messages.get(internal_message_key)
+
+        # Send the success message
+        await push_job_status_event(
+            job,
+            status,
+            payload={
+                "content": success_message,
+                "response_category": "copilot",
+                "completeness": "complete",
+            },
+        )
+
+        commit_info = None
+        if job.commit_sha:
+            # Get commit info
+            commit_info = await app.ctx.project_generator.git_service.get_commit_info(
+                job.commit_sha
+            )
+
+            commit_info["training_success"] = True
+
+            # Send commit
+            await push_job_status_event(
+                job,
+                status,
+                payload={
+                    "response_category": "copilot",
+                    "commit": commit_info,
+                    "completeness": "complete",
+                },
+            )
+
+        await persist_copilot_message_to_history(
+            text=success_message, commit=commit_info
+        )
+
+        # Mark job as done
+        await push_job_status_event(job, JobStatus.done)
+        job_manager.mark_done(job)
+
+        structlogger.info(
+            "copilot_go_back_in_time_success_job.success",
+            job_id=job.id,
+        )
+
+    except Exception as exc:
+        structlogger.exception(
+            "copilot_go_back_in_time_success_job.error",
+            job_id=job.id,
+            error=str(exc),
+        )
+        await push_job_status_event(job, JobStatus.error, message=str(exc))
+        job_manager.mark_done(job, error=str(exc))
+
+
+async def run_change_branch_job(
+    app: "Sanic",
+    job: JobInfo,
+    branch_name: str,
+    create_if_not_exists: bool = False,
+) -> None:
+    """Run the change branch job in the background.
+
+    Args:
+        app: The Sanic application instance.
+        job: The job information instance.
+        branch_name: The branch name to checkout.
+        create_if_not_exists: Whether to create the branch if it doesn't exist.
+    """
+    project_generator: ProjectGenerator = app.ctx.project_generator
+
+    await push_job_status_event(job, JobStatus.received)
+
+    try:
+        # 1. Switch branch
+        await push_job_status_event(job, JobStatus.switching_branch)
+        commit_sha = await project_generator.checkout_branch(
+            branch_name, create_if_not_exists
+        )
+        await push_job_status_event(job, JobStatus.branch_switch_success)
+
+        # 2. Training
+        await push_job_status_event(job, JobStatus.training)
+        agent = await load_or_train_agent_for_commit(project_generator, job, commit_sha)
+        update_agent(agent, app)
+        await push_job_status_event(job, JobStatus.train_success)
+
+        # 3. Done
+        structlogger.info(
+            "bot_builder_service.change_branch.success",
+            branch_name=branch_name,
+        )
+        await push_job_status_event(job, JobStatus.done)
+        job_manager.mark_done(job)
+
+    except GitOperationInProgressError as exc:
+        structlogger.debug(
+            "change_branch_job.operation_in_progress",
+            job_id=job.id,
+            error=str(exc),
+            branch_name=branch_name,
+        )
+        await push_job_status_event(job, JobStatus.error, message=str(exc))
+        job_manager.mark_done(job, error=str(exc))
+
+    except subprocess.CalledProcessError as exc:
+        structlogger.debug(
+            "change_branch_job.branch_switch_error",
+            job_id=job.id,
+            error=str(exc),
+            branch_name=branch_name,
+        )
+        await push_job_status_event(
+            job, JobStatus.branch_switch_error, message=str(exc)
+        )
+        job_manager.mark_done(job, error=str(exc))
+
+    except TrainingError as exc:
+        structlogger.debug(
+            "change_branch_job.training_error",
+            job_id=job.id,
+            error=str(exc),
+        )
+        await push_job_status_event(job, JobStatus.train_error, message=str(exc))
+        job_manager.mark_done(job, error=str(exc))
+
+    except ValidationError as exc:
+        # Log levels to include in the error message
+        log_levels = ["error"]
+        if config.VALIDATION_FAIL_ON_WARNINGS:
+            log_levels.append("warning")
+
+        structlogger.debug(
+            "change_branch_job.validation_error",
+            job_id=job.id,
+            error=str(exc),
+            all_validation_logs=exc.validation_logs,
+            included_log_levels=log_levels,
+        )
+        error_message = exc.get_error_message_with_logs(log_levels=log_levels)
+        await push_job_status_event(
+            job, JobStatus.validation_error, message=error_message
+        )
+        job_manager.mark_done(job, error=error_message)
+
+    except Exception as exc:
+        # Capture full traceback
+        structlogger.exception(
+            "change_branch_job.unexpected_error",
+            job_id=job.id,
+            error=str(exc),
+        )
+        await push_job_status_event(job, JobStatus.error, message=str(exc))
+        job_manager.mark_done(job, error=str(exc))
+
+
+async def run_rollback_job(
+    app: "Sanic",
+    job: JobInfo,
+    commit_sha: str,
+) -> None:
+    """Run rollback job following existing patterns.
+
+    Args:
+        app: The Sanic application instance.
+        job: The job information instance.
+        commit_sha: SHA of the commit to rollback to.
+    """
+    project_generator: ProjectGenerator = app.ctx.project_generator
+    await push_job_status_event(job, JobStatus.received)
+
+    try:
+        rollback_commit_sha = await perform_rollback(project_generator, job, commit_sha)
+        # we use the prior commit sha, since that saves us from a retrain in
+        # case we have a trained model for the prior commit. using the
+        # rollback sha wouldn't make sense as that is a new commit, so there
+        # would surely no model be trained for that
+        agent = await load_or_train_agent_for_commit(project_generator, job, commit_sha)
+
+        update_agent(agent, app)
+        await push_job_status_event(job, JobStatus.train_success)
+
+        structlogger.info(
+            "bot_builder_service.rollback.success", commit_sha=rollback_commit_sha
+        )
+        copilot_rollback_success_job = job_manager.create_job(
+            commit_sha=rollback_commit_sha
+        )
+        app.add_task(
+            run_copilot_go_back_in_time_success_job(
+                app,
+                copilot_rollback_success_job,
+                "rollback_success_response",
+                JobStatus.rollback_success,
+            )
+        )
+
+        await push_job_status_event(
+            job,
+            JobStatus.done,
+            payload={
+                "copilot_rollback_success_job_id": copilot_rollback_success_job.id
+            },
+        )
+        job_manager.mark_done(job)
+
+    except GitOperationInProgressError as exc:
+        await handle_rollback_error(job, exc, commit_sha, JobStatus.error)
+    except subprocess.CalledProcessError as exc:
+        await handle_rollback_error(job, exc, commit_sha, JobStatus.rollback_error)
+    except TrainingError as exc:
+        await handle_rollback_error(job, exc, commit_sha, JobStatus.train_error)
+    except Exception as exc:
+        await handle_rollback_error(
+            job, exc, commit_sha, JobStatus.error, log_traceback=True
+        )
+
+
+async def run_revert_job(
+    app: "Sanic",
+    job: JobInfo,
+    commit_sha: str,
+) -> None:
+    """Run revert job following existing patterns.
+
+    Args:
+        app: The Sanic application instance.
+        job: The job information instance.
+        commit_sha: SHA of the commit to revert.
+    """
+    project_generator: ProjectGenerator = app.ctx.project_generator
+    await push_job_status_event(job, JobStatus.received)
+
+    try:
+        revert_commit_sha = await perform_revert(project_generator, job, commit_sha)
+        # we use the prior commit sha, since that saves us from a retrain in
+        # case we have a trained model for the prior commit. using the
+        # revert sha wouldn't make sense as that is a new commit, so there
+        # would surely no model be trained for that
+        agent = await load_or_train_agent_for_commit(project_generator, job, commit_sha)
+
+        update_agent(agent, app)
+        await push_job_status_event(job, JobStatus.train_success)
+
+        structlogger.info("bot_builder_service.revert.success", commit_sha=commit_sha)
+        copilot_revert_success_job = job_manager.create_job(
+            commit_sha=revert_commit_sha
+        )
+        app.add_task(
+            run_copilot_go_back_in_time_success_job(
+                app,
+                copilot_revert_success_job,
+                "revert_success_response",
+                JobStatus.revert_success,
+            )
+        )
+
+        await push_job_status_event(
+            job=job,
+            status=JobStatus.done,
+            payload={"copilot_revert_success_job_id": copilot_revert_success_job.id},
+        )
+        job_manager.mark_done(job)
+
+    except GitOperationInProgressError as exc:
+        await handle_revert_error(job, exc, commit_sha, JobStatus.error)
+    except subprocess.CalledProcessError as exc:
+        await handle_revert_error(job, exc, commit_sha, JobStatus.revert_error)
+    except TrainingError as exc:
+        await handle_revert_error(job, exc, commit_sha, JobStatus.train_error)
+    except Exception as exc:
+        await handle_revert_error(
+            job, exc, commit_sha, JobStatus.error, log_traceback=True
+        )
 
 
 async def run_copilot_template_prompt_job(
@@ -821,43 +1143,17 @@ async def run_backup_to_bot_job(
 
         await push_job_status_event(job, JobStatus.generation_success)
 
-        # 2) Load existing model or train new one
-        models_dir = project_path / "models"
-        try:
-            latest_model = get_local_model(str(models_dir))
-        except ModelNotFound:
-            latest_model = None
+        # Ensure Git is initialized
+        project_generator.migrate_git_repository_if_needed()
+        commit_sha = await project_generator.git_service.get_current_commit_sha()
+        agent = await load_or_train_agent_for_commit(project_generator, job, commit_sha)
 
-        if latest_model:
-            # Load existing model
-            structlogger.info(
-                "backup_to_bot_job.loading_existing_model",
-                job_id=job.id,
-                model_path=latest_model,
-            )
-            await push_job_status_event(job, JobStatus.training)
-            available_endpoints = Configuration.initialise_endpoints(
-                endpoints_path=project_path / DEFAULT_ENDPOINTS_PATH
-            ).endpoints
-            agent = await load_agent(
-                model_path=latest_model, endpoints=available_endpoints
-            )
-            update_agent(agent, app)
-            await push_job_status_event(job, JobStatus.train_success)
-        else:
-            # Train new model
-            await push_job_status_event(job, JobStatus.training)
-            training_input = project_generator.get_training_input()
-            agent = await train_and_load_agent(training_input)
-            update_agent(agent, app)
-            await push_job_status_event(job, JobStatus.train_success)
+        update_agent(agent, app)
+        await push_job_status_event(job, JobStatus.train_success)
 
-        # 3) Complete successfully
-        bot_files = project_generator.get_bot_files()
         structlogger.info(
             "bot_builder_service.backup_to_bot.success",
-            files_restored=list(bot_files.keys()),
-            had_existing_model=bool(latest_model),
+            commit_sha=commit_sha,
         )
         await push_job_status_event(job, JobStatus.done)
         job_manager.mark_done(job)

@@ -1,7 +1,10 @@
+import asyncio
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from rasa.builder.models import GitCommitInfo
 from rasa.builder.project_generator import ProjectGenerator
 from rasa.utils.io import InvalidPathException
 
@@ -184,7 +187,17 @@ class TestProjectGenerator:
             "data/nlu.yml": "version: '3.1'\nnlu: []",
         }
 
-        generator.replace_all_bot_files(files)
+        # Mock the commit method since we're testing file operations, not git
+        with patch.object(
+            generator,
+            "_commit_changes",
+            new_callable=AsyncMock,
+            return_value="mock_sha",
+        ):
+            commit_info = GitCommitInfo(
+                message="Test commit", author="test_user", email="test@example.com"
+            )
+            asyncio.run(generator.replace_all_bot_files(files, commit_info))
 
         # Verify files were written
         assert (tmp_path / "config.yml").read_text() == "version: '3.1'\npipeline: []"
@@ -211,7 +224,17 @@ class TestProjectGenerator:
             "data/new_nlu.yml": "new nlu",
         }
 
-        generator.replace_all_bot_files(files)
+        # Mock the commit method since we're testing file operations, not git
+        with patch.object(
+            generator,
+            "_commit_changes",
+            new_callable=AsyncMock,
+            return_value="mock_sha",
+        ):
+            commit_info = GitCommitInfo(
+                message="Test commit", author="test_user", email="test@example.com"
+            )
+            asyncio.run(generator.replace_all_bot_files(files, commit_info))
 
         # Verify new files exist with correct content
         assert (tmp_path / "config.yml").read_text() == "new config"
@@ -243,7 +266,17 @@ class TestProjectGenerator:
         # Replace with new files
         files = {"config.yml": "new config", "domain.yml": "new domain"}
 
-        generator.replace_all_bot_files(files)
+        # Mock the commit method since we're testing file operations, not git
+        with patch.object(
+            generator,
+            "_commit_changes",
+            new_callable=AsyncMock,
+            return_value="mock_sha",
+        ):
+            commit_info = GitCommitInfo(
+                message="Test commit", author="test_user", email="test@example.com"
+            )
+            asyncio.run(generator.replace_all_bot_files(files, commit_info))
 
         # Verify restricted files still exist
         assert (rasa_dir / "cache").exists()
@@ -255,21 +288,31 @@ class TestProjectGenerator:
         assert (tmp_path / "config.yml").read_text() == "new config"
         assert (tmp_path / "domain.yml").read_text() == "new domain"
 
-    def test_replace_all_bot_files_skips_none_content(self, tmp_path: Path) -> None:
-        """Test replace_all_bot_files skips files with None content."""
+    def test_replace_all_bot_files_dumps_empty_files(self, tmp_path: Path) -> None:
+        """Test replace_all_bot_files dumps empty files."""
         generator = ProjectGenerator(tmp_path)
 
         files = {
             "config.yml": "version: '3.1'",
-            "domain.yml": None,  # Should be skipped
+            "domain.yml": None,  # Should be dumped as an empty file
             "data/nlu.yml": "nlu data",
         }
 
-        generator.replace_all_bot_files(files)
+        # Mock the commit method since we're testing file operations, not git
+        with patch.object(
+            generator,
+            "_commit_changes",
+            new_callable=AsyncMock,
+            return_value="mock_sha",
+        ):
+            commit_info = GitCommitInfo(
+                message="Test commit", author="test_user", email="test@example.com"
+            )
+            asyncio.run(generator.replace_all_bot_files(files, commit_info))
 
-        # Verify only non-None files were written
+        # Verify empty files were written
         assert (tmp_path / "config.yml").exists()
-        assert not (tmp_path / "domain.yml").exists()
+        assert (tmp_path / "domain.yml").read_text() == ""
         assert (tmp_path / "data" / "nlu.yml").exists()
 
     def test_replace_all_bot_files_rejects_restricted_files(
@@ -284,7 +327,19 @@ class TestProjectGenerator:
         }
 
         with pytest.raises(InvalidPathException, match="restricted from editing"):
-            generator.replace_all_bot_files(files_with_restricted)
+            # Mock the commit method since we're testing file operations, not git
+            with patch.object(
+                generator,
+                "_commit_changes",
+                new_callable=AsyncMock,
+                return_value="mock_sha",
+            ):
+                commit_info = GitCommitInfo(
+                    message="Test commit", author="test_user", email="test@example.com"
+                )
+                asyncio.run(
+                    generator.replace_all_bot_files(files_with_restricted, commit_info)
+                )
 
     def test_replace_all_bot_files_creates_directories(self, tmp_path: Path) -> None:
         """Test replace_all_bot_files creates necessary directories."""
@@ -296,7 +351,17 @@ class TestProjectGenerator:
             "actions/custom_actions.py": "action code",
         }
 
-        generator.replace_all_bot_files(files)
+        # Mock the commit method since we're testing file operations, not git
+        with patch.object(
+            generator,
+            "_commit_changes",
+            new_callable=AsyncMock,
+            return_value="mock_sha",
+        ):
+            commit_info = GitCommitInfo(
+                message="Test commit", author="test_user", email="test@example.com"
+            )
+            asyncio.run(generator.replace_all_bot_files(files, commit_info))
 
         # Verify directories were created and files written
         assert (tmp_path / "data" / "flows" / "greeting.yml").read_text() == "flow data"

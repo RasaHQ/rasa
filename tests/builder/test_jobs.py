@@ -27,6 +27,7 @@ from rasa.builder.job_manager import JobInfo, job_manager
 from rasa.builder.jobs import (
     _safe_tar_members,
     run_backup_to_bot_job,
+    run_copilot_go_back_in_time_success_job,
     run_copilot_template_prompt_job,
     run_copilot_training_error_analysis_job,
     run_copilot_training_success_job,
@@ -36,15 +37,14 @@ from rasa.builder.jobs import (
     run_template_to_bot_job,
 )
 from rasa.builder.models import JobStatus
-from rasa.builder.project_generator import ProjectGenerator
+from rasa.builder.project_generator import DEFAULT_COMMIT_INFO, ProjectGenerator
 from rasa.cli.scaffold import ProjectTemplateName
-from rasa.model import ModelNotFound
 
 
 @pytest.fixture
 def mock_app() -> MagicMock:
     """Create a mock Sanic app for testing."""
-    project_generator = Mock(spec=ProjectGenerator)
+    project_generator = MagicMock()
     app = MagicMock()
     app.ctx = SimpleNamespace()
     app.ctx.project_generator = project_generator
@@ -66,6 +66,7 @@ def mock_job() -> JobInfo:
     """Mock JobInfo."""
     job = MagicMock(spec=JobInfo)
     job.id = "test_job_123"
+    job.commit_sha = None
     job.put = AsyncMock()
     job._queue = MagicMock()
     job._queue.put_nowait = MagicMock()
@@ -104,7 +105,9 @@ class TestRunReplaceAllFilesJob:
         job = job_manager.create_job()
 
         # Mock the project generator methods
-        mock_app.ctx.project_generator.replace_all_bot_files = Mock()
+        mock_app.ctx.project_generator.replace_all_bot_files = AsyncMock(
+            return_value="abc123"
+        )
 
         # Mock training input and validation
         mock_training_input = Mock()
@@ -115,24 +118,33 @@ class TestRunReplaceAllFilesJob:
         # Setup mocks using monkeypatch
         mock_validate = AsyncMock()
         mock_train = AsyncMock()
+        mock_link_model = AsyncMock()
         mock_update_agent = MagicMock()
 
         monkeypatch.setattr("rasa.builder.jobs.validate_project", mock_validate)
-        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", mock_train)
+        monkeypatch.setattr("rasa.builder.job_helpers.train_and_load_agent", mock_train)
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.link_model_to_commit", mock_link_model
+        )
         monkeypatch.setattr("rasa.builder.jobs.update_agent", mock_update_agent)
 
         mock_validate.return_value = None  # No validation error
         mock_agent = Mock()
         mock_train.return_value = mock_agent
 
-        await run_replace_all_files_job(mock_app, job, sample_bot_files)
+        await run_replace_all_files_job(
+            mock_app, job, sample_bot_files, DEFAULT_COMMIT_INFO
+        )
 
         # Verify the flow
         mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
-            sample_bot_files
+            sample_bot_files, DEFAULT_COMMIT_INFO
         )
         mock_validate.assert_called_once_with(mock_training_input.importer)
         mock_train.assert_called_once_with(mock_training_input)
+        mock_link_model.assert_called_once_with(
+            mock_app.ctx.project_generator.git_service, mock_agent, "abc123"
+        )
         mock_update_agent.assert_called_once_with(mock_agent, mock_app)
 
         # Check job status
@@ -150,7 +162,9 @@ class TestRunReplaceAllFilesJob:
         job = job_manager.create_job()
         status_events, track_status_event = job_status_tracker
 
-        mock_app.ctx.project_generator.replace_all_bot_files = Mock()
+        mock_app.ctx.project_generator.replace_all_bot_files = AsyncMock(
+            return_value="abc123"
+        )
         mock_training_input = Mock()
         mock_app.ctx.project_generator.get_training_input.return_value = (
             mock_training_input
@@ -165,20 +179,30 @@ class TestRunReplaceAllFilesJob:
         # Setup mocks using monkeypatch
         mock_validate = AsyncMock()
         mock_validate.side_effect = validation_error
+        mock_copilot_analysis = AsyncMock()
+        monkeypatch.setattr(
+            "rasa.builder.jobs.run_copilot_training_error_analysis_job",
+            mock_copilot_analysis,
+        )
 
         monkeypatch.setattr(
             "rasa.builder.jobs.push_job_status_event", track_status_event
+        )
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.push_job_status_event", track_status_event
         )
         monkeypatch.setattr("rasa.builder.jobs.validate_project", mock_validate)
         monkeypatch.setattr(
             "rasa.builder.jobs.config.VALIDATION_FAIL_ON_WARNINGS", False
         )
 
-        await run_replace_all_files_job(mock_app, job, sample_bot_files)
+        await run_replace_all_files_job(
+            mock_app, job, sample_bot_files, DEFAULT_COMMIT_INFO
+        )
 
         # Verify file replacement was called
         mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
-            sample_bot_files
+            sample_bot_files, DEFAULT_COMMIT_INFO
         )
         mock_validate.assert_called_once_with(mock_training_input.importer)
 
@@ -202,7 +226,9 @@ class TestRunReplaceAllFilesJob:
         job = job_manager.create_job()
         status_events, track_status_event = job_status_tracker
 
-        mock_app.ctx.project_generator.replace_all_bot_files = Mock()
+        mock_app.ctx.project_generator.replace_all_bot_files = AsyncMock(
+            return_value="abc123"
+        )
         mock_training_input = Mock()
         mock_app.ctx.project_generator.get_training_input.return_value = (
             mock_training_input
@@ -220,14 +246,19 @@ class TestRunReplaceAllFilesJob:
         monkeypatch.setattr(
             "rasa.builder.jobs.push_job_status_event", track_status_event
         )
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.push_job_status_event", track_status_event
+        )
         monkeypatch.setattr("rasa.builder.jobs.validate_project", mock_validate)
-        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", mock_train)
+        monkeypatch.setattr("rasa.builder.job_helpers.train_and_load_agent", mock_train)
 
-        await run_replace_all_files_job(mock_app, job, sample_bot_files)
+        await run_replace_all_files_job(
+            mock_app, job, sample_bot_files, DEFAULT_COMMIT_INFO
+        )
 
         # Verify the flow up to training
         mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
-            sample_bot_files
+            sample_bot_files, DEFAULT_COMMIT_INFO
         )
         mock_validate.assert_called_once_with(mock_training_input.importer)
         mock_train.assert_called_once_with(mock_training_input)
@@ -261,8 +292,13 @@ class TestRunReplaceAllFilesJob:
         monkeypatch.setattr(
             "rasa.builder.jobs.push_job_status_event", track_status_event
         )
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.push_job_status_event", track_status_event
+        )
 
-        await run_replace_all_files_job(mock_app, job, sample_bot_files)
+        await run_replace_all_files_job(
+            mock_app, job, sample_bot_files, DEFAULT_COMMIT_INFO
+        )
 
         # Check that the job ended with error status (with copilot job ID)
         assert job.status == JobStatus.error.value
@@ -287,26 +323,40 @@ class TestRunReplaceAllFilesJob:
                 status_events.append(status)
             return await original_put(self, event)
 
-        mock_app.ctx.project_generator.replace_all_bot_files = Mock()
+        mock_app.ctx.project_generator.replace_all_bot_files = AsyncMock(
+            return_value="abc123"
+        )
         mock_training_input = Mock()
         mock_app.ctx.project_generator.get_training_input.return_value = (
             mock_training_input
         )
 
         # Setup mocks using monkeypatch
-        mock_validate = AsyncMock()
-        mock_train = AsyncMock()
+        mock_validate = AsyncMock(return_value=None)
+        mock_train = AsyncMock(return_value=MagicMock())
+        mock_link_model = AsyncMock()
         mock_update_agent = MagicMock()
-
-        mock_validate.return_value = None
-        mock_train.return_value = Mock()
-
-        monkeypatch.setattr(JobInfo, "put", track_status)
+        mock_copilot_analysis = AsyncMock()
+        mock_app.ctx.project_generator.replace_all_bot_files.return_value = "abc123"
+        monkeypatch.setattr("rasa.builder.job_manager.JobInfo.put", track_status)
         monkeypatch.setattr("rasa.builder.jobs.validate_project", mock_validate)
-        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", mock_train)
+        monkeypatch.setattr("rasa.builder.job_helpers.train_and_load_agent", mock_train)
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.link_model_to_commit", mock_link_model
+        )
         monkeypatch.setattr("rasa.builder.jobs.update_agent", mock_update_agent)
+        monkeypatch.setattr(
+            "rasa.builder.jobs.run_copilot_training_error_analysis_job",
+            mock_copilot_analysis,
+        )
+        monkeypatch.setattr(
+            "rasa.builder.jobs.run_copilot_training_success_job",
+            AsyncMock(),
+        )
 
-        await run_replace_all_files_job(mock_app, job, sample_bot_files)
+        await run_replace_all_files_job(
+            mock_app, job, sample_bot_files, DEFAULT_COMMIT_INFO
+        )
 
         # Verify status progression
         expected_statuses = [
@@ -345,13 +395,17 @@ class TestRunReplaceAllFilesJob:
         mock_push_error_and_start_copilot = AsyncMock()
         mock_validate = AsyncMock()
         mock_train = AsyncMock()
+        mock_link_model = AsyncMock()
         mock_update_agent = MagicMock()
 
         monkeypatch.setattr(
             "rasa.builder.jobs.push_job_status_event", mock_push_job_status_event
         )
         monkeypatch.setattr("rasa.builder.jobs.update_agent", mock_update_agent)
-        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", mock_train)
+        monkeypatch.setattr("rasa.builder.job_helpers.train_and_load_agent", mock_train)
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.link_model_to_commit", mock_link_model
+        )
         monkeypatch.setattr("rasa.builder.jobs.validate_project", mock_validate)
         monkeypatch.setattr(
             "rasa.builder.jobs.push_error_and_start_copilot_analysis",
@@ -361,14 +415,22 @@ class TestRunReplaceAllFilesJob:
         # Given
         mock_update_agent.return_value = None
 
+        # Set up the mock to return an AsyncMock for replace_all_bot_files
+        mock_app.ctx.project_generator.replace_all_bot_files = AsyncMock(
+            return_value="abc123"
+        )
+
         if raised_exception is None:
             mock_validate.return_value = None
-            mock_train.return_value = None
+            mock_link_model.return_value = None
+            mock_train.return_value = Mock()
         else:
             mock_validate.side_effect = raised_exception
 
         # When
-        await run_replace_all_files_job(mock_app, mock_job, sample_bot_files)
+        await run_replace_all_files_job(
+            mock_app, mock_job, sample_bot_files, DEFAULT_COMMIT_INFO
+        )
 
         # Then
         if should_create_copilot_job:
@@ -379,6 +441,7 @@ class TestRunReplaceAllFilesJob:
             assert call_args[0][2] is not None  # error_message
             assert call_args[0][3] is not None  # job_status
             assert call_args[0][4] == sample_bot_files
+            assert call_args[0][5] == "abc123"  # commit_sha
         else:
             mock_push_error_and_start_copilot.assert_not_called()
 
@@ -586,6 +649,7 @@ class TestCopilotWelcomeMessage:
 
         # Create training mocks
         self.mock_train = AsyncMock(return_value=MagicMock())
+        self.mock_link_model = AsyncMock()
         self.mock_load = AsyncMock(return_value=None)
         self.mock_update = MagicMock()
 
@@ -606,7 +670,12 @@ class TestCopilotWelcomeMessage:
             "rasa.builder.jobs.push_job_status_event", self.mock_push_event
         )
         monkeypatch.setattr("rasa.builder.jobs.job_manager", self.mock_job_manager)
-        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", self.mock_train)
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.train_and_load_agent", self.mock_train
+        )
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.link_model_to_commit", self.mock_link_model
+        )
         monkeypatch.setattr("rasa.builder.jobs.try_load_existing_agent", self.mock_load)
         monkeypatch.setattr("rasa.builder.jobs.update_agent", self.mock_update)
 
@@ -616,7 +685,9 @@ class TestCopilotWelcomeMessage:
         mock_app.ctx.project_generator.project_folder = "/tmp/test_project"
         mock_app.add_task = MagicMock()
 
-        mock_app.ctx.project_generator.init_from_template = AsyncMock()
+        mock_app.ctx.project_generator.init_from_template = AsyncMock(
+            return_value="template_commit_sha"
+        )
         mock_app.ctx.project_generator.get_bot_files.return_value = {
             "config.yml": "test"
         }
@@ -629,7 +700,7 @@ class TestCopilotWelcomeMessage:
         mock_app.add_task = MagicMock()
 
         mock_app.ctx.project_generator.generate_project_with_retries = AsyncMock(
-            return_value={"config.yml": "test"}
+            return_value="foobarsha"
         )
         return mock_app
 
@@ -640,7 +711,8 @@ class TestCopilotWelcomeMessage:
             for call in mock_push_event.call_args_list
             if call[0][1] == JobStatus.copilot_welcome_message
         ]
-        assert len(welcome_calls) == 1
+        # Now expects 2 calls: welcome message + commit info
+        assert len(welcome_calls) == 2
 
         welcome_payload = welcome_calls[0][1]["payload"]
         assert "content" in welcome_payload
@@ -650,6 +722,11 @@ class TestCopilotWelcomeMessage:
         assert welcome_payload["completeness"] == "complete"
         for snippet in expected_content_snippets:
             assert snippet in welcome_payload["content"]
+
+        commit_payload = welcome_calls[1][1]["payload"]
+        assert "commit" in commit_payload
+        assert "sha" in commit_payload["commit"]
+        assert commit_payload["commit"]["sha"] == "test_sha"
 
     @staticmethod
     def _verify_done_event_sent(mock_push_event):
@@ -681,16 +758,37 @@ class TestCopilotWelcomeMessage:
     async def test_template_welcome_message(
         self, mock_app, mock_job, template_name, expected_snippets
     ):
+        # Mock git_service.get_commit_info for jobs with commit_sha
+        mock_app.ctx.project_generator.git_service.get_commit_info = AsyncMock(
+            return_value={"sha": "test_sha", "message": "test commit"}
+        )
+        mock_job.commit_sha = "test_commit_sha"
+
         await run_copilot_welcome_message_job(mock_app, mock_job, template_name)
         self._verify_welcome_message_call(self.mock_push_event, expected_snippets)
         self._verify_done_event_sent(self.mock_push_event)
 
     @pytest.mark.asyncio
     async def test_prompt_to_bot_welcome_message(self, mock_app, mock_job):
-        await run_copilot_welcome_message_job(mock_app, mock_job)
-        self._verify_welcome_message_call(
-            self.mock_push_event, ["custom agent has been created"]
+        # Mock git_service.get_commit_info for jobs with commit_sha
+        mock_app.ctx.project_generator.git_service.get_commit_info = AsyncMock(
+            return_value={"sha": "test_sha", "message": "test commit"}
         )
+        mock_job.commit_sha = None  # No commit_sha for prompt-based jobs
+
+        await run_copilot_welcome_message_job(mock_app, mock_job)
+
+        # For prompt-based jobs without commit_sha, only 1 event is sent
+        welcome_calls = [
+            call
+            for call in self.mock_push_event.call_args_list
+            if call[0][1] == JobStatus.copilot_welcome_message
+        ]
+        assert len(welcome_calls) == 1
+
+        welcome_payload = welcome_calls[0][1]["payload"]
+        assert "content" in welcome_payload
+        assert "custom agent has been created" in welcome_payload["content"]
 
     @pytest.mark.asyncio
     async def test_welcome_message_persisted_to_history(self, mock_app, mock_job):
@@ -714,8 +812,60 @@ class TestCopilotWelcomeMessage:
         assert "Banking Agent template" in message.content[0].text
 
     @pytest.mark.asyncio
+    async def test_welcome_message_persisted_to_history_with_commit(
+        self, mock_app, mock_job
+    ):
+        """Test that welcome message is persisted with commit info."""
+        # Set up mock job with commit_sha
+        mock_job.commit_sha = "test_commit_sha_123"
+
+        # Mock git_service.get_commit_info
+        mock_app.ctx.project_generator.git_service.get_commit_info = AsyncMock(
+            return_value={
+                "sha": "test_commit_sha_123",
+                "message": "Initialize project from template",
+                "author": "Test Author",
+                "timestamp": 1234567890,
+            }
+        )
+
+        await run_copilot_welcome_message_job(
+            mock_app, mock_job, ProjectTemplateName.FINANCE
+        )
+
+        # Verify history store append was called
+        self.mock_history_store.append.assert_called_once()
+
+        # Verify the conversation key is correct
+        call_args = self.mock_history_store.append.call_args
+        conversation_key = call_args[0][0]
+        assert conversation_key.chat_id == "default"
+
+        # Verify the message content
+        message = call_args[0][1]
+        assert message.role == "copilot"
+
+        # Should have 2 content blocks: text + commit
+        assert len(message.content) == 2
+
+        # Verify text content
+        text_content = message.content[0]
+        assert text_content.type == "text"
+        assert "Banking Agent template" in text_content.text
+
+        # Verify commit content
+        commit_content = message.content[1]
+        assert commit_content.type == "commit"
+        assert commit_content.commit["sha"] == "test_commit_sha_123"
+        assert commit_content.commit["message"] == "Initialize project from template"
+        assert commit_content.commit["author"] == "Test Author"
+        assert commit_content.commit["training_success"] is True
+
+    @pytest.mark.asyncio
     async def test_template_job_creates_welcome_job(self, mock_template_app):
-        job = job_manager.create_job()
+        job = MagicMock(spec=JobInfo)
+        job.id = "test_job_id"
+        job.put = AsyncMock()
         await run_template_to_bot_job(
             mock_template_app, job, ProjectTemplateName.FINANCE
         )
@@ -733,7 +883,9 @@ class TestCopilotWelcomeMessage:
 
     @pytest.mark.asyncio
     async def test_prompt_job_creates_welcome_job(self, mock_prompt_app):
-        job = job_manager.create_job()
+        job = MagicMock(spec=JobInfo)
+        job.id = "test_job_id"
+        job.put = AsyncMock()
         await run_prompt_to_bot_job(
             mock_prompt_app, job, "Build me a banking assistant"
         )
@@ -743,7 +895,9 @@ class TestCopilotWelcomeMessage:
 
     @pytest.mark.asyncio
     async def test_training_error_prevents_welcome_job(self, mock_template_app):
-        job = job_manager.create_job()
+        job = MagicMock(spec=JobInfo)
+        job.id = "test_job_id"
+        job.put = AsyncMock()
         self.mock_train.side_effect = TrainingError("Training failed")
         await run_template_to_bot_job(
             mock_template_app, job, ProjectTemplateName.FINANCE
@@ -762,6 +916,7 @@ class TestCopilotWelcomeMessage:
     @pytest.mark.asyncio
     async def test_done_event_includes_welcome_job_id(self, mock_template_app):
         job = MagicMock(spec=JobInfo)
+        job.id = "test_job_id"
         job.put = AsyncMock()
 
         await run_template_to_bot_job(mock_template_app, job, ProjectTemplateName.BASIC)
@@ -886,20 +1041,35 @@ class TestCopilotTemplatePromptJob:
         mock_app.ctx.project_generator = project_generator
         mock_app.add_task = MagicMock()
 
-        project_generator.init_from_template = AsyncMock()
+        project_generator.init_from_template = AsyncMock(return_value="test_commit_sha")
         project_generator.get_bot_files.return_value = {"config.yml": "test"}
         project_generator.get_training_input.return_value = Mock()
         project_generator.project_folder = "/tmp/test_project"
+        project_generator.git_service = MagicMock()
+
+        # Create a mock job using the mock job manager
+        job = MagicMock()
+        job.id = "test-job-123"
+        job.put = AsyncMock()
+
+        # Mock agent to be returned by training
+        mock_agent = MagicMock()
 
         with patch(
             "rasa.builder.jobs.try_load_existing_agent", AsyncMock(return_value=None)
         ):
-            with patch("rasa.builder.jobs.train_and_load_agent", AsyncMock()):
+            with patch(
+                "rasa.builder.job_helpers.train_and_load_agent",
+                AsyncMock(return_value=mock_agent),
+            ):
                 with patch("rasa.builder.jobs.update_agent", MagicMock()):
-                    job = job_manager.create_job()
-                    await run_template_to_bot_job(
-                        mock_app, job, ProjectTemplateName.FINANCE
-                    )
+                    with patch(
+                        "rasa.builder.job_helpers.link_model_to_commit",
+                        new_callable=AsyncMock,
+                    ):
+                        await run_template_to_bot_job(
+                            mock_app, job, ProjectTemplateName.FINANCE
+                        )
 
         # Verify template prompt job and welcome job were created (2 total)
         assert self.mock_job_manager.create_job.call_count == 2
@@ -915,22 +1085,34 @@ class TestCopilotTemplatePromptJob:
         mock_app.ctx.project_generator = project_generator
         mock_app.add_task = MagicMock()
 
-        project_generator.init_from_template = AsyncMock()
+        project_generator.init_from_template = AsyncMock(return_value="test_commit_sha")
         project_generator.get_bot_files.return_value = {"config.yml": "test"}
         project_generator.get_training_input.return_value = Mock()
         project_generator.project_folder = "/tmp/test_project"
+        project_generator.git_service = MagicMock()
 
         job = MagicMock(spec=JobInfo)
+        job.id = "test-job-456"
         job.put = AsyncMock()
+
+        # Mock agent to be returned by training
+        mock_agent = MagicMock()
 
         with patch(
             "rasa.builder.jobs.try_load_existing_agent", AsyncMock(return_value=None)
         ):
-            with patch("rasa.builder.jobs.train_and_load_agent", AsyncMock()):
+            with patch(
+                "rasa.builder.job_helpers.train_and_load_agent",
+                AsyncMock(return_value=mock_agent),
+            ):
                 with patch("rasa.builder.jobs.update_agent", MagicMock()):
-                    await run_template_to_bot_job(
-                        mock_app, job, ProjectTemplateName.BASIC
-                    )
+                    with patch(
+                        "rasa.builder.job_helpers.link_model_to_commit",
+                        new_callable=AsyncMock,
+                    ):
+                        await run_template_to_bot_job(
+                            mock_app, job, ProjectTemplateName.BASIC
+                        )
 
         # Find the received event call
         # The call args are positional, with job as first arg and status as second
@@ -984,6 +1166,7 @@ class TestCopilotTrainingSuccessJob:
 
         # Create training mocks
         self.mock_train = AsyncMock(return_value=MagicMock())
+        self.mock_link_model = AsyncMock()
         self.mock_load = AsyncMock(return_value=None)
         self.mock_update = MagicMock()
 
@@ -1004,7 +1187,15 @@ class TestCopilotTrainingSuccessJob:
             "rasa.builder.jobs.push_job_status_event", self.mock_push_event
         )
         monkeypatch.setattr("rasa.builder.jobs.job_manager", self.mock_job_manager)
-        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", self.mock_train)
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.job_manager", self.mock_job_manager
+        )
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.train_and_load_agent", self.mock_train
+        )
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.link_model_to_commit", self.mock_link_model
+        )
         monkeypatch.setattr("rasa.builder.jobs.try_load_existing_agent", self.mock_load)
         monkeypatch.setattr("rasa.builder.jobs.update_agent", self.mock_update)
 
@@ -1017,6 +1208,7 @@ class TestCopilotTrainingSuccessJob:
             for call in mock_push_event.call_args_list
             if call[0][1] == JobStatus.train_success_message
         ]
+        # Now expects 2 calls: message + commit info with training success
         assert len(training_success_calls) == 2
 
         training_success_payload = training_success_calls[0][1]["payload"]
@@ -1028,13 +1220,11 @@ class TestCopilotTrainingSuccessJob:
         for snippet in expected_content_snippets:
             assert snippet in training_success_payload["content"]
 
-        training_success_payload = training_success_calls[1][1]["payload"]
-        assert "response_category" in training_success_payload
-        assert "completeness" in training_success_payload
-        assert (
-            training_success_payload["response_category"] == "copilot_training_success"
-        )
-        assert training_success_payload["completeness"] == "complete"
+        commit_payload = training_success_calls[1][1]["payload"]
+        assert "commit" in commit_payload
+        assert "sha" in commit_payload["commit"]
+        assert commit_payload["commit"]["sha"] == "test_sha"
+        assert commit_payload["commit"]["training_success"] is True
 
     @staticmethod
     def _verify_done_event_sent(mock_push_event):
@@ -1047,6 +1237,12 @@ class TestCopilotTrainingSuccessJob:
 
     @pytest.mark.asyncio
     async def test_training_success_message(self, mock_app, mock_job):
+        # Mock git_service.get_commit_info for jobs with commit_sha
+        mock_app.ctx.project_generator.git_service.get_commit_info = AsyncMock(
+            return_value={"sha": "test_sha", "message": "test commit"}
+        )
+        mock_job.commit_sha = "test_commit_sha"
+
         await run_copilot_training_success_job(mock_app, mock_job)
 
         expected_snippets = ["Your changes have been saved successfully."]
@@ -1083,8 +1279,10 @@ class TestCopilotTrainingSuccessJob:
         """Test that training errors don't create training success job."""
         job = job_manager.create_job()
 
-        # Mock the project generator methods
-        mock_app.ctx.project_generator.replace_all_bot_files = Mock()
+        # Mock the project generator methods - use AsyncMock
+        mock_app.ctx.project_generator.replace_all_bot_files = AsyncMock(
+            return_value="abc123"
+        )
         mock_training_input = Mock()
         mock_app.ctx.project_generator.get_training_input.return_value = (
             mock_training_input
@@ -1101,7 +1299,9 @@ class TestCopilotTrainingSuccessJob:
             mock_validate.return_value = None  # No validation error
 
             # Call run_replace_all_files_job which should handle the training error
-            await run_replace_all_files_job(mock_app, job, sample_bot_files)
+            await run_replace_all_files_job(
+                mock_app, job, sample_bot_files, DEFAULT_COMMIT_INFO
+            )
 
         # Verify that create_job was called once for copilot error analysis,
         # but NOT for a training success job
@@ -1111,6 +1311,138 @@ class TestCopilotTrainingSuccessJob:
 
         # Verify add_task was called once for the copilot error analysis job
         assert mock_app.add_task.call_count == 1
+
+
+class TestCopilotRollbackSuccessJob:
+    @pytest.fixture(autouse=True)
+    def setup_mocks(self, monkeypatch):
+        # Create mocks for copilot rollback success message job
+        self.mock_push_event = AsyncMock()
+        self.mock_job_manager = MagicMock()
+
+        # Create rollback success job mock
+        rollback_success_job = MagicMock()
+        rollback_success_job.id = "rollback_success_job_123"
+        self.mock_job_manager.create_job.return_value = rollback_success_job
+
+        # Create rollback mocks
+        self.mock_train = AsyncMock(return_value=MagicMock())
+        self.mock_link_model = AsyncMock()
+        self.mock_load = AsyncMock(return_value=None)
+        self.mock_update = MagicMock()
+
+        # Apply all mocks
+        monkeypatch.setattr(
+            "rasa.builder.jobs.push_job_status_event", self.mock_push_event
+        )
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.push_job_status_event", self.mock_push_event
+        )
+        monkeypatch.setattr("rasa.builder.jobs.job_manager", self.mock_job_manager)
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.job_manager", self.mock_job_manager
+        )
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.train_and_load_agent", self.mock_train
+        )
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.link_model_to_commit", self.mock_link_model
+        )
+        monkeypatch.setattr("rasa.builder.jobs.try_load_existing_agent", self.mock_load)
+        monkeypatch.setattr("rasa.builder.jobs.update_agent", self.mock_update)
+
+    @staticmethod
+    def _verify_rollback_success_message_call(
+        mock_push_event, expected_content_snippets
+    ):
+        rollback_success_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if call[0][1] == JobStatus.rollback_success
+        ]
+        # Now expects 2 calls: message + commit info with rollback success
+        assert len(rollback_success_calls) == 2
+
+        rollback_success_payload = rollback_success_calls[0][1]["payload"]
+        assert "content" in rollback_success_payload
+        assert "response_category" in rollback_success_payload
+        assert "completeness" in rollback_success_payload
+        assert rollback_success_payload["response_category"] == "copilot"
+        assert rollback_success_payload["completeness"] == "complete"
+        for snippet in expected_content_snippets:
+            assert snippet in rollback_success_payload["content"]
+
+        commit_payload = rollback_success_calls[1][1]["payload"]
+        assert "commit" in commit_payload
+        assert "sha" in commit_payload["commit"]
+        assert commit_payload["commit"]["sha"] == "test_sha"
+        assert "message" in commit_payload["commit"]
+        assert commit_payload["commit"]["message"] == "test commit"
+        assert "author" in commit_payload["commit"]
+        assert commit_payload["commit"]["author"] == "test_author"
+
+    @staticmethod
+    def _verify_done_event_sent(mock_push_event):
+        done_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if call[0][1] == JobStatus.done
+        ]
+        assert len(done_calls) == 1
+
+    @pytest.mark.asyncio
+    async def test_rollback_success_message(self, mock_app, mock_job):
+        # Mock git_service.get_commit_info for jobs with commit_sha
+        mock_app.ctx.project_generator.git_service.get_commit_info = AsyncMock(
+            return_value={
+                "sha": "test_sha",
+                "message": "test commit",
+                "author": "test_author",
+            }
+        )
+        mock_job.commit_sha = "test_commit_sha"
+
+        await run_copilot_go_back_in_time_success_job(
+            mock_app, mock_job, "rollback_success_response", JobStatus.rollback_success
+        )
+
+        expected_snippets = ["I've restored your agent to the previous version."]
+        self._verify_rollback_success_message_call(
+            self.mock_push_event, expected_snippets
+        )
+        self._verify_done_event_sent(self.mock_push_event)
+
+    @pytest.mark.asyncio
+    async def test_rollback_error_prevents_rollback_success_job(self, mock_app):
+        """Test that rollback errors don't create rollback success job."""
+        from rasa.builder.jobs import run_rollback_job
+
+        job = job_manager.create_job()
+        commit_sha = "test_commit_sha"
+
+        # Mock the git service to simulate rollback failure
+        mock_app.ctx.project_generator.git_service.rollback_to_commit = AsyncMock(
+            side_effect=Exception("Rollback failed")
+        )
+        mock_app.ctx.project_generator.project_folder = "/tmp/test_project"
+
+        # Call run_rollback_job which should handle the rollback error
+        await run_rollback_job(mock_app, job, commit_sha)
+
+        # Verify that create_job was NOT called for a rollback success job
+        # since the rollback failed
+        self.mock_job_manager.create_job.assert_not_called()
+
+        # Verify add_task was NOT called for a rollback success job
+        assert mock_app.add_task.call_count == 0
+
+        # Verify the job ended with an error status by checking the mock calls
+        error_status_calls = [
+            call
+            for call in self.mock_push_event.call_args_list
+            if call[0][1] == JobStatus.error
+        ]
+        assert len(error_status_calls) == 1
 
 
 class TestSafeTarMembers:
@@ -1204,9 +1536,7 @@ class TestBackupToBotJob:
         # Create all the common mocks
         self.mock_push_event = AsyncMock()
         self.mock_job_manager = MagicMock()
-        self.mock_get_local_model = MagicMock()
-        self.mock_load_agent = AsyncMock()
-        self.mock_train_and_load_agent = AsyncMock()
+        self.mock_load_or_train_agent = AsyncMock()
         self.mock_update_agent = MagicMock()
         self.mock_init_endpoints = MagicMock()
         self.mock_download_backup = AsyncMock()
@@ -1217,17 +1547,10 @@ class TestBackupToBotJob:
         )
         monkeypatch.setattr("rasa.builder.jobs.job_manager", self.mock_job_manager)
         monkeypatch.setattr(
-            "rasa.builder.jobs.get_local_model", self.mock_get_local_model
-        )
-        monkeypatch.setattr("rasa.builder.jobs.load_agent", self.mock_load_agent)
-        monkeypatch.setattr(
-            "rasa.builder.jobs.train_and_load_agent", self.mock_train_and_load_agent
+            "rasa.builder.jobs.load_or_train_agent_for_commit",
+            self.mock_load_or_train_agent,
         )
         monkeypatch.setattr("rasa.builder.jobs.update_agent", self.mock_update_agent)
-        monkeypatch.setattr(
-            "rasa.builder.jobs.Configuration.initialise_endpoints",
-            self.mock_init_endpoints,
-        )
         monkeypatch.setattr(
             "rasa.builder.jobs.download_backup_from_url", self.mock_download_backup
         )
@@ -1244,6 +1567,7 @@ class TestBackupToBotJob:
     def mock_job(self) -> MagicMock:
         mock_job = MagicMock()
         mock_job.id = "test-job-123"
+        mock_job.put = AsyncMock()
         return mock_job
 
     @staticmethod
@@ -1260,6 +1584,36 @@ class TestBackupToBotJob:
 
         return temp_file_path
 
+    @staticmethod
+    def create_test_backup_file_with_git(
+        files: Dict[str, str], git_dir_path: Path
+    ) -> str:
+        """Create a test backup file with actual .git directory structure.
+
+        Args:
+            files: Dictionary of file paths to content
+            git_dir_path: Path to an actual .git directory to include
+
+        Returns:
+            Path to the created backup file
+        """
+        temp_file = tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False)
+        temp_file_path = temp_file.name
+        temp_file.close()
+
+        with tarfile.open(temp_file_path, "w:gz") as tar:
+            # Add regular files
+            for filename, content in files.items():
+                info = tarfile.TarInfo(filename)
+                info.size = len(content.encode("utf-8"))
+                tar.addfile(info, fileobj=io.BytesIO(content.encode("utf-8")))
+
+            # Add .git directory if it exists
+            if git_dir_path.exists() and git_dir_path.is_dir():
+                tar.add(git_dir_path, arcname=".git", recursive=True)
+
+        return temp_file_path
+
     async def test_backup_to_bot_job_with_existing_model(
         self,
         mock_project_generator,
@@ -1268,17 +1622,15 @@ class TestBackupToBotJob:
     ):
         # Setup
         mock_project_generator.project_folder = str(tmp_path)
+        mock_project_generator.git_service.get_current_commit_sha = AsyncMock(
+            return_value="commit123"
+        )
         mock_app = MagicMock()
         mock_app.ctx.project_generator = mock_project_generator
 
-        # Create models directory with a model file
-        models_dir = tmp_path / "models"
-        models_dir.mkdir()
-        (models_dir / "model.tar.gz").write_bytes(b"fake model")
-
-        self.mock_get_local_model.return_value = str(models_dir / "model.tar.gz")
+        # Mock load_or_train_agent to return an agent (simulates existing model)
         mock_agent = MagicMock()
-        self.mock_load_agent.return_value = mock_agent
+        self.mock_load_or_train_agent.return_value = mock_agent
         mock_endpoints = MagicMock()
         self.mock_init_endpoints.return_value.endpoints = mock_endpoints
 
@@ -1306,8 +1658,8 @@ class TestBackupToBotJob:
             except Exception:
                 pass
 
-        # Should load existing model, not train
-        self.mock_load_agent.assert_called_once()
+        # Should load or train agent
+        self.mock_load_or_train_agent.assert_called_once()
         self.mock_update_agent.assert_called_once_with(mock_agent, mock_app)
 
         # Check job events
@@ -1329,13 +1681,15 @@ class TestBackupToBotJob:
     ):
         # Setup
         mock_project_generator.project_folder = str(tmp_path)
+        mock_project_generator.git_service.get_current_commit_sha = AsyncMock(
+            return_value="commit123"
+        )
         mock_app = MagicMock()
         mock_app.ctx.project_generator = mock_project_generator
 
-        # No models directory - simulate ModelNotFound exception
-        self.mock_get_local_model.side_effect = ModelNotFound("No model found")
+        # Mock load_or_train_agent to return an agent (simulates training new model)
         mock_agent = MagicMock()
-        self.mock_train_and_load_agent.return_value = mock_agent
+        self.mock_load_or_train_agent.return_value = mock_agent
 
         # Create test backup file
         backup_file_path = self.create_test_backup_file(
@@ -1358,8 +1712,8 @@ class TestBackupToBotJob:
                 pass
 
         # Verify
-        # Should train new model
-        self.mock_train_and_load_agent.assert_called_once()
+        # Should load or train agent
+        self.mock_load_or_train_agent.assert_called_once()
         self.mock_update_agent.assert_called_once_with(mock_agent, mock_app)
 
         # Check job events
@@ -1368,6 +1722,107 @@ class TestBackupToBotJob:
         assert JobStatus.received in statuses
         assert JobStatus.generating in statuses
         assert JobStatus.generation_success in statuses
-        assert JobStatus.training in statuses
+        # Training status is now pushed by load_or_train_agent_for_commit
+        # which is mocked, so we don't see it in the events
         assert JobStatus.train_success in statuses
         assert JobStatus.done in statuses
+
+    @pytest.mark.asyncio
+    async def test_backup_to_bot_job_restores_git_directory(
+        self,
+        mock_project_generator: MagicMock,
+        mock_job: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test that .git directory is properly restored from backup."""
+        # Setup project folder
+        project_folder = tmp_path / "project"
+        project_folder.mkdir()
+        mock_project_generator.project_folder = str(project_folder)
+        mock_project_generator.git_service.get_current_commit_sha = AsyncMock(
+            return_value="commit123"
+        )
+        mock_app = MagicMock()
+        mock_app.ctx.project_generator = mock_project_generator
+
+        # Create a mock .git directory with Git structure
+        git_source_dir = tmp_path / "source_git"
+        git_source_dir.mkdir()
+        (git_source_dir / "config").write_text("[core]\n\trepositoryformatversion = 0")
+        (git_source_dir / "HEAD").write_text("ref: refs/heads/main")
+        (git_source_dir / "description").write_text("Test repository")
+
+        # Create refs structure
+        refs_dir = git_source_dir / "refs" / "heads"
+        refs_dir.mkdir(parents=True)
+        (refs_dir / "main").write_text("abc123def456789012345678901234567890abcd")
+
+        # Create objects structure
+        objects_dir = git_source_dir / "objects"
+        objects_dir.mkdir()
+        (objects_dir / "pack").mkdir()
+        (objects_dir / "info").mkdir()
+        (objects_dir / "info" / "packs").write_text("")
+
+        # Mock load_or_train_agent to return an agent
+        mock_agent = MagicMock()
+        self.mock_load_or_train_agent.return_value = mock_agent
+
+        # Create test backup file with .git directory
+        backup_file_path = self.create_test_backup_file_with_git(
+            {
+                "config.yml": "version: '3.1'",
+                "domain.yml": "version: '3.1'",
+                "data/nlu.yml": "version: '3.1'\nnlu: []",
+            },
+            git_source_dir,
+        )
+
+        try:
+            # Mock the download function to return our test file
+            self.mock_download_backup.return_value = backup_file_path
+
+            presigned_url = "https://s3.amazonaws.com/bucket/path?signature=test"
+
+            # Execute
+            await run_backup_to_bot_job(mock_app, mock_job, presigned_url)
+
+            # Verify .git directory was restored
+            restored_git_dir = project_folder / ".git"
+            assert restored_git_dir.exists(), ".git directory should be restored"
+            assert restored_git_dir.is_dir(), ".git should be a directory"
+
+            # Verify .git directory contents
+            assert (restored_git_dir / "config").exists()
+            assert (restored_git_dir / "config").read_text() == (
+                "[core]\n\trepositoryformatversion = 0"
+            )
+
+            assert (restored_git_dir / "HEAD").exists()
+            assert (restored_git_dir / "HEAD").read_text() == "ref: refs/heads/main"
+
+            assert (restored_git_dir / "description").exists()
+            assert (restored_git_dir / "description").read_text() == "Test repository"
+
+            # Verify refs structure
+            assert (restored_git_dir / "refs" / "heads" / "main").exists()
+            assert (restored_git_dir / "refs" / "heads" / "main").read_text() == (
+                "abc123def456789012345678901234567890abcd"
+            )
+
+            # Verify objects structure
+            assert (restored_git_dir / "objects" / "pack").exists()
+            assert (restored_git_dir / "objects" / "info").exists()
+            assert (restored_git_dir / "objects" / "info" / "packs").exists()
+
+            # Verify regular files were also restored
+            assert (project_folder / "config.yml").exists()
+            assert (project_folder / "domain.yml").exists()
+            assert (project_folder / "data" / "nlu.yml").exists()
+
+        finally:
+            # Clean up test backup file
+            try:
+                Path(backup_file_path).unlink(missing_ok=True)
+            except Exception:
+                pass

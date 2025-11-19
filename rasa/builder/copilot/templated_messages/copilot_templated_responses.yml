@@ -9,7 +9,7 @@ responses:
   out_of_scope_response: |
     I’m here to help you build and improve your Rasa chatbot. I can explain concepts,
     walk you through changes, or debug things with you.
-    
+
     Do you want me to show you what your assistant can do right now, or help you add
     something new?
 
@@ -27,7 +27,7 @@ responses:
 
   knowledge_base_access_requested_response: |
     At the moment I can't read your knowledge base directly, but you can browse the
-    available entries in the `/docs` folder in your code editor. 
+    available entries in the `/docs` folder in your code editor.
 
   guardrail_blocked_user_response: |
     Your Copilot access has been temporarily blocked due to repeated policy violations.
@@ -39,3 +39,9 @@ responses:
 
   training_success_response: |
     Your changes have been saved successfully.
+
+  rollback_success_response: |
+    I've restored your agent to the previous version.
+
+  revert_success_response: |
+    I've reverted your agent to the previous version.

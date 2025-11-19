@@ -12,10 +12,16 @@ from sanic.request import Request
 from sanic_openapi import openapi
 
 import rasa
-from rasa.builder.auth import HEADER_USER_ID, is_auth_required_now, protected
+from rasa.builder.auth import (
+    HEADER_USER_ID,
+    email_from_auth,
+    is_auth_required_now,
+    protected,
+)
 from rasa.builder.config import (
     COPILOT_ASSISTANT_TRACKER_MAX_TURNS,
     COPILOT_HANDLER_ROLLING_BUFFER_SIZE,
+    DEFAULT_BOT_BUILDER_EMAIL,
     GUARDRAILS_ENABLE_BLOCKING,
     HELLO_RASA_PROJECT_ID,
     LAKERA_ASSISTANT_HISTORY_GUARDRAIL_PROJECT_ID,
@@ -48,8 +54,11 @@ from rasa.builder.guardrails.store import guardrails_store
 from rasa.builder.job_manager import job_manager
 from rasa.builder.jobs import (
     run_backup_to_bot_job,
+    run_change_branch_job,
     run_prompt_to_bot_job,
     run_replace_all_files_job,
+    run_revert_job,
+    run_rollback_job,
     run_template_to_bot_job,
 )
 from rasa.builder.llm_service import llm_service
@@ -63,6 +72,9 @@ from rasa.builder.models import (
     AssistantInfo,
     BotData,
     BotFiles,
+    ChangeBranchRequest,
+    GitCommitInfo,
+    GitStatusResponse,
     JobCreateResponse,
     JobStatus,
     JobStatusEvent,
@@ -717,6 +729,15 @@ async def get_bot_files(request: Request) -> HTTPResponse:
     required=False,
     schema=str,
 )
+@openapi.parameter(
+    "X-Commit-Message",
+    description=(
+        "Optional custom commit message. If not provided, AI-generated message used."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
 @protected()
 async def replace_all_bot_files(request: Request) -> HTTPResponse:
     """Replace all bot files with server-sent events for progress tracking."""
@@ -731,8 +752,17 @@ async def replace_all_bot_files(request: Request) -> HTTPResponse:
         )
 
     try:
+        # Extract commit metadata from headers
+        commit_message = request.headers.get("X-Commit-Message")
+        email = email_from_auth(request) or DEFAULT_BOT_BUILDER_EMAIL
+        commit_info = GitCommitInfo(
+            author="Bot Builder", email=email, message=commit_message
+        )
+
         job = job_manager.create_job()
-        request.app.add_task(run_replace_all_files_job(request.app, job, bot_files))
+        request.app.add_task(
+            run_replace_all_files_job(request.app, job, bot_files, commit_info)
+        )
         return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
     except Exception as exc:
         capture_exception_with_context(
@@ -1535,6 +1565,437 @@ async def _handle_guardrail_violation_and_maybe_block(
 
     await sse.send(message.to_sse_event().format())
     return message
+
+
+@bp.route("/git/branch", methods=["POST"])
+@openapi.summary("Change Git branch")
+@openapi.description(
+    "Changes the Git branch for the project folder and retrains the agent. "
+    "Returns immediately with a job ID. Connect to `/job-events/<job_id>` "
+    "to receive server-sent events (SSE) for real-time progress tracking.\n\n"
+    "**SSE Event Flow** (via `/job-events/<job_id>`):\n"
+    "1. `received` - Request received by server\n"
+    "2. `switching_branch` - Switching to the specified branch\n"
+    "3. `branch_switch_success` - Branch switched successfully\n"
+    "4. `training` - Training the bot model with the new branch\n"
+    "5. `train_success` - Model training completed\n"
+    "6. `done` - Branch change completed\n\n"
+    "**Error Events:**\n"
+    "- `branch_switch_error` - Failed to switch to the branch\n"
+    "- `train_error` - Branch switched but training failed\n"
+    "- `validation_error` - Branch configuration is invalid\n"
+    "- `error` - Unexpected error occurred\n\n"
+    "**Usage:**\n"
+    "1. Send POST request with Content-Type: application/json\n"
+    "2. The response will be a JSON object `{job_id: ...}`\n"
+    "3. Connect to `/job-events/<job_id>` for a server-sent event stream of progress."
+)
+@openapi.tag("git")
+@openapi.body(
+    {"application/json": model_to_schema(ChangeBranchRequest)},
+    description="Branch change request with branch name and creation option.",
+    required=True,
+    example={"branch_name": "feature/new-flow", "create_if_not_exists": True},
+)
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(JobCreateResponse)},
+    description="Job created. Poll or subscribe to /job-events/<job_id> for progress.",
+)
+@openapi.response(
+    400,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Validation error in request payload",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def handle_change_branch(request: Request) -> HTTPResponse:
+    """Handle change branch requests."""
+    try:
+        payload = ChangeBranchRequest(**request.json)
+    except Exception as exc:
+        return response.json(
+            ApiErrorResponse(
+                error="Invalid request", details={"error": str(exc)}
+            ).model_dump(),
+            status=400,
+        )
+
+    try:
+        # Allocate job and schedule background task
+        job = job_manager.create_job()
+        request.app.add_task(
+            run_change_branch_job(
+                request.app, job, payload.branch_name, payload.create_if_not_exists
+            )
+        )
+        return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.change_branch.unexpected_error",
+            tags={"endpoint": "/api/git/branch"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to create change branch job",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/git/status", methods=["GET"])
+@openapi.summary("Get Git repository status")
+@openapi.description(
+    "Returns the current Git repository status including current branch, "
+    "and uncommitted changes status."
+)
+@openapi.tag("git")
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(GitStatusResponse)},
+    description="Git status retrieved successfully",
+    example={
+        "current_branch": "main",
+        "uncommitted_changes": False,
+    },
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def handle_git_status(request: Request) -> HTTPResponse:
+    """Handle Git status requests."""
+    try:
+        project_generator = get_project_generator(request)
+        git_service = project_generator.git_service
+
+        git_status = GitStatusResponse(
+            current_branch=await git_service.get_current_branch(),
+            uncommitted_changes=await git_service.has_uncommitted_changes(),
+        )
+
+        return response.json(git_status.model_dump())
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.git_status.unexpected_error",
+            tags={"endpoint": "/api/git/status"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to get Git status",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/commits", methods=["GET"])
+@openapi.summary("Get commit history")
+@openapi.description(
+    "Returns the Git commit history for the project repository. "
+    "Each commit includes SHA, author, timestamp, and message information."
+)
+@openapi.tag("git")
+@openapi.parameter(
+    "limit",
+    description="Maximum number of commits to return (default: 50, max: 100)",
+    _in="query",
+    required=False,
+    schema=int,
+)
+@openapi.response(
+    200,
+    {"application/json": {"commits": list}},
+    description="Commit history retrieved successfully",
+    example={
+        "commits": [
+            {
+                "sha": "abc123def456",
+                "short_sha": "abc123d",
+                "author": "user",
+                "email": "user@example.com",
+                "timestamp": 1640995200,
+                "message": "Update bot files",
+            }
+        ]
+    },
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def handle_get_commits(request: Request) -> HTTPResponse:
+    """Handle get commits requests."""
+    try:
+        project_generator = get_project_generator(request)
+        limit = min(int(request.args.get("limit", 50)), 100)
+        commits = await project_generator.git_service.get_commit_history(limit)
+        return response.json({"commits": commits})
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.get_commits.unexpected_error",
+            tags={"endpoint": "/api/commits"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to get commit history",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/commits/<commit_sha>/rollback", methods=["POST"])
+@openapi.summary("Rollback to commit")
+@openapi.description(
+    "Rollback the project to a specific commit. This creates a background job "
+    "that checks out the specified commit and retrains the agent. "
+    "Returns immediately with a job ID. Connect to `/job-events/<job_id>` "
+    "to receive server-sent events (SSE) for real-time progress tracking.\n\n"
+    "**SSE Event Flow** (via `/job-events/<job_id>`):\n"
+    "1. `received` - Request received by server\n"
+    "2. `rolling_back` - Rolling back to the specified commit\n"
+    "3. `rollback_success` - Commit checkout completed\n"
+    "4. `training` - Training the bot model with the rolled back files\n"
+    "5. `train_success` - Model training completed\n"
+    "6. `done` - Rollback completed\n\n"
+    "**Error Events:**\n"
+    "- `rollback_error` - Failed to rollback to the commit\n"
+    "- `train_error` - Rollback succeeded but training failed\n"
+    "- `error` - Unexpected error occurred\n\n"
+    "**Usage:**\n"
+    "1. Send POST request\n"
+    "2. The response will be a JSON object `{job_id: ...}`\n"
+    "3. Connect to `/job-events/<job_id>` for a server-sent event stream of progress."
+)
+@openapi.tag("git")
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(JobCreateResponse)},
+    description="Job created. Poll or subscribe to /job-events/<job_id> for progress.",
+)
+@openapi.response(
+    400,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Invalid commit SHA",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def handle_rollback_to_commit(request: Request, commit_sha: str) -> HTTPResponse:
+    """Handle rollback to commit requests."""
+    try:
+        # Validate commit SHA format
+        if not commit_sha or len(commit_sha) < 7:
+            return response.json(
+                ApiErrorResponse(
+                    error="Invalid commit SHA", details={"commit_sha": commit_sha}
+                ).model_dump(),
+                status=400,
+            )
+
+        job = job_manager.create_job()
+        request.app.add_task(run_rollback_job(request.app, job, commit_sha))
+        return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.rollback_to_commit.unexpected_error",
+            tags={"endpoint": "/api/commits/<commit_sha>/rollback"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to create rollback job",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/commits/<commit_sha>/diff", methods=["GET"])
+@openapi.summary("Get commit diff")
+@openapi.description(
+    "Returns the diff for a specific commit, showing what changes were made."
+)
+@openapi.tag("git")
+@openapi.parameter(
+    "file_path",
+    description="Optional specific file to get diff for",
+    _in="query",
+    required=False,
+    schema=str,
+)
+@openapi.response(
+    200,
+    {"application/json": {"commit": dict, "diff": str, "file_path": str}},
+    description="Commit diff retrieved successfully",
+)
+@openapi.response(
+    400,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Invalid commit SHA",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def handle_get_commit_diff(request: Request, commit_sha: str) -> HTTPResponse:
+    """Handle get commit diff requests."""
+    try:
+        project_generator = get_project_generator(request)
+        file_path = request.args.get("file_path")
+        diff_data = await project_generator.git_service.get_commit_diff(
+            commit_sha, file_path
+        )
+        return response.json(diff_data)
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.get_commit_diff.unexpected_error",
+            tags={"endpoint": "/api/commits/<commit_sha>/diff"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to get commit diff",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/commits/<commit_sha>/revert", methods=["POST"])
+@openapi.summary("Revert to commit")
+@openapi.description(
+    "Revert the last commit on the project. This creates a background job "
+    "that adds a revert commit and retrains the agent. "
+    "Returns immediately with a job ID. Connect to `/job-events/<job_id>` "
+    "to receive server-sent events (SSE) for real-time progress tracking.\n\n"
+    "**SSE Event Flow** (via `/job-events/<job_id>`):\n"
+    "1. `received` - Request received by server\n"
+    "2. `reverting` - Reverting last commit\n"
+    "3. `revert_success` - Checkout revert commit\n"
+    "4. `training` - Training the bot model with the reverted files\n"
+    "5. `train_success` - Model training completed\n"
+    "6. `done` - Revert completed\n\n"
+    "**Error Events:**\n"
+    "- `revert_error` - Failed to revert last commit\n"
+    "- `train_error` - Revert succeeded but training failed\n"
+    "- `error` - Unexpected error occurred\n\n"
+    "**Usage:**\n"
+    "1. Send POST request\n"
+    "2. The response will be a JSON object `{job_id: ...}`\n"
+    "3. Connect to `/job-events/<job_id>` for a server-sent event stream of progress."
+)
+@openapi.tag("git")
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(JobCreateResponse)},
+    description="Job created. Poll or subscribe to /job-events/<job_id> for progress.",
+)
+@openapi.response(
+    400,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Invalid commit SHA",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def handle_revert_to_commit(request: Request, commit_sha: str) -> HTTPResponse:
+    """Handle revert to commit requests."""
+    try:
+        # Validate commit SHA format
+        if not commit_sha or len(commit_sha) < 7:
+            return response.json(
+                ApiErrorResponse(
+                    error="Invalid commit SHA", details={"commit_sha": commit_sha}
+                ).model_dump(),
+                status=400,
+            )
+
+        job = job_manager.create_job()
+        request.app.add_task(run_revert_job(request.app, job, commit_sha))
+        return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.revert_to_commit.unexpected_error",
+            tags={"endpoint": "/api/commits/<commit_sha>/revert"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to create revert job",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
 
 @langfuse.observe(capture_input=False, capture_output=False)
