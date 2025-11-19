@@ -5,7 +5,7 @@ from typing import AsyncIterator, Dict, Optional
 
 import aiohttp
 import structlog
-from aiohttp import ClientTimeout, WSMsgType
+from aiohttp import ClientTimeout
 
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 from rasa.core.channels.voice_stream.tts.tts_engine import (
@@ -72,43 +72,48 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
             await self.ws.close()
             self.ws = None
 
+    async def _send_tts_request(self, text: str, flush: bool) -> None:
+        """Send TTS request to Cartesia via WebSocket."""
+        if not self.ws or self.ws.closed:
+            raise TTSError("WebSocket connection not established")
+
+        message: Dict[str, object] = {
+            "model_id": self.config.model_id,
+            "voice": {
+                "mode": "id",
+                "id": self.config.voice,
+            },
+            "language": self.config.language,
+            "output_format": {
+                "container": "raw",
+                "encoding": "pcm_mulaw",
+                "sample_rate": HERTZ,
+            },
+            "context_id": "rasa-voice-stream",
+        }
+
+        if flush:
+            message["flush"] = True
+        else:
+            message["transcript"] = text
+            message["continue"] = True
+
+        await self.ws.send_json(message)
+
     async def send_text_chunk(self, text: str) -> None:
         """Send text to TTS engine for continuous streaming.
 
         This sends text to Cartesia but doesn't return anything.
         Audio will be available via stream_audio().
         """
-        if not self.ws or self.ws.closed:
-            raise TTSError("WebSocket connection not established")
-
-        await self.ws.send_json(
-            {
-                "model_id": self.config.model_id,
-                "transcript": text,
-                "voice": {
-                    "mode": "id",
-                    "id": self.config.voice,
-                },
-                "language": self.config.language,
-                "output_format": {
-                    "container": "raw",
-                    "encoding": "pcm_mulaw",
-                    "sample_rate": HERTZ,
-                },
-                "continue": True,  # Indicate more text may follow
-            }
-        )
+        await self._send_tts_request(text, flush=False)
 
     async def signal_text_done(self) -> None:
         """Signal TTS engine to process any remaining buffered text.
 
         This tells Cartesia that all text has been sent and to finish processing.
         """
-        if not self.ws or self.ws.closed:
-            raise TTSError("WebSocket connection not established")
-
-        # Send flush message to signal we're done
-        await self.ws.send_json({"flush": True})
+        await self._send_tts_request("", flush=True)
 
     async def stream_audio(self) -> AsyncIterator[RasaAudioBytes]:
         """Stream audio output from the TTS engine.
@@ -121,34 +126,26 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
 
         try:
             async for msg in self.ws:
-                if msg.type == WSMsgType.TEXT:
-                    # Handle JSON messages
-                    data = msg.json()
-                    msg_type = data.get("type")
+                data = msg.json()
+                msg_type = data.get("type")
 
-                    if msg_type == "chunk":
-                        # Audio data chunk - decode base64 and yield
-                        base64_audio = data.get("data")
-                        if base64_audio:
-                            audio_bytes = base64.b64decode(base64_audio)
-                            yield self.engine_bytes_to_rasa_audio_bytes(audio_bytes)
+                if msg_type == "chunk":
+                    # Audio data chunk - decode base64 and yield
+                    base64_audio = data.get("data")
+                    if base64_audio:
+                        audio_bytes = base64.b64decode(base64_audio)
+                        yield self.engine_bytes_to_rasa_audio_bytes(audio_bytes)
 
-                        # Check if this is the final chunk
-                        if data.get("done", False):
-                            structlogger.debug("cartesia.stream_audio.done")
-                            break
+                elif msg_type == "done":
+                    # TTS processing is done
+                    structlogger.debug("cartesia.stream_audio.done")
+                    return
 
-                    elif msg_type == "error":
-                        # Error occurred
-                        error_msg = data.get("error", "Unknown error")
-                        structlogger.error(
-                            "cartesia.stream_audio.error", error=error_msg
-                        )
-                        raise TTSError(f"Cartesia TTS error: {error_msg}")
-
-                elif msg.type == WSMsgType.ERROR:
-                    structlogger.error("cartesia.stream_audio.ws_error")
-                    raise TTSError("WebSocket error during audio streaming")
+                elif msg_type == "error":
+                    # Error occurred
+                    error_msg = data.get("error", "Unknown error")
+                    structlogger.error("cartesia.stream_audio.error", error=error_msg)
+                    raise TTSError(f"Cartesia TTS error: {error_msg}")
 
         except Exception as e:
             structlogger.error("cartesia.stream_audio.error", error=str(e))
@@ -175,10 +172,10 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
     def get_default_config() -> CartesiaTTSConfig:
         return CartesiaTTSConfig(
             language="en",
-            voice="248be419-c632-4f23-adf1-5324ed7dbf1d",
+            voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",
             timeout=30,
-            model_id="sonic-english",
-            version="2024-06-10",
+            model_id="sonic-3",
+            version="2025-04-16",
             endpoint="wss://api.cartesia.ai/tts/websocket",
         )
 

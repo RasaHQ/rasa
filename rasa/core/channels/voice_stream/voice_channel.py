@@ -391,7 +391,7 @@ class VoiceOutputChannel(OutputChannel):
             # skip non-streaming response if streaming was used
             # reset flag for next response
             self.streaming_response_sent = False
-            logger.info("voice_channel.skip_non_streaming_response")
+            logger.debug("voice_channel.skip_non_streaming_response")
             return
 
         self._track_rasa_processing_latency()

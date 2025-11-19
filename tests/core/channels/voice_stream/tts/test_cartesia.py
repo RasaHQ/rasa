@@ -45,9 +45,9 @@ async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch):
 def test_default_config():
     config = CartesiaTTS.get_default_config()
     assert config.language == "en"
-    assert config.voice == "248be419-c632-4f23-adf1-5324ed7dbf1d"
-    assert config.model_id == "sonic-english"
-    assert config.version == "2024-06-10"
+    assert config.voice == "f786b574-daa5-4673-aa0c-cbe3e8534c02"
+    assert config.model_id == "sonic-3"
+    assert config.version == "2025-04-16"
 
 
 async def test_tts_session_sharing():
