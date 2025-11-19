@@ -1,6 +1,6 @@
 # .github/workflows/publish-to-public-ecr.yml
 # This workflow builds and pushes the Rasa Pro Docker image to the public ECR repository.
-# It is triggered on pushes to the main branch or when a pull request is labeled with 'hello-rasa' or 'studio'.
+# It is triggered on pushes to the main branch, 3.x branches, or when a pull request is labeled with 'hello-rasa' or 'studio'.
 # The image is tagged with the pull request number or branch name and the short commit hash.
 # The workflow uses AWS credentials stored in GitHub secrets to authenticate with Amazon ECR.
 # The Docker image is built using a Makefile and the Poetry version is read from a script.
@@ -8,7 +8,7 @@
 
 name: Push Rasa Pro to Public ECR
 
-# This workflow is triggered on pushes to the main branch or when
+# This workflow is triggered on pushes to the main branch, 3.x branches, or when
 # a pull request is labeled or when new commits are pushed to a labeled PR.
 on:
   pull_request:
@@ -16,6 +16,7 @@ on:
   push:
     branches:
       - main
+      - '3.*'
 
 env:
   AWS_REGION: eu-west-1
@@ -26,7 +27,7 @@ jobs:
   train-templates:
     name: Train Project Templates
     runs-on: ubuntu-24.04
-    # This condition ensures the job only runs for pushes to 'main' or for PRs
+    # This condition ensures the job only runs for pushes to 'main', 3.x branches, or for PRs
     # that have either the 'hello-rasa' or 'studio' label.
     # For pull_request events, it runs on both label addition and new commits to labeled PRs.
     if: |
@@ -59,7 +60,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [train-templates]
 
-    # This condition ensures the job only runs for pushes to 'main' or for PRs
+    # This condition ensures the job only runs for pushes to 'main', 3.x branches, or for PRs
     # that have either the 'hello-rasa' or 'studio' label.
     # For pull_request events, it runs on both label addition and new commits to labeled PRs.
     if: |
@@ -90,11 +91,8 @@ jobs:
         run: |
           TAG_VERSION="${{ needs.train-templates.outputs.tag_version }}"
           echo "RASA_IMAGE_TAG=${TAG_VERSION}" >> $GITHUB_ENV
-          if [[ "${TAG_VERSION}" == pr-* ]]; then
-            echo "RASA_IMAGE_TAG_LATEST=${TAG_VERSION%-*}-latest" >> $GITHUB_ENV
-          else
-            echo "RASA_IMAGE_TAG_LATEST=main-latest" >> $GITHUB_ENV
-          fi
+          # Extract base name (branch or pr prefix) and append -latest
+          echo "RASA_IMAGE_TAG_LATEST=${TAG_VERSION%-*}-latest" >> $GITHUB_ENV
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
