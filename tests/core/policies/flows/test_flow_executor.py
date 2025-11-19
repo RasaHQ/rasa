@@ -727,13 +727,13 @@ def test_trigger_pattern_continue_interrupted_triggers_correctly_with_link_step(
     frame2 = CollectInformationPatternFlowStackFrame(
         flow_id="pattern_collect_information", step_id="4_action_listen", frame_id="id1"
     )
-    frame3 = UserFlowStackFrame(
+    link_frame = UserFlowStackFrame(
         flow_id="flow_c",
         frame_type=FlowStackFrameType.LINK,
         step_id="START",
         frame_id="id2",
     )
-    stack = DialogueStack(frames=[frame1, frame2, frame3])
+    stack = DialogueStack(frames=[frame1, frame2, link_frame])
     tracker = DialogueStateTracker.from_events("test", [])
     tracker.update_stack(stack)
     current_frame = UserFlowStackFrame(
@@ -757,7 +757,8 @@ def test_trigger_pattern_continue_interrupted_triggers_correctly_with_link_step(
     )
 
     assert len(stack.frames) == 4
-    assert stack.frames[-1] == continue_interrupted
+    assert stack.frames[-1] == link_frame
+    assert stack.frames[-2] == continue_interrupted
 
 
 def test_trigger_pattern_completed_on_user_flow_frame():

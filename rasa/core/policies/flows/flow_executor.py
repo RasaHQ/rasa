@@ -285,13 +285,26 @@ def trigger_pattern_continue_interrupted(
     options_string = assemble_options_string(flow_names)
 
     # trigger the pattern to continue the interrupted flows
-    stack.push(
-        ContinueInterruptedPatternFlowStackFrame(
-            interrupted_flow_names=flow_names,
-            interrupted_flow_ids=flow_ids,
-            interrupted_flow_options=options_string,
-        )
+    continue_interrupted_frame = ContinueInterruptedPatternFlowStackFrame(
+        interrupted_flow_names=flow_names,
+        interrupted_flow_ids=flow_ids,
+        interrupted_flow_options=options_string,
     )
+
+    # check if the last frame is a link frame
+    last_frame = stack.frames[-1]
+    if (
+        isinstance(last_frame, UserFlowStackFrame)
+        and last_frame.frame_type == FlowStackFrameType.LINK
+    ):
+        # push this below the current stack frame so that we can
+        # run the linked flow first which is considered a part of
+        # the current flow before continuing the interrupted flow.
+        # using index -1 to insert at the position currently occupied
+        # by the link frame thereby pushing it forward.
+        stack.push(continue_interrupted_frame, index=-1)
+    else:
+        stack.push(continue_interrupted_frame)
 
     return None
 
