@@ -1,12 +1,17 @@
 import argparse
 import base64
+import platform
 import re
+import socket
 import sys
+import time
 from typing import Any, Dict, Iterable, List, Optional, Set, Text, Tuple, Union
 
 import questionary
 import requests
 import structlog
+from requests.adapters import HTTPAdapter
+from urllib3.connection import HTTPConnection
 
 import rasa.cli.telemetry
 import rasa.cli.utils
@@ -70,6 +75,56 @@ DOMAIN_KEYS = [
     "forms",
     "session_config",
 ]
+
+
+class TCPKeepAliveAdapter(HTTPAdapter):
+    """An HTTPAdapter that enables TCP keep-alive."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        self.os_name = platform.system()
+        super().__init__(**kwargs)
+
+    def init_poolmanager(self, *args: Any, **kwargs: Any) -> Any:
+        kwargs["socket_options"] = self._get_socket_options()
+        return super().init_poolmanager(*args, **kwargs)  # type: ignore[no-untyped-call]
+
+    def _get_socket_options(self) -> List[Tuple[int, int, int]]:
+        options = HTTPConnection.default_socket_options + [
+            (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1),
+        ]
+        if self.os_name == "Windows":
+            # Windows doesn't use setsockopt for these; it uses ioctl.
+            # We can't set the specific values (60s) in 'options' list easily
+            # because 'options' is for setsockopt().
+            # The socket is not fully created yet here in init_poolmanager.
+            # We will handle Windows in the Connect logic below or rely on OS defaults
+            # (Windows default is 2hrs, which is bad).
+            pass
+
+        elif self.os_name == "Darwin":
+            # macOS uses TCP_KEEPALIVE instead of TCP_KEEPIDLE
+            # The value 0x10 (16) is often the constant for TCP_KEEPALIVE on Mac
+            # if missing
+            TCP_KEEPALIVE = getattr(socket, "TCP_KEEPALIVE", 0x10)
+            options.append((socket.IPPROTO_TCP, TCP_KEEPALIVE, 60))
+
+            # Interval is usually standard, but we use getattr to be safe
+            if hasattr(socket, "TCP_KEEPINTVL"):
+                options.append((socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 60))
+
+            if hasattr(socket, "TCP_KEEPCNT"):
+                options.append((socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3))
+
+        else:
+            # Default case for other OSes (e.g., Linux)
+            if hasattr(socket, "TCP_KEEPIDLE"):
+                options.append((socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60))
+            if hasattr(socket, "TCP_KEEPINTVL"):
+                options.append((socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 60))
+            if hasattr(socket, "TCP_KEEPCNT"):
+                options.append((socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3))
+
+        return options  # type: ignore[return-value]
 
 
 def _get_selected_entities_and_intents(
@@ -395,7 +450,15 @@ def make_request(endpoint: str, graphql_req: Dict, verify: bool = True) -> Studi
         verify: Whether to verify SSL
     """
     token = KeycloakTokenReader().get_token()
-    res = requests.post(
+
+    session = requests.Session()
+    session.mount("https://", TCPKeepAliveAdapter())
+    session.mount("http://", TCPKeepAliveAdapter())
+
+    # calculate duration of the request
+    start_time = time.time()
+
+    res = session.post(
         endpoint,
         json=graphql_req,
         headers={
@@ -403,11 +466,17 @@ def make_request(endpoint: str, graphql_req: Dict, verify: bool = True) -> Studi
             "Content-Type": "application/json",
         },
         verify=verify,
+        timeout=None,
     )
+
+    duration = time.time() - start_time
+
     if results_logger.response_has_errors(res.json()):
         track_upload_to_studio_failed(res.json())
         return StudioResult.error(res.json())
-    return StudioResult.success("Upload successful")
+    return StudioResult.success(
+        f"Upload successful. Request total duration: {duration:.2f} seconds."
+    )
 
 
 def _add_missing_entities(
@@ -625,7 +694,11 @@ def check_if_assistant_already_exists(
     )
 
     token = KeycloakTokenReader().get_token()
-    res = requests.post(
+    session = requests.Session()
+    session.mount("https://", TCPKeepAliveAdapter())
+    session.mount("http://", TCPKeepAliveAdapter())
+
+    res = session.post(
         endpoint,
         json=graphql_req,
         headers={
@@ -633,6 +706,7 @@ def check_if_assistant_already_exists(
             "Content-Type": "application/json",
         },
         verify=verify,
+        timeout=None,
     )
     response = res.json()["data"]["assistantByName"] or {}
     if results_logger.response_has_id(response):
@@ -643,7 +717,7 @@ def check_if_assistant_already_exists(
         return True
 
     structlogger.info(
-        "rasa.studio.upload.assistant_already_exists", event_info="Assistant not found."
+        "rasa.studio.upload.assistant_not_found", event_info="Assistant not found."
     )
     return False
 

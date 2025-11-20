@@ -208,7 +208,8 @@ def test_handle_upload(
     expected: Dict[str, Any],
     mock_replace_environment_variables: MagicMock,
 ) -> None:
-    mock = MagicMock()
+    mock_post = MagicMock()
+    mock_post.return_value = MagicMock()
     mock_token = MagicMock()
     mock_config = MagicMock()
     mock_config.read_config.return_value = StudioConfig(
@@ -217,8 +218,8 @@ def test_handle_upload(
         realm_name="rasa-test",
         client_id="rasa-cli",
     )
-    monkeypatch.setattr(rasa.studio.upload, "requests", mock)
-    monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", mock_token)
+    monkeypatch.setattr("rasa.studio.upload.requests.Session.post", mock_post)
+    monkeypatch.setattr("rasa.studio.upload.KeycloakTokenReader", mock_token)
     monkeypatch.setattr(
         rasa.studio.upload,
         "StudioConfig",
@@ -231,11 +232,11 @@ def test_handle_upload(
 
     mock_replace_environment_variables.assert_not_called()
 
-    assert mock.post.called
-    assert mock.post.call_args[0][0] == endpoint
-    assert mock.post.call_args[1]["verify"] is True
+    assert mock_post.called
+    assert mock_post.call_args[0][0] == endpoint
+    assert mock_post.call_args[1]["verify"] is True
 
-    actual = mock.post.call_args[1]["json"]
+    actual = mock_post.call_args[1]["json"]
     assert actual["query"] == expected["query"]
 
     actual_input = actual["variables"]["input"]
@@ -451,9 +452,9 @@ def test_build_import_request_no_nlu() -> None:
 
 
 @pytest.fixture
-def mock_requests(monkeypatch):
+def mock_requests_session_post(monkeypatch):
     mock = MagicMock()
-    monkeypatch.setattr("rasa.studio.upload.requests", mock)
+    monkeypatch.setattr("rasa.studio.upload.requests.Session.post", mock)
     return mock
 
 
@@ -473,7 +474,9 @@ def mock_keycloak_token(monkeypatch):
             "ImportFromEncodedYaml",
             {"data": {"importFromEncodedYaml": ""}},
             200,
-            StudioResult("Upload successful", True),
+            StudioResult(
+                "Upload successful. Request total duration: 0.00 seconds.", True
+            ),
         ),
         (
             "ImportFromEncodedYaml",
@@ -488,7 +491,9 @@ def mock_keycloak_token(monkeypatch):
             "UploadModernAssistant",
             {"data": {"uploadModernAssistant": ""}},
             200,
-            StudioResult("Upload successful", True),
+            StudioResult(
+                "Upload successful. Request total duration: 0.00 seconds.", True
+            ),
         ),
         (
             "UploadModernAssistant",
@@ -499,7 +504,7 @@ def mock_keycloak_token(monkeypatch):
     ],
 )
 def test_make_request(
-    mock_requests,
+    mock_requests_session_post,
     mock_keycloak_token,
     query_type,
     response_data,
@@ -525,7 +530,7 @@ def test_make_request(
     mock_response = MagicMock()
     mock_response.status_code = status_code
     mock_response.json.return_value = response_data
-    mock_requests.post.return_value = mock_response
+    mock_requests_session_post.return_value = mock_response
 
     # Act
     @with_studio_error_handler
@@ -539,7 +544,7 @@ def test_make_request(
     assert result.message == expected_result.message
     assert result.was_successful == expected_result.was_successful
 
-    mock_requests.post.assert_called_once_with(
+    mock_requests_session_post.assert_called_once_with(
         endpoint,
         json=graphql_req,
         headers={
@@ -547,6 +552,7 @@ def test_make_request(
             "Content-Type": "application/json",
         },
         verify=True,
+        timeout=None,
     )
     mock_keycloak_token.get_token.assert_called_once()
 
@@ -717,7 +723,7 @@ def test_check_if_assistant_already_exists(monkeypatch: MonkeyPatch):
     mock_response_not_exists = MagicMock()
     mock_response_not_exists.json.return_value = {"data": {"assistantByName": None}}
 
-    with patch("rasa.studio.upload.requests.post") as mock_post:
+    with patch("rasa.studio.upload.requests.Session.post") as mock_post:
         # Assistant exists
         mock_post.return_value = mock_response_exists
         assert (
