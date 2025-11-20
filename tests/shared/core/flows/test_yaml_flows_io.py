@@ -563,3 +563,85 @@ def test_flow_validate_exit_if_items_wrong_type_raises(predicate: Any) -> None:
     with pytest.raises(YamlValidationException) as e:
         YAMLFlowsReader.read_from_string(data)
     assert "exit_if" in str(e.value)
+
+
+def test_flow_validate_collect_with_dtmf_valid() -> None:
+    """Test that collect steps with DTMF configuration are valid."""
+    data = textwrap.dedent(
+        """
+        flows:
+          request_refund:
+            description: Help user request a refund for their order
+            steps:
+              - collect: order_id
+                description: A valid order ID is 4-6 digits
+                silence_timeout: 30
+                dtmf:
+                  allow_audio_input: true
+                  finish_on_key: "#"
+                rejections:
+                  - if: 'not (slots.order_id matches "^\\d{4,6}$")'
+                    utter: utter_invalid_order_id
+              - action: action_process_refund_request
+              - action: utter_refund_confirmation
+        """
+    )
+
+    flows = YAMLFlowsReader.read_from_string(data)
+    flow = flows.flow_by_id("request_refund")
+    assert flow is not None
+    collect_step = flow.steps[0]
+    assert isinstance(collect_step, CollectInformationFlowStep)
+    assert collect_step.collect == "order_id"
+    assert collect_step.description == "A valid order ID is 4-6 digits"
+
+
+def test_flow_validate_collect_with_dtmf_length_valid() -> None:
+    """Test that collect steps with DTMF length configuration are valid."""
+    data = textwrap.dedent(
+        """
+        flows:
+          verify_account:
+            description: Verify account with fixed length DTMF input
+            steps:
+              - collect: account_number
+                description: Enter your 6-digit account number
+                silence_timeout: 20
+                dtmf:
+                  length: 6
+              - action: action_verify_account
+        """
+    )
+
+    flows = YAMLFlowsReader.read_from_string(data)
+    flow = flows.flow_by_id("verify_account")
+    assert flow is not None
+    collect_step = flow.steps[0]
+    assert isinstance(collect_step, CollectInformationFlowStep)
+    assert collect_step.collect == "account_number"
+    assert collect_step.description == "Enter your 6-digit account number"
+
+
+def test_flow_validate_collect_with_dtmf_no_audio_input_valid() -> None:
+    """Test that collect steps with DTMF and no audio input are valid."""
+    data = textwrap.dedent(
+        """
+        flows:
+          transfer_amount:
+            description: Transfer amount using DTMF only
+            steps:
+              - collect: amount
+                silence_timeout: 20
+                dtmf:
+                  allow_audio_input: false
+                  finish_on_key: "#"
+              - action: action_transfer_amount
+        """
+    )
+
+    flows = YAMLFlowsReader.read_from_string(data)
+    flow = flows.flow_by_id("transfer_amount")
+    assert flow is not None
+    collect_step = flow.steps[0]
+    assert isinstance(collect_step, CollectInformationFlowStep)
+    assert collect_step.collect == "amount"
