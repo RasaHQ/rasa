@@ -1,7 +1,15 @@
+import copy
 import json
 import logging
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
+
+from rasa.agents.constants import (
+    AGENT_METADATA_AGENT_RESPONSE_KEY,
+    AGENT_METADATA_STRUCTURED_RESULTS_KEY,
+)
+from rasa.core.policies.flow_policy import FlowPolicy
 
 if TYPE_CHECKING:
     from rasa.agents.protocol.a2a.a2a_agent import A2AAgent
@@ -64,7 +72,11 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
-from rasa.shared.core.constants import REQUESTED_SLOT
+from rasa.shared.core.constants import (
+    ACTION_METADATA_MESSAGE_KEY,
+    ACTION_METADATA_TEXT_KEY,
+    REQUESTED_SLOT,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated, Event
 from rasa.shared.core.flows import Flow, FlowsList, FlowStep
@@ -81,6 +93,7 @@ from rasa.shared.utils.llm import (
     resolve_model_client_config,
 )
 from rasa.tracing.constants import (
+    ENABLE_TRACING_DEBUGGING_ENV_VAR_NAME,
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
@@ -292,7 +305,7 @@ def extract_attrs_for_graph_trainer(
     return {
         "training_type": model_configuration.training_type.model_type,
         "language": model_configuration.language,
-        "recipe_name": importer.get_config().get(CONFIG_RECIPE_KEY),
+        "recipe_name": importer.get_config().get(CONFIG_RECIPE_KEY, "None"),
         "output_filename": output_filename.name,
         "is_finetuning": is_finetuning,
     }
@@ -803,9 +816,9 @@ def extract_attrs_for_run_step(
     attrs = {
         "step_custom_id": step.custom_id if step.custom_id else "None",
         "step_description": step.description if step.description else "None",
-        "current_flow_id": flow.id,
+        "current_flow_id": flow.id if flow.id else "None",
         "current_context": json.dumps(current_context),
-        "previous_step_id": previous_step_id,
+        "previous_step_id": previous_step_id if previous_step_id else "None",
     }
 
     # Add CallFlowStep specific attributes if this is a CallFlowStep
@@ -813,6 +826,33 @@ def extract_attrs_for_run_step(
         attrs.update(extract_call_flow_step_attributes(step))
 
     return attrs
+
+
+def _is_tracing_debugging_enabled() -> bool:
+    return os.getenv(ENABLE_TRACING_DEBUGGING_ENV_VAR_NAME, "false").lower() == "true"
+
+
+def _sanitize_action_metadata(
+    self: Any,
+    action_metadata: Optional[Dict[Text, Any]] = None,
+) -> Optional[Dict[Text, Any]]:
+    """Sanitize action metadata by removing sensitive information."""
+    if action_metadata is None:
+        return action_metadata
+
+    if not isinstance(self, FlowPolicy) or _is_tracing_debugging_enabled():
+        return action_metadata
+
+    message_dict = copy.deepcopy(action_metadata.get(ACTION_METADATA_MESSAGE_KEY, {}))
+    for key in {
+        ACTION_METADATA_TEXT_KEY,
+        AGENT_METADATA_AGENT_RESPONSE_KEY,
+        AGENT_METADATA_STRUCTURED_RESULTS_KEY,
+    }:
+        if key in message_dict:
+            message_dict.pop(key)
+
+    return {**action_metadata, ACTION_METADATA_MESSAGE_KEY: message_dict}
 
 
 def extract_attrs_for_policy_prediction(
@@ -825,6 +865,8 @@ def extract_attrs_for_policy_prediction(
     diagnostic_data: Optional[Dict[Text, Any]] = None,
     action_metadata: Optional[Dict[Text, Any]] = None,
 ) -> Dict[str, Any]:
+    from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
+
     # diagnostic_data can contain ndarray type values which need to be converted
     # into a list since the returning values have to be JSON serializable.
     if isinstance(diagnostic_data, dict):
@@ -833,7 +875,7 @@ def extract_attrs_for_policy_prediction(
             for key, value in diagnostic_data.items()
         }
 
-    return {
+    attrs = {
         "priority": self.priority,
         "events": [event.__class__.__name__ for event in events] if events else "None",
         "optional_events": [event.__class__.__name__ for event in optional_events]
@@ -842,8 +884,14 @@ def extract_attrs_for_policy_prediction(
         "is_end_to_end_prediction": is_end_to_end_prediction,
         "is_no_user_prediction": is_no_user_prediction,
         "diagnostic_data": json.dumps(diagnostic_data),
-        "action_metadata": json.dumps(action_metadata),
     }
+
+    sanitized_action_metadata = _sanitize_action_metadata(self, action_metadata)
+
+    if not isinstance(self, EnterpriseSearchPolicy) or _is_tracing_debugging_enabled():
+        attrs["action_metadata"] = json.dumps(sanitized_action_metadata)
+
+    return attrs
 
 
 def extract_attrs_for_intentless_policy_prediction_result(

@@ -1341,7 +1341,7 @@ def _instrument_advance_flows_until_next_action(
                         "action_name": prediction.action_name
                         if prediction.action_name
                         else "None",
-                        "score": prediction.score,
+                        "score": prediction.score if prediction.score else "None",
                         "metadata": json.dumps(prediction.metadata)
                         if prediction.metadata
                         else "{}",
@@ -1460,7 +1460,7 @@ def _instrument_call_agent_with_retry(
                 )
 
             if result.error_message:
-                span.set_attribute("agent_output_error", result.error_message)
+                span.set_attribute("agent_output_error", str(result.error_message))
 
             if result.metadata:
                 span.set_attribute("agent_output_metadata", json.dumps(result.metadata))
