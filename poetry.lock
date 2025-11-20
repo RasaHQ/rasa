@@ -4444,29 +4444,32 @@ requests = "*"
 
 [[package]]
 name = "mcp"
-version = "1.12.4"
+version = "1.21.2"
 description = "Model Context Protocol SDK"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "(sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" or python_version >= \"3.12\") and (sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" and sys_platform != \"darwin\" or platform_machine == \"arm64\" or python_version >= \"3.12\")"
 files = [
-    {file = "mcp-1.12.4-py3-none-any.whl", hash = "sha256:7aa884648969fab8e78b89399d59a683202972e12e6bc9a1c88ce7eda7743789"},
-    {file = "mcp-1.12.4.tar.gz", hash = "sha256:0765585e9a3a5916a3c3ab8659330e493adc7bd8b2ca6120c2d7a0c43e034ca5"},
+    {file = "mcp-1.21.2-py3-none-any.whl", hash = "sha256:59413ef15db757a785e3859548c1a7ffc7be57bf162c3c24afc0e04fd9f4181c"},
+    {file = "mcp-1.21.2.tar.gz", hash = "sha256:b6497b7f7a77aabe263931a3335956dfd45fe8b1e2168931e455914ba1a7f4c9"},
 ]
 
 [package.dependencies]
 anyio = ">=4.5"
-httpx = ">=0.27"
+httpx = ">=0.27.1"
 httpx-sse = ">=0.4"
 jsonschema = ">=4.20.0"
-pydantic = ">=2.8.0,<3.0.0"
+pydantic = ">=2.11.0,<3.0.0"
 pydantic-settings = ">=2.5.2"
+pyjwt = {version = ">=2.10.1", extras = ["crypto"]}
 python-multipart = ">=0.0.9"
 pywin32 = {version = ">=310", markers = "sys_platform == \"win32\""}
 sse-starlette = ">=1.6.1"
 starlette = ">=0.27"
-uvicorn = {version = ">=0.23.1", markers = "sys_platform != \"emscripten\""}
+typing-extensions = ">=4.9.0"
+typing-inspection = ">=0.4.1"
+uvicorn = {version = ">=0.31.1", markers = "sys_platform != \"emscripten\""}
 
 [package.extras]
 cli = ["python-dotenv (>=1.0.0)", "typer (>=0.16.0)"]
@@ -9144,15 +9147,15 @@ uvicorn = ["uvicorn (>=0.34.0)"]
 
 [[package]]
 name = "starlette"
-version = "0.48.0"
+version = "0.49.3"
 description = "The little ASGI library that shines."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "(sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" or python_version >= \"3.12\") and (sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" and sys_platform != \"darwin\" or platform_machine == \"arm64\" or python_version >= \"3.12\")"
 files = [
-    {file = "starlette-0.48.0-py3-none-any.whl", hash = "sha256:0764ca97b097582558ecb498132ed0c7d942f233f365b86ba37770e026510659"},
-    {file = "starlette-0.48.0.tar.gz", hash = "sha256:7e8cee469a8ab2352911528110ce9088fdc6a37d9876926e73da7ce4aa4c7a46"},
+    {file = "starlette-0.49.3-py3-none-any.whl", hash = "sha256:b579b99715fdc2980cf88c8ec96d3bf1ce16f5a8051a7c2b84ef9b1cdecaea2f"},
+    {file = "starlette-0.49.3.tar.gz", hash = "sha256:1c14546f299b5901a1ea0e34410575bc33bbd741377a10484a54445588d00284"},
 ]
 
 [package.dependencies]
@@ -11272,4 +11275,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10.0,<3.14"
-content-hash = "1b6965db5caa98d7aa97575584ff0af40ea946b0adb07d45a84916e8518cb9bd"
+content-hash = "1a759aa175d3f2fc34586c8e7978495e27fda3aa1e3ee5845be51f7f1acd946a"
