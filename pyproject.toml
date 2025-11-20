@@ -135,7 +135,7 @@ skips = [ "B104", "B301",]
 
 [tool.ruff]
 line-length = 88
-target-version = "py39"
+target-version = "py310"
 exclude = [ "eggs", ".git", ".pytest_cache", "build", "dist",]
 
 # --------------------------------------------------------------------------------------
