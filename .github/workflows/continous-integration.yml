@@ -420,7 +420,7 @@ jobs:
   # Skip this job from merge queue, Backport PRs and Dependabot PRs
   deploy-rasa-private-helm-chart:
     name: Deploy rasa private helm chart
-    if: ${{ github.event_name != 'merge_group' && !startsWith(github.event.pull_request.title, 'Backport') && github.actor != 'dependabot[bot]' &&  inputs.full_ci_mode != 'false' && !(github.event_name == 'pull_request' && inputs.pr-author == 'rasabot' && inputs.pr-is-draft == 'true') }}
+    if: false
     runs-on: ubuntu-24.04
     needs: [rasa-private-dev-docker-image, rasa-private-dev-train-the-model]
 
@@ -469,7 +469,7 @@ jobs:
   # This job is being moved here from the pr-cleanup.yml workflow, to reduce AWS costs and save resources.
   # Skip this job from merge queue, Backport PRs and Dependabot PRs
   pulumi-destroy:
-    if: ${{ always() && github.event_name != 'merge_group' && !startsWith(github.event.pull_request.title, 'Backport') && github.actor != 'dependabot[bot]' && inputs.full_ci_mode != 'false' && !(github.event_name == 'pull_request' && inputs.pr-author == 'rasabot' && inputs.pr-is-draft == 'true') }}
+    if: false
     name: Destroy pulumi resources
     needs: deploy-rasa-private-helm-chart
     runs-on: ubuntu-24.04
