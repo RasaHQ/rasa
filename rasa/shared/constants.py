@@ -3,6 +3,10 @@ from __future__ import annotations
 from typing import List, Text
 
 from rasa.shared.engine.caching import get_local_cache_location
+from rasa.tracing.constants import (
+    LANGFUSE_CONFIG_PRIVATE_KEY,
+    LANGFUSE_CONFIG_PUBLIC_KEY,
+)
 
 DOCS_BASE_URL = "https://rasa.com/docs/rasa-pro"
 DOCS_URL_CONCEPTS = DOCS_BASE_URL + "/concepts"
@@ -338,6 +342,8 @@ SENSITIVE_DATA = [
     AWS_ACCESS_KEY_ID_CONFIG_KEY,
     AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
     AWS_SESSION_TOKEN_CONFIG_KEY,
+    LANGFUSE_CONFIG_PUBLIC_KEY,
+    LANGFUSE_CONFIG_PRIVATE_KEY,
 ]
 
 # Used for key values in BotUtterance.data

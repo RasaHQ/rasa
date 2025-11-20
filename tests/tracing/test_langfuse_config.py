@@ -10,8 +10,8 @@ from rasa.tracing.constants import (
     LANGFUSE_CONFIG_DEBUG_KEY,
     LANGFUSE_CONFIG_ENVIRONMENT_KEY,
     LANGFUSE_CONFIG_MEDIA_UPLOAD_THREAD_COUNT_KEY,
-    LANGFUSE_CONFIG_PRIVATE_KEY_KEY,
-    LANGFUSE_CONFIG_PUBLIC_KEY_KEY,
+    LANGFUSE_CONFIG_PRIVATE_KEY,
+    LANGFUSE_CONFIG_PUBLIC_KEY,
     LANGFUSE_CONFIG_RELEASE_KEY,
     LANGFUSE_CONFIG_SAMPLE_RATE_KEY,
     LANGFUSE_CONFIG_TIMEOUT_KEY,
@@ -98,8 +98,8 @@ def test_get_langfuse_config_single_dict(tmp_path: Path) -> None:
             """
             tracing:
                 type: langfuse
-                public_key: $LANGFUSE_PUBLIC_KEY
-                private_key: $LANGFUSE_SECRET_KEY
+                public_key: ${LANGFUSE_PUBLIC_KEY}
+                private_key: ${LANGFUSE_SECRET_KEY}
                 host: https://cloud.langfuse.com
             """
         )
@@ -107,8 +107,8 @@ def test_get_langfuse_config_single_dict(tmp_path: Path) -> None:
     result = _get_langfuse_config(str(endpoints_file))
     assert result is not None
     assert result.type == "langfuse"
-    assert result.kwargs[LANGFUSE_CONFIG_PUBLIC_KEY_KEY] == "$LANGFUSE_PUBLIC_KEY"
-    assert result.kwargs[LANGFUSE_CONFIG_PRIVATE_KEY_KEY] == "$LANGFUSE_SECRET_KEY"
+    assert result.kwargs[LANGFUSE_CONFIG_PUBLIC_KEY] == "${LANGFUSE_PUBLIC_KEY}"
+    assert result.kwargs[LANGFUSE_CONFIG_PRIVATE_KEY] == "${LANGFUSE_SECRET_KEY}"
     assert result.kwargs[LANGFUSE_CONFIG_BASE_URL_KEY] == "https://cloud.langfuse.com"
 
 
@@ -125,8 +125,8 @@ def test_get_langfuse_config_list_with_langfuse(tmp_path: Path) -> None:
                   host: localhost
                   port: 6831
                 - type: langfuse
-                  public_key: $LANGFUSE_PUBLIC_KEY
-                  private_key: $LANGFUSE_SECRET_KEY
+                  public_key: ${LANGFUSE_PUBLIC_KEY}
+                  private_key: ${LANGFUSE_SECRET_KEY}
                   host: https://cloud.langfuse.com
             """
         )
@@ -134,7 +134,7 @@ def test_get_langfuse_config_list_with_langfuse(tmp_path: Path) -> None:
     result = _get_langfuse_config(str(endpoints_file))
     assert result is not None
     assert result.type == "langfuse"
-    assert result.kwargs[LANGFUSE_CONFIG_PUBLIC_KEY_KEY] == "$LANGFUSE_PUBLIC_KEY"
+    assert result.kwargs[LANGFUSE_CONFIG_PUBLIC_KEY] == "${LANGFUSE_PUBLIC_KEY}"
 
 
 def test_get_langfuse_config_multiple_langfuse_configs(tmp_path: Path) -> None:
@@ -147,12 +147,12 @@ def test_get_langfuse_config_multiple_langfuse_configs(tmp_path: Path) -> None:
             """
             tracing:
                 - type: langfuse
-                  public_key: $LANGFUSE_PUBLIC_KEY_1
-                  private_key: $LANGFUSE_SECRET_KEY_1
+                  public_key: ${LANGFUSE_PUBLIC_KEY_1}
+                  private_key: ${LANGFUSE_SECRET_KEY_1}
                   host: https://cloud.langfuse.com
                 - type: langfuse
-                  public_key: $LANGFUSE_PUBLIC_KEY_2
-                  private_key: $LANGFUSE_SECRET_KEY_2
+                  public_key: ${LANGFUSE_PUBLIC_KEY_2}
+                  private_key: ${LANGFUSE_SECRET_KEY_2}
                   host: https://cloud.langfuse.com
             """
         )
@@ -170,8 +170,8 @@ def test_get_langfuse_config_handles_exception(tmp_path: Path, monkeypatch) -> N
             """
             tracing:
                 type: langfuse
-                public_key: $LANGFUSE_PUBLIC_KEY
-                private_key: $LANGFUSE_SECRET_KEY
+                public_key: ${LANGFUSE_PUBLIC_KEY}
+                private_key: ${LANGFUSE_SECRET_KEY}
                 host: https://cloud.langfuse.com
             """
         )
@@ -194,8 +194,8 @@ def test_get_langfuse_config_handles_exception(tmp_path: Path, monkeypatch) -> N
     [
         (
             {
-                LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "",
-                LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "$SECRET",
+                LANGFUSE_CONFIG_PUBLIC_KEY: "",
+                LANGFUSE_CONFIG_PRIVATE_KEY: "${SECRET}",
                 LANGFUSE_CONFIG_BASE_URL_KEY: "https://cloud.langfuse.com",
             },
             InvalidLangfuseConfigException,
@@ -203,8 +203,8 @@ def test_get_langfuse_config_handles_exception(tmp_path: Path, monkeypatch) -> N
         ),
         (
             {
-                LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "$PUBLIC",
-                LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "",
+                LANGFUSE_CONFIG_PUBLIC_KEY: "${PUBLIC}",
+                LANGFUSE_CONFIG_PRIVATE_KEY: "",
                 LANGFUSE_CONFIG_BASE_URL_KEY: "https://cloud.langfuse.com",
             },
             InvalidLangfuseConfigException,
@@ -212,8 +212,8 @@ def test_get_langfuse_config_handles_exception(tmp_path: Path, monkeypatch) -> N
         ),
         (
             {
-                LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "$PUBLIC",
-                LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "$SECRET",
+                LANGFUSE_CONFIG_PUBLIC_KEY: "${PUBLIC}",
+                LANGFUSE_CONFIG_PRIVATE_KEY: "${SECRET}",
                 LANGFUSE_CONFIG_BASE_URL_KEY: "",
             },
             InvalidLangfuseConfigException,
@@ -221,8 +221,8 @@ def test_get_langfuse_config_handles_exception(tmp_path: Path, monkeypatch) -> N
         ),
         (
             {
-                LANGFUSE_CONFIG_PUBLIC_KEY_KEY: None,
-                LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "$SECRET",
+                LANGFUSE_CONFIG_PUBLIC_KEY: None,
+                LANGFUSE_CONFIG_PRIVATE_KEY: "${SECRET}",
                 LANGFUSE_CONFIG_BASE_URL_KEY: "https://cloud.langfuse.com",
             },
             InvalidLangfuseConfigException,
@@ -230,8 +230,8 @@ def test_get_langfuse_config_handles_exception(tmp_path: Path, monkeypatch) -> N
         ),
         (
             {
-                LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "$PUBLIC",
-                LANGFUSE_CONFIG_PRIVATE_KEY_KEY: None,
+                LANGFUSE_CONFIG_PUBLIC_KEY: "${PUBLIC}",
+                LANGFUSE_CONFIG_PRIVATE_KEY: None,
                 LANGFUSE_CONFIG_BASE_URL_KEY: "https://cloud.langfuse.com",
             },
             InvalidLangfuseConfigException,
@@ -239,8 +239,8 @@ def test_get_langfuse_config_handles_exception(tmp_path: Path, monkeypatch) -> N
         ),
         (
             {
-                LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "$PUBLIC",
-                LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "$SECRET",
+                LANGFUSE_CONFIG_PUBLIC_KEY: "${PUBLIC}",
+                LANGFUSE_CONFIG_PRIVATE_KEY: "${SECRET}",
                 LANGFUSE_CONFIG_BASE_URL_KEY: None,
             },
             InvalidLangfuseConfigException,
@@ -248,21 +248,21 @@ def test_get_langfuse_config_handles_exception(tmp_path: Path, monkeypatch) -> N
         ),
         (
             {
-                LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "public_key",
-                LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "$SECRET",
+                LANGFUSE_CONFIG_PUBLIC_KEY: "public_key",
+                LANGFUSE_CONFIG_PRIVATE_KEY: "${SECRET}",
                 LANGFUSE_CONFIG_BASE_URL_KEY: "https://cloud.langfuse.com",
             },
             InvalidLangfuseConfigException,
-            "$syntax",
+            "${syntax}",
         ),
         (
             {
-                LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "$PUBLIC",
-                LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "secret_key",
+                LANGFUSE_CONFIG_PUBLIC_KEY: "${PUBLIC}",
+                LANGFUSE_CONFIG_PRIVATE_KEY: "secret_key",
                 LANGFUSE_CONFIG_BASE_URL_KEY: "https://cloud.langfuse.com",
             },
             InvalidLangfuseConfigException,
-            "$syntax",
+            "${syntax}",
         ),
     ],
 )
@@ -280,8 +280,8 @@ def test_validate_langfuse_config_invalid(
 def test_validate_langfuse_config_valid() -> None:
     """Test that _validate_langfuse_config passes for valid config."""
     config_values = {
-        LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "$LANGFUSE_PUBLIC_KEY",
-        LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "$LANGFUSE_SECRET_KEY",
+        LANGFUSE_CONFIG_PUBLIC_KEY: "${LANGFUSE_PUBLIC_KEY}",
+        LANGFUSE_CONFIG_PRIVATE_KEY: "${LANGFUSE_SECRET_KEY}",
         LANGFUSE_CONFIG_BASE_URL_KEY: "https://cloud.langfuse.com",
     }
     # Should not raise any exception
@@ -317,8 +317,8 @@ def test_configure_langfuse_sets_environment_variables(
             """
             tracing:
                 type: langfuse
-                public_key: $TEST_PUBLIC_KEY
-                private_key: $TEST_SECRET_KEY
+                public_key: ${TEST_PUBLIC_KEY}
+                private_key: ${TEST_SECRET_KEY}
                 host: https://cloud.langfuse.com
                 timeout: "30"
                 debug: "true"
@@ -370,8 +370,8 @@ def test_configure_langfuse_minimal_config(tmp_path: Path, monkeypatch) -> None:
             """
             tracing:
                 type: langfuse
-                public_key: $TEST_PUBLIC_KEY
-                private_key: $TEST_SECRET_KEY
+                public_key: ${TEST_PUBLIC_KEY}
+                private_key: ${TEST_SECRET_KEY}
                 host: https://cloud.langfuse.com
                 timeout: null
                 debug: null
@@ -412,7 +412,7 @@ def test_configure_langfuse_invalid_config_raises_exception(
             tracing:
                 type: langfuse
                 public_key: invalid_no_dollar_sign
-                private_key: $TEST_SECRET_KEY
+                private_key: ${TEST_SECRET_KEY}
                 host: https://cloud.langfuse.com
                 timeout: null
                 debug: null
@@ -429,7 +429,7 @@ def test_configure_langfuse_invalid_config_raises_exception(
     with pytest.raises(InvalidLangfuseConfigException) as exc_info:
         configure_langfuse(str(endpoints_file))
     assert (
-        "$syntax" in str(exc_info.value).lower()
+        "${syntax}" in str(exc_info.value).lower()
         or "public_key" in str(exc_info.value).lower()
     )
 
@@ -442,8 +442,8 @@ def test_configure_langfuse_sets_litellm_callback(tmp_path: Path, monkeypatch) -
             """
             tracing:
                 type: langfuse
-                public_key: $TEST_PUBLIC_KEY
-                private_key: $TEST_SECRET_KEY
+                public_key: ${TEST_PUBLIC_KEY}
+                private_key: ${TEST_SECRET_KEY}
                 host: https://cloud.langfuse.com
                 timeout: null
                 debug: null
@@ -479,8 +479,8 @@ def test_configure_langfuse_optional_parameters_none(
             """
             tracing:
                 type: langfuse
-                public_key: $TEST_PUBLIC_KEY
-                private_key: $TEST_SECRET_KEY
+                public_key: ${TEST_PUBLIC_KEY}
+                private_key: ${TEST_SECRET_KEY}
                 host: https://cloud.langfuse.com
                 timeout: null
                 debug: null
@@ -538,8 +538,8 @@ def test_extract_langfuse_config_values(tmp_path: Path) -> None:
             """
             tracing:
                 type: langfuse
-                public_key: $TEST_PUBLIC_KEY
-                private_key: $TEST_SECRET_KEY
+                public_key: ${TEST_PUBLIC_KEY}
+                private_key: ${TEST_SECRET_KEY}
                 host: https://cloud.langfuse.com
                 timeout: "30"
                 debug: "true"
@@ -552,8 +552,8 @@ def test_extract_langfuse_config_values(tmp_path: Path) -> None:
 
     config_values = _extract_langfuse_config_values(langfuse_config)
 
-    assert config_values[LANGFUSE_CONFIG_PUBLIC_KEY_KEY] == "$TEST_PUBLIC_KEY"
-    assert config_values[LANGFUSE_CONFIG_PRIVATE_KEY_KEY] == "$TEST_SECRET_KEY"
+    assert config_values[LANGFUSE_CONFIG_PUBLIC_KEY] == "${TEST_PUBLIC_KEY}"
+    assert config_values[LANGFUSE_CONFIG_PRIVATE_KEY] == "${TEST_SECRET_KEY}"
     assert config_values[LANGFUSE_CONFIG_BASE_URL_KEY] == "https://cloud.langfuse.com"
     assert config_values[LANGFUSE_CONFIG_TIMEOUT_KEY] == "30"
     assert config_values[LANGFUSE_CONFIG_DEBUG_KEY] == "true"
@@ -564,10 +564,12 @@ def test_resolve_environment_variables(monkeypatch) -> None:
     monkeypatch.setenv("TEST_PUBLIC_KEY", "resolved_public")
     monkeypatch.setenv("TEST_SECRET_KEY", "resolved_secret")
 
-    resolved = _resolve_environment_variables("$TEST_PUBLIC_KEY", "$TEST_SECRET_KEY")
+    resolved = _resolve_environment_variables(
+        "${TEST_PUBLIC_KEY}", "${TEST_SECRET_KEY}"
+    )
 
-    assert resolved[LANGFUSE_CONFIG_PUBLIC_KEY_KEY] == "resolved_public"
-    assert resolved[LANGFUSE_CONFIG_PRIVATE_KEY_KEY] == "resolved_secret"
+    assert resolved[LANGFUSE_CONFIG_PUBLIC_KEY] == "resolved_public"
+    assert resolved[LANGFUSE_CONFIG_PRIVATE_KEY] == "resolved_secret"
 
 
 def test_get_langfuse_config_tracing_config_is_none(tmp_path: Path) -> None:
@@ -628,8 +630,8 @@ def test_parse_tracing_configs_with_dict() -> None:
     """Test that _parse_tracing_configs handles dict config correctly."""
     config = {
         "type": "langfuse",
-        "public_key": "$TEST_PUBLIC_KEY",
-        "private_key": "$TEST_SECRET_KEY",
+        "public_key": "${TEST_PUBLIC_KEY}",
+        "private_key": "${TEST_SECRET_KEY}",
     }
     result = _parse_tracing_configs(config)
     assert len(result) == 1
@@ -640,7 +642,7 @@ def test_parse_tracing_configs_with_list() -> None:
     """Test that _parse_tracing_configs handles list config correctly."""
     config = [
         {"type": "jaeger", "host": "localhost"},
-        {"type": "langfuse", "public_key": "$TEST_PUBLIC_KEY"},
+        {"type": "langfuse", "public_key": "${TEST_PUBLIC_KEY}"},
     ]
     result = _parse_tracing_configs(config)
     assert len(result) == 2
@@ -661,8 +663,8 @@ def test_log_multiple_langfuse_configs_error(tmp_path: Path) -> None:
 def test_set_langfuse_environment_variables_all_values(monkeypatch) -> None:
     """Test that _set_langfuse_environment_variables sets all environment variables."""
     config_values = {
-        LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "test_public",
-        LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "test_secret",
+        LANGFUSE_CONFIG_PUBLIC_KEY: "test_public",
+        LANGFUSE_CONFIG_PRIVATE_KEY: "test_secret",
         LANGFUSE_CONFIG_BASE_URL_KEY: "https://cloud.langfuse.com",
         LANGFUSE_CONFIG_TIMEOUT_KEY: "30",
         LANGFUSE_CONFIG_DEBUG_KEY: "true",
@@ -673,8 +675,8 @@ def test_set_langfuse_environment_variables_all_values(monkeypatch) -> None:
     }
 
     resolved_keys = {
-        LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "resolved_public",
-        LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "resolved_secret",
+        LANGFUSE_CONFIG_PUBLIC_KEY: "resolved_public",
+        LANGFUSE_CONFIG_PRIVATE_KEY: "resolved_secret",
     }
 
     # Clear environment variables
@@ -708,8 +710,8 @@ def test_set_langfuse_environment_variables_all_values(monkeypatch) -> None:
 def test_set_langfuse_environment_variables_none_values(monkeypatch) -> None:
     """Test that _set_langfuse_environment_variables skips None values."""
     config_values = {
-        LANGFUSE_CONFIG_PUBLIC_KEY_KEY: None,
-        LANGFUSE_CONFIG_PRIVATE_KEY_KEY: None,
+        LANGFUSE_CONFIG_PUBLIC_KEY: None,
+        LANGFUSE_CONFIG_PRIVATE_KEY: None,
         LANGFUSE_CONFIG_BASE_URL_KEY: None,
         LANGFUSE_CONFIG_TIMEOUT_KEY: None,
         LANGFUSE_CONFIG_DEBUG_KEY: None,
@@ -720,8 +722,8 @@ def test_set_langfuse_environment_variables_none_values(monkeypatch) -> None:
     }
 
     resolved_keys = {
-        LANGFUSE_CONFIG_PUBLIC_KEY_KEY: None,
-        LANGFUSE_CONFIG_PRIVATE_KEY_KEY: None,
+        LANGFUSE_CONFIG_PUBLIC_KEY: None,
+        LANGFUSE_CONFIG_PRIVATE_KEY: None,
     }
 
     # Clear environment variables
@@ -768,8 +770,8 @@ def test_configure_litellm_callback() -> None:
 def test_validate_required_keys_missing_keys() -> None:
     """Test that _validate_required_keys raises exception when keys are missing."""
     config_values = {
-        LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "",
-        LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "$SECRET",
+        LANGFUSE_CONFIG_PUBLIC_KEY: "",
+        LANGFUSE_CONFIG_PRIVATE_KEY: "${SECRET}",
         LANGFUSE_CONFIG_BASE_URL_KEY: "https://cloud.langfuse.com",
     }
 
@@ -777,20 +779,20 @@ def test_validate_required_keys_missing_keys() -> None:
         _validate_required_keys(
             config_values,
             [
-                LANGFUSE_CONFIG_PUBLIC_KEY_KEY,
-                LANGFUSE_CONFIG_PRIVATE_KEY_KEY,
+                LANGFUSE_CONFIG_PUBLIC_KEY,
+                LANGFUSE_CONFIG_PRIVATE_KEY,
                 LANGFUSE_CONFIG_BASE_URL_KEY,
             ],
         )
     assert "required" in str(exc_info.value).lower()
-    assert LANGFUSE_CONFIG_PUBLIC_KEY_KEY in str(exc_info.value)
+    assert LANGFUSE_CONFIG_PUBLIC_KEY in str(exc_info.value)
 
 
 def test_validate_required_keys_missing_multiple_keys() -> None:
     """Test that _validate_required_keys raises exception with multiple missing keys."""
     config_values = {
-        LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "",
-        LANGFUSE_CONFIG_PRIVATE_KEY_KEY: None,
+        LANGFUSE_CONFIG_PUBLIC_KEY: "",
+        LANGFUSE_CONFIG_PRIVATE_KEY: None,
         LANGFUSE_CONFIG_BASE_URL_KEY: "",
     }
 
@@ -798,24 +800,22 @@ def test_validate_required_keys_missing_multiple_keys() -> None:
         _validate_required_keys(
             config_values,
             [
-                LANGFUSE_CONFIG_PUBLIC_KEY_KEY,
-                LANGFUSE_CONFIG_PRIVATE_KEY_KEY,
+                LANGFUSE_CONFIG_PUBLIC_KEY,
+                LANGFUSE_CONFIG_PRIVATE_KEY,
                 LANGFUSE_CONFIG_BASE_URL_KEY,
             ],
         )
     assert "required" in str(exc_info.value).lower()
     # Should mention all missing keys
     error_message = str(exc_info.value).lower()
-    assert (
-        LANGFUSE_CONFIG_PUBLIC_KEY_KEY in error_message or "public_key" in error_message
-    )
+    assert LANGFUSE_CONFIG_PUBLIC_KEY in error_message or "public_key" in error_message
 
 
 def test_validate_required_keys_all_present() -> None:
     """Test that _validate_required_keys passes when all keys are present."""
     config_values = {
-        LANGFUSE_CONFIG_PUBLIC_KEY_KEY: "$PUBLIC",
-        LANGFUSE_CONFIG_PRIVATE_KEY_KEY: "$SECRET",
+        LANGFUSE_CONFIG_PUBLIC_KEY: "${PUBLIC}",
+        LANGFUSE_CONFIG_PRIVATE_KEY: "${SECRET}",
         LANGFUSE_CONFIG_BASE_URL_KEY: "https://cloud.langfuse.com",
     }
 
@@ -823,8 +823,8 @@ def test_validate_required_keys_all_present() -> None:
     _validate_required_keys(
         config_values,
         [
-            LANGFUSE_CONFIG_PUBLIC_KEY_KEY,
-            LANGFUSE_CONFIG_PRIVATE_KEY_KEY,
+            LANGFUSE_CONFIG_PUBLIC_KEY,
+            LANGFUSE_CONFIG_PRIVATE_KEY,
             LANGFUSE_CONFIG_BASE_URL_KEY,
         ],
     )
@@ -833,16 +833,16 @@ def test_validate_required_keys_all_present() -> None:
 def test_validate_key_syntax_invalid_public_key() -> None:
     """Test that _validate_key_syntax raises exception for invalid public key."""
     with pytest.raises(InvalidLangfuseConfigException) as exc_info:
-        _validate_key_syntax("invalid_no_dollar", "$SECRET")
-    assert "$syntax" in str(exc_info.value).lower()
+        _validate_key_syntax("invalid_no_dollar", "${SECRET}")
+    assert "${syntax}" in str(exc_info.value).lower()
     assert "public_key" in str(exc_info.value).lower()
 
 
 def test_validate_key_syntax_invalid_secret_key() -> None:
     """Test that _validate_key_syntax raises exception for invalid secret key."""
     with pytest.raises(InvalidLangfuseConfigException) as exc_info:
-        _validate_key_syntax("$PUBLIC", "invalid_no_dollar")
-    assert "$syntax" in str(exc_info.value).lower()
+        _validate_key_syntax("${PUBLIC}", "invalid_no_dollar")
+    assert "${syntax}" in str(exc_info.value).lower()
     assert "private_key" in str(exc_info.value).lower()
 
 
@@ -850,13 +850,28 @@ def test_validate_key_syntax_both_invalid() -> None:
     """Test that _validate_key_syntax raises exception when both keys are invalid."""
     with pytest.raises(InvalidLangfuseConfigException) as exc_info:
         _validate_key_syntax("invalid_public", "invalid_secret")
-    assert "$syntax" in str(exc_info.value).lower()
+    assert "${syntax}" in str(exc_info.value).lower()
+
+
+def test_validate_key_syntax_rejects_dollar_without_braces() -> None:
+    """Test that _validate_key_syntax rejects $VAR syntax (only ${VAR} is accepted)."""
+    with pytest.raises(InvalidLangfuseConfigException) as exc_info:
+        _validate_key_syntax("$PUBLIC_KEY", "${SECRET_KEY}")
+    assert "${syntax}" in str(exc_info.value).lower()
+
+    with pytest.raises(InvalidLangfuseConfigException) as exc_info:
+        _validate_key_syntax("${PUBLIC_KEY}", "$SECRET_KEY")
+    assert "${syntax}" in str(exc_info.value).lower()
+
+    with pytest.raises(InvalidLangfuseConfigException) as exc_info:
+        _validate_key_syntax("$PUBLIC_KEY", "$SECRET_KEY")
+    assert "${syntax}" in str(exc_info.value).lower()
 
 
 def test_validate_key_syntax_valid() -> None:
-    """Test that _validate_key_syntax passes for valid keys."""
+    """Test that _validate_key_syntax passes for valid ${VAR} syntax."""
     # Should not raise any exception
-    _validate_key_syntax("$PUBLIC_KEY", "$SECRET_KEY")
+    _validate_key_syntax("${PUBLIC_KEY}", "${SECRET_KEY}")
 
 
 def test_extract_langfuse_config_values_all_fields(tmp_path: Path) -> None:
@@ -867,8 +882,8 @@ def test_extract_langfuse_config_values_all_fields(tmp_path: Path) -> None:
             """
             tracing:
                 type: langfuse
-                public_key: $TEST_PUBLIC_KEY
-                private_key: $TEST_SECRET_KEY
+                public_key: ${TEST_PUBLIC_KEY}
+                private_key: ${TEST_SECRET_KEY}
                 host: https://cloud.langfuse.com
                 timeout: "30"
                 debug: "true"
@@ -885,8 +900,8 @@ def test_extract_langfuse_config_values_all_fields(tmp_path: Path) -> None:
 
     config_values = _extract_langfuse_config_values(langfuse_config)
 
-    assert config_values[LANGFUSE_CONFIG_PUBLIC_KEY_KEY] == "$TEST_PUBLIC_KEY"
-    assert config_values[LANGFUSE_CONFIG_PRIVATE_KEY_KEY] == "$TEST_SECRET_KEY"
+    assert config_values[LANGFUSE_CONFIG_PUBLIC_KEY] == "${TEST_PUBLIC_KEY}"
+    assert config_values[LANGFUSE_CONFIG_PRIVATE_KEY] == "${TEST_SECRET_KEY}"
     assert config_values[LANGFUSE_CONFIG_BASE_URL_KEY] == "https://cloud.langfuse.com"
     assert config_values[LANGFUSE_CONFIG_TIMEOUT_KEY] == "30"
     assert config_values[LANGFUSE_CONFIG_DEBUG_KEY] == "true"
@@ -894,6 +909,50 @@ def test_extract_langfuse_config_values_all_fields(tmp_path: Path) -> None:
     assert config_values[LANGFUSE_CONFIG_RELEASE_KEY] == "v1.0.0"
     assert config_values[LANGFUSE_CONFIG_MEDIA_UPLOAD_THREAD_COUNT_KEY] == "5"
     assert config_values[LANGFUSE_CONFIG_SAMPLE_RATE_KEY] == "0.5"
+
+
+def test_langfuse_keys_not_expanded_during_yaml_parsing(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Test Langfuse public_key and private_key are not expanded during YAML parsing."""
+    monkeypatch.setenv("LANGFUSE_PUBLIC_KEY_TEST", "expanded_public_key_value")
+    monkeypatch.setenv("LANGFUSE_SECRET_KEY_TEST", "expanded_secret_key_value")
+
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing:
+                type: langfuse
+                public_key: ${LANGFUSE_PUBLIC_KEY_TEST}
+                private_key: ${LANGFUSE_SECRET_KEY_TEST}
+                host: https://cloud.langfuse.com
+            """
+        )
+    )
+
+    langfuse_config = _get_langfuse_config(str(endpoints_file))
+    assert langfuse_config is not None
+
+    # The keys should NOT be expanded - they should still contain ${VAR} syntax
+    assert (
+        langfuse_config.kwargs[LANGFUSE_CONFIG_PUBLIC_KEY]
+        == "${LANGFUSE_PUBLIC_KEY_TEST}"
+    )
+    assert (
+        langfuse_config.kwargs[LANGFUSE_CONFIG_PRIVATE_KEY]
+        == "${LANGFUSE_SECRET_KEY_TEST}"
+    )
+
+    # Verify they are NOT the expanded values
+    assert (
+        langfuse_config.kwargs[LANGFUSE_CONFIG_PUBLIC_KEY]
+        != "expanded_public_key_value"
+    )
+    assert (
+        langfuse_config.kwargs[LANGFUSE_CONFIG_PRIVATE_KEY]
+        != "expanded_secret_key_value"
+    )
 
 
 def test_extract_langfuse_config_values_missing_optional_fields(
@@ -906,8 +965,8 @@ def test_extract_langfuse_config_values_missing_optional_fields(
             """
             tracing:
                 type: langfuse
-                public_key: $TEST_PUBLIC_KEY
-                private_key: $TEST_SECRET_KEY
+                public_key: ${TEST_PUBLIC_KEY}
+                private_key: ${TEST_SECRET_KEY}
                 host: https://cloud.langfuse.com
             """
         )
@@ -918,8 +977,8 @@ def test_extract_langfuse_config_values_missing_optional_fields(
 
     config_values = _extract_langfuse_config_values(langfuse_config)
 
-    assert config_values[LANGFUSE_CONFIG_PUBLIC_KEY_KEY] == "$TEST_PUBLIC_KEY"
-    assert config_values[LANGFUSE_CONFIG_PRIVATE_KEY_KEY] == "$TEST_SECRET_KEY"
+    assert config_values[LANGFUSE_CONFIG_PUBLIC_KEY] == "${TEST_PUBLIC_KEY}"
+    assert config_values[LANGFUSE_CONFIG_PRIVATE_KEY] == "${TEST_SECRET_KEY}"
     assert config_values[LANGFUSE_CONFIG_BASE_URL_KEY] == "https://cloud.langfuse.com"
     # Optional fields should be None
     assert config_values[LANGFUSE_CONFIG_TIMEOUT_KEY] is None

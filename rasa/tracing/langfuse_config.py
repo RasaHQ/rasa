@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Any, Dict, List, Optional, Text, Union
 
 import structlog
 
+from rasa.shared.constants import SECRET_DATA_FORMAT_PATTERN
 from rasa.shared.utils.io import resolve_environment_variables
 from rasa.shared.utils.yaml import read_config_file
 from rasa.tracing.constants import (
@@ -13,8 +15,8 @@ from rasa.tracing.constants import (
     LANGFUSE_CONFIG_DEBUG_KEY,
     LANGFUSE_CONFIG_ENVIRONMENT_KEY,
     LANGFUSE_CONFIG_MEDIA_UPLOAD_THREAD_COUNT_KEY,
-    LANGFUSE_CONFIG_PRIVATE_KEY_KEY,
-    LANGFUSE_CONFIG_PUBLIC_KEY_KEY,
+    LANGFUSE_CONFIG_PRIVATE_KEY,
+    LANGFUSE_CONFIG_PUBLIC_KEY,
     LANGFUSE_CONFIG_RELEASE_KEY,
     LANGFUSE_CONFIG_SAMPLE_RATE_KEY,
     LANGFUSE_CONFIG_TIMEOUT_KEY,
@@ -50,8 +52,8 @@ def configure_langfuse(endpoints_file: str) -> None:
 
     _validate_langfuse_config(config_values)
 
-    public_key = config_values[LANGFUSE_CONFIG_PUBLIC_KEY_KEY]
-    private_key = config_values[LANGFUSE_CONFIG_PRIVATE_KEY_KEY]
+    public_key = config_values[LANGFUSE_CONFIG_PUBLIC_KEY]
+    private_key = config_values[LANGFUSE_CONFIG_PRIVATE_KEY]
 
     resolved_keys = _resolve_environment_variables(public_key, private_key)
     _set_langfuse_environment_variables(config_values, resolved_keys)
@@ -159,11 +161,11 @@ def _extract_langfuse_config_values(
 ) -> Dict[str, Any]:
     """Extract all configuration values from Langfuse config."""
     return {
-        LANGFUSE_CONFIG_PUBLIC_KEY_KEY: langfuse_config.kwargs.get(
-            LANGFUSE_CONFIG_PUBLIC_KEY_KEY
+        LANGFUSE_CONFIG_PUBLIC_KEY: langfuse_config.kwargs.get(
+            LANGFUSE_CONFIG_PUBLIC_KEY
         ),
-        LANGFUSE_CONFIG_PRIVATE_KEY_KEY: langfuse_config.kwargs.get(
-            LANGFUSE_CONFIG_PRIVATE_KEY_KEY
+        LANGFUSE_CONFIG_PRIVATE_KEY: langfuse_config.kwargs.get(
+            LANGFUSE_CONFIG_PRIVATE_KEY
         ),
         LANGFUSE_CONFIG_BASE_URL_KEY: langfuse_config.kwargs.get(
             LANGFUSE_CONFIG_BASE_URL_KEY
@@ -194,8 +196,8 @@ def _resolve_environment_variables(
 ) -> Dict[str, Union[str, List[Any], Dict[str, Any]]]:
     """Resolve environment variables in public and secret keys."""
     return {
-        LANGFUSE_CONFIG_PUBLIC_KEY_KEY: resolve_environment_variables(public_key),
-        LANGFUSE_CONFIG_PRIVATE_KEY_KEY: resolve_environment_variables(private_key),
+        LANGFUSE_CONFIG_PUBLIC_KEY: resolve_environment_variables(public_key),
+        LANGFUSE_CONFIG_PRIVATE_KEY: resolve_environment_variables(private_key),
     }
 
 
@@ -203,14 +205,10 @@ def _set_langfuse_environment_variables(
     config_values: Dict[str, Any], resolved_keys: Dict[str, Optional[str]]
 ) -> None:
     """Set Langfuse environment variables for LiteLLM integration."""
-    if resolved_keys[LANGFUSE_CONFIG_PUBLIC_KEY_KEY] is not None:
-        os.environ["LANGFUSE_PUBLIC_KEY"] = resolved_keys[
-            LANGFUSE_CONFIG_PUBLIC_KEY_KEY
-        ]  # type: ignore[assignment]
-    if resolved_keys[LANGFUSE_CONFIG_PRIVATE_KEY_KEY] is not None:
-        os.environ["LANGFUSE_SECRET_KEY"] = resolved_keys[
-            LANGFUSE_CONFIG_PRIVATE_KEY_KEY
-        ]  # type: ignore[assignment]
+    if resolved_keys[LANGFUSE_CONFIG_PUBLIC_KEY] is not None:
+        os.environ["LANGFUSE_PUBLIC_KEY"] = resolved_keys[LANGFUSE_CONFIG_PUBLIC_KEY]  # type: ignore[assignment]
+    if resolved_keys[LANGFUSE_CONFIG_PRIVATE_KEY] is not None:
+        os.environ["LANGFUSE_SECRET_KEY"] = resolved_keys[LANGFUSE_CONFIG_PRIVATE_KEY]  # type: ignore[assignment]
     if config_values[LANGFUSE_CONFIG_BASE_URL_KEY] is not None:
         os.environ["LANGFUSE_OTEL_HOST"] = config_values[LANGFUSE_CONFIG_BASE_URL_KEY]
     if config_values[LANGFUSE_CONFIG_TIMEOUT_KEY] is not None:
@@ -247,14 +245,14 @@ def _validate_langfuse_config(config_values: Dict[str, Any]) -> None:
     _validate_required_keys(
         config_values,
         [
-            LANGFUSE_CONFIG_PUBLIC_KEY_KEY,
-            LANGFUSE_CONFIG_PRIVATE_KEY_KEY,
+            LANGFUSE_CONFIG_PUBLIC_KEY,
+            LANGFUSE_CONFIG_PRIVATE_KEY,
             LANGFUSE_CONFIG_BASE_URL_KEY,
         ],
     )
 
-    public_key = config_values[LANGFUSE_CONFIG_PUBLIC_KEY_KEY]
-    private_key = config_values[LANGFUSE_CONFIG_PRIVATE_KEY_KEY]
+    public_key = config_values[LANGFUSE_CONFIG_PUBLIC_KEY]
+    private_key = config_values[LANGFUSE_CONFIG_PRIVATE_KEY]
     _validate_key_syntax(public_key, private_key)
 
 
@@ -282,18 +280,19 @@ def _validate_required_keys(
 
 
 def _validate_key_syntax(public_key: str, secret_key: str) -> None:
-    """Validate that keys use the correct $syntax for environment variables."""
-    if not public_key.startswith("$") or not secret_key.startswith("$"):
+    """Validate that keys use the correct ${VAR} syntax for environment variables."""
+    if not re.match(SECRET_DATA_FORMAT_PATTERN, public_key) or not re.match(
+        SECRET_DATA_FORMAT_PATTERN, secret_key
+    ):
         structlogger.error(
             "langfuse_configuration.langfuse_config_invalid",
             event_info=(
-                f"Langfuse config is invalid: {LANGFUSE_CONFIG_PUBLIC_KEY_KEY} and "
-                f"{LANGFUSE_CONFIG_PRIVATE_KEY_KEY} need to be provided via the "
-                "$syntax."
+                f"Langfuse config is invalid: {LANGFUSE_CONFIG_PUBLIC_KEY} and "
+                f"{LANGFUSE_CONFIG_PRIVATE_KEY} need to be provided via the "
+                f"${{syntax}}."
             ),
         )
         raise InvalidLangfuseConfigException(
-            f"Langfuse config is invalid: {LANGFUSE_CONFIG_PUBLIC_KEY_KEY} and "
-            f"{LANGFUSE_CONFIG_PRIVATE_KEY_KEY} need to be provided via the "
-            "$syntax."
+            f"Langfuse config is invalid: {LANGFUSE_CONFIG_PUBLIC_KEY} and "
+            f"{LANGFUSE_CONFIG_PRIVATE_KEY} need to be provided via the ${{syntax}}."
         )
