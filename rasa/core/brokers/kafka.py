@@ -93,7 +93,7 @@ class KafkaEventBroker(EventBroker):
         self.security_protocol = security_protocol.upper()
         self.sasl_username = sasl_username
         self.sasl_password = sasl_password
-        self.sasl_mechanism = sasl_mechanism
+        self.sasl_mechanism = sasl_mechanism.upper() if sasl_mechanism else "PLAIN"
         self.ssl_cafile = ssl_cafile
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile

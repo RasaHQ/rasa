@@ -1,3 +1,4 @@
+import contextlib
 import json
 import logging
 import textwrap
@@ -13,7 +14,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aiormq import ChannelNotFoundEntity
-from confluent_kafka import KafkaError, KafkaException
+from confluent_kafka import KafkaError, KafkaException, Producer
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -545,3 +546,15 @@ def test_kafka_event_broker_iam_config(monkeypatch: MonkeyPatch) -> None:
     assert config["oauth_cb"] == broker.get_aws_iam_token
     assert "sasl.username" not in config
     assert "sasl.password" not in config
+
+
+async def test_kafka_broker_invalid_casing_for_sasl_mechanism():
+    endpoints_path = (
+        "data/test_endpoints/event_brokers/kafka_lower_case_sasl_mechanism.yml"
+    )
+    cfg = read_endpoint_config(endpoints_path, "event_broker")
+
+    actual = await KafkaEventBroker.from_endpoint_config(cfg)
+    with contextlib.nullcontext():
+        producer = actual._create_producer()
+        assert isinstance(producer, Producer)
