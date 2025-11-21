@@ -131,6 +131,18 @@ class DTMFConfig:
             allow_audio_input=data.get("allow_audio_input", True),
         )
 
+    def to_json(self) -> Dict[Text, Any]:
+        data: Dict[Text, Any] = {}
+        if self.length is not None:
+            data["length"] = self.length
+        if self.finish_on_key is not None:
+            data["finish_on_key"] = self.finish_on_key
+        if self.allow_audio_input is not None:
+            data["allow_audio_input"] = self.allow_audio_input
+        else:
+            data["allow_audio_input"] = True
+        return data
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, DTMFConfig):
             return (
@@ -246,6 +258,8 @@ class CollectInformationFlowStep(FlowStep):
         data["force_slot_filling"] = self.force_slot_filling
         if self.silence_timeout:
             data.update(self.silence_timeout.to_json())
+        if self.dtmf:
+            data["dtmf"] = self.dtmf.to_json()
 
         return super().as_json(step_properties=data)
 

@@ -378,3 +378,29 @@ def test_collect_step_as_json_with_next_and_metadata() -> None:
         "key2": 42,
         "key3": True,
     }
+
+
+def test_dtmf_config_to_json_always_includes_allow_audio_input() -> None:
+    """DTMFConfig.to_json should always include allow_audio_input."""
+    config_with_length = DTMFConfig(length=6, allow_audio_input=True)
+    json_with_length = config_with_length.to_json()
+    assert "allow_audio_input" in json_with_length
+    assert json_with_length["allow_audio_input"] is True
+    assert json_with_length.get("finish_on_key") is None
+    assert json_with_length.get("length") == 6
+
+    config_with_finish_key = DTMFConfig(finish_on_key="#", allow_audio_input=False)
+    json_with_finish_key = config_with_finish_key.to_json()
+    assert "allow_audio_input" in json_with_finish_key
+    assert json_with_finish_key["allow_audio_input"] is False
+    assert json_with_finish_key.get("length") is None
+    assert json_with_finish_key.get("finish_on_key") == "#"
+
+    # default instance should still include allow_audio_input=True
+    default_config = DTMFConfig()
+    default_json = default_config.to_json()
+    assert "allow_audio_input" in default_json
+    assert default_json["allow_audio_input"] is True
+    # and no completion criteria fields by default
+    assert "length" not in default_json
+    assert "finish_on_key" not in default_json
