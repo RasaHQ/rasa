@@ -22,6 +22,7 @@ import sqlalchemy as sa
 import structlog
 
 import rasa.shared
+from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.constants import (
     POSTGRESQL_MAX_OVERFLOW,
@@ -275,7 +276,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                     self._create_database_and_update_engine(db, engine_url)
 
                 try:
-                    self.Base.metadata.create_all(self.engine)
+                    self._create_tables(dialect)
                 except (
                     sqlalchemy.exc.OperationalError,
                     sqlalchemy.exc.ProgrammingError,
@@ -308,6 +309,68 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         )
 
         super().__init__(domain, event_broker, **kwargs)
+
+    def _create_tables(
+        self,
+        dialect: Text = "sqlite",
+    ) -> None:
+        """Create database tables with appropriate locking mechanism.
+
+        Uses advisory locks for PostgreSQL when multiple Sanic workers are configured
+        to prevent race conditions during concurrent initialization.
+        """
+        sanic_workers = int(os.environ.get(ENV_SANIC_WORKERS, DEFAULT_SANIC_WORKERS))
+
+        if sanic_workers > 1:
+            if dialect == "postgresql":
+                self._create_tables_with_advisory_lock()
+            else:
+                structlogger.warning(
+                    "sql_tracker_store.multiple_workers_without_locking",
+                    event_info=(
+                        "Advisory lock mechanism is not supported for non-PostgreSQL "
+                        "databases when using multiple Sanic workers. Running with "
+                        f"{sanic_workers} Sanic workers using {dialect} database may"
+                        "result in race conditions during concurrent table creation."
+                    ),
+                )
+                self.Base.metadata.create_all(self.engine)
+        else:
+            self.Base.metadata.create_all(self.engine)
+
+    def _create_tables_with_advisory_lock(self) -> None:
+        """Create tables using PostgreSQL advisory lock to prevent race conditions.
+
+        Multiple Sanic workers may attempt to create tables simultaneously. The advisory
+        lock ensures only one worker creates the schema while others wait.
+        """
+        from sqlalchemy.engine import Inspector
+
+        # Use a hash of the table name as lock ID to ensure all workers
+        # use the same lock.
+        # Modulo keeps it within PostgreSQL's int range.
+        lock_id = hash("events") % (2**31)
+
+        with self.engine.begin() as conn:
+            # Acquire advisory lock - blocks until available
+            conn.execute(sa.text(f"SELECT pg_advisory_lock({lock_id})"))
+            try:
+                # Double-check if tables exist before creating
+                inspector = Inspector.from_engine(self.engine)
+                if not inspector.has_table("events"):
+                    self.Base.metadata.create_all(self.engine, checkfirst=True)
+                    structlogger.debug(
+                        "sql_tracker_store.tables_created",
+                        event_info="Successfully created database tables.",
+                    )
+                else:
+                    structlogger.debug(
+                        "sql_tracker_store.tables_already_exist",
+                        event_info="Tables already exist, skipping creation.",
+                    )
+            finally:
+                # Always release the lock
+                conn.execute(sa.text(f"SELECT pg_advisory_unlock({lock_id})"))
 
     @staticmethod
     def get_db_url(

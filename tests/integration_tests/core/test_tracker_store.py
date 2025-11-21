@@ -7,6 +7,7 @@ import sqlalchemy as sa
 import structlog
 from pytest import MonkeyPatch
 
+from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core.tracker_stores.redis_tracker_store import RedisTrackerStore
 from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
 from rasa.shared.core.domain import Domain
@@ -290,6 +291,91 @@ async def test_postgres_tracker_store_update(
     ) == new_tracker.current_state(EventVerbosity.ALL)
 
     tracker_store.engine.dispose()
+
+
+@pytest.mark.sequential
+@pytest.mark.timeout(10, func_only=True)
+async def test_postgres_concurrent_initialization_with_advisory_lock(
+    postgres_login_db_connection: sa.engine.Connection,
+    postgres_login_db_name: str,
+    postgres_db_name: str,
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that multiple workers can safely initialize tables concurrently.
+
+    This test verifies that the advisory lock mechanism prevents
+    race conditions when multiple Sanic workers attempt to create tables
+    simultaneously in PostgreSQL.
+    """
+    import concurrent.futures
+
+    monkeypatch.setenv(ENV_SANIC_WORKERS, "5")
+
+    postgres_login_db_connection.execute(sa.text(f"CREATE DATABASE {postgres_db_name}"))
+
+    tracker_stores = []
+    errors = []
+    all_logs = []
+
+    def create_tracker_store(worker_id: int):
+        """Simulate a Sanic worker creating a tracker store."""
+        with structlog.testing.capture_logs() as caplog:
+            try:
+                tracker_store = SQLTrackerStore(
+                    domain=domain,
+                    dialect="postgresql",
+                    host=POSTGRES_HOST,
+                    port=POSTGRES_PORT,
+                    username=POSTGRES_USER,
+                    password=POSTGRES_PASSWORD,
+                    db=postgres_db_name,
+                    login_db=postgres_login_db_name,
+                )
+                tracker_stores.append(tracker_store)
+                all_logs.extend(caplog)
+                return tracker_store
+            except Exception as e:
+                errors.append((worker_id, e))
+                raise
+
+    try:
+        # Simulate 5 workers starting simultaneously
+        num_workers = 5
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+            futures = [
+                executor.submit(create_tracker_store, i) for i in range(num_workers)
+            ]
+            concurrent.futures.wait(futures)
+
+        # All workers should have succeeded without IntegrityError
+        assert len(errors) == 0
+
+        # Verify that exactly one worker created tables
+        tables_created_logs = filter_logs(
+            all_logs,
+            event="sql_tracker_store.tables_created",
+            log_level="debug",
+            log_message_parts=["Successfully created database tables."],
+        )
+        assert len(tables_created_logs) == 1
+
+        # Verify that other workers skipped table creation
+        tables_exist_logs = filter_logs(
+            all_logs,
+            event="sql_tracker_store.tables_already_exist",
+            log_level="debug",
+            log_message_parts=["Tables already exist, skipping creation."],
+        )
+        # At least one worker should have skipped table creation
+        assert len(tables_exist_logs) >= 1
+
+        # All tracker stores should be functional
+        for tracker_store in tracker_stores:
+            assert tracker_store.engine.url.database == postgres_db_name
+    finally:
+        for tracker_store in tracker_stores:
+            tracker_store.engine.dispose()
 
 
 async def test_redis_tracker_store_retrieve_full_tracker(

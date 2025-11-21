@@ -3,7 +3,7 @@ from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
 from typing import ContextManager, Dict, List, Optional, Union
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import sqlalchemy
@@ -16,6 +16,7 @@ from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from structlog.testing import capture_logs
 
+from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core.agent import Agent
 from rasa.core.constants import (
     IAM_CLOUD_PROVIDER_ENV_VAR_NAME,
@@ -390,8 +391,6 @@ def test_ensure_schema_exists(
 
     # mock the `session.query().scalar()` query which returns whether the schema
     # exists in the db
-    from sqlalchemy.engine.base import Engine
-
     scalar = Mock(return_value=schema_exists)
     query = Mock(scalar=scalar)
     session = Mock()
@@ -745,8 +744,23 @@ def test_sql_tracker_store_creation_with_iam_enabled_and_ssl_args(
 
     mock_engine = Mock(spec=Engine)
     mock_engine.url = make_url("postgresql://test_user:***@localhost:5432/rasa.db")
+
+    mock_conn = Mock()
+    mock_engine.begin = Mock(
+        return_value=Mock(
+            __enter__=Mock(return_value=mock_conn),
+            __exit__=Mock(return_value=False),
+        )
+    )
+
     mock_create_engine = MagicMock(return_value=mock_engine)
     monkeypatch.setattr(sqlalchemy, "create_engine", mock_create_engine)
+
+    mock_inspector = Mock()
+    mock_inspector.has_table.return_value = False
+    monkeypatch.setattr(
+        "sqlalchemy.engine.Inspector.from_engine", Mock(return_value=mock_inspector)
+    )
 
     # intentionally do not pass password input
     tracker_store = TrackerStore.create(
@@ -766,3 +780,140 @@ def test_sql_tracker_store_creation_with_iam_enabled_and_ssl_args(
 
     ssl_args = {"sslmode": "verify-full", "sslrootcert": "/path/to/cert"}
     assert ssl_args == mock_create_engine.call_args[1]["connect_args"]
+
+
+async def test_sql_tracker_store_concurrent_initialization_with_advisory_lock(
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that PostgreSQL uses advisory locks during table creation.
+
+    This verifies that when using PostgreSQL, the tracker store
+    uses advisory locks to prevent race conditions during concurrent
+    initialization by multiple Sanic workers.
+    """
+    monkeypatch.setenv(ENV_SANIC_WORKERS, "2")
+
+    mock_engine = Mock(spec=Engine)
+    mock_engine.url = make_url("postgresql://test_user:***@localhost:5432/test_db")
+
+    mock_create_engine = MagicMock(return_value=mock_engine)
+    monkeypatch.setattr(sqlalchemy, "create_engine", mock_create_engine)
+
+    mock_advisory_lock = Mock()
+    monkeypatch.setattr(
+        SQLTrackerStore, "_create_tables_with_advisory_lock", mock_advisory_lock
+    )
+
+    SQLTrackerStore(domain=domain, dialect="postgresql")
+
+    mock_advisory_lock.assert_called_once()
+
+
+def test_sql_tracker_store_non_postgresql_skips_advisory_lock(
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that non-PostgreSQL databases don't use advisory locks."""
+    monkeypatch.setenv(ENV_SANIC_WORKERS, "2")
+
+    with patch.object(
+        SQLTrackerStore,
+        "_create_tables_with_advisory_lock",
+    ) as mock_advisory_lock:
+        with capture_logs() as caplog:
+            tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
+
+            # Verify tracker store was created successfully
+            assert isinstance(tracker_store, SQLTrackerStore)
+
+            # Verify advisory lock method was NOT called for SQLite
+            mock_advisory_lock.assert_not_called()
+
+            # Verify warning was logged
+            logs = filter_logs(
+                caplog,
+                event="sql_tracker_store.multiple_workers_without_locking",
+                log_level="warning",
+                log_message_parts=[
+                    "Advisory lock mechanism is not supported for non-PostgreSQL "
+                    "databases when using multiple Sanic workers."
+                ],
+            )
+            assert len(logs) == 1
+
+
+def test_sql_tracker_store_default_single_worker_skips_advisory_lock(
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that PostgreSQL skips advisory locks with single Sanic worker."""
+    mock_engine = Mock(spec=Engine)
+    mock_engine.url = make_url("postgresql://test_user:***@localhost:5432/test_db")
+
+    mock_create_engine = MagicMock(return_value=mock_engine)
+    monkeypatch.setattr(sqlalchemy, "create_engine", mock_create_engine)
+
+    mock_advisory_lock = Mock()
+    monkeypatch.setattr(
+        SQLTrackerStore, "_create_tables_with_advisory_lock", mock_advisory_lock
+    )
+
+    SQLTrackerStore(domain=domain, dialect="postgresql")
+
+    # Verify advisory lock method was NOT called with single worker
+    mock_advisory_lock.assert_not_called()
+
+
+async def test_sql_tracker_store_advisory_lock_released_on_error(
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that advisory lock is released even when table creation fails."""
+    monkeypatch.setenv(ENV_SANIC_WORKERS, "2")
+
+    lock_calls = []
+    mock_conn = Mock()
+
+    def mock_execute(statement):
+        """Track advisory lock and unlock SQL statements to verify execution order."""
+        statement_str = str(statement)
+        if "pg_advisory_lock" in statement_str:
+            lock_calls.append("lock")
+        elif "pg_advisory_unlock" in statement_str:
+            lock_calls.append("unlock")
+        return Mock()
+
+    mock_conn.execute = mock_execute
+
+    mock_engine = Mock(spec=Engine)
+    mock_engine.url = make_url("postgresql://test_user:***@localhost:5432/test_db")
+    mock_engine.begin = Mock(
+        return_value=Mock(
+            __enter__=Mock(return_value=mock_conn),
+            __exit__=Mock(return_value=False),
+        )
+    )
+
+    mock_create_engine = MagicMock(return_value=mock_engine)
+    monkeypatch.setattr(sqlalchemy, "create_engine", mock_create_engine)
+
+    mock_inspector = Mock()
+    mock_inspector.has_table.return_value = False
+    monkeypatch.setattr(
+        "sqlalchemy.engine.Inspector.from_engine", Mock(return_value=mock_inspector)
+    )
+
+    monkeypatch.setattr(
+        SQLTrackerStore.Base.metadata,
+        "create_all",
+        Mock(side_effect=Exception("Table creation failed")),
+    )
+
+    with pytest.raises(Exception):
+        SQLTrackerStore(domain=domain, dialect="postgresql")
+
+    # Verify unlock happened after lock (lock is always released)
+    assert "lock" in lock_calls
+    assert "unlock" in lock_calls
+    assert lock_calls.index("unlock") > lock_calls.index("lock")
