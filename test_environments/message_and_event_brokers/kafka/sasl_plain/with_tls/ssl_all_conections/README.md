@@ -14,8 +14,8 @@ Client should also import this certificate to verify the identity of the Kafka b
 * `ca-key` - CA private key (used to generate CA certificate `ca-cert`)
 * `cert-request` - certificate request for the broker, it must be signed by the CA before it can be used
 * `signed-server-cert` - signed certificate for the broker, it must be imported into the keystore
-* `ssl_keystore_password` - file containing the password for the keystore
-* `ssk_key_password` - file containing the password for the CA private key, used to unlock the CA certificate
+* `ssl_keystore_credentials` - file containing credentials for the keystore
+* `ssl_key_credentials` - file containing credentials for the CA private key, used to unlock the CA certificate
 * `broker_jaas.conf` - JAAS configuration file for the broker, contains usernames and passwords a client can use to authenticate
 
 

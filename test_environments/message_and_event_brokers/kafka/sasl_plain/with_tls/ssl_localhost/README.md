@@ -11,8 +11,8 @@ Client should also import this certificate to verify the identity of the Kafka b
 * `ca-key` - CA private key (used to generate CA certificate `ca-cert`)
 * `cert-request` - certificate request for the broker, it must be signed by the CA before it can be used
 * `signed-server-cert` - signed certificate for the broker, it must be imported into the keystore
-* `ssl_keystore_password` - file containing the password for the keystore
-* `ssk_key_password` - file containing the password for the CA private key, used to unlock the CA certificate
+* `ssl_keystore_credentials` - file containing credentials for the keystore
+* `ssl_key_credentials` - file containing credentials for the CA private key, used to unlock the CA certificate
 * `broker_jaas.conf` - JAAS configuration file for the broker, contains usernames and passwords a client can use to authenticate
 
 ## How to generate certificates for TLS bound to DNS localhost
@@ -24,7 +24,7 @@ Refer to [this](../README.md#about-certificates) section for more details about 
 
 You can create the certificates and store them in the keystore using the following commands:
 ```shell
-# Create private and public key (public key is usually reffered to as Certificate Authority's certificate or CA certificate)
+# Create private and public key (public key is usually referred to as Certificate Authority's certificate or CA certificate)
 openssl req -x509 -newkey rsa:4096 -keyout ca-key -out ca-cert -days 365 -nodes -subj '/CN=localhost/OU=Atom/O=Rasa/L=Berlin/ST=Germany/C=GE' -passin pass:123456 -passout pass:123456
 
 # Create server keystore protected with storepass and keypass
