@@ -47,7 +47,8 @@ if __name__ == "__main__":
     reports_paths = list(reports_dir.glob("*/report.json"))
 
     for report_path in reports_paths:
-        report_dict = json.load(open(report_path))
+        with open(report_path) as f:
+            report_dict = json.load(f)
         data = combine_result(data, report_dict)
 
     summary_file = os.environ["SUMMARY_FILE"]
