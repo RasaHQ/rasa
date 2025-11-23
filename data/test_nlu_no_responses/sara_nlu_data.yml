@@ -2050,16 +2050,16 @@ nlu:
     - what is the latest version of rasa?
     - Can I use Rasa for E-Mail
     - Can you send messages based on events?
-    - How did rasa works?
+    - How does Rasa work?
     - How do I use ngrok with [rasa x](product)?
     - I want to know more about tracker
     - What is the difference between entities and slots?
     - Where can I get the source code of Rasa?
     - Which other tools can be used to create chatbots?
-    - an I use Rasa for e-mail applications
+    - Can I use Rasa for e-mail applications
     - any open source GUI rasa have?
     - any other tools to create chatbots?
-    - can i install on may mac
+    - can i install on my mac
     - can rasa run standalone
     - db processing
     - do you have docker image for rasa?
@@ -2153,9 +2153,9 @@ nlu:
     - php
     - php code
     - what is the difference between slot and entity
-    - is slot teh same as entity
+    - is slot the same as entity
     - what should I do when I want to use a binary slot
-    - How d I use a boolean slot
+    - How do I use a boolean slot
     - what  are values of a boolean slot
     - fallback
     - stories files
