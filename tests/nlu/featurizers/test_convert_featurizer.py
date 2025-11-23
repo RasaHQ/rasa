@@ -290,10 +290,9 @@ def test_raise_wrong_model_file(
     tmp_path: Path,
 ):
     # create a dummy file
-    temp_file = os.path.join(tmp_path, "saved_model.pb")
-    f = open(temp_file, "wb")
-    f.close()
-    component_config = {FEATURIZER_CLASS_ALIAS: "alias", "model_url": temp_file}
+    temp_file = tmp_path / "saved_model.pb"
+    temp_file.touch()
+    component_config = {FEATURIZER_CLASS_ALIAS: "alias", "model_url": str(temp_file)}
 
     with pytest.raises(RasaException) as excinfo:
         _ = create_or_load_convert_featurizer(component_config)
