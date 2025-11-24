@@ -204,31 +204,46 @@ def _resolve_environment_variables(
 def _set_langfuse_environment_variables(
     config_values: Dict[str, Any], resolved_keys: Dict[str, Optional[str]]
 ) -> None:
-    """Set Langfuse environment variables for LiteLLM integration."""
-    if resolved_keys[LANGFUSE_CONFIG_PUBLIC_KEY] is not None:
-        os.environ["LANGFUSE_PUBLIC_KEY"] = resolved_keys[LANGFUSE_CONFIG_PUBLIC_KEY]  # type: ignore[assignment]
-    if resolved_keys[LANGFUSE_CONFIG_PRIVATE_KEY] is not None:
-        os.environ["LANGFUSE_SECRET_KEY"] = resolved_keys[LANGFUSE_CONFIG_PRIVATE_KEY]  # type: ignore[assignment]
-    if config_values[LANGFUSE_CONFIG_BASE_URL_KEY] is not None:
-        os.environ["LANGFUSE_OTEL_HOST"] = config_values[LANGFUSE_CONFIG_BASE_URL_KEY]
-    if config_values[LANGFUSE_CONFIG_TIMEOUT_KEY] is not None:
-        os.environ["LANGFUSE_TIMEOUT"] = config_values[LANGFUSE_CONFIG_TIMEOUT_KEY]
-    if config_values[LANGFUSE_CONFIG_DEBUG_KEY] is not None:
-        os.environ["LANGFUSE_DEBUG"] = config_values[LANGFUSE_CONFIG_DEBUG_KEY]
-    if config_values[LANGFUSE_CONFIG_ENVIRONMENT_KEY] is not None:
-        os.environ["LANGFUSE_TRACING_ENVIRONMENT"] = config_values[
-            LANGFUSE_CONFIG_ENVIRONMENT_KEY
-        ]
-    if config_values[LANGFUSE_CONFIG_RELEASE_KEY] is not None:
-        os.environ["LANGFUSE_RELEASE"] = config_values[LANGFUSE_CONFIG_RELEASE_KEY]
-    if config_values[LANGFUSE_CONFIG_MEDIA_UPLOAD_THREAD_COUNT_KEY] is not None:
-        os.environ["LANGFUSE_MEDIA_UPLOAD_THREAD_COUNT"] = config_values[
-            LANGFUSE_CONFIG_MEDIA_UPLOAD_THREAD_COUNT_KEY
-        ]
-    if config_values[LANGFUSE_CONFIG_SAMPLE_RATE_KEY] is not None:
-        os.environ["LANGFUSE_SAMPLE_RATE"] = config_values[
-            LANGFUSE_CONFIG_SAMPLE_RATE_KEY
-        ]
+    """Set Langfuse environment variables for LiteLLM integration.
+
+    Logs warnings when overwriting existing environment variables.
+    """
+    # Map of config keys to (source dict, environment variable name)
+    env_var_mappings = [
+        (LANGFUSE_CONFIG_PUBLIC_KEY, resolved_keys, "LANGFUSE_PUBLIC_KEY"),
+        (LANGFUSE_CONFIG_PRIVATE_KEY, resolved_keys, "LANGFUSE_SECRET_KEY"),
+        (LANGFUSE_CONFIG_BASE_URL_KEY, config_values, "LANGFUSE_OTEL_HOST"),
+        (LANGFUSE_CONFIG_TIMEOUT_KEY, config_values, "LANGFUSE_TIMEOUT"),
+        (LANGFUSE_CONFIG_DEBUG_KEY, config_values, "LANGFUSE_DEBUG"),
+        (
+            LANGFUSE_CONFIG_ENVIRONMENT_KEY,
+            config_values,
+            "LANGFUSE_TRACING_ENVIRONMENT",
+        ),
+        (LANGFUSE_CONFIG_RELEASE_KEY, config_values, "LANGFUSE_RELEASE"),
+        (
+            LANGFUSE_CONFIG_MEDIA_UPLOAD_THREAD_COUNT_KEY,
+            config_values,
+            "LANGFUSE_MEDIA_UPLOAD_THREAD_COUNT",
+        ),
+        (LANGFUSE_CONFIG_SAMPLE_RATE_KEY, config_values, "LANGFUSE_SAMPLE_RATE"),
+    ]
+
+    for config_key, source_dict, env_var_name in env_var_mappings:
+        value = source_dict.get(config_key)
+        if value is not None:
+            # Check if environment variable already exists
+            existing_value = os.getenv(env_var_name)
+            if existing_value is not None:
+                structlogger.warning(
+                    "langfuse_configuration.overwriting_env_var",
+                    event_info=(
+                        f"Overwriting existing environment variable '{env_var_name}' "
+                        f"with value from endpoints configuration. "
+                    ),
+                    env_var_name=env_var_name,
+                )
+            os.environ[env_var_name] = value
 
 
 def _configure_litellm_callback() -> None:
