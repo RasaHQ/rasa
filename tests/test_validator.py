@@ -389,24 +389,19 @@ def test_early_exit_on_invalid_domain():
     domain_path = "data/test_domains/duplicate_intents.yml"
 
     importer = RasaFileImporter(domain_path=domain_path)
-    with pytest.warns(UserWarning) as record:
-        warnings.simplefilter("ignore", DeprecationWarning)
+    with structlog.testing.capture_logs() as caplog:
         validator = Validator.from_importer(importer)
-    validator.verify_domain_validity()
-
-    # one for non-unique domain
-    assert len(record) == 1
-
-    non_unique_warnings = list(
-        filter(
-            lambda warning: f"Loading domain from '{domain_path}' failed. "
-            f"Using empty domain. Error: 'Intents are not unique! "
-            f"Found multiple intents with name(s) ['default', 'goodbye']. "
-            f"Either rename or remove the duplicate ones.'" in warning.message.args[0],
-            record,
+        validator.verify_domain_validity()
+        logs = filter_logs(
+            caplog,
+            log_level="error",
+            event="RasaFileImporter.get_domain.invalid_domain",
         )
-    )
-    assert len(non_unique_warnings) == 1
+        assert len(logs) == 1
+        assert (
+            "Intents are not unique! Found multiple intents "
+            "with name(s) ['default', 'goodbye']" in logs[0]["event_info"]
+        )
 
 
 def test_verify_there_is_not_example_repetition_in_intents():
@@ -2740,7 +2735,8 @@ def test_validate_custom_slot_mappings_with_action_property_success(
     capsys: CaptureFixture,
 ) -> None:
     importer = RasaFileImporter(
-        domain_path="data/test_calm_slot_mappings/validation/domain_custom_mappings_valid.yml",
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_custom_slot_mappings_valid.yml",
         training_data_paths=[
             "data/test_calm_slot_mappings/validation/flows_for_valid_custom_slot_mappings.yml",
         ],

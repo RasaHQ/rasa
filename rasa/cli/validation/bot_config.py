@@ -174,11 +174,11 @@ def validate_files(
     elif translations_only:
         all_good = validator.verify_translations()
     else:
-        if importer.get_domain().is_empty():
-            structlogger.error(
-                "cli.validate_files.empty_domain",
-                event_info="Encountered empty domain during validation.",
-            )
+        # Check for empty user-defined domain
+        # before proceeding with other validations.
+        # The user domain could be empty if the
+        # provided domain is missing or invalid
+        if importer.get_user_domain().is_empty():
             display_research_study_prompt()
             raise ValidationError(
                 code="cli.validate_files.empty_domain",
@@ -221,10 +221,6 @@ def validate_files(
 
     telemetry.track_validate_files(all_good)
     if not all_good:
-        structlogger.error(
-            "cli.validate_files.project_validation_error",
-            event_info="Project validation completed with errors.",
-        )
         display_research_study_prompt()
         raise ValidationError(
             code="cli.validate_files.project_validation_error",

@@ -1,6 +1,7 @@
-import logging
 import os
 from typing import Dict, List, Optional, Text, Union
+
+import structlog
 
 import rasa.shared.core.flows.yaml_flows_io
 import rasa.shared.data
@@ -17,7 +18,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.common import cached_method
 from rasa.shared.utils.yaml import read_model_configuration
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger(__name__)
 
 
 class RasaFileImporter(TrainingDataImporter):
@@ -52,7 +53,11 @@ class RasaFileImporter(TrainingDataImporter):
     def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
         if not self.config_file or not os.path.exists(self.config_file):
-            logger.debug("No configuration file was provided to the RasaFileImporter.")
+            structlogger.debug(
+                "RasaFileImporter.get_config.no_config_file ",
+                event_info="No configuration file was provided "
+                "to the RasaFileImporter.",
+            )
             return {}
 
         config = read_model_configuration(
@@ -91,17 +96,20 @@ class RasaFileImporter(TrainingDataImporter):
     @cached_method
     def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
-        domain = Domain.empty()
+        empty_domain = Domain.empty()
 
         # If domain path is None, return an empty domain
         if not self._domain_path:
-            return domain
+            return empty_domain
+
         try:
-            domain = Domain.load(self._domain_path)
-        except InvalidDomain as e:
-            rasa.shared.utils.io.raise_warning(
-                f"Loading domain from '{self._domain_path}' failed. Using "
-                f"empty domain. Error: '{e}'"
+            return Domain.load(self._domain_path)
+        except InvalidDomain as exc:
+            structlogger.error(
+                "RasaFileImporter.get_domain.invalid_domain",
+                domain_path=self._domain_path,
+                event_info=f"Loading domain from '{self._domain_path}' failed. Using "
+                f"empty domain. Error: '{exc}'",
             )
 
-        return domain
+            return empty_domain
