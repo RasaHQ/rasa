@@ -55,9 +55,12 @@ class DevelopmentInspectorPlugin:
         self.inspector = inspector
         self.tasks: List[asyncio.Task] = []
 
-    def _cancel_tasks(self) -> None:
+    async def _cancel_tasks(self) -> None:
         """Cancel all remaining tasks."""
-        [task.cancel() for task in self.tasks]
+        for task in self.tasks:
+            if not task.done():
+                task.cancel()
+                await task
         self.tasks = []
 
     def _cleanup_completed_tasks(self) -> None:
@@ -81,9 +84,9 @@ class DevelopmentInspectorPlugin:
         self._create_broadcast_task(tracker)
 
     @hookimpl
-    def after_server_stop(self) -> None:
+    async def after_server_stop(self) -> None:
         """Cancels all remaining tasks when the server stops."""
-        self._cancel_tasks()
+        await self._cancel_tasks()
 
 
 class DevelopmentInspectProxy(InputChannel):
@@ -147,12 +150,16 @@ class DevelopmentInspectProxy(InputChannel):
 
     async def on_tracker_updated(self, tracker: DialogueStateTracker) -> None:
         """Notifies all clients about tracker updates in real-time."""
-        if self.tracker_stream and tracker.sender_id:
-            state = tracker.current_state(EventVerbosity.AFTER_RESTART)
-            tracker_dump = orjson.dumps(
-                state, option=orjson.OPT_SERIALIZE_NUMPY
-            ).decode("utf-8")
-            await self.tracker_stream.broadcast(tracker_dump)
+        try:
+            if self.tracker_stream and tracker.sender_id:
+                state = tracker.current_state(EventVerbosity.AFTER_RESTART)
+                tracker_dump = orjson.dumps(
+                    state, option=orjson.OPT_SERIALIZE_NUMPY
+                ).decode("utf-8")
+                await self.tracker_stream.broadcast(tracker_dump)
+        except asyncio.CancelledError:
+            structlogger.debug("development_inspector.on_tracker_updated.cancelled")
+            pass
 
     def _record_turn_start_time(self, sender_id: Text) -> None:
         """Records the start time of a new turn."""
@@ -253,16 +260,21 @@ class TrackerStream:
         """Sends a message to a connected client."""
         try:
             await ws.send(message)
-        except exceptions.WebsocketClosed:
+        except (exceptions.WebsocketClosed, asyncio.CancelledError):
             pass
 
     async def broadcast(self, message: str) -> None:
         """Broadcasts a message to all connected clients."""
         if not self._connected_clients:
             return
-        await asyncio.wait(
-            [
-                asyncio.create_task(self._send(websocket, message))
-                for websocket in self._connected_clients
-            ]
-        )
+        # create & track tasks to avoid orphaned tasks on shutdown
+        tasks = [
+            asyncio.create_task(self._send(websocket, message))
+            for websocket in self._connected_clients
+        ]
+        if tasks:
+            _, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            # Cancel any pending tasks
+            for task in pending:
+                task.cancel()
+                await task

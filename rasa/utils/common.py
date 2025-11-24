@@ -145,6 +145,16 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         FutureWarning,
         "ResponseSelector is deprecated and will be removed in a future version.*",
     ),
+    # Suppress Pydantic serialization warnings from LiteLLM responses
+    # https://rasahq.atlassian.net/browse/VO-327
+    (
+        UserWarning,
+        "Pydantic serializer warnings.*",
+    ),
+    (
+        RuntimeWarning,
+        "coroutine 'close_litellm_async_clients' was never awaited",
+    ),
 ]
 
 PYTHON_LOGGING_SCHEMA_DOCS = (

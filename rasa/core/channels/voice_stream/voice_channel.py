@@ -662,7 +662,10 @@ class VoiceInputChannel(InputChannel):
                 elif isinstance(channel_action, EndConversationAction):
                     # end stream event came from the other side
                     await self.handle_disconnect(
-                        channel_websocket, on_new_message, tts_engine, call_parameters
+                        channel_websocket,
+                        on_new_message,
+                        tts_engine,
+                        call_parameters,
                     )
                     break
 
@@ -683,12 +686,9 @@ class VoiceInputChannel(InputChannel):
 
         async def asr_keep_alive_task() -> None:
             interval = getattr(asr_engine.config, "keep_alive_interval", 5)
-            try:
-                while True:
-                    await asyncio.sleep(interval)
-                    await asr_engine.send_keep_alive()
-            except asyncio.CancelledError:
-                pass
+            while True:
+                await asyncio.sleep(interval)
+                await asr_engine.send_keep_alive()
 
         tasks = [
             asyncio.create_task(consume_audio_bytes()),
@@ -696,19 +696,24 @@ class VoiceInputChannel(InputChannel):
             asyncio.create_task(handle_asr_events()),
             asyncio.create_task(asr_keep_alive_task()),
         ]
-        await asyncio.wait(
-            tasks,
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-        for task in tasks:
-            if not task.done():
+        try:
+            await asyncio.wait(
+                tasks,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+        finally:
+            # Cancel all remaining tasks
+            for task in tasks:
                 task.cancel()
 
-        # Cleanup connections
-        await asr_engine.close_connection()
-        await tts_engine.close_connection()
-        await channel_websocket.close()
-        self._cancel_silence_timeout_watcher()
+            # Wait for cancellations to complete, suppressing CancelledError
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+            # Cleanup connections
+            await asr_engine.close_connection()
+            await tts_engine.close_connection()
+            await channel_websocket.close()
+            self._cancel_silence_timeout_watcher()
 
     def create_output_channel(
         self, voice_websocket: Websocket, tts_engine: TTSEngine

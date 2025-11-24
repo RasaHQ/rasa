@@ -186,7 +186,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
                 if activity["name"] == "start":
                     # handled in collect_call_parameters
                     pass
-                elif activity["name"] == "dtmf":
+                elif activity["name"] == "DTMF":
                     return DTMFInputAction(digit=activity["value"])
                 elif activity["name"] == "playFinished":
                     logger.debug("audiocodes_stream.playFinished", data=activity)
