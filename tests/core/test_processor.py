@@ -114,6 +114,7 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
     DialogueStackUpdated,
     Event,
+    FlowCompleted,
     LoopInterrupted,
     ReminderCancelled,
     ReminderScheduled,
@@ -3054,3 +3055,109 @@ async def test_parse_message_with_commands_and_intents_sets_the_coexistence_rout
         assert len(slot_commands) == 1
         assert slot_commands[0]["name"] == ROUTE_TO_CALM_SLOT
         assert slot_commands[0]["value"] == expected_route_session_to_calm_slot_value
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_custom_action_failure_triggers_pattern_internal_error(
+    flow_policy_bot_agent: Agent,
+):
+    action_server_url = "http://some-url"
+    endpoint = EndpointConfig(action_server_url)
+    processor = flow_policy_bot_agent.processor
+    processor.action_endpoint = endpoint
+    sender_id = uuid.uuid4().hex
+
+    message = UserMessage(
+        text="Activate custom action.",
+        output_channel=CollectingOutputChannel(),
+        sender_id=sender_id,
+    )
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            status=500,
+        )
+        await processor.handle_message(message)
+        tracker = await processor.get_tracker(sender_id)
+        bot_uttered = [
+            event for event in tracker.events if isinstance(event, BotUttered)
+        ]
+        assert (
+            bot_uttered[0].text == "Sorry, I am having trouble with that. "
+            "Please try again in a few minutes."
+        )
+        assert (
+            bot_uttered[0].metadata.get("utter_action") == "utter_internal_error_rasa"
+        )
+        assert (
+            FlowCompleted(
+                flow_id="pattern_internal_error",
+                step_id="pattern_internal_error_3_utter_internal_error_rasa",
+            )
+            in tracker.events
+        )
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_processor_get_events_from_action_execution_failure_calm_assistant(
+    flow_policy_bot_agent: Agent,
+):
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    tracker = await processor.get_tracker(sender_id)
+
+    events, actual_tracker = processor._get_events_from_action_execution_failure(
+        tracker
+    )
+    assert len(events) == 1
+    stack_event = events[0]
+    assert isinstance(stack_event, DialogueStackUpdated)
+    assert (
+        '"flow_id": "pattern_internal_error", "step_id": "START", '
+        '"error_type": "rasa_internal_error_default", "info": {}, '
+        '"type": "pattern_internal_error"}}]' in stack_event.update
+    )
+    assert list(actual_tracker.events) == events
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_custom_action_failure_in_nlu_assistant(
+    default_processor: MessageProcessor,
+):
+    action_server_url = "http://some-url"
+    endpoint = EndpointConfig(action_server_url)
+    default_processor.action_endpoint = endpoint
+    sender_id = uuid.uuid4().hex
+
+    message = UserMessage(
+        text="Activate custom action.",
+        output_channel=CollectingOutputChannel(),
+        sender_id=sender_id,
+    )
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            status=500,
+        )
+        await default_processor.handle_message(message)
+        tracker = await default_processor.get_tracker(sender_id)
+        stack_events = [
+            event for event in tracker.events if isinstance(event, DialogueStackUpdated)
+        ]
+        assert len(stack_events) == 0
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_processor_get_events_from_action_execution_failure_nlu_assistant(
+    default_processor: MessageProcessor,
+):
+    sender_id = uuid.uuid4().hex
+    tracker = await default_processor.get_tracker(sender_id)
+
+    events, actual_tracker = (
+        default_processor._get_events_from_action_execution_failure(tracker)
+    )
+    assert events == []
+    assert actual_tracker == tracker

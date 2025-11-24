@@ -41,6 +41,9 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.commands.utils import (
     create_validate_frames_from_slot_set_events,
 )
+from rasa.dialogue_understanding.patterns.internal_error import (
+    InternalErrorPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.patterns.validate_slot import (
     ValidateSlotPatternFlowStackFrame,
 )
@@ -1393,7 +1396,7 @@ class MessageProcessor:
             ]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name())
-        except Exception as e:
+        except Exception as exc:
             structlogger.exception(
                 "rasa.core.processor.run_action.exception",
                 event_info=f"Encountered an exception while "
@@ -1402,14 +1405,14 @@ class MessageProcessor:
                 f"Please check the logs of your action server for "
                 f"more information.",
             )
-            error_messge = str(e)
-            events = []
+            error_message = str(exc)
+            events, tracker = self._get_events_from_action_execution_failure(tracker)
             self._log_action_prediction_on_tracker(
                 tracker,
                 action,
                 prediction,
                 was_successful=False,
-                error_message=error_messge,
+                error_message=error_message,
             )
 
         if any(isinstance(e, UserUttered) for e in events):
@@ -1429,6 +1432,29 @@ class MessageProcessor:
         await self.execute_side_effects(events, tracker, output_channel)
         plugin_manager().hook.after_action_executed(tracker=tracker)
         return self.should_predict_another_action(action.name())
+
+    def _get_events_from_action_execution_failure(
+        self, tracker: DialogueStateTracker
+    ) -> Tuple[List[Event], DialogueStateTracker]:
+        if not self.is_calm_assistant or (
+            tracker.has_coexistence_routing_slot
+            and not tracker.get_slot(ROUTE_TO_CALM_SLOT)
+        ):
+            return [], tracker
+
+        # In CALM assistants or CALM mode, we want to trigger
+        # pattern_internal_error when an action fails
+        structlogger.debug(
+            "rasa.core.processor.run_action.trigger_pattern_internal_error",
+            event_info="Triggering pattern_internal_error "
+            "due to action execution failure.",
+        )
+
+        dialogue_stack = tracker.stack
+        dialogue_stack.push(InternalErrorPatternFlowStackFrame())
+        events = tracker.create_stack_updated_events(dialogue_stack)
+        tracker.update_with_events(events)
+        return events, tracker
 
     def _add_metadata_if_action_listen(
         self, action: Action, prediction: PolicyPrediction
