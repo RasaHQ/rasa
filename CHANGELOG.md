@@ -415,6 +415,18 @@ Rasa Pro 3.14.0 (2025-10-09)
 - [#1892](https://github.com/rasahq/rasa-private/issues/1892), [#2184](https://github.com/rasahq/rasa-private/issues/2184), [#2767](https://github.com/rasahq/rasa-private/issues/2767), [#2814](https://github.com/rasahq/rasa-private/issues/2814), [#2863](https://github.com/rasahq/rasa-private/issues/2863), [#2911](https://github.com/rasahq/rasa-private/issues/2911), [#2913](https://github.com/rasahq/rasa-private/issues/2913), [#2916](https://github.com/rasahq/rasa-private/issues/2916), [#2957](https://github.com/rasahq/rasa-private/issues/2957), [#2990](https://github.com/rasahq/rasa-private/issues/2990), [#3018](https://github.com/rasahq/rasa-private/issues/3018), [#3019](https://github.com/rasahq/rasa-private/issues/3019), [#3052](https://github.com/rasahq/rasa-private/issues/3052), [#3078](https://github.com/rasahq/rasa-private/issues/3078), [#3094](https://github.com/rasahq/rasa-private/issues/3094), [#3121](https://github.com/rasahq/rasa-private/issues/3121), [#3125](https://github.com/rasahq/rasa-private/issues/3125), [#3207](https://github.com/rasahq/rasa-private/issues/3207), [#3208](https://github.com/rasahq/rasa-private/issues/3208), [#3260](https://github.com/rasahq/rasa-private/issues/3260), [#3289](https://github.com/rasahq/rasa-private/issues/3289), [#3319](https://github.com/rasahq/rasa-private/issues/3319), [#3374](https://github.com/rasahq/rasa-private/issues/3374), [#3375](https://github.com/rasahq/rasa-private/issues/3375), [#3411](https://github.com/rasahq/rasa-private/issues/3411)
 
 
+## [3.13.16] - 2025-11-21
+                         
+Rasa Pro 3.13.16 (2025-11-21)                              
+### Bugfixes
+- [#3864](https://github.com/rasahq/rasa-private/issues/3864): Fixed `patten-continue-interrupted` running out of order before linked flows.
+- [#3933](https://github.com/rasahq/rasa-private/issues/3933): Fix `rasa studio upload` timeouts by enabling TCP keep-alive with platform-specific socket options to maintain stable connections.
+- [#3948](https://github.com/rasahq/rasa-private/issues/3948): Remove `action_metadata` tracing span attribute from `EnterpriseSearchPolicy` instrumentation to prevent PII leakages.
+  Add new environment variable `RASA_TRACING_DEBUGGING_ENABLED` to enable adding `action_metadata` to
+  `EnterpriseSearchPolicy` spans for debugging purposes. By default, this variable is set to `false` to ensure PII is not logged
+  in production environments.
+
+
 ## [3.13.15] - 2025-11-13
 
 Rasa Pro 3.13.15 (2025-11-13)
