@@ -443,6 +443,26 @@ async def run_copilot_training_error_analysis_job(
         )
         intercepted_stream = copilot_response_handler.handle_response(original_stream)
 
+        commit_info = None
+        if job.commit_sha:
+            # Get commit info
+            commit_info = await app.ctx.project_generator.git_service.get_commit_info(
+                job.commit_sha
+            )
+
+            commit_info["training_success"] = False
+
+            # Send commit
+            await push_job_status_event(
+                job,
+                JobStatus.copilot_analyzing,
+                payload={
+                    "response_category": "copilot",
+                    "commit": commit_info,
+                    "completeness": "complete",
+                },
+            )
+
         # Stream the copilot response as job events
         async for token in intercepted_stream:
             # Send each token as a job event using the same format as /copilot endpoint
@@ -464,26 +484,6 @@ async def run_copilot_training_error_analysis_job(
         await push_job_status_event(
             job, JobStatus.copilot_analyzing, payload=training_error_log.sse_data
         )
-
-        commit_info = None
-        if job.commit_sha:
-            # Get commit info
-            commit_info = await app.ctx.project_generator.git_service.get_commit_info(
-                job.commit_sha
-            )
-
-            commit_info["training_success"] = False
-
-            # Send commit
-            await push_job_status_event(
-                job,
-                JobStatus.copilot_analyzing,
-                payload={
-                    "response_category": "copilot",
-                    "commit": commit_info,
-                    "completeness": "complete",
-                },
-            )
 
         # Persist the training error analysis to history
         full_text, _ = copilot_response_handler.extract_full_text_and_category()
@@ -553,17 +553,6 @@ async def run_copilot_welcome_message_job(
         else:
             welcome_message = welcome_messages.get(PROMPT_TO_BOT_KEY)
 
-        # Send the welcome message as a single event
-        await push_job_status_event(
-            job,
-            JobStatus.copilot_welcome_message,
-            payload={
-                "content": welcome_message,
-                "response_category": "copilot",
-                "completeness": "complete",
-            },
-        )
-
         commit_info = None
         if job.commit_sha:
             # Get commit info
@@ -583,6 +572,17 @@ async def run_copilot_welcome_message_job(
                     "completeness": "complete",
                 },
             )
+
+        # Send the welcome message as a single event
+        await push_job_status_event(
+            job,
+            JobStatus.copilot_welcome_message,
+            payload={
+                "content": welcome_message,
+                "response_category": "copilot",
+                "completeness": "complete",
+            },
+        )
 
         # Persist the welcome message to conversation history
         await persist_copilot_message_to_history(
@@ -628,17 +628,6 @@ async def run_copilot_training_success_job(
         # Get the appropriate training success message
         training_success_message = internal_messages.get("training_success_response")
 
-        # Send the training success message
-        await push_job_status_event(
-            job,
-            JobStatus.train_success_message,
-            payload={
-                "content": training_success_message,
-                "response_category": "copilot",
-                "completeness": "complete",
-            },
-        )
-
         commit_info = None
         if job.commit_sha:
             # Get commit info
@@ -659,6 +648,17 @@ async def run_copilot_training_success_job(
                     "completeness": "complete",
                 },
             )
+
+        # Send the training success message
+        await push_job_status_event(
+            job,
+            JobStatus.train_success_message,
+            payload={
+                "content": training_success_message,
+                "response_category": "copilot",
+                "completeness": "complete",
+            },
+        )
 
         await persist_copilot_message_to_history(
             text=training_success_message, commit=commit_info
@@ -709,17 +709,6 @@ async def run_copilot_go_back_in_time_success_job(
         # Get the appropriate rollback success message
         success_message = internal_messages.get(internal_message_key)
 
-        # Send the success message
-        await push_job_status_event(
-            job,
-            status,
-            payload={
-                "content": success_message,
-                "response_category": "copilot",
-                "completeness": "complete",
-            },
-        )
-
         commit_info = None
         if job.commit_sha:
             # Get commit info
@@ -739,6 +728,17 @@ async def run_copilot_go_back_in_time_success_job(
                     "completeness": "complete",
                 },
             )
+
+        # Send the success message
+        await push_job_status_event(
+            job,
+            status,
+            payload={
+                "content": success_message,
+                "response_category": "copilot",
+                "completeness": "complete",
+            },
+        )
 
         await persist_copilot_message_to_history(
             text=success_message, commit=commit_info

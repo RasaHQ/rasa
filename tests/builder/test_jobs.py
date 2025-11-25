@@ -714,7 +714,12 @@ class TestCopilotWelcomeMessage:
         # Now expects 2 calls: welcome message + commit info
         assert len(welcome_calls) == 2
 
-        welcome_payload = welcome_calls[0][1]["payload"]
+        commit_payload = welcome_calls[0][1]["payload"]
+        assert "commit" in commit_payload
+        assert "sha" in commit_payload["commit"]
+        assert commit_payload["commit"]["sha"] == "test_sha"
+
+        welcome_payload = welcome_calls[1][1]["payload"]
         assert "content" in welcome_payload
         assert "response_category" in welcome_payload
         assert "completeness" in welcome_payload
@@ -722,11 +727,6 @@ class TestCopilotWelcomeMessage:
         assert welcome_payload["completeness"] == "complete"
         for snippet in expected_content_snippets:
             assert snippet in welcome_payload["content"]
-
-        commit_payload = welcome_calls[1][1]["payload"]
-        assert "commit" in commit_payload
-        assert "sha" in commit_payload["commit"]
-        assert commit_payload["commit"]["sha"] == "test_sha"
 
     @staticmethod
     def _verify_done_event_sent(mock_push_event):
@@ -1211,7 +1211,13 @@ class TestCopilotTrainingSuccessJob:
         # Now expects 2 calls: message + commit info with training success
         assert len(training_success_calls) == 2
 
-        training_success_payload = training_success_calls[0][1]["payload"]
+        commit_payload = training_success_calls[0][1]["payload"]
+        assert "commit" in commit_payload
+        assert "sha" in commit_payload["commit"]
+        assert commit_payload["commit"]["sha"] == "test_sha"
+        assert commit_payload["commit"]["training_success"] is True
+
+        training_success_payload = training_success_calls[1][1]["payload"]
         assert "content" in training_success_payload
         assert "response_category" in training_success_payload
         assert "completeness" in training_success_payload
@@ -1219,12 +1225,6 @@ class TestCopilotTrainingSuccessJob:
         assert training_success_payload["completeness"] == "complete"
         for snippet in expected_content_snippets:
             assert snippet in training_success_payload["content"]
-
-        commit_payload = training_success_calls[1][1]["payload"]
-        assert "commit" in commit_payload
-        assert "sha" in commit_payload["commit"]
-        assert commit_payload["commit"]["sha"] == "test_sha"
-        assert commit_payload["commit"]["training_success"] is True
 
     @staticmethod
     def _verify_done_event_sent(mock_push_event):
@@ -1363,16 +1363,7 @@ class TestCopilotRollbackSuccessJob:
         # Now expects 2 calls: message + commit info with rollback success
         assert len(rollback_success_calls) == 2
 
-        rollback_success_payload = rollback_success_calls[0][1]["payload"]
-        assert "content" in rollback_success_payload
-        assert "response_category" in rollback_success_payload
-        assert "completeness" in rollback_success_payload
-        assert rollback_success_payload["response_category"] == "copilot"
-        assert rollback_success_payload["completeness"] == "complete"
-        for snippet in expected_content_snippets:
-            assert snippet in rollback_success_payload["content"]
-
-        commit_payload = rollback_success_calls[1][1]["payload"]
+        commit_payload = rollback_success_calls[0][1]["payload"]
         assert "commit" in commit_payload
         assert "sha" in commit_payload["commit"]
         assert commit_payload["commit"]["sha"] == "test_sha"
@@ -1380,6 +1371,15 @@ class TestCopilotRollbackSuccessJob:
         assert commit_payload["commit"]["message"] == "test commit"
         assert "author" in commit_payload["commit"]
         assert commit_payload["commit"]["author"] == "test_author"
+
+        rollback_success_payload = rollback_success_calls[1][1]["payload"]
+        assert "content" in rollback_success_payload
+        assert "response_category" in rollback_success_payload
+        assert "completeness" in rollback_success_payload
+        assert rollback_success_payload["response_category"] == "copilot"
+        assert rollback_success_payload["completeness"] == "complete"
+        for snippet in expected_content_snippets:
+            assert snippet in rollback_success_payload["content"]
 
     @staticmethod
     def _verify_done_event_sent(mock_push_event):
