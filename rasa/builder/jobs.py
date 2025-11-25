@@ -463,6 +463,12 @@ async def run_copilot_training_error_analysis_job(
                 },
             )
 
+        # Send original error log as part of copilot_analyzing stream
+        training_error_log = TrainingErrorLog(logs=[log_content_block])
+        await push_job_status_event(
+            job, JobStatus.copilot_analyzing, payload=training_error_log.sse_data
+        )
+
         # Stream the copilot response as job events
         async for token in intercepted_stream:
             # Send each token as a job event using the same format as /copilot endpoint
@@ -478,12 +484,6 @@ async def run_copilot_training_error_analysis_job(
             await push_job_status_event(
                 job, JobStatus.copilot_analyzing, payload=reference_section.sse_data
             )
-
-        # Send original error log as part of copilot_analyzing stream
-        training_error_log = TrainingErrorLog(logs=[log_content_block])
-        await push_job_status_event(
-            job, JobStatus.copilot_analyzing, payload=training_error_log.sse_data
-        )
 
         # Persist the training error analysis to history
         full_text, _ = copilot_response_handler.extract_full_text_and_category()
