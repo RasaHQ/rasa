@@ -93,6 +93,7 @@ from rasa.shared.core.events import (
     Event,
     ReminderCancelled,
     ReminderScheduled,
+    SessionEnded,
     SlotSet,
     UserUttered,
 )
@@ -371,7 +372,11 @@ class MessageProcessor:
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
         """
-        if not tracker.applied_events() or self._has_session_expired(tracker):
+        if (
+            not tracker.applied_events()
+            or self._has_session_expired(tracker)
+            or tracker.is_ending_with_event(SessionEnded)
+        ):
             structlogger.debug(
                 "rasa.core.processor._update_tracker_session",
                 event_info="Starting a new session.",

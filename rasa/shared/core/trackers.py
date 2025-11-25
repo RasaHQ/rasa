@@ -1198,6 +1198,18 @@ class DialogueStateTracker:
 
         return list(reversed(last_turn_events))
 
+    def is_ending_with_event(self, event_type: Type[Event]) -> bool:
+        """Check if the tracker ends with an event of the given type.
+
+        Args:
+            event_type: The type of event to check against.
+        Returns:
+            True if the last event is of the given type, False otherwise.
+        """
+        if not self.events:
+            return False
+        return isinstance(self.events[-1], event_type)
+
 
 class TrackerEventDiffEngine:
     """Computes event difference of two trackers."""

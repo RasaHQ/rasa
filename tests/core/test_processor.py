@@ -119,6 +119,7 @@ from rasa.shared.core.events import (
     ReminderCancelled,
     ReminderScheduled,
     Restarted,
+    SessionEnded,
     SessionStarted,
     SlotSet,
     UserUttered,
@@ -656,6 +657,37 @@ async def test_update_tracker_session(
 
     assert list(tracker.events) == [
         ActionExecuted(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+
+async def test_update_tracker_session_after_session_ended(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+):
+    """Test that a session start is added even after a session end event."""
+    sender_id = uuid.uuid4().hex
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker.events.append(SessionEnded())
+
+    # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
+    # does something
+    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: False)
+
+    await default_processor._update_tracker_session(tracker, default_channel)
+
+    # the save is not called in _update_tracker_session()
+    await default_processor.save_tracker(tracker)
+
+    # inspect tracker and make sure all events are present
+    tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
+
+    assert list(tracker.events) == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        SessionEnded(),
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
