@@ -146,11 +146,12 @@ def _get_tracer_provider(endpoints_file: Text) -> Optional[TracerProvider]:
 
     if not tracing_config:
         structlogger.info(
-            "endpoint.read.no_tracing_config",
+            "endpoint.read.no_backend_tracing_config",
             filename=os.path.abspath(endpoints_file),
             event_info=(
-                f"No endpoint for tracing type available in {endpoints_file}, "
-                f"tracing will not be configured."
+                f"No backend tracing configuration found in {endpoints_file}. "
+                f"Supported backend tracing types are 'jaeger' and 'otlp'. "
+                f"Backend tracing will not be configured."
             ),
         )
         return None
