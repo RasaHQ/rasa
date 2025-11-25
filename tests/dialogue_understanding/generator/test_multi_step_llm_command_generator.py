@@ -433,14 +433,17 @@ class TestMultiStepLLMCommandGenerator:
                 ],
             ),
             # Clarify of non-existent option is dropped
-            ("Clarify(transfer_money)", []),
+            ("Clarify(transfer_money)", [ClarifyCommand(options=[])]),
             # Clarify orders options
             (
                 "Clarify(some_flow, 02_benefits_learning_days)",
                 [ClarifyCommand(options=["02_benefits_learning_days", "some_flow"])],
             ),
             ("Clarify(some_flow)", [StartFlowCommand(flow="some_flow")]),
-            ("Clarify(test_1, test_2, test_3, test_4, test_5, test_6)", []),
+            (
+                "Clarify(test_1, test_2, test_3, test_4, test_5, test_6)",
+                [ClarifyCommand(options=[])],
+            ),
             (
                 "Clarify(some_flow, test_2, test_3, test_4, test_5, test_6)",
                 [StartFlowCommand(flow="some_flow")],

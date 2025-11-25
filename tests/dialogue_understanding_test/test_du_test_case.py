@@ -672,19 +672,6 @@ class TestDialogueUnderstandingTestCase:
         except ValueError:
             pytest.fail("ValueError raised unexpectedly.")
 
-    def test_raise_error_on_parsing_clarify_command_with_nonexisting_flow_arg(
-        self, sample_flow_list: FlowsList
-    ):
-        with pytest.raises(ValueError) as exc_info:
-            DialogueUnderstandingTestStep.from_dict(
-                step={"user": "hello", "commands": ["Clarify(non_existing_flow)"]},
-                flows=sample_flow_list,
-            )
-        assert (
-            "Failed to parse command 'Clarify(non_existing_flow)': command parser "
-            "returned None" in str(exc_info.value)
-        )
-
     def test_do_raise_error_on_parsing_valid_clarify_command(
         self, sample_flow_list: FlowsList
     ):

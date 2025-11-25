@@ -266,7 +266,6 @@ class DialogueUnderstandingTestStep(BaseModel):
                 parsed_commands = parse_commands(
                     command,
                     flows,
-                    clarify_options_optional=True,
                     additional_commands=custom_command_classes,
                     default_commands_to_remove=remove_default_commands,
                 )

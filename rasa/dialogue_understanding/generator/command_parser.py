@@ -216,11 +216,7 @@ def _parse_clarify_command(
     # if no options are available
     if not parsed_command.options:
         # Return the command if options are optional; else, return an empty list
-        return (
-            ClarifyCommand([])
-            if kwargs.get("clarify_options_optional", False)
-            else None
-        )
+        return ClarifyCommand([])
     valid_options = [
         flow for flow in parsed_command.options if flow in flows.user_flow_ids
     ]
@@ -229,11 +225,7 @@ def _parse_clarify_command(
     # if there is only one valid option, start the flow
     if len(unique_valid_options) == 1:
         return start_flow_by_name(valid_options[0], flows)
-
-    # if there are multiple valid options, return a clarify command
-    if len(valid_options) > 1:
-        return ClarifyCommand(valid_options)
-    return None
+    return ClarifyCommand(valid_options)
 
 
 def _parse_start_flow_command(

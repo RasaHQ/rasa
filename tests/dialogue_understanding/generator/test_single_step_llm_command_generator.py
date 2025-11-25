@@ -1017,7 +1017,7 @@ class TestSingleStepLLMCommandGenerator:
                 ],
             ),
             # Clarify of non-existent option is dropped
-            ("Clarify(transfer_money)", []),
+            ("Clarify(transfer_money)", [ClarifyCommand(options=[])]),
             # Clarify orders options
             (
                 "Clarify(some_flow, 02_benefits_learning_days)",

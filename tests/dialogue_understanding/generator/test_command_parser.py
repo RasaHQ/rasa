@@ -191,9 +191,7 @@ def test_parse_commands_clarify_command_optional():
 
 def test_parse_commands_clarify_command_optional_retuns_empty_command():
     # When
-    commands = parse_commands(
-        "Clarify()", FlowsList(underlying_flows=[]), clarify_options_optional=True
-    )
+    commands = parse_commands("Clarify()", FlowsList(underlying_flows=[]))
 
     # Then
     assert commands == [ClarifyCommand([])]
@@ -204,7 +202,7 @@ def test_parse_commands_clarify_command_optional_retuns_empty_list():
     commands = parse_commands("Clarify()", FlowsList(underlying_flows=[]))
 
     # Then
-    assert commands == []
+    assert commands == [ClarifyCommand(options=[])]
 
 
 def test_parse_commands_cancel_command():

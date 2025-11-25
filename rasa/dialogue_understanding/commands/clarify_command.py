@@ -148,10 +148,10 @@ class ClarifyCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: r"Clarify\(([\"\'a-zA-Z0-9_, -]*)\)",
             CommandSyntaxVersion.v2: (
-                r"""^[\s\W\d]*disambiguate flows (["'a-zA-Z0-9_, -]*)[\W]*$"""
+                r"""^[\s\W\d]*disambiguate flows\s*(["'a-zA-Z0-9_, -]*)[\W]*$"""
             ),
             CommandSyntaxVersion.v3: (
-                r"""^[\s\W\d]*disambiguate flows (["'a-zA-Z0-9_, -]*)[\W]*$"""
+                r"""^[\s\W\d]*disambiguate flows\s*(["'a-zA-Z0-9_, -]*)[\W]*$"""
             ),
         }
         return mapper.get(

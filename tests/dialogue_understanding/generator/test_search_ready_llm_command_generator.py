@@ -1068,7 +1068,7 @@ class TestSearchReadyLLMCommandGenerator:
                 ],
             ),
             # Clarify of non-existent option is dropped
-            ("disambiguate flows transfer_money", []),
+            ("disambiguate flows transfer_money", [ClarifyCommand(options=[])]),
             # Clarify orders options
             (
                 "disambiguate flows some_flow 02_benefits_learning_days",
