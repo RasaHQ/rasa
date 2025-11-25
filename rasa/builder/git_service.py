@@ -290,7 +290,8 @@ class GitService:
         async with self.git_operation():
             # Ensure a clean workspace so revert can proceed without conflicts
             await self.run_git_command(["reset", "--hard", "HEAD"])  # discard changes
-            await self.run_git_command(["clean", "-fdx"])  # remove untracked files
+            # Clean untracked files (including ignored files with -x) but preserve .rasa
+            await self.run_git_command(["clean", "-fdx", "-e", ".rasa"])
 
             # Revert all commits from target (exclusive) to HEAD, staging the inverse
             # changes. This results in the tree matching the target commit after

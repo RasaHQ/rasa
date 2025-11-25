@@ -196,7 +196,7 @@ class TestGitService:
         """Test rollback creates a new commit by reverting to target commit tree."""
         mock_git_command_async.side_effect = [
             None,  # reset --hard HEAD
-            None,  # clean -fdx
+            None,  # clean -fdx -e .rasa
             None,  # revert --no-commit <sha>..HEAD
             "abc123def456|user|user@example.com|1640995200|Initial commit\n",
             None,  # commit
@@ -206,7 +206,7 @@ class TestGitService:
         result = await git_service.rollback_to_commit("abc123def456")
 
         mock_git_command_async.assert_any_call(["reset", "--hard", "HEAD"])
-        mock_git_command_async.assert_any_call(["clean", "-fdx"])
+        mock_git_command_async.assert_any_call(["clean", "-fdx", "-e", ".rasa"])
         mock_git_command_async.assert_any_call(
             [
                 "revert",
