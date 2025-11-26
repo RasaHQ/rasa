@@ -672,12 +672,19 @@ class Validator:
             all_good = False
 
         slot = domain_slots.get(collect.collect)
-        slot_has_initial_value_defind = slot and slot.initial_value is not None
+        slot_has_initial_value_defined = slot and slot.initial_value is not None
+        # we need to check if the slot with initial_value define is asked by
+        # a collect step which set ask_before_filling to True
+        ask_before_filling_is_true = (
+            slot_has_initial_value_defined and collect.ask_before_filling
+        )
 
-        if (
-            not slot_has_initial_value_defind
-            and not has_utterance_defined
-            and not has_action_defined
+        missing_utterance_and_action = (
+            not has_utterance_defined and not has_action_defined
+        )
+
+        if missing_utterance_and_action and (
+            not slot_has_initial_value_defined or ask_before_filling_is_true
         ):
             structlogger.error(
                 "validator.verify_flows_steps_against_domain.collect_step",
@@ -687,9 +694,8 @@ class Validator:
                 flow=flow_id,
                 event_info=(
                     f"The collect step '{collect.collect}' has neither a response "
-                    f"nor an action defined, nor an initial value defined in the "
-                    f"domain. You can fix this by adding a response named "
-                    f"'{collect.utter}' used in the collect step."
+                    f"nor an action defined. You can fix this by adding a response "
+                    f"named '{collect.utter}' used in the collect step."
                 ),
             )
             all_good = False

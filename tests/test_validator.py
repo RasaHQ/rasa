@@ -2250,25 +2250,44 @@ def test_validator_fail_as_both_utterance_and_action_defined_for_collect(
     assert expected_log_level in result.out
 
 
-def test_validator_fail_as_both_utterance_and_action_not_defined_for_collect(
-    capsys: CaptureFixture,
-) -> None:
-    test_domain = Domain.from_yaml(
-        f"""
+@pytest.mark.parametrize(
+    "test_domain_yaml, ask_before_filling",
+    [
+        (
+            f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         slots:
             transfer_amount:
                 type: float
-                mappings: []
-        """
-    )
+        """,
+            False,
+        ),
+        (
+            f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+            transfer_amount:
+                type: float
+                initial_value: 100
+        """,
+            True,
+        ),
+    ],
+)
+def test_validator_fail_as_both_utterance_and_action_not_defined_for_collect(
+    capsys: CaptureFixture,
+    test_domain_yaml: str,
+    ask_before_filling: bool,
+) -> None:
+    test_domain = Domain.from_yaml(test_domain_yaml)
     flows = flows_from_str(
-        """
+        f"""
         flows:
           flow_bar:
             description: Test flow.
             steps:
             - collect: transfer_amount
+              ask_before_filling: {ask_before_filling}
         """
     )
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
@@ -2277,8 +2296,8 @@ def test_validator_fail_as_both_utterance_and_action_not_defined_for_collect(
     expected_log_event = "validator.verify_flows_steps_against_domain.collect_step"
     expected_log_message = (
         "The collect step 'transfer_amount' has neither a response nor an action "
-        "defined, nor an initial value defined in the domain. You can fix this by "
-        "adding a response named 'utter_ask_transfer_amount' used in the collect step."
+        "defined. You can fix this by adding a response named "
+        "'utter_ask_transfer_amount' used in the collect step."
     )
     assert validator.verify_flows_steps_against_domain() is False
 
@@ -2347,7 +2366,6 @@ def test_validator_pass_as_initial_slot_value_defined_for_collect() -> None:
             transfer_amount:
                 type: float
                 initial_value: 100
-                mappings: []
         """
     )
     flows = flows_from_str(
