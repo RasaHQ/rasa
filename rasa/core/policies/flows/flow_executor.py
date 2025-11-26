@@ -890,6 +890,7 @@ def _set_dtmf_state_if_available(step: CollectInformationFlowStep) -> None:
     try:
         call_state.is_collecting_dtmf = True
         call_state.dtmf_config = step.dtmf
+        call_state.dtmf_buffer = ""
     except (LookupError, RuntimeError):
         # call_state is not initialized - this is expected for non-voice channels
         structlogger.debug(

@@ -182,7 +182,7 @@ def test_map_input_message_dtmf(input_channel: AudiocodesVoiceInputChannel):
         "type": "activities",
         "activities": [
             {
-                "name": "dtmf",
+                "name": "DTMF",
                 "value": "5",
             }
         ],
@@ -206,7 +206,7 @@ def test_map_input_message_dtmf_all_digits(
         "type": "activities",
         "activities": [
             {
-                "name": "dtmf",
+                "name": "DTMF",
                 "value": dtmf_digit,
             }
         ],

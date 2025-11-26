@@ -217,7 +217,7 @@ class GenesysInputChannel(VoiceInputChannel):
                 self.handle_close(ws, data)
                 return EndConversationAction()
             elif msg_type == "ping":
-                logger.info("genesys.handle_ping", message=data)
+                logger.debug("genesys.handle_ping", message=data)
                 self.handle_ping(ws, data)
             elif msg_type == "playback_started":
                 logger.debug("genesys.handle_playback_started", message=data)
