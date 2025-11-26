@@ -10,6 +10,136 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.0] - 2025-11-26
+                        
+Rasa Pro 3.15.0 (2025-11-26)                             
+### Features
+- [#2480](https://github.com/rasahq/rasa-private/issues/2480): Added Langfuse integration for tracing LLM and embedding calls.
+  All LLM-based components (Command Generators, Rephraser, Enterprise Search Policy, ReAct Sub Agent) and embedding operations are automatically traced when Langfuse is configured.
+  Each trace includes, among other things, input/output, latency, token usage, cost, session ID, and component name.
+
+  To get started, configure Langfuse by adding a `langfuse` entry to the `tracing` section in `endpoints.yml`.
+
+  Example:
+  ```yaml
+  tracing:
+    - type: langfuse
+      public_key: ${LANGFUSE_PUBLIC_KEY}
+      private_key: ${LANGFUSE_PRIVATE_KEY}
+      host: https://cloud.langfuse.com
+  ```
+
+  Custom components can override `get_llm_tracing_metadata()` to customize metadata.
+- [#3601](https://github.com/rasahq/rasa-private/issues/3601): Added support for triggering clarification when multiple `StartFlow` commands are generated with no active flow. 
+  To enable this feature, set the `CLARIFY_ON_MULTIPLE_START_FLOWS` environment variable to `True`.
+- [#3603](https://github.com/rasahq/rasa-private/issues/3603): Adds DTMF (Dual-Tone Multi-Frequency) input support for collect steps in flows. Voice channels can now configure DTMF collection with options for digit length, finish key, and audio input control. The feature gracefully handles non-voice channels by skipping DTMF configuration when call_state is not initialized.
+- [#3634](https://github.com/rasahq/rasa-private/issues/3634): Added new CLI option `-f, --e2e-failed-tests` to export failed e2e tests to a file that can be directly used to re-run only those tests.
+  It accepts an optional filename or directory path, with automatic timestamping to prevent overwriting previous test runs.
+- [#3693](https://github.com/rasahq/rasa-private/issues/3693): Added support for including current datetime information by default in LLM prompts. This feature enables LLM-based components to include date and time context in their prompts, helping the model understand temporal references and provide time-aware responses.
+
+  **Components Updated:**
+  - `CompactLLMCommandGenerator`
+  - `SearchReadyLLMCommandGenerator`
+  - `EnterpriseSearchPolicy`
+  - `MCPOpenAgent` (with timezone support)
+  - `MCPTaskAgent` (with timezone support)
+
+  **Prompt Template Updates:**
+  When `include_date_time` is enabled, prompts include a "Date & Time Context" section showing:
+  - Current date (formatted as "DD Month, YYYY")
+  - Current time (formatted as "HH:MM:SS" with timezone)
+  - Current day of the week
+
+  **E2E Testing Support:**
+  For deterministic testing, you can mock the datetime using the `mocked_datetime` slot in e2e test fixtures. The mocked datetime value must be provided in ISO 8601 format (e.g., `"2024-01-15T10:30:00+00:00"`). The e2e test runner validates the format and raises a `ValidationError` if the value is invalid.
+
+### Improvements
+- [#2454](https://github.com/rasahq/rasa-private/issues/2454): Updated `pattern_completed` to check wether the user wants to continue the conversation or not by adding a `collect` step to the pattern.
+- [#2482](https://github.com/rasahq/rasa-private/issues/2482): The `OutputChannel` is now provided to policies through the graph inputs.
+  This enables any policy to access the output channel and send messages directly
+  to the user, which is particularly useful for sending intermediate or filler messages.
+- [#3573](https://github.com/rasahq/rasa-private/issues/3573): Allow LLM responses to be streamed to the output channel for any generative responses. This currently only applies to Enterprise Search Policy and Rephraser. Output channels that support streaming should handle duplicate message prevention when a response has already been streamed.
+  Voice output channels (Browser Audio, Genesys, Audiocodes Stream, and Jambonz Stream) have been updated to use the streaming tokens to prepare the Text-to-Speech audio stream instead of waiting for the complete response to be generated.
+  These changes are backward compatible; any existing channel does NOT need any additional changes. However, it can add new methods to make use of the streaming responses whenever they are available.
+- [#3712](https://github.com/rasahq/rasa-private/issues/3712): Enhanced the clarification pattern with a configurable limit on the number of flows in the clarification options.
+  Added a new slot `max_clarification_options` to the `default_flows_for_patterns.yml` with an initial value of `3` which can be changed by overriding the `initial_value` of the slot `max_clarification_options` to customize the maximum number of flows displayed during clarification.
+- [#3745](https://github.com/rasahq/rasa-private/issues/3745): Enhanced the clarification pattern to handle empty clarification options.
+  Added `utter_clarification_no_options_rasa` response to `default_flows_for_patterns.yml`, triggered when `pattern_clarification` receives a `ClarifyCommand` with no options.
+- [#3749](https://github.com/rasahq/rasa-private/issues/3749): Allow e2e test results CLI flag `-o`, `--e2e-results` to be specified with a custom path.
+  If the flag is used without a path, the default path `tests/` is used.
+- [#3865](https://github.com/rasahq/rasa-private/issues/3865): Enable generative responses dispatched by custom actions to be evaluated by `generative_response_is_grounded` and `generative_response_is_relevant`
+  assertions in E2E testing.
+  In order for the E2E testing framework to evaluate generative responses dispatched by custom actions, you must add the
+  custom action dispatching the generative bot response to the `utter_source` key of the appopriate assertion in the E2E test case.
+  For example, if you have a custom action `action_generate_summary` that generates a summary using a generative model,
+  you can add the following assertion to your E2E test case:
+  ```yaml
+  test_cases:
+    - test_case: Generate summary for user query
+      steps:
+        - user: |
+            Can you provide a summary of the latest news on climate change?
+          assertions:
+            - generative_response_is_grounded:
+                threshold: 0.8
+                utter_source: action_generate_summary
+                ground_truth: <insert_ground_truth_summary_here>
+
+            - generative_response_is_relevant:
+                threshold: 0.9
+                utter_source: action_generate_summary
+  ```
+- [#3917](https://github.com/rasahq/rasa-private/issues/3917): Allow `flow_started` and `pattern_clarification_contains` E2E testing assertions to define the operator i.e. `all`, `any`,
+  for matching multiple flow_id values.
+  Previously, `flow_started` only supported a single flow_id value, while `pattern_clarification_contains` defaulted to `all`.
+  Introduce new format to specify the operator explicitly:
+  ```yaml
+  test_cases:
+    - test_case: user is asked to clarify contact-related message
+      steps:
+        - user: contacts
+          assertions:
+            - pattern_clarification_contains:
+                operator: "any"
+                flow_ids:
+                  - remove_contact
+                  - list_contacts
+                  - add_contact
+                  - update_contact
+    - test_case: user removes a missing contact
+      steps:
+        - user: i want to remove a contact
+          assertions:
+            - flow_started:
+                operator: "any"
+                flow_ids:
+                  - remove_contact
+                  - update_contact
+  ```
+  The `operator` field can take values `all` or `any`, determining whether all specified flow_ids must match or if any one of them is sufficient.
+
+  The previous format for these two assertions remains unchanged for backward compatibility, however it has been deprecated and will be removed in a future major release.
+- [#3929](https://github.com/rasahq/rasa-private/issues/3929): Updated the default model and voice of Cartesia TTS, using `sonic-3` and voice ID American English Katie.
+- [#3995](https://github.com/rasahq/rasa-private/issues/3995): Move commit messages to top of the SSE
+- [#3998](https://github.com/rasahq/rasa-private/issues/3998): Allow trigerring empty `Clarify Command` without flow options.
+
+### Bugfixes
+- [#3952](https://github.com/rasahq/rasa-private/issues/3952): Run action_session_start if tracker ends with SessionEnded event.
+- [#3958](https://github.com/rasahq/rasa-private/issues/3958): Fixed PostgreSQL `UniqueViolation` error when running an assistant with multiple Sanic workers.
+- [#3966](https://github.com/rasahq/rasa-private/issues/3966): Fix Kafka producer creation failing when SASL mechanism is specified in lowercase. 
+  The SASL mechanism is now case-insensitive in the Kafka producer configuration.
+- [#3975](https://github.com/rasahq/rasa-private/issues/3975): Fix issue where the validation of the assistant files continued even when the provided domain was invalid and was being loaded as empty.
+  The training or validation command didn't exit because the final merged domain contained only the default implementations
+  for patterns, slots and responses and therefore passed the check for being non-empty.
+- [#3984](https://github.com/rasahq/rasa-private/issues/3984): Trigger pattern_internal_error in a CALM assistant when a custom action fails during execution.
+- [#3996](https://github.com/rasahq/rasa-private/issues/3996): Create AWS Bedrock / Sagemaker client only if the LLM healthcheck environment variable is set.
+  If the environment variable is not set, validate that required credentials are present.
+- [#4008](https://github.com/rasahq/rasa-private/issues/4008): Update `langchain-core` version to `~0.3.80` to address security vulnerability CVE-2025-65106.
+
+### Miscellaneous internal changes
+- [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
+
+
 ## [3.14.3] - 2025-11-13
                         
 Rasa Pro 3.14.3 (2025-11-13)                             

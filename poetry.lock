@@ -2012,7 +2012,6 @@ files = [
     {file = "faiss_cpu-1.11.0.post1-cp39-cp39-musllinux_1_2_aarch64.whl", hash = "sha256:dc12b3f89cf48be3f2a20b37f310c3f1a7a5708fdf705f88d639339a24bb590b"},
     {file = "faiss_cpu-1.11.0.post1-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:773fa45aa98a210ab4e2c17c1b5fb45f6d7e9acb4979c9a0b320b678984428ac"},
     {file = "faiss_cpu-1.11.0.post1-cp39-cp39-win_amd64.whl", hash = "sha256:6240c4b1551eedc07e76813c2e14a1583a1db6c319a92a3934bf212d0e4c7791"},
-    {file = "faiss_cpu-1.11.0.post1.tar.gz", hash = "sha256:06b1ea9ddec9e4d9a41c8ef7478d493b08d770e9a89475056e963081eed757d1"},
 ]
 
 [package.dependencies]
@@ -7468,15 +7467,15 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.15.0.dev1"
+version = "3.15.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 optional = false
 python-versions = "<3.14,>3.9"
 groups = ["main"]
 markers = "(sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" or python_version >= \"3.12\") and (sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" and sys_platform != \"darwin\" or platform_machine == \"arm64\" or python_version >= \"3.12\")"
 files = [
-    {file = "rasa_sdk-3.15.0.dev1-py3-none-any.whl", hash = "sha256:9658ed557a12e49c5d240b5db92efbfd4ceeedc44b0df4e47af92a3d13f035fa"},
-    {file = "rasa_sdk-3.15.0.dev1.tar.gz", hash = "sha256:5b32f19fe74310d7038aea0f1ab41c3f3c0819435172e01fe3002ff916cd887c"},
+    {file = "rasa_sdk-3.15.0-py3-none-any.whl", hash = "sha256:e437e23f4e9e0fb7bcff6a067c1d671253e5126195dd7df482b0d496e9759aa5"},
+    {file = "rasa_sdk-3.15.0.tar.gz", hash = "sha256:b4c1df8c019a04f725a740b883c107be7394bfcac6df7cf4481213c98bfb917b"},
 ]
 
 [package.dependencies]
@@ -11276,4 +11275,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10.0,<3.14"
-content-hash = "073d54f29465b264156250c30f50851b342ebbc42be3b613712a2d405c362ce0"
+content-hash = "98db4a8ef8b05dc14bd7e5478127c71b1348d47cb6d7d82ccea23814cd3a3eda"
