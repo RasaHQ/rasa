@@ -1,18 +1,23 @@
-from typing import Any, Dict, Optional
+import os
+from typing import Any, Dict, Optional, Set
 
 import boto3
 import structlog
 from botocore.exceptions import BotoCoreError, ClientError
+from google.auth.environment_vars import AWS_DEFAULT_REGION
 
 from rasa.shared.constants import (
     API_BASE_CONFIG_KEY,
     API_VERSION_CONFIG_KEY,
     AWS_ACCESS_KEY_ID_CONFIG_KEY,
+    AWS_ACCESS_KEY_ID_ENV_VAR,
     AWS_BEDROCK_PROVIDER,
     AWS_REGION_NAME_CONFIG_KEY,
+    AWS_REGION_NAME_ENV_VAR,
     AWS_SAGEMAKER_CHAT_PROVIDER,
     AWS_SAGEMAKER_PROVIDER,
     AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
+    AWS_SECRET_ACCESS_KEY_ENV_VAR,
     AWS_SESSION_TOKEN_CONFIG_KEY,
     AZURE_API_BASE_ENV_VAR,
     AZURE_API_VERSION_ENV_VAR,
@@ -40,6 +45,8 @@ def validate_aws_setup_for_litellm_clients(
         ProviderClientValidationError: If any required AWS environment variable
             or corresponding configuration key is missing.
     """
+    from rasa.shared.utils.health_check.health_check import is_api_health_check_enabled
+
     # expand environment variables if referenced in the config
     resolved_litellm_call_kwargs: Dict = resolve_environment_variables(
         litellm_call_kwargs
@@ -73,6 +80,164 @@ def validate_aws_setup_for_litellm_clients(
             AWS_REGION_NAME_CONFIG_KEY
         ]
 
+    if is_api_health_check_enabled():
+        structlogger.debug(
+            f"{source_log}.validating_aws_credentials_for_litellm_clients_via_aws_client",
+            model_name=litellm_model_name,
+        )
+        _validate_credentials_with_aws_client(
+            provider,
+            additional_kwargs,
+            litellm_model_name,
+            source_log,
+        )
+        return None
+
+    return _validate_credentials_exist(
+        resolved_litellm_call_kwargs, litellm_model_name, source_log
+    )
+
+
+def _validate_credentials_exist(
+    resolved_litellm_call_kwargs: Dict[str, Any],
+    litellm_model_name: str,
+    source_log: str,
+) -> None:
+    """Validates that AWS credentials are provided.
+
+    Args:
+        resolved_litellm_call_kwargs (Dict[str, Any]): The resolved keyword arguments
+            containing AWS credentials.
+        litellm_model_name (str): The name of the LiteLLM model being validated.
+        source_log (str): The source log identifier for structured logging.
+
+    Raises:
+        ProviderClientValidationError: If any required AWS credentials are missing.
+    """
+    required_iam_credential_keys = {"model_id", AWS_REGION_NAME_CONFIG_KEY}
+    required_env_var_secrets = {
+        AWS_ACCESS_KEY_ID_CONFIG_KEY,
+        AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
+        AWS_REGION_NAME_CONFIG_KEY,
+    }
+
+    provided_credentials: Dict[str, Any] = _add_env_vars_credentials_if_defined(
+        resolved_litellm_call_kwargs
+    )
+    provided_credentials_keys = set(provided_credentials.keys())
+    common_credentials = (
+        required_iam_credential_keys | required_env_var_secrets
+    ) & provided_credentials_keys
+
+    if not common_credentials:
+        event_info = (
+            "Missing AWS credentials for LiteLLM clients. "
+            "Ensure that you are using one of the available authentication methods: "
+            "endpoints yml, environment variables, or IAM roles. "
+        )
+        structlogger.error(
+            f"{source_log}.validate_aws_credentials_existence_for_litellm_clients",
+            event_info=event_info,
+            model_name=litellm_model_name,
+        )
+        raise ProviderClientValidationError(event_info)
+
+    # if the chosen auth method is via env vars,
+    # ensure that all required env vars are set
+    if common_credentials.issubset(required_env_var_secrets):
+        _verify_missing_credentials(
+            required_env_var_secrets, common_credentials, litellm_model_name, source_log
+        )
+
+    if common_credentials.issubset(required_iam_credential_keys):
+        _verify_missing_credentials(
+            required_iam_credential_keys,
+            common_credentials,
+            litellm_model_name,
+            source_log,
+        )
+
+
+def _add_env_vars_credentials_if_defined(
+    resolved_litellm_call_kwargs: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Adds AWS credentials from environment variables to the resolved call kwargs.
+
+    Args:
+        resolved_litellm_call_kwargs (Dict[str, Any]): The resolved keyword arguments.
+
+    Returns:
+        Dict[str, Any]: The updated keyword arguments with AWS credentials from
+            environment variables if they were defined.
+    """
+    if AWS_ACCESS_KEY_ID_CONFIG_KEY not in resolved_litellm_call_kwargs:
+        env_var_value = os.getenv(AWS_ACCESS_KEY_ID_ENV_VAR)
+        if env_var_value is not None:
+            resolved_litellm_call_kwargs[AWS_ACCESS_KEY_ID_CONFIG_KEY] = env_var_value
+
+    if AWS_SECRET_ACCESS_KEY_CONFIG_KEY not in resolved_litellm_call_kwargs:
+        env_var_value = os.getenv(AWS_SECRET_ACCESS_KEY_ENV_VAR)
+        if env_var_value is not None:
+            resolved_litellm_call_kwargs[AWS_SECRET_ACCESS_KEY_CONFIG_KEY] = (
+                env_var_value
+            )
+
+    if AWS_REGION_NAME_CONFIG_KEY not in resolved_litellm_call_kwargs:
+        env_var_value = os.getenv(
+            AWS_REGION_NAME_ENV_VAR, os.getenv(AWS_DEFAULT_REGION)
+        )
+        if env_var_value is not None:
+            resolved_litellm_call_kwargs[AWS_REGION_NAME_CONFIG_KEY] = env_var_value
+
+    return resolved_litellm_call_kwargs
+
+
+def _verify_missing_credentials(
+    required_credentials: Set[str],
+    present_credentials: Set[str],
+    litellm_model_name: str,
+    source_log: str,
+) -> None:
+    """Verifies if any required credentials are missing.
+
+    Args:
+        present_credentials (set): The set of essential credential keys
+            that are present.
+        required_credentials (set): The set of required credential keys.
+        litellm_model_name (str): The name of the LiteLLM model being validated.
+        source_log (str): The source log identifier for structured logging.
+
+    Raises:
+        ProviderClientValidationError: If any required credentials are missing.
+    """
+    missing_credentials = required_credentials - present_credentials
+    if missing_credentials:
+        event_info = (
+            f"Missing AWS credentials for "
+            f"LiteLLM clients: {', '.join(missing_credentials)}. "
+        )
+        structlogger.error(
+            f"{source_log}.validate_aws_credentials_existence_for_litellm_clients",
+            event_info=event_info,
+            model_name=litellm_model_name,
+        )
+        raise ProviderClientValidationError(event_info)
+
+
+def _validate_credentials_with_aws_client(
+    provider: str,
+    additional_kwargs: Dict[str, Any],
+    litellm_model_name: str,
+    source_log: str,
+) -> None:
+    """Creates an AWS client with the provided credentials.
+
+    Args:
+        provider (str): The AWS service provider.
+        additional_kwargs (Dict[str, Any]): Additional keyword arguments for the client.
+        litellm_model_name (str): The name of the LiteLLM model being validated.
+        source_log (str): The source log identifier for structured logging.
+    """
     try:
         # We are using the boto3 client because it can discover the AWS credentials
         # from the environment variables, credentials file, or IAM roles.
@@ -94,7 +259,7 @@ def validate_aws_setup_for_litellm_clients(
             f"Also, ensure that the AWS region is set correctly. "
         )
         structlogger.error(
-            f"{source_log}.validate_aws_credentials_for_litellm_clients",
+            f"{source_log}.validate_aws_credentials_for_litellm_clients_via_aws_client.failed",
             event_info=event_info,
             exception=str(exc),
             model_name=litellm_model_name,

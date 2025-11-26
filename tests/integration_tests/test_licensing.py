@@ -71,6 +71,7 @@ def test_license_scope_ok(
     assert result.ret == 0
 
 
+@pytest.mark.timeout(180)
 def test_license_scope_missing_voice_scope(
     monkeypatch: MonkeyPatch,
     audiocodes_credentials: Path,
@@ -115,6 +116,7 @@ def wait_for_rasa_server_to_start(url: str, token: str, retry_count: int = 120) 
             retry_count -= 1
 
 
+@pytest.mark.timeout(180)
 def test_license_scope_voice_scope_ok(
     monkeypatch: MonkeyPatch,
     audiocodes_credentials,

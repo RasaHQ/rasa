@@ -57,7 +57,7 @@ clean:  ## Remove Python/build artifacts.
 	rm -rf .mypy_cache/
 	rm -rf dist/
 
-install:  ## Install rasa and it's dependencies without extras.
+install:  ## Install rasa and its dependencies without extras.
 	poetry run python -m pip install -U pip
 	poetry install
 
