@@ -2999,10 +2999,7 @@ def test_get_validated_mocked_datetime_invalid_string_formats(
         exc_info.value.code
         == "e2e_test_runner.validate_mocked_datetime.invalid_value_format"
     )
-    assert "Invalid mocked_datetime value" in exc_info.value.info
     assert "Unable to convert to a valid datetime" in exc_info.value.info
-    assert "Accepted formats include" in exc_info.value.info
-    assert str(invalid_value) in exc_info.value.info
 
 
 @pytest.mark.parametrize(
@@ -3027,9 +3024,4 @@ def test_get_validated_mocked_datetime_invalid_types(
         exc_info.value.code
         == "e2e_test_runner.validate_mocked_datetime.invalid_value_type"
     )
-    assert "Invalid mocked_datetime value" in exc_info.value.info
-    assert (
-        f"Expected a 'str', but got {type(invalid_value).__name__}."
-        in exc_info.value.info
-    )
-    assert str(invalid_value) in exc_info.value.info
+    assert "Unable to convert to a valid datetime" in exc_info.value.info

@@ -89,7 +89,7 @@ class DialogueUnderstandingTestRunner:
                     sub_agents=sub_agents,
                 )
             # Defensive return for mypy - never actually reached
-            return  # type: ignore[return-value]
+            return
 
         self.agent = asyncio.run(load_agent_with_agents_connection_cleanup())
         if not self.agent.is_ready():

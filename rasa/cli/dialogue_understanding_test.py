@@ -265,7 +265,7 @@ def execute_dialogue_understanding_tests(args: argparse.Namespace) -> None:
                 test_suite.test_cases, test_suite.fixtures, test_suite.metadata
             )
         # Defensive return for mypy - never actually reached
-        return  # type: ignore[return-value]
+        return
 
     # run the actual test cases
     test_results = asyncio.run(run_test_cases_with_agents_connection_cleanup())

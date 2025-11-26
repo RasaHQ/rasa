@@ -85,8 +85,11 @@ class AgentsConnectionCleanup:
         exc_type: Optional[Type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[object],
-    ) -> bool:
-        """Exit the context - cleanup agents connections."""
+    ) -> None:
+        """Exit the context - cleanup agents connections.
+
+        Always lets exceptions from the context body propagate.
+        """
         agent_manager: AgentManager = AgentManager()
         agents_to_disconnect = agent_manager.agents.keys()
         if agents_to_disconnect:
@@ -98,15 +101,19 @@ class AgentsConnectionCleanup:
 
             # Disconnect each agent using the agent manager.
             for agent_identifier in agents_to_disconnect:
-                await agent_manager.disconnect_agent(
-                    agent_identifier.agent_name, agent_identifier.protocol_type
-                )
+                try:
+                    await agent_manager.disconnect_agent(
+                        agent_identifier.agent_name, agent_identifier.protocol_type
+                    )
+                except Exception:
+                    continue
 
             structlogger.debug(
                 "agents.utils.agents_connection_cleanup.cleanup_completed",
                 event_info="Agents connection cleanup completed",
             )
-        return True
+        # Always return None to let exceptions from the context body propagate
+        return None
 
 
 def _log_beta_feature_warning(mcp_tool_used: bool, agent_used: bool) -> None:

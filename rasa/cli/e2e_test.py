@@ -237,7 +237,7 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
                 coverage=args.coverage_report,
             )
         # Defensive return for mypy - never actually reached
-        return  # type: ignore[return-value]
+        return
 
     results = asyncio.run(run_tests_with_agents_connection_cleanup())
 

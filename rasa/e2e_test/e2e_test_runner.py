@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import dataclasses
 import difflib
 from asyncio import CancelledError
 from collections import defaultdict
@@ -127,7 +128,7 @@ class E2ETestRunner:
                     sub_agents=sub_agents,
                 )
             # Defensive return for mypy - never actually reached
-            return  # type: ignore[return-value]
+            return
 
         self.agent = asyncio.run(load_agent_with_agents_connection_cleanup())
 
@@ -905,20 +906,6 @@ class E2ETestRunner:
 
         for fixture in fixtures:
             for slot_name, slot_value in fixture.slots_set.items():
-                # Validate mocked_datetime if it's being set and convert to ISO format
-                if slot_name == MOCKED_DATETIME_SLOT:
-                    try:
-                        # Validate and convert to ISO format string
-                        slot_value = self._get_validated_mocked_datetime(slot_value)
-                    except ValidationError as e:
-                        structlogger.error(
-                            e.code,
-                            event_info=e.info,
-                            mocked_datetime_value=slot_value,
-                            slot_name=slot_name,
-                            fixture_name=fixture.name,
-                        )
-                        raise e from e
                 tracker.update(SlotSet(slot_name, slot_value))
 
         await self.agent.tracker_store.save(tracker)
@@ -1001,6 +988,12 @@ class E2ETestRunner:
         # telemetry call for tracking test runs
         track_e2e_test_run(input_test_cases, input_fixtures, input_metadata)
 
+        # Validate and convert all fixtures upfront before running any tests
+        # This ensures we fail fast on validation errors rather than running
+        # some tests before hitting an invalid fixture, and stores converted
+        # values in fixtures to avoid repeated validation/conversion
+        input_fixtures = self._validate_and_convert_all_fixtures(input_fixtures)
+
         for test_case in input_test_cases:
             test_case_name = test_case.name.replace(" ", "_")
             # Add the name of the file and the current test case name being
@@ -1067,11 +1060,87 @@ class E2ETestRunner:
         # add timestamp suffix to ensure sender_id is unique
         return f"{test_case_name}_{datetime.now()}"
 
+    def _validate_and_convert_all_fixtures(
+        self, fixtures: List[Fixture]
+    ) -> List[Fixture]:
+        """Validate and convert all fixtures upfront before running any tests.
+
+        This ensures we fail fast on validation errors (e.g., invalid mocked_datetime)
+        rather than running some tests before hitting an invalid fixture.
+        Collects all validation errors and reports them in a single ValidationError.
+        Also converts mocked_datetime values to ISO format and stores them in fixtures
+        to avoid repeated validation/conversion.
+
+        Args:
+            fixtures: List of all fixtures to validate and convert.
+
+        Returns:
+            List of fixtures with converted mocked_datetime values.
+
+        Raises:
+            ValidationError: If any fixture has invalid mocked_datetime values.
+                The error message includes all invalid fixtures.
+        """
+        validation_errors: List[
+            Tuple[str, str]
+        ] = []  # List of (fixture_name, mocked_datetime_value)
+        converted_fixtures = []
+
+        # Single pass: validate and convert fixtures
+        for fixture in fixtures:
+            converted_slots = fixture.slots_set.copy()
+            for slot_name, slot_value in fixture.slots_set.items():
+                if slot_name == MOCKED_DATETIME_SLOT:
+                    try:
+                        # Validate and convert to ISO format
+                        converted_value = self._get_validated_mocked_datetime(
+                            slot_value
+                        )
+                        converted_slots[slot_name] = converted_value
+                    except ValidationError:
+                        # Collect the error for later reporting
+                        validation_errors.append((fixture.name, str(slot_value)))
+
+            # Create new fixture with converted values (even if validation failed,
+            # we'll raise an error after processing all fixtures)
+            converted_fixture = dataclasses.replace(fixture, slots_set=converted_slots)
+            converted_fixtures.append(converted_fixture)
+
+        # If there are any validation errors, raise a single comprehensive error
+        if validation_errors:
+            valid_formats = [
+                "YYYY-MM-DDTHH:MM:SS±HH:MM  e.g. '2024-01-15T14:30:00+05:30'",
+                "YYYY-MM-DDTHH:MM:SS±HHMM   e.g. '2024-01-15T14:30:00+0530'",
+                "YYYY-MM-DD HH:MM:SS        e.g. '2024-01-15 14:30:00'",
+                "YYYY-MM-DDTHH:MM:SS        e.g. '2024-01-15T14:30:00'",
+                "YYYY-MM-DD                 e.g. '2024-01-15'",
+            ]
+
+            error_details = "\n".join(
+                f"{i + 1}. Fixture - `{fixture_name}`, mocked_datetime value: "
+                f"`{mocked_datetime_value}`"
+                for i, (fixture_name, mocked_datetime_value) in enumerate(
+                    validation_errors
+                )
+            )
+
+            raise ValidationError(
+                code="e2e_test_runner.validate_mocked_datetime.invalid_value_format",
+                event_info=(
+                    "Unable to convert to a valid datetime. Invalid `mocked_datetime` "
+                    "value present in the following fixtures."
+                    + f"\n\n{error_details}\n\n"
+                    + "Accepted formats include:\n"
+                    + "\n".join(f"  * {fmt}" for fmt in valid_formats)
+                ),
+            )
+
+        return converted_fixtures
+
     def _get_validated_mocked_datetime(
         self, mocked_datetime_value: Any
     ) -> Optional[str]:
-        """Validates that mocked_datetime can be converted to a datetime object
-        and returns it in ISO 8601 format.
+        """Validates and converts mocked_datetime to ISO 8601 format.
 
         Args:
             mocked_datetime_value: The value of the mocked_datetime slot.
@@ -1092,13 +1161,7 @@ class E2ETestRunner:
             # YAML fixtures only provide strings, so other types are invalid
             raise ValidationError(
                 code="e2e_test_runner.validate_mocked_datetime.invalid_value_type",
-                event_info=(
-                    f"Invalid mocked_datetime value: '{mocked_datetime_value}' "
-                    f"Expected a 'str', but got {type(mocked_datetime_value).__name__}."
-                ),
-                mocked_datetime_value=mocked_datetime_value,
-                expected_value_type="str",
-                actual_value_type=type(mocked_datetime_value).__name__,
+                event_info="Unable to convert to a valid datetime.",
             )
 
         valid_datetime_formats = {
@@ -1120,22 +1183,9 @@ class E2ETestRunner:
                 continue
 
         # If we get here, the conversion failed. i.e. all parsing attempts fail
-        valid_formats = [
-            "YYYY-MM-DDTHH:MM:SS±HH:MM   e.g. '2024-01-15T14:30:00+05:30'",
-            "YYYY-MM-DDTHH:MM:SS±HHMM   e.g. '2024-01-15T14:30:00+0530'",
-            "YYYY-MM-DD HH:MM:SS        e.g. '2024-01-15 14:30:00'",
-            "YYYY-MM-DDTHH:MM:SS        e.g. '2024-01-15T14:30:00'",
-            "YYYY-MM-DD                 e.g. '2024-01-15'",
-        ]
-
         raise ValidationError(
             code="e2e_test_runner.validate_mocked_datetime.invalid_value_format",
-            event_info=(
-                f"Invalid mocked_datetime value: '{mocked_datetime_value}'. "
-                f"Unable to convert to a valid datetime.\n\n"
-                f"Accepted formats include:\n"
-                + "\n".join(f"  * {fmt}" for fmt in valid_formats)
-            ),
+            event_info="Unable to convert to a valid datetime.",
         )
 
     async def _process_test_case(
