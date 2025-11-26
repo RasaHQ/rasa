@@ -397,25 +397,33 @@ class Domain:
 
             # handle duplicated responses by raising an error
             duplicated_responses = combined_duplicates.pop(KEY_RESPONSES, [])
-            Domain._handle_duplicate_responses(duplicated_responses)
+            Domain._handle_duplicates(duplicated_responses, "response")
+
+            # handle duplicated slots by raising an error
+            duplicated_slots = combined_duplicates.pop(KEY_SLOTS, [])
+            Domain._handle_duplicates(duplicated_slots, "slot")
 
             # warn about other duplicates
             warn_about_duplicates_found_during_domain_merging(combined_duplicates)
 
     @staticmethod
-    def _handle_duplicate_responses(response_duplicates: List[Text]) -> None:
-        if response_duplicates:
-            for response in response_duplicates:
+    def _handle_duplicates(
+        duplicates: List[Text],
+        item_type: Text,
+    ) -> None:
+        if duplicates:
+            for item in duplicates:
                 structlogger.error(
-                    "domain.duplicate_response",
-                    response=response,
+                    f"domain.duplicate_{item_type}",
+                    **{item_type: item},
                     event_info=(
-                        f"Response '{response}' is defined in multiple domains. "
-                        f"Please make sure this response is only defined in one domain."
+                        f"{item_type.capitalize()} '{item}' is defined "
+                        "in multiple domains. Please make sure this "
+                        f"{item_type} is only defined in one domain."
                     ),
                 )
             print_error_and_exit(
-                "Unable to merge domains due to duplicate responses in domain."
+                f"Unable to merge domains due to duplicate {item_type}(s) in domain."
             )
 
     def merge(

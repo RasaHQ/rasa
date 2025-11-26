@@ -15,7 +15,7 @@ responses:
     - text: "Great, carry on!"
 
 slots:
-  mood:
+  some_slot:
     type: bool
     mappings:
       - type: from_entity

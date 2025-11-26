@@ -1913,18 +1913,13 @@ def test_domain_invalid_yml_in_folder():
             assert len(logs) == 1
 
 
-def test_invalid_domain_dir_with_duplicates_intents_slots(recwarn: WarningsRecorder):
-    """Raises InvalidDomain if a domain is loaded from a directory with duplicated slots,
-    responses and intents in domain files.
+def test_invalid_domain_dir_with_duplicates_intents(recwarn: WarningsRecorder):
+    """Raises InvalidDomain if a domain is loaded from a directory
+    with duplicated intents in domain files.
     """
-    Domain.from_directory(
-        "data/test_domains/test_domain_with_duplicates_intents_slots/"
-    )
+    Domain.from_directory("data/test_domains/test_domain_with_duplicate_intents/")
 
-    error_message = (
-        "The following duplicated intents have been found across multiple domain files: greet \n"
-        "The following duplicated slots have been found across multiple domain files: mood"
-    )
+    error_message = "The following duplicated intents have been found across multiple domain files: greet"
     for warning in recwarn.list:
         # filter expected warnings
         if not any(
@@ -1933,6 +1928,25 @@ def test_invalid_domain_dir_with_duplicates_intents_slots(recwarn: WarningsRecor
             for warning_type, warning_message in EXPECTED_WARNINGS
         ):
             assert error_message == warning.message.args[0]
+
+
+def test_invalid_domain_dir_with_duplicated_slots():
+    """Exits if the domain has duplicated slots in domain files."""
+    expected_event = "domain.duplicate_slot"
+    expected_log_level = "error"
+    expected_log_message = (
+        "Please make sure this slot is " "only defined in one domain."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
+        with pytest.raises(SystemExit):
+            Domain.from_directory("data/test_domains/test_domain_with_duplicate_slots/")
+
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+        assert logs[0]["slot"] == "mood"
 
 
 def test_invalid_domain_dir_with_duplicated_responses():

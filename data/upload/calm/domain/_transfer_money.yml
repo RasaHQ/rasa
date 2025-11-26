@@ -15,13 +15,6 @@ slots:
     type: text
   transfer_money_final_confirmation:
     type: text
-  set_slots_test_text:
-    type: text
-  set_slots_test_categorical:
-    type: categorical
-    values:
-      - value_1
-      - value_2
 
 responses:
   utter_transfer_money_insufficient_funds: # newly added utterance response in a separate file
