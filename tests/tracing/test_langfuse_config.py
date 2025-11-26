@@ -1,6 +1,7 @@
+# isort: skip_file
+from pathlib import Path
 import os
 import textwrap
-from pathlib import Path
 
 import pytest
 import structlog
@@ -89,9 +90,7 @@ def test_get_langfuse_config_no_langfuse_config(tmp_path: Path) -> None:
 
 
 def test_get_langfuse_config_single_dict(tmp_path: Path) -> None:
-    """Test that _get_langfuse_config returns config when langfuse config
-    exists as single dict.
-    """
+    """Test _get_langfuse_config returns config when config exists as single dict."""
     endpoints_file = tmp_path / "endpoints.yml"
     endpoints_file.write_text(
         textwrap.dedent(
@@ -113,9 +112,7 @@ def test_get_langfuse_config_single_dict(tmp_path: Path) -> None:
 
 
 def test_get_langfuse_config_list_with_langfuse(tmp_path: Path) -> None:
-    """Test that _get_langfuse_config returns config when langfuse config
-    exists in a list.
-    """
+    """Test that _get_langfuse_config returns config when config exists in a list."""
     endpoints_file = tmp_path / "endpoints.yml"
     endpoints_file.write_text(
         textwrap.dedent(
@@ -138,9 +135,7 @@ def test_get_langfuse_config_list_with_langfuse(tmp_path: Path) -> None:
 
 
 def test_get_langfuse_config_multiple_langfuse_configs(tmp_path: Path) -> None:
-    """Test that _get_langfuse_config raises exception when multiple langfuse
-    configs found.
-    """
+    """Test that _get_langfuse_config raises exception when multiple configs found."""
     endpoints_file = tmp_path / "endpoints.yml"
     endpoints_file.write_text(
         textwrap.dedent(
@@ -869,9 +864,116 @@ def test_validate_key_syntax_rejects_dollar_without_braces() -> None:
 
 
 def test_validate_key_syntax_valid() -> None:
-    """Test that _validate_key_syntax passes for valid ${VAR} syntax."""
-    # Should not raise any exception
+    """Test _validate_key_syntax passes for valid ${VAR} syntax."""
+    # Should not raise
     _validate_key_syntax("${PUBLIC_KEY}", "${SECRET_KEY}")
+
+
+@pytest.mark.parametrize(
+    "env_value,is_valid",
+    [
+        ("abc test", False),  # contains space
+        ("Test", False),  # contains uppercase
+        ("langfuse-prod", False),  # starts with disallowed prefix
+        ("invalid$chars", False),  # invalid character
+        ("a" * 41, False),  # too long
+        ("valid-env_1", True),  # valid
+        ("e2e-test", True),  # valid
+        ("du-test", True),  # valid
+        ("prod_1", True),  # valid
+        ("staging", True),  # valid
+    ],
+)
+def test_validate_environment_invalid(env_value: str, is_valid: bool) -> None:
+    """Invalid environment values raise InvalidLangfuseConfigException."""
+    config_values = {
+        LANGFUSE_CONFIG_PUBLIC_KEY: "${PUBLIC}",
+        LANGFUSE_CONFIG_PRIVATE_KEY: "${SECRET}",
+        LANGFUSE_CONFIG_BASE_URL_KEY: "https://cloud.langfuse.com",
+        LANGFUSE_CONFIG_ENVIRONMENT_KEY: env_value,
+    }
+    if is_valid:
+        # Should not raise
+        _validate_langfuse_config(config_values)
+    else:
+        with structlog.testing.capture_logs() as caplog:
+            with pytest.raises(InvalidLangfuseConfigException):
+                _validate_langfuse_config(config_values)
+            assert "langfuse_configuration.invalid_environment" in [
+                log["event"] for log in caplog
+            ]
+
+
+def test_set_langfuse_environment_variables_override_applied_last(monkeypatch) -> None:
+    """Override environment should take precedence over config and existing env."""
+    # Pre-set env var to simulate existing value
+    monkeypatch.setenv("LANGFUSE_TRACING_ENVIRONMENT", "dev")
+
+    # Prepare config values including an environment
+    config_values = {
+        LANGFUSE_CONFIG_PUBLIC_KEY: None,
+        LANGFUSE_CONFIG_PRIVATE_KEY: None,
+        LANGFUSE_CONFIG_BASE_URL_KEY: None,
+        LANGFUSE_CONFIG_TIMEOUT_KEY: None,
+        LANGFUSE_CONFIG_DEBUG_KEY: None,
+        LANGFUSE_CONFIG_ENVIRONMENT_KEY: "production",
+        LANGFUSE_CONFIG_RELEASE_KEY: None,
+        LANGFUSE_CONFIG_MEDIA_UPLOAD_THREAD_COUNT_KEY: None,
+        LANGFUSE_CONFIG_SAMPLE_RATE_KEY: None,
+    }
+    resolved_keys = {
+        LANGFUSE_CONFIG_PUBLIC_KEY: None,
+        LANGFUSE_CONFIG_PRIVATE_KEY: None,
+    }
+
+    # Apply with override; should end up with the override value
+    _set_langfuse_environment_variables(
+        config_values, resolved_keys, langfuse_environment_name="e2e-test"
+    )
+
+    assert os.environ["LANGFUSE_TRACING_ENVIRONMENT"] == "e2e-test"
+
+
+def test_configure_langfuse_applies_override(tmp_path: Path, monkeypatch) -> None:
+    """configure_langfuse should override environment name from endpoints.yml
+    by the value provided in langfuse_environment_name parameter.
+    """
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing:
+                type: langfuse
+                public_key: ${TEST_PUBLIC_KEY}
+                private_key: ${TEST_SECRET_KEY}
+                host: https://cloud.langfuse.com
+                environment: production
+            """
+        )
+    )
+
+    # Ensure import guard passes regardless of runtime dependencies
+    monkeypatch.setenv("TEST_PUBLIC_KEY", "resolved_public_key")
+    monkeypatch.setenv("TEST_SECRET_KEY", "resolved_secret_key")
+    for var in [
+        "LANGFUSE_PUBLIC_KEY",
+        "LANGFUSE_SECRET_KEY",
+        "LANGFUSE_OTEL_HOST",
+        "LANGFUSE_TRACING_ENVIRONMENT",
+    ]:
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setattr(
+        "rasa.tracing.langfuse_config._is_langfuse_available", lambda: True
+    )
+
+    configure_langfuse(str(endpoints_file), langfuse_environment_name="du-test")
+
+    # Keys set from config
+    assert os.environ["LANGFUSE_PUBLIC_KEY"] == "resolved_public_key"
+    assert os.environ["LANGFUSE_SECRET_KEY"] == "resolved_secret_key"
+    assert os.environ["LANGFUSE_OTEL_HOST"] == "https://cloud.langfuse.com"
+    # Environment overridden
+    assert os.environ["LANGFUSE_TRACING_ENVIRONMENT"] == "du-test"
 
 
 def test_extract_langfuse_config_values_all_fields(tmp_path: Path) -> None:

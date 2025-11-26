@@ -55,7 +55,14 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
 
     if endpoints_file is not None:
         configure_backend_tracing(endpoints_file)
-        configure_langfuse(endpoints_file)
+
+        # Determine optional override for Langfuse environment from argparse defaults
+        langfuse_environment_name: Optional[Text] = getattr(
+            cmdline_arguments, "langfuse_environment_name", None
+        )
+        configure_langfuse(
+            endpoints_file, langfuse_environment_name=langfuse_environment_name
+        )
         configure_metrics(endpoints_file)
 
     return endpoints_file

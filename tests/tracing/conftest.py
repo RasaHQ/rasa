@@ -23,6 +23,17 @@ from pytest import MonkeyPatch
 
 from rasa.core.config.configuration import Configuration
 from rasa.engine.caching import LocalTrainingCache
+from rasa.tracing.constants import (
+    LANGFUSE_ENV_VAR_DEBUG,
+    LANGFUSE_ENV_VAR_MEDIA_UPLOAD_THREAD_COUNT,
+    LANGFUSE_ENV_VAR_OTEL_HOST,
+    LANGFUSE_ENV_VAR_PUBLIC_KEY,
+    LANGFUSE_ENV_VAR_RELEASE,
+    LANGFUSE_ENV_VAR_SAMPLE_RATE,
+    LANGFUSE_ENV_VAR_SECRET_KEY,
+    LANGFUSE_ENV_VAR_TIMEOUT,
+    LANGFUSE_ENV_VAR_TRACING_ENVIRONMENT,
+)
 
 TRACING_TESTS_FIXTURES_DIRECTORY = pathlib.Path(__file__).parent / "fixtures"
 
@@ -142,3 +153,24 @@ def set_up_test_meter_provider(
 def default_empty_config() -> Configuration:
     """Initialize Configuration singleton for all tests in the tracing module."""
     return Configuration.initialise_empty()
+
+
+# Cleanup any LANGFUSE_* env vars after each test to prevent leakage across tests
+_LANGFUSE_ENV_VARS = [
+    LANGFUSE_ENV_VAR_PUBLIC_KEY,
+    LANGFUSE_ENV_VAR_SECRET_KEY,
+    LANGFUSE_ENV_VAR_OTEL_HOST,
+    LANGFUSE_ENV_VAR_TIMEOUT,
+    LANGFUSE_ENV_VAR_DEBUG,
+    LANGFUSE_ENV_VAR_TRACING_ENVIRONMENT,
+    LANGFUSE_ENV_VAR_RELEASE,
+    LANGFUSE_ENV_VAR_MEDIA_UPLOAD_THREAD_COUNT,
+    LANGFUSE_ENV_VAR_SAMPLE_RATE,
+]
+
+
+@pytest.fixture(autouse=True)
+def _cleanup_langfuse_env(monkeypatch):
+    yield
+    for var in _LANGFUSE_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)

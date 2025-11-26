@@ -102,7 +102,9 @@ def create_e2e_test_subparser(
         description="Runs end-to-end testing.",
     )
 
-    e2e_test_subparser.set_defaults(func=execute_e2e_tests)
+    e2e_test_subparser.set_defaults(
+        func=execute_e2e_tests, langfuse_environment_name="e2e-test"
+    )
 
     add_e2e_test_arguments(e2e_test_subparser)
     add_model_param(e2e_test_subparser, add_positional_arg=False)

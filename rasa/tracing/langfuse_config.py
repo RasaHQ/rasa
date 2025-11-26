@@ -20,6 +20,15 @@ from rasa.tracing.constants import (
     LANGFUSE_CONFIG_RELEASE_KEY,
     LANGFUSE_CONFIG_SAMPLE_RATE_KEY,
     LANGFUSE_CONFIG_TIMEOUT_KEY,
+    LANGFUSE_ENV_VAR_DEBUG,
+    LANGFUSE_ENV_VAR_MEDIA_UPLOAD_THREAD_COUNT,
+    LANGFUSE_ENV_VAR_OTEL_HOST,
+    LANGFUSE_ENV_VAR_PUBLIC_KEY,
+    LANGFUSE_ENV_VAR_RELEASE,
+    LANGFUSE_ENV_VAR_SAMPLE_RATE,
+    LANGFUSE_ENV_VAR_SECRET_KEY,
+    LANGFUSE_ENV_VAR_TIMEOUT,
+    LANGFUSE_ENV_VAR_TRACING_ENVIRONMENT,
     TRACING_TYPE_LANGFUSE,
 )
 from rasa.tracing.exceptions import (
@@ -30,9 +39,21 @@ from rasa.utils.endpoints import EndpointConfig
 
 structlogger = structlog.get_logger()
 
+# https://langfuse.com/docs/observability/features/environments#data-model
+LANGFUSE_VALID_ENVIRONMENT_PATTERN = re.compile(r"^(?!langfuse)[a-z0-9-_]+$")
 
-def configure_langfuse(endpoints_file: str) -> None:
-    """Configure Langfuse callback for litellm from endpoints file."""
+
+def configure_langfuse(
+    endpoints_file: str, langfuse_environment_name: Optional[str] = None
+) -> None:
+    """Configure Langfuse callback for litellm from endpoints file.
+
+    Args:
+        endpoints_file: Path to endpoints configuration file.
+        langfuse_environment_name: Optional environment name to force for Langfuse
+            tracing (e.g. "E2E test", "DU test"). If provided, this overrides
+            any environment configured in the endpoints file.
+    """
     langfuse_config = _get_langfuse_config(endpoints_file)
 
     if not langfuse_config:
@@ -56,7 +77,11 @@ def configure_langfuse(endpoints_file: str) -> None:
     private_key = config_values[LANGFUSE_CONFIG_PRIVATE_KEY]
 
     resolved_keys = _resolve_environment_variables(public_key, private_key)
-    _set_langfuse_environment_variables(config_values, resolved_keys)
+    _set_langfuse_environment_variables(
+        config_values,
+        resolved_keys,
+        langfuse_environment_name=langfuse_environment_name,
+    )
     _configure_litellm_callback()
 
     structlogger.info(
@@ -202,7 +227,9 @@ def _resolve_environment_variables(
 
 
 def _set_langfuse_environment_variables(
-    config_values: Dict[str, Any], resolved_keys: Dict[str, Optional[str]]
+    config_values: Dict[str, Any],
+    resolved_keys: Dict[str, Optional[str]],
+    langfuse_environment_name: Optional[str] = None,
 ) -> None:
     """Set Langfuse environment variables for LiteLLM integration.
 
@@ -210,40 +237,46 @@ def _set_langfuse_environment_variables(
     """
     # Map of config keys to (source dict, environment variable name)
     env_var_mappings = [
-        (LANGFUSE_CONFIG_PUBLIC_KEY, resolved_keys, "LANGFUSE_PUBLIC_KEY"),
-        (LANGFUSE_CONFIG_PRIVATE_KEY, resolved_keys, "LANGFUSE_SECRET_KEY"),
-        (LANGFUSE_CONFIG_BASE_URL_KEY, config_values, "LANGFUSE_OTEL_HOST"),
-        (LANGFUSE_CONFIG_TIMEOUT_KEY, config_values, "LANGFUSE_TIMEOUT"),
-        (LANGFUSE_CONFIG_DEBUG_KEY, config_values, "LANGFUSE_DEBUG"),
-        (
-            LANGFUSE_CONFIG_ENVIRONMENT_KEY,
-            config_values,
-            "LANGFUSE_TRACING_ENVIRONMENT",
-        ),
-        (LANGFUSE_CONFIG_RELEASE_KEY, config_values, "LANGFUSE_RELEASE"),
+        (LANGFUSE_CONFIG_PUBLIC_KEY, resolved_keys, LANGFUSE_ENV_VAR_PUBLIC_KEY),
+        (LANGFUSE_CONFIG_PRIVATE_KEY, resolved_keys, LANGFUSE_ENV_VAR_SECRET_KEY),
+        (LANGFUSE_CONFIG_BASE_URL_KEY, config_values, LANGFUSE_ENV_VAR_OTEL_HOST),
+        (LANGFUSE_CONFIG_TIMEOUT_KEY, config_values, LANGFUSE_ENV_VAR_TIMEOUT),
+        (LANGFUSE_CONFIG_DEBUG_KEY, config_values, LANGFUSE_ENV_VAR_DEBUG),
+        (LANGFUSE_CONFIG_RELEASE_KEY, config_values, LANGFUSE_ENV_VAR_RELEASE),
         (
             LANGFUSE_CONFIG_MEDIA_UPLOAD_THREAD_COUNT_KEY,
             config_values,
-            "LANGFUSE_MEDIA_UPLOAD_THREAD_COUNT",
+            LANGFUSE_ENV_VAR_MEDIA_UPLOAD_THREAD_COUNT,
         ),
-        (LANGFUSE_CONFIG_SAMPLE_RATE_KEY, config_values, "LANGFUSE_SAMPLE_RATE"),
+        (LANGFUSE_CONFIG_SAMPLE_RATE_KEY, config_values, LANGFUSE_ENV_VAR_SAMPLE_RATE),
     ]
 
+    def _set_env_var(env_var_name: str, value: Optional[str]) -> None:
+        if value is None:
+            return
+        existing_value = os.getenv(env_var_name)
+        # Only warn when the value is actually changing to reduce log noise
+        if existing_value is not None and existing_value != value:
+            structlogger.warning(
+                "langfuse_configuration.overwriting_env_var",
+                event_info=(
+                    f"Overwriting existing environment variable '{env_var_name}' "
+                    f"with value from endpoints configuration."
+                ),
+                env_var_name=env_var_name,
+            )
+        os.environ[env_var_name] = value
+
     for config_key, source_dict, env_var_name in env_var_mappings:
-        value = source_dict.get(config_key)
-        if value is not None:
-            # Check if environment variable already exists
-            existing_value = os.getenv(env_var_name)
-            if existing_value is not None:
-                structlogger.warning(
-                    "langfuse_configuration.overwriting_env_var",
-                    event_info=(
-                        f"Overwriting existing environment variable '{env_var_name}' "
-                        f"with value from endpoints configuration. "
-                    ),
-                    env_var_name=env_var_name,
-                )
-            os.environ[env_var_name] = value
+        _set_env_var(env_var_name, source_dict.get(config_key))
+
+    # Decide langfuse environment name value once, then set
+    environment = (
+        langfuse_environment_name
+        if langfuse_environment_name is not None
+        else config_values.get(LANGFUSE_CONFIG_ENVIRONMENT_KEY)
+    )
+    _set_env_var(LANGFUSE_ENV_VAR_TRACING_ENVIRONMENT, environment)
 
 
 def _configure_litellm_callback() -> None:
@@ -269,6 +302,34 @@ def _validate_langfuse_config(config_values: Dict[str, Any]) -> None:
     public_key = config_values[LANGFUSE_CONFIG_PUBLIC_KEY]
     private_key = config_values[LANGFUSE_CONFIG_PRIVATE_KEY]
     _validate_key_syntax(public_key, private_key)
+    _validate_environment_name(config_values.get(LANGFUSE_CONFIG_ENVIRONMENT_KEY))
+
+
+def _validate_environment_name(environment: Optional[str]) -> None:
+    """Validate the optional Langfuse environment name if provided.
+
+    The environment must match the regex ^(?!langfuse)[a-z0-9-_]+$ and be at most
+    40 characters long.
+    """
+    if not environment:
+        return
+
+    if (
+        not isinstance(environment, str)
+        or len(environment) > 40
+        or not LANGFUSE_VALID_ENVIRONMENT_PATTERN.match(environment)
+    ):
+        error_message = (
+            f"Invalid Langfuse environment: '{environment}'. It can only contain "
+            f"lowercase letters, numbers, hyphens, and underscores. It cannot start "
+            f"with 'langfuse' prefix and must be at most 40 characters long."
+        )
+        structlogger.error(
+            "langfuse_configuration.invalid_environment",
+            event_info=error_message,
+            environment=environment,
+        )
+        raise InvalidLangfuseConfigException(error_message)
 
 
 def _validate_required_keys(

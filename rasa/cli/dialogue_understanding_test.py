@@ -108,7 +108,9 @@ def create_du_test_subparser(
         description="Runs dialogue understanding testing.",
     )
 
-    du_test_subparser.set_defaults(func=execute_dialogue_understanding_tests)
+    du_test_subparser.set_defaults(
+        func=execute_dialogue_understanding_tests, langfuse_environment_name="du-test"
+    )
 
     add_du_test_arguments(du_test_subparser)
     add_bot_arguments(du_test_subparser)
