@@ -1,7 +1,7 @@
 {
   "repoOwner": "RasaHQ",
   "repoName": "rasa-private",
-  "targetBranchChoices": ["main", "3.11.x", "3.12.x", "3.13.x", "3.14.x"],
+  "targetBranchChoices": ["main", "3.12.x", "3.13.x", "3.14.x", "3.15.x"],
   "commitConflicts": true,
   "branchLabelMapping": {
     "^backport-to-(.+)$": "$1"
