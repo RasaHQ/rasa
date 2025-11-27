@@ -140,6 +140,34 @@ Rasa Pro 3.15.0 (2025-11-26)
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
 
 
+## [3.14.4] - 2025-11-27
+                        
+Rasa Pro 3.14.4 (2025-11-27)                             
+### Bugfixes
+- [#3864](https://github.com/rasahq/rasa-private/issues/3864): Fixed `patten-continue-interrupted` running out of order before linked flows.
+- [#3933](https://github.com/rasahq/rasa-private/issues/3933): Fix `rasa studio upload` timeouts by enabling TCP keep-alive with platform-specific socket options to maintain stable connections.
+- [#3948](https://github.com/rasahq/rasa-private/issues/3948): Remove `action_metadata` tracing span attribute from `EnterpriseSearchPolicy` instrumentation to prevent PII leakages.
+  Add new environment variable `RASA_TRACING_DEBUGGING_ENABLED` to enable adding `action_metadata` to
+  `EnterpriseSearchPolicy` spans for debugging purposes. By default, this variable is set to `false` to ensure PII is not logged
+  in production environments.
+- [#3958](https://github.com/rasahq/rasa-private/issues/3958): Fixed PostgreSQL `UniqueViolation` error when running an assistant with multiple Sanic workers.
+- [#3966](https://github.com/rasahq/rasa-private/issues/3966): Fix Kafka producer creation failing when SASL mechanism is specified in lowercase. 
+  The SASL mechanism is now case-insensitive in the Kafka producer configuration.
+- [#3975](https://github.com/rasahq/rasa-private/issues/3975): Fix issue where the validation of the assistant files continued even when the provided domain was invalid and was being loaded as empty.
+  The training or validation command didn't exit because the final merged domain contained only the default implementations
+  for patterns, slots and responses and therefore passed the check for being non-empty.
+- [#3984](https://github.com/rasahq/rasa-private/issues/3984): Trigger pattern_internal_error in a CALM assistant when a custom action fails during execution.
+- [#3996](https://github.com/rasahq/rasa-private/issues/3996): Create AWS Bedrock / Sagemaker client only if the LLM healthcheck environment variable is set.
+  If the environment variable is not set, validate that required credentials are present.
+- [#4008](https://github.com/rasahq/rasa-private/issues/4008): Update `langchain-core` version to `~0.3.80` to address security vulnerability CVE-2025-65106.
+- [#4010](https://github.com/rasahq/rasa-private/issues/4010): Raise validation error when duplicate slot definitions are found across domains.
+- [#4020](https://github.com/rasahq/rasa-private/issues/4020): Raise validation error when a slot with an initial value set is collected by a flow collect step
+  which sets `asks_before_filling` to `true` without having a corresponding collect utterance or custom action.
+
+### Miscellaneous internal changes
+- [#3945](https://github.com/rasahq/rasa-private/issues/3945)
+
+
 ## [3.14.3] - 2025-11-13
                         
 Rasa Pro 3.14.3 (2025-11-13)                             
@@ -545,6 +573,25 @@ Rasa Pro 3.14.0 (2025-10-09)
 - [#1892](https://github.com/rasahq/rasa-private/issues/1892), [#2184](https://github.com/rasahq/rasa-private/issues/2184), [#2767](https://github.com/rasahq/rasa-private/issues/2767), [#2814](https://github.com/rasahq/rasa-private/issues/2814), [#2863](https://github.com/rasahq/rasa-private/issues/2863), [#2911](https://github.com/rasahq/rasa-private/issues/2911), [#2913](https://github.com/rasahq/rasa-private/issues/2913), [#2916](https://github.com/rasahq/rasa-private/issues/2916), [#2957](https://github.com/rasahq/rasa-private/issues/2957), [#2990](https://github.com/rasahq/rasa-private/issues/2990), [#3018](https://github.com/rasahq/rasa-private/issues/3018), [#3019](https://github.com/rasahq/rasa-private/issues/3019), [#3052](https://github.com/rasahq/rasa-private/issues/3052), [#3078](https://github.com/rasahq/rasa-private/issues/3078), [#3094](https://github.com/rasahq/rasa-private/issues/3094), [#3121](https://github.com/rasahq/rasa-private/issues/3121), [#3125](https://github.com/rasahq/rasa-private/issues/3125), [#3207](https://github.com/rasahq/rasa-private/issues/3207), [#3208](https://github.com/rasahq/rasa-private/issues/3208), [#3260](https://github.com/rasahq/rasa-private/issues/3260), [#3289](https://github.com/rasahq/rasa-private/issues/3289), [#3319](https://github.com/rasahq/rasa-private/issues/3319), [#3374](https://github.com/rasahq/rasa-private/issues/3374), [#3375](https://github.com/rasahq/rasa-private/issues/3375), [#3411](https://github.com/rasahq/rasa-private/issues/3411)
 
 
+## [3.13.17] - 2025-11-27
+                         
+Rasa Pro 3.13.17 (2025-11-27)                              
+### Bugfixes
+- [#3958](https://github.com/rasahq/rasa-private/issues/3958): Fixed PostgreSQL `UniqueViolation` error when running an assistant with multiple Sanic workers.
+- [#3966](https://github.com/rasahq/rasa-private/issues/3966): Fix Kafka producer creation failing when SASL mechanism is specified in lowercase. 
+  The SASL mechanism is now case-insensitive in the Kafka producer configuration.
+- [#3975](https://github.com/rasahq/rasa-private/issues/3975): Fix issue where the validation of the assistant files continued even when the provided domain was invalid and was being loaded as empty.
+  The training or validation command didn't exit because the final merged domain contained only the default implementations
+  for patterns, slots and responses and therefore passed the check for being non-empty.
+- [#3984](https://github.com/rasahq/rasa-private/issues/3984): Trigger pattern_internal_error in a CALM assistant when a custom action fails during execution.
+- [#3996](https://github.com/rasahq/rasa-private/issues/3996): Create AWS Bedrock / Sagemaker client only if the LLM healthcheck environment variable is set.
+  If the environment variable is not set, validate that required credentials are present.
+- [#4008](https://github.com/rasahq/rasa-private/issues/4008): Update `langchain-core` version to `~0.3.80` to address security vulnerability CVE-2025-65106.
+- [#4010](https://github.com/rasahq/rasa-private/issues/4010): Raise validation error when duplicate slot definitions are found across domains.
+- [#4020](https://github.com/rasahq/rasa-private/issues/4020): Raise validation error when a slot with an initial value set is collected by a flow collect step
+  which sets `asks_before_filling` to `true` without having a corresponding collect utterance or custom action.
+
+
 ## [3.13.16] - 2025-11-21
                          
 Rasa Pro 3.13.16 (2025-11-21)                              
@@ -931,6 +978,21 @@ Rasa Pro 3.13.0 (2025-07-07)
 
 ### Miscellaneous internal changes
 - [#2125](https://github.com/rasahq/rasa-private/issues/2125), [#2134](https://github.com/rasahq/rasa-private/issues/2134), [#2361](https://github.com/rasahq/rasa-private/issues/2361), [#2419](https://github.com/rasahq/rasa-private/issues/2419), [#2471](https://github.com/rasahq/rasa-private/issues/2471), [#2496](https://github.com/rasahq/rasa-private/issues/2496), [#2506](https://github.com/rasahq/rasa-private/issues/2506), [#2513](https://github.com/rasahq/rasa-private/issues/2513), [#2538](https://github.com/rasahq/rasa-private/issues/2538), [#2571](https://github.com/rasahq/rasa-private/issues/2571), [#2615](https://github.com/rasahq/rasa-private/issues/2615), [#2629](https://github.com/rasahq/rasa-private/issues/2629), [#2668](https://github.com/rasahq/rasa-private/issues/2668), [#2672](https://github.com/rasahq/rasa-private/issues/2672), [#2682](https://github.com/rasahq/rasa-private/issues/2682), [#2707](https://github.com/rasahq/rasa-private/issues/2707), [#2712](https://github.com/rasahq/rasa-private/issues/2712), [#2720](https://github.com/rasahq/rasa-private/issues/2720), [#2745](https://github.com/rasahq/rasa-private/issues/2745), [#2769](https://github.com/rasahq/rasa-private/issues/2769)
+
+
+## [3.12.40] - 2025-11-27
+                         
+Rasa Pro 3.12.40 (2025-11-27)                              
+### Bugfixes
+- [#3958](https://github.com/rasahq/rasa-private/issues/3958): Fixed PostgreSQL `UniqueViolation` error when running an assistant with multiple Sanic workers.
+- [#3975](https://github.com/rasahq/rasa-private/issues/3975): Fix issue where the validation of the assistant files continued even when the provided domain was invalid and was being loaded as empty.
+  The training or validation command didn't exit because the final merged domain contained only the default implementations
+  for patterns, slots and responses and therefore passed the check for being non-empty.
+- [#3984](https://github.com/rasahq/rasa-private/issues/3984): Trigger pattern_internal_error in a CALM assistant when a custom action fails during execution.
+- [#4008](https://github.com/rasahq/rasa-private/issues/4008): Update `langchain-core` version to `~0.3.80` to address security vulnerability CVE-2025-65106.
+- [#4010](https://github.com/rasahq/rasa-private/issues/4010): Raise validation error when duplicate slot definitions are found across domains.
+- [#4020](https://github.com/rasahq/rasa-private/issues/4020): Raise validation error when a slot with an initial value set is collected by a flow collect step
+  which sets `asks_before_filling` to `true` without having a corresponding collect utterance or custom action.
 
 
 ## [3.12.39] - 2025-11-21
