@@ -35,10 +35,10 @@ jobs:
           python-version: '3.11'
 
       - name: Run action to get records
-        uses: RasaHQ/get-release-records-from-datocms-gha@69bf862bbbca46174cd9c8747a61a1d6c7e20cb9
+        uses: RasaHQ/get-release-records-from-cms-gha@cc80bc019e53f22a3c177d40619208983e9c011a
         id: get_branches
         with:
-          dato-cms-api-key: ${{ secrets.DATO_CMS_API_KEY }}
+          cms-api-key: ${{ secrets.WEBFLOW_CMS_API_KEY }}
           product-name: Rasa Pro
           status: supported
 

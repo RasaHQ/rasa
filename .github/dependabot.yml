@@ -198,8 +198,8 @@ updates:
           - "*"
         exclude-patterns:
         # internal git repo, not reachable for depenabot
-          - "RasaHQ/get-release-records-from-datocms-gha"
-          - "RasaHQ/push-release-record-to-datocms-gha"
+          - "RasaHQ/get-release-records-from-cms-gha"
+          - "RasaHQ/push-release-record-to-cms-gha"
     pull-request-branch-name:
       separator: "-"
     open-pull-requests-limit: 10
