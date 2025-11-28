@@ -522,18 +522,19 @@ class CopilotResponseHandler:
         return reference_section
 
     def extract_full_text(self) -> str:
-        """Extract and join all text content from the handler's responses.
+        """Extract and join all content from the handler's responses.
 
         Returns:
-            str: Concatenated text from all generated content responses.
+            str: Concatenated all generated content responses.
         """
-        text_parts: List[str] = []
+        content_parts: List[str] = []
 
         for response in self.generated_responses or []:
-            if isinstance(response, GeneratedContent) and response.content:
-                text_parts.append(response.content)
+            if isinstance(response, GeneratedContent):
+                if response.response_completeness == ResponseCompleteness.COMPLETE:
+                    content_parts.append(response.content)
 
-        return "".join(text_parts)
+        return "".join(content_parts)
 
     def extract_response_category(self) -> ResponseCategory:
         """Extract the last non-reference response category from the handler.
