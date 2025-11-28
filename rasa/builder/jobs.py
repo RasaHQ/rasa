@@ -192,6 +192,22 @@ async def run_template_to_bot_job(
         bot_files = project_generator.get_bot_files()
         await push_job_status_event(job, JobStatus.generation_success)
 
+        # Persist template prompt to history after template initialization
+        # This ensures the project directory and .rasa folder exist
+        try:
+            template_prompts = load_copilot_template_prompts()
+            template_prompt = template_prompts.get(template_name.value)
+            if template_prompt:
+                await persist_user_message_to_history(text=template_prompt)
+        except Exception as persist_exc:
+            # Don't fail the job if persistence fails, just log it
+            structlogger.error(
+                "template_to_bot_job.persist_template_prompt_failed",
+                job_id=job.id,
+                template=template_name.value,
+                error=str(persist_exc),
+            )
+
         await push_job_status_event(job, JobStatus.training)
         agent = await try_load_existing_agent(project_generator.project_folder)
         if agent is None:
@@ -991,8 +1007,9 @@ async def run_copilot_template_prompt_job(
 ) -> None:
     """Run the template prompt job in the background.
 
-    This job sends the template prompt as a user message at the start
-    of a template-based bot creation.
+    This job sends the template prompt as a user message to the frontend
+    at the start of a template-based bot creation. The message is persisted
+    to history separately after template initialization.
 
     Args:
         app: The Sanic application instance.
@@ -1021,8 +1038,6 @@ async def run_copilot_template_prompt_job(
                 "completeness": "complete",
             },
         )
-
-        await persist_user_message_to_history(text=template_prompt)
 
         await push_job_status_event(job, JobStatus.done)
         job_manager.mark_done(job)

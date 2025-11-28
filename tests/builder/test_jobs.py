@@ -1012,25 +1012,15 @@ class TestCopilotTemplatePromptJob:
         self._verify_done_event_sent(self.mock_push_event)
 
     @pytest.mark.asyncio
-    async def test_template_prompt_persisted_to_history(self, mock_app, mock_job):
+    async def test_template_prompt_not_persisted_immediately(self, mock_app, mock_job):
+        """Template prompt is streamed immediately but persisted later in job."""
         await run_copilot_template_prompt_job(
             mock_app, mock_job, ProjectTemplateName.FINANCE
         )
 
-        # Verify history store append was called
-        self.mock_history_store.append.assert_called_once()
-
-        # Verify the conversation key is correct
-        call_args = self.mock_history_store.append.call_args
-        conversation_key = call_args[0][0]
-        assert conversation_key.chat_id == "default"
-
-        # Verify the message content
-        message = call_args[0][1]
-        assert message.role == "user"
-        assert len(message.content) == 1
-        assert message.content[0].type == "text"
-        assert "banking agent" in message.content[0].text.lower()
+        # Verify history store append was NOT called in template prompt job
+        # Persistence now happens in run_template_to_bot_job after initialization
+        self.mock_history_store.append.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_template_job_creates_template_prompt_job(self):
@@ -1075,6 +1065,61 @@ class TestCopilotTemplatePromptJob:
         assert self.mock_job_manager.create_job.call_count == 2
         # Verify both jobs were added as tasks
         assert mock_app.add_task.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_template_prompt_persisted_in_template_job(self):
+        """Test that template prompt is persisted after template initialization."""
+        # Setup mocks for template to bot job
+        mock_app = MagicMock()
+        project_generator = Mock(spec=ProjectGenerator)
+        mock_app.ctx = SimpleNamespace()
+        mock_app.ctx.project_generator = project_generator
+        mock_app.add_task = MagicMock()
+
+        project_generator.init_from_template = AsyncMock(return_value="test_commit_sha")
+        project_generator.get_bot_files.return_value = {"config.yml": "test"}
+        project_generator.get_training_input.return_value = Mock()
+        project_generator.project_folder = "/tmp/test_project"
+        project_generator.git_service = MagicMock()
+
+        job = MagicMock(spec=JobInfo)
+        job.id = "test-job-789"
+        job.put = AsyncMock()
+
+        # Mock agent to be returned by training
+        mock_agent = MagicMock()
+
+        with patch(
+            "rasa.builder.jobs.try_load_existing_agent", AsyncMock(return_value=None)
+        ):
+            with patch(
+                "rasa.builder.job_helpers.train_and_load_agent",
+                AsyncMock(return_value=mock_agent),
+            ):
+                with patch("rasa.builder.jobs.update_agent", MagicMock()):
+                    with patch(
+                        "rasa.builder.job_helpers.link_model_to_commit",
+                        new_callable=AsyncMock,
+                    ):
+                        await run_template_to_bot_job(
+                            mock_app, job, ProjectTemplateName.FINANCE
+                        )
+
+        # Verify history store append was called for template prompt persistence
+        # Should be called once for the template prompt after template initialization
+        self.mock_history_store.append.assert_called()
+
+        # Verify the conversation key is correct
+        call_args = self.mock_history_store.append.call_args
+        conversation_key = call_args[0][0]
+        assert conversation_key.chat_id == "default"
+
+        # Verify the message content
+        message = call_args[0][1]
+        assert message.role == "user"
+        assert len(message.content) == 1
+        assert message.content[0].type == "text"
+        assert "banking agent" in message.content[0].text.lower()
 
     @pytest.mark.asyncio
     async def test_received_event_includes_template_prompt_job_id(self):
