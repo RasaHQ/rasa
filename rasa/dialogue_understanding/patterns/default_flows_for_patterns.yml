@@ -213,13 +213,13 @@ flows:
       - noop: true
         next:
           - if: context.names
-            then:
-            - action: action_clarify_flows
-            - action: utter_clarification_options_rasa
-              next: END
+            then: action_clarify_flows
           - else:
             - action: utter_clarification_no_options_rasa
               next: END
+      - id: action_clarify_flows
+        action: action_clarify_flows
+      - action: utter_clarification_options_rasa
   
   pattern_code_change:
     description: Conversation repair flow for cleaning the stack after an assistant update
@@ -253,7 +253,7 @@ flows:
         description: Set this slot to `True` if the user needs further help and wants to continue the conversation. Set it to `False` otherwise.
         ask_before_filling: true
         next:
-          - if: slots.continue_conversation is True
+          - if: slots.continue_conversation
             then:
             - action: utter_can_do_something_else
               next: END

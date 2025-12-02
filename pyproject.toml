@@ -538,9 +538,6 @@ convention = "google"
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "pypred.Predicate".msg = "Only use the patched pypred module from rasa.utils.pypred."
 
-
-
-
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.3.5,<0.4.0"
 docker = "~7.1.0"
