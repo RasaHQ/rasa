@@ -211,6 +211,7 @@ def _setup_copilot_mocks(
     mock_llm_service = MagicMock()
     mock_llm_service.instantiate_handler = mock_instantiate_handler
     mock_llm_service.instantiate_copilot.return_value = mock_copilot
+    mock_llm_service.history_store = history_store
 
     # Mock guardrails_policy_checker to return None (no violations)
     mock_guardrails_checker = MagicMock()

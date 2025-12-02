@@ -57,7 +57,6 @@ from rasa.builder.jobs import (
     run_change_branch_job,
     run_prompt_to_bot_job,
     run_replace_all_files_job,
-    run_revert_job,
     run_rollback_job,
     run_template_to_bot_job,
 )
@@ -1919,84 +1918,6 @@ async def handle_get_commit_diff(request: Request, commit_sha: str) -> HTTPRespo
         return response.json(
             ApiErrorResponse(
                 error="Failed to get commit diff",
-                details={"error": str(exc)},
-            ).model_dump(),
-            status=HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
-
-@bp.route("/commits/<commit_sha>/revert", methods=["POST"])
-@openapi.summary("Revert to commit")
-@openapi.description(
-    "Revert the last commit on the project. This creates a background job "
-    "that adds a revert commit and retrains the agent. "
-    "Returns immediately with a job ID. Connect to `/job-events/<job_id>` "
-    "to receive server-sent events (SSE) for real-time progress tracking.\n\n"
-    "**SSE Event Flow** (via `/job-events/<job_id>`):\n"
-    "1. `received` - Request received by server\n"
-    "2. `reverting` - Reverting last commit\n"
-    "3. `revert_success` - Checkout revert commit\n"
-    "4. `training` - Training the bot model with the reverted files\n"
-    "5. `train_success` - Model training completed\n"
-    "6. `done` - Revert completed\n\n"
-    "**Error Events:**\n"
-    "- `revert_error` - Failed to revert last commit\n"
-    "- `train_error` - Revert succeeded but training failed\n"
-    "- `error` - Unexpected error occurred\n\n"
-    "**Usage:**\n"
-    "1. Send POST request\n"
-    "2. The response will be a JSON object `{job_id: ...}`\n"
-    "3. Connect to `/job-events/<job_id>` for a server-sent event stream of progress."
-)
-@openapi.tag("git")
-@openapi.response(
-    200,
-    {"application/json": model_to_schema(JobCreateResponse)},
-    description="Job created. Poll or subscribe to /job-events/<job_id> for progress.",
-)
-@openapi.response(
-    400,
-    {"application/json": model_to_schema(ApiErrorResponse)},
-    description="Invalid commit SHA",
-)
-@openapi.response(
-    500,
-    {"application/json": model_to_schema(ApiErrorResponse)},
-    description="Internal server error",
-)
-@openapi.parameter(
-    HEADER_USER_ID,
-    description=(
-        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
-    ),
-    _in="header",
-    required=False,
-    schema=str,
-)
-async def handle_revert_to_commit(request: Request, commit_sha: str) -> HTTPResponse:
-    """Handle revert to commit requests."""
-    try:
-        # Validate commit SHA format
-        if not commit_sha or len(commit_sha) < 7:
-            return response.json(
-                ApiErrorResponse(
-                    error="Invalid commit SHA", details={"commit_sha": commit_sha}
-                ).model_dump(),
-                status=400,
-            )
-
-        job = job_manager.create_job()
-        request.app.add_task(run_revert_job(request.app, job, commit_sha))
-        return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
-    except Exception as exc:
-        capture_exception_with_context(
-            exc,
-            "bot_builder_service.revert_to_commit.unexpected_error",
-            tags={"endpoint": "/api/commits/<commit_sha>/revert"},
-        )
-        return response.json(
-            ApiErrorResponse(
-                error="Failed to create revert job",
                 details={"error": str(exc)},
             ).model_dump(),
             status=HTTPStatus.INTERNAL_SERVER_ERROR,

@@ -24,11 +24,12 @@ from rasa.builder.exceptions import (
     ValidationError,
 )
 from rasa.builder.git_service import DEFAULT_COMMIT_INFO
+from rasa.builder.job_helpers import handle_rollback_validation_error
 from rasa.builder.job_manager import JobInfo, job_manager
 from rasa.builder.jobs import (
     _safe_tar_members,
     run_backup_to_bot_job,
-    run_copilot_go_back_in_time_success_job,
+    run_copilot_rollback_message_job,
     run_copilot_template_prompt_job,
     run_copilot_training_error_analysis_job,
     run_copilot_training_success_job,
@@ -1404,7 +1405,7 @@ class TestCopilotRollbackSuccessJob:
         rollback_success_calls = [
             call
             for call in mock_push_event.call_args_list
-            if call[0][1] == JobStatus.rollback_success
+            if call[0][1] == JobStatus.rollback_message
         ]
         # Now expects 2 calls: message + commit info with rollback success
         assert len(rollback_success_calls) == 2
@@ -1448,8 +1449,8 @@ class TestCopilotRollbackSuccessJob:
         )
         mock_job.commit_sha = "test_commit_sha"
 
-        await run_copilot_go_back_in_time_success_job(
-            mock_app, mock_job, "rollback_success_response", JobStatus.rollback_success
+        await run_copilot_rollback_message_job(
+            mock_app, mock_job, "rollback_message_response", JobStatus.rollback_message
         )
 
         expected_snippets = ["I've restored your agent to the previous version."]
@@ -1872,3 +1873,116 @@ class TestBackupToBotJob:
                 Path(backup_file_path).unlink(missing_ok=True)
             except Exception:
                 pass
+
+
+class TestRollbackMessageJob:
+    @pytest.fixture(autouse=True)
+    def setup_mocks(self, monkeypatch):
+        # Create mocks for copilot rollback message job
+        self.mock_push_event = AsyncMock()
+        self.mock_job_manager = MagicMock()
+
+        # Create rollback job mock
+        rollback_job = MagicMock()
+        rollback_job.id = "rollback_job_123"
+        rollback_job.commit_sha = "test_rollback_sha"
+        self.mock_job_manager.create_job.return_value = rollback_job
+
+        # Mock load_copilot_handler_default_responses
+        self.mock_load_responses = MagicMock()
+        self.mock_load_responses.return_value = {
+            "rollback_message_response": (
+                "I've restored your agent to the previous version."
+            )
+        }
+
+        # Apply mocks using monkeypatch - need to mock both modules
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.push_job_status_event", self.mock_push_event
+        )
+        monkeypatch.setattr(
+            "rasa.builder.jobs.push_job_status_event", self.mock_push_event
+        )
+        monkeypatch.setattr(
+            "rasa.builder.job_helpers.job_manager", self.mock_job_manager
+        )
+        monkeypatch.setattr("rasa.builder.jobs.job_manager", self.mock_job_manager)
+        monkeypatch.setattr(
+            "rasa.builder.jobs.load_copilot_handler_default_responses",
+            self.mock_load_responses,
+        )
+
+    @staticmethod
+    def _verify_rollback_message_call(mock_push_event, expected_content_snippets):
+        rollback_message_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if call[0][1] == JobStatus.rollback_message
+        ]
+        # Now expects 3 calls: logs + message + commit info with training success
+        assert len(rollback_message_calls) == 3
+
+        logs_payload = rollback_message_calls[0][1]["payload"]
+        assert "logs" in logs_payload
+        assert "response_category" in logs_payload
+        assert "completeness" in logs_payload
+        assert logs_payload["response_category"] == "training_error_log"
+        assert logs_payload["completeness"] == "complete"
+        assert isinstance(logs_payload["logs"], list)
+        assert len(logs_payload["logs"]) > 0
+
+        commit_payload = rollback_message_calls[1][1]["payload"]
+        assert "commit" in commit_payload
+        assert "sha" in commit_payload["commit"]
+        assert commit_payload["commit"]["sha"] == "test_sha"
+
+        message_payload = rollback_message_calls[2][1]["payload"]
+        assert "content" in message_payload
+        assert "response_category" in message_payload
+        assert "completeness" in message_payload
+        assert message_payload["response_category"] == "copilot"
+        assert message_payload["completeness"] == "complete"
+        for snippet in expected_content_snippets:
+            assert snippet in message_payload["content"]
+
+    @staticmethod
+    def _verify_done_event_sent_for_rollback_job(mock_push_event, rollback_job_id):
+        """Verify that done event was sent for the rollback message job."""
+        done_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if call[0][1] == JobStatus.done and call[0][0].id == rollback_job_id
+        ]
+        assert len(done_calls) == 1
+
+    @pytest.mark.asyncio
+    async def test_rollback_message(self, mock_app, mock_job):
+        # Mock git_service.get_commit_info for jobs with commit_sha
+        mock_app.ctx.project_generator.git_service.get_commit_info = AsyncMock(
+            return_value={"sha": "test_sha", "message": "test rollback commit"}
+        )
+        mock_job.commit_sha = "test_rollback_sha"
+
+        # Create a validation error with logs
+        validation_error = ValidationError("Validation failed")
+        validation_error.validation_logs = [
+            {"log_level": "error", "message": "Error 1", "file": "domain.yml"},
+        ]
+
+        # Call the function - it will schedule run_copilot_rollback_message_job
+        await handle_rollback_validation_error(
+            mock_app, mock_job, validation_error, "test_rollback_sha"
+        )
+
+        # Now manually execute the scheduled task (run_copilot_rollback_message_job)
+        # The task was added via app.add_task, so we need to get it and await it
+        assert mock_app.add_task.called
+        scheduled_task = mock_app.add_task.call_args[0][0]
+        await scheduled_task
+
+        expected_snippets = ["I've restored your agent to the previous version."]
+        self._verify_rollback_message_call(self.mock_push_event, expected_snippets)
+        # Verify done event was sent for the rollback message job (not the original job)
+        self._verify_done_event_sent_for_rollback_job(
+            self.mock_push_event, "rollback_job_123"
+        )

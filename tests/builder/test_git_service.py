@@ -217,29 +217,6 @@ class TestGitService:
         assert result == "newcommitsha"
 
     @pytest.mark.asyncio
-    async def test_revert_to_commit(
-        self, git_service: GitService, mock_git_command_async: MagicMock
-    ) -> None:
-        """Test revert creates a revert commit to target commit."""
-        mock_git_command_async.side_effect = [
-            None,  # revert --no-commit <sha>
-            "abc123def456|user|user@example.com|1640995200|Initial commit\n",
-            None,  # commit
-            "revertcommitsha\n",
-        ]
-
-        result = await git_service.revert_to_commit("abc123def456")
-
-        mock_git_command_async.assert_any_call(
-            [
-                "revert",
-                "--no-commit",
-                "abc123def456",
-            ]
-        )
-        assert result == "revertcommitsha"
-
-    @pytest.mark.asyncio
     async def test_get_commit_diff(
         self, git_service: GitService, mock_git_command_async: MagicMock
     ) -> None:

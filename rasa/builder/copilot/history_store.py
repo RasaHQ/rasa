@@ -510,6 +510,7 @@ async def persist_copilot_message_to_history(
     chat_id: str = DEFAULT_COPILOT_CHAT_ID,
     response_category: ResponseCategory = ResponseCategory.COPILOT,
     commit: Optional[Dict[str, Any]] = None,
+    logs: Optional[List[LogContent]] = None,
 ) -> None:
     """Persist a copilot message to conversation history.
 
@@ -553,6 +554,19 @@ async def persist_copilot_message_to_history(
             # Add commit as a content block if provided
             if commit:
                 message_content.append(CommitContent(type="commit", commit=commit))
+
+            # Add logs
+            if logs:
+                log_items = [
+                    LogItem(
+                        type="log",
+                        content=log.content,
+                        context=log.context,
+                        metadata=log.metadata or {},
+                    )
+                    for log in logs
+                ]
+                message_content.append(LogsContent(type="logs", logs=log_items))
 
         copilot_message = CopilotChatMessage(
             role="copilot",

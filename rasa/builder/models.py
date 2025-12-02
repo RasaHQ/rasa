@@ -272,13 +272,8 @@ class JobStatus(str, Enum):
 
     rolling_back = "rolling_back"
     rollback_success = "rollback_success"
-    rollback_success_message = "rollback_success_message"
+    rollback_message = "rollback_message"
     rollback_error = "rollback_error"
-
-    reverting = "reverting"
-    revert_success = "revert_success"
-    revert_success_message = "revert_success_message"
-    revert_error = "revert_error"
 
     copilot_analysis_start = "copilot_analysis_start"
     copilot_analyzing = "copilot_analyzing"

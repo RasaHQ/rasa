@@ -119,6 +119,9 @@ class TestGitIntegration:
                 "rasa.builder.jobs.push_job_status_event", new_callable=AsyncMock
             ) as mock_push_event_jobs,
             patch("rasa.builder.jobs.update_agent"),
+            patch(
+                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
+            ) as mock_validate,
             patch.object(
                 mock_app.ctx.project_generator,
                 "get_training_input",
@@ -149,11 +152,12 @@ class TestGitIntegration:
                 "add_task",
             ) as mock_add_task,
             patch(
-                "rasa.builder.jobs.run_copilot_go_back_in_time_success_job",
+                "rasa.builder.jobs.run_copilot_rollback_message_job",
                 new_callable=AsyncMock,
             ),
         ):
             mock_agent = MagicMock()
+            mock_validate.return_value = None
             mock_train_and_load.return_value = mock_agent
             mock_get_training_input.return_value = Mock()
             mock_rollback.return_value = "new_rollback_commit_sha"
@@ -186,8 +190,10 @@ class TestGitIntegration:
                 call[0][1] for call in mock_push_event.call_args_list
             ]
 
-            # The received and done events come from jobs module
+            # The events come from jobs module
             assert JobStatus.received in status_calls_jobs
+            assert JobStatus.validating in status_calls_jobs
+            assert JobStatus.validation_success in status_calls_jobs
             assert JobStatus.done in status_calls_jobs
 
             # The rollback and training events come from helpers module
@@ -201,6 +207,8 @@ class TestGitIntegration:
                 JobStatus.received,
                 JobStatus.rolling_back,
                 JobStatus.rollback_success,
+                JobStatus.validating,
+                JobStatus.validation_success,
                 JobStatus.training,
                 JobStatus.train_success,
                 JobStatus.done,
@@ -220,19 +228,44 @@ class TestGitIntegration:
         with (
             patch("rasa.builder.jobs.push_job_status_event", new_callable=AsyncMock),
             patch(
+                "rasa.builder.job_helpers.push_job_status_event", new_callable=AsyncMock
+            ),
+            patch(
+                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
+            ) as mock_validate,
+            patch(
                 "rasa.builder.jobs.load_or_train_agent_for_commit",
                 new_callable=AsyncMock,
             ) as mock_load_or_train,
             patch("rasa.builder.jobs.update_agent"),
             patch.object(
+                mock_app.ctx.project_generator,
+                "get_training_input",
+            ) as mock_get_training_input,
+            patch.object(
                 mock_app.ctx.project_generator.git_service,
                 "rollback_to_commit",
                 new_callable=AsyncMock,
             ),
+            patch("rasa.builder.jobs.job_manager.create_job") as mock_create_job,
+            patch("rasa.builder.jobs.job_manager.mark_done"),
+            patch.object(mock_app, "add_task"),
+            patch(
+                "rasa.builder.jobs.run_copilot_rollback_message_job",
+                new_callable=AsyncMock,
+            ),
         ):
+            mock_validate.return_value = None
             mock_load_or_train.return_value = existing_agent
+            mock_get_training_input.return_value = Mock()
+            copilot_job = MagicMock()
+            copilot_job.id = "copilot_job_123"
+            mock_create_job.return_value = copilot_job
 
             await run_rollback_job(mock_app, job, commit_sha)
+
+            # Should validate project
+            mock_validate.assert_called_once()
 
             # Should load or train agent
             mock_load_or_train.assert_called_once()

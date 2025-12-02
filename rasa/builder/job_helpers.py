@@ -9,6 +9,9 @@ from typing import Any, Dict, Optional
 import structlog
 from sanic import Sanic
 
+from rasa.builder import config
+from rasa.builder.copilot.models import LogContent, TrainingErrorLog
+from rasa.builder.exceptions import ValidationError
 from rasa.builder.git_service import link_model_to_commit
 from rasa.builder.job_manager import JobInfo, job_manager
 from rasa.builder.models import JobStatus, JobStatusEvent
@@ -174,33 +177,64 @@ async def handle_rollback_error(
     job_manager.mark_done(job, error=str(exc))
 
 
-# Revert-specific helpers
-
-
-async def perform_revert(
-    project_generator: ProjectGenerator, job: JobInfo, commit_sha: str
-) -> str:
-    """Perform the git revert operation."""
-    await push_job_status_event(job, JobStatus.reverting)
-    revert_commit_sha = await project_generator.git_service.revert_to_commit(commit_sha)
-    await push_job_status_event(job, JobStatus.revert_success)
-    return revert_commit_sha
-
-
-async def handle_revert_error(
+async def handle_rollback_validation_error(
+    app: Sanic,
     job: JobInfo,
-    exc: Exception,
+    exc: ValidationError,
     commit_sha: str,
-    error_status: JobStatus,
-    log_traceback: bool = False,
 ) -> None:
-    """Handle revert job errors with appropriate logging and status updates."""
-    log_method = structlogger.exception if log_traceback else structlogger.debug
-    log_method(
-        f"revert_job.{error_status.value}",
+    """Handle validation error in rollback job.
+
+    Args:
+        job: The job information instance
+        exc: The exception that occurred
+        commit_sha: SHA of the commit being rolled back to
+        error_status: The error status to set
+        log_traceback: Whether to log the full traceback
+    """
+    # Import here to avoid circular dependency
+    from rasa.builder.jobs import run_copilot_rollback_message_job
+
+    log_levels = ["error"]
+    if config.VALIDATION_FAIL_ON_WARNINGS:
+        log_levels.append("warning")
+    structlogger.debug(
+        "copilot_rollback_job.validation_error",
         job_id=job.id,
         error=str(exc),
-        commit_sha=commit_sha,
+        validation_logs=exc.validation_logs,
+        included_log_levels=log_levels,
     )
-    await push_job_status_event(job, error_status, message=str(exc))
-    job_manager.mark_done(job, error=str(exc))
+    error_message = exc.get_error_message_with_logs(log_levels=log_levels)
+    # Push error event and start copilot analysis job
+    # Create message content blocks with log content and available files
+    log_content_block = LogContent(
+        type="log", content=error_message, context="training_error"
+    )
+    # Send original error log
+    training_error_log = TrainingErrorLog(logs=[log_content_block])
+
+    await push_job_status_event(
+        job, JobStatus.validation_error, payload=training_error_log.sse_data
+    )
+
+    copilot_rollback_message_job = job_manager.create_job(commit_sha=commit_sha)
+
+    app.add_task(
+        run_copilot_rollback_message_job(
+            app,
+            copilot_rollback_message_job,
+            "rollback_message_response",
+            JobStatus.rollback_message,
+            training_error_log=training_error_log,
+        )
+    )
+
+    await push_job_status_event(
+        job,
+        JobStatus.done,
+        payload={"copilot_rollback_message_job_id": copilot_rollback_message_job.id},
+    )
+
+    # After error mark job as done
+    job_manager.mark_done(job, error=error_message)

@@ -40,8 +40,5 @@ responses:
   training_success_response: |
     Your changes have been saved successfully.
 
-  rollback_success_response: |
+  rollback_message_response: |
     I've restored your agent to the previous version.
-
-  revert_success_response: |
-    I've reverted your agent to the previous version.

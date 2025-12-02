@@ -316,40 +316,6 @@ class GitService:
             )
             return new_sha
 
-    async def revert_to_commit(self, commit_sha: str) -> str:
-        """Create a revert commit to the given commit.
-
-        Args:
-            commit_sha: SHA of the commit to revert
-
-        Returns:
-            The SHA of the revert commit
-
-        Raises:
-            GitOperationInProgressError: If another operation is in progress
-        """
-        async with self.git_operation():
-            # Revert commit
-            await self.run_git_command(["revert", "--no-commit", commit_sha])
-
-            # Get commit info
-            commit_info = await self.get_commit_info(commit_sha)
-
-            # Create the revert commit
-            new_commit_info = DEFAULT_COMMIT_INFO.model_copy(
-                update={"message": f"Undo '{commit_info['message']}'"}
-            )
-            await self._create_commit(new_commit_info)
-            revert_sha = await self.get_current_commit_sha()
-
-            structlogger.info(
-                "git_service.revert_completed",
-                target_commit_sha=commit_sha,
-                new_commit_sha=revert_sha,
-                project_folder=self.project_folder.as_posix(),
-            )
-            return revert_sha
-
     async def get_commit_diff(
         self, commit_sha: str, file_path: Optional[str] = None
     ) -> Dict[str, Any]:

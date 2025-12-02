@@ -43,10 +43,9 @@ from rasa.builder.exceptions import (
 )
 from rasa.builder.git_service import GitOperationInProgressError
 from rasa.builder.job_helpers import (
-    handle_revert_error,
     handle_rollback_error,
+    handle_rollback_validation_error,
     load_or_train_agent_for_commit,
-    perform_revert,
     perform_rollback,
     push_error_and_start_copilot_analysis,
     push_job_status_event,
@@ -747,21 +746,23 @@ async def run_copilot_training_success_job(
         job_manager.mark_done(job, error=str(exc))
 
 
-async def run_copilot_go_back_in_time_success_job(
+async def run_copilot_rollback_message_job(
     app: "Sanic",
     job: JobInfo,
     internal_message_key: str,
     status: JobStatus,
+    training_error_log: Optional[TrainingErrorLog] = None,
 ) -> None:
-    """Run the rollback success job in the background.
+    """Run the rollback message job in the background.
 
-    This job sends a rollback success message to the user after successful rollback.
+    This job sends a rollback message to the user after rollback.
 
     Args:
         app: The Sanic application instance.
         job: The job information instance.
         internal_message_key: The key of the internal message to send.
         status: The status of the job.
+        training_error_log: Optional training error log to include in the message.
 
     Returns:
         None
@@ -770,8 +771,8 @@ async def run_copilot_go_back_in_time_success_job(
         # Load copilot default messages from YAML
         internal_messages = load_copilot_handler_default_responses()
 
-        # Get the appropriate rollback success message
-        success_message = internal_messages.get(internal_message_key)
+        # Get the appropriate rollback message
+        rollback_message = internal_messages.get(internal_message_key)
 
         commit_info = None
         if job.commit_sha:
@@ -780,7 +781,16 @@ async def run_copilot_go_back_in_time_success_job(
                 job.commit_sha
             )
 
-            commit_info["training_success"] = True
+            if training_error_log:
+                # Send error log
+                await push_job_status_event(
+                    job, status, payload=training_error_log.sse_data
+                )
+
+                commit_info["training_success"] = False
+
+            else:
+                commit_info["training_success"] = True
 
             # Send commit
             await push_job_status_event(
@@ -793,19 +803,21 @@ async def run_copilot_go_back_in_time_success_job(
                 },
             )
 
-        # Send the success message
+        # Send the message
         await push_job_status_event(
             job,
             status,
             payload={
-                "content": success_message,
+                "content": rollback_message,
                 "response_category": "copilot",
                 "completeness": "complete",
             },
         )
 
         await persist_copilot_message_to_history(
-            text=success_message, commit=commit_info
+            text=rollback_message,
+            commit=commit_info,
+            logs=training_error_log.logs if training_error_log else None,
         )
 
         # Mark job as done
@@ -944,7 +956,24 @@ async def run_rollback_job(
     await push_job_status_event(job, JobStatus.received)
 
     try:
+        # 1. Rolling back
         rollback_commit_sha = await perform_rollback(project_generator, job, commit_sha)
+
+        structlogger.info(
+            "bot_builder_service.rollback.success", commit_sha=rollback_commit_sha
+        )
+        # 2. Validating (ok if fails)
+        await push_job_status_event(job, JobStatus.validating)
+        training_input = project_generator.get_training_input()
+        validation_error = await validate_project(training_input.importer)
+        if validation_error:
+            raise ValidationError(validation_error)
+        await push_job_status_event(job, JobStatus.validation_success)
+        structlogger.info(
+            "bot_builder_service.rollback.validation_success",
+            commit_sha=rollback_commit_sha,
+        )
+        # 3. Training
         # we use the prior commit sha, since that saves us from a retrain in
         # case we have a trained model for the prior commit. using the
         # rollback sha wouldn't make sense as that is a new commit, so there
@@ -953,27 +982,29 @@ async def run_rollback_job(
 
         update_agent(agent, app)
         await push_job_status_event(job, JobStatus.train_success)
-
         structlogger.info(
-            "bot_builder_service.rollback.success", commit_sha=rollback_commit_sha
+            "bot_builder_service.rollback.train_success", commit_sha=rollback_commit_sha
         )
-        copilot_rollback_success_job = job_manager.create_job(
+
+        # 4. Send rollback message
+        copilot_rollback_message_job = job_manager.create_job(
             commit_sha=rollback_commit_sha
         )
         app.add_task(
-            run_copilot_go_back_in_time_success_job(
+            run_copilot_rollback_message_job(
                 app,
-                copilot_rollback_success_job,
-                "rollback_success_response",
-                JobStatus.rollback_success,
+                copilot_rollback_message_job,
+                "rollback_message_response",
+                JobStatus.rollback_message,
             )
         )
 
+        # 5. Done
         await push_job_status_event(
             job,
             JobStatus.done,
             payload={
-                "copilot_rollback_success_job_id": copilot_rollback_success_job.id
+                "copilot_rollback_message_job_id": copilot_rollback_message_job.id
             },
         )
         job_manager.mark_done(job)
@@ -982,68 +1013,12 @@ async def run_rollback_job(
         await handle_rollback_error(job, exc, commit_sha, JobStatus.error)
     except subprocess.CalledProcessError as exc:
         await handle_rollback_error(job, exc, commit_sha, JobStatus.rollback_error)
+    except ValidationError as exc:
+        await handle_rollback_validation_error(app, job, exc, rollback_commit_sha)
     except TrainingError as exc:
         await handle_rollback_error(job, exc, commit_sha, JobStatus.train_error)
     except Exception as exc:
         await handle_rollback_error(
-            job, exc, commit_sha, JobStatus.error, log_traceback=True
-        )
-
-
-async def run_revert_job(
-    app: "Sanic",
-    job: JobInfo,
-    commit_sha: str,
-) -> None:
-    """Run revert job following existing patterns.
-
-    Args:
-        app: The Sanic application instance.
-        job: The job information instance.
-        commit_sha: SHA of the commit to revert.
-    """
-    project_generator: ProjectGenerator = app.ctx.project_generator
-    await push_job_status_event(job, JobStatus.received)
-
-    try:
-        revert_commit_sha = await perform_revert(project_generator, job, commit_sha)
-        # we use the prior commit sha, since that saves us from a retrain in
-        # case we have a trained model for the prior commit. using the
-        # revert sha wouldn't make sense as that is a new commit, so there
-        # would surely no model be trained for that
-        agent = await load_or_train_agent_for_commit(project_generator, job, commit_sha)
-
-        update_agent(agent, app)
-        await push_job_status_event(job, JobStatus.train_success)
-
-        structlogger.info("bot_builder_service.revert.success", commit_sha=commit_sha)
-        copilot_revert_success_job = job_manager.create_job(
-            commit_sha=revert_commit_sha
-        )
-        app.add_task(
-            run_copilot_go_back_in_time_success_job(
-                app,
-                copilot_revert_success_job,
-                "revert_success_response",
-                JobStatus.revert_success,
-            )
-        )
-
-        await push_job_status_event(
-            job=job,
-            status=JobStatus.done,
-            payload={"copilot_revert_success_job_id": copilot_revert_success_job.id},
-        )
-        job_manager.mark_done(job)
-
-    except GitOperationInProgressError as exc:
-        await handle_revert_error(job, exc, commit_sha, JobStatus.error)
-    except subprocess.CalledProcessError as exc:
-        await handle_revert_error(job, exc, commit_sha, JobStatus.revert_error)
-    except TrainingError as exc:
-        await handle_revert_error(job, exc, commit_sha, JobStatus.train_error)
-    except Exception as exc:
-        await handle_revert_error(
             job, exc, commit_sha, JobStatus.error, log_traceback=True
         )
 

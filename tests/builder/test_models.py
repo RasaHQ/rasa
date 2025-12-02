@@ -50,12 +50,8 @@ def test_job_status_members():
         JobStatus.branch_switch_error.value,
         JobStatus.rolling_back.value,
         JobStatus.rollback_success.value,
-        JobStatus.rollback_success_message.value,
+        JobStatus.rollback_message.value,
         JobStatus.rollback_error.value,
-        JobStatus.reverting.value,
-        JobStatus.revert_success.value,
-        JobStatus.revert_success_message.value,
-        JobStatus.revert_error.value,
     }
     assert {s.value for s in JobStatus} == expected
 
