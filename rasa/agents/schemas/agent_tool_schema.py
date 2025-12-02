@@ -132,14 +132,27 @@ class AgentToolSchema(BaseModel):
     @staticmethod
     def _ensure_property_types(parameters: Dict[str, Any]) -> None:
         """Ensure all properties in parameters have a type defined and
-        additionalProperties is set."""
+        additionalProperties is set.
+
+        Properties that use structural keywords ($ref, anyOf, oneOf, allOf, enum)
+        are left untouched, as they naturally omit the type field and adding one
+        would break the schema.
+        """
         properties = parameters[TOOL_PROPERTIES_KEY]
 
         if not properties:
             return
 
+        # Structural keywords that indicate the type is determined elsewhere
+        structural_keywords = {"$ref", "anyOf", "oneOf", "allOf", "enum"}
+
         for _, prop_schema in properties.items():
             if not isinstance(prop_schema, dict):
+                continue
+
+            # Skip adding type if the property uses structural keywords
+            # These schemas naturally omit type and adding one would break validation
+            if any(keyword in prop_schema for keyword in structural_keywords):
                 continue
 
             # Ensure the property has a type

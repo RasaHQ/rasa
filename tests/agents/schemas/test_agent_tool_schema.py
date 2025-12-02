@@ -1,5 +1,7 @@
 """Unit tests for AgentToolSchema."""
 
+from typing import Any
+
 import pytest
 
 from rasa.agents.constants import (
@@ -282,7 +284,7 @@ def test_from_litellm_json_format_valid_structure():
     ],
 )
 def test_from_litellm_json_format_various_invalid_inputs(
-    invalid_tool, expected_error_pattern
+    invalid_tool: dict, expected_error_pattern: str
 ):
     """Test various invalid input formats are properly rejected."""
     with pytest.raises(ValueError, match=expected_error_pattern):
@@ -293,3 +295,81 @@ def test_from_litellm_json_format_none_input():
     """Test that None input raises TypeError."""
     with pytest.raises(TypeError, match="argument of type 'NoneType' is not iterable"):
         AgentToolSchema.from_litellm_json_format(None)
+
+
+# Tests for structural keywords fix (preserving $ref, anyOf, oneOf, allOf, enum)
+@pytest.mark.parametrize(
+    "property_name,property_schema,structural_keyword,expected_value",
+    [
+        (
+            "x_caller_identity",
+            {"$ref": "#/$defs/XCallerIdentity"},
+            "$ref",
+            "#/$defs/XCallerIdentity",
+        ),
+        (
+            "filters",
+            {
+                "anyOf": [{"$ref": "#/$defs/JobsFilters"}, {"type": "null"}],
+                "default": None,
+            },
+            "anyOf",
+            [{"$ref": "#/$defs/JobsFilters"}, {"type": "null"}],
+        ),
+        (
+            "value",
+            {"oneOf": [{"type": "string"}, {"type": "number"}]},
+            "oneOf",
+            [{"type": "string"}, {"type": "number"}],
+        ),
+        (
+            "value",
+            {
+                "allOf": [
+                    {"$ref": "#/$defs/BaseSchema"},
+                    {"type": "object", "properties": {"extra": {"type": "string"}}},
+                ]
+            },
+            "allOf",
+            [
+                {"$ref": "#/$defs/BaseSchema"},
+                {"type": "object", "properties": {"extra": {"type": "string"}}},
+            ],
+        ),
+        (
+            "status",
+            {"enum": ["active", "inactive", "pending"]},
+            "enum",
+            ["active", "inactive", "pending"],
+        ),
+    ],
+)
+def test_property_with_structural_keyword_not_modified(
+    property_name: str,
+    property_schema: dict,
+    structural_keyword: str,
+    expected_value: Any,
+):
+    """Test that properties with structural keywords are not modified."""
+    parameters = {
+        "type": "object",
+        "properties": {
+            property_name: property_schema,
+            "regular_param": {"description": "Regular parameter"},
+        },
+    }
+
+    AgentToolSchema._ensure_property_types(parameters)
+
+    # Property with structural keyword should remain unchanged (no type added)
+    structural_prop = parameters["properties"][property_name]
+    assert (
+        structural_keyword in structural_prop
+    ), f"{structural_keyword} should be preserved"
+
+    # Verify the structural keyword value is preserved
+    if structural_keyword in ["$ref", "anyOf", "oneOf", "allOf", "enum"]:
+        assert structural_prop[structural_keyword] == expected_value
+
+    # Regular property should get type added
+    assert parameters["properties"]["regular_param"]["type"] == "string"
