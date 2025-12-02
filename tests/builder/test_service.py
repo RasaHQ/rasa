@@ -8,7 +8,7 @@ import tarfile
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, Generator
+from typing import Any, Dict, Generator, Optional
 from unittest.mock import AsyncMock, MagicMock, Mock, PropertyMock, patch
 
 import pytest
@@ -163,7 +163,11 @@ def self_removable_path(tmp_path: Path) -> Generator[Path, Any, None]:
         sys.path.remove(tmp_path_str)
 
 
-def _setup_copilot_mocks(monkeypatch: MonkeyPatch, expected_response: str) -> None:
+def _setup_copilot_mocks(
+    monkeypatch: MonkeyPatch,
+    expected_response: str,
+    history_store: Optional[SQLiteCopilotHistoryStore] = None,
+) -> None:
     # Mock response handler
     mock_generated_response = GeneratedContent(
         content=expected_response, response_category=ResponseCategory.COPILOT
@@ -217,6 +221,10 @@ def _setup_copilot_mocks(monkeypatch: MonkeyPatch, expected_response: str) -> No
         return_value=None
     )
     mock_llm_service.guardrails_policy_checker = mock_guardrails_checker
+
+    # Configure history_store if provided
+    if history_store is not None:
+        type(mock_llm_service).history_store = PropertyMock(return_value=history_store)
 
     monkeypatch.setattr("rasa.builder.service.llm_service", mock_llm_service)
 
@@ -472,7 +480,7 @@ class TestFilesEndpointIntegration:
         (temp_project_dir / "old_file.txt").write_text("old file")
 
         # Mock project generator with real directory
-        from rasa.builder.project_generator import ProjectGenerator
+        from rasa.builder.project_generator.project_generator import ProjectGenerator
 
         real_pg = ProjectGenerator(str(temp_project_dir))
         sanic_app.ctx.project_generator = real_pg
@@ -535,7 +543,7 @@ class TestFilesEndpointIntegration:
         # Create regular file
         (temp_project_dir / "config.yml").write_text("old config")
 
-        from rasa.builder.project_generator import ProjectGenerator
+        from rasa.builder.project_generator.project_generator import ProjectGenerator
 
         real_pg = ProjectGenerator(str(temp_project_dir))
         sanic_app.ctx.project_generator = real_pg
@@ -602,13 +610,13 @@ async def test_copilot_endpoint_stores_messages_to_sqlite(
 
         # Setup mocks and store
         expected_response = "Hello! I can help you build a bot."
-        _setup_copilot_mocks(monkeypatch, expected_response)
         test_store = SQLiteCopilotHistoryStore(temp_db_path)
 
         # Configure the mocked llm_service to use our test store
-        from rasa.builder.service import llm_service
-
-        type(llm_service).history_store = PropertyMock(return_value=test_store)
+        monkeypatch.setattr(
+            "rasa.builder.service.llm_service._history_store", test_store
+        )
+        _setup_copilot_mocks(monkeypatch, expected_response, history_store=test_store)
 
         # Make request
         user_id, session_id = "test-user", "test-session"

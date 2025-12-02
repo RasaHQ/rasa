@@ -1,0 +1,25 @@
+Previous attempt failed validation with error:
+
+{{ error }}
+
+Logs:
+
+{{ logs }}
+
+{% if copilot_guidance %}
+## Copilot Error Analysis
+
+The following guidance was provided by the copilot error analysis:
+
+{{ copilot_guidance }}
+
+{% endif %}
+Please fix the issues and generate a valid Rasa project.
+Pay special attention to:
+- Proper YAML syntax
+- Required fields in domain and flows
+- Consistent naming between flows and domain
+- Valid slot types and mappings
+{% if copilot_guidance %}
+- Follow the specific guidance provided above by the copilot error analysis
+{% endif %}

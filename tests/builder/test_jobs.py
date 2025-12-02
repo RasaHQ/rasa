@@ -23,6 +23,7 @@ from rasa.builder.exceptions import (
     TrainingError,
     ValidationError,
 )
+from rasa.builder.git_service import DEFAULT_COMMIT_INFO
 from rasa.builder.job_manager import JobInfo, job_manager
 from rasa.builder.jobs import (
     _safe_tar_members,
@@ -37,7 +38,7 @@ from rasa.builder.jobs import (
     run_template_to_bot_job,
 )
 from rasa.builder.models import JobStatus
-from rasa.builder.project_generator import DEFAULT_COMMIT_INFO, ProjectGenerator
+from rasa.builder.project_generator.project_generator import ProjectGenerator
 from rasa.cli.scaffold import ProjectTemplateName
 
 
@@ -700,7 +701,7 @@ class TestCopilotWelcomeMessage:
         mock_app.add_task = MagicMock()
 
         mock_app.ctx.project_generator.generate_project_with_retries = AsyncMock(
-            return_value="foobarsha"
+            return_value=({"config.yml": "test"}, 1)
         )
         return mock_app
 

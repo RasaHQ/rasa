@@ -3,6 +3,7 @@ import tarfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import langfuse
 import structlog
 from sanic import Sanic
 
@@ -57,7 +58,10 @@ from rasa.builder.models import (
     GitCommitInfo,
     JobStatus,
 )
-from rasa.builder.project_generator import ProjectGenerator
+from rasa.builder.project_generator.project_generator import ProjectGenerator
+from rasa.builder.telemetry.prompt_to_bot_langfuse_telemetry import (
+    PromptToBotLangfuseTelemetry,
+)
 from rasa.builder.training_service import (
     try_load_existing_agent,
     update_agent,
@@ -68,10 +72,15 @@ from rasa.cli.scaffold import ProjectTemplateName
 structlogger = structlog.get_logger()
 
 
+@langfuse.observe(
+    capture_input=False,
+    capture_output=False,
+)
 async def run_prompt_to_bot_job(
     app: Any,
     job: JobInfo,
     prompt: str,
+    user_id: Optional[str] = None,
 ) -> None:
     """Run the prompt-to-bot job in the background.
 
@@ -80,14 +89,23 @@ async def run_prompt_to_bot_job(
         job: The job information instance.
         prompt: The natural language prompt for bot generation.
     """
+    PromptToBotLangfuseTelemetry.setup_prompt_to_bot_trace(
+        prompt=prompt,
+        user_id=user_id,
+        job_id=job.id,
+    )
     project_generator: ProjectGenerator = app.ctx.project_generator
 
+    ## Todo: Add copilot_template_prompt_job_id with prompt here
     await push_job_status_event(job, JobStatus.received)
 
     try:
         # 1. Generating
         await push_job_status_event(job, JobStatus.generating)
-        commit_sha = await project_generator.generate_project_with_retries(
+        (
+            attempts,
+            commit_sha,
+        ) = await project_generator.generate_project_with_retries(
             prompt,
             template=ProjectTemplateName.BASIC,
         )
@@ -116,12 +134,24 @@ async def run_prompt_to_bot_job(
         )
         job_manager.mark_done(job)
 
+        PromptToBotLangfuseTelemetry.update_prompt_to_bot_trace_output_success(
+            bot_files=bot_files,
+            attempts=attempts,
+            max_attempts=config.PROJECT_GENERATION_MAX_RETRIES,
+        )
+
     except TrainingError as exc:
         structlogger.debug(
             "prompt_to_bot_job.training_error", job_id=job.id, error=str(exc)
         )
         await push_job_status_event(job, JobStatus.train_error, message=str(exc))
         job_manager.mark_done(job, error=str(exc))
+
+        PromptToBotLangfuseTelemetry.update_prompt_to_bot_trace_output_failure(
+            error=exc,
+            attempts=config.PROJECT_GENERATION_MAX_RETRIES,
+            max_attempts=config.PROJECT_GENERATION_MAX_RETRIES,
+        )
 
     except ValidationError as exc:
         # Log levels to include in the error message
@@ -143,12 +173,24 @@ async def run_prompt_to_bot_job(
         )
         job_manager.mark_done(job, error=error_message)
 
+        PromptToBotLangfuseTelemetry.update_prompt_to_bot_trace_output_failure(
+            error=exc,
+            attempts=config.PROJECT_GENERATION_MAX_RETRIES,
+            max_attempts=config.PROJECT_GENERATION_MAX_RETRIES,
+        )
+
     except (ProjectGenerationError, LLMGenerationError) as exc:
         structlogger.debug(
             "prompt_to_bot_job.generation_error", job_id=job.id, error=str(exc)
         )
         await push_job_status_event(job, JobStatus.generation_error, message=str(exc))
         job_manager.mark_done(job, error=str(exc))
+
+        PromptToBotLangfuseTelemetry.update_prompt_to_bot_trace_output_failure(
+            error=exc,
+            attempts=config.PROJECT_GENERATION_MAX_RETRIES,
+            max_attempts=config.PROJECT_GENERATION_MAX_RETRIES,
+        )
 
     except Exception as exc:
         # Capture full traceback
@@ -157,6 +199,12 @@ async def run_prompt_to_bot_job(
         )
         await push_job_status_event(job, JobStatus.error, message=str(exc))
         job_manager.mark_done(job, error=str(exc))
+
+        PromptToBotLangfuseTelemetry.update_prompt_to_bot_trace_output_failure(
+            error=exc,
+            attempts=config.PROJECT_GENERATION_MAX_RETRIES,
+            max_attempts=config.PROJECT_GENERATION_MAX_RETRIES,
+        )
 
 
 async def run_template_to_bot_job(

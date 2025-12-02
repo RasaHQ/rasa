@@ -14,7 +14,10 @@ from rasa.builder.jobs import (
     run_rollback_job,
 )
 from rasa.builder.models import JobStatus
-from rasa.builder.project_generator import DEFAULT_COMMIT_INFO, ProjectGenerator
+from rasa.builder.project_generator.project_generator import (
+    DEFAULT_COMMIT_INFO,
+    ProjectGenerator,
+)
 
 
 class TestGitIntegration:

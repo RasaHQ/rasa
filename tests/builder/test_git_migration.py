@@ -1,11 +1,11 @@
 import asyncio
 from pathlib import Path
+from typing import Dict, Optional
 
 import pytest
 
 from rasa.builder.git_service import GitService
-from rasa.builder.models import GitCommitInfo
-from rasa.builder.project_generator import ProjectGenerator
+from rasa.builder.project_generator.project_generator import ProjectGenerator
 
 
 class TestGitMigration:
@@ -74,14 +74,12 @@ class TestGitMigration:
         assert not (project_dir / ".git").exists()
 
         # Perform a write path that triggers _commit_changes (defensive ensure)
-        files = {
+        files: Dict[str, Optional[str]] = {
             "config.yml": "version: '3.1'\npipeline: []",
             "domain.yml": "version: '3.1'\nintents: []",
         }
-        commit_info = GitCommitInfo(
-            message="Test commit", author="test_user", email="test@example.com"
-        )
-        await generator.update_bot_files(files, commit_info)
+
+        await generator.update_bot_files(files)
 
         # Repo should now exist with a commit
         assert (project_dir / ".git").exists()

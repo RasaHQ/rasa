@@ -83,7 +83,7 @@ from rasa.builder.models import (
     ServerSentEvent,
     TemplateRequest,
 )
-from rasa.builder.project_generator import ProjectGenerator
+from rasa.builder.project_generator.project_generator import ProjectGenerator
 from rasa.builder.shared.tracker_context import TrackerContext
 from rasa.builder.telemetry.copilot_langfuse_telemetry import CopilotLangfuseTelemetry
 from rasa.builder.telemetry.copilot_segment_telemetry import CopilotSegmentTelemetry
@@ -355,6 +355,7 @@ async def job_events(request: Request, job_id: str) -> HTTPResponse:
     required=False,
     schema=str,
 )
+@langfuse.observe(capture_input=False, capture_output=False)
 async def handle_prompt_to_bot(request: Request) -> HTTPResponse:
     """Handle prompt-to-bot generation requests."""
     try:
@@ -370,7 +371,11 @@ async def handle_prompt_to_bot(request: Request) -> HTTPResponse:
     try:
         # Allocate job and schedule background task
         job = job_manager.create_job()
-        request.app.add_task(run_prompt_to_bot_job(request.app, job, payload.prompt))
+        request.app.add_task(
+            run_prompt_to_bot_job(
+                request.app, job, payload.prompt, request.headers.get(HEADER_USER_ID)
+            )
+        )
         return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
     except Exception as exc:
         capture_exception_with_context(

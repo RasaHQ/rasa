@@ -67,6 +67,10 @@ format = ["sdist", "wheel"]
 path = "rasa/builder/evaluator/content_processors/prompts"
 format = ["sdist", "wheel"]
 
+[[tool.poetry.include]]
+path = "rasa/builder/project_generator/prompts"
+format = ["sdist", "wheel"]
+
 [[tool.poetry.packages]]
 include = "rasa"
 

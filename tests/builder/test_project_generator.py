@@ -4,8 +4,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from rasa.builder.exceptions import ProjectGenerationError, ValidationError
 from rasa.builder.models import GitCommitInfo
-from rasa.builder.project_generator import ProjectGenerator
+from rasa.builder.project_generator.project_generator import ProjectGenerator
+from rasa.cli.scaffold import ProjectTemplateName
 from rasa.utils.io import InvalidPathException
 
 
@@ -14,26 +16,26 @@ class TestProjectGenerator:
 
     def test_is_empty_with_empty_directory(self, tmp_path: Path) -> None:
         """Test is_empty returns True for empty directory."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
         assert generator.is_empty() is True
 
     def test_is_empty_with_files(self, tmp_path: Path) -> None:
         """Test is_empty returns False when directory contains files."""
         (tmp_path / "config.yml").write_text("version: '3.1'")
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
         assert generator.is_empty() is False
 
     def test_is_empty_ignores_hidden_files(self, tmp_path: Path) -> None:
         """Test is_empty ignores hidden files and directories."""
         (tmp_path / ".hidden_file").write_text("hidden")
         (tmp_path / ".hidden_dir").mkdir()
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
         assert generator.is_empty() is True
 
     def test_is_empty_with_empty_subdirectories(self, tmp_path: Path) -> None:
         """Test is_empty returns True when directory contains only empty subdirs."""
         (tmp_path / "data").mkdir()
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
         # The implementation only checks for files, not directories
         assert generator.is_empty() is True
 
@@ -42,13 +44,13 @@ class TestProjectGenerator:
         data_dir = tmp_path / "data"
         data_dir.mkdir()
         (data_dir / "file.txt").write_text("content")
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
         # Should return True because is_empty only checks for files at the root level
         assert generator.is_empty() is True
 
     def test_is_restricted_path_hidden_files(self, tmp_path: Path) -> None:
         """Test is_restricted_path correctly identifies hidden files."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Hidden files should be restricted
         hidden_file = tmp_path / ".hidden_file"
@@ -64,7 +66,7 @@ class TestProjectGenerator:
 
     def test_is_restricted_path_models_directory(self, tmp_path: Path) -> None:
         """Test is_restricted_path correctly identifies models directory."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Models directory should be restricted
         models_dir = tmp_path / "models"
@@ -76,7 +78,7 @@ class TestProjectGenerator:
 
     def test_is_restricted_path_pycache_directory(self, tmp_path: Path) -> None:
         """Test is_restricted_path correctly identifies __pycache__ directory."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # __pycache__ directory should be restricted
         pycache_dir = tmp_path / "actions" / "__pycache__"
@@ -84,7 +86,7 @@ class TestProjectGenerator:
 
     def test_is_restricted_path_normal_files(self, tmp_path: Path) -> None:
         """Test is_restricted_path allows normal files."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Normal files should not be restricted
         config_file = tmp_path / "config.yml"
@@ -99,7 +101,7 @@ class TestProjectGenerator:
 
     def test_bot_file_paths_excludes_restricted_paths(self, tmp_path: Path) -> None:
         """Test bot_file_paths only returns non-restricted file paths."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Create various types of files
         (tmp_path / "config.yml").write_text("version: '3.1'")
@@ -136,9 +138,9 @@ class TestProjectGenerator:
         self, tmp_path: Path
     ) -> None:
         """Test ensure_all_files_are_writable allows normal files."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
-        files = {
+        files: dict[str, str | None] = {
             "config.yml": "version: '3.1'",
             "domain.yml": "version: '3.1'",
             "data/nlu.yml": "nlu data",
@@ -151,16 +153,19 @@ class TestProjectGenerator:
         self, tmp_path: Path
     ) -> None:
         """Test ensure_all_files_are_writable rejects restricted files."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Test .rasa files
-        files_with_rasa = {"config.yml": "version: '3.1'", ".rasa/cache": "cache data"}
+        files_with_rasa: dict[str, str | None] = {
+            "config.yml": "version: '3.1'",
+            ".rasa/cache": "cache data",
+        }
 
         with pytest.raises(InvalidPathException, match="restricted from editing"):
             generator.ensure_all_files_are_writable(files_with_rasa)
 
         # Test models files
-        files_with_models = {
+        files_with_models: dict[str, str | None] = {
             "config.yml": "version: '3.1'",
             "models/model.tar.gz": "model data",
         }
@@ -169,7 +174,7 @@ class TestProjectGenerator:
             generator.ensure_all_files_are_writable(files_with_models)
 
         # Test hidden files
-        files_with_hidden = {
+        files_with_hidden: dict[str, str | None] = {
             "config.yml": "version: '3.1'",
             ".hidden_file": "hidden data",
         }
@@ -179,9 +184,9 @@ class TestProjectGenerator:
 
     def test_replace_all_bot_files_writes_new_files(self, tmp_path: Path) -> None:
         """Test replace_all_bot_files writes new files correctly."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
-        files = {
+        files: dict[str, str | None] = {
             "config.yml": "version: '3.1'\npipeline: []",
             "domain.yml": "version: '3.1'\nintents: []",
             "data/nlu.yml": "version: '3.1'\nnlu: []",
@@ -206,7 +211,7 @@ class TestProjectGenerator:
 
     def test_replace_all_bot_files_deletes_existing_files(self, tmp_path: Path) -> None:
         """Test replace_all_bot_files deletes files not in the request."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Create some existing files
         (tmp_path / "config.yml").write_text("old config")
@@ -218,7 +223,7 @@ class TestProjectGenerator:
         (data_dir / "old_nlu.yml").write_text("old nlu")
 
         # Replace with new files (excluding old_file.txt and old_nlu.yml)
-        files = {
+        files: dict[str, str | None] = {
             "config.yml": "new config",
             "domain.yml": "new domain",
             "data/new_nlu.yml": "new nlu",
@@ -249,7 +254,7 @@ class TestProjectGenerator:
         self, tmp_path: Path
     ) -> None:
         """Test replace_all_bot_files preserves .rasa and models directories."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Create restricted files
         rasa_dir = tmp_path / ".rasa"
@@ -264,7 +269,10 @@ class TestProjectGenerator:
         (tmp_path / "config.yml").write_text("old config")
 
         # Replace with new files
-        files = {"config.yml": "new config", "domain.yml": "new domain"}
+        files: dict[str, str | None] = {
+            "config.yml": "new config",
+            "domain.yml": "new domain",
+        }
 
         # Mock the commit method since we're testing file operations, not git
         with patch.object(
@@ -290,7 +298,7 @@ class TestProjectGenerator:
 
     def test_replace_all_bot_files_dumps_empty_files(self, tmp_path: Path) -> None:
         """Test replace_all_bot_files dumps empty files."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         files = {
             "config.yml": "version: '3.1'",
@@ -319,9 +327,9 @@ class TestProjectGenerator:
         self, tmp_path: Path
     ) -> None:
         """Test replace_all_bot_files rejects files in restricted paths."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
-        files_with_restricted = {
+        files_with_restricted: dict[str, str | None] = {
             "config.yml": "version: '3.1'",
             ".rasa/cache": "cache data",
         }
@@ -343,9 +351,9 @@ class TestProjectGenerator:
 
     def test_replace_all_bot_files_creates_directories(self, tmp_path: Path) -> None:
         """Test replace_all_bot_files creates necessary directories."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
-        files = {
+        files: dict[str, str | None] = {
             "data/flows/greeting.yml": "flow data",
             "data/rules/rules.yml": "rules data",
             "actions/custom_actions.py": "action code",
@@ -370,7 +378,7 @@ class TestProjectGenerator:
 
     def test_cleanup_empty_directories_removes_empty_dirs(self, tmp_path: Path) -> None:
         """Test _cleanup_empty_directories removes empty directories."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Create directory structure
         empty_dir = tmp_path / "empty_dir"
@@ -399,7 +407,7 @@ class TestProjectGenerator:
         self, tmp_path: Path
     ) -> None:
         """Test _cleanup_empty_directories preserves restricted directories."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Create empty restricted directories
         rasa_dir = tmp_path / ".rasa"
@@ -421,7 +429,7 @@ class TestProjectGenerator:
 
     def test_get_bot_files_uses_bot_file_paths(self, tmp_path: Path) -> None:
         """Test get_bot_files uses bot_file_paths to filter files."""
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Create various files
         (tmp_path / "config.yml").write_text("config")
@@ -519,7 +527,7 @@ class TestProjectGenerator:
         hidden_dir.mkdir()
         (hidden_dir / "file.txt").write_text("file in hidden dir")
 
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
         bot_files = generator.get_bot_files(exclude_models_directory=False)
 
         # Should include visible files but exclude hidden ones
@@ -547,7 +555,7 @@ class TestProjectGenerator:
         models_pycache.mkdir()
         (models_pycache / "model_module.pyc").write_text("compiled model")
 
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Test with models excluded
         bot_files_no_models = generator.get_bot_files(exclude_models_directory=True)
@@ -568,7 +576,7 @@ class TestProjectGenerator:
         (tmp_path / "config.yml").write_text("version: '3.1'")
         (tmp_path / "domain.yml").write_text("version: '3.1'")
 
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
 
         # Both settings should work fine
         bot_files_exclude = generator.get_bot_files(exclude_models_directory=True)
@@ -596,10 +604,316 @@ class TestProjectGenerator:
         sub_models.mkdir()
         (sub_models / "data_model.json").write_text("data model")
 
-        generator = ProjectGenerator(tmp_path)
+        generator = ProjectGenerator(str(tmp_path))
         bot_files = generator.get_bot_files(exclude_models_directory=True)
 
         # Should exclude root models but include nested models directory
         assert "config.yml" in bot_files
         assert "models/model.tar.gz" not in bot_files  # Root models excluded
         assert "data/models/data_model.json" in bot_files  # Nested models included
+
+    @pytest.mark.asyncio
+    async def test_attempt_generation_success(self, tmp_path: Path) -> None:
+        """Test successful project generation attempt."""
+        generator = ProjectGenerator(str(tmp_path))
+
+        # Mock dependencies
+        with (
+            patch.object(
+                generator, "generate_response", new_callable=AsyncMock
+            ) as mock_generate,
+            patch.object(
+                generator, "_update_bot_files_from_llm_response", new_callable=AsyncMock
+            ) as mock_update,
+            patch.object(
+                generator, "_validate_generated_project", new_callable=AsyncMock
+            ) as mock_validate,
+            patch.object(
+                generator, "get_bot_files", return_value={"config.yml": "test"}
+            ),
+        ):
+            mock_generate.return_value = {"domain": {}, "flows": {"flows": {}}}
+            mock_update.return_value = "commit_sha_123"
+            mock_validate.return_value = None
+
+            # Execute
+            commit_sha = await generator._attempt_generation(
+                initial_messages=[{"role": "system", "content": "test"}],
+                error_feedback_messages=[],
+                attempts_left=3,
+                max_retries=3,
+            )
+
+            # Verify
+            assert commit_sha == "commit_sha_123"
+            mock_generate.assert_called_once()
+            mock_update.assert_called_once()
+            mock_validate.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_attempt_generation_validation_error(self, tmp_path: Path) -> None:
+        """Test generation attempt with validation error."""
+        generator = ProjectGenerator(str(tmp_path))
+
+        # Mock dependencies
+        validation_error = ValidationError("Validation failed")
+        with (
+            patch.object(
+                generator, "generate_response", new_callable=AsyncMock
+            ) as mock_generate,
+            patch.object(
+                generator, "_update_bot_files_from_llm_response", new_callable=AsyncMock
+            ) as mock_update,
+            patch.object(
+                generator, "_validate_generated_project", new_callable=AsyncMock
+            ) as mock_validate,
+            patch.object(
+                generator, "get_bot_files", return_value={"config.yml": "test"}
+            ),
+        ):
+            mock_generate.return_value = {"domain": {}, "flows": {"flows": {}}}
+            mock_update.return_value = "commit_sha_123"
+            mock_validate.side_effect = validation_error
+
+            # Execute and verify exception is raised
+            with pytest.raises(ValidationError):
+                await generator._attempt_generation(
+                    initial_messages=[{"role": "system", "content": "test"}],
+                    error_feedback_messages=[],
+                    attempts_left=3,
+                    max_retries=3,
+                )
+
+            # Verify methods were called
+            mock_generate.assert_called_once()
+            mock_update.assert_called_once()
+            mock_validate.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_attempt_generation_generic_error(self, tmp_path: Path) -> None:
+        """Test generation attempt with generic error."""
+        generator = ProjectGenerator(str(tmp_path))
+
+        # Mock generate_response to raise an exception
+        with patch.object(
+            generator, "generate_response", new_callable=AsyncMock
+        ) as mock_generate:
+            mock_generate.side_effect = Exception("LLM error")
+
+            # Execute and verify exception is raised
+            with pytest.raises(Exception, match="LLM error"):
+                await generator._attempt_generation(
+                    initial_messages=[{"role": "system", "content": "test"}],
+                    error_feedback_messages=[],
+                    attempts_left=3,
+                    max_retries=3,
+                )
+
+    @pytest.mark.asyncio
+    async def test_generate_project_with_retries_success_first_attempt(
+        self, tmp_path: Path
+    ) -> None:
+        """Test successful project generation on first attempt."""
+        generator = ProjectGenerator(str(tmp_path))
+
+        # Mock dependencies
+        with (
+            patch.object(
+                generator, "init_from_template", new_callable=AsyncMock
+            ) as mock_init,
+            patch.object(
+                generator, "_attempt_generation", new_callable=AsyncMock
+            ) as mock_attempt,
+            patch.object(
+                generator,
+                "_get_bot_data_for_llm",
+                return_value={"domain": {}, "flows": {}},
+            ),
+            patch.object(
+                generator,
+                "_create_system_message",
+                return_value={"role": "system", "content": "test"},
+            ),
+            patch.object(
+                generator,
+                "_create_user_request_message",
+                return_value={"role": "user", "content": "test"},
+            ),
+        ):
+            mock_init.return_value = "init_commit_sha"
+            mock_attempt.return_value = "final_commit_sha"
+
+            # Execute
+            attempts, commit_sha = await generator.generate_project_with_retries(
+                skill_description="Build a banking bot",
+                template=ProjectTemplateName.BASIC,
+                max_retries=3,
+            )
+
+            # Verify
+            assert attempts == 0  # Success on first attempt
+            assert commit_sha == "final_commit_sha"
+            mock_init.assert_called_once_with(ProjectTemplateName.BASIC)
+            mock_attempt.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_generate_project_with_retries_success_after_retry(
+        self, tmp_path: Path
+    ) -> None:
+        """Test successful project generation after validation errors."""
+        generator = ProjectGenerator(str(tmp_path))
+
+        # Mock dependencies
+        validation_error = ValidationError("Invalid domain")
+        with (
+            patch.object(
+                generator, "init_from_template", new_callable=AsyncMock
+            ) as mock_init,
+            patch.object(
+                generator, "_attempt_generation", new_callable=AsyncMock
+            ) as mock_attempt,
+            patch.object(
+                generator,
+                "_get_bot_data_for_llm",
+                return_value={"domain": {}, "flows": {}},
+            ),
+            patch.object(
+                generator,
+                "_create_system_message",
+                return_value={"role": "system", "content": "test"},
+            ),
+            patch.object(
+                generator,
+                "_create_user_request_message",
+                return_value={"role": "user", "content": "test"},
+            ),
+            patch.object(
+                generator,
+                "_create_error_feedback_messages",
+                return_value=[{"role": "user", "content": "error feedback"}],
+            ),
+            patch.object(
+                generator, "_get_copilot_error_guidance", new_callable=AsyncMock
+            ) as mock_guidance,
+        ):
+            mock_init.return_value = "init_commit_sha"
+            # First attempt fails, second succeeds
+            mock_attempt.side_effect = [validation_error, "final_commit_sha"]
+            mock_guidance.return_value = "Fix the error"
+
+            # Execute
+            attempts, commit_sha = await generator.generate_project_with_retries(
+                skill_description="Build a banking bot",
+                template=ProjectTemplateName.BASIC,
+                max_retries=3,
+            )
+
+            # Verify
+            assert attempts == 1  # Success on second attempt
+            assert commit_sha == "final_commit_sha"
+            assert mock_attempt.call_count == 2
+            mock_guidance.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_generate_project_with_retries_exhausts_retries(
+        self, tmp_path: Path
+    ) -> None:
+        """Test project generation exhausting all retries."""
+        generator = ProjectGenerator(str(tmp_path))
+
+        # Mock dependencies
+        validation_error = ValidationError("Invalid domain")
+        with (
+            patch.object(
+                generator, "init_from_template", new_callable=AsyncMock
+            ) as mock_init,
+            patch.object(
+                generator, "_attempt_generation", new_callable=AsyncMock
+            ) as mock_attempt,
+            patch.object(
+                generator,
+                "_get_bot_data_for_llm",
+                return_value={"domain": {}, "flows": {}},
+            ),
+            patch.object(
+                generator,
+                "_create_system_message",
+                return_value={"role": "system", "content": "test"},
+            ),
+            patch.object(
+                generator,
+                "_create_user_request_message",
+                return_value={"role": "user", "content": "test"},
+            ),
+            patch.object(
+                generator,
+                "_create_error_feedback_messages",
+                return_value=[{"role": "user", "content": "error feedback"}],
+            ),
+            patch.object(
+                generator, "_get_copilot_error_guidance", new_callable=AsyncMock
+            ),
+        ):
+            mock_init.return_value = "init_commit_sha"
+            # All attempts fail
+            mock_attempt.side_effect = validation_error
+
+            # Execute - should return max_retries and init commit sha
+            attempts, commit_sha = await generator.generate_project_with_retries(
+                skill_description="Build a banking bot",
+                template=ProjectTemplateName.BASIC,
+                max_retries=2,
+            )
+
+            # Verify
+            assert attempts == 2
+            assert commit_sha == "init_commit_sha"
+            assert mock_attempt.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_generate_project_with_retries_generic_error(
+        self, tmp_path: Path
+    ) -> None:
+        """Test project generation with generic error."""
+        generator = ProjectGenerator(str(tmp_path))
+
+        # Mock dependencies
+        with (
+            patch.object(
+                generator, "init_from_template", new_callable=AsyncMock
+            ) as mock_init,
+            patch.object(
+                generator, "_attempt_generation", new_callable=AsyncMock
+            ) as mock_attempt,
+            patch.object(
+                generator,
+                "_get_bot_data_for_llm",
+                return_value={"domain": {}, "flows": {}},
+            ),
+            patch.object(
+                generator,
+                "_create_system_message",
+                return_value={"role": "system", "content": "test"},
+            ),
+            patch.object(
+                generator,
+                "_create_user_request_message",
+                return_value={"role": "user", "content": "test"},
+            ),
+        ):
+            mock_init.return_value = "init_commit_sha"
+            # All attempts fail with generic error
+            mock_attempt.side_effect = Exception("LLM error")
+
+            # Execute and verify exception is raised
+            with pytest.raises(
+                ProjectGenerationError, match="Failed to generate Rasa project"
+            ):
+                await generator.generate_project_with_retries(
+                    skill_description="Build a banking bot",
+                    template=ProjectTemplateName.BASIC,
+                    max_retries=2,
+                )
+
+            # Verify attempts were made
+            assert mock_attempt.call_count == 2

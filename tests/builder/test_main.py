@@ -6,7 +6,7 @@ from sanic import Sanic
 
 from rasa.builder import config
 from rasa.builder.main import create_app
-from rasa.builder.project_generator import ProjectGenerator
+from rasa.builder.project_generator.project_generator import ProjectGenerator
 
 
 class TestCreateApp:

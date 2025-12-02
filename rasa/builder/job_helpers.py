@@ -12,7 +12,7 @@ from sanic import Sanic
 from rasa.builder.git_service import link_model_to_commit
 from rasa.builder.job_manager import JobInfo, job_manager
 from rasa.builder.models import JobStatus, JobStatusEvent
-from rasa.builder.project_generator import ProjectGenerator
+from rasa.builder.project_generator.project_generator import ProjectGenerator
 from rasa.builder.training_service import train_and_load_agent
 from rasa.core.agent import Agent
 
