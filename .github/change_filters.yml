@@ -1,16 +1,16 @@
 backend:
-  - 'pyproject.toml'
-  - 'poetry.lock'
-  - 'rasa/**/*'
-  - 'tests/**/*'
-  - 'data/**/*'
-  - 'examples/**/*'
-  - 'Makefile'
-  - '.github/workflows/continous-integration.yml'
-  - '.github/workflows/security-scans.yml'
+  - pyproject.toml
+  - poetry.lock
+  - rasa/**/*
+  - tests/**/*
+  - data/**/*
+  - examples/**/*
+  - Makefile
+  - .github/workflows/continous-integration.yml
+  - .github/workflows/security-scans.yml
 
 providers:
-  - 'rasa/shared/providers/**'
+  - rasa/shared/providers/**
 
 dm1-tensorflow-files:
   - data/project_templates/nlu_based/**
@@ -51,17 +51,17 @@ dm1-tensorflow-files:
   - rasa/utils/plotting.py
 
 docker:
-  - 'pyproject.toml'
-  - 'poetry.lock'
-  - 'rasa/**/*'
-  - 'docker/**/*'
-  - 'Makefile'
+  - pyproject.toml
+  - poetry.lock
+  - rasa/**/*
+  - docker/**/*
+  - Makefile
 
 lock_file:
-  - 'poetry.lock'
+  - poetry.lock
 
 pii-management:
-  - 'rasa/privacy/**'
+  - rasa/privacy/**
 
 voice-files:
   - rasa/core/channels/voice_ready/**
@@ -70,3 +70,88 @@ voice-files:
   - rasa/core/channels/socketio.py
   - rasa/core/channels/studio_chat.py
 
+broker-files:
+  - rasa/core/brokers/**
+
+tracing-and-metrics-files:
+  - rasa/tracing/**
+  - rasa/core/policies/**
+  - rasa/dialogue_understanding/generator/**
+  - rasa/engine/**
+  - rasa/shared/core/domain.py
+
+sequential-integration-files: # files related to sequential integration feature.Only tests run here are from tests/integration_tests/core/test_tracker_store.py
+    - rasa/core/tracker_stores/redis_tracker_store.py
+    - rasa/core/tracker_stores/sql_tracker_store.py
+    - rasa/core/tracker_stores/tracker_store.py
+    - rasa/shared/core/trackers.py
+    - rasa/shared/core/domain.py
+    - rasa/shared/core/events.py
+
+non-sequential-integration-files:
+    - rasa/studio/**
+    - rasa/shared/providers/_utils.py
+    - rasa/shared/core/domain.py
+    - rasa/shared/core/events.py
+    - rasa/shared/core/trackers.py
+    - rasa/e2e_tests/**
+    - rasa/core/actions/**
+    - rasa/core/agent.py
+    - rasa/core/tracker_stores/**
+    - rasa/core/processor.py
+    - rasa/core/lock_store.py
+    - rasa/core/agent.py
+    - rasa/cli/e2e_test.py
+    - rasa/cli/data.py
+    - rasa/cli/telemetry.py
+    - rasa/model_training.py
+    - rasa/telemetry.py
+    - rasa/hooks.py
+    - rasa/plugin.py
+    - rasa/core/channels/channel.py
+    - rasa/shared/core/events.py
+    - rasa/utils/licensing.py
+    - rasa/core/secrets_manager/**
+
+enterprise-search-policy-files:
+  - rasa/core/policies/enterprise_search_policy*
+  - rasa/core/policies/policy.py
+  - rasa/dialogue_understanding/**
+  - rasa/engine/**
+  - rasa/shared/core/policies/**
+
+custom-action-files:
+  - rasa/core/actions/**
+  - rasa/shared/core/**
+  - rasa/shared/utils/**
+
+channel-connector-files:
+  - rasa/core/brokers/**
+  - rasa/core/channels/**
+
+mongo-db-files:
+  - rasa/core/tracker_stores/mongo_tracker_store.py
+  - rasa/core/tracker_stores/**
+  - rasa/shared/core/trackers.py
+  - rasa/shared/core/domain.py
+
+dynamo-db-files:
+  - rasa/core/tracker_stores/dynamo_tracker_store.py
+  - rasa/core/tracker_stores/**
+  - rasa/shared/core/trackers.py
+  - rasa/shared/core/events.py
+  - rasa/shared/core/domain.py
+
+poetry-dependency-updates:
+  - pyproject.toml
+  - poetry.lock
+
+rasa-core-dependencies-files: # added an extra filters for rasa core dependencies
+  - rasa/core/**
+  - rasa/shared/core/**
+
+concurrent-lockstore-files:
+  - rasa/core/channels/**
+  - rasa/core/concurrent_lock_store.py
+  - rasa/core/lock_store.py
+  - rasa/utils/endpoints.py
