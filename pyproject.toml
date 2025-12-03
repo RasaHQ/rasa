@@ -237,7 +237,6 @@ numpy = "~2.1.3"  # langchain-community (>=0.3.29,<0.4.0) requires numpy (>=2.1.
 scikit-learn = "~1.6.1"
 demoji = "^1.1.0"  # required for voice and whitespacetokenizer
 azure-identity = "~1.25.1"
-langcodes = "^3.5.0"
 sanic-openapi = "^21.12.0"
 aioshutil = "~1.6"
 aws-msk-iam-sasl-signer-python = "~1.0.2"
@@ -265,6 +264,10 @@ markers = "python_version >= '3.12'"
 [[tool.poetry.dependencies.rasa-sdk]]
 version = "3.16.0a1"  # upgraded to use updated protobuf required for python 3.12, depends on protobuf (>=5.29.5,<5.30.0)
 allow-prereleases = true
+
+[tool.poetry.dependencies.langcodes]
+version = "~3.5.1"
+extras = ["data"]  # data extra includes language-data which required in the engine.language module
 
 [tool.poetry.dependencies.PyJWT]
 version = "^2.8.0"
