@@ -119,10 +119,15 @@ async def perform_rollback(
 
 
 async def train_and_load_and_link_agent(
-    project_generator: ProjectGenerator, commit_sha: str
+    project_generator: ProjectGenerator,
+    commit_sha: str,
+    role: str = "user",
+    action: str = "edit",
 ) -> Agent:
     """Train and load an agent and link it to a commit."""
-    agent = await train_and_load_agent(project_generator.get_training_input())
+    agent = await train_and_load_agent(
+        project_generator.get_training_input(), role=role, action=action
+    )
     await link_model_to_commit(project_generator.git_service, agent, commit_sha)
     return agent
 

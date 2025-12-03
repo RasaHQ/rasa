@@ -1016,7 +1016,11 @@ def initialize_error_reporting(private_mode: bool = True) -> None:
 
 @contextlib.contextmanager
 def track_model_training(
-    training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False
+    training_data: "TrainingDataImporter",
+    model_type: Text,
+    is_finetuning: bool = False,
+    role: Optional[str] = "user",
+    action: Optional[str] = "edit",
 ) -> typing.Generator[None, None, None]:
     """Track a model training started.
 
@@ -1086,6 +1090,8 @@ def track_model_training(
         "is_finetuning": is_finetuning,
         "recipe": config.get(CONFIG_RECIPE_KEY),
         "agents": _collect_agent_configuration(flows),
+        "role": role,
+        "action": action,
     }
 
     flow_statistics = _collect_flow_statistics(flows.underlying_flows)

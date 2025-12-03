@@ -138,7 +138,9 @@ async def run_prompt_to_bot_job(
 
         # 2. Training
         await push_job_status_event(job, JobStatus.training)
-        agent = await train_and_load_and_link_agent(project_generator, commit_sha)
+        agent = await train_and_load_and_link_agent(
+            project_generator, commit_sha, role="copilot", action="generation"
+        )
         update_agent(agent, app)
         await push_job_status_event(job, JobStatus.train_success)
 

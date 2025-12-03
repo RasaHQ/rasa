@@ -29,7 +29,7 @@ def update_agent(agent: Optional[Agent], app: Sanic) -> None:
         app.ctx.input_channel.agent = agent
 
 
-async def train_and_load_agent(input: TrainingInput) -> Agent:
+async def train_and_load_agent(input: TrainingInput, role: str, action: str) -> Agent:
     """Train a model and load an agent.
 
     Args:
@@ -45,7 +45,11 @@ async def train_and_load_agent(input: TrainingInput) -> Agent:
     try:
         # Train the model
         training_result = await _train_model(
-            input.importer, input.endpoints_file, input.config_file
+            input.importer,
+            input.endpoints_file,
+            input.config_file,
+            role=role,
+            action=action,
         )
 
         # Load the agent
@@ -139,7 +143,11 @@ async def try_load_existing_agent(
 
 
 async def _train_model(
-    importer: TrainingDataImporter, endpoints_file: Path, config_file: Path
+    importer: TrainingDataImporter,
+    endpoints_file: Path,
+    config_file: Path,
+    role: str,
+    action: str,
 ) -> TrainingResult:
     """Train the Rasa model."""
     try:
@@ -154,6 +162,8 @@ async def _train_model(
             endpoints=str(endpoints_file),
             training_files=None,
             file_importer=importer,
+            role=role,
+            action=action,
         )
 
         if not training_result or not training_result.model:

@@ -138,6 +138,8 @@ async def train(
     keep_local_model_copy: bool = False,
     remote_root_only: bool = False,
     sub_agents: Optional[str] = None,
+    role: str = "user",
+    action: str = "edit",
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
@@ -244,7 +246,9 @@ async def train(
 
     _check_unresolved_slots(domain_object, stories)
 
-    with telemetry.track_model_training(file_importer, model_type="rasa"):
+    with telemetry.track_model_training(
+        file_importer, model_type="rasa", role=role, action=action
+    ):
         return await _train_graph(
             file_importer,
             training_type=training_type,

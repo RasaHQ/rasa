@@ -143,7 +143,9 @@ class TestRunReplaceAllFilesJob:
             sample_bot_files, DEFAULT_COMMIT_INFO
         )
         mock_validate.assert_called_once_with(mock_training_input.importer)
-        mock_train.assert_called_once_with(mock_training_input)
+        mock_train.assert_called_once_with(
+            mock_training_input, role="user", action="edit"
+        )
         mock_link_model.assert_called_once_with(
             mock_app.ctx.project_generator.git_service, mock_agent, "abc123"
         )
@@ -263,7 +265,9 @@ class TestRunReplaceAllFilesJob:
             sample_bot_files, DEFAULT_COMMIT_INFO
         )
         mock_validate.assert_called_once_with(mock_training_input.importer)
-        mock_train.assert_called_once_with(mock_training_input)
+        mock_train.assert_called_once_with(
+            mock_training_input, role="user", action="edit"
+        )
 
         # Check that the job ended with training error status (with copilot job ID)
         assert job.status == JobStatus.train_error.value
