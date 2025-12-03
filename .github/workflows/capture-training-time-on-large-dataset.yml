@@ -15,7 +15,7 @@ env:
 jobs:
   capture_training_time_on_large_data:
     name: Capture training time on large data
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     timeout-minutes: 60
 
     steps:

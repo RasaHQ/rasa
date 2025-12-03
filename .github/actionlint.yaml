@@ -1,2 +1,2 @@
 self-hosted-runner:
-  labels: [ubuntu-24.04-16core]
+  labels: [warp-ubuntu-latest-x64-16x]

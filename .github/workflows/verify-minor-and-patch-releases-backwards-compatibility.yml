@@ -50,7 +50,7 @@ env:
 
 jobs:
   verify_releases_compatibility_with_active_user_session:
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     services:
       redis:
         image: redis:6

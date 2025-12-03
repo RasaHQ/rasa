@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   check-voice-code-changes:
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     outputs:
       voice-files: ${{ steps.filter.outputs.voice-files }}
     steps:
@@ -42,7 +42,7 @@ jobs:
 
   voice_integration_tests:
     name: Run Voice Integration Tests
-    runs-on: ubuntu-24.04-4core
+    runs-on: warp-ubuntu-latest-x64-4x
     needs: [check-voice-code-changes]
     if: needs.check-voice-code-changes.outputs.voice-files == 'true'
     timeout-minutes: 60
@@ -109,7 +109,7 @@ jobs:
 
   send_slack_notification_on_failure:
     name: Notify Slack
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [ check-voice-code-changes, voice_integration_tests ]
 
     steps:

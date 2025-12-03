@@ -39,7 +39,7 @@ permissions:
 
 jobs:
     e2e_mcp_tests:
-        runs-on: ubuntu-24.04
+        runs-on: warp-ubuntu-latest-x64-2x
         strategy:
           fail-fast: false
           matrix:
@@ -121,7 +121,7 @@ jobs:
                 path: calm-benchmarking-bot/mcp-server-logs.txt
 
     e2e_a2a_tests:
-        runs-on: ubuntu-24.04
+        runs-on: warp-ubuntu-latest-x64-2x
         strategy:
           fail-fast: false
           matrix:
@@ -232,7 +232,7 @@ jobs:
     # Pipeline to test - via one happy-path E2E - MCP agent with major LLM providers in 
     # `agent.configuration.llm`, as providers-e2e-tests pipeline does not cover this aspect.
     e2e_mcp_provider_test:
-        runs-on: ubuntu-24.04
+        runs-on: warp-ubuntu-latest-x64-2x
         services:
           redis:
             image: redis:6
@@ -342,7 +342,7 @@ jobs:
                 path: calm-benchmarking-bot/mcp-server-logs.txt
 
     DUT_mcp:
-        runs-on: ubuntu-24.04
+        runs-on: warp-ubuntu-latest-x64-2x
         strategy:
           fail-fast: false
           matrix:
@@ -417,7 +417,7 @@ jobs:
                 path: calm-benchmarking-bot/mcp-server-logs.txt
 
     DUT_a2a:
-        runs-on: ubuntu-24.04
+        runs-on: warp-ubuntu-latest-x64-2x
         strategy:
           fail-fast: false
           matrix:

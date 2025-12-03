@@ -15,7 +15,7 @@ jobs:
     # Skip any PR created by dependabot to avoid permission issues
     if: (github.actor != 'dependabot[bot]')
     name: Delete PR docker images from private ECR
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
@@ -52,7 +52,7 @@ jobs:
     # Skip any PR created by dependabot to avoid permission issues
     if: (github.actor != 'dependabot[bot]')
     name: Delete PR docker images from public ECR
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0

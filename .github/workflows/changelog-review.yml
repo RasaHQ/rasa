@@ -12,7 +12,7 @@ jobs:
     name: Assign reviewers and label PR for backport
     # do not run this job on prereleases (alpha, beta, dev, etc...)
     if: startsWith(github.head_ref, 'prepare-release-') && !startsWith(github.head_ref, 'prepare-release-pre-')
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
 
     steps:
       - name: Add label to backport to main

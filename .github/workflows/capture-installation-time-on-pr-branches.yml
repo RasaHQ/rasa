@@ -6,7 +6,7 @@ on:
 jobs:
   check_poetry_lock:
     name: Detect changes in poetry.lock
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     outputs:
       lock_file: ${{ steps.filter.outputs.lock_file }}
     steps:
@@ -21,7 +21,7 @@ jobs:
   trigger_installation_workflow:
     needs: check_poetry_lock
     name: Trigger installation workflow
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ needs.check_poetry_lock.outputs.lock_file == 'true' }}
     steps:
       - name: Trigger installation workflow

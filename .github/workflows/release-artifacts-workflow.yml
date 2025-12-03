@@ -115,7 +115,7 @@ jobs:
 
   train-templates:
     name: Train Project Templates
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -143,8 +143,8 @@ jobs:
   release-artifacts-docker:
     name: Release Artifacts Docker
     # Run this workflow on a large runner because ARM64 build consumes disk space
-    # ubuntu-24.04-4core - 4 cores, 16GB of RAM and 150 GB SSD
-    runs-on: ubuntu-24.04-4core
+    # warp-ubuntu-latest-x64-4x - 4 cores, 16GB of RAM and 150 GB SSD
+    runs-on: warp-ubuntu-latest-x64-4x
     needs: [train-templates]
 
     outputs:
@@ -243,7 +243,7 @@ jobs:
 
   release-artifacts-pypi:
     name: Release Artifacts PyPI
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     environment:
       name: pypi
       url: https://pypi.org/p/rasa-pro
@@ -338,7 +338,7 @@ jobs:
 
   release-atifacts-publish-release:
     name: Release Artifacts Publish Release
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [release-artifacts-docker, release-artifacts-pypi]
 
     steps:
@@ -382,7 +382,7 @@ jobs:
 
   release-artifact-slack-notifications:
     name: Release Artifact Slack Notifications
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [release-artifacts-docker, release-artifacts-pypi]
     if: always()  # Ensures this job runs regardless of the result of previous jobs
 
@@ -412,7 +412,7 @@ jobs:
 # this step can be moved to a separate workflow, if needed. We only need to figure out how to pass the tag version to the new workflow
   install-released-rasa-version-and-run:
     name: Install released Rasa version and run
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [release-artifacts-docker, release-artifacts-pypi]
 
     steps:
@@ -458,7 +458,7 @@ jobs:
   trigger_dev_edition_rasa_pro_image_tag_update:
     needs: [release-artifacts-docker, release-artifacts-pypi]
     name: Trigger Dev Edition Rasa Pro Image Tag Update in Docker Compose
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Trigger dev edition Rasa Pro image tag update workflow
         uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0  #v3.0.0

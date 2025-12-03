@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   get_tags:
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     continue-on-error: true
     outputs:
       tags: ${{ steps.tags.outputs.tags }}
@@ -73,7 +73,7 @@ jobs:
         run: |
           echo "Tags: ${{ steps.tags.outputs.tags }}"
   build:
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: get_tags
     # Don't allow a single image failure to block all the image builds.
     continue-on-error: true

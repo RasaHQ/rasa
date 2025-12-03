@@ -72,7 +72,7 @@ permissions:
 jobs:
   check-poetry-lock-is-up-to-date:
     name: check poetry lock is up to date
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -90,7 +90,7 @@ jobs:
 
   check-for-merge-conflicts:
     name: Check for merge conflicts
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -102,7 +102,7 @@ jobs:
 
   check-integration-tests-requirements:
     name: Check if integration tests are required
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ inputs.full_ci_mode != 'false' }}
     outputs:
       broker-files: ${{ steps.filter.outputs.broker-files }}
@@ -148,7 +148,7 @@ jobs:
 
   quality:
     name: Code Quality
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ inputs.run_code_quality != 'false' }}
 
     steps:
@@ -209,7 +209,7 @@ jobs:
 
   train-templates-dev:
     name: Train Project Templates for Dev
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ inputs.full_ci_mode != 'false' }}
     outputs:
       tag_version: ${{ steps.set-tag.outputs.tag_version }}
@@ -230,7 +230,7 @@ jobs:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
 
   rasa-init-sanity-check:
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ inputs.full_ci_mode != 'false' }}
     strategy:
       fail-fast: false
@@ -334,7 +334,7 @@ jobs:
 
   rasa-private-dev-docker-image:
     name: rasa-private dev docker image
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ needs.check-integration-tests-requirements.outputs.create_dev_docker_images == 'true' }}
     needs: [train-templates-dev, check-integration-tests-requirements]
     outputs:
@@ -414,7 +414,7 @@ jobs:
     name: Train the model and upload to S3
     if: false
     needs: rasa-private-dev-docker-image
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
 
     steps:
       - name: Check out code
@@ -465,7 +465,7 @@ jobs:
   deploy-rasa-private-helm-chart:
     name: Deploy rasa private helm chart
     if: false
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [rasa-private-dev-docker-image, rasa-private-dev-train-the-model]
 
     steps:
@@ -516,7 +516,7 @@ jobs:
     if: false
     name: Destroy pulumi resources
     needs: deploy-rasa-private-helm-chart
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -540,7 +540,7 @@ jobs:
 
   check_inspector_build:
     name: Check Inspector Build
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ inputs.full_ci_mode != 'false' }}
     defaults:
       run:
@@ -591,7 +591,7 @@ jobs:
     name: Tracing Integration Tests
     if: ${{ needs.check-integration-tests-requirements.outputs.tracing-and-metrics-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
     needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
-    runs-on: ubuntu-24.04-4core
+    runs-on: warp-ubuntu-latest-x64-4x
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -663,7 +663,7 @@ jobs:
     name: Metric Integration Tests
     if: ${{ needs.check-integration-tests-requirements.outputs.tracing-and-metrics-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
     needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
-    runs-on: ubuntu-24.04-4core
+    runs-on: warp-ubuntu-latest-x64-4x
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -722,7 +722,7 @@ jobs:
     name: Custom Action Integration Tests With NLU bot and CALM bot
     if: ${{ needs.check-integration-tests-requirements.outputs.custom-action-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
     needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
-    runs-on: ubuntu-24.04-4core
+    runs-on: warp-ubuntu-latest-x64-4x
     env:
       RASA_SDK_IMAGE_TAG: latest
 
@@ -873,7 +873,7 @@ jobs:
     name: Run Enterprise Search Integration Tests
     if: ${{ needs.check-integration-tests-requirements.outputs.enterprise-search-policy-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
     needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
-    runs-on: ubuntu-24.04-4core
+    runs-on: warp-ubuntu-latest-x64-4x
     env:
       RASA_SDK_IMAGE_TAG: latest
     steps:
@@ -1011,7 +1011,7 @@ jobs:
 
   sequential-integration-test:
       name: Run Sequential Integration Tests
-      runs-on: ubuntu-24.04
+      runs-on: warp-ubuntu-latest-x64-2x
       if: ${{ needs.check-integration-tests-requirements.outputs.sequential-integration-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
       needs: [ check-integration-tests-requirements ]
       timeout-minutes: 60
@@ -1077,7 +1077,7 @@ jobs:
 
   non-sequential-integration-test:
     name: Run Non-Sequential Integration Tests
-    runs-on: ubuntu-24.04-8core
+    runs-on: warp-ubuntu-latest-x64-8x
     if: ${{ needs.check-integration-tests-requirements.outputs.non-sequential-integration-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
     needs: [ check-integration-tests-requirements ]
     timeout-minutes: 60
@@ -1144,7 +1144,7 @@ jobs:
 
   mongo-tracker-store-integration-test:
     name: Run Mongo Tracker Store Integration Tests
-    runs-on: ubuntu-24.04-8core
+    runs-on: warp-ubuntu-latest-x64-8x
     if: ${{ needs.check-integration-tests-requirements.outputs.mongo-db-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
     needs: [ check-integration-tests-requirements ]
     timeout-minutes: 60
@@ -1218,7 +1218,7 @@ jobs:
 
   dynamo-tracker-store-integration-test:
     name: Run Dynamo Tracker Store Integration Tests
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ needs.check-integration-tests-requirements.outputs.dynamo-db-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
     needs: [ check-integration-tests-requirements ]
     timeout-minutes: 60
@@ -1281,7 +1281,7 @@ jobs:
 
   concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ needs.check-integration-tests-requirements.outputs.concurrent-lockstore-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
     needs: [ check-integration-tests-requirements ]
     timeout-minutes: 60
@@ -1340,7 +1340,7 @@ jobs:
 
   broker_integration_test:
     name: Run Broker Integration Tests
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [ check-integration-tests-requirements ]
     if: ${{ needs.check-integration-tests-requirements.outputs.broker-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
     timeout-minutes: 60
@@ -1419,7 +1419,7 @@ jobs:
     name: Channel Connector Integration Tests With CALM bot
     needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
     if: ${{ needs.check-integration-tests-requirements.outputs.channel-connector-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -1488,7 +1488,7 @@ jobs:
     name: PII Management in CALM Bot Integration Tests
     needs: [rasa-private-dev-docker-image, check-integration-tests-requirements]
     if: ${{ needs.check-integration-tests-requirements.outputs.pii-management == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-    runs-on: ubuntu-24.04-4core
+    runs-on: warp-ubuntu-latest-x64-4x
     env:
       RASA_SDK_IMAGE_TAG: latest
     steps:
@@ -1575,7 +1575,7 @@ jobs:
     name: Run Voice Unit Tests
     needs: [ check-integration-tests-requirements ]
     if: ${{ needs.check-integration-tests-requirements.outputs.voice-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-    runs-on: ubuntu-24.04-4core
+    runs-on: warp-ubuntu-latest-x64-4x
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -1634,7 +1634,7 @@ jobs:
 
   unit-test:
     name: Run Unit Tests
-    runs-on: ubuntu-24.04-4core
+    runs-on: warp-ubuntu-latest-x64-4x
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -1732,7 +1732,7 @@ jobs:
 
   test-anonymization:
     name: Run Anonymization Unit Tests
-    runs-on: ubuntu-24.04-4core
+    runs-on: warp-ubuntu-latest-x64-4x
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -1819,7 +1819,7 @@ jobs:
 
   run-test-to-monitor-memory-consumption-and-display-on-PR:
     name: Run test to monitor memory consumption and display on PR
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
     if: ${{ needs.check-integration-tests-requirements.outputs.rasa-core-dependencies-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
     timeout-minutes: 30
@@ -1876,7 +1876,7 @@ jobs:
             rm -rf /tmp/rasa-memory-test
 
   publish-test-results:
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs:
       - tracing-integration-test
       - metric-integration-test
@@ -1914,7 +1914,7 @@ jobs:
 
   sonarqube:
     name: SonarQube
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [ unit-test, test-anonymization ]
      # We don't want to run the code quality checks on scheduled runs
     if: ${{ inputs.full_ci_mode != 'false' && !cancelled() }}
@@ -1938,7 +1938,7 @@ jobs:
 
   clean-docker-image-artifact:
     name: Clean docker image artifact
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs:
       - train-templates-dev
       - rasa-private-dev-docker-image
@@ -1975,7 +1975,7 @@ jobs:
 
 #Temporarily disabled until we can ensure proper cost controls and selective triggering is in place
 #  analyse-and-fix-test-errors-in-ci:
-#      runs-on: ubuntu-24.04
+#      runs-on: warp-ubuntu-latest-x64-2x
 #      permissions:
 #        checks: write
 #        id-token: write

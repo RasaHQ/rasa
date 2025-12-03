@@ -26,7 +26,7 @@ env:
 jobs:
   train-templates:
     name: Train Project Templates
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     # This condition ensures the job only runs for pushes to 'main', 3.x branches, or for PRs
     # that have either the 'hello-rasa' or 'studio' label.
     # For pull_request events, it runs on both label addition and new commits to labeled PRs.
@@ -57,7 +57,7 @@ jobs:
 
   build-and-push-to-ecr:
     name: Build and Push Docker Image to Public ECR
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [train-templates]
 
     # This condition ensures the job only runs for pushes to 'main', 3.x branches, or for PRs

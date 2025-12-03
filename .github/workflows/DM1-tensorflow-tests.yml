@@ -54,7 +54,7 @@ concurrency:
 
 jobs:
     check-dm1-tensorflow-changes:
-      runs-on: ubuntu-24.04
+      runs-on: warp-ubuntu-latest-x64-2x
       outputs:
         dm1-tensorflow-files: ${{ steps.filter.outputs.dm1-tensorflow-files }}
       steps:
@@ -69,7 +69,7 @@ jobs:
     dm1-tensorflow-tests:
         needs: check-dm1-tensorflow-changes
         if: ${{ needs.check-dm1-tensorflow-changes.outputs.dm1-tensorflow-files == 'true' }}
-        runs-on: ubuntu-24.04-4core
+        runs-on: warp-ubuntu-latest-x64-4x
         timeout-minutes: 60
         steps:
         - name: Check out code

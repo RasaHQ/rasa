@@ -22,7 +22,7 @@ permissions:
 jobs:
   e2e-tests:
     name: Run Rasa E2E Tests - ${{ matrix.template }}
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     timeout-minutes: 10
     strategy:
       fail-fast: false

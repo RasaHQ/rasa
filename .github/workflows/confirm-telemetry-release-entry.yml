@@ -9,7 +9,7 @@ on:
 jobs:
   run_metabase_query:
     name: Query Metabase
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     outputs:
       error_message_docker: ${{ steps.metabase_query.outputs.error_message_docker }}
       error_message_python: ${{ steps.metabase_query.outputs.error_message_python }}
@@ -62,7 +62,7 @@ jobs:
 
   slack-notifications:
     name: Slack Notifications
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [run_metabase_query]
     if: always()  # Ensures this job runs regardless of the result of previous jobs
 

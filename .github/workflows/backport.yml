@@ -8,7 +8,7 @@ jobs:
   backport:
     name: Backport PR
     if: github.event.pull_request.merged == true && !(contains(github.event.pull_request.labels.*.name, 'backport'))
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Backport Action
         uses: sorenlouv/backport-github-action@ad888e978060bc1b2798690dd9d03c4036560947  #v.9.5.1

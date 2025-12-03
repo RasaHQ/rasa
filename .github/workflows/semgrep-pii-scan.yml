@@ -10,7 +10,7 @@ on:
 jobs:
   semgrep:
     name: PII Detection with Semgrep
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     permissions:
       contents: read
       actions: read

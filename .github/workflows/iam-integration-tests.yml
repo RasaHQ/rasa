@@ -32,7 +32,7 @@ jobs:
 
   rasa-private-dev-train-the-model:
     name: Train the model and upload to S3
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     env:
       PLATFORM: linux/amd64
 
@@ -103,7 +103,7 @@ jobs:
 
   deploy-rasa-private-helm-chart:
     name: Deploy rasa private helm chart
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [ rasa-private-dev-train-the-model ]
 
     steps:
@@ -156,7 +156,7 @@ jobs:
     if: ${{ needs.deploy-rasa-private-helm-chart.result == 'success' }}
     name: Destroy pulumi resources
     needs: [ rasa-private-dev-train-the-model, deploy-rasa-private-helm-chart ]
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

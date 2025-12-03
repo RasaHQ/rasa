@@ -8,7 +8,7 @@ on:
 
 jobs:
   check-python-eol:
-    runs-on: ubuntu-latest
+    runs-on: warp-ubuntu-latest-x64-2x
     outputs:
       is-eol-soon: ${{ steps.check-eol.outputs.is-eol-soon }}
       python-version: ${{ steps.check-eol.outputs.python-version }}
@@ -39,7 +39,7 @@ jobs:
 
   slack-notifications:
     name: Slack Notifications
-    runs-on: ubuntu-24.04
+    runs-on: warp-ubuntu-latest-x64-2x
     needs: [check-python-eol]
     if: always()  # Ensures this job runs regardless of the result of previous jobs
 
