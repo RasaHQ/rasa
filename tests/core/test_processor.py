@@ -3098,6 +3098,16 @@ async def test_custom_action_failure_triggers_pattern_internal_error(
     processor = flow_policy_bot_agent.processor
     processor.action_endpoint = endpoint
     sender_id = uuid.uuid4().hex
+    # Set up an active flow before the action fails
+    tracker = await processor.get_tracker(sender_id)
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="foo", step_id="0_collect_foo_slot_a"),
+            ]
+        )
+    )
+    await processor.save_tracker(tracker)
 
     message = UserMessage(
         text="Activate custom action.",
@@ -3129,6 +3139,15 @@ async def test_custom_action_failure_triggers_pattern_internal_error(
             )
             in tracker.events
         )
+        # Verify that the flow was cancelled before triggering internal error
+        dialogue_stack_updates = [
+            event for event in tracker.events if isinstance(event, DialogueStackUpdated)
+        ]
+        assert any(
+            '"type": "pattern_cancel_flow"' in update.update
+            and '"type": "pattern_internal_error"' in update.update
+            for update in dialogue_stack_updates
+        )
 
 
 @pytest.mark.timeout(180, func_only=True)
@@ -3137,7 +3156,16 @@ async def test_processor_get_events_from_action_execution_failure_calm_assistant
 ):
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
+    # Set up an active flow before the action fails
     tracker = await processor.get_tracker(sender_id)
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="foo", step_id="0_collect_foo_slot_a"),
+            ]
+        )
+    )
+    await processor.save_tracker(tracker)
 
     events, actual_tracker = processor._get_events_from_action_execution_failure(
         tracker
@@ -3145,12 +3173,14 @@ async def test_processor_get_events_from_action_execution_failure_calm_assistant
     assert len(events) == 1
     stack_event = events[0]
     assert isinstance(stack_event, DialogueStackUpdated)
+    assert '"type": "pattern_cancel_flow"' in stack_event.update
+    assert '"canceled_name": "foo"' in stack_event.update
     assert (
         '"flow_id": "pattern_internal_error", "step_id": "START", '
         '"error_type": "rasa_internal_error_default", "info": {}, '
         '"type": "pattern_internal_error"}}]' in stack_event.update
     )
-    assert list(actual_tracker.events) == events
+    assert actual_tracker.events[-1] == events[-1]
 
 
 @pytest.mark.timeout(180, func_only=True)

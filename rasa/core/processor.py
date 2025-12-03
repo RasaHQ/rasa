@@ -41,12 +41,10 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.commands.utils import (
     create_validate_frames_from_slot_set_events,
 )
-from rasa.dialogue_understanding.patterns.internal_error import (
-    InternalErrorPatternFlowStackFrame,
-)
 from rasa.dialogue_understanding.patterns.validate_slot import (
     ValidateSlotPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.frames import BaseFlowStackFrame
 from rasa.dialogue_understanding.utils import add_commands_to_message_parse_data
 from rasa.engine import loader
 from rasa.engine.constants import (
@@ -1456,7 +1454,13 @@ class MessageProcessor:
         )
 
         dialogue_stack = tracker.stack
-        dialogue_stack.push(InternalErrorPatternFlowStackFrame())
+        top_frame = dialogue_stack.top()
+
+        flow_name = (
+            top_frame.flow_id if isinstance(top_frame, BaseFlowStackFrame) else ""
+        )
+        rasa.core.utils.cancel_flow_and_push_internal_error(dialogue_stack, flow_name)
+
         events = tracker.create_stack_updated_events(dialogue_stack)
         tracker.update_with_events(events)
         return events, tracker

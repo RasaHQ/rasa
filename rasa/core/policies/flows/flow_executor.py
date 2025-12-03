@@ -25,7 +25,7 @@ from rasa.core.policies.flows.flow_step_result import (
     PauseFlowReturnPrediction,
 )
 from rasa.core.policies.flows.mcp_tool_executor import call_mcp_tool
-from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
+from rasa.core.utils import cancel_flow_and_push_internal_error
 from rasa.dialogue_understanding.patterns.collect_information import (
     FLOW_PATTERN_COLLECT_INFORMATION,
     CollectInformationPatternFlowStackFrame,
@@ -38,9 +38,6 @@ from rasa.dialogue_understanding.patterns.continue_interrupted import (
 )
 from rasa.dialogue_understanding.patterns.human_handoff import (
     HumanHandoffPatternFlowStackFrame,
-)
-from rasa.dialogue_understanding.patterns.internal_error import (
-    InternalErrorPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.user_silence import FLOW_PATTERN_USER_SILENCE
@@ -586,27 +583,6 @@ def validate_collect_step(
     cancel_flow_and_push_internal_error(stack, flow_name)
 
     return False
-
-
-def cancel_flow_and_push_internal_error(stack: DialogueStack, flow_name: str) -> None:
-    """Cancel the top user flow and push the internal error pattern."""
-    from rasa.dialogue_understanding.commands import CancelFlowCommand
-
-    top_frame = stack.top()
-
-    if isinstance(top_frame, BaseFlowStackFrame):
-        # we need to first cancel the top user flow
-        # because we cannot collect one of its slots
-        # and therefore should not proceed with the flow
-        # after triggering pattern_internal_error
-        canceled_frames = CancelFlowCommand.select_canceled_frames(stack)
-        stack.push(
-            CancelPatternFlowStackFrame(
-                canceled_name=flow_name,
-                canceled_frames=canceled_frames,
-            )
-        )
-    stack.push(InternalErrorPatternFlowStackFrame())
 
 
 def attach_stack_metadata_to_events(

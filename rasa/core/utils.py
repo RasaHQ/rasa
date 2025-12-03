@@ -18,6 +18,7 @@ from rasa.core.constants import (
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.lock_store import InMemoryLockStore, LockStore, RedisLockStore
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.constants import TCP_PROTOCOL
 from rasa.shared.core.constants import (
     SlotMappingType,
@@ -358,3 +359,30 @@ def get_slot_names_from_exit_conditions(exit_conditions: List[str]) -> List[str]
             for name in re.findall(r"\bslots\.(\w+)", condition)
         }
     )
+
+
+def cancel_flow_and_push_internal_error(stack: DialogueStack, flow_name: str) -> None:
+    from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
+    from rasa.dialogue_understanding.patterns.internal_error import (
+        InternalErrorPatternFlowStackFrame,
+    )
+    from rasa.dialogue_understanding.stack.frames import BaseFlowStackFrame
+
+    """Cancel the top user flow and push the internal error pattern."""
+    from rasa.dialogue_understanding.commands import CancelFlowCommand
+
+    top_frame = stack.top()
+
+    if isinstance(top_frame, BaseFlowStackFrame):
+        # we need to first cancel the top user flow
+        # because we cannot collect one of its slots
+        # and therefore should not proceed with the flow
+        # after triggering pattern_internal_error
+        canceled_frames = CancelFlowCommand.select_canceled_frames(stack)
+        stack.push(
+            CancelPatternFlowStackFrame(
+                canceled_name=flow_name,
+                canceled_frames=canceled_frames,
+            )
+        )
+    stack.push(InternalErrorPatternFlowStackFrame())
