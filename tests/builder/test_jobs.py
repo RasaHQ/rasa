@@ -892,7 +892,7 @@ class TestCopilotWelcomeMessage:
             mock_prompt_app, job, "Build me a banking assistant"
         )
 
-        self.mock_job_manager.create_job.assert_called_once()
+        assert self.mock_job_manager.create_job.call_count == 2
         assert mock_prompt_app.add_task.called
 
     @pytest.mark.asyncio

@@ -95,10 +95,21 @@ async def run_prompt_to_bot_job(
     )
     project_generator: ProjectGenerator = app.ctx.project_generator
 
-    ## Todo: Add copilot_template_prompt_job_id with prompt here
-    await push_job_status_event(job, JobStatus.received)
+    copilot_template_prompt_job = job_manager.create_job()
+    await push_job_status_event(
+        job,
+        JobStatus.received,
+        payload={"copilot_template_prompt_job_id": copilot_template_prompt_job.id},
+    )
 
     try:
+        # 0. Persist initial user prompt
+        app.add_task(
+            run_copilot_template_prompt_job(
+                app, copilot_template_prompt_job, custom_prompt=prompt
+            )
+        )
+
         # 1. Generating
         await push_job_status_event(job, JobStatus.generating)
         (
@@ -110,6 +121,20 @@ async def run_prompt_to_bot_job(
         )
         bot_files = project_generator.get_bot_files()
         await push_job_status_event(job, JobStatus.generation_success)
+
+        # Persist prompt to history after generation
+        # This ensures the project directory and .rasa folder exist
+        try:
+            if prompt:
+                await persist_user_message_to_history(text=prompt)
+        except Exception as persist_exc:
+            # Don't fail the job if persistence fails, just log it
+            structlogger.error(
+                "prompt_to_bot_job.persist_prompt_failed",
+                job_id=job.id,
+                prompt=prompt,
+                error=str(persist_exc),
+            )
 
         # 2. Training
         await push_job_status_event(job, JobStatus.training)
@@ -1026,7 +1051,8 @@ async def run_rollback_job(
 async def run_copilot_template_prompt_job(
     app: "Sanic",
     job: JobInfo,
-    template_name: ProjectTemplateName,
+    template_name: Optional[ProjectTemplateName] = None,
+    custom_prompt: Optional[str] = None,
 ) -> None:
     """Run the template prompt job in the background.
 
@@ -1037,17 +1063,21 @@ async def run_copilot_template_prompt_job(
     Args:
         app: The Sanic application instance.
         job: The job information instance.
-        template_name: The template name to get the prompt for.
+        template_name: Optional template name to get the prompt for.
+        custom_prompt: Optional custom prompt by user.
     """
     try:
         template_prompts = load_copilot_template_prompts()
-        template_prompt = template_prompts.get(template_name.value)
+        prompt = custom_prompt or (
+            template_prompts.get(template_name.value) if template_name else None
+        )
 
-        if not template_prompt:
+        if not prompt:
             structlogger.warning(
                 "copilot_template_prompt_job.no_prompt_found",
                 job_id=job.id,
-                template=template_name.value,
+                template=template_name.value if template_name else None,
+                custom_prompt=custom_prompt if custom_prompt else None,
             )
             await push_job_status_event(job, JobStatus.done)
             job_manager.mark_done(job)
@@ -1057,7 +1087,7 @@ async def run_copilot_template_prompt_job(
             job,
             JobStatus.copilot_template_prompt,
             payload={
-                "content": template_prompt,
+                "content": prompt,
                 "completeness": "complete",
             },
         )
@@ -1068,7 +1098,9 @@ async def run_copilot_template_prompt_job(
         structlogger.info(
             "copilot_template_prompt_job.success",
             job_id=job.id,
-            template=template_name.value,
+            template_name=template_name.value if template_name else None,
+            custom_prompt=custom_prompt if custom_prompt else None,
+            prompt=prompt,
         )
 
     except Exception as exc:
