@@ -23,7 +23,12 @@ async def test_environment_validation():
 
 
 async def test_synthesis_with_asr():
-    tts_engine = AzureTTS()
+    tts_engine = AzureTTS(
+        AzureTTSConfig(
+            speech_region="germanywestcentral",
+            language="en-US",
+        )
+    )
     text = "hello my name is Edgar"
     asr_engine = DeepgramASR()
     await run_single_utterance_through_tts_and_asr(text, asr_engine, tts_engine)

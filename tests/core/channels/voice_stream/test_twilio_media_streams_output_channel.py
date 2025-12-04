@@ -7,11 +7,38 @@ from sanic.exceptions import WebsocketClosed
 
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import CallState, _call_state
-from rasa.core.channels.voice_stream.tts.azure import AzureTTS
+from rasa.core.channels.voice_stream.tts.azure import AzureTTS, AzureTTSConfig
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
 from rasa.core.channels.voice_stream.twilio_media_streams import (
     TwilioMediaStreamsOutputChannel,
 )
+
+
+@pytest.fixture
+def mock_websocket() -> AsyncMock:
+    """Mock websocket for testing."""
+    return AsyncMock()
+
+
+@pytest.fixture
+def tts_cache() -> TTSCache:
+    """Mock TTS cache for testing."""
+    return TTSCache(1)
+
+
+@pytest.fixture
+def azure_tts_config() -> AzureTTSConfig:
+    """TTS config for testing."""
+    return AzureTTSConfig(
+        speech_region="germanywestcentral",
+        language="en-US",
+    )
+
+
+@pytest.fixture
+def tts_engine(azure_tts_config: AzureTTSConfig) -> AzureTTS:
+    """TTS engine for testing."""
+    return AzureTTS(azure_tts_config)
 
 
 def ensure_call_state_context():
@@ -32,11 +59,13 @@ def check_mark_message(message: str, recipient_id: str):
     assert len(data["mark"]["name"]) > 0
 
 
-async def test_twilio_media_streams_output_channel_send():
+async def test_twilio_media_streams_output_channel_send(
+    azure_tts_config: AzureTTSConfig,
+):
     ensure_call_state_context()
     websocket = AsyncMock()
     tts_cache = TTSCache(1)
-    tts_engine = AzureTTS()
+    tts_engine = AzureTTS(azure_tts_config)
     recipient_id = "test_id"
     output_channel = TwilioMediaStreamsOutputChannel(websocket, tts_engine, tts_cache)
     await output_channel.send_text_message(recipient_id, "Hi There.")
@@ -54,11 +83,13 @@ async def test_twilio_media_streams_output_channel_send():
     check_mark_message(messages[-1][0][0], recipient_id)
 
 
-async def test_twilio_media_streams_output_channel_caching():
+async def test_twilio_media_streams_output_channel_caching(
+    azure_tts_config: AzureTTSConfig,
+):
     ensure_call_state_context()
     websocket = AsyncMock()
     tts_cache = TTSCache(1)
-    tts_engine = AzureTTS()
+    tts_engine = AzureTTS(azure_tts_config)
     recipient_id = "test_id"
     output_channel = TwilioMediaStreamsOutputChannel(websocket, tts_engine, tts_cache)
     await output_channel.send_text_message(recipient_id, "Hi There.")
@@ -81,24 +112,6 @@ async def test_twilio_media_streams_output_channel_caching():
 
     # last message should be mark
     check_mark_message(messages[-1][0][0], recipient_id)
-
-
-@pytest.fixture
-def mock_websocket() -> AsyncMock:
-    """Mock websocket for testing."""
-    return AsyncMock()
-
-
-@pytest.fixture
-def tts_cache() -> TTSCache:
-    """Mock TTS cache for testing."""
-    return TTSCache(1)
-
-
-@pytest.fixture
-def tts_engine() -> AzureTTS:
-    """TTS engine for testing."""
-    return AzureTTS()
 
 
 async def test_twilio_media_streams_output_channel_send_when_client_closed(
