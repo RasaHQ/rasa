@@ -32,7 +32,7 @@ BOT_MESSAGES = [
         "Credit Card Number: 1234-5678-9012-3456",
         2: "Please provide your feedback on the service.",
     },
-    {-1: "What else can I help you with?"},
+    {-1: "Is there anything else I can help you with?"},
     {},
 ]
 

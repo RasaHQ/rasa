@@ -10,6 +10,31 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.2] - 2025-12-04
+                        
+Rasa Pro 3.15.2 (2025-12-04)                             
+### Bugfixes
+- [#4067](https://github.com/rasahq/rasa-private/issues/4067): Fix agentic prompt template to access slots directly.
+- [#4077](https://github.com/rasahq/rasa-private/issues/4077): Disable LLM health check for Enterprise Search Policy when generative search is disabled (i.e. use_generative_llm is False).
+- [#4083](https://github.com/rasahq/rasa-private/issues/4083): Fix deduplication of collect steps in cases where the same slot was called in different flows.
+- [#4084](https://github.com/rasahq/rasa-private/issues/4084): Cancel active flow before triggering internal pattern error during a custom action failure.
+- [#4111](https://github.com/rasahq/rasa-private/issues/4111): Fix bug with the missing `language_data` module by installing `langcodes` with the `data` extra dependency.
+
+
+## [3.15.1] - 2025-12-02
+                        
+Rasa Pro 3.15.1 (2025-12-02)                             
+### Bugfixes
+- [#4010](https://github.com/rasahq/rasa-private/issues/4010): Raise validation error when duplicate slot definitions are found across domains.
+- [#4020](https://github.com/rasahq/rasa-private/issues/4020): Raise validation error when a slot with an initial value set is collected by a flow collect step
+  which sets `asks_before_filling` to `true` without having a corresponding collect utterance or custom action.
+- [#4051](https://github.com/rasahq/rasa-private/issues/4051): Update `pip` to fix security vulnerability.
+- [#4053](https://github.com/rasahq/rasa-private/issues/4053): Fix  AgentToolSchema._ensure_property_types() correctly preserves structural keywords ($ref, anyOf, oneOf, etc.)
+
+### Miscellaneous internal changes
+- [#4072](https://github.com/rasahq/rasa-private/issues/4072)
+
+
 ## [3.15.0] - 2025-11-26
                         
 Rasa Pro 3.15.0 (2025-11-26)                             

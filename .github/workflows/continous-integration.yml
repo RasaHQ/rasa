@@ -1764,13 +1764,11 @@ jobs:
         run: |
           poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.7.1/en_core_web_lg-3.7.1-py3-none-any.whl
 
-      - name: Install Homebrew
-        id: set-up-homebrew
-        uses: Homebrew/actions/setup-homebrew@1bad5a8c1bb08ac392c63b4587f3231cf80bb1a4
-
       - name: Install Hugging Face CLI
         run: |
-          brew install huggingface-cli
+          curl -LsSf https://hf.co/cli/install.sh | bash
+          # Verify installation
+          hf --help
         shell: bash
 
       - name: Download GliNER model for PII

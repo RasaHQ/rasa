@@ -31,6 +31,5 @@ responses:
   utter_ask_feedback:
     - text: "Please provide your feedback on the service."
 
-
 actions:
   - validate_full_name
