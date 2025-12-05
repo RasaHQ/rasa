@@ -1016,6 +1016,17 @@ Rasa Pro 3.13.0 (2025-07-07)
 - [#2125](https://github.com/rasahq/rasa-private/issues/2125), [#2134](https://github.com/rasahq/rasa-private/issues/2134), [#2361](https://github.com/rasahq/rasa-private/issues/2361), [#2419](https://github.com/rasahq/rasa-private/issues/2419), [#2471](https://github.com/rasahq/rasa-private/issues/2471), [#2496](https://github.com/rasahq/rasa-private/issues/2496), [#2506](https://github.com/rasahq/rasa-private/issues/2506), [#2513](https://github.com/rasahq/rasa-private/issues/2513), [#2538](https://github.com/rasahq/rasa-private/issues/2538), [#2571](https://github.com/rasahq/rasa-private/issues/2571), [#2615](https://github.com/rasahq/rasa-private/issues/2615), [#2629](https://github.com/rasahq/rasa-private/issues/2629), [#2668](https://github.com/rasahq/rasa-private/issues/2668), [#2672](https://github.com/rasahq/rasa-private/issues/2672), [#2682](https://github.com/rasahq/rasa-private/issues/2682), [#2707](https://github.com/rasahq/rasa-private/issues/2707), [#2712](https://github.com/rasahq/rasa-private/issues/2712), [#2720](https://github.com/rasahq/rasa-private/issues/2720), [#2745](https://github.com/rasahq/rasa-private/issues/2745), [#2769](https://github.com/rasahq/rasa-private/issues/2769)
 
 
+## [3.12.41] - 2025-12-04
+                         
+Rasa Pro 3.12.41 (2025-12-04)                              
+### Bugfixes
+- [#4051](https://github.com/rasahq/rasa-private/issues/4051): Update `pip` to fix security vulnerability.
+- [#4077](https://github.com/rasahq/rasa-private/issues/4077): Disable LLM health check for Enterprise Search Policy when generative search is disabled (i.e. use_generative_llm is False).
+- [#4083](https://github.com/rasahq/rasa-private/issues/4083): Fix deduplication of collect steps in cases where the same slot was called in different flows.
+- [#4084](https://github.com/rasahq/rasa-private/issues/4084): Cancel active flow before triggering internal pattern error during a custom action failure.
+- [#4111](https://github.com/rasahq/rasa-private/issues/4111): Fix bug with the missing `language_data` module by installing `langcodes` with the `data` extra dependency.
+
+
 ## [3.12.40] - 2025-11-27
                          
 Rasa Pro 3.12.40 (2025-11-27)                              
