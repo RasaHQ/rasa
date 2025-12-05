@@ -8,56 +8,26 @@ on:
 
 env:
   DEFAULT_PYTHON_VERSION: "3.11"
-  NODE_VERSION_INSPECTOR_BUILD: 16
 
 jobs:
   check-newly-added-dependencies:
     name: Check if new dependencies were added in the PR
-    runs-on: warp-ubuntu-latest-x64-4x
+    runs-on: warp-ubuntu-latest-x64-2x
     steps:
-      - name: Check out code
+      - name: Check out PR branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          fetch-depth: 0
-          ref: main
+          fetch-depth: 0 # Need full history to access main branch
 
-      - name: Free up disk-space
-        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b # TODO: Change to `main` once the composite-action is merged to main
-
-      - name: Prepare the job
-        uses: RasaHQ/rasa-private/.github/actions/test-prerequisites@b8016beeb87d41e7288dcea419b80da36a241255 # 3.12.4
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
-          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Install Dependencies 📦
-        run: |
-          sudo apt-get -y install libpq-dev
-          make install
-
-      - name: Save main branch dependencies
-        id: main_dependencies
-        run: |
-          echo "MAIN_OUTPUT=$(poetry show --top-level | awk '{print $1}' | tr '\n' ',' | sed 's/,$//' | tr '\n' ',')" >> $GITHUB_ENV
-
-      - name: Checkout on PR branch and install dependencies
-        run: |
-          git checkout ${GITHUB_HEAD_REF} --quiet
-          python -m venv create .venv-2
-          source .venv-2/bin/activate
-          make install-full
-
-      - name: Check for new dependencies on the PR branch
-        id: pr_dependencies
-        env:
-          VENV: .venv-2/bin/activate
-        run: |
-          echo "PR_OUTPUT=$(poetry show --top-level | awk '{print $1}' | tr '\n' ',' | sed 's/,$//' | tr '\n' ',')" >> $GITHUB_ENV
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Compare dependencies
         id: compare_dependencies
         run: |
-          echo "new_dependencies=$(python3 scripts/find_new_dependencies.py)" >> $GITHUB_OUTPUT
+          echo "new_dependencies=$(python3 scripts/find_new_dependencies.py origin/main HEAD)" >> $GITHUB_OUTPUT
 
       - name: Publish comment if new dependencies were added
         if: steps.compare_dependencies.outputs.new_dependencies != ''

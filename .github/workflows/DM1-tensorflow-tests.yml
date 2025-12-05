@@ -79,7 +79,6 @@ jobs:
           uses: ./.github/actions/test-prerequisites
           with:
                 PYTHON_VERSION: 3.11
-                POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
         - name: Install Dependencies (Linux) 📦
             # Poetry intermittently fails to install dependency if it is not PEP 517 compliant

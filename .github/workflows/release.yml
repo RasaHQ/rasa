@@ -4,30 +4,30 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release'
+        description: "Version to release"
         required: true
       rasa-sdk-version:
-        description: 'Rasa SDK version to use'
+        description: "Rasa SDK version to use"
         required: true
       fromMain:
-        description: 'Release from main'
+        description: "Release from main"
         type: boolean
         required: true
         default: false
   pull_request:
     branches:
       - main
-      - '[0-9]+.[0-9]+.x'
+      - "[0-9]+.[0-9]+.x"
     types: [closed]
 
 env:
-    GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}
-    INPUT_VERSION: ${{ github.event.inputs.version }}
-    INPUT_RASA_SDK_VERSION: ${{ github.event.inputs['rasa-sdk-version'] }}
-    COMMIT_EMAIL: sara-tagger@users.noreply.github.com
-    DEFAULT_PYTHON_VERSION: "3.11"
-    RELEASE_FOM_MAIN: ${{ github.event.inputs.fromMain }}
-    SOURCE_BRANCH: prepare-release-${{ github.event.inputs.version }}
+  GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+  INPUT_VERSION: ${{ github.event.inputs.version }}
+  INPUT_RASA_SDK_VERSION: ${{ github.event.inputs['rasa-sdk-version'] }}
+  COMMIT_EMAIL: sara-tagger@users.noreply.github.com
+  DEFAULT_PYTHON_VERSION: "3.11"
+  RELEASE_FOM_MAIN: ${{ github.event.inputs.fromMain }}
+  SOURCE_BRANCH: prepare-release-${{ github.event.inputs.version }}
 
 jobs:
   prepare-the-release:
@@ -38,9 +38,6 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-
-      - name: Free up disk-space
-        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
 
       - name: Dev or RC Release - Check if this is DEV or RC release
         id: dev_or_rc_check
@@ -133,7 +130,7 @@ jobs:
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
-            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Update Rasa SDK Version
         if: env.update_required == 'true'
@@ -155,7 +152,7 @@ jobs:
           git commit -m "bump rasa-sdk dependency"
 
       - name: Prepare the release
-        run:  |
+        run: |
           git config user.name "rasabot"
           git config user.email "rasabot@rasa.com"
           poetry run python scripts/release.py prepare --next_version $INPUT_VERSION
@@ -163,7 +160,7 @@ jobs:
           INPUT_VERSION: ${{ github.event.inputs.version }}
 
       - name: Create pull request
-        uses: devops-infra/action-pull-request@ff118b4a7c24bac5a3c95acef59e9edd1fc37890  #v0.6.0
+        uses: devops-infra/action-pull-request@ff118b4a7c24bac5a3c95acef59e9edd1fc37890 #v0.6.0
         with:
           github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
           source_branch: ${{ env.SOURCE_BRANCH }}
@@ -180,20 +177,17 @@ jobs:
         with:
           token: ${{ secrets.RELEASE_TAGGER_PAT }}
 
-      - name: Free up disk-space
-        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
-
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
-            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: .venv
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Clear Poetry cache

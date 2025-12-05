@@ -13,25 +13,24 @@ on:
       run_code_quality:
         type: string
         required: false
-        default: 'true'
+        default: "true"
         description: "Whether to run the Code Quality checks."
       # Only run partial workflow steps
       full_ci_mode:
         type: string
         required: false
-        default: 'true'
+        default: "true"
         description: "Whether to run all the CI checks."
       pr-author: # new input: PR author login (passed by caller)
         type: string
         required: false
-        default: ''
+        default: ""
         description: "PR author login (pass from caller workflow)"
       pr-is-draft: # new input: PR draft flag (passed by caller)
         type: string
         required: false
-        default: 'false'
+        default: "false"
         description: "Whether the PR is a draft (pass from caller workflow)"
-
 
 concurrency:
   group: continous-integration-${{ github.ref }} # branch or tag name
@@ -46,6 +45,8 @@ concurrency:
 # - INTEGRATION_TESTS_PRO_LICENSE: license key for Pro. Used in integration tests. Expires in 2034.
 
 env:
+  # Disable CUDA to prevent "failed call to cuInit" errors on CPU-only runners
+  CUDA_VISIBLE_DEVICES: ""
   AWS_REGION: eu-west-1
   RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-private-dev
   RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-sdk-dev
@@ -57,7 +58,7 @@ env:
   SONAR_PROJECT_KEY: RasaHQ_rasa-private
   TEMPLATES: "telco finance basic"
   POSTGRES_HOST: rasa-pro-integration-tests-db.cvgblmmqghrx.eu-west-1.rds.amazonaws.com
-  POSTGRES_PORT: '5432'
+  POSTGRES_PORT: "5432"
   POSTGRES_USER: integration_tests_user
   POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD_AWS }}
   POSTGRES_DB: integrationtestsdb
@@ -81,7 +82,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+          RASA_INSTALL_GROUP: "default"
 
       - name: Check poetry lock
         run: |
@@ -100,76 +101,101 @@ jobs:
           ./scripts/conflict-finder.sh
         shell: bash
 
-  check-integration-tests-requirements:
-    name: Check if integration tests are required
+  install-and-cache-rasa:
+    name: Install and cache Rasa for reuse across jobs
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ inputs.full_ci_mode != 'false' }}
-    outputs:
-      broker-files: ${{ steps.filter.outputs.broker-files }}
-      voice-files: ${{ steps.filter.outputs.voice-files }}
-      pii-management: ${{ steps.filter.outputs.pii-management }}
-      poetry-dependency-updates: ${{ steps.filter.outputs.poetry-dependency-updates }}
-      mongo-db-files: ${{ steps.filter.outputs.mongo-db-files }}
-      tracing-and-metrics-files: ${{ steps.filter.outputs.tracing-and-metrics-files }}
-      enterprise-search-policy-files: ${{ steps.filter.outputs.enterprise-search-policy-files }}
-      custom-action-files: ${{ steps.filter.outputs.action-files }}
-      dynamo-db-files: ${{ steps.filter.outputs.dynamo-db-files }}
-      channel-connector-files: ${{ steps.filter.outputs.channel-connector-files }}
-      sequential-integration-files: ${{ steps.filter.outputs.sequential-integration-files }}
-      non-sequential-integration-files: ${{ steps.filter.outputs.non-sequential-integration-files }}
-      create_dev_docker_images: ${{ steps.set-dev-image-flag.outputs.create_dev_docker_images }}
-      rasa-core-dependencies-files: ${{ steps.filter.outputs.rasa-core-dependencies-files }}
-      concurrent-lockstore-files: ${{ steps.filter.outputs.concurrent-lockstore-files }}
+    strategy:
+      matrix:
+        installation:
+          - default
+          - nlu
+          - full
+          - anonymisation
     steps:
-      - name: Checkout git repository 🕝
+      - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - id: filter
-        name: Check for changes in related files
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36  # v3.0.2
-        with:
-            filters: .github/change_filters.yml
-      - id: set-dev-image-flag
-        name: Set flag to create dev docker images if any relevant changes detected
-        run: |
-          if [ "${{ steps.filter.outputs.pii-management }}" = "true" ] || \
-             [ "${{ steps.filter.outputs.poetry-dependency-updates }}" = "true" ] || \
-             [ "${{ steps.filter.outputs.rasa-core-dependencies-files }}" = "true" ] || \
-             [ "${{ steps.filter.outputs.tracing-and-metrics-files }}" = "true" ] || \
-             [ "${{ steps.filter.outputs.enterprise-search-policy-files }}" = "true" ] || \
-             [ "${{ steps.filter.outputs.action-files }}" = "true" ] || \
-             [ "${{ steps.filter.outputs.action-files }}" = "true" ] || \
-             [ "${{ steps.filter.outputs.channel-connector-files }}" = "true" ]; then
-            echo "create_dev_docker_images=true" >> $GITHUB_OUTPUT
-          else
-            echo "create_dev_docker_images=false" >> $GITHUB_OUTPUT
-          fi
-        shell: bash
 
+      # Check if cached Rasa exists
+      - name: Check Rasa cache
+        id: cached-rasa
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: ${{ github.workspace }}/.venv
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+          lookup-only: true
+          fail-on-cache-miss: true
+        continue-on-error: true
+
+      - name: Prepare the job
+        if: ${{ steps.cached-rasa.outcome == 'failure' }}
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          LOAD_CACHE: "false"
+
+      # Install if no cache hits
+      - name: Install Rasa with default installation
+        if: ${{ steps.cached-rasa.outcome == 'failure' && matrix.installation == 'default' }}
+        run: |
+          make install
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+
+      # Install if no cache hits
+      - name: Install Rasa with nlu installation
+        if: ${{ steps.cached-rasa.outcome == 'failure' && matrix.installation == 'nlu' }}
+        run: |
+          make install-nlu
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+
+      # Install if no cache hits
+      - name: Install Rasa with full installation
+        if: ${{ steps.cached-rasa.outcome == 'failure' && matrix.installation == 'full' }}
+        run: |
+          make install-full
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+
+      # Install if no cache hits
+      - name: Install Rasa with anonymisation prerequisites' installation
+        if: ${{ steps.cached-rasa.outcome == 'failure' && matrix.installation == 'anonymisation' }}
+        run: |
+          make install-nlu-pii-channels | tee .output
+          make install-monitoring | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+
+      # Save new Cache if no existing cache hits
+      - name: Save Rasa
+        if: steps.cached-rasa.outcome == 'failure'
+        uses: WarpBuilds/cache/save@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+          path: ${{ github.workspace }}/.venv
 
   quality:
     name: Code Quality
     runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ inputs.run_code_quality != 'false' }}
+    needs: install-and-cache-rasa
 
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Free up disk-space
-        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
-
       - name: Prepare the job
         uses: ./.github/actions/test-prerequisites
+        id: prepare-job
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
         # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
         # This is a workaround for that issue
+        env:
+          RASA_INSTALLED: ${{ steps.prepare-job.outputs.CACHE_LOADED }}
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full
+          if [[ "${RASA_INSTALLED}" == 'false' ]]; then
+            make install-full
+          fi
 
       - name: Checkout target branch to be able to diff on PR
         if: github.event_name == 'pull_request'
@@ -229,114 +255,66 @@ jobs:
           rasa_pro_license: ${{ secrets.RASA_PRO_LICENSE }}
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
 
-  rasa-init-sanity-check:
+  check-code-changes:
+    name: Check for code changes
     runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ inputs.full_ci_mode != 'false' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version:
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-        template:
-          - default
-          - tutorial
-          - basic
-          - finance
-          - telco
-        install-group:
-          - default
-          - nlu
-          - channels
-          - full
-        install-method:
-          - poetry
-          - pip
-          - uv
-        exclude:
-          - python-version: "3.9"
-            template: tutorial
-          - python-version: "3.9"
-            template: basic
-          - python-version: "3.9"
-            template: finance
-          - python-version: "3.9"
-            template: telco
-          - python-version: "3.9"
-            install-method: pip
-          - python-version: "3.9"
-            install-method: uv
-    name: rasa init Py${{ matrix.python-version }} ${{ matrix.install-group }}-group (with ${{ matrix.install-method }} install) ${{ matrix.template }}-template
-    env:
-      RASA_INIT_TEST_DIRECTORY: test-rasa-init
+    outputs:
+      # Unit test related outputs
+      voice-files: ${{ steps.filter.outputs.voice-files }}
+      dm1-tensorflow-files: ${{ steps.filter.outputs.dm1-tensorflow-files }}
+      nlu-files: ${{ steps.filter.outputs.nlu-files }}
+      cli-files: ${{ steps.filter.outputs.cli-files }}
+      agent-files: ${{ steps.filter.outputs.agent-files }}
+      policy-files: ${{ steps.filter.outputs.policy-files }}
+      source-code-and-build-changes: ${{ steps.filter.outputs.docker }} # 'Docker' filter encompasses both source code and build related files
+      tracing-and-metrics-files: ${{ steps.filter.outputs.tracing-and-metrics-files }}
+      action-files: ${{ steps.filter.outputs.action-files }}
+      enterprise-search-policy-files: ${{ steps.filter.outputs.enterprise-search-policy-files }}
+      channel-files: ${{ steps.filter.outputs.channel-files }}
+      pii-management: ${{ steps.filter.outputs.pii-management }}
+      # Integration test related outputs
+      broker-files: ${{ steps.filter.outputs.broker-files }}
+      poetry-dependency-updates: ${{ steps.filter.outputs.poetry-dependency-updates }}
+      mongo-db-files: ${{ steps.filter.outputs.mongo-db-files }}
+      custom-action-files: ${{ steps.filter.outputs.action-files }}
+      dynamo-db-files: ${{ steps.filter.outputs.dynamo-db-files }}
+      channel-connector-files: ${{ steps.filter.outputs.channel-connector-files }}
+      sequential-integration-files: ${{ steps.filter.outputs.sequential-integration-files }}
+      non-sequential-integration-files: ${{ steps.filter.outputs.non-sequential-integration-files }}
+      create_dev_docker_images: ${{ steps.set-dev-image-flag.outputs.create_dev_docker_images }}
+      rasa-core-dependencies-files: ${{ steps.filter.outputs.rasa-core-dependencies-files }}
+      concurrent-lockstore-files: ${{ steps.filter.outputs.concurrent-lockstore-files }}
     steps:
-        - name: Check out code
-          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        - name: Free up disk-space
-          if: ${{ matrix.install-group == 'full' || matrix.install-group == 'nlu' }}
-          uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
-        - name: Setup Python ${{ matrix.python-version }} and install rasa-pro (via ${{ matrix.install-method }}) with default installation
-          if: ${{ matrix.python-version != '3.9' && matrix.install-group == 'default' }}
-          uses: ./.github/actions/setup-python-env
-          with:
-            PYTHON_VERSION: ${{ matrix.python-version }}
-            MATRIX_JOB: ${{ matrix.install-group }}-${{ matrix.install-method }}-${{ matrix.template }}
-            RASA_DEFAULT_INSTALLATION_ONLY: "true"
-            DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL: ${{ matrix.install-method }}
-        - name: Setup Python ${{ matrix.python-version }} and install rasa-pro (via ${{ matrix.install-method }}) with ${{ matrix.install-group }} group
-          if: ${{ matrix.python-version != '3.9' && matrix.install-group != 'default'  }}
-          uses: ./.github/actions/setup-python-env
-          with:
-            PYTHON_VERSION: ${{ matrix.python-version }}
-            MATRIX_JOB: ${{ matrix.install-group }}-${{ matrix.install-method }}-${{ matrix.template }}
-            OPTIONAL_GROUP_TO_INSTALL: ${{ matrix.install-group }}
-            RASA_DEFAULT_INSTALLATION_ONLY: "false"
-            DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL: ${{ matrix.install-method }}
-        - name: Set up Python 3.9
-          if: ${{ matrix.python-version == '3.9' }}
-          uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
-          with:
-            python-version: ${{ matrix.python-version }}
-        - name: Read Poetry Version 🔢
-          if: ${{ matrix.python-version == '3.9' }}
-          run: |
-            echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-        - name: Install Poetry ${{ env.POETRY_VERSION }}
-          if: ${{ matrix.python-version == '3.9' }}
-          uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1.4.1
-          with:
-            version: ${{ env.POETRY_VERSION }}
-            virtualenvs-create: true
-            virtualenvs-in-project: true
-            installer-parallel: true
-        - name: Check error warning on Rasa install if using Python 3.9
-          if: ${{ matrix.python-version == '3.9' }}
-          run: |
-            make install > error-log 2>&1 || true
-            echo 'Error log:'
-            cat error-log
-            echo 'Search log for error, on Rasa installation in Python 3.9 environment:'
-            grep -E 'Current Python version \(3.9.[0-9]+\) is not allowed by the project \(>=3.10.0,<3.14\)' error-log
-        - name: Make empty directory for `rasa init`
-          run: mkdir "${RASA_INIT_TEST_DIRECTORY}"
-        - name: Sanity check of `rasa init`
-          if: ${{ matrix.python-version != '3.9' }}
-          working-directory: ${{ env.RASA_INIT_TEST_DIRECTORY }}
-          env:
-            LLM_API_HEALTH_CHECK: true
-            OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-            RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-            TEMPLATE: ${{ matrix.template }}
-          run: rasa init --template "${TEMPLATE}" --no-prompt --debug
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - id: filter
+        name: Check for changes in related files
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: .github/change_filters.yml
+      - id: set-dev-image-flag
+        name: Set flag to create dev docker images if any relevant changes detected
+        run: |
+          if [ "${{ steps.filter.outputs.pii-management }}" = "true" ] || \
+             [ "${{ steps.filter.outputs.poetry-dependency-updates }}" = "true" ] || \
+             [ "${{ steps.filter.outputs.rasa-core-dependencies-files }}" = "true" ] || \
+             [ "${{ steps.filter.outputs.tracing-and-metrics-files }}" = "true" ] || \
+             [ "${{ steps.filter.outputs.enterprise-search-policy-files }}" = "true" ] || \
+             [ "${{ steps.filter.outputs.action-files }}" = "true" ] || \
+             [ "${{ steps.filter.outputs.action-files }}" = "true" ] || \
+             [ "${{ steps.filter.outputs.channel-connector-files }}" = "true" ]; then
+            echo "create_dev_docker_images=true" >> $GITHUB_OUTPUT
+          else
+            echo "create_dev_docker_images=false" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
 
   rasa-private-dev-docker-image:
     name: rasa-private dev docker image
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ needs.check-integration-tests-requirements.outputs.create_dev_docker_images == 'true' }}
-    needs: [train-templates-dev, check-integration-tests-requirements]
+    if: ${{ needs.check-code-changes.outputs.create_dev_docker_images == 'true' }}
+    needs: [train-templates-dev, check-code-changes]
     outputs:
       rasa_image_tag: ${{ steps.set-tag.outputs.rasa_image_tag }}
       stack_name: ${{ steps.set-tag.outputs.stack_name }}
@@ -347,22 +325,36 @@ jobs:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      # Check if cached Rasa Docker image exists
+      - name: Check Rasa Docker image cache
+        id: cached-docker-image
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: rasa-docker-image.tar.gz
+          key: rasa-docker-image-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+          lookup-only: true
+          fail-on-cache-miss: true
+        continue-on-error: true
+
       - name: Read Poetry Version 🔢
         run: |
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
       - name: Configure AWS credentials
+        if: ${{ steps.cached-docker-image.outcome == 'failure' }}
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
+        if: ${{ steps.cached-docker-image.outcome == 'failure' }}
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
 
       - name: Set image tag
+        if: ${{ steps.cached-docker-image.outcome == 'failure' }}
         id: set-tag
         run: |
           TAG_VERSION="${{ needs.train-templates-dev.outputs.tag_version }}"
@@ -375,15 +367,14 @@ jobs:
           fi
 
       - name: Prepare template caches
+        if: ${{ steps.cached-docker-image.outcome == 'failure' }}
         uses: ./.github/actions/prepare-template-caches
         with:
           tag_version: ${{ needs.train-templates-dev.outputs.tag_version }}
           templates: ${{ env.TEMPLATES }}
 
-      - name: Free up disk-space
-        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
-
       - name: Build Rasa Private Dev Docker Image
+        if: ${{ steps.cached-docker-image.outcome == 'failure' }}
         run: |
           POETRY_VERSION=$POETRY_VERSION \
           PLATFORM=${{ env.PLATFORM }} \
@@ -392,151 +383,26 @@ jobs:
           make build-docker
 
       - name: Tag, and push image to Amazon ECR
+        if: ${{ steps.cached-docker-image.outcome == 'failure' }}
         run: |
           docker push ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.RASA_IMAGE_TAG }}
 
-      # Leverage GitHub Actions artifact upload/download to share Docker images between jobs,
+      - name: Tag Docker image by hash also for GHA caching
+        if: ${{ steps.cached-docker-image.outcome == 'failure' }}
+        run: docker tag ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.RASA_IMAGE_TAG }} ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
+
+      # Leverage GitHub Actions cache to share Docker images between jobs,
       # reducing dependency on ECR and minimizing AWS costs
       - name: Save docker image
-        run: docker save ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.RASA_IMAGE_TAG }} | gzip > image-${{ env.RASA_IMAGE_TAG }}.tar.gz
+        if: ${{ steps.cached-docker-image.outcome == 'failure' }}
+        run: docker save ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }} | gzip > rasa-docker-image.tar.gz
 
-      - name: Upload image as artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+      - name: Cache Docker image
+        if: ${{ steps.cached-docker-image.outcome == 'failure' }}
+        uses: WarpBuilds/cache/save@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
-          name: docker-image-${{ env.RASA_IMAGE_TAG }}.tar.gz
-          path: image-${{ env.RASA_IMAGE_TAG }}.tar.gz
-          retention-days: 5
-
-  # This job is stable but still a work in progress.
-  # It is not a blocker for merging and will eventually be moved to a separate workflow.
-  # Skip this job from merge queue, Backport PRs and Dependabot PRs
-  rasa-private-dev-train-the-model:
-    name: Train the model and upload to S3
-    if: false
-    needs: rasa-private-dev-docker-image
-    runs-on: warp-ubuntu-latest-x64-2x
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Download image artifact
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
-        with:
-          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
-
-      - name: Load Docker image
-        run: |
-          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
-
-      - name: Rasa Train
-        run: |
-          make train-rds-tracker-bot
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
-          MODEL_NAME: model-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
-          DB_HOST: ${{ env.POSTGRES_HOST }} # required if tracker-store-type is sql
-          DB_PORT: ${{ env.POSTGRES_PORT }} # required if tracker-store-type is sql
-          DB_USER: ${{ env.POSTGRES_USER }} # required if tracker-store-type is sql
-          DB_PASS: ${{ env.POSTGRES_PASSWORD }} # required if tracker-store-type is sql
-          DB_NAME: ${{ env.POSTGRES_DB }} # required if tracker-store-type is sql
-
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
-        with:
-          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Upload the model to S3
-        run: |
-          aws s3 cp $MODEL_FILE_PATH s3://rasa-pro-ci-trained-models/ \
-          --region eu-west-1 \
-          --endpoint-url https://s3.eu-west-1.amazonaws.com
-        env:
-          MODEL_FILE_PATH: tests_deployment/integration_tests_tracker_stores/sql_tracker_store/calm-demo-bot/models/model-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
-
-  # This job is stable but still a work in progress.
-  # It is not a blocker for merging and will eventually be moved to a separate workflow.
-  # Skip this job from merge queue, Backport PRs and Dependabot PRs
-  deploy-rasa-private-helm-chart:
-    name: Deploy rasa private helm chart
-    if: false
-    runs-on: warp-ubuntu-latest-x64-2x
-    needs: [rasa-private-dev-docker-image, rasa-private-dev-train-the-model]
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Set up Python 3.10 🐍
-        id: setup-python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
-        with:
-          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
-
-      - name: Deploy Rasa Pro Dev Helm Chart
-        uses: ./.github/actions/setup-build-for-helm-deploy
-        with:
-          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
-          aws-region: ${{ env.AWS_REGION }}
-          aws-assume-role-session-token: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          rasa-pro-helm-repo: ${{ env.RASA_PRO_HELM_REPO }}
-          rasa-pro-helm-version: ${{ env.RASA_PRO_HELM_VERSION }}
-          rasa-pro-version: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
-          rasa-pro-dev-repository: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          helm-deploy-rasa-pro-license: ${{ secrets.HELM_DEPLOY_RASA_PRO_LICENSE }}
-          helm-deploy-openai-api-key: ${{ secrets.HELM_DEPLOY_OPENAI_API_KEY }}
-          helm-deploy-certificate-arn: ${{ secrets.HELM_DEPLOY_CERTIFICATE_ARN }}
-          helm-deploy-hosted-zone-id: ${{ secrets.HELM_DEPLOY_HOSTED_ZONE_ID }}
-          helm-deploy-pulumi-access-token: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
-          model-file-name: model-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
-          aws-model-s3-bucket: rasa-pro-ci-trained-models
-          aws-model-s3-endpoint-url: https://s3.eu-west-1.amazonaws.com
-          aws-model-s3-access-key-id: ${{ secrets.AWS_MODEL_S3_ACCESS_KEY_ID }}
-          aws-model-s3-secret-access-key: ${{ secrets.AWS_MODEL_S3_SECRET_ACCESS_KEY }}
-          stack-name: ${{ needs.rasa-private-dev-docker-image.outputs.stack_name }}
-          # Use the image tag as project name and PR name to distinguish deployments
-          project-name: rasa-pro-${{ needs.rasa-private-dev-docker-image.outputs.stack_name }}
-          pr-name: ${{ needs.rasa-private-dev-docker-image.outputs.stack_name }}
-          domain-name: rasapro.rasa-dev.io
-          postgres-host: ${{ env.POSTGRES_HOST }} # required if tracker-store-type is sql
-          postgres-port: ${{ env.POSTGRES_PORT }} # required if tracker-store-type is sql
-          postgres-user: ${{ env.POSTGRES_USER }} # required if tracker-store-type is sql
-          postgres-password: ${{ env.POSTGRES_PASSWORD }} # required if tracker-store-type is sql
-          postgres-db: ${{ env.POSTGRES_DB }} # required if tracker-store-type is sql
-
-
-  # This job is being moved here from the pr-cleanup.yml workflow, to reduce AWS costs and save resources.
-  # Skip this job from merge queue, Backport PRs and Dependabot PRs
-  pulumi-destroy:
-    if: false
-    name: Destroy pulumi resources
-    needs: deploy-rasa-private-helm-chart
-    runs-on: warp-ubuntu-latest-x64-2x
-    steps:
-      - name: Check out code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Set stack name
-        run: |
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "STACK_NAME=pr-${{ github.event.number }}" >> $GITHUB_ENV
-          else
-            echo "STACK_NAME=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-          fi
-
-      - name: Destroy Pulumi resources
-        uses: ./.github/actions/destroy-pulumi-resources
-        with:
-          aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          pulumi-access-token: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
-          stack-name: ${{ env.STACK_NAME }}
-
+          key: rasa-docker-image-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+          path: rasa-docker-image.tar.gz
 
   check_inspector_build:
     name: Check Inspector Build
@@ -548,68 +414,74 @@ jobs:
         working-directory: rasa/core/channels/inspector
 
     steps:
-    - name: Check out code
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-    - name: Set up Node.js
-      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 #v4.4.0
-      with:
-        node-version: ${{ env.NODE_VERSION_INSPECTOR_BUILD }}
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 #v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION_INSPECTOR_BUILD }}
 
-    - name: Cache node modules
-      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-      id: yarn-cache
-      with:
-        path: "**/inspector/node_modules"
-        key: ${{ runner.os }}-modules-${{ hashFiles('**/inspector/yarn.lock') }}
+      - name: Cache node modules
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        id: yarn-cache
+        with:
+          path: "**/inspector/node_modules"
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/inspector/yarn.lock') }}
 
-    - name: Install dependencies
-      if: steps.yarn-cache.outputs.cache-hit != 'true'
-      run: |
-        yarn install --frozen-lockfile
+      - name: Install dependencies
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        run: |
+          yarn install --frozen-lockfile
 
-    - name: Build Inspector
-      run: |
-        yarn build
+      - name: Build Inspector
+        run: |
+          yarn build
 
-    - name: Store build output
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
-      with:
-        name: inspector-build
-        path: rasa/core/channels/inspector/dist
+      - name: Store build output
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: inspector-build
+          path: rasa/core/channels/inspector/dist
 
-    - name: Compare build output
-      run: |
-        if git diff --quiet -- dist; then
-          echo "No changes in the Inspector build output."
-        else
-          echo "Detected changes in the Inspector build output. Please build the Inspector and commit the contents of rasa/core/channels/inspector/dist/ ."
-          exit 1
-        fi
+      - name: Compare build output
+        run: |
+          if git diff --quiet -- dist; then
+            echo "No changes in the Inspector build output."
+          else
+            echo "Detected changes in the Inspector build output. Please build the Inspector and commit the contents of rasa/core/channels/inspector/dist/ ."
+            exit 1
+          fi
 
   tracing-integration-test:
     name: Tracing Integration Tests
-    if: ${{ needs.check-integration-tests-requirements.outputs.tracing-and-metrics-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-    needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
+    if: ${{ needs.check-code-changes.outputs.tracing-and-metrics-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    needs:
+      [
+        install-and-cache-rasa,
+        check-code-changes,
+        rasa-private-dev-docker-image,
+      ]
     runs-on: warp-ubuntu-latest-x64-4x
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Load cached Rasa Docker image
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: rasa-docker-image.tar.gz
+          key: rasa-docker-image-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+          fail-on-cache-miss: true
+
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Download image artifact
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
-        with:
-          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Load Docker image
         run: |
-          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
+          gunzip -c rasa-docker-image.tar.gz | docker load
 
       - name: Pull rasa-sdk dev image
         uses: ./.github/actions/pull-from-ecr
@@ -628,7 +500,7 @@ jobs:
       - name: Tracing integration testing - Run docker containers
         env:
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
         run: |
@@ -661,33 +533,39 @@ jobs:
 
   metric-integration-test:
     name: Metric Integration Tests
-    if: ${{ needs.check-integration-tests-requirements.outputs.tracing-and-metrics-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-    needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
+    if: ${{ needs.check-code-changes.outputs.tracing-and-metrics-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    needs:
+      [
+        install-and-cache-rasa,
+        rasa-private-dev-docker-image,
+        check-code-changes,
+      ]
     runs-on: warp-ubuntu-latest-x64-4x
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Load cached Rasa Docker image
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: rasa-docker-image.tar.gz
+          key: rasa-docker-image-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+          fail-on-cache-miss: true
+
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Download image artifact
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
-        with:
-          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Load Docker image
         run: |
-          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
+          gunzip -c rasa-docker-image.tar.gz | docker load
 
       - name: Metric Integration Testing - Run docker containers
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_SDK_REPOSITORY: rasa/rasa-sdk
           RASA_SDK_IMAGE_TAG: latest
@@ -720,8 +598,13 @@ jobs:
 
   custom-action-integration-tests:
     name: Custom Action Integration Tests With NLU bot and CALM bot
-    if: ${{ needs.check-integration-tests-requirements.outputs.custom-action-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-    needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
+    if: ${{ needs.check-code-changes.outputs.custom-action-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    needs:
+      [
+        install-and-cache-rasa,
+        rasa-private-dev-docker-image,
+        check-code-changes,
+      ]
     runs-on: warp-ubuntu-latest-x64-4x
     env:
       RASA_SDK_IMAGE_TAG: latest
@@ -729,6 +612,13 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Load cached Rasa Docker image
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: rasa-docker-image.tar.gz
+          key: rasa-docker-image-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+          fail-on-cache-miss: true
 
       - name: Read Poetry Version 🔢
         run: |
@@ -738,20 +628,14 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Docker version
         run: docker --version && docker compose version
 
-      - name: Download image artifact
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
-        with:
-          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
-
       - name: Load Docker image
         run: |
-          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
+          gunzip -c rasa-docker-image.tar.gz | docker load
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
@@ -769,7 +653,7 @@ jobs:
         env:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
@@ -779,7 +663,7 @@ jobs:
         env:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
@@ -797,7 +681,7 @@ jobs:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_nlu_bot"
@@ -812,8 +696,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Custom Action Integration Test Results For NLU bot
-          path:
-           integration-results-custom-actions-with-nlu-bot-results.xml
+          path: integration-results-custom-actions-with-nlu-bot-results.xml
 
       - name: Custom Actions Integration Testing CALM - Train docker containers
         run: |
@@ -822,7 +705,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
@@ -833,7 +716,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
@@ -851,7 +734,7 @@ jobs:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_calm_bot"
@@ -866,13 +749,17 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Custom Action Integration Test Results For CALM bot
-          path:
-           integration-results-custom-actions-with-calm-bot-results.xml
+          path: integration-results-custom-actions-with-calm-bot-results.xml
 
   enterprise-search-integration-tests:
     name: Run Enterprise Search Integration Tests
-    if: ${{ needs.check-integration-tests-requirements.outputs.enterprise-search-policy-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-    needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
+    if: ${{ needs.check-code-changes.outputs.enterprise-search-policy-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    needs:
+      [
+        install-and-cache-rasa,
+        rasa-private-dev-docker-image,
+        check-code-changes,
+      ]
     runs-on: warp-ubuntu-latest-x64-4x
     env:
       RASA_SDK_IMAGE_TAG: latest
@@ -880,11 +767,18 @@ jobs:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Load cached Rasa Docker image
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: rasa-docker-image.tar.gz
+          key: rasa-docker-image-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+          fail-on-cache-miss: true
+
       - name: Set up Python 3.10 🐍
         id: setup-python
         uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Read Poetry Version 🔢
         run: |
@@ -900,21 +794,25 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
+      # Load cached Rasa if cache exists
+      - name: Load cached Rasa
+        id: cached-rasa
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: ${{ github.workspace }}/.venv
+          key: rasa-default-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+
       - name: Install Dependencies (Linux) 📦
         # without this step the additional dependency installations with pip install
         # in the `Install additional dependencies for Docs ingestion` step fails
+        if: ${{ steps.cached-rasa.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
           make install
 
-      - name: Download image artifact
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
-        with:
-          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
-
       - name: Load Docker image
         run: |
-          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
+          gunzip -c rasa-docker-image.tar.gz | docker load
 
       - name: Enterprise Search Integration Testing - Train bot Faiss
         run: |
@@ -923,7 +821,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           CONFIG: "config-faiss.yml"
           ENDPOINTS: "endpoints-faiss.yml"
           MODEL_NAME: "model-faiss"
@@ -935,7 +833,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           CONFIG: "config-milvus.yml"
           ENDPOINTS: "endpoints-milvus.yml"
           MODEL_NAME: "model-milvus"
@@ -947,7 +845,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           CONFIG: "config-qdrant.yml"
           ENDPOINTS: "endpoints-qdrant.yml"
           MODEL_NAME: "model-qdrant"
@@ -959,7 +857,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           CONFIG: "config-qdrant.yml"
           ENDPOINTS: "endpoints-qdrant.yml"
           DOCKER_COMPOSE: "docker-compose.yml"
@@ -1010,76 +908,69 @@ jobs:
           path: integration-results-enterprise-search.xml
 
   sequential-integration-test:
-      name: Run Sequential Integration Tests
-      runs-on: warp-ubuntu-latest-x64-2x
-      if: ${{ needs.check-integration-tests-requirements.outputs.sequential-integration-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-      needs: [ check-integration-tests-requirements ]
-      timeout-minutes: 60
-      env:
-        POSTGRES_HOST: localhost
-        POSTGRES_PORT: 5432
-        POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: postgres
+    name: Run Sequential Integration Tests
+    runs-on: warp-ubuntu-latest-x64-2x
+    if: ${{ needs.check-code-changes.outputs.sequential-integration-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    needs: [install-and-cache-rasa, check-code-changes]
+    timeout-minutes: 60
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
 
-      services:
-        postgres:
-          image: postgres:13
-          # Set health checks to wait until postgres has started
-          options: >-
-            --health-cmd pg_isready
-            --health-interval 10s
-            --health-timeout 5s
-            --health-retries 5
-          env:
-            # postgres image requires password to be set
-            POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-          ports:
-            # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
-            # mapping container ports to the host
-            - 5432:5432
-      steps:
-        - name: Check out code
-          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+    services:
+      postgres:
+        image: postgres:13
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          # postgres image requires password to be set
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        ports:
+          # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
+          # mapping container ports to the host
+          - 5432:5432
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-        - name: Prepare the job for integration tests
-          uses: ./.github/actions/test-prerequisites
-          with:
-              PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-              POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          RASA_INSTALL_GROUP: "default"
 
-        - name: Install Dependencies (Linux) 📦
-          run: |
-            poetry env remove
-            rm -rf .venv
-            make install
-          shell: bash
+      # these integration tests need to be run in a sequential fashion,
+      # due to environment constraints, so we're running them in a single process.
+      - name: Test Code with Services 🩺 (sequential)
+        env:
+          JOBS: 1
+          INTEGRATION_TEST_PYTEST_MARKERS: "sequential"
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          make test-integration
 
-        # these integration tests need to be run in a sequential fashion,
-        # due to environment constraints, so we're running them in a single process.
-        - name: Test Code with Services 🩺 (sequential)
-          env:
-            JOBS: 1
-            INTEGRATION_TEST_PYTEST_MARKERS: "sequential"
-            PYTHONIOENCODING: "utf-8"
-          run: |
-            make test-integration
+      - name: Prepare test results
+        if: success() || failure()
+        run: mv report_integration.xml integration-results-sequential.xml
 
-        - name: Prepare test results
-          if: always()
-          run: mv report_integration.xml integration-results-sequential.xml
-
-        - name: Save Test Results
-          if: always()
-          uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
-          with:
-            name: Sequential Integration Test Results
-            path: integration-results-sequential.xml
+      - name: Save Test Results
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: Sequential Integration Test Results
+          path: integration-results-sequential.xml
 
   non-sequential-integration-test:
     name: Run Non-Sequential Integration Tests
     runs-on: warp-ubuntu-latest-x64-8x
-    if: ${{ needs.check-integration-tests-requirements.outputs.non-sequential-integration-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-    needs: [ check-integration-tests-requirements ]
+    if: ${{ needs.check-code-changes.outputs.non-sequential-integration-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    needs: [install-and-cache-rasa, check-code-changes]
     timeout-minutes: 60
     env:
       REDIS_HOST: localhost
@@ -1096,21 +987,22 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Install Dependencies (Linux) 📦
-        run: |
-          make install-nlu
-        shell: bash
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          RASA_INSTALL_GROUP: "nlu"
 
       - name: Run container for non-sequential integration testing
         run: |
           make run-non-sequential-container
 
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: ubuntu-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ubuntu-${{ runner.os }}-dependencies-non-sequential-integration-test
+
       - name: Test Code with Services 🩺
         env:
-          JOBS: 6
+          JOBS: logical
           INTEGRATION_TEST_PYTEST_MARKERS: '"(not sequential) and (not broker) and (not concurrent_lock_store)"'
           PYTHONIOENCODING: "utf-8"
           INTEGRATION_TESTS_STUDIO_LICENSE: ${{ secrets.INTEGRATION_TESTS_STUDIO_LICENSE }}
@@ -1118,17 +1010,20 @@ jobs:
           INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          UBUNTU_DEPENDENCIES_INSTALLED: ${{ steps.ubuntu-dependencies.outputs.cache-hit }}
         run: |
-          make prepare-tests-ubuntu
+          if [[ "${UBUNTU_DEPENDENCIES_INSTALLED}" == 'false' ]]; then
+            make prepare-tests-ubuntu
+          fi
           make prepare-spacy
           make test-integration
 
       - name: Prepare test results
-        if: always()
+        if: success() || failure()
         run: mv report_integration.xml integration-results-non-sequential.xml
 
       - name: Save Test Results
-        if: always()
+        if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Non-Sequential Integration Test Results
@@ -1145,8 +1040,8 @@ jobs:
   mongo-tracker-store-integration-test:
     name: Run Mongo Tracker Store Integration Tests
     runs-on: warp-ubuntu-latest-x64-8x
-    if: ${{ needs.check-integration-tests-requirements.outputs.mongo-db-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-    needs: [ check-integration-tests-requirements ]
+    if: ${{ needs.check-code-changes.outputs.mongo-db-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    needs: [install-and-cache-rasa, check-code-changes]
     timeout-minutes: 60
     env:
       DB_PORT: 27017
@@ -1164,53 +1059,55 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Install Dependencies (Linux) 📦
-        run: |
-          poetry env remove
-          rm -rf .venv
-          make install
-        shell: bash
+          RASA_INSTALL_GROUP: "default"
 
       - name: Run containers for tracker store integration testing
         run: |
           make run-mongodb-container
 
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: ubuntu-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ubuntu-${{ runner.os }}-dependencies-mongo-tracker-store-integration-test
+
       - name: Test Code with Services 🩺
         env:
-          JOBS: 6
+          JOBS: logical
           PYTHONIOENCODING: "utf-8"
           INTEGRATION_TESTS_STUDIO_LICENSE: ${{ secrets.INTEGRATION_TESTS_STUDIO_LICENSE }}
           INTEGRATION_TESTS_PRO_LICENSE: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE }}
           INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          UBUNTU_DEPENDENCIES_INSTALLED: ${{ steps.ubuntu-dependencies.outputs.cache-hit }}
         run: |
-          make prepare-tests-ubuntu
+          if [[ "${UBUNTU_DEPENDENCIES_INSTALLED}" == 'false' ]]; then
+            make prepare-tests-ubuntu
+          fi
           make test-mongodb-tracker-store
 
       - name: Show mongo-with-tls container logs
-        if: always()
+        if: success() || failure()
         uses: ./.github/actions/debug-tracker-store-tests
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store/docker-compose.mongodb.yml
           CONTAINER_NAME: mongodb-with-tls
 
       - name: Show mongo-without-tls container logs
-        if: always()
+        if: success() || failure()
         uses: ./.github/actions/debug-tracker-store-tests
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store/docker-compose.mongodb.yml
           CONTAINER_NAME: mongodb-without-tls
 
       - name: Stop containers for tracker store integration testing
-        if: always()
+        if: success() || failure()
         run: |
           make stop-mongodb-container
 
       - name: Save Test Results
-        if: always()
+        if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Tracker Store Integration Test Results
@@ -1219,8 +1116,8 @@ jobs:
   dynamo-tracker-store-integration-test:
     name: Run Dynamo Tracker Store Integration Tests
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ needs.check-integration-tests-requirements.outputs.dynamo-db-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-    needs: [ check-integration-tests-requirements ]
+    if: ${{ needs.check-code-changes.outputs.dynamo-db-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    needs: [install-and-cache-rasa, check-code-changes]
     timeout-minutes: 60
 
     steps:
@@ -1231,18 +1128,17 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Install Dependencies (Linux) 📦
-        run: |
-          poetry env remove
-          rm -rf .venv
-          make install
-        shell: bash
+          RASA_INSTALL_GROUP: "default"
 
       - name: Run containers for tracker store integration testing
         run: |
           make run-dynamo-container
+
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: ubuntu-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ubuntu-${{ runner.os }}-dependencies-dynamo-tracker-store-integration-test
 
       - name: Test Code with Services 🩺
         env:
@@ -1256,24 +1152,27 @@ jobs:
           AWS_ENDPOINT_URL: "http://0.0.0.0:8000"
           AWS_ACCESS_KEY_ID: "testing"
           AWS_SECRET_ACCESS_KEY: "testing"
+          UBUNTU_DEPENDENCIES_INSTALLED: ${{ steps.ubuntu-dependencies.outputs.cache-hit }}
         run: |
-          make prepare-tests-ubuntu
+          if [[ "${UBUNTU_DEPENDENCIES_INSTALLED}" == 'false' ]]; then
+            make prepare-tests-ubuntu
+          fi
           make test-dynamo-tracker-store
 
       - name: Show container logs
-        if: always()
+        if: success() || failure()
         uses: ./.github/actions/debug-tracker-store-tests
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracker_stores/dynamo_tracker_store/docker-compose.dynamo.yml
           CONTAINER_NAME: dynamodb-local
 
       - name: Stop containers for tracker store integration testing
-        if: always()
+        if: success() || failure()
         run: |
           make stop-dynamo-container
 
       - name: Save Test Results
-        if: always()
+        if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Dynamo Tracker Store Integration Test Results
@@ -1282,8 +1181,8 @@ jobs:
   concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ needs.check-integration-tests-requirements.outputs.concurrent-lockstore-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
-    needs: [ check-integration-tests-requirements ]
+    if: ${{ needs.check-code-changes.outputs.concurrent-lockstore-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    needs: [install-and-cache-rasa, check-code-changes]
     timeout-minutes: 60
     env:
       REDIS_HOST: localhost
@@ -1296,15 +1195,8 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Install Dependencies (Linux) 📦
-        run: |
-          poetry env remove
-          rm -rf .venv
-          make install
-        shell: bash
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          RASA_INSTALL_GROUP: "default"
 
       - name: Run container for concurrent lock store integration testing
         run: |
@@ -1320,11 +1212,11 @@ jobs:
           make test-integration
 
       - name: Prepare test results
-        if: always()
+        if: success() || failure()
         run: mv report_integration.xml integration-results-concurrent-lockstore.xml
 
       - name: Save Test Results
-        if: always()
+        if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Concurrent LockStore Integration Test Results
@@ -1341,46 +1233,56 @@ jobs:
   broker_integration_test:
     name: Run Broker Integration Tests
     runs-on: warp-ubuntu-latest-x64-2x
-    needs: [ check-integration-tests-requirements ]
-    if: ${{ needs.check-integration-tests-requirements.outputs.broker-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
+    needs: [install-and-cache-rasa, check-code-changes]
+    if: ${{ needs.check-code-changes.outputs.broker-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
     timeout-minutes: 60
 
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Free up disk-space
-        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
-
       - name: Prepare the job for integration tests
+        id: prepare-job
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+          RASA_INSTALL_GROUP: "full"
+
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: ubuntu-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ubuntu-${{ runner.os }}-dependencies-broker-integration-test
 
       - name: Install Dependencies Full (Linux) 📦
+        env:
+          RASA_INSTALLED: ${{ steps.prepare-job.outputs.CACHE_LOADED }}
+          UBUNTU_DEPENDENCIES_INSTALLED: ${{ steps.ubuntu-dependencies.outputs.cache-hit }}
         run: |
-          sudo apt-get -y install libpq-dev
-          make install-full | tee .output
-          if grep 'The lock file is not up to date' .output; then exit 1; fi
-          make prepare-tests-ubuntu
+
+          if [[ "${RASA_INSTALLED}" == 'false' && "${UBUNTU_DEPENDENCIES_INSTALLED}" == 'false' ]]; then
+            make install-full | tee .output
+            if grep 'The lock file is not up to date' .output; then exit 1; fi
+            sudo apt-get -y install libpq-dev
+            make prepare-tests-ubuntu
+          fi
           make prepare-spacy
 
       - name: Run the pika test separately
         # these tests need to be run separately as they turn on and off docker container and interfere with the other broker tests
         run: |
-          poetry run pytest tests/integration_tests/core/brokers/test_pika.py --junitxml=report_pika_test_integration.xml
+          poetry run pytest tests/integration_tests/core/brokers/test_pika.py --junitxml=report_pika_test_integration.xml --reruns 3 --reruns-delay 1
 
       - name: Prepare pika test results
-        if: always()
+        if: success() || failure()
         run: mv report_pika_test_integration.xml integration-results-pika-broker-integration.xml
 
       - name: Save Test Results
-        if: always()
+        if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-            name: Pika Broker Integration Test Results
-            path: integration-results-pika-broker-integration.xml
+          name: Pika Broker Integration Test Results
+          path: integration-results-pika-broker-integration.xml
 
       - name: Run rabbitmq, kafka and zookeeper containers for integration testing
         run: |
@@ -1392,24 +1294,24 @@ jobs:
           INTEGRATION_TEST_PYTEST_MARKERS: "broker"
           PYTHONIOENCODING: "utf-8"
         run: |
-            make test-integration
+          make test-integration
 
       - name: Show container logs
-        if: always()
+        if: success() || failure()
         uses: ./.github/actions/debug-broker-tests
         with:
           COMPOSE_FILE_PATH: tests_deployment/docker-compose.broker.yml
 
       - name: Prepare test results
-        if: always()
+        if: success() || failure()
         run: mv report_integration.xml integration-results-broker-integration.xml
 
       - name: Save Test Results
-        if: always()
+        if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-            name: Broker Integration Test Results
-            path: integration-results-broker-integration.xml
+          name: Broker Integration Test Results
+          path: integration-results-broker-integration.xml
 
       - name: Stop rabbitmq, kafka and zookeeper containers for integration testing
         run: |
@@ -1417,33 +1319,36 @@ jobs:
 
   channel_connector_integration_tests:
     name: Channel Connector Integration Tests With CALM bot
-    needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
-    if: ${{ needs.check-integration-tests-requirements.outputs.channel-connector-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
+    needs:
+      [
+        install-and-cache-rasa,
+        rasa-private-dev-docker-image,
+        check-code-changes,
+      ]
+    if: ${{ needs.check-code-changes.outputs.channel-connector-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
     runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Free up disk-space
-        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
+      - name: Load cached Rasa Docker image
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: rasa-docker-image.tar.gz
+          key: rasa-docker-image-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+          fail-on-cache-miss: true
 
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Docker version
         run: docker --version && docker compose version
 
-      - name: Download image artifact
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
-        with:
-          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
-
       - name: Load Docker image
         run: |
-          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
+          gunzip -c rasa-docker-image.tar.gz | docker load
 
       - name: Channel connector Integration Tests - Run docker containers
         run: |
@@ -1452,7 +1357,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
 
       - name: Channel connector Integration Tests -  Test Code with Services 🩺
         run: |
@@ -1481,19 +1386,26 @@ jobs:
         with:
           name: Channel connector Integration Tests Test Results
           path: |
-           integration-results-channel-connectors-with-calm-bot-results.xml
-           integration-results-custom-broker-with-calm-bot-results.xml
+            integration-results-channel-connectors-with-calm-bot-results.xml
+            integration-results-custom-broker-with-calm-bot-results.xml
 
   pii-management-in-calm-integration-tests:
     name: PII Management in CALM Bot Integration Tests
-    needs: [rasa-private-dev-docker-image, check-integration-tests-requirements]
-    if: ${{ needs.check-integration-tests-requirements.outputs.pii-management == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
+    needs: [rasa-private-dev-docker-image, check-code-changes]
+    if: ${{ needs.check-code-changes.outputs.pii-management == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
     runs-on: warp-ubuntu-latest-x64-4x
     env:
       RASA_SDK_IMAGE_TAG: latest
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Load cached Rasa Docker image
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: rasa-docker-image.tar.gz
+          key: rasa-docker-image-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+          fail-on-cache-miss: true
 
       - name: Read Poetry Version 🔢
         run: |
@@ -1504,7 +1416,6 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Get latest Rasa Pro version
         id: get-latest-rasa-pro-version
@@ -1512,19 +1423,14 @@ jobs:
           chmod 755 scripts/get-latest-rasa-version.py
           echo "LATEST_RASA_PRO_VERSION=$(python scripts/get-latest-rasa-version.py)" >> $GITHUB_ENV
 
-      - name: Download image artifact
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
-        with:
-          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
-
       - name: Load Docker image
         run: |
-          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
+          gunzip -c rasa-docker-image.tar.gz | docker load
 
       - name: Build Rasa Pro PII image with GLiNER and trained Rasa models
         id: build_rasa_pro_pii_image
         env:
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
         working-directory: "./tests_deployment/integration_tests_pii_management_in_calm/calm_demo_bot"
         run: |
           docker build --build-arg RASA_REPOSITORY=${{ env.RASA_PRO_DEV_REPOSITORY }} \
@@ -1539,7 +1445,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}-pii
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}-pii
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
@@ -1551,21 +1457,21 @@ jobs:
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
 
       - name: Show container logs
-        if: always()
+        if: success() || failure()
         uses: ./.github/actions/debug-pii-management-tests
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_pii_management_in_calm/docker-compose.yml
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}-pii
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}-pii
           BOT_PATH: "./tests_deployment/integration_tests_pii_management_in_calm/calm_demo_bot"
 
       - name: PII Integration Testing - Stop docker containers
-        if: always()
+        if: success() || failure()
         run: |
           make stop-pii-calm-containers
 
       - name: Save Test Results
-        if: always()
+        if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: PII Management in CALM Bot Integration Tests
@@ -1573,31 +1479,35 @@ jobs:
 
   voice_unit_tests:
     name: Run Voice Unit Tests
-    needs: [ check-integration-tests-requirements ]
-    if: ${{ needs.check-integration-tests-requirements.outputs.voice-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
+    needs: [check-code-changes, install-and-cache-rasa]
+    if: ${{ needs.check-code-changes.outputs.voice-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
     runs-on: warp-ubuntu-latest-x64-4x
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Free up disk-space
-        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
-
       - name: Prepare the job for unit tests
         uses: ./.github/actions/test-prerequisites
+        id: prepare-job
         with:
           PYTHON_VERSION: ${{ matrix.python-version }}
-          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: ubuntu-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ubuntu-${{ runner.os }}-dependencies-voice-unit-tests
 
       - name: Install Dependencies (Linux) 📦
         # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
         # This is a workaround for that issue
+        if: ${{ steps.prepare-job.outputs.CACHE_LOADED != 'true' && steps.ubuntu-dependencies.outputs.cache-hit != 'true' }}
         run: |
           sudo apt-get -y install libpq-dev
           make install-full | tee .output
@@ -1605,11 +1515,11 @@ jobs:
           make prepare-tests-ubuntu
 
       - name: Install additional dependencies
-        run: poetry add ddtrace azure-cognitiveservices-speech
+        run: poetry add azure-cognitiveservices-speech
 
       - name: Test Code 🔍 (multi-process)
         env:
-          JOBS: 6
+          JOBS: logical
           PYTHONUTF8: 1
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
@@ -1621,35 +1531,54 @@ jobs:
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Prepare test results
-        if: always()
-        run: mv coverage.xml  ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
+        if: success() || failure()
+        run: mv coverage.xml  ${{ github.workspace }}/unit-tests-results-python-${{ matrix.python-version }}.xml
 
       - name: Save Test Results
-        if: always()
+        if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}
+          name: unit-tests-results-python-${{ matrix.python-version }}
           path: |
-            ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
+            ${{ github.workspace }}/unit-tests-results-python-${{ matrix.python-version }}.xml
 
-  unit-test:
-    name: Run Unit Tests
+  unit-test-policies:
+    name: Run Policies Unit Tests
     runs-on: warp-ubuntu-latest-x64-4x
-    timeout-minutes: 60
+    if: ${{ inputs.full_ci_mode != 'false' && (needs.check-code-changes.outputs.policy-files == 'true') }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        test:
-          - test-cli
-          - test-policies
-          - test-nlu-featurizers
-          - test-nlu-predictors
-          - test-full-model-training
-          - test-other-unit-tests
-          - test-performance
-          - test-flaky
-          - test-agents
         python-version: ${{ fromJson(inputs.python-versions) }}
+        # While more runners can be added, but when using lots of them
+        # intermittently some jobs get stuck in queue for a GHA-hosted
+        # runner to be available, becoming a bottleneck and slowing down
+        # overall CI completion time.
+        runner:
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+          ]
+    needs: [install-and-cache-rasa, check-code-changes]
 
     steps:
       - name: Check out code
@@ -1658,20 +1587,406 @@ jobs:
       - name: Prepare the job for unit tests
         uses: ./.github/actions/test-prerequisites
         with:
-            PYTHON_VERSION: ${{ matrix.python-version }}
-            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
 
-      - name: Install Dependencies (Linux) 📦
-        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
-        # This is a workaround for that issue
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: linux-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ${{ runner.os }}-${{ matrix.python-version }}-unit-test-policies-${{ matrix.runner }}
+
+      - name: Install Linux dependencies
+        if: ${{ steps.linux-dependencies.outputs.cache-hit != 'true' }}
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output
-          if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
-      - name: Install ddtrace on Linux
-        run: poetry run pip install -U ddtrace
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: logical
+          PYTHONUTF8: 1
+          DD_ARGS: --junitxml=unit-tests-results.xml
+          RUNNER_ID: ${{ matrix.runner }}
+          NUMBER_OF_RUNNERS: 20
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
+          CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
+          CHAMPION_SERVER_INTERNAL_LICENSE: ${{ secrets.CHAMPION_SERVER_INTERNAL_LICENSE }}
+          CHAMPION_SERVER_LIMITED_LICENSE: ${{ secrets.CHAMPION_SERVER_LIMITED_LICENSE }}
+          EXPIRED_LICENSE: ${{ secrets.EXPIRED_LICENSE }}
+          IMMATURE_LICENSE: ${{ secrets.IMMATURE_LICENSE }}
+          INVALID_SCHEMA_LICENSE: ${{ secrets.INVALID_SCHEMA_LICENSE }}
+          INVALID_SIGNATURE_LICENSE: ${{ secrets.INVALID_SIGNATURE_LICENSE }}
+          NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
+          UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
+          VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
+        run: |
+          make test-policies
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Prepare test results
+        if: success() || failure()
+        run: |
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-policies-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+      - name: Save Test Results
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: unit-tests-results-policies-python-${{ matrix.python-version }}-${{ matrix.runner }}
+          path: |
+            ${{ github.workspace }}/unit-tests-results-policies-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+  unit-test-agents:
+    name: Run Agents Unit Tests
+    runs-on: warp-ubuntu-latest-x64-4x
+    if: ${{ inputs.full_ci_mode != 'false' && (needs.check-code-changes.outputs.agent-files == 'true') }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python-versions) }}
+        # While more runners can be added, but when using lots of them
+        # intermittently some jobs get stuck in queue for a GHA-hosted
+        # runner to be available, becoming a bottleneck and slowing down
+        # overall CI completion time.
+        runner:
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+          ]
+    needs: [install-and-cache-rasa, check-code-changes]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: linux-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ${{ runner.os }}-${{ matrix.python-version }}-unit-test-agents-${{ matrix.runner }}
+
+      - name: Install Linux dependencies
+        if: ${{ steps.linux-dependencies.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt-get -y install libpq-dev
+          make prepare-tests-ubuntu
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: logical
+          PYTHONUTF8: 1
+          DD_ARGS: --junitxml=unit-tests-results.xml
+          RUNNER_ID: ${{ matrix.runner }}
+          NUMBER_OF_RUNNERS: 20
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
+          CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
+          CHAMPION_SERVER_INTERNAL_LICENSE: ${{ secrets.CHAMPION_SERVER_INTERNAL_LICENSE }}
+          CHAMPION_SERVER_LIMITED_LICENSE: ${{ secrets.CHAMPION_SERVER_LIMITED_LICENSE }}
+          EXPIRED_LICENSE: ${{ secrets.EXPIRED_LICENSE }}
+          IMMATURE_LICENSE: ${{ secrets.IMMATURE_LICENSE }}
+          INVALID_SCHEMA_LICENSE: ${{ secrets.INVALID_SCHEMA_LICENSE }}
+          INVALID_SIGNATURE_LICENSE: ${{ secrets.INVALID_SIGNATURE_LICENSE }}
+          NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
+          UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
+          VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
+        run: |
+          make test-agents
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Prepare test results
+        if: success() || failure()
+        run: |
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-agents-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+      - name: Save Test Results
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: unit-tests-results-agents-python-${{ matrix.python-version }}-${{ matrix.runner }}
+          path: |
+            ${{ github.workspace }}/unit-tests-results-agents-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+  unit-test-nlu:
+    name: Run NLU Unit Tests
+    runs-on: warp-ubuntu-latest-x64-16x
+    if: ${{ inputs.full_ci_mode != 'false' && (needs.check-code-changes.outputs.nlu-files == 'true' || needs.check-code-changes.outputs.dm1-tensorflow-files == 'true' ) }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - test-nlu-featurizers
+          - test-nlu-predictors
+          # Full model training and performance-test seem to use DM1/NLU only bot
+          - test-full-model-training
+          - test-performance
+        python-version: ${{ fromJson(inputs.python-versions) }}
+        # While more runners can be added, but when using lots of them
+        # intermittently some jobs get stuck in queue for a GHA-hosted
+        # runner to be available, becoming a bottleneck and slowing down
+        # overall CI completion time.
+        runner: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        # Performance-tests have only 3 but large tests, so not using more than 3 runners for it.
+        exclude:
+          - test: test-performance
+            runner: 4
+          - test: test-performance
+            runner: 5
+          - test: test-performance
+            runner: 6
+          - test: test-performance
+            runner: 7
+          - test: test-performance
+            runner: 8
+          - test: test-performance
+            runner: 9
+          - test: test-performance
+            runner: 10
+    needs: [install-and-cache-rasa, check-code-changes]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: linux-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test }}-${{ matrix.runner }}
+
+      - name: Install Linux dependencies
+        if: ${{ steps.linux-dependencies.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt-get -y install libpq-dev
+          make prepare-tests-ubuntu
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: logical
+          PYTHONUTF8: 1
+          DD_ARGS: --junitxml=unit-tests-results.xml
+          RUNNER_ID: ${{ matrix.runner }}
+          NUMBER_OF_RUNNERS: ${{ matrix.test == 'test-performance' && 3 || 10 }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
+          CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
+          CHAMPION_SERVER_INTERNAL_LICENSE: ${{ secrets.CHAMPION_SERVER_INTERNAL_LICENSE }}
+          CHAMPION_SERVER_LIMITED_LICENSE: ${{ secrets.CHAMPION_SERVER_LIMITED_LICENSE }}
+          EXPIRED_LICENSE: ${{ secrets.EXPIRED_LICENSE }}
+          IMMATURE_LICENSE: ${{ secrets.IMMATURE_LICENSE }}
+          INVALID_SCHEMA_LICENSE: ${{ secrets.INVALID_SCHEMA_LICENSE }}
+          INVALID_SIGNATURE_LICENSE: ${{ secrets.INVALID_SIGNATURE_LICENSE }}
+          NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
+          UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
+          VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
+        run: |
+          make ${{ matrix.test }}
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Prepare test results
+        if: success() || failure()
+        run: |
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-nlu-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+      - name: Save Test Results
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}
+          path: |
+            ${{ github.workspace }}/unit-tests-results-nlu-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+  unit-test-cli:
+    name: Run CLI Unit Tests
+    runs-on: warp-ubuntu-latest-x64-16x
+    if: ${{ inputs.full_ci_mode != 'false' && (needs.check-code-changes.outputs.cli-files == 'true') }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python-versions) }}
+        # While more runners can be added, but when using lots of them
+        # intermittently some jobs get stuck in queue for a GHA-hosted
+        # runner to be available, becoming a bottleneck and slowing down
+        # overall CI completion time.
+        runner:
+          [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    needs: [install-and-cache-rasa, check-code-changes]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: linux-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.runner }}
+
+      - name: Install Linux dependencies
+        if: ${{ steps.linux-dependencies.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt-get -y install libpq-dev
+          make prepare-tests-ubuntu
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: logical
+          PYTHONUTF8: 1
+          DD_ARGS: --junitxml=unit-tests-results.xml
+          RUNNER_ID: ${{ matrix.runner }}
+          NUMBER_OF_RUNNERS: 19
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
+          CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
+          CHAMPION_SERVER_INTERNAL_LICENSE: ${{ secrets.CHAMPION_SERVER_INTERNAL_LICENSE }}
+          CHAMPION_SERVER_LIMITED_LICENSE: ${{ secrets.CHAMPION_SERVER_LIMITED_LICENSE }}
+          EXPIRED_LICENSE: ${{ secrets.EXPIRED_LICENSE }}
+          IMMATURE_LICENSE: ${{ secrets.IMMATURE_LICENSE }}
+          INVALID_SCHEMA_LICENSE: ${{ secrets.INVALID_SCHEMA_LICENSE }}
+          INVALID_SIGNATURE_LICENSE: ${{ secrets.INVALID_SIGNATURE_LICENSE }}
+          NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
+          UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
+          VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
+        run: |
+          make test-cli
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Prepare test results
+        if: success() || failure()
+        run: |
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-cli-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+      - name: Save Test Results
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: unit-tests-results-cli-python-${{ matrix.python-version }}-${{ matrix.runner }}
+          path: |
+            ${{ github.workspace }}/unit-tests-results-cli-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+  unit-test:
+    name: Run Unit Tests
+    runs-on: warp-ubuntu-latest-x64-16x
+    if: ${{ !(github.event_name == 'pull_request' && inputs.pr-author == 'rasabot' && inputs.pr-is-draft == 'true') }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - test-other-unit-tests
+          - test-flaky
+        python-version: ${{ fromJson(inputs.python-versions) }}
+        # While more runners can be added, but when using lots of them
+        # intermittently some jobs get stuck in queue for a GHA-hosted
+        # runner to be available, becoming a bottleneck and slowing down
+        # overall CI completion time.
+        # test-other-unit-tests uses runners 1-20, test-flaky uses runners 1-9
+        runner:
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+          ]
+        exclude:
+          # test-flaky only needs runners 1-9
+          - test: test-flaky
+            runner: 10
+          - test: test-flaky
+            runner: 11
+          - test: test-flaky
+            runner: 12
+          - test: test-flaky
+            runner: 13
+          - test: test-flaky
+            runner: 14
+          - test: test-flaky
+            runner: 15
+          - test: test-flaky
+            runner: 16
+          - test: test-flaky
+            runner: 17
+          - test: test-flaky
+            runner: 18
+          - test: test-flaky
+            runner: 19
+          - test: test-flaky
+            runner: 20
+    needs: [install-and-cache-rasa]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: linux-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test }}-${{ matrix.runner }}
+
+      - name: Install Linux dependencies
+        if: ${{ steps.linux-dependencies.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt-get -y install libpq-dev
+          make prepare-tests-ubuntu
 
       - name: Make direcory for Swagger/OpenAPI coverage results
         if: matrix.test == 'test-other-unit-tests'
@@ -1679,12 +1994,11 @@ jobs:
 
       - name: Test Code 🔍 (multi-process)
         env:
-          JOBS: 6
+          JOBS: logical
           PYTHONUTF8: 1
-          DD_ENV: ${{ matrix.test }}
-          DD_SERVICE: rasa
-          DD_ARGS: --ddtrace --ddtrace-patch-all --junitxml=unit-tests-results.xml
-          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_ARGS: --junitxml=unit-tests-results.xml
+          RUNNER_ID: ${{ matrix.runner }}
+          NUMBER_OF_RUNNERS: 20
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
           CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
@@ -1698,37 +2012,40 @@ jobs:
           UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
           VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
           API_DOCS_FORMAT: yaml
+          TEST: ${{ matrix.test }}
         run: |
-          make ${{ matrix.test }}
+          make "${TEST}"
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Prepare test results
-        if: always()
+        if: success() || failure()
         run: |
-          mv coverage.xml ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
-      - name: Generate Rasa server OpenAPI test coverage report
-        if: always() && matrix.test == 'test-other-unit-tests'
-        run: |
-          .venv/lib/python${{ matrix.python-version }}/site-packages/swagger_coverage_py/swagger-coverage-commandline/bin/swagger-coverage-commandline \
-          -c swagger-coverage-config-rasa-pro.json \
-          -i swagger-coverage-output/localhost:5005 \
-          -s swagger-doc-rasa-pro.yaml
+      # TODO: Investigate and fix OpenAPI test coverage report generation with sharded tests
+      # - name: Generate Rasa server OpenAPI test coverage report
+      #   if: (success() || failure()) && matrix.test == 'test-other-unit-tests'
+      #   run: |
+      #     .venv/lib/python${{ matrix.python-version }}/site-packages/swagger_coverage_py/swagger-coverage-commandline/bin/swagger-coverage-commandline \
+      #     -c swagger-coverage-config-rasa-pro.json \
+      #     -i swagger-coverage-output/localhost:5005 \
+      #     -s swagger-doc-rasa-pro.yaml
 
       - name: Save Test Results
-        if: always()
+        if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}
+          name: unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}
           path: |
-            ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
+            ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
-      - name: Save Rasa server OpenAPI tests coverage report
-        if: always() && matrix.test == 'test-other-unit-tests'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
-        with:
-          name: Rasa Server OpenAPI tests coverage report on python-${{ matrix.python-version }}
-          path: swagger-coverage-report-rasa-pro.html
+      # TODO: Investigate and fix OpenAPI test coverage report generation with sharded tests
+      # - name: Save Rasa server OpenAPI tests coverage report
+      #   if: (success() || failure()) && matrix.test == 'test-other-unit-tests'
+      #   uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+      #   with:
+      #     name: Rasa Server OpenAPI tests coverage report on python-${{ matrix.python-version }}
+      #     path: swagger-coverage-report-rasa-pro.html
 
   test-anonymization:
     name: Run Anonymization Unit Tests
@@ -1738,6 +2055,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ${{ fromJson(inputs.python-versions) }}
+    needs: install-and-cache-rasa
 
     steps:
       - name: Check out code
@@ -1745,20 +2063,34 @@ jobs:
 
       - name: Prepare the job for unit tests
         uses: ./.github/actions/test-prerequisites
+        id: prepare-job
         with:
           PYTHON_VERSION: ${{ matrix.python-version }}
-          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+          RASA_INSTALL_GROUP: "anonymisation"
+
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: ubuntu-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ubuntu-${{ runner.os }}-dependencies-test-anonymization
 
       - name: Install Dependencies (Linux) 📦
         # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
         # This is a workaround for that issue
+        env:
+          UBUNTU_DEPENDENCIES_INSTALLED: ${{ steps.ubuntu-dependencies.outputs.cache-hit }}
+          RASA_INSTALLED: ${{ steps.prepare-job.outputs.CACHE_LOADED }}
         run: |
-          sudo apt-get -y install libpq-dev
           make install-mitie
-          make install-nlu-pii-channels | tee .output
-          make install-monitoring | tee .output
-          if grep 'The lock file is not up to date' .output; then exit 1; fi
-          make prepare-tests-ubuntu
+          if [[ "${RASA_INSTALLED}" == 'false' ]]; then
+            make install-nlu-pii-channels | tee .output
+            make install-monitoring | tee .output
+            if grep 'The lock file is not up to date' .output; then exit 1; fi
+          fi
+          if [[ "${UBUNTU_DEPENDENCIES_INSTALLED}" == 'false' ]]; then
+            sudo apt-get -y install libpq-dev
+            make prepare-tests-ubuntu
+          fi
 
       - name: Install spaCy language model
         run: |
@@ -1783,16 +2115,11 @@ jobs:
           hf download urchade/gliner_multi_pii-v1 --repo-type model --local-dir models --cache-dir models
         shell: bash
 
-      - name: Install ddtrace on Linux
-        run: poetry run pip install -U ddtrace
-
       - name: Test Code 🔍 (multi-process)
         env:
-          JOBS: 6
+          JOBS: logical
           PYTHONUTF8: 1
-          DD_SERVICE: rasa
-          DD_ARGS: --ddtrace --ddtrace-patch-all --junitxml=unit-tests-results.xml
-          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_ARGS: --junitxml=unit-tests-results.xml
           HUGGINGFACE_HUB_CACHE_DIR: ${{ github.workspace }}/models
           GLINER_MODEL_PATH: ${{ github.workspace }}/models
           TRANSFORMERS_OFFLINE: 0
@@ -1803,26 +2130,23 @@ jobs:
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Prepare test results
-        if: always()
+        if: success() || failure()
         run: mv coverage.xml ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
 
       - name: Save Test Results
-        if: always()
+        if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-            name: unit-tests-results-test-anonymization-python-${{ matrix.python-version }}
-            path: |
-              ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
-
+          name: unit-tests-results-test-anonymization-python-${{ matrix.python-version }}-runner
+          path: |
+            ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
 
   run-test-to-monitor-memory-consumption-and-display-on-PR:
     name: Run test to monitor memory consumption and display on PR
     runs-on: warp-ubuntu-latest-x64-2x
-    needs: [ rasa-private-dev-docker-image, check-integration-tests-requirements ]
-    if: ${{ needs.check-integration-tests-requirements.outputs.rasa-core-dependencies-files == 'true' || needs.check-integration-tests-requirements.outputs.poetry-dependency-updates == 'true' }}
+    needs: [install-and-cache-rasa, check-code-changes]
+    if: ${{ needs.check-code-changes.outputs.rasa-core-dependencies-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
     timeout-minutes: 30
-    env:
-      RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
 
     steps:
       - name: Check out code
@@ -1833,14 +2157,17 @@ jobs:
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
 
-      - name: Download image artifact
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
+        # Load cached Rasa if cache exists
+      - name: Load cached Rasa
+        id: cached-rasa
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
-          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+          path: ${{ github.workspace }}/.venv
+          key: rasa-default-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
 
-      - name: Load Docker image
-        run: |
-          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
+      - name: Install Rasa
+        if: ${{ steps.cached-rasa.outputs.cache-hit != 'true' }}
+        run: make install
 
       - name: Create tmp directory
         run: |
@@ -1850,28 +2177,26 @@ jobs:
         uses: ./.github/actions/rasa-memory-consumption-test
         id: read-max-rss
         with:
-            RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-            RASA_PRO_DEV_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-            RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-            OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Display max memory consumption for `rasa init` and `rasa train` exceeding threshold on PR
         if: github.event_name == 'pull_request' && success()
         run: |
-            if [ "${{ steps.read-max-rss.outputs.max_rss_mb }}" -gt 30 ]; then
-                gh pr comment ${{ github.event.pull_request.number }} --body "💔 The maximum resident set size (memory consumption) during \`rasa init\` is **${{ steps.read-max-rss.outputs.max_rss_mb }} MB**, which exceeds the average threshold of 30MB." --edit-last
-            fi
-            if [ "${{ steps.read-max-rss.outputs.max_rss_train_mb }}" -gt 30 ]; then
-                gh pr comment ${{ github.event.pull_request.number }} --body "💔 The maximum resident set size (memory consumption) during \`rasa train\` is **${{ steps.read-max-rss.outputs.max_rss_train_mb }} MB**, which exceeds the average threshold of 30MB." --edit-last
-            fi
+          if [ "${{ steps.read-max-rss.outputs.max_rss_mb }}" -gt 30 ]; then
+              gh pr comment ${{ github.event.pull_request.number }} --body "💔 The maximum resident set size (memory consumption) during \`rasa init\` is **${{ steps.read-max-rss.outputs.max_rss_mb }} MB**, which exceeds the average threshold of 30MB." --edit-last
+          fi
+          if [ "${{ steps.read-max-rss.outputs.max_rss_train_mb }}" -gt 30 ]; then
+              gh pr comment ${{ github.event.pull_request.number }} --body "💔 The maximum resident set size (memory consumption) during \`rasa train\` is **${{ steps.read-max-rss.outputs.max_rss_train_mb }} MB**, which exceeds the average threshold of 30MB." --edit-last
+          fi
         env:
           GH_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}
         shell: bash
 
       - name: Remove tmp directory
-        if: always()
+        if: success() || failure()
         run: |
-            rm -rf /tmp/rasa-memory-test
+          rm -rf /tmp/rasa-memory-test
 
   publish-test-results:
     runs-on: warp-ubuntu-latest-x64-2x
@@ -1904,7 +2229,7 @@ jobs:
           path: artifacts
 
       - name: Publish integration test results
-        if: always()
+        if: success() || failure()
         uses: EnricoMi/publish-unit-test-result-action@afb2984f4d89672b2f9d9c13ae23d53779671984 # v2.19.0
         with:
           files: "artifacts/**/integration-results-*.xml"
@@ -1912,9 +2237,10 @@ jobs:
 
   sonarqube:
     name: SonarQube
-    runs-on: warp-ubuntu-latest-x64-2x
-    needs: [ unit-test, test-anonymization ]
-     # We don't want to run the code quality checks on scheduled runs
+    runs-on: warp-ubuntu-latest-x64-16x
+    needs:
+      [unit-test, test-anonymization]
+      # We don't want to run the code quality checks on scheduled runs
     if: ${{ inputs.full_ci_mode != 'false' && !cancelled() }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -1931,7 +2257,7 @@ jobs:
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@1a6d90ebcb0e6a6b1d87e37ba693fe453195ae25 # v5.3.1
         env:
-          GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}  # Needed to get PR information, if any
+          GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   clean-docker-image-artifact:
@@ -1940,8 +2266,6 @@ jobs:
     needs:
       - train-templates-dev
       - rasa-private-dev-docker-image
-      - rasa-private-dev-train-the-model
-      - deploy-rasa-private-helm-chart
       - tracing-integration-test
       - metric-integration-test
       - custom-action-integration-tests
@@ -1970,7 +2294,6 @@ jobs:
             docker-image-*
             template-artifacts
 
-
 #Temporarily disabled until we can ensure proper cost controls and selective triggering is in place
 #  analyse-and-fix-test-errors-in-ci:
 #      runs-on: warp-ubuntu-latest-x64-2x
@@ -1981,7 +2304,7 @@ jobs:
 #        contents: write
 #        issues: read
 #        actions: write
-#      if: ${{ inputs.full_ci_mode != 'false' && !(inputs.pr-author == 'rasabot') && always() && github.event_name == 'pull_request' && contains(join(needs.*.result, ','), 'failure') }}
+#      if: ${{ inputs.full_ci_mode != 'false' && !(inputs.pr-author == 'rasabot') && (success() || failure()) && github.event_name == 'pull_request' && contains(join(needs.*.result, ','), 'failure') }}
 #      needs:
 #        - unit-test
 #        - test-anonymization
@@ -2006,8 +2329,6 @@ jobs:
 #          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 #          with:
 #            token: ${{ secrets.WORKFLOW_TOKEN }} # Use fine-grained PAT with `workflows` permission, to allow updates to CI config in `.github/workflows/**` also if required
-#        - name: Free up disk-space
-#          uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
 #        - name: Configure AWS credentials
 #          uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 # v4.1.0
 #          with:

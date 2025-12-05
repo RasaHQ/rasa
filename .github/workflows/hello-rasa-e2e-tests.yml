@@ -40,7 +40,6 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           PYTHON_VERSION: ${{ matrix.python_version }}
-          MATRIX_JOB: e2e-tests-${{ matrix.template }}
           RASA_DEFAULT_INSTALLATION_ONLY: "true"
 
       - name: Train Rasa model

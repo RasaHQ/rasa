@@ -3,8 +3,24 @@ name: Scheduled CI Tests
 on:
   schedule:
     # Runs at 3AM Monday to Friday
-    - cron: '0 3 * * 1-5'
+    - cron: "0 3 * * 1-5"
   workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-1
+  DEFAULT_PYTHON_VERSION: "3.10"
+  TEMPLATES: "telco finance basic"
+  RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-private-dev
+  RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-sdk-dev
+  POSTGRES_HOST: rasa-pro-integration-tests-db.cvgblmmqghrx.eu-west-1.rds.amazonaws.com
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: integration_tests_user
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD_AWS }}
+  POSTGRES_DB: integrationtestsdb
+
+permissions:
+  contents: read
+  id-token: write
 
 # Reusing continous-integration.yml workflow
 # Inputs:
@@ -16,9 +32,256 @@ jobs:
     with:
       python-versions: '["3.10", "3.11"]'
       # We don't want to run the code quality checks on scheduled runs
-      run_code_quality: 'false'
+      run_code_quality: "false"
       # We only want to run the CI checks for unit tests that need to be run against multiple python versions
-      full_ci_mode: 'false'
+      full_ci_mode: "false"
       pr-author: ${{ github.event.pull_request.user.login }}
       pr-is-draft: ${{ github.event.pull_request.draft }}
     secrets: inherit
+
+  rasa-init-sanity-check:
+    runs-on: warp-ubuntu-latest-x64-2x
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+        template:
+          - default
+          - tutorial
+          - basic
+          - finance
+          - telco
+        install-group:
+          - default
+          - nlu
+          - channels
+          - full
+        install-method:
+          - poetry
+          - pip
+          - uv
+        exclude:
+          - python-version: "3.9"
+            template: tutorial
+          - python-version: "3.9"
+            template: basic
+          - python-version: "3.9"
+            template: finance
+          - python-version: "3.9"
+            template: telco
+          - python-version: "3.9"
+            install-method: pip
+          - python-version: "3.9"
+            install-method: uv
+    name: rasa init Py${{ matrix.python-version }} ${{ matrix.install-group }}-group (with ${{ matrix.install-method }} install) ${{ matrix.template }}-template
+    env:
+      RASA_INIT_TEST_DIRECTORY: test-rasa-init
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Python ${{ matrix.python-version }} and install rasa-pro (via ${{ matrix.install-method }}) with default installation
+        if: ${{ matrix.python-version != '3.9' && matrix.install-group == 'default' }}
+        uses: ./.github/actions/setup-python-env
+        with:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+          RASA_DEFAULT_INSTALLATION_ONLY: "true"
+          DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL: ${{ matrix.install-method }}
+
+      - name: Setup Python ${{ matrix.python-version }} and install rasa-pro (via ${{ matrix.install-method }}) with ${{ matrix.install-group }} group
+        if: ${{ matrix.python-version != '3.9' && matrix.install-group != 'default'  }}
+        uses: ./.github/actions/setup-python-env
+        with:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+          OPTIONAL_GROUP_TO_INSTALL: ${{ matrix.install-group }}
+          RASA_DEFAULT_INSTALLATION_ONLY: "false"
+          DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL: ${{ matrix.install-method }}
+
+      - name: Set up Python 3.9
+        if: ${{ matrix.python-version == '3.9' }}
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Read Poetry Version 🔢
+        if: ${{ matrix.python-version == '3.9' }}
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> "${GITHUB_ENV}"
+
+      - name: Install Poetry ${{ env.POETRY_VERSION }}
+        if: ${{ matrix.python-version == '3.9' }}
+        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1.4.1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: Check error warning on Rasa install if using Python 3.9
+        if: ${{ matrix.python-version == '3.9' }}
+        run: |
+          make install > error-log 2>&1 || true
+          echo 'Error log:'
+          cat error-log
+          echo 'Search log for error, on Rasa installation in Python 3.9 environment:'
+          grep -E 'Current Python version \(3.9.[0-9]+\) is not allowed by the project \(>=3.10.0,<3.14\)' error-log
+
+      - name: Make empty directory for `rasa init`
+        run: mkdir "${RASA_INIT_TEST_DIRECTORY}"
+
+      - name: Sanity check of `rasa init`
+        if: ${{ matrix.python-version != '3.9' }}
+        working-directory: ${{ env.RASA_INIT_TEST_DIRECTORY }}
+        env:
+          LLM_API_HEALTH_CHECK: true
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          TEMPLATE: ${{ matrix.template }}
+        run: rasa init --template "${TEMPLATE}" --no-prompt --debug
+
+  rasa-private-dev-train-the-model:
+    name: Train the model and upload to S3
+    runs-on: warp-ubuntu-latest-x64-2x
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Load cached Rasa Docker image
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: rasa-docker-image.tar.gz
+          key: rasa-docker-image-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+          fail-on-cache-miss: true
+
+      - name: Load Docker image
+        run: |
+          gunzip -c rasa-docker-image | docker load
+
+      - name: Rasa Train
+        run: |
+          make train-rds-tracker-bot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile')
+          MODEL_NAME: model-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+          postgres-host: ${{ env.POSTGRES_HOST }} # required if tracker-store-type is sql
+          postgres-port: ${{ env.POSTGRES_PORT }} # required if tracker-store-type is sql
+          postgres-user: ${{ env.POSTGRES_USER }} # required if tracker-store-type is sql
+          postgres-password: ${{ env.POSTGRES_PASSWORD }} # required if tracker-store-type is sql
+          postgres-db: ${{ env.POSTGRES_DB }} # required if tracker-store-type is sql
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload the model to S3
+        run: |
+          aws s3 cp $MODEL_FILE_PATH s3://rasa-pro-ci-trained-models/ \
+          --region eu-west-1 \
+          --endpoint-url https://s3.eu-west-1.amazonaws.com
+        env:
+          MODEL_FILE_PATH: tests_deployment/integration_tests_tracker_stores/sql_tracker_store/calm-demo-bot/models/model-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+
+  deploy-rasa-private-helm-chart:
+    name: Deploy rasa private helm chart
+    runs-on: warp-ubuntu-latest-x64-2x
+    needs: rasa-private-dev-train-the-model
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python 3.10 🐍
+        id: setup-python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Set stack name
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "STACK_NAME=pr-${{ github.event.number }}" >> $GITHUB_ENV
+          else
+            echo "STACK_NAME=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          fi
+
+      - name: Deploy Rasa Pro Dev Helm Chart
+        uses: ./.github/actions/setup-build-for-helm-deploy
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          aws-region: ${{ env.AWS_REGION }}
+          aws-assume-role-session-token: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          rasa-pro-helm-repo: oci://europe-west3-docker.pkg.dev/rasa-releases/helm-charts/rasa
+          rasa-pro-helm-version: 1.2.0
+          rasa-pro-version: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
+          rasa-pro-dev-repository: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          helm-deploy-rasa-pro-license: ${{ secrets.HELM_DEPLOY_RASA_PRO_LICENSE }}
+          helm-deploy-openai-api-key: ${{ secrets.HELM_DEPLOY_OPENAI_API_KEY }}
+          helm-deploy-certificate-arn: ${{ secrets.HELM_DEPLOY_CERTIFICATE_ARN }}
+          helm-deploy-hosted-zone-id: ${{ secrets.HELM_DEPLOY_HOSTED_ZONE_ID }}
+          helm-deploy-pulumi-access-token: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
+          model-file-name: model-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
+          aws-model-s3-bucket: rasa-pro-ci-trained-models
+          aws-model-s3-endpoint-url: https://s3.eu-west-1.amazonaws.com
+          aws-model-s3-access-key-id: ${{ secrets.AWS_MODEL_S3_ACCESS_KEY_ID }}
+          aws-model-s3-secret-access-key: ${{ secrets.AWS_MODEL_S3_SECRET_ACCESS_KEY }}
+          stack-name: ${{ env.STACK_NAME }}
+          # Use the image tag as project name and PR name to distinguish deployments
+          project-name: rasa-pro-${{ env.STACK_NAME }}
+          pr-name: ${{ env.STACK_NAME }}
+          domain-name: rasapro.rasa-dev.io
+          postgres-host: ${{ env.POSTGRES_HOST }} # required if tracker-store-type is sql
+          postgres-port: ${{ env.POSTGRES_PORT }} # required if tracker-store-type is sql
+          postgres-user: ${{ env.POSTGRES_USER }} # required if tracker-store-type is sql
+          postgres-password: ${{ env.POSTGRES_PASSWORD }} # required if tracker-store-type is sql
+          postgres-db: ${{ env.POSTGRES_DB }} # required if tracker-store-type is sql
+
+  pulumi-destroy:
+    name: Destroy pulumi resources
+    needs: deploy-rasa-private-helm-chart
+    runs-on: warp-ubuntu-latest-x64-2x
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set stack name
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "STACK_NAME=pr-${{ github.event.number }}" >> $GITHUB_ENV
+          else
+            echo "STACK_NAME=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          fi
+
+      - name: Destroy Pulumi resources
+        uses: ./.github/actions/destroy-pulumi-resources
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          pulumi-access-token: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
+          stack-name: ${{ env.STACK_NAME }}
+
+  clean-docker-image-artifact:
+    name: Clean docker image artifact
+    if: success()
+    runs-on: warp-ubuntu-latest-x64-2x
+    needs:
+      - rasa-private-dev-train-the-model
+      - deploy-rasa-private-helm-chart
+
+    steps:
+      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
+        with:
+          failOnError: false
+          name: |
+            docker-image-*
+            template-artifacts

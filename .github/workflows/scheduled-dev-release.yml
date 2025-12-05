@@ -1,12 +1,11 @@
 name: Weekly Scheduled Dev releases
 on:
   schedule:
-    - cron: '0 9 * * 1' # Every Monday at 9:00 UTC
+    - cron: "0 9 * * 1" # Every Monday at 9:00 UTC
   workflow_dispatch:
 
-
 env:
-    DEFAULT_PYTHON_VERSION: "3.11" # Default Python version for the workflow
+  DEFAULT_PYTHON_VERSION: "3.11" # Default Python version for the workflow
 
 jobs:
   run_script_and_tag_weekly_dev_release:
@@ -21,9 +20,6 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           ref: main # update this to branch to test
-
-      - name: Free up disk-space
-        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b # TODO: Change to `main` once the composite-action is merged to main
 
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
@@ -47,11 +43,11 @@ jobs:
           DATE=$(date +'%Y%m%d')
           echo "Trying to find the latest rasa version..."
           LATEST_RASA_MINOR=$(python -c "import sys; import os; sys.path.append('${{ github.workspace }}/rasa'); from rasa.version import __version__; print(__version__)")
-          
+
            # Find latest rasa version on branch and split dev tag if available
           if [[ "${LATEST_RASA_MINOR}" != *"dev"* && "${LATEST_RASA_MINOR}" != *"a"* ]]; then         
               echo "Current RASA version: ${LATEST_RASA_MINOR}"
-          
+
               ## Increment the minor version for the weekly dev release and make the patch version 0, e.g. 3.12.17 to 3.13.0
               LATEST_WEEKLY_VERSION=$(python -c "v='${LATEST_RASA_MINOR}'; parts=v.split('.'); parts[1]=str(int(parts[1])+1); parts[2]='0'; print('.'.join(parts))")
           else
@@ -60,7 +56,7 @@ jobs:
               echo "Current RASA version: ${LATEST_RASA_MINOR}"
               LATEST_WEEKLY_VERSION="${LATEST_RASA_MINOR}"
             fi
-          
+
           echo "Composing weekly build tag name..."
           GH_TAG=${LATEST_WEEKLY_VERSION}.dev${DATE}
           echo "New weekly dev release version: ${GH_TAG}"
@@ -94,7 +90,7 @@ jobs:
           delete-branch: true
           title: "Prepare release of version ${{ steps.set_tagname.outputs.tag_name }}"
           draft: false
-          base: main  # or the appropriate branch name
+          base: main # or the appropriate branch name
 
       - name: ✅ Approve the pull request
         if: steps.create_pr.outcome == 'success'

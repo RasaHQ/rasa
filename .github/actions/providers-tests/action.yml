@@ -58,12 +58,9 @@ runs:
         ref: ${{ env.RASA_PRO_VERSION }}
         path: rasa-pro
 
-    - name: Free up disk-space
-      uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b # TODO: Change to `main` once the composite-action is merged to main
-
     - name: Setup Python Environment
       id: setup-python
-      uses: ./rasa-private/.github/actions/setup-python-env
+      uses: ./.github/actions/setup-python-env
       with:
         PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
         WORKING_DIRECTORY: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
@@ -147,7 +144,7 @@ runs:
 
     - name: Cache model to be used with vLLM
       if: ${{ inputs.provider == 'self-hosted-vllm' }}
-      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
       id: self-hosted-vllm-model-cache
       with:
         path: models
@@ -205,7 +202,7 @@ runs:
 
     - name: Cache model to be used with Llama-CPP
       if: ${{ inputs.provider == 'self-hosted-llama-cpp' }}
-      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
       id: self-hosted-llama-cpp-model-cache
       with:
         path: models

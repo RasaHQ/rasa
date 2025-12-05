@@ -81,37 +81,37 @@ tracing-and-metrics-files:
   - rasa/shared/core/domain.py
 
 sequential-integration-files: # files related to sequential integration feature.Only tests run here are from tests/integration_tests/core/test_tracker_store.py
-    - rasa/core/tracker_stores/redis_tracker_store.py
-    - rasa/core/tracker_stores/sql_tracker_store.py
-    - rasa/core/tracker_stores/tracker_store.py
-    - rasa/shared/core/trackers.py
-    - rasa/shared/core/domain.py
-    - rasa/shared/core/events.py
+  - rasa/core/tracker_stores/redis_tracker_store.py
+  - rasa/core/tracker_stores/sql_tracker_store.py
+  - rasa/core/tracker_stores/tracker_store.py
+  - rasa/shared/core/trackers.py
+  - rasa/shared/core/domain.py
+  - rasa/shared/core/events.py
 
 non-sequential-integration-files:
-    - rasa/studio/**
-    - rasa/shared/providers/_utils.py
-    - rasa/shared/core/domain.py
-    - rasa/shared/core/events.py
-    - rasa/shared/core/trackers.py
-    - rasa/e2e_tests/**
-    - rasa/core/actions/**
-    - rasa/core/agent.py
-    - rasa/core/tracker_stores/**
-    - rasa/core/processor.py
-    - rasa/core/lock_store.py
-    - rasa/core/agent.py
-    - rasa/cli/e2e_test.py
-    - rasa/cli/data.py
-    - rasa/cli/telemetry.py
-    - rasa/model_training.py
-    - rasa/telemetry.py
-    - rasa/hooks.py
-    - rasa/plugin.py
-    - rasa/core/channels/channel.py
-    - rasa/shared/core/events.py
-    - rasa/utils/licensing.py
-    - rasa/core/secrets_manager/**
+  - rasa/studio/**
+  - rasa/shared/providers/_utils.py
+  - rasa/shared/core/domain.py
+  - rasa/shared/core/events.py
+  - rasa/shared/core/trackers.py
+  - rasa/e2e_tests/**
+  - rasa/core/actions/**
+  - rasa/core/agent.py
+  - rasa/core/tracker_stores/**
+  - rasa/core/processor.py
+  - rasa/core/lock_store.py
+  - rasa/core/agent.py
+  - rasa/cli/e2e_test.py
+  - rasa/cli/data.py
+  - rasa/cli/telemetry.py
+  - rasa/model_training.py
+  - rasa/telemetry.py
+  - rasa/hooks.py
+  - rasa/plugin.py
+  - rasa/core/channels/channel.py
+  - rasa/shared/core/events.py
+  - rasa/utils/licensing.py
+  - rasa/core/secrets_manager/**
 
 enterprise-search-policy-files:
   - rasa/core/policies/enterprise_search_policy*
@@ -155,3 +155,35 @@ concurrent-lockstore-files:
   - rasa/core/concurrent_lock_store.py
   - rasa/core/lock_store.py
   - rasa/utils/endpoints.py
+cli-files:
+  - rasa/cli/**
+  - rasa/shared/**
+  - rasa/utils/**
+
+agent-files:
+  - rasa/agents/**
+  - rasa/dialogue_understanding/**
+  - rasa/engine/**
+  - rasa/core/**/*agent*.py
+  - rasa/cli/**/train.py
+  - rasa/core/policies/flows/**
+  - rasa/shared/agents/**
+  - rasa/shared/core/**
+  - rasa/shared/engine/**
+  - rasa/shared/utils/mcp/**
+
+nlu-files:
+  - rasa/nlu/**
+  - rasa/shared/nlu/**
+
+policy-files:
+  - rasa/core/policies/**
+  - rasa/shared/core/policies/**
+
+action-files:
+  - rasa/core/actions/**
+  - rasa/shared/core/**
+  - rasa/shared/utils/**
+
+channel-files:
+  - rasa/core/channels/**

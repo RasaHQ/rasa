@@ -3,22 +3,22 @@ description: Trains Rasa Pro templates and creates artifacts
 
 inputs:
   tag_version:
-    description: 'Tag version for naming artifacts'
+    description: "Tag version for naming artifacts"
     required: true
   templates:
-    description: 'Space-separated list of templates to train'
+    description: "Space-separated list of templates to train"
     required: true
-    default: 'telco finance basic'
+    default: "telco finance basic"
   rasa_pro_license:
-    description: 'Rasa Pro license key'
+    description: "Rasa Pro license key"
     required: true
   openai_api_key:
-    description: 'OpenAI API key'
+    description: "OpenAI API key"
     required: true
   python_version:
-    description: 'Python version to use'
+    description: "Python version to use (must match cached version)"
     required: false
-    default: '3.11'
+    default: "3.10"
 
 outputs:
   artifacts_created:
@@ -26,7 +26,7 @@ outputs:
     value: ${{ steps.train-templates.outputs.artifacts_created }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Set up Python 🐍
       uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
@@ -39,14 +39,32 @@ runs:
         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
 
     - name: Install Poetry 🦄
-      uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
+      uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1.4.1
       with:
-        poetry-version: ${{ env.POETRY_VERSION }}
+        version: ${{ env.POETRY_VERSION }}
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+        installer-parallel: true
+
+    # Restore cached venv if available
+    - name: Load cached venv
+      id: cached-rasa
+      uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+      with:
+        path: ${{ github.workspace }}/.venv
+        key: rasa-default-install-${{ runner.os }}-${{ inputs.python_version }}-${{ hashFiles('poetry.lock') }}
 
     - name: Build and install Rasa Pro package
+      if: ${{ steps.cached-rasa.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
         poetry install
+
+    - name: Activate virtualenv
+      shell: bash
+      run: |
+        . .venv/bin/activate
+        echo PATH=$PATH >> $GITHUB_ENV
 
     - name: Train all templates sequentially
       id: train-templates

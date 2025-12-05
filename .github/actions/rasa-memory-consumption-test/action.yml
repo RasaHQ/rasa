@@ -7,42 +7,21 @@ inputs:
   OPENAI_API_KEY:
     required: true
     description: "OpenAI API key"
-  RASA_PRO_DEV_REPOSITORY:
-    required: true
-    description: "Rasa Docker image repository"
-  RASA_IMAGE_TAG:
-    required: true
-    description: "Rasa Docker image tag"
 runs:
   using: "composite"
   steps:
     - name: Run rasa init, monitor memory
       working-directory: /tmp/rasa-memory-test
       shell: bash
-      run: |
-        /usr/bin/time -v docker run --rm \
-          -e RASA_PRO_LICENSE=$RASA_PRO_LICENSE \
-          -e OPENAI_API_KEY=$OPENAI_API_KEY \
-          -v /tmp/rasa-memory-test:/app \
-          $RASA_PRO_DEV_REPOSITORY:$RASA_IMAGE_TAG \
-          init --no-prompt > output.txt 2>&1
+      run: /usr/bin/time -v rasa init --no-prompt > output.txt 2>&1
       env:
         RASA_PRO_LICENSE: ${{ inputs.RASA_PRO_LICENSE }}
         OPENAI_API_KEY: ${{ inputs.OPENAI_API_KEY }}
-        RASA_PRO_DEV_REPOSITORY: ${{ inputs.RASA_PRO_DEV_REPOSITORY }}
-        RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
-
     - name: Run rasa train, monitor memory
       working-directory: /tmp/rasa-memory-test
       if: ${{ success() }}
       shell: bash
-      run: |
-        /usr/bin/time -v docker run --rm \
-        -e RASA_PRO_LICENSE=$RASA_PRO_LICENSE \
-        -e OPENAI_API_KEY=$OPENAI_API_KEY \
-        -v $(pwd):/app \
-        $RASA_PRO_DEV_REPOSITORY:$RASA_IMAGE_TAG \
-        train --fixed-model-name model > train_output.txt 2>&1
+      run: /usr/bin/time -v rasa train --fixed-model-name model > train_output.txt 2>&1
       env:
         RASA_PRO_LICENSE: ${{ inputs.RASA_PRO_LICENSE }}
         OPENAI_API_KEY: ${{ inputs.OPENAI_API_KEY }}

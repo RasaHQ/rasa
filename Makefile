@@ -157,16 +157,17 @@ prepare-tests-windows-gha:
 	powershell -command "Install-ChocoPackage wget graphviz"
 
 test: clean  ## Run Rasa unit tests using pytest.
-	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-	OMP_NUM_THREADS=1 \
-	TF_CPP_MIN_LOG_LEVEL=2 \
-	poetry run \
-		pytest tests \
-			-n $(JOBS) \
-			--dist loadscope \
-			--cov rasa \
-			--ignore $(INTEGRATION_TEST_FOLDER)/
+# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
+OMP_NUM_THREADS=1 \
+TF_CPP_MIN_LOG_LEVEL=2 \
+poetry run \
+	pytest tests \
+		-n $(JOBS) \
+		--dist loadscope \
+		--reruns 3 --reruns-delay 1 \
+		--cov rasa \
+		--ignore $(INTEGRATION_TEST_FOLDER)/
 
 test-integration:  ## Run general integration tests using pytest. It will run all integration tests except ones for metrics, tracing, custom actions and enterprise search.
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
@@ -177,6 +178,7 @@ ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))
 	poetry run \
 		pytest $(INTEGRATION_TEST_FOLDER)/ \
 			-n $(JOBS) \
+			--reruns 3 --reruns-delay 1 \
 			-m $(INTEGRATION_TEST_PYTEST_MARKERS) \
 			--dist loadgroup  \
 			--ignore $(TRACING_INTEGRATION_TEST_FOLDER) \
@@ -196,6 +198,7 @@ else
 	poetry run \
 		pytest $(INTEGRATION_TEST_FOLDER)/ \
 			-n $(JOBS) \
+			--reruns 3 --reruns-delay 1 \
 			-m $(INTEGRATION_TEST_PYTEST_MARKERS) \
 			--dist loadgroup \
 			--ignore $(TRACING_INTEGRATION_TEST_FOLDER) \
@@ -257,12 +260,13 @@ test-audio-manual:  ## Run audio manual tests
 	OMP_NUM_THREADS=1 \
 	TF_CPP_MIN_LOG_LEVEL=2 \
 	poetry run \
-		pytest tests/core/channels/voice_ready tests/core/channels/voice_stream \
-			-n $(JOBS) \
-			--dist loadscope \
-			--cov rasa \
-			--cov-report=xml \
-			--cov-branch \
+	pytest tests/core/channels/voice_ready tests/core/channels/voice_stream \
+		-n $(JOBS) \
+		--dist loadscope \
+		--reruns 3 --reruns-delay 1 \
+		--cov rasa \
+		--cov-report=xml \
+		--cov-branch \
 
 test-agents: PYTEST_MARKER=category_agents
 test-agents: DD_ARGS := $(or $(DD_ARGS),)
@@ -270,10 +274,11 @@ test-agents: test-marker
 
 test-voice-integration: ## Run voice integration tests
 	poetry run \
-        pytest $(VOICE_READY_CONNECTOR_INTEGRATION_TEST_PATH) \
-        $(VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH) \
-        -n $(JOBS) \
-        --junitxml=integration-test-results.xml
+		pytest $(VOICE_READY_CONNECTOR_INTEGRATION_TEST_PATH) \
+		$(VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH) \
+		-n $(JOBS) \
+		--reruns 3 --reruns-delay 1 \
+		--junitxml=integration-test-results.xml
 
 test-dm1-tensorflow: PYTEST_MARKER=category_dm1_tensorflow
 test-dm1-tensorflow: prepare-spacy prepare-mitie prepare-transformers test-marker
@@ -284,22 +289,27 @@ test-gh-actions:  ## Run all tests for GitHub Actions
 	poetry run \
 		pytest .github/tests --cov .github/scripts
 
+RUNNER_ID ?= 1
+NUMBER_OF_RUNNERS ?= 1
 test-marker: clean ## Run marker tests
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
 	TRANSFORMERS_OFFLINE=$(TRANSFORMERS_OFFLINE) \
 	OMP_NUM_THREADS=1 \
 	TF_CPP_MIN_LOG_LEVEL=2 \
-	poetry run \
-		pytest tests \
+	poetry run pytest tests \
 			-n $(JOBS) \
 			--dist loadscope \
+			--reruns 3 --reruns-delay 1 \
+			--splits $(NUMBER_OF_RUNNERS) --group $(RUNNER_ID) \
 			-m "$(PYTEST_MARKER)" \
 			--cov=rasa \
 			--cov-report=xml \
 			--cov-branch \
 			--ignore $(INTEGRATION_TEST_FOLDER)/ $(DD_ARGS)
 
+## Note : running pytest with poetry run will set the PYTHONPATH to the root of the project automatically.
+## Removing this will cause issues with imports in tests and `pytest not found` errors.
 release:  ## Prepare a release.
 	poetry run python scripts/release.py prepare --interactive
 
@@ -352,6 +362,7 @@ test-tracing-integration:  ## Run the tracing integration tests. Make sure to ru
 			-n $(JOBS) \
 			--ignore $(METRICS_INTEGRATION_TEST_PATH) \
 			--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+			--reruns 3 --reruns-delay 1 \
 			--junitxml=integration-results-tracing.xml
 
 
@@ -384,6 +395,7 @@ test-metrics-integration:  ## Run the metrics integration tests. Make sure to ru
 	poetry run \
 		pytest $(METRICS_INTEGRATION_TEST_PATH) \
 			-n $(JOBS) \
+			--reruns 3 --reruns-delay 1 \
 			--junitxml=integration-results-metric.xml
 
 
@@ -483,6 +495,7 @@ stop-action-server-calm-containers: ## Stop the action server integration test c
 TEST_CUSTOM_ACTION_INTEGRATION_COMMAND = poetry run \
 		pytest $(INTEGRATION_TEST_PATH) \
 		-n $(JOBS) \
+		--reruns 3 --reruns-delay 1 \
 		--junitxml=$(RESULTS_FILE)
 
 
@@ -537,8 +550,8 @@ run-rasa-calm-demo-test-containers: ## Run the containers.
 TEST_ENTERPRISE_SEARCH_INTEGRATION_COMMAND = poetry run \
 		pytest $(ENTERPRISE_SEARCH_TEST_PATH) \
 		-n $(JOBS) \
+		--reruns 3 --reruns-delay 1 \
 		--junitxml=$(RESULTS_FILE)
-
 
 
 # Run the enterprise search integration tests with CALM bot
@@ -554,6 +567,7 @@ stop-rasa-calm-demo-bot-test-containers: ## Stop the metrics integration test co
 TEST_CHANNEL_CONNECTOR_INTEGRATION_COMMAND = poetry run \
         pytest $(CHANNEL_CONNECTOR_TEST_PATH) \
         -n $(JOBS) \
+        --reruns 3 --reruns-delay 1 \
         --junitxml=$(RESULTS_FILE) \
         --ignore $(VOICE_READY_CONNECTOR_INTEGRATION_TEST_PATH) \
         --ignore $(VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH)
@@ -585,9 +599,10 @@ test-channel-connectors-integration-with-calm-bot: ## Run the channel connectors
 # Run the Custom Broker integration tests with CALM bot
 test-custom-broker-integration-with-calm-bot:
 	poetry run \
-        pytest tests/integration_tests/core/custom_components/test_custom_broker.py \
-        -n $(JOBS) \
-        --junitxml=integration-results-custom-broker-with-calm-bot-results.xml
+		pytest tests/integration_tests/core/custom_components/test_custom_broker.py \
+		-n $(JOBS) \
+		--reruns 3 --reruns-delay 1 \
+		--junitxml=integration-results-custom-broker-with-calm-bot-results.xml
 
 stop-channel-connectors-integration-containers: ## Stop the channel connectors integration test containers.
 	$(STOP_CHANNEL_CONNECTOR_CONTAINER_COMMAND)
@@ -612,6 +627,7 @@ test-mongodb-tracker-store:  ## Run the MongoDB tracker store integration tests.
 	poetry run \
 		pytest $(TRACKER_STORE_INTEGRATION_TEST_PATH)/test_mongo_tracker_store.py \
 			-n $(JOBS) \
+			--reruns 3 --reruns-delay 1 \
 			--junitxml=integration-results-mongo-tracker-store.xml
 
 run-otel-collector: ## Run OTEL collector, which would recieve traces and metrics, and export them to OTEL monitoring backend
@@ -643,6 +659,7 @@ test-dynamo-tracker-store:  ## Run the dynamo tracker store integration tests. M
 	poetry run \
 		pytest $(TRACKER_STORE_INTEGRATION_TEST_PATH)/test_dynamo_tracker_store.py \
 			-n $(JOBS) \
+			--reruns 3 --reruns-delay 1 \
 			--junitxml=integration-results-dynamo-tracker-store.xml
 
 TRAIN_PII_BOT_COMMAND = docker run --rm \
@@ -692,6 +709,7 @@ stop-pii-calm-containers: ## Stop the PII integration test containers for CALM b
 TEST_PII_INTEGRATION_COMMAND = poetry run \
 		pytest $(INTEGRATION_TEST_PATH) \
 		-n $(JOBS) \
+		--reruns 3 --reruns-delay 1 \
 		--junitxml=$(RESULTS_FILE)
 
 # Run the PII integration tests with CALM bot

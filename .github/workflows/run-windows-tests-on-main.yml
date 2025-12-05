@@ -58,10 +58,10 @@ jobs:
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: .venv
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ env.pythonLocation }}
 
       - name: Clear Poetry cache
         if: steps.cache-poetry.outputs.cache-hit == 'true'
@@ -140,7 +140,6 @@ jobs:
           make ${{ matrix.test }}
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
-
   test-anonymization:
     name: Run Anonymization Unit Tests
     runs-on: windows-2022
@@ -175,10 +174,10 @@ jobs:
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: .venv
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ env.pythonLocation }}
 
       - name: Clear Poetry cache
         if: steps.cache-poetry.outputs.cache-hit == 'true'
@@ -235,15 +234,15 @@ jobs:
 
       - name: Download GliNER model for PII
         env:
-            HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
-            PYTHONIOENCODING: "utf-8"
+          HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
+          PYTHONIOENCODING: "utf-8"
         run: |
-            [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-            .\.venv\Scripts\activate
-            git config --global credential.helper cache
-            hf login --token ${{ env.HUGGINGFACE_API_KEY }} --add-to-git-credential
-            if (!(Test-Path models)) { mkdir models }
-            hf download urchade/gliner_multi_pii-v1 --repo-type model --local-dir models --cache-dir models
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          .\.venv\Scripts\activate
+          git config --global credential.helper cache
+          hf login --token ${{ env.HUGGINGFACE_API_KEY }} --add-to-git-credential
+          if (!(Test-Path models)) { mkdir models }
+          hf download urchade/gliner_multi_pii-v1 --repo-type model --local-dir models --cache-dir models
 
       - name: Install ddtrace on Windows
         run: |
@@ -299,10 +298,10 @@ jobs:
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: .venv
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ env.pythonLocation }}
 
       - name: Clear Poetry cache
         if: steps.cache-poetry.outputs.cache-hit == 'true'
@@ -370,7 +369,7 @@ jobs:
     name: Notify Slack
     runs-on: warp-ubuntu-latest-x64-2x
     if: always()
-    needs: [ test, test-anonymization, test-flaky ]
+    needs: [test, test-anonymization, test-flaky]
 
     steps:
       - name: Notify Slack of failure ⛔️

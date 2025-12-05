@@ -73,37 +73,37 @@ jobs:
         run: |
           REPO_NAME="rasa/rasa-private-dev"
           SEARCH_STRING="pr-${{ github.event.number }}"
-          
+
           echo "=== DEBUGGING ECR PUBLIC ==="
           echo "Repository Name: $REPO_NAME"
           echo "Search Pattern: $SEARCH_STRING"
           echo ""
-          
+
           echo "1. Testing AWS CLI access..."
           aws sts get-caller-identity
           echo ""
-          
+
           echo "2. Listing all repositories in the public registry..."
           aws ecr-public describe-repositories --region us-east-1 || echo "Failed to list repositories"
           echo ""
-          
+
           echo "3. Listing all images in the target repository..."
           aws ecr-public describe-images --repository-name $REPO_NAME --region us-east-1 --query "imageDetails[?imageTags!=null].{Tags:imageTags,Digest:imageDigest}" --output table || echo "Failed to list images"
           echo ""
-          
+
           echo "4. Listing all tags in the target repository..."
           ALL_TAGS=$(aws ecr-public describe-images --repository-name $REPO_NAME --region us-east-1 --query "imageDetails[?imageTags!=null].imageTags[]" --output text 2>/dev/null || echo "")
           echo "All tags found:"
           echo "$ALL_TAGS"
           echo ""
-          
+
           echo "5. Filtering tags that contain '$SEARCH_STRING'..."
           if [ -n "$ALL_TAGS" ]; then
             MATCHING_IMAGES=$(echo "$ALL_TAGS" | tr '\t' '\n' | grep "$SEARCH_STRING" || echo "")
           else
             MATCHING_IMAGES=""
           fi
-          
+
           if [ -z "$MATCHING_IMAGES" ]; then
             echo "No images found matching pattern: $SEARCH_STRING"
           else
