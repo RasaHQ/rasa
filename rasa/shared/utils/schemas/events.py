@@ -203,6 +203,18 @@ DIALOGUE_STACK_UPDATED = {
 ROUTING_SESSION_ENDED = {"properties": {"event": {"const": "routing_session_ended"}}}
 
 ERROR_HANDLED = {"properties": {"event": {"const": "error"}}}
+SESSION_PAUSED = {
+    "properties": {
+        "event": {"const": "session_paused"},
+        "reason": {"type": "string"},
+        "timestamp": {
+            "type": "number",
+            "description": "Epoch timestamp when the session was paused. "
+            "If not provided, the current time will be used.",
+        },
+    },
+    "required": ["event", "reason"],
+}
 
 EVENT_SCHEMA = {
     "type": "object",
@@ -250,6 +262,7 @@ EVENT_SCHEMA = {
         ROUTING_SESSION_ENDED,
         SESSION_ENDED,
         ERROR_HANDLED,
+        SESSION_PAUSED,
     ],
 }
 
