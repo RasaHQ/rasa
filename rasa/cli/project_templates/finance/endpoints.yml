@@ -59,7 +59,7 @@ model_groups:
     models:
       - provider: openai
         model: gpt-4o-2024-11-20
-        timeout: 7
+        timeout: 15
         max_completion_tokens: 256
   - id: openai-embeddings
     models:
