@@ -520,11 +520,12 @@ class LLMBasedCommandGenerator(
                     ),
                     "description": collect_step.description,
                 }
-                for collect_step in top_flow.get_collect_steps()
+                for collect_step in top_flow.get_collect_steps(deduplicate=True)
                 if self.is_extractable(collect_step, tracker, current_step)
             ]
         else:
             flow_slots = []
+
         return flow_slots
 
     def prepare_current_slot_for_template(

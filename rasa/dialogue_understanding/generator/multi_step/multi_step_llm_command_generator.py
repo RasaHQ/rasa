@@ -869,7 +869,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                     ),
                     "description": collect_step.description,
                 }
-                for collect_step in top_flow.get_collect_steps()
+                for collect_step in top_flow.get_collect_steps(deduplicate=True)
                 if self.is_extractable(collect_step, tracker, current_step)
             ]
         else:

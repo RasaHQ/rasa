@@ -327,7 +327,7 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
                         "description": q.description,
                         "allowed_values": allowed_values_for_slot(slots[q.collect]),
                     }
-                    for q in flow.get_collect_steps()
+                    for q in flow.get_collect_steps(deduplicate=True)
                 ]
 
             flow_docs.append(

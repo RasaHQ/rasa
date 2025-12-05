@@ -1010,6 +1010,466 @@ class TestLLMBasedCommandGenerator:
         # Then
         assert is_extractable
 
+    # Tests for prepare_current_flow_slots_for_template method
+    def test_prepare_current_flow_slots_for_template_basic(
+        self,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+    ):
+        """Test prepare_current_flow_slots_for_template with basic flow and slots."""
+        generator = base_command_generator_fixture
+
+        flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                name: a test flow
+                description: some test flow
+                steps:
+                - id: first_step
+                  collect: slot_1
+                  description: "Slot 1 description"
+                  ask_before_filling: false
+                - id: second_step
+                  collect: slot_2
+                  description: "Slot 2 description"
+                  ask_before_filling: false
+            """
+        )
+
+        tracker = DialogueStateTracker.from_events(
+            "test",
+            evts=[],
+            slots=[
+                TextSlot(name="slot_1", mappings=[]),
+                TextSlot(name="slot_2", mappings=[]),
+            ],
+        )
+
+        top_flow = flows.flow_by_id("test_flow")
+        assert top_flow is not None
+        current_step = top_flow.step_by_id("first_step")
+
+        result = generator.prepare_current_flow_slots_for_template(
+            top_flow, current_step, tracker
+        )
+
+        assert len(result) == 2
+        assert result[0]["name"] == "slot_1"
+        assert result[0]["value"] == "undefined"
+        assert result[0]["description"] == "Slot 1 description"
+        assert result[1]["name"] == "slot_2"
+        assert result[1]["value"] == "undefined"
+        assert result[1]["description"] == "Slot 2 description"
+
+    def test_prepare_current_flow_slots_for_template_deduplicates_by_slot_name(
+        self,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+    ):
+        """Test that prepare_current_flow_slots_for_template deduplicates slots by name.
+
+        This test covers the fix for slot duplication when a flow calls other flows
+        that collect the same slot multiple times.
+        """
+        generator = base_command_generator_fixture
+
+        flows = flows_from_str(
+            """
+            flows:
+              main_flow:
+                name: main flow
+                description: main flow that calls subflows
+                steps:
+                - id: step1
+                  collect: slot_support_ticket_title
+                  description: "Title of the ticket"
+                  ask_before_filling: false
+                - id: step2
+                  call: subflow_1
+                - id: step3
+                  call: subflow_2
+                - id: step4
+                  collect: slot_licenses_for_escalation
+                  description: "License IDs"
+                  ask_before_filling: false
+              subflow_1:
+                name: subflow 1
+                description: subflow that collects slot_support_ticket_title
+                steps:
+                - id: sub_step1
+                  collect: slot_support_ticket_title
+                  description: "Title of the ticket"
+                  ask_before_filling: false
+              subflow_2:
+                name: subflow 2
+                description: subflow that also collects slot_support_ticket_title
+                steps:
+                - id: sub_step2
+                  collect: slot_support_ticket_title
+                  description: "Title of the ticket"
+                  ask_before_filling: false
+                - id: sub_step3
+                  call: subflow_3
+              subflow_3:
+                name: subflow 3
+                description: nested subflow
+                steps:
+                - id: sub_step4
+                  collect: slot_support_ticket_title
+                  description: "Title of the ticket"
+                  ask_before_filling: false
+        """
+        )
+
+        tracker = DialogueStateTracker.from_events(
+            "test",
+            evts=[],
+            slots=[
+                TextSlot(name="slot_support_ticket_title", mappings=[]),
+                TextSlot(name="slot_licenses_for_escalation", mappings=[]),
+            ],
+        )
+
+        top_flow = flows.flow_by_id("main_flow")
+        assert top_flow is not None
+        current_step = top_flow.step_by_id("step1")
+
+        result = generator.prepare_current_flow_slots_for_template(
+            top_flow, current_step, tracker
+        )
+
+        # Should only have 2 unique slots, not duplicates
+        slot_names = [slot["name"] for slot in result]
+        assert len(slot_names) == 2
+        assert "slot_support_ticket_title" in slot_names
+        assert "slot_licenses_for_escalation" in slot_names
+
+        # slot_support_ticket_title should appear only once
+        assert slot_names.count("slot_support_ticket_title") == 1
+        assert slot_names.count("slot_licenses_for_escalation") == 1
+
+        # The first occurrence should be kept (from main_flow)
+        slot_ticket_title = next(
+            slot for slot in result if slot["name"] == "slot_support_ticket_title"
+        )
+        assert slot_ticket_title["description"] == "Title of the ticket"
+
+    @pytest.mark.parametrize(
+        "slot_1_value, slot_2_value, expected_value_1, expected_value_2",
+        [
+            (None, None, "undefined", "undefined"),
+            ("value_1", "value_2", "value_1", "value_2"),
+            ("value_1", None, "value_1", "undefined"),
+            (None, "value_2", "undefined", "value_2"),
+        ],
+    )
+    def test_prepare_current_flow_slots_for_template_with_slot_values(
+        self,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+        slot_1_value: Optional[str],
+        slot_2_value: Optional[str],
+        expected_value_1: str,
+        expected_value_2: str,
+    ):
+        """Test prepare_current_flow_slots_for_template with various slot value
+        combinations."""
+        generator = base_command_generator_fixture
+
+        flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                name: a test flow
+                description: some test flow
+                steps:
+                - id: first_step
+                  collect: slot_1
+                  description: "Slot 1 description"
+                  ask_before_filling: false
+                - id: second_step
+                  collect: slot_2
+                  description: "Slot 2 description"
+                  ask_before_filling: false
+            """
+        )
+
+        events = []
+        if slot_1_value is not None:
+            events.append(SlotSet("slot_1", slot_1_value))
+        if slot_2_value is not None:
+            events.append(SlotSet("slot_2", slot_2_value))
+
+        tracker = DialogueStateTracker.from_events(
+            "test",
+            evts=events,
+            slots=[
+                TextSlot(name="slot_1", mappings=[]),
+                TextSlot(name="slot_2", mappings=[]),
+            ],
+        )
+
+        top_flow = flows.flow_by_id("test_flow")
+        assert top_flow is not None
+        current_step = top_flow.step_by_id("first_step")
+
+        result = generator.prepare_current_flow_slots_for_template(
+            top_flow, current_step, tracker
+        )
+
+        assert len(result) == 2
+        assert result[0]["name"] == "slot_1"
+        assert result[0]["value"] == expected_value_1
+        assert result[1]["name"] == "slot_2"
+        assert result[1]["value"] == expected_value_2
+
+    @pytest.mark.parametrize(
+        "ask_before_filling_1, ask_before_filling_2, slot_1_set, current_step_id, expected_count, expected_slots",  # noqa: E501
+        [
+            # Both extractable (ask_before_filling=False)
+            (False, False, False, "first_step", 2, ["slot_1", "slot_2"]),
+            # One extractable, one not (ask_before_filling=True)
+            (False, True, False, "first_step", 1, ["slot_1"]),
+            # Both non-extractable, but slot_1 is set
+            (True, True, True, "first_step", 1, ["slot_1"]),
+            # Both non-extractable, neither set, but current_step is collecting slot_1
+            # (so slot_1 is extractable because we're currently asking for it)
+            (True, True, False, "first_step", 1, ["slot_1"]),
+            # Both non-extractable, neither set, current_step is not a collect step
+            # (so neither slot is extractable)
+            (True, True, False, None, 0, []),
+        ],
+    )
+    def test_prepare_current_flow_slots_for_template_filters_by_extractability(
+        self,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+        ask_before_filling_1: bool,
+        ask_before_filling_2: bool,
+        slot_1_set: bool,
+        current_step_id: Optional[str],
+        expected_count: int,
+        expected_slots: List[str],
+    ):
+        """Test that prepare_current_flow_slots_for_template filters slots based on
+        extractability."""
+        generator = base_command_generator_fixture
+
+        flows = flows_from_str(
+            f"""
+            flows:
+              test_flow:
+                name: a test flow
+                description: some test flow
+                steps:
+                - id: first_step
+                  collect: slot_1
+                  description: "Slot 1 description"
+                  ask_before_filling: {str(ask_before_filling_1).lower()}
+                - id: second_step
+                  collect: slot_2
+                  description: "Slot 2 description"
+                  ask_before_filling: {str(ask_before_filling_2).lower()}
+            """
+        )
+
+        events = []
+        if slot_1_set:
+            events.append(SlotSet("slot_1", "value"))
+
+        tracker = DialogueStateTracker.from_events(
+            "test",
+            evts=events,
+            slots=[
+                TextSlot(name="slot_1", mappings=[]),
+                TextSlot(name="slot_2", mappings=[]),
+            ],
+        )
+
+        top_flow = flows.flow_by_id("test_flow")
+        assert top_flow is not None
+        current_step = top_flow.step_by_id(current_step_id) if current_step_id else None
+
+        result = generator.prepare_current_flow_slots_for_template(
+            top_flow, current_step, tracker
+        )
+
+        assert len(result) == expected_count
+        slot_names = [slot["name"] for slot in result]
+        assert set(slot_names) == set(expected_slots)
+
+    def test_prepare_current_flow_slots_for_template_with_current_collect_step(
+        self,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+    ):
+        """Test that current collect step is included even if
+        ask_before_filling=True."""
+        generator = base_command_generator_fixture
+
+        flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                name: a test flow
+                description: some test flow
+                steps:
+                - id: first_step
+                  collect: current_slot
+                  description: "Current slot being asked"
+                  ask_before_filling: true
+                - id: second_step
+                  collect: other_slot
+                  description: "Other slot"
+                  ask_before_filling: false
+            """
+        )
+
+        tracker = DialogueStateTracker.from_events(
+            "test",
+            evts=[],
+            slots=[
+                TextSlot(name="current_slot", mappings=[]),
+                TextSlot(name="other_slot", mappings=[]),
+            ],
+        )
+
+        top_flow = flows.flow_by_id("test_flow")
+        assert top_flow is not None
+        current_step = top_flow.step_by_id("first_step")
+
+        result = generator.prepare_current_flow_slots_for_template(
+            top_flow, current_step, tracker
+        )
+
+        # Both slots should be included:
+        # - current_slot (currently being asked, so extractable)
+        # - other_slot (ask_before_filling=False)
+        assert len(result) == 2
+        slot_names = [slot["name"] for slot in result]
+        assert "current_slot" in slot_names
+        assert "other_slot" in slot_names
+
+    def test_prepare_current_flow_slots_for_template_no_flow(
+        self,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+    ):
+        """Test prepare_current_flow_slots_for_template when top_flow is None."""
+        generator = base_command_generator_fixture
+
+        tracker = DialogueStateTracker.from_events("test", evts=[], slots=[])
+
+        result = generator.prepare_current_flow_slots_for_template(None, None, tracker)
+
+        assert result == []
+
+    def test_prepare_current_flow_slots_for_template_no_collect_steps(
+        self,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+    ):
+        """Test prepare_current_flow_slots_for_template with flow that has no collect
+        steps."""
+        generator = base_command_generator_fixture
+
+        flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                name: a test flow
+                description: some test flow
+                steps:
+                - id: first_step
+                  action: action_listen
+            """
+        )
+
+        tracker = DialogueStateTracker.from_events("test", evts=[], slots=[])
+
+        top_flow = flows.flow_by_id("test_flow")
+        assert top_flow is not None
+        current_step = top_flow.step_by_id("first_step")
+
+        result = generator.prepare_current_flow_slots_for_template(
+            top_flow, current_step, tracker
+        )
+
+        assert result == []
+
+    @pytest.mark.parametrize(
+        "slot_type, slot_name, slot_kwargs, expected_allowed_values",
+        [
+            (
+                "TextSlot",
+                "text_slot",
+                {},
+                None,
+            ),
+            (
+                "CategoricalSlot",
+                "category_slot",
+                {"values": ["option1", "option2", "option3"]},
+                "['option1', 'option2', 'option3']",
+            ),
+            (
+                "CategoricalSlot",
+                "category_slot_empty",
+                {"values": []},
+                "[]",
+            ),
+        ],
+    )
+    def test_prepare_current_flow_slots_for_template_with_different_slot_types(
+        self,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+        slot_type: str,
+        slot_name: str,
+        slot_kwargs: Dict[str, Any],
+        expected_allowed_values: Optional[str],
+    ):
+        """Test prepare_current_flow_slots_for_template with different slot types.
+
+        Note: allowed_values_for_slot returns a string representation of the list,
+        not the actual list, which is why expected_allowed_values is a string.
+        """
+        from rasa.shared.core.slots import CategoricalSlot, TextSlot
+
+        generator = base_command_generator_fixture
+
+        flows = flows_from_str(
+            f"""
+            flows:
+              test_flow:
+                name: a test flow
+                description: some test flow
+                steps:
+                - id: first_step
+                  collect: {slot_name}
+                  description: "{slot_name} description"
+                  ask_before_filling: false
+            """
+        )
+
+        slot_class = TextSlot if slot_type == "TextSlot" else CategoricalSlot
+        slot = slot_class(name=slot_name, mappings=[], **slot_kwargs)
+
+        tracker = DialogueStateTracker.from_events(
+            "test",
+            evts=[],
+            slots=[slot],
+        )
+
+        top_flow = flows.flow_by_id("test_flow")
+        assert top_flow is not None
+        current_step = top_flow.step_by_id("first_step")
+
+        result = generator.prepare_current_flow_slots_for_template(
+            top_flow, current_step, tracker
+        )
+
+        assert len(result) == 1
+        assert result[0]["name"] == slot_name
+        if expected_allowed_values is not None:
+            assert result[0]["allowed_values"] == expected_allowed_values
+        else:
+            # TextSlot should not have allowed_values or it should be None/empty
+            assert result[0].get("allowed_values") in (None, [])
+
     def test_is_extractable_with_current_step(
         self,
         base_command_generator_fixture: LLMBasedCommandGenerator,

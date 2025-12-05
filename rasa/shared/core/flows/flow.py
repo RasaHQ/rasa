@@ -320,18 +320,31 @@ class Flow:
         """Test whether the flow is a rasa default flow."""
         return self.id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
 
-    def get_collect_steps(self) -> List[CollectInformationFlowStep]:
-        """Return all CollectInformationFlowSteps in the flow."""
+    def get_collect_steps(
+        self, deduplicate: bool = False
+    ) -> List[CollectInformationFlowStep]:
+        """Return all CollectInformationFlowSteps in the flow.
+
+        Args:
+            deduplicate: Whether to deduplicate collect steps by
+                (slot_name, description). Defaults to False.
+        """
         collect_steps: List[CollectInformationFlowStep] = []
+        seen_slots: Set[Tuple[str, Optional[str]]] = set()
         for step in self.steps_with_calls_resolved:
-            # Only add collect steps that are not already in the list.
-            # This is to avoid returning duplicate collect steps from called flows
-            # in case the called flow is called multiple times.
-            if (
-                isinstance(step, CollectInformationFlowStep)
-                and step not in collect_steps
-            ):
-                collect_steps.append(step)
+            if isinstance(step, CollectInformationFlowStep):
+                if deduplicate:
+                    # Deduplicate collect steps by (slot_name, description), which is
+                    # neccessary if we want to fetch all collect steps and add them to
+                    # the context window of an LLM.
+                    # We cannot rely on step equality as the equality check also checks
+                    # the flow id. But because the same slot can be
+                    # collected in multiple flows, the equality check does not work.
+                    if (step.collect, step.description) not in seen_slots:
+                        seen_slots.add((step.collect, step.description))
+                        collect_steps.append(step)
+                else:
+                    collect_steps.append(step)
         return collect_steps
 
     @property

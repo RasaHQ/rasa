@@ -521,18 +521,84 @@ def test_get_collect_steps_duplicate_collect_steps():
             steps:
             - collect: another_slot
               description: "another slot description"
+            - collect: slot_3
+              description: "slot 3 description"
         """
     )
 
     foo_flow = flows.flow_by_id("foo")
     assert foo_flow is not None
 
-    collect_steps = foo_flow.get_collect_steps()
+    collect_steps = foo_flow.get_collect_steps(deduplicate=True)
 
     assert len(collect_steps) == 4
     assert {"slot_1", "slot_2", "slot_3", "another_slot"} == {
         s.collect for s in collect_steps
     }
+
+
+def test_get_collect_steps_deduplicates_by_slot_name_and_description():
+    """Ensure that collect steps are deduplicated by (slot_name, description).
+
+    Steps with the same slot name and description should only appear once,
+    even if they come from different flows. Steps with the same slot name
+    but different descriptions should both appear.
+    """
+    Configuration.initialise_empty()
+
+    flows = flows_from_str(
+        """
+        flows:
+          main_flow:
+            description: main flow
+            steps:
+            - collect: slot_a
+              description: "Description A"
+            - call: subflow_1
+            - call: subflow_2
+          subflow_1:
+            description: subflow 1
+            steps:
+            - collect: slot_a
+              description: "Description A"
+            - collect: slot_b
+              description: "Description B"
+          subflow_2:
+            description: subflow 2
+            steps:
+            - collect: slot_a
+              description: "Description A"
+            - collect: slot_b
+              description: "Different Description B"
+        """
+    )
+
+    main_flow = flows.flow_by_id("main_flow")
+    assert main_flow is not None
+
+    collect_steps = main_flow.get_collect_steps(deduplicate=True)
+
+    # Should have 3 unique (slot_name, description) combinations:
+    # - slot_a with "Description A" (appears in main_flow, subflow_1, subflow_2 -
+    #   deduplicated)
+    # - slot_b with "Description B" (appears in subflow_1)
+    # - slot_b with "Different Description B" (appears in subflow_2)
+    assert len(collect_steps) == 3
+
+    # Check slot names
+    slot_names = {s.collect for s in collect_steps}
+    assert slot_names == {"slot_a", "slot_b"}
+
+    # Check that slot_a appears only once (same description)
+    slot_a_steps = [s for s in collect_steps if s.collect == "slot_a"]
+    assert len(slot_a_steps) == 1
+    assert slot_a_steps[0].description == "Description A"
+
+    # Check that slot_b appears twice (different descriptions)
+    slot_b_steps = [s for s in collect_steps if s.collect == "slot_b"]
+    assert len(slot_b_steps) == 2
+    slot_b_descriptions = {s.description for s in slot_b_steps}
+    assert slot_b_descriptions == {"Description B", "Different Description B"}
 
 
 def test_previous_collect_steps_collect(add_contact_flow: Flow):

@@ -288,3 +288,22 @@ class CollectInformationFlowStep(FlowStep):
                 and super().__eq__(other)
             )
         return False
+
+    def __hash__(self) -> int:
+        """Hash implementation for CollectInformationFlowStep."""
+        return hash(
+            (
+                self.collect,
+                self.utter,
+                self.collect_action,
+                tuple(self.rejections),
+                self.ask_before_filling,
+                self.reset_after_flow_ends,
+                self.force_slot_filling,
+                self.silence_timeout,
+                self.dtmf,
+                self.idx,
+                self.description,
+                self.flow_id,
+            )
+        )
