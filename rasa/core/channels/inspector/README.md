@@ -6,9 +6,9 @@ A rapid prototyping tool for enterprise developer personas working in Rasa Pro b
 
 ### Prerequisites
 
-- **Node.js**: Version **greater than 18.x.x and less than 20.x.x**.
-    - [How to install Node.js](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs)
-    - Recommended: Use [nvm](https://github.com/nvm-sh/nvm) for version management.
+- **Node.js**: Version **20.x.x**.
+  - [How to install Node.js](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs)
+  - Recommended: Use [nvm](https://github.com/nvm-sh/nvm) for version management.
 - `yarn` version 1.x - Check how to install `yarn` [here](https://classic.yarnpkg.com/lang/en/docs/install/).
 - a running version of `rasa`
 - a running action server (optional)
@@ -48,25 +48,22 @@ file, and direct edits cannot be effectively made there.
 ### Step-by-Step Guide
 
 1. **Make updates in [rasa-x](https://github.com/RasaHQ/rasa-x) repository:**
-
-    - Make the necessary code changes.
-    - Update the **npm** package version. This is done in
-      the [src/rasa-chat/package.json](https://github.com/RasaHQ/rasa-x/blob/main/src/rasa-chat/package.json) file.
-    - Merge the changes to the lastest version branch or to the `main` branch.
+   - Make the necessary code changes.
+   - Update the **npm** package version. This is done in
+     the [src/rasa-chat/package.json](https://github.com/RasaHQ/rasa-x/blob/main/src/rasa-chat/package.json) file.
+   - Merge the changes to the lastest version branch or to the `main` branch.
 
 2. **Trigger the release GitHub action:**
-
-    - Navigate to
-      the [publish-rasa-chat](https://github.com/RasaHQ/rasa-x/blob/main/.github/workflows/publish-rasa-chat.yml) GitHub
-      action within the [rasa-x](https://github.com/RasaHQ/rasa-x) repo and initiate the workflow.
+   - Navigate to
+     the [publish-rasa-chat](https://github.com/RasaHQ/rasa-x/blob/main/.github/workflows/publish-rasa-chat.yml) GitHub
+     action within the [rasa-x](https://github.com/RasaHQ/rasa-x) repo and initiate the workflow.
 
 3. **Monitor Deployment to npm:**
-
-    - After the GitHub action successfully runs, the updated package will be deployed to npm. Confirm the deployment by
-      visiting the package page on npm at [@rasahq/rasa-chat](https://www.npmjs.com/package/@rasahq/rasa-chat/).
+   - After the GitHub action successfully runs, the updated package will be deployed to npm. Confirm the deployment by
+     visiting the package page on npm at [@rasahq/rasa-chat](https://www.npmjs.com/package/@rasahq/rasa-chat/).
 
 4. **Update the [rasa-private](https://github.com/RasaHQ/rasa-private) Repository:**
-    - Download or copy the minified JavaScript from the `widget.js` file in the newly published npm package.
-    - Replace the content in
-      the [rasa-chat.js](https://github.com/RasaHQ/rasa-private/blob/main/rasa/core/channels/inspector/assets/rasa-chat.js)
-      file with this new code to incorporate the updates.
+   - Download or copy the minified JavaScript from the `widget.js` file in the newly published npm package.
+   - Replace the content in
+     the [rasa-chat.js](https://github.com/RasaHQ/rasa-private/blob/main/rasa/core/channels/inspector/assets/rasa-chat.js)
+     file with this new code to incorporate the updates.

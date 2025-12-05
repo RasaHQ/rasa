@@ -40,7 +40,7 @@ export const Welcome = ({
         <Text as="span">New to the Inspector?</Text>
         <Link
           sx={linkSx}
-          href="https://rasa.com/docs/rasa-pro/production/inspect-assistant/"
+          href="https://rasa.com/docs/pro/testing/trying-assistant"
           target="_blank"
           ml={rasaSpace[0.25]}
         >
