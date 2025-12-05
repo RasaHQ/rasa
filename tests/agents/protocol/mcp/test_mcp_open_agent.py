@@ -315,7 +315,9 @@ class TestMCPOpenAgent:
             patch.object(mcp_open_agent, "get_available_tools") as mock_get_tools,
         ):
             mock_llm_client.acompletion = AsyncMock(return_value=mock_llm_response)
-            mock_get_tools.return_value = [MagicMock(name="task_completed")]
+            mock_tool = MagicMock()
+            mock_tool.name = "task_completed"
+            mock_get_tools.return_value = [mock_tool]
 
             result = await mcp_open_agent.send_message(mock_agent_input)
 
@@ -375,7 +377,9 @@ class TestMCPOpenAgent:
             ) as mock_error_output,
         ):
             mock_llm_client.acompletion = AsyncMock(return_value=mock_llm_response)
-            mock_get_tools.return_value = [MagicMock(name=tool_name)]
+            mock_tool = MagicMock()
+            mock_tool.name = tool_name
+            mock_get_tools.return_value = [mock_tool]
             mock_execute_tool.return_value = mock_tool_output
             mock_error_output.return_value = MagicMock()
 
@@ -399,15 +403,17 @@ class TestMCPOpenAgent:
         provider_exception.original_exception = decode_error
 
         mock_llm_client = MagicMock()
-        mock_llm_client.acompletion.side_effect = [
-            provider_exception,
-            LLMResponse(
-                id="test_id",
-                created=1642248600,
-                choices=["Success response"],
-                tool_calls=[],
-            ),
-        ]
+        mock_llm_client.acompletion = AsyncMock(
+            side_effect=[
+                provider_exception,
+                LLMResponse(
+                    id="test_id",
+                    created=1642248600,
+                    choices=["Success response"],
+                    tool_calls=[],
+                ),
+            ]
+        )
         mcp_open_agent.llm_client = mock_llm_client
 
         with patch.object(mcp_open_agent, "get_available_tools") as mock_get_tools:
@@ -446,7 +452,9 @@ class TestMCPOpenAgent:
     ):
         """Test send_message with general exception."""
         with patch.object(mcp_open_agent, "llm_client") as mock_llm_client:
-            mock_llm_client.acompletion.side_effect = Exception("General error")
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=Exception("General error")
+            )
 
             result = await mcp_open_agent.send_message(mock_agent_input)
 
@@ -488,7 +496,9 @@ class TestMCPOpenAgent:
         ):
             # Always return the same response to create an infinite loop
             mock_llm_client.acompletion = AsyncMock(return_value=mock_llm_response)
-            mock_get_tools.return_value = [MagicMock(name="other_tool")]
+            mock_tool = MagicMock()
+            mock_tool.name = "other_tool"
+            mock_get_tools.return_value = [mock_tool]
             mock_execute_tool.return_value = mock_tool_output
 
             # Set max iterations to 1 to force completion

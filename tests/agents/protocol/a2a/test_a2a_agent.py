@@ -1362,7 +1362,7 @@ def test_prepare_message_uses_last_user_message_with_context_and_slots():
     assert isinstance(message.parts[1].root, DataPart)
     # Ensure only non-None slot is included
     slots_payload = message.parts[1].root.data
-    assert slots_payload == {"slots": [{"name": "city", "value": "Berlin"}]}
+    assert slots_payload == {"slots": {"city": "Berlin"}}
     assert message.context_id == "ctx-123"
     assert message.task_id == "task-999"
 

@@ -760,11 +760,11 @@ class A2AAgent(AgentProtocol):
 
         if len(agent_input.slots) > 0:
             slots_dict: Dict[str, Any] = {
-                "slots": [
-                    slot.model_dump(exclude={"type", "allowed_values"})
+                "slots": {
+                    slot.name: slot.value
                     for slot in agent_input.slots
                     if slot.value is not None
-                ]
+                }
             }
             parts.append(Part(root=DataPart(data=slots_dict)))
 

@@ -573,6 +573,26 @@ class MCPBaseAgent(AgentProtocol):
     # LLM & Prompt Management
     # ============================================================================
 
+    def _build_context_for_prompt(self, context: AgentInput) -> Dict[str, Any]:
+        """Get the context dictionary for the prompt."""
+        context_dict = context.model_dump(exclude={"id", "timestamp", "events"})
+        if "slots" in context_dict and isinstance(context_dict["slots"], list):
+            context_dict["slots"] = {
+                slot.name: slot.value
+                for slot in context.slots
+                if slot.value is not None
+            }
+
+        if self._include_date_time:
+            context_dict["current_datetime"] = self._get_current_datetime_for_prompt(
+                context
+            )
+
+        return {
+            **context_dict,
+            "description": self._description,
+        }
+
     def _get_current_datetime_for_prompt(self, context: AgentInput) -> datetime:
         """Get the current datetime for the prompt."""
         # Get the mocked datetime value from the context.
@@ -584,16 +604,9 @@ class MCPBaseAgent(AgentProtocol):
 
     def render_prompt_template(self, context: AgentInput) -> str:
         """Render the prompt template with the provided inputs."""
-        template_vars = {
-            **context.model_dump(exclude={"id", "timestamp", "events"}),
-            "description": self._description,
-        }
-
-        # Add current_datetime object if enabled
-        if self._include_date_time:
-            template_vars["current_datetime"] = self._get_current_datetime_for_prompt(
-                context
-            )
+        # Build the context for the prompt.
+        template_vars = self._build_context_for_prompt(context)
+        # Render the prompt template.
         return Template(self.prompt_template).render(**template_vars)
 
     def build_messages_for_llm_request(

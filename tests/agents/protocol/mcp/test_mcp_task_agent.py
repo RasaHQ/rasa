@@ -1,7 +1,7 @@
 """Unit tests for MCPTaskAgent."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from unittest.mock import AsyncMock, MagicMock, patch
 from zoneinfo import ZoneInfo
 
@@ -509,6 +509,135 @@ class TestMCPTaskAgent:
             assert "- Current date: 15 January, 2024" in result
             assert "- Current time: 14:30:45 (UTC)" in result
             assert "- Current day: Monday" in result
+
+    @pytest.mark.parametrize(
+        "slots, metadata, expected_assertions",
+        [
+            # Test basic slot access with slot_names
+            (
+                [
+                    AgentInputSlot(
+                        name="user_name",
+                        value="John",
+                        type="text",
+                    ),
+                    AgentInputSlot(
+                        name="user_age",
+                        value=25,
+                        type="float",
+                    ),
+                ],
+                {"exit_if": ["slots.user_name == 'John'"]},
+                [
+                    ("user_name=John", True),
+                    ("user_age=25", True),
+                    ("Direct: John, 25", True),
+                    ("user_name", True),  # from slot_names
+                ],
+            ),
+            # Test None values are excluded
+            (
+                [
+                    AgentInputSlot(
+                        name="user_name",
+                        value="John",
+                        type="text",
+                    ),
+                    AgentInputSlot(
+                        name="user_age",
+                        value=None,
+                        type="float",
+                    ),
+                    AgentInputSlot(
+                        name="user_email",
+                        value="john@example.com",
+                        type="text",
+                    ),
+                ],
+                {},
+                [
+                    ("user_name=John", True),
+                    ("user_email=john@example.com", True),
+                    ("user_age=None", False),  # Should not appear
+                    ("Has user_age: no", True),  # Should not be in dict
+                ],
+            ),
+            # Test both slots and slot_names accessible together
+            (
+                [
+                    AgentInputSlot(
+                        name="user_name",
+                        value="John",
+                        type="text",
+                    ),
+                    AgentInputSlot(
+                        name="user_age",
+                        value=25,
+                        type="float",
+                    ),
+                ],
+                {"exit_if": ["slots.user_name == 'John'"]},
+                [
+                    ("user_name=John", True),
+                    ("user_age=25", True),
+                    ("user_name", True),  # from slot_names
+                    ("Direct: John", True),
+                ],
+            ),
+        ],
+    )
+    def test_render_prompt_template_slots_access(
+        self,
+        mcp_task_agent: MCPTaskAgent,
+        slots: List[AgentInputSlot],
+        metadata: Dict[str, Any],
+        expected_assertions: List[Tuple[str, bool]],
+    ):
+        """Test that slots, slot_names are accessible in the task agent prompt."""
+        # Single comprehensive template that covers all test cases
+        template = (
+            "User message: {{user_message}}\n"
+            "Slots count: {{ slots|length }}\n"
+            "Slots: {% for slot_name, slot_value in slots.items() %}"
+            "{{ slot_name }}={{ slot_value }}"
+            "{% endfor %}\n"
+            "Direct: {{ slots.user_name if slots.user_name else 'not set' }}, "
+            "{{ slots.user_age if slots.user_age else 'not set' }}\n"
+            "Has user_name: {{ 'yes' if 'user_name' in slots else 'no' }}\n"
+            "Has user_age: {{ 'yes' if 'user_age' in slots else 'no' }}\n"
+            "Slot names: {{ slot_names }}"
+        )
+        mcp_task_agent.prompt_template = template
+
+        agent_input = AgentInput(
+            id="test_id",
+            user_message="Hello",
+            slots=slots,
+            conversation_history="",
+            events=[],
+            metadata=metadata,
+            timestamp="2024-01-15T10:30:00Z",
+        )
+
+        with patch(
+            "rasa.shared.utils.datetime_utils.get_current_datetime"
+        ) as mock_get_current_datetime:
+            mock_get_current_datetime.return_value = datetime(
+                2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo("UTC")
+            )
+
+            result = mcp_task_agent.render_prompt_template(agent_input)
+
+            # Verify all expected assertions
+            for expected_text, should_be_present in expected_assertions:
+                if should_be_present:
+                    assert (
+                        expected_text in result
+                    ), f"Expected '{expected_text}' in result"
+                else:
+                    assert (
+                        expected_text not in result
+                    ), f"Expected '{expected_text}' NOT in result"
 
     @pytest.mark.parametrize(
         "include_date_time, timezone, expected_datetime_present, expected_date_format,"

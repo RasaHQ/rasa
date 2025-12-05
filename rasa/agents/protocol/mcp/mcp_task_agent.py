@@ -20,21 +20,18 @@ from rasa.agents.schemas import (
     AgentToolSchema,
 )
 from rasa.agents.schemas.agent_input import AgentInputSlot
-from rasa.agents.utils import get_slot_value_from_agent_input
 from rasa.core.available_agents import AgentMCPServerConfig, ProtocolConfig
 from rasa.core.channels import OutputChannel
 from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.constants import (
     ROLE_TOOL,
 )
-from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.exceptions import (
     LLMToolResponseDecodeError,
     ProviderClientAPIException,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse
-from rasa.shared.utils.datetime_utils import resolve_datetime
 from rasa.utils.pypred import Predicate
 
 DEFAULT_TASK_AGENT_PROMPT_TEMPLATE = importlib.resources.read_text(
@@ -202,7 +199,7 @@ class MCPTaskAgent(MCPBaseAgent):
             structlogger.debug(
                 "mcp_task_agent.is_exit_conditions_met.result",
                 event_info=f"Exit conditions met: {all_conditions_met}",
-                evaulation_result=all_conditions_met,
+                evaluation_result=all_conditions_met,
                 exit_conditions=exit_conditions,
             )
 
@@ -256,22 +253,10 @@ class MCPTaskAgent(MCPBaseAgent):
 
     def render_prompt_template(self, context: AgentInput) -> str:
         """Render the prompt template with the provided inputs."""
-        slot_names = self._get_slot_names_from_exit_conditions(context)
-
-        template_vars = {
-            **context.model_dump(exclude={"id", "timestamp", "events"}),
-            "description": self._description,
-            "slot_names": slot_names,
-        }
-
-        # Add current_datetime object if enabled
-        if self._include_date_time:
-            mocked_datetime_value = get_slot_value_from_agent_input(
-                context, MOCKED_DATETIME_SLOT
-            )
-            template_vars["current_datetime"] = resolve_datetime(
-                mocked_datetime_value, timezone=self._timezone
-            )
+        # Build the context for the prompt.
+        template_vars = self._build_context_for_prompt(context)
+        template_vars["slot_names"] = self._get_slot_names_from_exit_conditions(context)
+        # Render the prompt template.
         return Template(self.prompt_template).render(**template_vars)
 
     async def send_message(

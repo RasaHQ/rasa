@@ -1,7 +1,7 @@
 """Unit tests for MCPBaseAgent."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from unittest.mock import AsyncMock, MagicMock, patch
 from zoneinfo import ZoneInfo
 
@@ -561,6 +561,126 @@ class TestMCPBaseAgent:
             assert "- Current date: 15 January, 2024" in result
             assert "- Current time: 14:30:45 (UTC)" in result
             assert "- Current day: Monday" in result
+
+    @pytest.mark.parametrize(
+        "slots, expected_assertions",
+        [
+            # Test basic slot access
+            (
+                [
+                    AgentInputSlot(
+                        name="user_name",
+                        value="John",
+                        type="text",
+                    ),
+                    AgentInputSlot(
+                        name="user_age",
+                        value=25,
+                        type="float",
+                    ),
+                ],
+                [
+                    ("user_name=John", True),
+                    ("user_age=25", True),
+                    ("Direct: John, 25", True),
+                ],
+            ),
+            # Test None values are excluded
+            (
+                [
+                    AgentInputSlot(
+                        name="user_name",
+                        value="John",
+                        type="text",
+                    ),
+                    AgentInputSlot(
+                        name="user_age",
+                        value=None,
+                        type="float",
+                    ),
+                    AgentInputSlot(
+                        name="user_email",
+                        value="john@example.com",
+                        type="text",
+                    ),
+                ],
+                [
+                    ("user_name=John", True),
+                    ("user_email=john@example.com", True),
+                    ("user_age=None", False),  # Should not appear
+                    ("Has user_age: no", True),  # Should not be in dict
+                ],
+            ),
+            # Test empty slots
+            (
+                [],
+                [
+                    ("Slots count: 0", True),
+                ],
+            ),
+            # Test dict structure and membership check
+            (
+                [
+                    AgentInputSlot(
+                        name="user_name",
+                        value="John",
+                        type="text",
+                    ),
+                    AgentInputSlot(
+                        name="user_age",
+                        value=None,
+                        type="float",
+                    ),
+                ],
+                [
+                    ("Direct: John", True),
+                    ("Has user_name: yes", True),
+                    ("Has user_age: no", True),  # None value excluded
+                ],
+            ),
+        ],
+    )
+    def test_render_prompt_template_slots_access(
+        self,
+        mock_mcp_base_agent: MockMCPBaseAgentImpl,
+        slots: List[AgentInputSlot],
+        expected_assertions: List[Tuple[str, bool]],
+    ) -> None:
+        """Test that slots are accessible in the prompt template as a dict."""
+        # Single comprehensive template that covers all test cases
+        template = (
+            "User message: {{user_message}}\n"
+            "Slots count: {{ slots|length }}\n"
+            "Slots: {% for slot_name, slot_value in slots.items() %}"
+            "{{ slot_name }}={{ slot_value }}"
+            "{% endfor %}\n"
+            "Direct: {{ slots.user_name if slots.user_name else 'not set' }}, "
+            "{{ slots.user_age if slots.user_age else 'not set' }}\n"
+            "Has user_name: {{ 'yes' if 'user_name' in slots else 'no' }}\n"
+            "Has user_age: {{ 'yes' if 'user_age' in slots else 'no' }}"
+        )
+        mock_mcp_base_agent.prompt_template = template
+
+        agent_input = AgentInput(
+            id="test_id",
+            user_message="Hello",
+            slots=slots,
+            conversation_history="",
+            events=[],
+            metadata={},
+            timestamp="2024-01-15T10:30:00Z",
+        )
+
+        result = mock_mcp_base_agent.render_prompt_template(agent_input)
+
+        # Verify all expected assertions
+        for expected_text, should_be_present in expected_assertions:
+            if should_be_present:
+                assert expected_text in result, f"Expected '{expected_text}' in result"
+            else:
+                assert (
+                    expected_text not in result
+                ), f"Expected '{expected_text}' NOT in result"
 
     def test_build_messages_for_llm_request(
         self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
