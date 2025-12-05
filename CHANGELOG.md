@@ -165,6 +165,14 @@ Rasa Pro 3.15.0 (2025-11-26)
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
 
 
+## [3.14.5] - 2025-12-02
+                        
+Rasa Pro 3.14.5 (2025-12-02)                             
+### Bugfixes
+- [#4051](https://github.com/rasahq/rasa-private/issues/4051): Update `pip` to fix security vulnerability.
+- [#4053](https://github.com/rasahq/rasa-private/issues/4053): Fix  AgentToolSchema._ensure_property_types() correctly preserves structural keywords ($ref, anyOf, oneOf, etc.)
+
+
 ## [3.14.4] - 2025-11-27
                         
 Rasa Pro 3.14.4 (2025-11-27)                             
