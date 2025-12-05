@@ -509,7 +509,9 @@ def test_train_faiss_with_invalid_documents_path(
     vector_store: InformationRetrieval,
     tmp_path: Path,
     caplog: LogCaptureFixture,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test_train_faiss_with_invalid_documents_path")
     docs_dir = tmp_path / "existing_file.txt"
     docs_dir.touch()
     assert docs_dir.exists() and not docs_dir.is_dir()
@@ -550,7 +552,9 @@ def test_train_faiss_with_empty_documents_path(
     vector_store: InformationRetrieval,
     tmp_path: Path,
     caplog: LogCaptureFixture,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test_train_faiss_with_empty_documents_path")
     docs_dir = tmp_path / "docs"
     docs_dir.mkdir()
     assert docs_dir.exists()
@@ -2551,7 +2555,11 @@ def test_get_system_default_prompt_based_on_config(
 @patch("rasa.core.policies.enterprise_search_policy" ".FAISS_Store")
 @patch(
     "rasa.core.policies.enterprise_search_policy"
-    ".EnterpriseSearchPolicy._perform_health_checks"
+    ".EnterpriseSearchPolicy.perform_llm_health_check"
+)
+@patch(
+    "rasa.core.policies.enterprise_search_policy"
+    ".EnterpriseSearchPolicy.perform_embeddings_health_check"
 )
 @patch(
     "rasa.core.policies.enterprise_search_policy"
@@ -2569,8 +2577,9 @@ def test_train_and_load_calls_faiss_store_with_parsed_faq_when_use_generative_ll
     mock_create_plain_embedder: Mock,
     mock_track_enterprise_search_policy_train_completed: Mock,
     mock_track_enterprise_search_policy_train_started: Mock,
+    mock_perform_embeddings_health_check: Mock,
     mock_perform_llm_health_check: Mock,
-    mock_faiss_store,
+    mock_faiss_store: Mock,
     default_model_storage: ModelStorage,
     resource: Resource,
     use_generative_llm_config: dict,
@@ -2604,6 +2613,15 @@ def test_train_and_load_calls_faiss_store_with_parsed_faq_when_use_generative_ll
     # Then
     # Once during training and once during loading
     assert mock_faiss_store.call_count == 2
+
+    # LLM health check should be called if use_generative_llm is True
+    if use_generative_llm_config.get(USE_LLM_PROPERTY, True):
+        assert mock_perform_llm_health_check.call_count == 2
+    else:
+        assert mock_perform_llm_health_check.call_count == 0
+
+    # Embeddings health check should still be called (2 calls for train + load)
+    assert mock_perform_embeddings_health_check.call_count == 2
 
     for call_args in mock_faiss_store.call_args_list:
         kwargs = call_args.kwargs

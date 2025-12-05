@@ -351,8 +351,12 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             can load the policy from the resource.
         """
         # Perform health checks for both LLM and embeddings client configs
+        # Skip LLM health checks if use_generative_llm is False
         self._perform_health_checks(
-            self.llm_config, self.embeddings_config, "enterprise_search_policy.train"
+            self.llm_config,
+            self.embeddings_config,
+            "enterprise_search_policy.train",
+            use_generative_llm=self.use_llm,
         )
 
         # telemetry call to track training start
@@ -984,10 +988,12 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         parsed_config = EnterpriseSearchPolicyConfig.from_dict(config)
 
         # Perform health checks for both LLM and embeddings client configs
+        # Skip LLM health checks if use_generative_llm is False
         cls._perform_health_checks(
             parsed_config.llm_config,
             parsed_config.embeddings_config,
             "enterprise_search_policy.load",
+            use_generative_llm=parsed_config.use_generative_llm,
         )
 
         prompt_template = cls._load_prompt_template(model_storage, resource)
@@ -1297,6 +1303,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         llm_config: Dict[Text, Any],
         embeddings_config: Dict[Text, Any],
         log_source_method: str,
+        use_generative_llm: bool = True,
     ) -> None:
         """Perform the health checks using resolved LLM and embeddings configurations.
         Resolved means the configuration is either:
@@ -1310,14 +1317,18 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             llm_config: A resolved LLM configuration.
             embeddings_config: A resolved embeddings configuration.
             log_source_method: The method health checks has been called from.
+            use_generative_llm: Whether to perform LLM health checks. If False,
+                only embeddings health checks are performed.
 
         """
-        cls.perform_llm_health_check(
-            llm_config,
-            DEFAULT_LLM_CONFIG,
-            log_source_method,
-            EnterpriseSearchPolicy.__name__,
-        )
+        # Only perform LLM health checks if use_generative_llm is True
+        if use_generative_llm:
+            cls.perform_llm_health_check(
+                llm_config,
+                DEFAULT_LLM_CONFIG,
+                log_source_method,
+                EnterpriseSearchPolicy.__name__,
+            )
         cls.perform_embeddings_health_check(
             embeddings_config,
             DEFAULT_EMBEDDINGS_CONFIG,
