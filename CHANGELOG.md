@@ -165,6 +165,17 @@ Rasa Pro 3.15.0 (2025-11-26)
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
 
 
+## [3.14.6] - 2025-12-05
+
+Rasa Pro 3.14.6 (2025-12-05)
+### Bugfixes
+- [#4067](https://github.com/rasahq/rasa-private/issues/4067): Fix agentic prompt template to access slots directly.
+- [#4077](https://github.com/rasahq/rasa-private/issues/4077): Disable LLM health check for Enterprise Search Policy when generative search is disabled (i.e. use_generative_llm is False).
+- [#4083](https://github.com/rasahq/rasa-private/issues/4083): Fix deduplication of collect steps in cases where the same slot was called in different flows.
+- [#4084](https://github.com/rasahq/rasa-private/issues/4084): Cancel active flow before triggering internal pattern error during a custom action failure.
+- [#4111](https://github.com/rasahq/rasa-private/issues/4111): Fix bug with the missing `language_data` module by installing `langcodes` with the `data` extra dependency.
+
+
 ## [3.14.5] - 2025-12-02
                         
 Rasa Pro 3.14.5 (2025-12-02)                             
