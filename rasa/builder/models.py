@@ -248,6 +248,7 @@ class JobStatus(str, Enum):
     error = "error"
     commit = "commit"
 
+    heartbeat = "heartbeat"
     generating = "generating"
     generation_success = "generation_success"
     generation_error = "generation_error"

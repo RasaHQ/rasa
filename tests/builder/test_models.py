@@ -21,6 +21,7 @@ def test_server_sent_event_type_members():
 
 def test_job_status_members():
     expected = {
+        JobStatus.heartbeat.value,
         JobStatus.received.value,
         JobStatus.done.value,
         JobStatus.error.value,

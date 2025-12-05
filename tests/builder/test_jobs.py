@@ -1,5 +1,6 @@
 """Tests for rasa.builder.jobs module."""
 
+import asyncio
 import io
 import tarfile
 import tempfile
@@ -1990,3 +1991,43 @@ class TestRollbackMessageJob:
         self._verify_done_event_sent_for_rollback_job(
             self.mock_push_event, "rollback_job_123"
         )
+
+
+class TestSendHeartbeat:
+    """Test the send_heartbeat async utility."""
+
+    @pytest.mark.asyncio
+    async def test_send_heartbeat_sends_event(self, monkeypatch):
+        from rasa.builder.jobs import JobStatus, send_heartbeat
+
+        calls = []
+        mock_job = Mock()
+
+        # Patch push_job_status_event to just record the call
+        async def _mock_push_event(job, status):
+            calls.append((job, status))
+
+        monkeypatch.setattr("rasa.builder.jobs.push_job_status_event", _mock_push_event)
+
+        # Save the original asyncio.sleep (before patch)
+        real_asyncio_sleep = asyncio.sleep
+
+        # Patch asyncio.sleep to not actually sleep, but yield control
+        async def fast_sleep(_):
+            await real_asyncio_sleep(0)
+
+        monkeypatch.setattr("asyncio.sleep", fast_sleep)
+
+        # Launch the heartbeat task and cancel after first heartbeat
+        task = asyncio.create_task(send_heartbeat(mock_job, interval=1))
+        await real_asyncio_sleep(1.1)  # Use original sleep to avoid recursion
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+        # At least one heartbeat event should have been sent
+        assert calls
+        assert calls[0][0] is mock_job
+        assert calls[0][1] == JobStatus.heartbeat

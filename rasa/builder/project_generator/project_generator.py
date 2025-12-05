@@ -523,7 +523,7 @@ class ProjectGenerator:
                 )
             )
             # Add flow files
-            flows_dict = project_data.get("flows", {}).get("flows", {})
+            flows_dict = project_data.get("flows", {})
             for flow_id, flow_data in flows_dict.items():
                 flow_file_path = self._path_for_flow(flow_id)
                 single_flow_file_data = {"flows": {flow_id: flow_data}}
@@ -778,7 +778,7 @@ class ProjectGenerator:
             "domain/domain.yml": dump_obj_as_yaml_to_string(project_data["domain"])
         }
         # split up flows into one file per flow in the /flows folder
-        for flow_id, flow_data in project_data["flows"].get("flows", {}).items():
+        for flow_id, flow_data in project_data.get("flows", {}).items():
             flow_file_path = self._path_for_flow(flow_id)
             single_flow_file_data = {"flows": {flow_id: flow_data}}
             files[flow_file_path] = dump_obj_as_yaml_to_string(single_flow_file_data)

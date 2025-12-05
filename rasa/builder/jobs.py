@@ -1,3 +1,4 @@
+import asyncio
 import subprocess
 import tarfile
 from pathlib import Path
@@ -71,6 +72,17 @@ from rasa.cli.scaffold import ProjectTemplateName
 structlogger = structlog.get_logger()
 
 
+async def send_heartbeat(job: JobInfo, interval: int = 15) -> None:
+    """Send a heartbeat event every `interval` seconds while running."""
+    try:
+        while True:
+            await asyncio.sleep(interval)
+            await push_job_status_event(job, JobStatus.heartbeat)
+    except asyncio.CancelledError:
+        structlogger.debug("send_heartbeat.cancelled", job_id=job.id)
+        raise
+
+
 @langfuse.observe(
     capture_input=False,
     capture_output=False,
@@ -96,11 +108,7 @@ async def run_prompt_to_bot_job(
     project_generator: ProjectGenerator = app.ctx.project_generator
 
     copilot_template_prompt_job = job_manager.create_job()
-    await push_job_status_event(
-        job,
-        JobStatus.received,
-        payload={"copilot_template_prompt_job_id": copilot_template_prompt_job.id},
-    )
+    heartbeat_task = asyncio.create_task(send_heartbeat(job))
 
     try:
         # 0. Persist initial user prompt
@@ -108,6 +116,11 @@ async def run_prompt_to_bot_job(
             run_copilot_template_prompt_job(
                 app, copilot_template_prompt_job, custom_prompt=prompt
             )
+        )
+        await push_job_status_event(
+            job,
+            JobStatus.received,
+            payload={"copilot_template_prompt_job_id": copilot_template_prompt_job.id},
         )
 
         # 1. Generating
@@ -231,6 +244,18 @@ async def run_prompt_to_bot_job(
             attempts=config.PROJECT_GENERATION_MAX_RETRIES,
             max_attempts=config.PROJECT_GENERATION_MAX_RETRIES,
         )
+    finally:
+        heartbeat_task.cancel()
+        try:
+            await heartbeat_task
+        except asyncio.CancelledError:
+            pass
+        except Exception as exc:
+            structlogger.warning(
+                "prompt_to_bot_job.heartbeat_task_failed",
+                job_id=job.id,
+                error=str(exc),
+            )
 
 
 async def run_template_to_bot_job(
