@@ -145,6 +145,14 @@ def reset_validator_state():
 class TestCompactLLMCommandGenerator:
     """Tests for the CompactLLMCommandGenerator."""
 
+    def setup_method(self):
+        """Set up test fixtures before each test method."""
+        CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    def teardown_method(self):
+        """Tear down test fixtures after each test method."""
+        CommandSyntaxManager.reset_syntax_version()
+
     @pytest.fixture
     def command_generator(self):
         """Create an CompactLLMCommandGenerator."""
