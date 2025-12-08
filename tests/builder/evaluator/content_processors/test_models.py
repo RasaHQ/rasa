@@ -304,15 +304,17 @@ class TestDocumentationEvidence:
         dataset_entry: DatasetEntry,
         error_message: str,
     ) -> None:
-        """Test that ValueError is raised when document URL is None.
+        """Test that documents with None URL are skipped (not included in results).
 
         Args:
             dataset_entry: Dataset entry with at least one document with None URL.
-            error_message: Expected error message.
+            error_message: Expected error message (not used, kept for compatibility).
         """
-        # When / Then
-        with pytest.raises(ValueError, match=error_message):
-            DocumentationEvidence.from_dataset_entry(dataset_entry)
+        # When
+        result = DocumentationEvidence.from_dataset_entry(dataset_entry)
+
+        # Then - documents with None URL should be skipped
+        assert all(doc.url is not None for doc in result)
 
 
 class TestCodeEvidence:

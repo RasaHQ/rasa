@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Response Classification Evaluator CLI.
+"""Copilot Response Evaluator CLI.
 
-A command-line tool for running response classification evaluation experiments using
+A command-line tool for running copilot response quality evaluation experiments using
 Langfuse.
 
-This script runs experiments on datasets and provides links to the results.
+This script evaluates copilot responses on faithfulness and completeness dimensions.
 """
 
 import argparse
@@ -13,13 +13,13 @@ import sys
 
 import structlog
 
-from rasa.builder.evaluator.response_classification.langfuse_runner import (
-    ResponseClassificationLangfuseRunner,
+from rasa.builder.evaluator.copilot_response_evaluator.langfuse_runner import (
+    CopilotResponseEvaluatorLangfuseRunner,
 )
 from rasa.builder.evaluator.scripts.utils import run_experiment, validate_environment
 from rasa.builder.evaluator.shared.constants import (
-    DEFAULT_RESPONSE_CLASSIFICATION_EVALUATION_TEXT_OUTPUT_FILENAME,
-    RESPONSE_CLASSIFICATION_EVALUATION_YAML_OUTPUT_FILENAME,
+    COPILOT_RESPONSE_EVALUATION_YAML_OUTPUT_FILENAME,
+    DEFAULT_COPILOT_RESPONSE_EVALUATION_TEXT_OUTPUT_FILENAME,
 )
 
 # Configure structured logging
@@ -38,16 +38,22 @@ REQUIRED_ENV_VARS = [
 def main() -> int:
     """Main entry point for the CLI."""
     parser = argparse.ArgumentParser(
-        description="Run response classification evaluation experiments using Langfuse",
+        description=(
+            "Run copilot response quality evaluation experiments using Langfuse. "
+            "Evaluates responses on faithfulness and completeness dimensions."
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="Examples:\npython run_response_classification_evaluator.py my_dataset",
+        epilog=(
+            "Examples:\n"
+            "python run_copilot_response_evaluator.py --dataset-name my_dataset"
+        ),
     )
 
     parser.add_argument(
         "--dataset-name",
         help=(
-            "Name of the dataset on the Langfuse platform to evaluate the response "
-            "classification on."
+            "Name of the dataset on the Langfuse platform to evaluate the copilot "
+            "responses on."
         ),
         required=True,
     )
@@ -56,10 +62,10 @@ def main() -> int:
         help=(
             "(Optional) Directory to write experiment results. Two files are created "
             "with a timestamp prefix (YYYYMMDD_HHMMSS_):\n"
-            f"- {DEFAULT_RESPONSE_CLASSIFICATION_EVALUATION_TEXT_OUTPUT_FILENAME} "
-            f"from Langfuse, and"
-            f"- {RESPONSE_CLASSIFICATION_EVALUATION_YAML_OUTPUT_FILENAME} "
-            "from the classifier."
+            f"- {DEFAULT_COPILOT_RESPONSE_EVALUATION_TEXT_OUTPUT_FILENAME} "
+            f"from Langfuse, and\n"
+            f"- {COPILOT_RESPONSE_EVALUATION_YAML_OUTPUT_FILENAME} "
+            "with detailed metrics per item."
         ),
     )
 
@@ -67,13 +73,15 @@ def main() -> int:
 
     # Validate environment variables
     validate_environment(REQUIRED_ENV_VARS)
+
     structlogger.info(f"🔍 Dataset: {args.dataset_name}")
     structlogger.info("🚀 Starting evaluation...")
 
-    # Run the experiment
-    runner = ResponseClassificationLangfuseRunner(
+    runner = CopilotResponseEvaluatorLangfuseRunner(
         dataset_name=args.dataset_name, output_dir=args.output_file
     )
+
+    # Run the experiment
     result = asyncio.run(run_experiment(runner, args.dataset_name))
 
     if result is None:

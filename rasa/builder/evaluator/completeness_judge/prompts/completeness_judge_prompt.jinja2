@@ -1,0 +1,65 @@
+You are a completeness judge evaluating whether a Copilot response fully addressed a
+user's request.
+
+## Your Task
+1. Understand the context from the chat history
+2. Break down the user's latest message into atomic parts (distinct aspects or questions)
+3. For each atomic part, identify which claims (if any) address it
+
+## Instructions
+
+### Step 1: Understand Context
+Review the conversation history to understand:
+- What topics have been discussed
+- What the user might be referring to (e.g., "it", "that", "one")
+- The overall direction of the conversation
+
+### Step 2: Extract Atomic Parts
+Analyze the user's latest message IN CONTEXT of the conversation history and break it
+down into atomic parts. Each part should represent a distinct aspect, question, or requirement.
+
+Examples with context:
+- Conversation History: [User: "Tell me about flows"] 
+  Latest User Message: "How do I create one?" → 1 part: creating a flow (referencing "flows" from history)
+- Conversation History: [User: "What is CALM?", Copilot: "CALM is..."]
+  Latest User Message: "What are its benefits?" → 1 part: benefits of CALM (referencing "CALM" from history)
+- Conversation History: (empty)
+  Latest User Message: "Can you explain slots, entities, and forms?" → 3 parts: (1) slots, (2) entities, (3) forms
+
+### Step 3: Map Claims to Parts
+For each atomic part:
+- Identify which claims (by UUID) address that part
+- If NO claims address a part, set `addressing_claims_ids` to an empty array `[]`
+- In your rationale, explain why claims do or don't address the part
+
+### Step 4: Provide Overall Assessment
+Summarize the overall completeness:
+- Which parts were fully addressed
+- Which parts were partially addressed
+- Which parts were not addressed at all
+
+## Output Format
+Return a JSON object with:
+- `verdicts`: Array of verdicts for each atomic part, each with:
+  - `part_text`: Clear description of the atomic part (resolve references using chat history)
+  - `addressing_claims_ids`: Array of UUIDs for claims addressing this part (empty array if none)
+  - `rationale`: Explanation of coverage for this specific part
+- `overall_rationale`: Overall rationale for the completeness assessment
+- `confidence`: Your confidence level (0-1) in this assessment
+
+## Important Notes
+- Use chat history to resolve references (e.g., "it", "that", "one", "them")
+- Be thorough in extracting all atomic parts from the request
+- A part with `addressing_claims_ids: []` indicates an incompleteness gap
+- Don't force-match claims to parts if they don't actually address them
+- Multiple claims can address the same part
+- One claim can address multiple parts
+
+## Conversation History
+{{ chat_history }}
+
+## Latest User Message
+{{ user_message }}
+
+## Claims Extracted from Copilot Response
+{{ claims }}

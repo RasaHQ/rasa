@@ -17,10 +17,11 @@ from rasa.builder.copilot.models import (
     CopilotContext,
     ResponseCategory,
 )
-from rasa.builder.evaluator.copilot_executor import CopilotRunResult
 from rasa.builder.evaluator.response_classification.langfuse_runner import (
     ResponseClassificationLangfuseRunner,
 )
+from rasa.builder.evaluator.shared.copilot_executor import CopilotRunResult
+from rasa.builder.evaluator.shared.langfuse_utils import run_copilot_task
 
 
 class TestResponseClassificationLangfuseRunner:
@@ -78,7 +79,7 @@ class TestResponseClassificationLangfuseRunner:
 
     @pytest.mark.asyncio
     @patch(
-        "rasa.builder.evaluator.response_classification.langfuse_runner"
+        "rasa.builder.evaluator.shared.langfuse_utils"
         ".run_copilot_with_response_handler"
     )
     @patch(
@@ -88,22 +89,22 @@ class TestResponseClassificationLangfuseRunner:
     async def test_run_copilot_task_success(
         self,
         mock_get_client: MagicMock,
-        mock_run_copilot_with_response_handler: MagicMock,
+        mock_run_copilot_with_response_handler: AsyncMock,
         tmp_path: Path,
         mock_langfuse_client: MagicMock,
         mock_dataset: MagicMock,
     ) -> None:
-        """Test _run_copilot_task method with successful execution."""
+        """Test run_copilot_task function with successful execution."""
         # Given
+        from rasa.builder.evaluator.shared.langfuse_utils import run_copilot_task
 
-        runner = ResponseClassificationLangfuseRunner("test_dataset", str(tmp_path))
         mock_get_client.return_value = mock_langfuse_client
         mock_langfuse_client.get_dataset.return_value = mock_dataset
         # Mock the return result of the run_copilot_with_response_handler function
         test_copilot_result = AsyncMock(spec=CopilotRunResult)
         mock_run_copilot_with_response_handler.return_value = test_copilot_result
 
-        # Mock the experiment item that is passed to the _run_copilot_task method
+        # Mock the experiment item that is passed to the run_copilot_task function
         experiment_item = MagicMock(spec=ExperimentItem)
         experiment_item.id = "test_item_1"
         experiment_item.input = {"test": "input"}
@@ -133,17 +134,14 @@ class TestResponseClassificationLangfuseRunner:
         )
 
         # When
-        result = await runner._run_copilot_task(item=experiment_item)
+        result = await run_copilot_task(item=experiment_item)
 
         # Then
         assert result == test_copilot_result
         mock_run_copilot_with_response_handler.assert_called_once_with(copilot_context)
 
     @pytest.mark.asyncio
-    @patch(
-        "rasa.builder.evaluator.response_classification.langfuse_runner"
-        ".DatasetEntry.from_raw_data"
-    )
+    @patch("rasa.builder.evaluator.shared.langfuse_utils" ".DatasetEntry.from_raw_data")
     @patch(
         "rasa.builder.evaluator.response_classification.langfuse_runner"
         ".langfuse.get_client"
@@ -156,13 +154,13 @@ class TestResponseClassificationLangfuseRunner:
         mock_langfuse_client: MagicMock,
         mock_dataset: MagicMock,
     ) -> None:
-        """Test _run_copilot_task method when context creation fails."""
+        """Test run_copilot_task function when context creation fails."""
         # Given
+        from rasa.builder.evaluator.shared.langfuse_utils import run_copilot_task
+
         mock_get_client.return_value = mock_langfuse_client
         mock_langfuse_client.get_dataset.return_value = mock_dataset
         mock_from_raw_data.side_effect = Exception("Context creation failed")
-
-        runner = ResponseClassificationLangfuseRunner("test_dataset", str(tmp_path))
 
         experiment_item = MagicMock(spec=ExperimentItem)
         experiment_item.id = "test_item_1"
@@ -171,20 +169,17 @@ class TestResponseClassificationLangfuseRunner:
         experiment_item.metadata = {"test": "metadata"}
 
         # When
-        result = await runner._run_copilot_task(item=experiment_item)
+        result = await run_copilot_task(item=experiment_item)
 
         # Then
         assert result is None
 
     @pytest.mark.asyncio
     @patch(
-        "rasa.builder.evaluator.response_classification.langfuse_runner"
+        "rasa.builder.evaluator.shared.langfuse_utils"
         ".run_copilot_with_response_handler"
     )
-    @patch(
-        "rasa.builder.evaluator.response_classification.langfuse_runner"
-        ".DatasetEntry.from_raw_data"
-    )
+    @patch("rasa.builder.evaluator.shared.langfuse_utils" ".DatasetEntry.from_raw_data")
     @patch(
         "rasa.builder.evaluator.response_classification.langfuse_runner"
         ".langfuse.get_client"
@@ -193,12 +188,12 @@ class TestResponseClassificationLangfuseRunner:
         self,
         mock_get_client: MagicMock,
         mock_from_raw_data: MagicMock,
-        mock_run_copilot: MagicMock,
+        mock_run_copilot: AsyncMock,
         tmp_path: Path,
         mock_langfuse_client: MagicMock,
         mock_dataset: MagicMock,
     ) -> None:
-        """Test _run_copilot_task method when copilot run fails."""
+        """Test run_copilot_task function when copilot run fails."""
         # Given
         mock_get_client.return_value = mock_langfuse_client
         mock_langfuse_client.get_dataset.return_value = mock_dataset
@@ -209,8 +204,6 @@ class TestResponseClassificationLangfuseRunner:
         mock_from_raw_data.return_value = mock_dataset_entry
         mock_run_copilot.side_effect = Exception("Copilot run failed")
 
-        runner = ResponseClassificationLangfuseRunner("test_dataset", str(tmp_path))
-
         experiment_item = MagicMock(spec=ExperimentItem)
         experiment_item.id = "test_item_1"
         experiment_item.input = {"test": "input"}
@@ -218,7 +211,7 @@ class TestResponseClassificationLangfuseRunner:
         experiment_item.metadata = {"test": "metadata"}
 
         # When
-        result = await runner._run_copilot_task(item=experiment_item)
+        result = await run_copilot_task(item=experiment_item)
 
         # Then
         assert result is None

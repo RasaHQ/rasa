@@ -43,7 +43,14 @@ class DocumentationEvidence(BaseEvidence):
         pattern=f"^{DOCUMENTATION_EVIDENCE_TYPE}",
         description="Type of evidence",
     )
-    url: str = Field(..., description="URL of the documentation source")
+    url: Optional[str] = Field(
+        None,
+        description=(
+            "URL of the documentation source. "
+            "None can indicate invalid/hallucinated evidence. "
+            "Mimics the Document model from the document_retrieval package."
+        ),
+    )
     title: Optional[str] = Field(..., description="Title of the documentation source")
     content: str = Field(..., description="Content used by the LLM Judge")
     used: bool = Field(
@@ -75,15 +82,15 @@ class DocumentationEvidence(BaseEvidence):
         ) in dataset_entry.metadata.copilot_additional_context.relevant_documents:
             # Validate URL is not None
             if retrieved_document.url is None:
-                message = "Document's URL is None"
-                structlogger.error(
+                message = "Document's URL is None. Skipping document."
+                structlogger.warning(
                     "documentation_evidence.from_dataset_entry.document_url_is_none",
                     event_info=message,
                     document_url=retrieved_document.url,
                     document_title=retrieved_document.title,
                     document_content=retrieved_document.content,
                 )
-                raise ValueError(message)
+                continue
 
             # Check if this document was actually referenced in the response
             was_used = retrieved_document.url in referenced_urls

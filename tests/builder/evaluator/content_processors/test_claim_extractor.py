@@ -12,7 +12,7 @@ from rasa.builder.evaluator.content_processors.models import (
     ClaimExtractionFailure,
     Claims,
 )
-from rasa.builder.evaluator.exceptions import ClaimExtractionError
+from rasa.builder.evaluator.shared.exceptions import ClaimExtractionError
 
 
 class TestClaimExtractor:

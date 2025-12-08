@@ -13,16 +13,16 @@ import structlog
 from jinja2 import Template
 
 from rasa.builder.copilot.constants import ROLE_USER
-from rasa.builder.evaluator.constants import (
-    CLAIM_EXTRACTOR_PROMPTS_FILE,
-    CLAIM_EXTRACTOR_PROMPTS_PACKAGE_NAME,
-    CLAIM_EXTRACTOR_RESPONSE_SCHEMA_PATH,
-)
 from rasa.builder.evaluator.content_processors.models import (
     ClaimExtractionFailure,
     Claims,
 )
-from rasa.builder.evaluator.exceptions import ClaimExtractionError
+from rasa.builder.evaluator.shared.constants import (
+    CLAIM_EXTRACTOR_PROMPTS_FILE,
+    CLAIM_EXTRACTOR_PROMPTS_PACKAGE_NAME,
+    CLAIM_EXTRACTOR_RESPONSE_SCHEMA_PATH,
+)
+from rasa.builder.evaluator.shared.exceptions import ClaimExtractionError
 from rasa.shared.constants import PACKAGE_NAME
 from rasa.shared.utils.io import read_json_file
 

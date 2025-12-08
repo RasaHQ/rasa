@@ -8,7 +8,6 @@ import yaml  # type: ignore[import-untyped]
 from langfuse import Evaluation
 from langfuse._client.datasets import DatasetClient
 from langfuse.experiment import (
-    ExperimentItem,
     ExperimentItemResult,
     ExperimentResult,
 )
@@ -16,16 +15,6 @@ from langfuse.experiment import (
 from rasa.builder.copilot.models import (
     ResponseCategory,
 )
-from rasa.builder.evaluator.constants import (
-    DEFAULT_RESPONSE_CLASSIFICATION_EVALUATION_TEXT_OUTPUT_FILENAME,
-    RESPONSE_CLASSIFICATION_EVALUATION_RESULTS_DIR,
-    RESPONSE_CLASSIFICATION_EVALUATION_YAML_OUTPUT_FILENAME,
-)
-from rasa.builder.evaluator.copilot_executor import (
-    CopilotRunResult,
-    run_copilot_with_response_handler,
-)
-from rasa.builder.evaluator.dataset.models import DatasetEntry
 from rasa.builder.evaluator.response_classification.constants import (
     EXPERIMENT_DESCRIPTION,
     EXPERIMENT_NAME,
@@ -65,6 +54,18 @@ from rasa.builder.evaluator.response_classification.models import (
     ClassificationResult,
     MetricsSummary,
 )
+from rasa.builder.evaluator.shared.constants import (
+    DEFAULT_RESPONSE_CLASSIFICATION_EVALUATION_TEXT_OUTPUT_FILENAME,
+    RESPONSE_CLASSIFICATION_EVALUATION_RESULTS_DIR,
+    RESPONSE_CLASSIFICATION_EVALUATION_YAML_OUTPUT_FILENAME,
+)
+from rasa.builder.evaluator.shared.copilot_executor import (
+    CopilotRunResult,
+)
+from rasa.builder.evaluator.shared.langfuse_utils import (
+    report_langfuse_run_results_to_txt_file,
+    run_copilot_task,
+)
 
 structlogger = structlog.get_logger()
 
@@ -99,73 +100,12 @@ class ResponseClassificationLangfuseRunner:
         result = self._dataset.run_experiment(
             name=EXPERIMENT_NAME,
             description=EXPERIMENT_DESCRIPTION,
-            task=self._run_copilot_task,
+            task=run_copilot_task,
             run_evaluators=[self._run_classification_metrics_evaluator],
         )
         self._report_run_results_to_txt_file(result)
         self._langfuse.flush()
         return result
-
-    async def _run_copilot_task(
-        self,
-        *,
-        item: ExperimentItem,
-        **kwargs: Dict[str, Any],
-    ) -> Optional[CopilotRunResult]:
-        """Copilot task function that processes each dataset item.
-
-        Follows the languse.experiment.TaskFunction protocol. The function mimics the
-        functionality of the `/copilot` endpoint.
-
-        Args:
-            item: The dataset item to process.
-            kwargs: Additional keyword arguments.
-
-        Returns:
-            A tuple containing the complete response and the generation context.
-        """
-        # Try to create the copilot context used for generating the response from the
-        # dataset item, if the context cannot be created, skip the evaluation by
-        # returning None.
-        try:
-            dataset_entry = DatasetEntry.from_raw_data(
-                id=item.id,  # type: ignore[union-attr]
-                input_data=item.input,  # type: ignore[union-attr]
-                expected_output_data=item.expected_output,  # type: ignore[union-attr]
-                metadata_data=item.metadata,  # type: ignore[union-attr]
-            )
-            context = dataset_entry.to_copilot_context()
-        except Exception as e:
-            structlogger.error(
-                "langfuse_runner._task_function_run_copilot.context_creation_failed",
-                event_info=(
-                    f"Failed to create CopilotContext from dataset item with id: "
-                    f"{item.id}. The Copilot cannot be run without a valid "  # type: ignore[union-attr]
-                    f"CopilotContext. Skipping evaluation."
-                ),
-                item_id=item.id,  # type: ignore[union-attr]
-                item_input=item.input,  # type: ignore[union-attr]
-                item_expected_output=item.expected_output,  # type: ignore[union-attr]
-                error=str(e),
-            )
-            return None
-
-        # Run the evalution. If the task fails, skip the evaluation by returning None.
-        try:
-            return await run_copilot_with_response_handler(context)
-        except Exception as e:
-            structlogger.error(
-                "langfuse_runner._task_function_run_copilot.copilot_run_failed",
-                event_info=(
-                    f"Failed to run the copilot with response handler for dataset item "
-                    f"with id: {item.id}. Skipping evaluation."  # type: ignore[union-attr]
-                ),
-                item_id=item.id,  # type: ignore[union-attr]
-                item_input=item.input,  # type: ignore[union-attr]
-                item_expected_output=item.expected_output,  # type: ignore[union-attr]
-                error=str(e),
-            )
-            return None
 
     def _run_classification_metrics_evaluator(
         self, *, item_results: List[ExperimentItemResult], **kwargs: Dict[str, Any]
@@ -401,9 +341,7 @@ class ResponseClassificationLangfuseRunner:
         return evaluations
 
     def _report_run_results_to_txt_file(self, result: ExperimentResult) -> None:
-        result_str = result.format().replace("\\n", "\n")
-        self._output_dir.mkdir(parents=True, exist_ok=True)
-
+        """Export evaluation results to a text file."""
         # Add timestamp prefix to filename
         current_date = datetime.now().strftime("%Y%m%d_%H%M%S")
         timestamped_filename = (
@@ -411,14 +349,7 @@ class ResponseClassificationLangfuseRunner:
             f"{DEFAULT_RESPONSE_CLASSIFICATION_EVALUATION_TEXT_OUTPUT_FILENAME}"
         )
         output_path = self._output_dir / timestamped_filename
-
-        with open(str(output_path), "w") as f:
-            f.write(result_str)
-        structlogger.info(
-            "langfuse_runner._report_run_results.exported",
-            event_info="Evaluation results exported to text file",
-            text_file=output_path,
-        )
+        report_langfuse_run_results_to_txt_file(result, output_path)
 
     def _report_yaml_structured_results(self, evaluations: list[Evaluation]) -> None:
         """Export evaluation results to a YAML file with structured data."""

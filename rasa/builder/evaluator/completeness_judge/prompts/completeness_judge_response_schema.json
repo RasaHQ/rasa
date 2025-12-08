@@ -1,0 +1,44 @@
+{
+  "type": "object",
+  "properties": {
+    "verdicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "part_text": {
+            "type": "string",
+            "description": "Text describing this atomic part of the user request"
+          },
+          "addressing_claims_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "List of claim UUIDs that address this part of the request (empty if not covered)"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Explanation of how the claims address (or don't address) this part"
+          }
+        },
+        "required": ["part_text", "addressing_claims_ids", "rationale"],
+        "additionalProperties": false
+      },
+      "description": "List of verdicts for each atomic part of the user request"
+    },
+    "overall_rationale": {
+      "type": "string",
+      "description": "Overall rationale for the completeness assessment"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence in the completeness assessment (0-1)"
+    }
+  },
+  "required": ["verdicts", "overall_rationale", "confidence"],
+  "additionalProperties": false
+}

@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "properties": {
+    "verdicts": {
+      "type": "array",
+      "description": "List of verdicts for each claim",
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "description": "UUID of the claim being evaluated"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": ["supported", "contradicted", "not_enough_info"],
+            "description": "Verdict for the claim: supported (backed by evidence), contradicted (conflicts with evidence), or not_enough_info (cannot be confirmed)"
+          },
+          "evidence_ids": {
+            "type": "array",
+            "description": "List of evidence IDs (UUIDs) that support this verdict",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Brief explanation (1-2 sentences) of why this verdict was given, citing specific evidence"
+          },
+          "confidence": {
+            "type": "number",
+            "description": "Confidence score between 0 and 1",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": ["claim_id", "verdict", "evidence_ids", "rationale", "confidence"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["verdicts"],
+  "additionalProperties": false
+}
+
