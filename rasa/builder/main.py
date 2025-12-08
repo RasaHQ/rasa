@@ -8,6 +8,7 @@ import sys
 from typing import Optional
 
 import structlog
+from langfuse import Langfuse
 from sanic import HTTPResponse, Sanic
 from sanic.request import Request
 from sanic_openapi import openapi3_blueprint
@@ -87,6 +88,18 @@ def setup_middleware(app: Sanic) -> None:
         except Exception:
             # avoid breaking response path
             pass
+
+
+def setup_langfuse() -> None:
+    """Setup langfuse configuration"""
+    Langfuse(
+        public_key=config.LANGFUSE_PUBLIC_KEY,
+        secret_key=config.LANGFUSE_SECRET_KEY,
+        host=config.LANGFUSE_HOST,
+        additional_headers={
+            config.DEPLOYMENT_STACK_HEADER_NAME: config.DEPLOYMENT_STACK
+        },
+    )
 
 
 def create_app(project_folder: str) -> Sanic:
@@ -192,6 +205,9 @@ def main(project_folder: Optional[str] = None) -> None:
         # Setup telemetry
         rasa.telemetry.initialize_telemetry()
         rasa.telemetry.initialize_error_reporting(private_mode=False)
+
+        # Setup langfuse
+        setup_langfuse()
 
         _apply_llm_overrides_from_builder_env()
 

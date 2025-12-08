@@ -917,3 +917,102 @@ class TestProjectGenerator:
 
             # Verify attempts were made
             assert mock_attempt.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_generate_commit_message(self, tmp_path: Path) -> None:
+        """Test commit message generation."""
+        generator = ProjectGenerator(str(tmp_path))
+
+        diff_output = "M\tconfig.yml\nA\tdomain.yml"
+        detailed_diff = "diff --git a/config.yml b/config.yml\n+version: 3.1"
+        llm_response = "Update config and add domain"
+
+        with (
+            patch.object(
+                generator.git_service,
+                "run_git_command",
+                new_callable=AsyncMock,
+            ) as mock_git,
+            patch(
+                "rasa.builder.project_generator.project_generator.llm_service.generate_text",
+                new_callable=AsyncMock,
+            ) as mock_llm,
+            patch(
+                "rasa.builder.project_generator.project_generator.CommitMessageGenerationLangfuseTelemetry.update_commit_message_generation_input"
+            ) as mock_telemetry_input,
+            patch(
+                "rasa.builder.project_generator.project_generator.CommitMessageGenerationLangfuseTelemetry.update_commit_message_generation_output"
+            ) as mock_telemetry_output,
+        ):
+            # Mock git commands
+            mock_git.side_effect = [diff_output, detailed_diff]
+            # Mock LLM response
+            mock_llm.return_value = llm_response
+
+            # Execute
+            result = await generator._generate_commit_message()
+
+            # Verify
+            assert result == "Update config and add domain"
+            assert mock_git.call_count == 2
+            mock_git.assert_any_call(["diff", "--name-status"], check_output=True)
+            mock_git.assert_any_call(["diff", "--unified=2"], check_output=True)
+            mock_llm.assert_called_once()
+            mock_telemetry_input.assert_called_once()
+            mock_telemetry_output.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_generate_commit_message_no_diff(self, tmp_path: Path) -> None:
+        """Test commit message generation."""
+        generator = ProjectGenerator(str(tmp_path))
+
+        diff_output = ""
+
+        with (
+            patch.object(
+                generator.git_service,
+                "run_git_command",
+                new_callable=AsyncMock,
+            ) as mock_git,
+        ):
+            # Mock git commands
+            mock_git.side_effect = [diff_output]
+
+            # Execute
+            result = await generator._generate_commit_message()
+
+            # Verify default message is used when no diff
+            assert result == "Update files"
+
+    @pytest.mark.asyncio
+    async def test_generate_commit_message_too_long_message(
+        self, tmp_path: Path
+    ) -> None:
+        """Test commit message generation."""
+        generator = ProjectGenerator(str(tmp_path))
+
+        diff_output = "M\tconfig.yml\nA\tdomain.yml"
+        detailed_diff = "diff --git a/config.yml b/config.yml\n+version: 3.1"
+        llm_response = "Update all flows, domain data and config > 36"
+
+        with (
+            patch.object(
+                generator.git_service,
+                "run_git_command",
+                new_callable=AsyncMock,
+            ) as mock_git,
+            patch(
+                "rasa.builder.project_generator.project_generator.llm_service.generate_text",
+                new_callable=AsyncMock,
+            ) as mock_llm,
+        ):
+            # Mock git commands
+            mock_git.side_effect = [diff_output, detailed_diff]
+            # Mock LLM response
+            mock_llm.return_value = llm_response
+
+            # Execute
+            result = await generator._generate_commit_message()
+
+            # Verify default message when LLM response too long
+            assert result == "Update files"

@@ -5,7 +5,7 @@ import pytest
 from sanic import Sanic
 
 from rasa.builder import config
-from rasa.builder.main import create_app
+from rasa.builder.main import create_app, setup_langfuse
 from rasa.builder.project_generator.project_generator import ProjectGenerator
 
 
@@ -109,3 +109,43 @@ class TestConditionalLogic:
         )
 
         assert should_register is False
+
+
+class TestSetupLangfuse:
+    """Test the setup_langfuse function."""
+
+    @patch("rasa.builder.main.Langfuse")
+    @patch("rasa.builder.main.config.LANGFUSE_PUBLIC_KEY", "test-public-key")
+    @patch("rasa.builder.main.config.LANGFUSE_SECRET_KEY", "test-secret-key")
+    @patch("rasa.builder.main.config.LANGFUSE_HOST", "https://test-langfuse-host.com")
+    @patch("rasa.builder.main.config.DEPLOYMENT_STACK", "unit-test")
+    @patch("rasa.builder.main.config.DEPLOYMENT_STACK_HEADER_NAME", "deployment-stack")
+    def test_setup_langfuse_creates_client(
+        self, mock_langfuse_class: MagicMock
+    ) -> None:
+        """Test that setup_langfuse creates a Langfuse client that can be retrieved."""
+        import langfuse
+
+        # Create a mock client instance
+        mock_client_instance = MagicMock()
+        mock_client_instance.flush = MagicMock()
+        mock_langfuse_class.return_value = mock_client_instance
+
+        # Mock get_client to return the same instance
+        with patch.object(langfuse, "get_client", return_value=mock_client_instance):
+            # Call setup_langfuse to initialize the client
+            setup_langfuse()
+
+            # Verify Langfuse was instantiated with correct parameters
+            mock_langfuse_class.assert_called_once_with(
+                public_key="test-public-key",
+                secret_key="test-secret-key",
+                host="https://test-langfuse-host.com",
+                additional_headers={"deployment-stack": "unit-test"},
+            )
+
+            # Get the client using langfuse.get_client()
+            client = langfuse.get_client()
+
+            # Verify the client retrieved is the same one that was created
+            assert client is mock_client_instance

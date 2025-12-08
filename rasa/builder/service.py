@@ -1744,7 +1744,7 @@ async def handle_git_status(request: Request) -> HTTPResponse:
                 "author": "user",
                 "email": "user@example.com",
                 "timestamp": 1640995200,
-                "message": "Update bot files",
+                "message": "Update files",
             }
         ]
     },

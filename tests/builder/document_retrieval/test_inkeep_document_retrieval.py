@@ -23,6 +23,19 @@ from rasa.builder.document_retrieval.inkeep_document_retrieval import (
 from rasa.builder.exceptions import DocumentRetrievalError
 
 
+@pytest.fixture(autouse=True)
+def mock_langfuse():
+    """Mock Langfuse client to prevent network connections during tests."""
+    with patch("langfuse.get_client") as mock_get_client:
+        mock_client = MagicMock()
+        mock_generation = MagicMock()
+        mock_generation.__enter__ = MagicMock(return_value=mock_generation)
+        mock_generation.__exit__ = MagicMock(return_value=None)
+        mock_client.start_as_current_generation.return_value = mock_generation
+        mock_get_client.return_value = mock_client
+        yield mock_client
+
+
 class TestInKeepDocumentRetrieval:
     """Test cases for InKeepDocumentRetrieval class."""
 
@@ -412,6 +425,18 @@ class TestInKeepDocumentRetrieval:
         assert expected_error_message in str(exc_info.value)
 
     @pytest.mark.asyncio
+    @patch(
+        "rasa.builder.document_retrieval.inkeep_document_retrieval.config.DEPLOYMENT_STACK",
+        "unit-test",
+    )
+    @patch(
+        "rasa.builder.document_retrieval.inkeep_document_retrieval.config.DEPLOYMENT_STACK_HEADER_NAME",
+        "deployment-stack",
+    )
+    @patch(
+        "rasa.builder.document_retrieval.inkeep_document_retrieval.config.HELLO_LLM_PROXY_BASE_URL",
+        None,
+    )
     @patch("openai.AsyncOpenAI")
     async def test_get_client_creation(
         self,
@@ -432,6 +457,7 @@ class TestInKeepDocumentRetrieval:
             mock_openai_class.assert_called_once_with(
                 api_key=mock_api_key,
                 base_url=expected_base_url,
+                default_headers={"deployment-stack": "unit-test"},
             )
 
         # When - Second call - should create a new client
@@ -451,6 +477,10 @@ class TestInKeepDocumentRetrieval:
 
         # Reload config to re-evaluate INKEEP_BASE_URL (computed at import)
         importlib.reload(config)
+
+        # Patch config values after reload to ensure they take effect
+        monkeypatch.setattr(config, "DEPLOYMENT_STACK", "unit-test")
+        monkeypatch.setattr(config, "DEPLOYMENT_STACK_HEADER_NAME", "deployment-stack")
 
         mock_client = AsyncMock()
         async_openai_mock = MagicMock(return_value=mock_client)
@@ -475,3 +505,8 @@ class TestInKeepDocumentRetrieval:
             async_openai_mock.call_args.kwargs.get("base_url")
             == expected_base_url_with_slash
         )
+
+        # Verify default_headers are set correctly
+        assert async_openai_mock.call_args.kwargs.get("default_headers") == {
+            "deployment-stack": "unit-test"
+        }

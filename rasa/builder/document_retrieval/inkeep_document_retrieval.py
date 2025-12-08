@@ -165,7 +165,13 @@ class InKeepDocumentRetrieval:
         """Get or create client that handles the API calls to InKeep AI."""
         # Ensure trailing slash to match client expectations/tests
         base_url = f"{config.INKEEP_BASE_URL.rstrip('/')}/"
-        client = openai.AsyncOpenAI(base_url=base_url, api_key=self.api_key)
+        client = openai.AsyncOpenAI(
+            base_url=base_url,
+            api_key=self.api_key,
+            default_headers={
+                config.DEPLOYMENT_STACK_HEADER_NAME: config.DEPLOYMENT_STACK
+            },
+        )
         structlogger.debug("inkeep_document_retrieval._get_client", base_url=base_url)
 
         try:

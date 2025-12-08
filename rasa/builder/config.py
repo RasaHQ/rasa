@@ -88,11 +88,19 @@ INKEEP_BASE_URL = os.getenv("INKEEP_BASE_URL", "https://api.inkeep.com/v1").rstr
 HELLO_LLM_PROXY_BASE_URL = os.getenv("HELLO_LLM_PROXY_BASE_URL")
 RASA_PRO_LICENSE = os.getenv("RASA_PRO_LICENSE")
 
+# Langfuse Configuration
+LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")
+LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")
+LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+DEPLOYMENT_STACK = os.getenv("DEPLOYMENT_STACK", "local")
+DEPLOYMENT_STACK_HEADER_NAME = "deployment-stack"
+
 # Compute proxy-aware base URLs
 if HELLO_LLM_PROXY_BASE_URL:
     _proxy = HELLO_LLM_PROXY_BASE_URL.rstrip("/")
     INKEEP_BASE_URL = f"{_proxy}/documentation"
     LAKERA_BASE_URL = f"{_proxy}/guardrails"
+    LANGFUSE_HOST = f"{_proxy}/langfuse"
 
 
 # Number of minutes after FIRST_USED when authentication becomes required

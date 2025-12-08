@@ -36,6 +36,9 @@ from rasa.builder.llm_service import llm_service
 from rasa.builder.logging_utils import capture_exception_with_context
 from rasa.builder.models import BotFiles, GitCommitInfo
 from rasa.builder.project_info import ProjectInfo, ensure_first_used, load_project_info
+from rasa.builder.telemetry.commit_langfuse_telemetry import (
+    CommitMessageGenerationLangfuseTelemetry,
+)
 from rasa.builder.telemetry.prompt_to_bot_langfuse_telemetry import (
     PromptToBotLangfuseTelemetry,
 )
@@ -59,6 +62,7 @@ from rasa.shared.utils.io import read_json_file
 from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_schema_file
 from rasa.utils.io import InvalidPathException, subpath
 
+DEFAULT_COMMIT_MESSAGE = "Update files"
 structlogger = structlog.get_logger()
 
 
@@ -1060,6 +1064,7 @@ class ProjectGenerator:
             # Don't fail the operation if Git commit fails, return current commit
             return await self.git_service.get_current_commit_sha()
 
+    @langfuse.observe
     async def _generate_commit_message(self) -> str:
         """Generate a meaningful commit message using AI based on the changes.
 
@@ -1070,18 +1075,17 @@ class ProjectGenerator:
             # Get the diff of staged changes
             diff_output = (
                 await self.git_service.run_git_command(
-                    ["diff", "--cached", "--name-status"], check_output=True
+                    ["diff", "--name-status"], check_output=True
                 )
                 or ""
             )
-
             if not diff_output:
-                return "Update bot files"
+                return DEFAULT_COMMIT_MESSAGE
 
             # Get a more detailed diff for context (limited to avoid token limits)
             detailed_diff = (
                 await self.git_service.run_git_command(
-                    ["diff", "--cached", "--unified=2"], check_output=True
+                    ["diff", "--unified=2"], check_output=True
                 )
                 or ""
             )
@@ -1097,11 +1101,18 @@ class ProjectGenerator:
                 f"The commit message should:\n"
                 f"- Be in imperative mood (e.g., 'Add', 'Update', 'Fix', 'Remove')\n"
                 f"- Be specific about what changed\n"
-                f"- Be under 72 characters\n"
+                f"- Be under 36 characters\n"
                 f"- Focus on the most significant changes\n\n"
                 f"File changes:\n{diff_output}\n\n"
                 f"Detailed diff:\n{detailed_diff}\n\n"
                 f"Generate only the commit message, nothing else:"
+            )
+
+            # Update Langfuse span with input data
+            CommitMessageGenerationLangfuseTelemetry.update_commit_message_generation_input(
+                diff_output=diff_output,
+                detailed_diff=detailed_diff,
+                prompt=prompt,
             )
 
             # Use the existing LLM service to generate the commit message
@@ -1111,18 +1122,14 @@ class ProjectGenerator:
             commit_message = response.strip().strip('"').strip("'")
 
             # Fallback to a reasonable default if generation fails or is too long
-            if not commit_message or len(commit_message) > 72:
-                # Try to infer from file changes
-                if "domain.yml" in diff_output:
-                    return "Update domain configuration"
-                elif any(f in diff_output for f in ["flows/", "data/flows/"]):
-                    return "Update conversation flows"
-                elif any(f in diff_output for f in ["nlu.yml", "data/nlu"]):
-                    return "Update NLU training data"
-                elif "config.yml" in diff_output:
-                    return "Update model configuration"
-                else:
-                    return "Update bot files"
+            if not commit_message or len(commit_message) > 36:
+                commit_message = DEFAULT_COMMIT_MESSAGE
+
+            # Update Langfuse span with output data
+            CommitMessageGenerationLangfuseTelemetry.update_commit_message_generation_output(
+                raw_response=response,
+                commit_message=commit_message,
+            )
 
             return commit_message
 
@@ -1132,7 +1139,7 @@ class ProjectGenerator:
                 project_folder=self.project_folder.as_posix(),
             )
             # Fallback to generic message
-            return "Update bot files"
+            return DEFAULT_COMMIT_MESSAGE
 
     async def checkout_branch(
         self, branch_name: str, create_if_not_exists: bool = False
