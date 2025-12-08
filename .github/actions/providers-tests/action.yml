@@ -60,7 +60,7 @@ runs:
 
     - name: Setup Python Environment
       id: setup-python
-      uses: ./.github/actions/setup-python-env
+      uses: ./rasa-private/.github/actions/setup-python-env
       with:
         PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
         WORKING_DIRECTORY: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
