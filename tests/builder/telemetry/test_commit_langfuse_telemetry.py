@@ -19,8 +19,12 @@ class TestCommitMessageGenerationLangfuseTelemetry:
         mock_client.update_current_span = MagicMock()
         return mock_client
 
-    def test_update_commit_message_generation_input(self, mock_langfuse_client):
+    @patch("langfuse.get_client")
+    def test_update_commit_message_generation_input(
+        self, mock_get_client, mock_langfuse_client
+    ):
         """Test updating commit message generation input."""
+        mock_get_client.return_value = mock_langfuse_client
         diff_output = "M domain/general/hello.yml"
         detailed_diff = """diff --git a/domain/general/hello.yml
  b/domain/general/hello.yml
@@ -56,12 +60,11 @@ utter_hello:
 
 Generate only the commit message, nothing else:"""
 
-        with patch("langfuse.get_client", return_value=mock_langfuse_client):
-            CommitMessageGenerationLangfuseTelemetry.update_commit_message_generation_input(
-                diff_output=diff_output,
-                detailed_diff=detailed_diff,
-                prompt=prompt,
-            )
+        CommitMessageGenerationLangfuseTelemetry.update_commit_message_generation_input(
+            diff_output=diff_output,
+            detailed_diff=detailed_diff,
+            prompt=prompt,
+        )
 
         mock_langfuse_client.update_current_span.assert_called_once_with(
             input={
@@ -71,20 +74,23 @@ Generate only the commit message, nothing else:"""
             }
         )
 
-    def test_update_commit_message_generation_output(self, mock_langfuse_client):
+    @patch("langfuse.get_client")
+    def test_update_commit_message_generation_output(
+        self, mock_get_client, mock_langfuse_client
+    ):
         """Test updating commit message generation output."""
-        raw_response = "Update domain configuration\n"
+        mock_get_client.return_value = mock_langfuse_client
+        response_content = "Update domain configuration\n"
         commit_message = "Update domain configuration"
 
-        with patch("langfuse.get_client", return_value=mock_langfuse_client):
-            CommitMessageGenerationLangfuseTelemetry.update_commit_message_generation_output(
-                raw_response=raw_response,
-                commit_message=commit_message,
-            )
+        CommitMessageGenerationLangfuseTelemetry.update_commit_message_generation_output(
+            response_content=response_content,
+            commit_message=commit_message,
+        )
 
         mock_langfuse_client.update_current_span.assert_called_once_with(
             output={
-                "raw_response": raw_response,
+                "response_content": response_content,
                 "commit_message": commit_message,
             }
         )

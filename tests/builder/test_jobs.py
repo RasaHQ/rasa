@@ -783,6 +783,11 @@ class TestCopilotWelcomeMessage:
         )
         mock_job.commit_sha = None  # No commit_sha for prompt-based jobs
 
+        # Mock generate_welcome_message for prompt-based bots
+        mock_app.ctx.project_generator.generate_welcome_message = AsyncMock(
+            return_value="Your custom agent has been created successfully!"
+        )
+
         await run_copilot_welcome_message_job(mock_app, mock_job)
 
         # For prompt-based jobs without commit_sha, only 1 event is sent

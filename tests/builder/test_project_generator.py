@@ -4,6 +4,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from rasa.builder.copilot.constants import PROMPT_TO_BOT_KEY, PROMPT_TO_BOT_TEMPLATE_KEY
+from rasa.builder.copilot.copilot_templated_message_provider import (
+    load_copilot_welcome_messages,
+)
 from rasa.builder.exceptions import ProjectGenerationError, ValidationError
 from rasa.builder.models import GitCommitInfo
 from rasa.builder.project_generator.project_generator import ProjectGenerator
@@ -927,14 +931,22 @@ class TestProjectGenerator:
         detailed_diff = "diff --git a/config.yml b/config.yml\n+version: 3.1"
         llm_response = "Update config and add domain"
 
+        # Create a mock ChatCompletion response
+        from unittest.mock import MagicMock
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = llm_response
+
         with (
             patch.object(
                 generator.git_service,
                 "run_git_command",
                 new_callable=AsyncMock,
             ) as mock_git,
-            patch(
-                "rasa.builder.project_generator.project_generator.llm_service.generate_text",
+            patch.object(
+                generator,
+                "_generate_text",
                 new_callable=AsyncMock,
             ) as mock_llm,
             patch(
@@ -947,7 +959,7 @@ class TestProjectGenerator:
             # Mock git commands
             mock_git.side_effect = [diff_output, detailed_diff]
             # Mock LLM response
-            mock_llm.return_value = llm_response
+            mock_llm.return_value = mock_response
 
             # Execute
             result = await generator._generate_commit_message()
@@ -995,24 +1007,372 @@ class TestProjectGenerator:
         detailed_diff = "diff --git a/config.yml b/config.yml\n+version: 3.1"
         llm_response = "Update all flows, domain data and config > 36"
 
+        # Create a mock ChatCompletion response
+        from unittest.mock import MagicMock
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = llm_response
+
         with (
             patch.object(
                 generator.git_service,
                 "run_git_command",
                 new_callable=AsyncMock,
             ) as mock_git,
-            patch(
-                "rasa.builder.project_generator.project_generator.llm_service.generate_text",
+            patch.object(
+                generator,
+                "_generate_text",
                 new_callable=AsyncMock,
             ) as mock_llm,
         ):
             # Mock git commands
             mock_git.side_effect = [diff_output, detailed_diff]
             # Mock LLM response
-            mock_llm.return_value = llm_response
+            mock_llm.return_value = mock_response
 
             # Execute
             result = await generator._generate_commit_message()
 
             # Verify default message when LLM response too long
             assert result == "Update files"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "flows,llm_response,expected_uses_template,should_call_llm",
+        [
+            pytest.param(
+                {
+                    "hello_world_greeting": {
+                        "steps": [{"action": "utter_hello_world", "next": "END"}],
+                        "description": "Responds to user greetings with 'Hello World'.",
+                    }
+                },
+                "- *Say hello to me*",
+                True,
+                True,
+                id="generated_message",
+            ),
+            pytest.param(
+                {},
+                None,
+                False,
+                False,
+                id="no_flows",
+            ),
+            pytest.param(
+                {
+                    "hello_world_greeting": {
+                        "steps": [{"action": "utter_hello_world", "next": "END"}],
+                        "description": "Responds to user greetings with 'Hello World'.",
+                    }
+                },
+                None,
+                False,
+                True,
+                id="no_response",
+            ),
+            pytest.param(
+                {
+                    "hello_world_greeting": {
+                        "steps": [{"action": "utter_hello_world", "next": "END"}],
+                        "description": "Responds to user greetings with 'Hello World'.",
+                    }
+                },
+                "",
+                False,
+                True,
+                id="empty_response",
+            ),
+            pytest.param(
+                {
+                    "hello_world_greeting": {
+                        "steps": [{"action": "utter_hello_world", "next": "END"}],
+                        "description": "Responds to user greetings with 'Hello World'.",
+                    }
+                },
+                " *Say hello to me*",
+                False,
+                True,
+                id="wrong_format_response",
+            ),
+            pytest.param(
+                {
+                    "greeting_flow": {
+                        "steps": [{"action": "utter_greet", "next": "END"}],
+                        "description": "Greet the user",
+                    },
+                    "goodbye_flow": {
+                        "steps": [{"action": "utter_goodbye", "next": "END"}],
+                        "description": "Say goodbye to the user",
+                    },
+                    "help_flow": {
+                        "steps": [{"action": "utter_help", "next": "END"}],
+                        "description": "Provide help information",
+                    },
+                },
+                "- *Hello*\n- *Goodbye*\n- *Help me*",
+                True,
+                True,
+                id="multiple_flows",
+            ),
+            pytest.param(
+                {
+                    "greeting_flow": {
+                        "steps": [{"action": "utter_greet", "next": "END"}],
+                        "description": "Greet the user",
+                    },
+                    "goodbye_flow": {
+                        "steps": [{"action": "utter_goodbye", "next": "END"}],
+                        "description": "Say goodbye to the user",
+                    },
+                    "help_flow": {
+                        "steps": [{"action": "utter_help", "next": "END"}],
+                        "description": "Provide help information",
+                    },
+                },
+                "- *Say hello to me*\n- *Hello*\n- *Goodbye*\n- *Help me*",
+                False,
+                True,
+                id="too_many_examples",
+            ),
+        ],
+    )
+    async def test_generate_welcome_message(
+        self,
+        tmp_path: Path,
+        flows: dict,
+        llm_response: str | None,
+        expected_uses_template: bool,
+        should_call_llm: bool,
+    ) -> None:
+        """Test welcome message generation"""
+        generator = ProjectGenerator(str(tmp_path))
+
+        welcome_messages = load_copilot_welcome_messages()
+        default_welcome_message = welcome_messages.get(PROMPT_TO_BOT_KEY)
+        template_welcome_message = welcome_messages.get(PROMPT_TO_BOT_TEMPLATE_KEY)
+
+        assert default_welcome_message is not None
+        assert template_welcome_message is not None
+
+        # Create a mock ChatCompletion response
+        from unittest.mock import MagicMock
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = llm_response
+
+        with (
+            patch.object(
+                generator,
+                "_get_bot_data_for_llm",
+                return_value={"domain": {}, "flows": flows},
+            ),
+            patch.object(
+                generator,
+                "_generate_text",
+                new_callable=AsyncMock,
+            ) as mock_llm,
+            patch(
+                "rasa.builder.project_generator.project_generator.WelcomeMessageGenerationLangfuseTelemetry.update_welcome_message_generation_input"
+            ) as mock_telemetry_input,
+            patch(
+                "rasa.builder.project_generator.project_generator.WelcomeMessageGenerationLangfuseTelemetry.update_welcome_message_generation_output"
+            ) as mock_telemetry_output,
+        ):
+            # Mock LLM response
+            mock_llm.return_value = mock_response
+
+            # Execute
+            welcome_message = await generator.generate_welcome_message(
+                default_welcome_message=default_welcome_message,
+                template_welcome_message=template_welcome_message,
+            )
+
+            # Verify LLM calls
+            if should_call_llm:
+                mock_llm.assert_called_once()
+                mock_telemetry_input.assert_called_once()
+                mock_telemetry_output.assert_called_once()
+            else:
+                mock_llm.assert_not_called()
+                mock_telemetry_input.assert_not_called()
+                mock_telemetry_output.assert_not_called()
+
+            # Verify welcome message
+            if expected_uses_template:
+                assert welcome_message == template_welcome_message.format(
+                    example_questions=llm_response
+                )
+            else:
+                assert welcome_message == default_welcome_message
+
+    @pytest.mark.parametrize(
+        "response,max_amount,expected",
+        [
+            pytest.param(
+                "- *Hello*",
+                3,
+                True,
+                id="single_valid_bullet_point",
+            ),
+            pytest.param(
+                "- *Hello*\n- *Goodbye*\n- *Help me*",
+                3,
+                True,
+                id="multiple_valid_bullet_points",
+            ),
+            pytest.param(
+                "- *Hello*\n- *Goodbye*",
+                3,
+                True,
+                id="less_than_max_amount",
+            ),
+            pytest.param(
+                "- *Hello*\n- *Goodbye*\n- *Help me*\n- *Extra*",
+                3,
+                False,
+                id="exceeds_max_amount",
+            ),
+            pytest.param(
+                "",
+                3,
+                False,
+                id="empty_string",
+            ),
+            pytest.param(
+                "\n\n\n",
+                3,
+                False,
+                id="only_whitespace",
+            ),
+            pytest.param(
+                "- Hello",
+                3,
+                False,
+                id="missing_asterisks",
+            ),
+            pytest.param(
+                "*Hello*",
+                3,
+                False,
+                id="missing_dash",
+            ),
+            pytest.param(
+                " *Hello*",
+                3,
+                False,
+                id="missing_dash_with_space",
+            ),
+            pytest.param(
+                "- *Hello",
+                3,
+                False,
+                id="missing_closing_asterisk",
+            ),
+            pytest.param(
+                "- Hello*",
+                3,
+                False,
+                id="missing_opening_asterisk",
+            ),
+            pytest.param(
+                "- **Hello**",
+                3,
+                False,
+                id="double_asterisks",
+            ),
+            pytest.param(
+                "- *Hello*\n- Goodbye",
+                3,
+                False,
+                id="mixed_valid_and_invalid",
+            ),
+            pytest.param(
+                "- *Hello*\n\n- *Goodbye*",
+                3,
+                True,
+                id="valid_with_empty_lines",
+            ),
+            pytest.param(
+                "  - *Hello*  \n  - *Goodbye*  ",
+                3,
+                True,
+                id="valid_with_leading_trailing_whitespace",
+            ),
+            pytest.param(
+                "-*Hello*",
+                3,
+                False,
+                id="no_space_after_dash",
+            ),
+            pytest.param(
+                "- *Hello world*",
+                3,
+                True,
+                id="bullet_point_with_spaces",
+            ),
+            pytest.param(
+                "- *Can I transfer money?*",
+                3,
+                True,
+                id="bullet_point_with_question_mark",
+            ),
+            pytest.param(
+                "- *Check my balance!*",
+                3,
+                True,
+                id="bullet_point_with_exclamation",
+            ),
+            pytest.param(
+                "- *Hello, how are you?*",
+                3,
+                True,
+                id="bullet_point_with_comma",
+            ),
+            pytest.param(
+                "- *Hello*\n- *Goodbye*\n- *Help*",
+                2,
+                False,
+                id="exactly_exceeds_max_amount",
+            ),
+            pytest.param(
+                "- *Hello*\n- *Goodbye*",
+                2,
+                True,
+                id="exactly_at_max_amount",
+            ),
+            pytest.param(
+                "- *Hello*",
+                1,
+                True,
+                id="single_bullet_max_one",
+            ),
+            pytest.param(
+                "- *Hello*\n- *Goodbye*",
+                1,
+                False,
+                id="two_bullets_max_one",
+            ),
+            pytest.param(
+                "- *Text with * asterisk inside*",
+                3,
+                False,
+                id="asterisk_inside_text",
+            ),
+            pytest.param(
+                "- *First*\n- *Second*\nNot a bullet",
+                3,
+                False,
+                id="valid_bullets_with_non_bullet_line",
+            ),
+        ],
+    )
+    def test_verify_bullet_points(
+        self, tmp_path: Path, response: str, max_amount: int, expected: bool
+    ) -> None:
+        """Test _verify_bullet_points"""
+        generator = ProjectGenerator(str(tmp_path))
+        result = generator._verify_bullet_points(response, max_amount)
+        assert result == expected

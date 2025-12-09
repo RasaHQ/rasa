@@ -54,3 +54,15 @@ welcome_messages:
 
     ### ▶️ **First step: try it out**
     Test your agent in the chat preview on the right to see how it responds to your users.
+
+  prompt_to_bot_template: |
+    👋 Welcome to Hello Rasa!
+
+    I'm your **Copilot** — here to help you explore Rasa and start customizing your agent.
+    You can ask me how your agent works, how to add new skills, or how to connect integrations.
+
+    Your custom agent has been created and trained successfully.
+
+    ### ▶️ **First step: try it out**
+    Ask your agent (in the chat preview on the right):
+    {example_questions}

@@ -16,6 +16,7 @@ from rasa.builder.constants import (
 )
 from rasa.builder.copilot.constants import (
     PROMPT_TO_BOT_KEY,
+    PROMPT_TO_BOT_TEMPLATE_KEY,
 )
 from rasa.builder.copilot.copilot_templated_message_provider import (
     load_copilot_handler_default_responses,
@@ -666,7 +667,12 @@ async def run_copilot_welcome_message_job(
                 welcome_messages.get(PROMPT_TO_BOT_KEY),
             )
         else:
-            welcome_message = welcome_messages.get(PROMPT_TO_BOT_KEY)
+            welcome_message = await app.ctx.project_generator.generate_welcome_message(
+                default_welcome_message=welcome_messages.get(PROMPT_TO_BOT_KEY),
+                template_welcome_message=welcome_messages.get(
+                    PROMPT_TO_BOT_TEMPLATE_KEY
+                ),
+            )
 
         commit_info = None
         if job.commit_sha:

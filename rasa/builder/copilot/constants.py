@@ -37,3 +37,7 @@ DEFAULT_COPILOT_CHAT_ID = "default"
 
 # Welcome message key for prompt-to-bot (not a template enum)
 PROMPT_TO_BOT_KEY = "prompt_to_bot"
+PROMPT_TO_BOT_TEMPLATE_KEY = "prompt_to_bot_template"
+
+# Default commit message when updating files
+DEFAULT_COMMIT_MESSAGE = "Update files"

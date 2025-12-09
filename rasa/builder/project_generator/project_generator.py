@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import re
 import shutil
 import subprocess
 from contextlib import asynccontextmanager
@@ -15,9 +16,13 @@ import langfuse
 import openai
 import structlog
 from jinja2 import Template
+from openai.types.chat import ChatCompletion
 
 from rasa.builder import config
 from rasa.builder.config import PROJECT_GENERATION_TIMEOUT
+from rasa.builder.copilot.constants import (
+    DEFAULT_COMMIT_MESSAGE,
+)
 from rasa.builder.copilot.models import (
     CopilotContext,
     FileContent,
@@ -42,6 +47,9 @@ from rasa.builder.telemetry.commit_langfuse_telemetry import (
 from rasa.builder.telemetry.prompt_to_bot_langfuse_telemetry import (
     PromptToBotLangfuseTelemetry,
 )
+from rasa.builder.telemetry.welcome_langfuse_telemetry import (
+    WelcomeMessageGenerationLangfuseTelemetry,
+)
 from rasa.builder.template_cache import copy_cache_for_template_if_available
 from rasa.builder.training_service import TrainingInput
 from rasa.builder.validation_service import validate_project
@@ -62,8 +70,9 @@ from rasa.shared.utils.io import read_json_file
 from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_schema_file
 from rasa.utils.io import InvalidPathException, subpath
 
-DEFAULT_COMMIT_MESSAGE = "Update files"
 structlogger = structlog.get_logger()
+
+BULLET_POINT_REGEX = re.compile(r"^-\s+\*[^*]+\*\s*$")
 
 
 class ProjectGenerator:
@@ -95,6 +104,18 @@ class ProjectGenerator:
             importlib_resources.read_text(  # type: ignore[no-untyped-call]
                 "rasa.builder.project_generator.prompts",
                 "skill_to_bot_error_feedback_prompt.jinja2",
+            )
+        )
+        self._welcome_message_prompt_template = Template(
+            importlib_resources.read_text(  # type: ignore[no-untyped-call]
+                "rasa.builder.copilot.prompts",
+                "welcome_message_prompt.jinja2",
+            )
+        )
+        self._commit_message_prompt_template = Template(
+            importlib_resources.read_text(  # type: ignore[no-untyped-call]
+                "rasa.builder.copilot.prompts",
+                "commit_message_prompt.jinja2",
             )
         )
 
@@ -1064,6 +1085,41 @@ class ProjectGenerator:
             # Don't fail the operation if Git commit fails, return current commit
             return await self.git_service.get_current_commit_sha()
 
+    @WelcomeMessageGenerationLangfuseTelemetry.trace_text_generation
+    async def _generate_text(
+        self, prompt: str, max_tokens: int = 100
+    ) -> ChatCompletion:
+        """Generate simple text using OpenAI.
+
+        Args:
+            prompt: The text prompt to send to the model
+            max_tokens: Maximum tokens to generate
+
+        Returns:
+            Chat Completion response
+
+        Raises:
+            LLMGenerationError: If generation fails
+        """
+        try:
+            async with self._get_client() as client:
+                response = await client.chat.completions.create(
+                    model=config.OPENAI_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1,  # Lower temperature for consistent messages
+                    max_tokens=max_tokens,
+                )
+
+                if not response.choices[0].message.content:
+                    raise LLMGenerationError("Empty response from LLM")
+
+                return response
+
+        except openai.OpenAIError as e:
+            raise LLMGenerationError(f"OpenAI API error: {e}")
+        except asyncio.TimeoutError:
+            raise LLMGenerationError("LLM request timed out")
+
     @langfuse.observe
     async def _generate_commit_message(self) -> str:
         """Generate a meaningful commit message using AI based on the changes.
@@ -1094,18 +1150,10 @@ class ProjectGenerator:
             if detailed_diff and len(detailed_diff) > 2000:
                 detailed_diff = detailed_diff[:2000] + "\n... (diff truncated)"
 
-            # Prepare the prompt for the LLM
-            prompt = (
-                f"Generate a concise, descriptive Git commit message for the "
-                f"following changes to a Rasa chatbot project.\n\n"
-                f"The commit message should:\n"
-                f"- Be in imperative mood (e.g., 'Add', 'Update', 'Fix', 'Remove')\n"
-                f"- Be specific about what changed\n"
-                f"- Be under 36 characters\n"
-                f"- Focus on the most significant changes\n\n"
-                f"File changes:\n{diff_output}\n\n"
-                f"Detailed diff:\n{detailed_diff}\n\n"
-                f"Generate only the commit message, nothing else:"
+            # Render the prompt using the template
+            prompt = self._commit_message_prompt_template.render(
+                diff_output=diff_output,
+                detailed_diff=detailed_diff,
             )
 
             # Update Langfuse span with input data
@@ -1116,10 +1164,11 @@ class ProjectGenerator:
             )
 
             # Use the existing LLM service to generate the commit message
-            response = await llm_service.generate_text(prompt, max_tokens=50)
+            response = await self._generate_text(prompt, max_tokens=50)
+            response_content = response.choices[0].message.content or ""
 
             # Clean up the response
-            commit_message = response.strip().strip('"').strip("'")
+            commit_message = response_content.strip().strip('"').strip("'")
 
             # Fallback to a reasonable default if generation fails or is too long
             if not commit_message or len(commit_message) > 36:
@@ -1127,7 +1176,7 @@ class ProjectGenerator:
 
             # Update Langfuse span with output data
             CommitMessageGenerationLangfuseTelemetry.update_commit_message_generation_output(
-                raw_response=response,
+                response_content=response_content,
                 commit_message=commit_message,
             )
 
@@ -1163,3 +1212,69 @@ class ProjectGenerator:
     async def _get_current_branch(self) -> str:
         """Get the current Git branch name."""
         return await self.git_service.get_current_branch()
+
+    def _verify_bullet_points(self, response: str, max_amount: int) -> bool:
+        """Verify that the response is in bullet point format."""
+        lines = [line.strip() for line in response.splitlines() if line.strip()]
+        if not lines:
+            return False
+        if len(lines) > max_amount:
+            return False
+        return all(BULLET_POINT_REGEX.match(line) for line in lines)
+
+    @langfuse.observe
+    async def generate_welcome_message(
+        self, default_welcome_message: str, template_welcome_message: str
+    ) -> str:
+        """Generate a welcome message based on the generated flows.
+
+        Returns:
+            welcome message string
+        """
+        try:
+            # Get generated flows
+            flows = self._get_bot_data_for_llm().get("flows", {})
+            if not flows:
+                return default_welcome_message
+
+            # Render the prompt using the template
+            prompt = self._welcome_message_prompt_template.render(flows=flows)
+
+            # Update Langfuse span with input data
+            WelcomeMessageGenerationLangfuseTelemetry.update_welcome_message_generation_input(
+                flows=flows,
+                prompt=prompt,
+            )
+
+            # Use the existing LLM service to generate the example questions
+            response = await self._generate_text(prompt, max_tokens=50)
+            response_content = response.choices[0].message.content or ""
+
+            # Initialize variables with defaults
+            welcome_message = default_welcome_message
+
+            # Clean up the response
+            if (
+                response_content
+                and template_welcome_message
+                and self._verify_bullet_points(response_content, 3)
+            ):
+                welcome_message = template_welcome_message.format(
+                    example_questions=response_content
+                )
+
+            # Update Langfuse span with output data
+            WelcomeMessageGenerationLangfuseTelemetry.update_welcome_message_generation_output(
+                response_content=response_content,
+                welcome_message=welcome_message,
+            )
+
+            return welcome_message
+
+        except Exception:
+            structlogger.warning(
+                "project_generator.welcome_message_generation_failed",
+                project_folder=self.project_folder.as_posix(),
+            )
+            # Fallback to generic message
+            return default_welcome_message
