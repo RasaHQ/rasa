@@ -12,7 +12,7 @@ from rasa.shared.nlu.training_data.message import Message
 
 structlogger = structlog.get_logger()
 
-SET_SLOTS_PATTERN = r"(?P<slot_name>[^(),=]+)=(?P<slot_value>[^(),]+)"
+SET_SLOTS_PATTERN = r"(?P<slot_name>[^(),=]+)=(?P<slot_value>\[[^\]]*\]|[^(),]+)"
 MAX_NUMBER_OF_SLOTS = 10
 
 

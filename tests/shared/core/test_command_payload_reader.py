@@ -18,7 +18,23 @@ from rasa.shared.nlu.training_data.message import Message
         (
             "/SetSlots(merchant=visa, amount=1000, date=2022-01-01)",
             [("merchant", "visa"), (" amount", "1000"), (" date", "2022-01-01")],
-        )
+        ),
+        (
+            '/SetSlots(list_slot=["val1", "val2"])',
+            [("list_slot", '["val1", "val2"]')],
+        ),
+        (
+            '/SetSlots(list_slot=["val3"])',
+            [("list_slot", '["val3"]')],
+        ),
+        (
+            '/SetSlots(list_slot=["val1", "val2"], other_slot=value)',
+            [("list_slot", '["val1", "val2"]'), (" other_slot", "value")],
+        ),
+        (
+            "/SetSlots(list_slot=[])",
+            [("list_slot", "[]")],
+        ),
     ],
 )
 def test_command_payload_reader_find_match_successfully(
@@ -130,6 +146,37 @@ def test_command_payload_reader_unpack_regex_message_prevent_ReDoS(
 
     log_output = capsys.readouterr().out
     assert "too.many.slots" in log_output
+
+
+@pytest.mark.parametrize(
+    "user_text, expected_value",
+    [
+        ('/SetSlots(list_slot=["val1", "val2"])', '["val1", "val2"]'),
+        ('/SetSlots(list_slot=["val3"])', '["val3"]'),
+        ("/SetSlots(list_slot=[])", "[]"),
+    ],
+)
+def test_command_payload_reader_unpack_regex_message_list_value(
+    user_text: str, expected_value: str
+) -> None:
+    message = Message({TEXT: user_text})
+    domain = Domain.from_yaml(
+        """
+        slots:
+          list_slot:
+            type: list
+        """
+    )
+
+    processed_message = CommandPayloadReader.unpack_regex_message(message, domain)
+    assert processed_message.get(COMMANDS) == [
+        {
+            "command": SET_SLOT_COMMAND,
+            "name": "list_slot",
+            "value": expected_value,
+            "extractor": SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+        }
+    ]
 
 
 @pytest.mark.parametrize(
