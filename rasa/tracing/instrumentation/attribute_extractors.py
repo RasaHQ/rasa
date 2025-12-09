@@ -627,7 +627,8 @@ def extract_attrs_for_remove_duplicated_set_slots(
                 update = json.loads(update)
                 for update_dict in update:
                     value = update_dict.pop("value", {})
-                    value.pop("corrected_slots", None)
+                    if isinstance(value, dict):
+                        value.pop("corrected_slots", None)
                     update_dict["value"] = json.dumps(value)
                     event_as_dict["update"] = str([update_dict])
                     break

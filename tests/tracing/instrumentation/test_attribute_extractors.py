@@ -6,6 +6,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps.call import CallFlowStep
 from rasa.tracing.instrumentation.attribute_extractors import (
@@ -13,6 +14,7 @@ from rasa.tracing.instrumentation.attribute_extractors import (
     extract_attrs_for_enterprise_search_invoke_llm,
     extract_attrs_for_llm_based_command_generator,
     extract_attrs_for_mcp_agent_llm_call,
+    extract_attrs_for_remove_duplicated_set_slots,
     extract_call_flow_step_attributes,
 )
 
@@ -348,3 +350,49 @@ def test_extract_attrs_for_mcp_agent_llm_call_includes_datetime_config() -> None
         assert result["include_date_time"] == "True"
         assert result["timezone"] == "Asia/Singapore"
         assert result["prompt_messages_count"] == 1
+
+
+@pytest.mark.parametrize(
+    ("update_json", "expected_absent", "expected_present"),
+    [
+        # Dictionary value with corrected_slots - should be removed
+        (
+            '[{"op": "add", "path": "/2", "value": {"frame_id": "H70JZZK1", "flow_id": "pattern_correction", "step_id": "START", "corrected_slots": {"recipient": "john"}, "type": "pattern_correction"}}]',  # noqa: E501
+            ["corrected_slots"],
+            ["pattern_correction"],
+        ),
+        # String value - should be preserved without raising AttributeError
+        (
+            '[{"op": "replace", "path": "/0/answer", "value": "The answer to your question is 42."}]',  # noqa: E501
+            [],
+            ["The answer to your question is 42."],
+        ),
+    ],
+)
+def test_extract_attrs_for_remove_duplicated_set_slots(
+    update_json: str,
+    expected_absent: List[str],
+    expected_present: List[str],
+) -> None:
+    """Test attribute extraction for remove_duplicated_set_slots.
+
+    Tests that:
+    - Dictionary values have corrected_slots removed
+    - String values are handled gracefully without raising AttributeError
+    """
+    # Given
+    events = [DialogueStackUpdated(update=update_json)]
+
+    # When
+    result = extract_attrs_for_remove_duplicated_set_slots(events)
+
+    # Then
+    assert "resulting_events" in result
+    assert "module_name" in result
+    assert result["module_name"] == "command_processor"
+
+    for absent in expected_absent:
+        assert absent not in result["resulting_events"]
+
+    for present in expected_present:
+        assert present in result["resulting_events"]
