@@ -63,7 +63,6 @@ from rasa.shared.core.events import (
     Restarted,
     RoutingSessionEnded,
     SessionEnded,
-    SessionPaused,
     SessionStarted,
     SlotSet,
     StoryExported,
@@ -151,7 +150,6 @@ from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_
             AgentCompleted("my_agent", "my_flow"),
             AgentCompleted("my_other_agent", "my_other_flow"),
         ),
-        (SessionPaused(reason="Widget closed"), SessionPaused(reason="User left")),
     ],
 )
 def test_event_has_proper_implementation(one_event, another_event):
@@ -208,7 +206,6 @@ def test_event_has_proper_implementation(one_event, another_event):
         AgentResumed("my_agent", "my_flow"),
         AgentCancelled("my_agent", "my_flow"),
         AgentCompleted("my_agent", "my_flow"),
-        SessionPaused(reason="Widget closed"),
     ],
 )
 def test_dict_serialisation(one_event):
@@ -230,17 +227,6 @@ def test_json_parse_restarted():
 def test_json_parse_session_started():
     evt = {"event": "session_started"}
     assert Event.from_parameters(evt) == SessionStarted()
-
-
-def test_json_parse_session_paused():
-    evt = {
-        "event": "session_paused",
-        "reason": "User took a break",
-        "timestamp": 1621590172.3872123,
-    }
-    assert Event.from_parameters(evt) == SessionPaused(
-        reason="User took a break", timestamp=1621590172.3872123
-    )
 
 
 def test_json_parse_reset():
@@ -458,14 +444,6 @@ def test_correct_timestamp_setting_for_flow_started() -> None:
     event = FlowStarted("test_flow")
     time.sleep(0.01)
     event2 = FlowStarted("test_flow")
-
-    assert event.timestamp < event2.timestamp
-
-
-def test_correct_timestamp_setting_for_session_paused() -> None:
-    event = SessionPaused(reason="test")
-    time.sleep(0.01)
-    event2 = SessionPaused(reason="test")
 
     assert event.timestamp < event2.timestamp
 
@@ -975,7 +953,6 @@ tested_events = [
     AgentInterrupted("test_agent", "test_flow"),
     AgentCancelled("test_agent", "test_flow"),
     AgentResumed("test_agent", "test_flow"),
-    SessionPaused(reason="User took a break"),
 ]
 
 
@@ -1006,10 +983,6 @@ def test_event_fingerprint_uniqueness(event: Event):
 
 def test_session_started_event_is_not_serialised():
     assert SessionStarted().as_story_string() is None
-
-
-def test_session_paused_event_is_not_serialised():
-    assert SessionPaused(reason="Widget closed").as_story_string() is None
 
 
 @pytest.mark.parametrize(
@@ -1382,98 +1355,3 @@ def test_agent_cancelled_with_reason() -> None:
     """Test that agent cancelled event can be created with reason."""
     event = AgentCancelled("test_agent", "test_flow", reason="user_cancelled")
     assert event.reason == "user_cancelled"
-
-
-def test_session_paused_creation() -> None:
-    """Test that SessionPaused event can be created with reason."""
-    reason = "User took a break"
-    event = SessionPaused(reason=reason)
-
-    assert event.reason == reason
-    assert event.timestamp is not None
-    assert event.metadata is not None
-
-
-def test_session_paused_creation_with_timestamp() -> None:
-    """Test that SessionPaused event can be created with reason."""
-    reason = "User took a break"
-    event = SessionPaused(reason=reason, timestamp=1234567890)
-
-    assert event.reason == reason
-    assert event.timestamp == 1234567890
-    assert event.metadata is not None
-
-
-def test_session_paused_dict_serialization() -> None:
-    """Test that session paused event can be serialized to dictionary."""
-    timestamp = 1234567890.0
-    event = SessionPaused(
-        reason="reason",
-        timestamp=timestamp,
-    )
-
-    event_dict = event.as_dict()
-
-    assert event_dict["event"] == event.type_name
-    assert event_dict["reason"] == "reason"
-    assert event_dict["timestamp"] == timestamp
-
-
-def test_session_paused_from_parameters() -> None:
-    """Test that session paused event can be created from parameters dictionary."""
-    parameters = {
-        "reason": "reason",
-        "timestamp": 1234567890.0,
-    }
-
-    event = SessionPaused._from_parameters(parameters)
-
-    assert event.reason == "reason"
-    assert event.timestamp == 1234567890.0
-
-
-def test_session_paused_fingerprint() -> None:
-    """Test that session paused event has consistent fingerprints."""
-    event1 = SessionPaused(reason="reason")
-    event2 = SessionPaused(reason="reason")
-    event3 = SessionPaused(reason="different_reason")
-
-    assert event1.fingerprint() == event2.fingerprint()
-    assert event1.fingerprint() != event3.fingerprint()
-
-
-def test_session_paused_repr_representation() -> None:
-    """Test that agent events have correct repr representation."""
-    event = SessionPaused(reason="test reason")
-    repr_str = repr(event)
-
-    assert repr_str == "SessionPaused(reason: test reason)"
-
-
-def test_session_paused_string_representation() -> None:
-    """Test that agent events have correct string representation."""
-    event = SessionPaused(
-        reason="test reason",
-    )
-    str_repr = str(event)
-
-    assert str_repr == "SessionPaused(test reason)"
-
-
-def test_session_paused_apply_to_tracker() -> None:
-    """Test that session paused event does not modify the tracker."""
-    from rasa.shared.core.domain import Domain
-    from rasa.shared.core.trackers import DialogueStateTracker
-
-    domain = Domain.empty()
-    tracker = DialogueStateTracker("test_sender", domain.slots)
-    event = SessionPaused(
-        reason="reason",
-    )
-
-    original_tracker = copy.deepcopy(tracker)
-    # Should not raise any exceptions
-    event.apply_to(tracker)
-
-    # Should not have changed the tracker state
-    assert tracker == original_tracker

@@ -1185,6 +1185,7 @@ class TestSearchReadyLLMCommandGenerator:
                   collect: some_slot
             """
         )
+        CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
         parsed_commands = SearchReadyLLMCommandGenerator.parse_commands(
             input_action, Mock(), test_flows
         )
