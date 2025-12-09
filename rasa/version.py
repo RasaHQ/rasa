@@ -1,3 +1,3 @@
 # this file will automatically be changed,
 # do not add anything but the version number here!
-__version__ = "3.16.0.dev20251201"
+__version__ = "3.16.0a2"
