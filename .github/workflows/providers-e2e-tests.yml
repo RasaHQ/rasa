@@ -289,7 +289,7 @@ jobs:
     name: Run e2e Test
     needs: [job_setup, check_changes_impacting_providers]
     if: ${{ always() && (github.event_name == 'schedule' || inputs.provider == 'all' || (needs.check_changes_impacting_providers.outputs.litellm_upgraded == 'success' || needs.check_changes_impacting_providers.outputs.openai_upgraded == 'success' || needs.check_changes_impacting_providers.outputs.provider_code_changed == 'true' )) }}
-    runs-on: ${{ contains(matrix.provider, 'self-hosted') && 'warp-ubuntu-latest-x64-16x' || 'warp-ubuntu-latest-x64-2x' }}
+    runs-on: ${{ contains(matrix.provider, 'self-hosted') && 'warp-ubuntu-latest-x64-8x' || 'warp-ubuntu-latest-x64-2x' }}
     services:
       redis:
         image: redis:6
@@ -400,7 +400,7 @@ jobs:
     name: Run e2e Test
     needs: job_setup
     if: ${{ inputs.provider != 'all' && github.event_name == 'workflow_dispatch' }}
-    runs-on: ${{ contains(inputs.provider, 'self-hosted') && 'warp-ubuntu-latest-x64-16x' || 'warp-ubuntu-latest-x64-2x' }}
+    runs-on: ${{ contains(inputs.provider, 'self-hosted') && 'warp-ubuntu-latest-x64-8x' || 'warp-ubuntu-latest-x64-2x' }}
     services:
       redis:
         image: redis:6

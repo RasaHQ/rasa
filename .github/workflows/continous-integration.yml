@@ -1734,7 +1734,7 @@ jobs:
 
   unit-test-nlu:
     name: Run NLU Unit Tests
-    runs-on: warp-ubuntu-latest-x64-16x
+    runs-on: warp-ubuntu-latest-x64-8x
     if: ${{ inputs.full_ci_mode != 'false' && (needs.check-code-changes.outputs.nlu-files == 'true' || needs.check-code-changes.outputs.dm1-tensorflow-files == 'true' ) }}
     timeout-minutes: 30
     strategy:
@@ -1829,7 +1829,7 @@ jobs:
 
   unit-test-cli:
     name: Run CLI Unit Tests
-    runs-on: warp-ubuntu-latest-x64-16x
+    runs-on: warp-ubuntu-latest-x64-8x
     if: ${{ inputs.full_ci_mode != 'false' && (needs.check-code-changes.outputs.cli-files == 'true') }}
     timeout-minutes: 30
     strategy:
@@ -1903,7 +1903,7 @@ jobs:
 
   unit-test:
     name: Run Unit Tests
-    runs-on: warp-ubuntu-latest-x64-16x
+    runs-on: warp-ubuntu-latest-x64-8x
     if: ${{ !(github.event_name == 'pull_request' && inputs.pr-author == 'rasabot' && inputs.pr-is-draft == 'true') }}
     timeout-minutes: 30
     strategy:
@@ -2237,7 +2237,7 @@ jobs:
 
   sonarqube:
     name: SonarQube
-    runs-on: warp-ubuntu-latest-x64-16x
+    runs-on: warp-ubuntu-latest-x64-8x
     needs:
       [unit-test, test-anonymization]
       # We don't want to run the code quality checks on scheduled runs
