@@ -263,7 +263,7 @@ version = "~1.14.0"
 markers = "python_version >= '3.12'"
 
 [[tool.poetry.dependencies.rasa-sdk]]
-version = "3.16.0a1"  # upgraded to use updated protobuf required for python 3.12, depends on protobuf (>=5.29.5,<5.30.0)
+version = "3.16.0a2"  # upgraded to use updated protobuf required for python 3.12, depends on protobuf (>=5.29.5,<5.30.0)
 allow-prereleases = true
 
 [tool.poetry.dependencies.langcodes]
