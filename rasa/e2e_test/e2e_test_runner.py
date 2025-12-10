@@ -663,6 +663,9 @@ class E2ETestRunner:
         bot_utter_test_steps: List[TestStep],
     ) -> Tuple[str, str]:
         """Handles generating the diff text for a failed test step."""
+        diff_test_text = ""
+        diff_actual_text = ""
+
         if failed_step.text is not None:
             diff_test_text = f"{failed_step.actor}: {failed_step.text}"
             diff_actual_text = NO_RESPONSE
@@ -711,6 +714,7 @@ class E2ETestRunner:
                 slot_value = failed_step.get_slot_value()
                 diff_test_text += f": {slot_value}"
 
+            diff_actual_text = NO_SLOT
             for event in test_response.slot_set_events:
                 if slot_name == event.key:
                     diff_actual_text = (

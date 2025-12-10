@@ -1703,6 +1703,56 @@ def test_generate_result_with_slot_was_set_to_number_failure() -> None:
     ]
 
 
+def test_generate_result_with_slot_was_not_set_failure() -> None:
+    """Test that slot_was_not_set fails when the slot was actually set."""
+    test_turns: TEST_TURNS_TYPE = {
+        -1: ActualStepOutput.from_test_step(
+            TestStep.from_dict({"bot": "Test"}),
+            [],
+        ),
+        0: ActualStepOutput.from_test_step(
+            TestStep.from_dict({"user": "Hi!"}),
+            [
+                UserUttered("Hi!"),
+                BotUttered("Hey! How are you?"),
+            ],
+        ),
+        1: TestStep.from_dict({"bot": "Hey! How are you?"}),
+        2: ActualStepOutput.from_test_step(
+            TestStep.from_dict({"user": "I want to cancel my trip to Lisbon."}),
+            [
+                UserUttered("I want to cancel my trip to Lisbon."),
+                SlotSet("destination", "Lisbon"),
+                BotUttered("Your trip to Lisbon has been cancelled."),
+            ],
+        ),
+        3: TestStep.from_dict({"slot_was_not_set": "destination"}),
+        4: TestStep.from_dict({"bot": "Your trip to Lisbon has been cancelled."}),
+    }
+
+    test_case = TestCase(
+        steps=[
+            TestStep.from_dict({"user": "Hi!"}),
+            TestStep.from_dict({"bot": "Hey! How are you?"}),
+            TestStep.from_dict({"user": "I want to cancel my trip to Lisbon."}),
+            TestStep.from_dict({"slot_was_not_set": "destination"}),
+            TestStep.from_dict({"bot": "Your trip to Lisbon has been cancelled."}),
+        ],
+        name="cancel_trip",
+    )
+
+    result = E2ETestRunner.generate_test_result(test_turns, test_case)
+    assert result.pass_status is False
+
+    assert result.difference == [
+        "  user: Hi!",
+        "  bot: Hey! How are you?",
+        "  user: I want to cancel my trip to Lisbon.",
+        "- slot_was_set: destination: Lisbon (str)",
+        "+ slot_was_not_set: destination",
+    ]
+
+
 def test_find_test_failure_with_less_actual_events() -> None:
     test_turns: TEST_TURNS_TYPE = {
         -1: ActualStepOutput.from_test_step(
