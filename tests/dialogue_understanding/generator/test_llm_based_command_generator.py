@@ -38,7 +38,6 @@ from rasa.shared.constants import (
     MODEL_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
     PROVIDER_CONFIG_KEY,
-    ROUTE_TO_CALM_SLOT,
     TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
@@ -787,9 +786,8 @@ class TestLLMBasedCommandGenerator:
 
         mock_flow_retrieval_filter_flows.assert_called_once()
 
-        assert len(predicted_commands) == 2
+        assert len(predicted_commands) == 1
         assert ErrorCommand() in predicted_commands
-        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     ### Tests for methods implemented in the base class
     # Parameterized fixture
@@ -1171,7 +1169,8 @@ class TestLLMBasedCommandGenerator:
         expected_value_2: str,
     ):
         """Test prepare_current_flow_slots_for_template with various slot value
-        combinations."""
+        combinations.
+        """
         generator = base_command_generator_fixture
 
         flows = flows_from_str(
@@ -1249,7 +1248,8 @@ class TestLLMBasedCommandGenerator:
         expected_slots: List[str],
     ):
         """Test that prepare_current_flow_slots_for_template filters slots based on
-        extractability."""
+        extractability.
+        """
         generator = base_command_generator_fixture
 
         flows = flows_from_str(
@@ -1300,7 +1300,8 @@ class TestLLMBasedCommandGenerator:
         base_command_generator_fixture: LLMBasedCommandGenerator,
     ):
         """Test that current collect step is included even if
-        ask_before_filling=True."""
+        ask_before_filling=True.
+        """
         generator = base_command_generator_fixture
 
         flows = flows_from_str(
@@ -1364,7 +1365,8 @@ class TestLLMBasedCommandGenerator:
         base_command_generator_fixture: LLMBasedCommandGenerator,
     ):
         """Test prepare_current_flow_slots_for_template with flow that has no collect
-        steps."""
+        steps.
+        """
         generator = base_command_generator_fixture
 
         flows = flows_from_str(

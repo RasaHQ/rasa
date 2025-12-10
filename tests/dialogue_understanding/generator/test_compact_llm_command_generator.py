@@ -2525,7 +2525,7 @@ class TestCompactLLMCommandGenerator:
                     flows=flows,
                     tracker=tracker,
                 )
-                assert len(commands) == 2  # TODO: Fix in ENG-2500
+                assert len(commands) == 1
                 assert commands[0] == CannotHandleCommand()
 
         # Then
@@ -2573,7 +2573,7 @@ class TestCompactLLMCommandGenerator:
                     flows=flows,
                     tracker=tracker,
                 )
-                assert len(commands) == 2  # TODO: Fix in ENG-2500
+                assert len(commands) == 1
                 assert commands[0] == CannotHandleCommand()
 
         # Then
@@ -2597,7 +2597,7 @@ class TestCompactLLMCommandGenerator:
         )
 
         # Then
-        assert len(commands) == 2  # TODO: Fix in ENG-2500
+        assert len(commands) == 1
         assert commands[0] == StartFlowCommand("test_flow")
         assert (
             CommandParserValidatorSingleton.get_no_command_predicted_turn_counter() == 0
@@ -2620,7 +2620,7 @@ class TestCompactLLMCommandGenerator:
                     flows=flows,
                     tracker=tracker,
                 )
-                assert len(commands) == 2  # TODO: Fix in ENG-2500
+                assert len(commands) == 1
                 assert commands[0] == CannotHandleCommand()
 
         # Then

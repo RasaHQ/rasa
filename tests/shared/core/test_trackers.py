@@ -1782,6 +1782,23 @@ def test_has_coexistence_routing_slot(slots: List[Slot], result: bool):
     assert tracker.has_coexistence_routing_slot == result
 
 
+def test_has_coexistence_routing_slot_with_any_slot_dict_entries():
+    """Test that AnySlotDict with auto-created entries still returns False.
+
+    This tests a specific bug where AnySlotDict.__contains__ always returns True,
+    and AnySlotDict.__missing__ auto-creates slots when accessed. Without the fix,
+    accessing any slot would make has_coexistence_routing_slot incorrectly return True.
+    """
+    # Create tracker without domain slots (uses AnySlotDict)
+    tracker = DialogueStateTracker("default", None)
+
+    # Access a slot to trigger __missing__ and add an entry to AnySlotDict
+    _ = tracker.slots["some_random_slot"]
+
+    # Should still return False because AnySlotDict means no domain slots were defined
+    assert tracker.has_coexistence_routing_slot is False
+
+
 @pytest.mark.parametrize(
     "events, slots, expected_applied_events",
     [
