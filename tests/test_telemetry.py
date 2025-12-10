@@ -1859,7 +1859,7 @@ def test_track_privacy_enabled(
 
 # Tests for agent configuration telemetry
 @patch("rasa.telemetry._track")
-def test_track_model_training_includes_agent_configuration(
+def test_track_model_training_includes_key_properties(
     mock_track: MagicMock,
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -1891,6 +1891,10 @@ def test_track_model_training_includes_agent_configuration(
     tracking_data = first_call.args[1]
     assert "agents" in tracking_data
     assert isinstance(tracking_data["agents"], dict)
+    assert isinstance(tracking_data["pipeline"], str)
+    assert isinstance(tracking_data["policies"], str)
+    assert isinstance(tracking_data["model_groups"], str)
+    assert isinstance(tracking_data["recipe"], str)
 
 
 def test_collect_agent_configuration_empty_flows():

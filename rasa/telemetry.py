@@ -37,9 +37,7 @@ from rasa.shared.constants import (
     CONFIG_LANGUAGE_KEY,
     CONFIG_PIPELINE_KEY,
     CONFIG_POLICIES_KEY,
-    CONFIG_PREDICT_SCHEMA,
     CONFIG_RECIPE_KEY,
-    CONFIG_TRAIN_SCHEMA,
     DOCS_URL_TELEMETRY,
     LLM_API_HEALTH_CHECK_DEFAULT_VALUE,
     LLM_API_HEALTH_CHECK_ENV_VAR,
@@ -1024,6 +1022,12 @@ def track_model_training(
 ) -> typing.Generator[None, None, None]:
     """Track a model training started.
 
+    WARNING: Please refrain from adding deep nested data to the tracking data, as
+    Segment will 1) normalise the data and 2) store each property in a separate column.
+    Please refrain from adding dynamic keys that are empty for some events.
+    Postgres (the data warehouse) has a limit of 1,600 columns for each table, and we
+    already hit it once. Hitting this limit causes data flow disruption.
+
     WARNING: since this is a generator, it can't use the ensure telemetry
         decorator. We need to manually add these checks here. This can be
         fixed as soon as we drop python 3.6 support.
@@ -1058,11 +1062,11 @@ def track_model_training(
         "training_id": training_id,
         "type": model_type,
         "assistant_id": config.get(ASSISTANT_ID_KEY),
-        "pipeline": config.get(CONFIG_PIPELINE_KEY),
-        "policies": config.get(CONFIG_POLICIES_KEY),
-        "train_schema": config.get(CONFIG_TRAIN_SCHEMA),
-        "predict_schema": config.get(CONFIG_PREDICT_SCHEMA),
-        "model_groups": rasa.core.config.configuration.Configuration.get_instance().endpoints.model_groups,  # noqa: E501
+        "pipeline": json.dumps(config.get(CONFIG_PIPELINE_KEY)),
+        "policies": json.dumps(config.get(CONFIG_POLICIES_KEY)),
+        "model_groups": json.dumps(
+            rasa.core.config.configuration.Configuration.get_instance().endpoints.model_groups
+        ),
         "api_health_check_enabled": (
             os.getenv(
                 LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_CHECK_DEFAULT_VALUE
