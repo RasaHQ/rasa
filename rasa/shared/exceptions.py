@@ -109,6 +109,26 @@ class FileIOException(RasaException):
     """Raised if there is an error while doing file IO."""
 
 
+class InvalidPromptTemplateException(RasaException):
+    """Raised when a custom prompt template file cannot be read."""
+
+    def __init__(self, file_path: str, resolved_path: str) -> None:
+        """Initialize the exception.
+
+        Args:
+            file_path: The path to the prompt template file that was specified.
+            resolved_path: The resolved absolute path to the file.
+        """
+        message = (
+            f"Failed to read custom prompt template from `{file_path}`. "
+            f"Resolved path: `{resolved_path}`. "
+            f"Please ensure the file exists and is readable."
+        )
+        super().__init__(message)
+        self.file_path = file_path
+        self.resolved_path = resolved_path
+
+
 class InvalidConfigException(ValueError, RasaException):
     """Raised if an invalid configuration is encountered."""
 

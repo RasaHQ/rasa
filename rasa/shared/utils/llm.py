@@ -66,6 +66,7 @@ from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
     InvalidConfigException,
+    InvalidPromptTemplateException,
 )
 from rasa.shared.providers._configs.azure_openai_client_config import (
     is_azure_openai_config,
@@ -839,12 +840,12 @@ def validate_jinja2_template(template_content: Text) -> None:
 
 
 def get_prompt_template(
-    jinja_file_path: Optional[Text],
-    default_prompt_template: Text,
+    jinja_file_path: Optional[str],
+    default_prompt_template: str,
     *,
-    log_source_component: Optional[Text] = None,
+    log_source_component: Optional[str] = None,
     log_source_method: Optional[Literal["init", "fingerprint_addon"]] = None,
-) -> Text:
+) -> str:
     """Returns the jinja template.
 
     Args:
@@ -859,6 +860,10 @@ def get_prompt_template(
 
     Returns:
         The prompt template.
+
+    Raises:
+        InvalidPromptTemplateException: If the custom prompt template file cannot
+          be read.
     """
     try:
         if jinja_file_path is not None:
@@ -883,15 +888,28 @@ def get_prompt_template(
                 log_source_method=log_source_method,
             )
             return prompt_template
-    except (FileIOException, FileNotFoundException) as e:
-        structlogger.warning(
-            "utils.llm.get_prompt_template" ".failed_to_read_custom_prompt_template",
+    except (FileIOException, FileNotFoundException):
+        # At this point, jinja_file_path is guaranteed to be not None since
+        # the exception can only be raised inside the if block above.
+        assert jinja_file_path is not None
+        absolute_path = Path(jinja_file_path).resolve()
+
+        structlogger.error(
+            "utils.llm.get_prompt_template.failed_to_read_custom_prompt_template",
             event_info=(
-                "Failed to read custom prompt template. Using default template instead."
+                f"Failed to read custom prompt template from "
+                f"`{jinja_file_path}`. "
+                f"Please ensure the file exists and is readable. "
             ),
+            prompt_file_path=jinja_file_path,
+            resolved_path=str(absolute_path),
             log_source_component=log_source_component,
             log_source_method=log_source_method,
-            error=str(e),
+        )
+
+        raise InvalidPromptTemplateException(
+            file_path=jinja_file_path,
+            resolved_path=str(absolute_path),
         )
     return default_prompt_template
 

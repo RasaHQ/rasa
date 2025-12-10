@@ -56,7 +56,11 @@ from rasa.shared.core.slots import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.engine.caching import CACHE_LOCATION_ENV
-from rasa.shared.exceptions import InvalidConfigException, ProviderClientValidationError
+from rasa.shared.exceptions import (
+    InvalidConfigException,
+    InvalidPromptTemplateException,
+    ProviderClientValidationError,
+)
 from rasa.shared.providers.embedding.azure_openai_embedding_client import (
     AzureOpenAIEmbeddingClient,
 )
@@ -1499,7 +1503,7 @@ class TestEmbedderClientFactory:
         assert isinstance(embedder, OpenAIEmbeddingClient)
 
     @pytest.mark.parametrize(
-        "config," "expected_model",
+        "config,expected_model",
         [
             (
                 {"provider": "huggingface_local", "model": "hf-repo/model_name"},
@@ -2007,10 +2011,23 @@ def test_get_prompt_template_returns_custom_prompt(tmp_path: Path) -> None:
     assert response == prompt_template
 
 
-def test_get_prompt_template_returns_default_on_error() -> None:
+def test_get_prompt_template_raises_error_on_file_not_found() -> None:
+    """Test that an exception is raised and error is logged when file is not found."""
     default_prompt_template = "default prompt template"
-    response = get_prompt_template("non_existent_file.jinja2", default_prompt_template)
-    assert response == default_prompt_template
+
+    with patch("rasa.shared.utils.llm.structlogger.error") as mock_error:
+        with pytest.raises(InvalidPromptTemplateException) as exc_info:
+            get_prompt_template("non_existent_file.jinja2", default_prompt_template)
+
+        # Should raise exception with the file path info
+        assert exc_info.value.file_path == "non_existent_file.jinja2"
+        assert exc_info.value.resolved_path is not None
+
+        # Should log an error with the file path
+        mock_error.assert_called_once()
+        call_kwargs = mock_error.call_args[1]
+        assert call_kwargs["prompt_file_path"] == "non_existent_file.jinja2"
+        assert "resolved_path" in call_kwargs
 
 
 def test_ensure_cache_creates_creates_diskcache_sqlite_db(
@@ -2028,7 +2045,7 @@ def test_ensure_cache_creates_creates_diskcache_sqlite_db(
 
 
 @pytest.mark.parametrize(
-    "custom_config," "expected_combined_config,",
+    "custom_config,expected_combined_config,",
     (  # Test cases for the client - OpenAI.
         # case: 0
         (

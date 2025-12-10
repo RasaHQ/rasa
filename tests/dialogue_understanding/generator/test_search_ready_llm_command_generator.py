@@ -72,7 +72,10 @@ from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.slots import BooleanSlot, CategoricalSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.exceptions import (
+    InvalidPromptTemplateException,
+    ProviderClientAPIException,
+)
 from rasa.shared.nlu.constants import (
     COMMANDS,
     KEY_COMPONENT_NAME,
@@ -2603,36 +2606,30 @@ class TestSearchReadyLLMCommandGenerator:
                 mock_get_default.assert_not_called()
 
     def test_resolve_component_prompt_template_custom_prompt_read_error(self):
-        """Test that default prompt template is used when custom prompt template path is provided but fails to load."""  # noqa: E501
+        """Test that an exception is raised and error is logged when custom prompt template file is not found."""  # noqa: E501
         # Given
         config = {
             "prompt_template": "nonexistent_prompt.jinja2",
             "llm": {"model": "gpt-4o"},
         }
 
-        # Mock get_prompt_template to return None (read error)
-        with patch(
-            "rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator.get_prompt_template"
-        ) as mock_get_prompt_template:
-            mock_get_prompt_template.return_value = None
-
-            # Mock get_default_prompt_template_based_on_model to return default content
-            with patch(
-                "rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator.get_default_prompt_template_based_on_model"
-            ) as mock_get_default:
-                mock_get_default.return_value = "Default prompt template"
-
-                # When
-                result = (
-                    SearchReadyLLMCommandGenerator._resolve_component_prompt_template(
-                        config
-                    )
+        # Patch structlogger.error to verify error is logged
+        with patch("rasa.shared.utils.llm.structlogger.error") as mock_error:
+            # When/Then - should raise exception
+            with pytest.raises(InvalidPromptTemplateException) as exc_info:
+                SearchReadyLLMCommandGenerator._resolve_component_prompt_template(
+                    config
                 )
 
-                # Then
-                assert result == "Default prompt template"
-                mock_get_prompt_template.assert_called_once()
-                mock_get_default.assert_called_once()
+            # Verify exception contains file path information
+            assert exc_info.value.file_path == "nonexistent_prompt.jinja2"
+            assert exc_info.value.resolved_path is not None
+
+            # Verify error was logged with file path information
+            mock_error.assert_called_once()
+            call_kwargs = mock_error.call_args[1]
+            assert call_kwargs["prompt_file_path"] == "nonexistent_prompt.jinja2"
+            assert "resolved_path" in call_kwargs
 
     def test_resolve_component_prompt_template_no_custom_prompt(self):
         """Test that default prompt template is used when no custom prompt template is provided."""  # noqa: E501
