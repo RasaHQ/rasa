@@ -1,3 +1,4 @@
+import functools
 import importlib.resources
 from typing import Dict
 
@@ -16,7 +17,8 @@ from rasa.shared.constants import PACKAGE_NAME
 structlogger = structlog.get_logger()
 
 
-def load_copilot_internal_message_templates() -> Dict[str, str]:
+@functools.lru_cache(maxsize=1)
+def copilot_internal_message_templates() -> Dict[str, str]:
     """Load internal message templates from the YAML configuration file.
 
     Returns:
@@ -38,7 +40,8 @@ def load_copilot_internal_message_templates() -> Dict[str, str]:
         return dict()
 
 
-def load_copilot_handler_default_responses() -> Dict[str, str]:
+@functools.lru_cache(maxsize=1)
+def copilot_handler_default_responses() -> Dict[str, str]:
     """Load handler responses from the YAML configuration file.
 
     Returns:
@@ -60,7 +63,8 @@ def load_copilot_handler_default_responses() -> Dict[str, str]:
         return dict()
 
 
-def load_copilot_welcome_messages() -> Dict[str, str]:
+@functools.lru_cache(maxsize=1)
+def copilot_welcome_messages() -> Dict[str, str]:
     """Load welcome message templates from the YAML configuration file.
 
     Returns:
@@ -82,7 +86,8 @@ def load_copilot_welcome_messages() -> Dict[str, str]:
         return dict()
 
 
-def load_copilot_template_prompts() -> Dict[str, str]:
+@functools.lru_cache(maxsize=1)
+def copilot_template_prompts() -> Dict[str, str]:
     """Load template prompt messages from the YAML configuration file.
 
     Returns:

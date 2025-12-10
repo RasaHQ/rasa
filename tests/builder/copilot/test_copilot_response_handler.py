@@ -31,7 +31,13 @@ async def mock_response_stream(content: str) -> AsyncGenerator[str, None]:
 
 
 class TestCopilotResponseHandler:
-    """Test class for CopilotResponseHandler."""
+    """Test class for CopilotResponseHandler.
+
+    Note: These tests are specifically for CopilotResponseHandler functionality.
+    Tests use CopilotResponseHandler directly when accessing internal state like
+    _llm_stream_buffer. For tests that use the public API, CopilotResponseHandler
+    can be used (which may be either implementation based on config).
+    """
 
     @pytest.mark.parametrize(
         "input_content,"
@@ -151,12 +157,12 @@ class TestCopilotResponseHandler:
         check_if_prefix_is_removed: bool,
     ):
         # Given
-        handler = CopilotResponseHandler()
         input_stream = mock_response_stream(input_content)
+        handler = CopilotResponseHandler(input_stream)
 
         # When
         responses: List[CopilotOutput] = []
-        async for response in handler.handle_response(input_stream):
+        async for response in handler.stream():
             responses.append(response)
 
         # Then
@@ -524,9 +530,21 @@ class TestCopilotResponseHandler:
         expected_references: List[Dict[str, Any]],
         expected_warnings: List[str],  # type: ignore
     ):
-        """Test the extract_references method with various scenarios."""
+        """Test the extract_references method with various scenarios.
+
+        Note: Uses CopilotResponseHandler directly as we need to access
+        the internal _llm_stream_buffer attribute which is specific to the
+        legacy implementation.
+        """
+
         # Given
-        handler = CopilotResponseHandler()
+        # Create a mock stream that's already been processed
+        async def mock_stream():
+            yield buffer_content
+
+        handler = CopilotResponseHandler(mock_stream())
+        # Set the buffer directly to simulate the handler
+        # having already processed the stream
         handler._llm_stream_buffer = [buffer_content]
 
         # When

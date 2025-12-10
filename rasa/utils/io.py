@@ -1,5 +1,6 @@
 import asyncio
 import filecmp
+import importlib
 import logging
 import os
 import re
@@ -7,6 +8,7 @@ import tempfile
 import warnings
 from asyncio import AbstractEventLoop
 from collections import OrderedDict
+from functools import lru_cache
 from io import StringIO
 from pathlib import Path
 from typing import (
@@ -26,6 +28,7 @@ from typing_extensions import Protocol
 
 import rasa.shared.constants
 import rasa.shared.utils.io
+from rasa.constants import PACKAGE_NAME
 from rasa.shared.exceptions import RasaException
 
 if TYPE_CHECKING:
@@ -268,3 +271,11 @@ def subpath(parent: str, child: str) -> str:
         raise InvalidPathException(f"Invalid path: {safe_path}")
 
     return safe_path
+
+
+@lru_cache()
+def read_text_from_package(base_package_name: str, file_name: str) -> str:
+    """Reads a text file from a package."""
+    return importlib.resources.read_text(
+        f"{PACKAGE_NAME}.{base_package_name}", file_name
+    )

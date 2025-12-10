@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Tuple, cast
 
 import importlib_resources
-import langfuse
 import openai
 import structlog
 from jinja2 import Template
@@ -20,6 +19,7 @@ from openai.types.chat import ChatCompletion
 
 from rasa.builder import config
 from rasa.builder.config import PROJECT_GENERATION_TIMEOUT
+from rasa.builder.copilot import Copilot
 from rasa.builder.copilot.constants import (
     DEFAULT_COMMIT_MESSAGE,
 )
@@ -37,13 +37,20 @@ from rasa.builder.exceptions import (
     ValidationError,
 )
 from rasa.builder.git_service import DEFAULT_COMMIT_INFO, GitService
-from rasa.builder.llm_service import llm_service
 from rasa.builder.logging_utils import capture_exception_with_context
 from rasa.builder.models import BotFiles, GitCommitInfo
+from rasa.builder.project_generator.project_utils import (
+    bot_file_paths,
+    get_bot_files,
+    is_restricted_path,
+    path_relative_to_project,
+    unsafe_write_to_bot_files,
+)
 from rasa.builder.project_info import ProjectInfo, ensure_first_used, load_project_info
 from rasa.builder.telemetry.commit_langfuse_telemetry import (
     CommitMessageGenerationLangfuseTelemetry,
 )
+from rasa.builder.telemetry.langfuse_compat import observe
 from rasa.builder.telemetry.prompt_to_bot_langfuse_telemetry import (
     PromptToBotLangfuseTelemetry,
 )
@@ -55,7 +62,6 @@ from rasa.builder.training_service import TrainingInput
 from rasa.builder.validation_service import validate_project
 from rasa.cli.scaffold import ProjectTemplateName, create_initial_project
 from rasa.shared.constants import (
-    DEFAULT_MODELS_PATH,
     DOMAIN_SCHEMA_FILE,
     PACKAGE_NAME,
     RESPONSES_SCHEMA_FILE,
@@ -68,7 +74,7 @@ from rasa.shared.core.flows.yaml_flows_io import FLOWS_SCHEMA_FILE
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.io import read_json_file
 from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_schema_file
-from rasa.utils.io import InvalidPathException, subpath
+from rasa.utils.io import InvalidPathException
 
 structlogger = structlog.get_logger()
 
@@ -135,12 +141,6 @@ class ProjectGenerator:
         self._flow_documentation = self._get_flow_documentation()
         self._domain_documentation = self._get_domain_documentation()
         self._custom_actions_documentation = self._get_custom_actions_documentation()
-
-        # Initialize copilot and response handler for error analysis
-        self._copilot = llm_service.instantiate_copilot()
-        self._copilot_response_handler = llm_service.instantiate_handler(
-            config.COPILOT_HANDLER_ROLLING_BUFFER_SIZE
-        )
 
         # Migrate existing projects to Git if needed
         self.migrate_git_repository_if_needed()
@@ -367,7 +367,7 @@ class ProjectGenerator:
             "Failed to generate Rasa project: exhausted all retry attempts", max_retries
         )
 
-    @langfuse.observe
+    @observe()
     async def _attempt_generation(
         self,
         initial_messages: List[Dict[str, Any]],
@@ -428,7 +428,7 @@ class ProjectGenerator:
             )
             raise e
 
-    @langfuse.observe(as_type="generation")
+    @observe(as_type="generation")
     async def generate_response(
         self,
         initial_messages: List[Dict[str, Any]],
@@ -516,7 +516,7 @@ class ProjectGenerator:
             )
             raise LLMGenerationError(error_message)
 
-    @langfuse.observe
+    @observe()
     async def _get_copilot_error_guidance(
         self,
         error: Exception,
@@ -574,20 +574,18 @@ class ProjectGenerator:
                 ],
             )
 
+            copilot = Copilot()
             # Generate copilot response and handle it with the response handler.
             # Consume the stream to get the full response.
             (
-                original_stream,
+                copilot_response_handler,
                 generation_context,
-            ) = await self._copilot.generate_response(context)
-            intercepted_stream = self._copilot_response_handler.handle_response(
-                original_stream
-            )
-            async for _ in intercepted_stream:
+            ) = await copilot.generate_response(context)
+            async for _ in copilot_response_handler.stream():
                 pass
 
             # Extract the full text from the handler
-            full_text = self._copilot_response_handler.extract_full_text()
+            full_text = copilot_response_handler.extract_full_text()
             return full_text if full_text else None
 
         except Exception as e:
@@ -698,81 +696,19 @@ class ProjectGenerator:
         exclude_docs_directory: bool = False,
         exclude_models_directory: bool = True,
     ) -> BotFiles:
-        """Get the current bot files by reading from disk.
-
-        Args:
-            allowed_file_extensions: Optional list of file extensions to include.
-                If None, fetch all files. If provided, only fetch files with matching
-                extensions. Use `""` empty string to allow files with no extensions.
-            exclude_docs_directory: Optional boolean indicating whether to exclude.
-            exclude_models_directory: Optional boolean indicating whether to exclude.
-
-        Returns:
-            Dictionary of file contents with relative paths as keys
-        """
-        bot_files: BotFiles = {}
-
-        for file in self.bot_file_paths(exclude_models_directory):
-            relative_path = file.relative_to(self.project_folder)
-
-            # Exclude the docs directory if specified
-            if exclude_docs_directory and relative_path.parts[0] == "docs":
-                continue
-
-            # Exclude the files by file extensions if specified
-            if allowed_file_extensions is not None:
-                allowed_file_extensions = [
-                    ext.lower() for ext in allowed_file_extensions
-                ]
-                if file.suffix.lstrip(".").lower() not in allowed_file_extensions:
-                    continue
-            # Read file content and store with relative path as key
-            try:
-                bot_files[relative_path.as_posix()] = file.read_text(encoding="utf-8")
-            except Exception as e:
-                structlogger.debug(
-                    "project_generator.get_bot_files.error",
-                    error=str(e),
-                    file_path=file.as_posix(),
-                )
-                bot_files[relative_path.as_posix()] = None
-        return bot_files
-
-    def is_restricted_path(
-        self, path: Path, exclude_models_directory: bool = True
-    ) -> bool:
-        """Check if the path is restricted.
-
-        These paths are excluded from deletion and editing by the user.
-        """
-        relative_path = path.relative_to(self.project_folder)
-
-        # Skip hidden files and directories (any path component starting with '.')
-        # as well as `__pycache__` folders
-        if any(part.startswith(".") for part in relative_path.parts):
-            return True
-
-        if "__pycache__" in relative_path.parts:
-            return True
-
-        # exclude the project_folder / models folder if specified
-        if exclude_models_directory and relative_path.parts[0] == DEFAULT_MODELS_PATH:
-            return True
-
-        return False
+        """Get the current bot files by reading from disk."""
+        return get_bot_files(
+            self.project_folder,
+            allowed_file_extensions,
+            exclude_docs_directory,
+            exclude_models_directory,
+        )
 
     def bot_file_paths(
         self, exclude_models_directory: bool = True
     ) -> Generator[Path, None, None]:
         """Get the paths of all bot files."""
-        for file in self.project_folder.glob("**/*"):
-            # Skip directories
-            if not file.is_file() or self.is_restricted_path(
-                file, exclude_models_directory
-            ):
-                continue
-
-            yield file
+        yield from bot_file_paths(self.project_folder, exclude_models_directory)
 
     def _get_bot_data_for_llm(self) -> Dict[str, Any]:
         """Get the current bot data for the LLM."""
@@ -828,19 +764,9 @@ class ProjectGenerator:
             if not self.git_service.git_dir.exists():
                 self._ensure_git_repository()
 
-            for filename, content in files.items():
-                file_path = Path(subpath(str(self.project_folder), filename))
-                # Disallow updates inside .rasa project metadata directory
-                if any(
-                    part.startswith(".")
-                    for part in file_path.relative_to(self.project_folder).parts
-                ):
-                    # silently ignore hidden paths
-                    continue
-                if content is None:
-                    continue
-                file_path.parent.mkdir(parents=True, exist_ok=True)
-                file_path.write_text(content, encoding="utf-8")
+            unsafe_write_to_bot_files(
+                self.project_folder, files, fail_on_restricted_path=False
+            )
             # Commit changes using internal method (lock already held)
             commit_sha = await self.git_service._commit_changes_internal(
                 DEFAULT_COMMIT_INFO.model_copy(
@@ -852,8 +778,8 @@ class ProjectGenerator:
     def ensure_all_files_are_writable(self, files: Dict[str, Optional[str]]) -> None:
         """Ensure all files are writable."""
         for filename, content in files.items():
-            file_path = Path(subpath(str(self.project_folder), filename))
-            if self.is_restricted_path(file_path):
+            file_path = path_relative_to_project(self.project_folder, filename)
+            if is_restricted_path(self.project_folder, file_path):
                 raise InvalidPathException(
                     f"This file or folder is restricted from editing: {file_path}"
                 )
@@ -882,25 +808,24 @@ class ProjectGenerator:
 
         # Write all new files
         for filename, content in files.items():
-            file_path = Path(subpath(str(self.project_folder), filename))
-            file_path.parent.mkdir(parents=True, exist_ok=True)
-
             try:
-                file_path.write_text(content or "", encoding="utf-8")
+                file_path = path_relative_to_project(self.project_folder, filename)
+                unsafe_write_to_bot_files(
+                    self.project_folder,
+                    {filename: content},
+                    fail_on_restricted_path=False,
+                )
+                # Remove from deletion set since this file is
+                # in the new set of files
+                existing_files.discard(file_path.as_posix())
             except Exception as e:
                 # Log write failure and avoid deleting an existing file by mistake
                 capture_exception_with_context(
                     e,
                     "project_generator.replace_all_bot_files.write_error",
-                    extra={"file_path": file_path},
+                    extra={"file_path": filename},
                 )
-                if file_path.as_posix() in existing_files:
-                    # Keep the original file if it already existed
-                    existing_files.discard(file_path.as_posix())
                 continue
-
-            # Remove from deletion set since this file is in the new set of files
-            existing_files.discard(file_path.as_posix())
 
         # Delete files that weren't in the request
         for file_to_delete in existing_files:
@@ -917,7 +842,7 @@ class ProjectGenerator:
         # Clean up empty directories (except excluded ones)
         self._cleanup_empty_directories()
         # Commit changes to Git with AI-generated message
-        return await self._commit_changes(commit_info)
+        return await self.unsafe_commit_changes(commit_info)
 
     def _cleanup_empty_directories(self) -> None:
         """Remove empty directories from the project folder.
@@ -930,7 +855,7 @@ class ProjectGenerator:
             if dirpath == str(self.project_folder):
                 continue
 
-            if self.is_restricted_path(Path(dirpath)):
+            if is_restricted_path(self.project_folder, Path(dirpath)):
                 continue
 
             relative_path = Path(dirpath).relative_to(self.project_folder)
@@ -1054,7 +979,7 @@ class ProjectGenerator:
                 project_folder=self.project_folder.as_posix(),
             )
 
-    async def _commit_changes(self, commit_info: GitCommitInfo) -> str:
+    async def unsafe_commit_changes(self, commit_info: GitCommitInfo) -> str:
         """Commit all changes.
 
         Args:
@@ -1120,7 +1045,7 @@ class ProjectGenerator:
         except asyncio.TimeoutError:
             raise LLMGenerationError("LLM request timed out")
 
-    @langfuse.observe
+    @observe()
     async def _generate_commit_message(self) -> str:
         """Generate a meaningful commit message using AI based on the changes.
 
@@ -1222,7 +1147,7 @@ class ProjectGenerator:
             return False
         return all(BULLET_POINT_REGEX.match(line) for line in lines)
 
-    @langfuse.observe
+    @observe()
     async def generate_welcome_message(
         self, default_welcome_message: str, template_welcome_message: str
     ) -> str:

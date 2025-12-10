@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 import structlog
 
 from rasa import telemetry
+from rasa.builder.copilot import CopilotResponseHandler
 from rasa.builder.copilot.constants import COPILOT_SEGMENT_WRITE_KEY_ENV_VAR
-from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
 from rasa.builder.copilot.models import (
     EventContent,
 )

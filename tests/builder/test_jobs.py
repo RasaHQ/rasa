@@ -478,24 +478,18 @@ class TestRunCopilotTrainingErrorAnalysisJob:
         """Test successful copilot analysis job with content validation."""
         # Setup mocks
         mock_push_event = AsyncMock()
-        mock_instantiate_copilot = MagicMock()
-        mock_instantiate_handler = MagicMock()
+        mock_copilot_class = MagicMock()
 
         monkeypatch.setattr("rasa.builder.jobs.push_job_status_event", mock_push_event)
         monkeypatch.setattr(
-            "rasa.builder.jobs.llm_service.instantiate_copilot",
-            mock_instantiate_copilot,
-        )
-        monkeypatch.setattr(
-            "rasa.builder.jobs.llm_service.instantiate_handler",
-            mock_instantiate_handler,
+            "rasa.builder.jobs.Copilot",
+            mock_copilot_class,
         )
 
         # Given
         mock_copilot = MagicMock()
         mock_handler = MagicMock()
-        mock_instantiate_copilot.return_value = mock_copilot
-        mock_instantiate_handler.return_value = mock_handler
+        mock_copilot_class.return_value = mock_copilot
 
         mock_token = GeneratedContent(
             content="Analysis result",
@@ -528,10 +522,11 @@ class TestRunCopilotTrainingErrorAnalysisJob:
         async def mock_stream():
             yield mock_token
 
-        mock_handler.handle_response.return_value = mock_stream()
+        mock_handler.stream.return_value = mock_stream()
         mock_handler.extract_references.return_value = mock_reference_section
+        mock_handler.extract_full_text.return_value = "Analysis result"
         mock_copilot.generate_response = AsyncMock(
-            return_value=(mock_response_stream(), mock_generation_context)
+            return_value=(mock_handler, mock_generation_context)
         )
 
         # When
@@ -543,7 +538,10 @@ class TestRunCopilotTrainingErrorAnalysisJob:
         # Updated to account for TrainingErrorLog event
         assert mock_push_event.call_count >= 3
         mock_copilot.generate_response.assert_called_once()
-        mock_handler.extract_references.assert_called_once_with([mock_document])
+        # extract_references is called multiple times
+        # (once to extract and once to persist)
+        assert mock_handler.extract_references.call_count >= 1
+        mock_handler.extract_references.assert_any_call([mock_document])
 
         # Verify that generate_response was called with a context containing the
         # internal message
@@ -610,16 +608,16 @@ class TestRunCopilotTrainingErrorAnalysisJob:
         """Test copilot analysis job with error."""
         # Setup mocks
         mock_push_event = AsyncMock()
-        mock_instantiate_copilot = MagicMock()
+        mock_copilot_class = MagicMock()
 
         monkeypatch.setattr("rasa.builder.jobs.push_job_status_event", mock_push_event)
         monkeypatch.setattr(
-            "rasa.builder.jobs.llm_service.instantiate_copilot",
-            mock_instantiate_copilot,
+            "rasa.builder.jobs.Copilot",
+            mock_copilot_class,
         )
 
         # Given
-        mock_instantiate_copilot.side_effect = Exception("Copilot error")
+        mock_copilot_class.side_effect = Exception("Copilot error")
 
         # When
         await run_copilot_training_error_analysis_job(
@@ -670,7 +668,6 @@ class TestCopilotWelcomeMessage:
 
         # Patch llm_service
         monkeypatch.setattr("rasa.builder.llm_service.llm_service", mock_llm_service)
-        monkeypatch.setattr("rasa.builder.jobs.llm_service", mock_llm_service)
 
         # Apply all mocks
         monkeypatch.setattr(
@@ -687,7 +684,7 @@ class TestCopilotWelcomeMessage:
         monkeypatch.setattr("rasa.builder.jobs.update_agent", self.mock_update)
 
     @pytest.fixture
-    def mock_template_app(self, mock_app):
+    def mock_template_app(self, mock_app: MagicMock) -> MagicMock:
         mock_app.ctx.project_generator.get_training_input.return_value = Mock()
         mock_app.ctx.project_generator.project_folder = "/tmp/test_project"
         mock_app.add_task = MagicMock()
@@ -971,7 +968,6 @@ class TestCopilotTemplatePromptJob:
 
         # Patch llm_service
         monkeypatch.setattr("rasa.builder.llm_service.llm_service", mock_llm_service)
-        monkeypatch.setattr("rasa.builder.jobs.llm_service", mock_llm_service)
 
     @staticmethod
     def _verify_template_prompt_call(mock_push_event, expected_content_snippets):
@@ -1190,7 +1186,7 @@ class TestCopilotTemplatePromptJob:
     async def test_no_prompt_for_unknown_template(self, mock_app, mock_job):
         # Test with a template name that doesn't have a prompt
         with patch(
-            "rasa.builder.jobs.load_copilot_template_prompts",
+            "rasa.builder.jobs.copilot_template_prompts",
             return_value={},
         ):
             await run_copilot_template_prompt_job(
@@ -1237,7 +1233,6 @@ class TestCopilotTrainingSuccessJob:
 
         # Patch llm_service
         monkeypatch.setattr("rasa.builder.llm_service.llm_service", mock_llm_service)
-        monkeypatch.setattr("rasa.builder.jobs.llm_service", mock_llm_service)
 
         # Apply all mocks
         monkeypatch.setattr(
@@ -1898,7 +1893,7 @@ class TestRollbackMessageJob:
         rollback_job.commit_sha = "test_rollback_sha"
         self.mock_job_manager.create_job.return_value = rollback_job
 
-        # Mock load_copilot_handler_default_responses
+        # Mock copilot_handler_default_responses
         self.mock_load_responses = MagicMock()
         self.mock_load_responses.return_value = {
             "rollback_message_response": (
@@ -1918,7 +1913,7 @@ class TestRollbackMessageJob:
         )
         monkeypatch.setattr("rasa.builder.jobs.job_manager", self.mock_job_manager)
         monkeypatch.setattr(
-            "rasa.builder.jobs.load_copilot_handler_default_responses",
+            "rasa.builder.jobs.copilot_handler_default_responses",
             self.mock_load_responses,
         )
 

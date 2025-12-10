@@ -110,6 +110,21 @@ AUTH_REQUIRED_AFTER_MINUTES = int(os.getenv("AUTH_REQUIRED_AFTER_MINUTES", "480"
 
 DEFAULT_BOT_BUILDER_EMAIL = "noreply@rasa.com"
 
+# Agent SDK Configuration
+USE_AGENT_SDK_COPILOT = os.getenv("USE_AGENT_SDK_COPILOT", "false").lower() == "true"
+
+
+# MCP Server Configuration
+MCP_SERVER_HOST = os.getenv("MCP_SERVER_HOST", "127.0.0.1")
+MCP_SERVER_PORT = int(os.getenv("MCP_SERVER_PORT", "5051"))
+# Timeout for MCP server client session (in seconds)
+# This sets client_session_timeout_seconds for MCPServer
+# Validation and training tools can take 60+ seconds
+MCP_TOOL_CALL_TIMEOUT = int(os.getenv("MCP_TOOL_CALL_TIMEOUT", "120"))
+MCP_MAX_RETRY_ATTEMPTS = int(os.getenv("MCP_MAX_RETRY_ATTEMPTS", "3"))
+# Timeout for waiting for MCP server to start accepting connections (in seconds)
+MCP_SERVER_STARTUP_TIMEOUT = int(os.getenv("MCP_SERVER_STARTUP_TIMEOUT", "30"))
+
 
 def get_default_credentials() -> Dict[str, Any]:
     """Get default credentials configuration."""

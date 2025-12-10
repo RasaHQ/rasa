@@ -2,7 +2,8 @@ import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, List, Optional
+from functools import lru_cache
+from typing import Any, AsyncGenerator, List, Optional
 
 import openai
 import structlog
@@ -23,6 +24,11 @@ from rasa.shared.utils.io import read_json_file
 structlogger = structlog.get_logger()
 
 
+@lru_cache(maxsize=1)
+def _read_rag_schema() -> Any:
+    return read_json_file(INKEEP_RAG_RESPONSE_SCHEMA_PATH)
+
+
 class InKeepDocumentRetrieval:
     """Handles the document retrieval from InKeep AI."""
 
@@ -30,7 +36,7 @@ class InKeepDocumentRetrieval:
         self,
         api_key: Optional[str] = None,
     ):
-        self._rag_schema = read_json_file(INKEEP_RAG_RESPONSE_SCHEMA_PATH)
+        self._rag_schema = _read_rag_schema()
         self._api_key = api_key or os.getenv(INKEEP_API_KEY_ENV_VAR)
 
     @property

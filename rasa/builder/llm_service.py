@@ -6,11 +6,6 @@ import openai
 import structlog
 
 from rasa.builder import config
-from rasa.builder.copilot.copilot import Copilot
-from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
-from rasa.builder.copilot.copilot_templated_message_provider import (
-    load_copilot_internal_message_templates,
-)
 from rasa.builder.copilot.history_store import (
     CopilotHistoryStore,
     SQLiteCopilotHistoryStore,
@@ -31,47 +26,9 @@ class LLMService:
         self._client: Optional[openai.AsyncOpenAI] = None
         self._domain_schema: Optional[Dict[str, Any]] = None
         self._flows_schema: Optional[Dict[str, Any]] = None
-        self._copilot: Optional[Copilot] = None
         self._guardrails: Optional[GuardrailsClient] = None
         self._guardrails_policy_checker: Optional[GuardrailsPolicyChecker] = None
-        self._copilot_response_handler: Optional[CopilotResponseHandler] = None
-        self._copilot_internal_message_templates: Optional[Dict[str, str]] = None
         self._history_store: Optional[CopilotHistoryStore] = None
-
-    @property
-    def copilot(self) -> Copilot:
-        """Get or lazy create copilot instance."""
-        if self._copilot is None:
-            self._copilot = Copilot()
-
-        try:
-            return self._copilot
-        except Exception as e:
-            structlogger.error(
-                "llm_service.copilot.error",
-                event_info="LLM Service: Error getting copilot instance.",
-                error=str(e),
-            )
-            raise
-
-    @property
-    def copilot_response_handler(self) -> CopilotResponseHandler:
-        """Get or lazy create copilot response handler instance."""
-        if self._copilot_response_handler is None:
-            self._copilot_response_handler = CopilotResponseHandler(
-                rolling_buffer_size=config.COPILOT_HANDLER_ROLLING_BUFFER_SIZE,
-            )
-        try:
-            return self._copilot_response_handler
-        except Exception as e:
-            structlogger.error(
-                "llm_service.copilot_response_handler.error",
-                event_info=(
-                    "LLM Service: Error getting copilot response handler instance."
-                ),
-                error=str(e),
-            )
-            raise
 
     @property
     def guardrails(self) -> Optional[GuardrailsClient]:
@@ -111,15 +68,6 @@ class LLMService:
             raise
 
     @property
-    def copilot_internal_message_templates(self) -> Dict[str, str]:
-        """Get or lazy load copilot internal message templates."""
-        if self._copilot_internal_message_templates is None:
-            self._copilot_internal_message_templates = (
-                load_copilot_internal_message_templates()
-            )
-        return self._copilot_internal_message_templates
-
-    @property
     def history_store(self) -> CopilotHistoryStore:
         """Get or lazy create history store instance."""
         if self._history_store is None:
@@ -136,18 +84,6 @@ class LLMService:
                 error=str(e),
             )
             raise
-
-    @staticmethod
-    def instantiate_copilot() -> Copilot:
-        """Instantiate a new Copilot instance."""
-        return Copilot()
-
-    @staticmethod
-    def instantiate_handler(rolling_buffer_size: int) -> CopilotResponseHandler:
-        """Instantiate a new CopilotResponseHandler instance."""
-        return CopilotResponseHandler(
-            rolling_buffer_size=rolling_buffer_size,
-        )
 
 
 # Global service instance

@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import os
+import socket
 import sys
 import textwrap
 import threading
@@ -19,6 +20,7 @@ from typing import Any, Dict, Generator, List, NoReturn, Optional, Text, Tuple, 
 from unittest.mock import ANY, AsyncMock, MagicMock, Mock, patch
 
 import pytest
+import requests
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 from aioresponses import aioresponses
@@ -26,7 +28,6 @@ from pytest import LogCaptureFixture
 from ruamel.yaml import StringIO
 from sanic import Sanic
 from sanic_testing.testing import SanicASGITestClient
-from swagger_coverage_py.listener import CoverageListener
 
 import rasa
 import rasa.constants
@@ -2691,7 +2692,11 @@ def server_host() -> str:
 
 @pytest.fixture
 def server_port() -> int:
-    return 5005
+    """Get a free port for the test server to avoid conflicts in parallel runs."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", 0))
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        return s.getsockname()[1]
 
 
 @pytest.fixture
@@ -2714,18 +2719,14 @@ def start_server(rasa_server_with_flows, server_host, server_port):
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Does not run on windows")
 def test_retrieve_flows(
-    setup_swagger_coverage,
     start_server,
     server_host,
     server_port,
 ):
-    response = CoverageListener(
-        method="get",
-        base_url=f"http://{server_host}:{server_port}",
-        raw_path="/flows",
-        uri_params={},
+    response = requests.get(
+        f"http://{server_host}:{server_port}/flows",
         params={"token": "rasa"},
-    ).response
+    )
     assert response.status_code == HTTPStatus.OK
     flows = response.json()
     assert flows
@@ -2740,18 +2741,14 @@ def test_retrieve_flows(
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Does not run on windows")
 def test_retrieve_flows_with_invalid_authentication(
-    setup_swagger_coverage,
     start_server,
     server_host,
     server_port,
 ):
-    response = CoverageListener(
-        method="get",
-        base_url=f"http://{server_host}:{server_port}",
-        raw_path="/flows",
-        uri_params={},
+    response = requests.get(
+        f"http://{server_host}:{server_port}/flows",
         params={"token": "invalid"},
-    ).response
+    )
     assert response.status_code == HTTPStatus.UNAUTHORIZED
     jsonResponse = response.json()
     assert jsonResponse["version"]

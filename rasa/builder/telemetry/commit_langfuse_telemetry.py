@@ -1,4 +1,4 @@
-import langfuse
+from rasa.builder.telemetry.langfuse_compat import with_langfuse
 
 
 class CommitMessageGenerationLangfuseTelemetry:
@@ -17,14 +17,17 @@ class CommitMessageGenerationLangfuseTelemetry:
             detailed_diff: The detailed git diff with line-by-line changes.
             prompt: The full prompt sent to the LLM.
         """
-        langfuse_client = langfuse.get_client()
-        langfuse_client.update_current_span(
-            input={
-                "diff_output": diff_output,
-                "detailed_diff": detailed_diff,
-                "prompt": prompt,
-            }
-        )
+        with with_langfuse() as lf:
+            if not lf:
+                return
+            langfuse_client = lf.get_client()
+            langfuse_client.update_current_span(
+                input={
+                    "diff_output": diff_output,
+                    "detailed_diff": detailed_diff,
+                    "prompt": prompt,
+                }
+            )
 
     @staticmethod
     def update_commit_message_generation_output(
@@ -37,10 +40,13 @@ class CommitMessageGenerationLangfuseTelemetry:
             response_content: The response content from the LLM.
             commit_message: The cleaned and validated commit message.
         """
-        langfuse_client = langfuse.get_client()
-        langfuse_client.update_current_span(
-            output={
-                "response_content": response_content,
-                "commit_message": commit_message,
-            }
-        )
+        with with_langfuse() as lf:
+            if not lf:
+                return
+            langfuse_client = lf.get_client()
+            langfuse_client.update_current_span(
+                output={
+                    "response_content": response_content,
+                    "commit_message": commit_message,
+                }
+            )

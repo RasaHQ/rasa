@@ -6,34 +6,41 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import yaml
-from langfuse import Evaluation
-from langfuse._client.datasets import DatasetClient
-from langfuse.experiment import ExperimentResult
 
-from rasa.builder.copilot.models import ReferenceEntry, ResponseCategory
-from rasa.builder.evaluator.completeness_judge.models import (
+from rasa.builder.telemetry.langfuse_compat import require_langfuse
+
+require_langfuse()
+
+from langfuse import Evaluation  # noqa: E402, TID251
+from langfuse._client.datasets import DatasetClient  # noqa: E402, TID251
+from langfuse.experiment import ExperimentResult  # noqa: E402, TID251
+
+from rasa.builder.copilot.models import ReferenceEntry, ResponseCategory  # noqa: E402
+from rasa.builder.evaluator.completeness_judge.models import (  # noqa: E402
     CompletenessJudgeResult,
     UserRequestCompletenessVerdict,
 )
-from rasa.builder.evaluator.content_processors.models import (
+from rasa.builder.evaluator.content_processors.models import (  # noqa: E402
     Claim,
     ClaimImportance,
     Claims,
 )
-from rasa.builder.evaluator.copilot_response_evaluator.langfuse_runner import (
+from rasa.builder.evaluator.copilot_response_evaluator.langfuse_runner import (  # noqa: E402
     CopilotResponseEvaluatorLangfuseRunner,
 )
-from rasa.builder.evaluator.copilot_response_evaluator.models import (
+from rasa.builder.evaluator.copilot_response_evaluator.models import (  # noqa: E402
     CopilotResponseCompletenessEvaluationResult,
     CopilotResponseFaithfulnessEvaluationResult,
 )
-from rasa.builder.evaluator.faithfulness_judge.models import (
+from rasa.builder.evaluator.faithfulness_judge.models import (  # noqa: E402
     ClaimVerdict,
     FaithfulnessJudgeResult,
     FaithfulnessVerdictLabel,
 )
-from rasa.builder.evaluator.shared.copilot_executor import CopilotRunResult
-from rasa.builder.evaluator.shared.models import EvaluationFailure
+from rasa.builder.evaluator.shared.copilot_executor import (  # noqa: E402
+    CopilotRunResult,
+)
+from rasa.builder.evaluator.shared.models import EvaluationFailure  # noqa: E402
 
 
 class TestCopilotResponseEvaluatorLangfuseRunner:

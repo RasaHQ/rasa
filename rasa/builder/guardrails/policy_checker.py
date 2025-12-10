@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, cast
 
 import structlog
 
+from rasa.builder.copilot import CopilotResponseHandler
 from rasa.builder.copilot.constants import ROLE_COPILOT, ROLE_USER
-from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
     CopilotContext,

@@ -35,6 +35,7 @@ updates:
           - "safetensors"
           - "mitie"
           - "tf-keras"
+          - "openai-agents"
       server-and-protocols:
         dependency-type: production
         patterns:

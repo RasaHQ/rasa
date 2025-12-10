@@ -1,0 +1,66 @@
+{
+  "name": "rasa-copilot",
+  "version": "1.0.0",
+  "description": "MCP server for Rasa assistant development with tools for file operations, validation, and training",
+  "transport": "stdio",
+  "env": {
+    "RASA_PROJECT_FOLDER": "${RASA_PROJECT_FOLDER}",
+    "PRODUCTION": "${PRODUCTION:-false}"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "json"
+  },
+  "tools": {
+    "tags": {
+      "files": "File system operations for reading and writing project files",
+      "read": "Read-only file operations",
+      "write": "File modification operations",
+      "documentation": "Documentation search and retrieval",
+      "validation": "Project validation and quality checks",
+      "training": "Model training operations",
+      "ml": "Machine learning operations"
+    }
+  },
+  "resources": {
+    "project://files": {
+      "description": "Complete project with ALL file contents - USE THIS FIRST to avoid multiple tool calls!",
+      "mimeType": "application/json"
+    },
+    "project://tree": {
+      "description": "Lightweight project file tree structure without contents",
+      "mimeType": "application/json"
+    },
+    "project://flows": {
+      "description": "All conversation flow definitions from data/ directory",
+      "mimeType": "application/json"
+    },
+    "project://domain": {
+      "description": "All domain files (slots, responses, actions) from domain/ directory",
+      "mimeType": "application/json"
+    },
+    "project://actions": {
+      "description": "All custom Python action implementations from actions/ directory",
+      "mimeType": "application/json"
+    },
+    "logs://assistant": {
+      "description": "Recent log entries from the Rasa assistant",
+      "mimeType": "application/json"
+    },
+    "config://bot": {
+      "description": "Bot configuration files",
+      "mimeType": "application/json"
+    }
+  },
+  "prompts": {
+    "system_prompt": {
+      "description": "Main system prompt for the Rasa copilot"
+    },
+    "user_message_context": {
+      "description": "Template for enriching user messages with context"
+    },
+    "training_error_analysis": {
+      "description": "Template for analyzing training errors"
+    }
+  }
+}

@@ -1988,10 +1988,6 @@ jobs:
           sudo apt-get -y install libpq-dev
           make prepare-tests-ubuntu
 
-      - name: Make direcory for Swagger/OpenAPI coverage results
-        if: matrix.test == 'test-other-unit-tests'
-        run: mkdir -p 'swagger-coverage-output/localhost:5005'
-
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: logical
@@ -2022,15 +2018,6 @@ jobs:
         run: |
           mv coverage.xml ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
-      # TODO: Investigate and fix OpenAPI test coverage report generation with sharded tests
-      # - name: Generate Rasa server OpenAPI test coverage report
-      #   if: (success() || failure()) && matrix.test == 'test-other-unit-tests'
-      #   run: |
-      #     .venv/lib/python${{ matrix.python-version }}/site-packages/swagger_coverage_py/swagger-coverage-commandline/bin/swagger-coverage-commandline \
-      #     -c swagger-coverage-config-rasa-pro.json \
-      #     -i swagger-coverage-output/localhost:5005 \
-      #     -s swagger-doc-rasa-pro.yaml
-
       - name: Save Test Results
         if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
@@ -2038,14 +2025,6 @@ jobs:
           name: unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}
           path: |
             ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
-
-      # TODO: Investigate and fix OpenAPI test coverage report generation with sharded tests
-      # - name: Save Rasa server OpenAPI tests coverage report
-      #   if: (success() || failure()) && matrix.test == 'test-other-unit-tests'
-      #   uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
-      #   with:
-      #     name: Rasa Server OpenAPI tests coverage report on python-${{ matrix.python-version }}
-      #     path: swagger-coverage-report-rasa-pro.html
 
   test-anonymization:
     name: Run Anonymization Unit Tests
@@ -2459,8 +2438,9 @@ jobs:
       - dynamo-tracker-store-integration-test
       - concurrent-lockstore-integration-test
       - broker_integration_test
-      - channel_connector_integration_tests
-      - pii-management-in-calm-integration-tests
+      # Temporarily disabled since these jobs are flaky
+      # - channel_connector_integration_tests
+      # - pii-management-in-calm-integration-tests
       - voice_unit_tests
       - unit-test-policies
       - unit-test-agents

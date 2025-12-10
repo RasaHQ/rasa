@@ -2,6 +2,7 @@
 
 import collections
 import contextvars
+import json
 import logging
 import threading
 import time
@@ -26,6 +27,35 @@ _validation_logs: contextvars.ContextVar[Optional[List[Dict[str, Any]]]] = (
     contextvars.ContextVar("validation_logs", default=None)
 )
 
+IGNORED_EVENT_DICT_KEYS = [
+    "event_info",
+    "event",
+    "level",
+    "correlation_id",
+    "timestamp",
+]
+
+
+def _try_to_extract_event_dict_json(event_dict: MutableMapping[str, Any]) -> str:
+    """Try to extract the event dict as a json string.
+
+    Returns:
+        The event dict as a json string.
+    """
+    try:
+        keys_to_add = []
+        for k, v in event_dict.items():
+            if k in IGNORED_EVENT_DICT_KEYS:
+                continue
+            dumped_value = json.dumps(v, default=str)
+            if len(dumped_value) > 100:
+                keys_to_add.append((k, dumped_value[:100] + "..."))
+            else:
+                keys_to_add.append((k, dumped_value))
+        return ", ".join([f"{k}={v}" for k, v in keys_to_add])
+    except Exception:
+        return ""
+
 
 def collecting_logs_processor(
     logger: Any, log_level: str, event_dict: MutableMapping[str, Any]
@@ -36,7 +66,11 @@ def collecting_logs_processor(
     """
     if log_level != logging.getLevelName(logging.DEBUG).lower():
         event_message = event_dict.get("event_info") or event_dict.get("event", "")
-        log_entry = f"[{log_level}] {event_message}"
+        # also append event dict as json string but trimming every property individually
+        # to a max length of 100 characters. also at most add 10 keys
+        event_dict_json = _try_to_extract_event_dict_json(event_dict)
+
+        log_entry = f"[{log_level}] {event_message} {event_dict_json}"
 
         with _logs_lock:
             _recent_logs.append(log_entry)
@@ -140,8 +174,8 @@ def _sanitize_headers(headers: Mapping[str, str]) -> Dict[str, Any]:
     # Safe keepers
     if "user-agent" in lowered:
         result["user-agent"] = lowered["user-agent"]
-    if HEADER_USER_ID in lowered:
-        result[HEADER_USER_ID] = lowered[HEADER_USER_ID]
+    if HEADER_USER_ID.lower() in lowered:
+        result[HEADER_USER_ID] = lowered[HEADER_USER_ID.lower()]
     # Redact auth info
     if "authorization" in lowered:
         auth_val = lowered["authorization"]
@@ -241,7 +275,7 @@ def log_request_start(request: Any) -> float:
     start = time.perf_counter()
     cid = ensure_correlation_id_on_request(request)
     ctx = extract_request_context()
-    structlogger.info(
+    structlogger.debug(
         "request.received",
         method=ctx.get("method"),
         path=ctx.get("path"),
@@ -256,7 +290,7 @@ def log_request_end(request: Any, response: Any, start: float) -> None:
     """Log request completion with latency and correlation id."""
     latency_ms = int((time.perf_counter() - start) * 1000)
     cid = ensure_correlation_id_on_request(request)
-    structlogger.info(
+    structlogger.debug(
         "request.completed",
         method=getattr(request, "method", None),
         path=getattr(request, "path", None),

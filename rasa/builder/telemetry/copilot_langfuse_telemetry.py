@@ -9,27 +9,29 @@ from typing import (
     Optional,
 )
 
-from rasa.builder.copilot.models import CopilotTurnRequest
-from rasa.builder.telemetry.shared import update_generation_span_with_usage_statistics
-
-if TYPE_CHECKING:
-    from rasa.builder.copilot.copilot import Copilot
-    from rasa.builder.copilot.models import CopilotContext
-    from rasa.builder.document_retrieval.inkeep_document_retrieval import (
-        InKeepDocumentRetrieval,
-    )
-
-import langfuse
 import structlog
 
-from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
 from rasa.builder.copilot.models import (
+    CopilotTurnRequest,
     EventContent,
     UsageStatistics,
 )
 from rasa.builder.document_retrieval.models import Document
 from rasa.builder.models import BotFiles
 from rasa.builder.shared.tracker_context import TrackerContext
+from rasa.builder.telemetry.langfuse_compat import (
+    is_langfuse_available,
+    langfuse,
+    with_langfuse,
+)
+from rasa.builder.telemetry.shared import update_generation_span_with_usage_statistics
+
+if TYPE_CHECKING:
+    from rasa.builder.copilot import BaseCopilot, CopilotResponseHandler
+    from rasa.builder.copilot.models import CopilotContext
+    from rasa.builder.document_retrieval.inkeep_document_retrieval import (
+        InKeepDocumentRetrieval,
+    )
 
 structlogger = structlog.get_logger()
 
@@ -49,19 +51,22 @@ class CopilotLangfuseTelemetry:
                 fetched from the tracker.
             session_id: The session ID used to fetch the right tracker.
         """
-        langfuse_client = langfuse.get_client()
-        # Use `update_current_span` to update the current span of the trace.
-        langfuse_client.update_current_span(
-            output={
-                "tracker_context": (
-                    tracker_context.model_dump() if tracker_context else None
-                ),
-            },
-            metadata={
-                "max_conversation_turns": max_conversation_turns,
-                "session_id": session_id,
-            },
-        )
+        with with_langfuse() as lf:
+            if not lf:
+                return
+            langfuse_client = lf.get_client()
+            # Use `update_current_span` to update the current span of the trace.
+            langfuse_client.update_current_span(
+                output={
+                    "tracker_context": (
+                        tracker_context.model_dump() if tracker_context else None
+                    ),
+                },
+                metadata={
+                    "max_conversation_turns": max_conversation_turns,
+                    "session_id": session_id,
+                },
+            )
 
     @staticmethod
     def trace_copilot_relevant_assistant_files(
@@ -72,13 +77,16 @@ class CopilotLangfuseTelemetry:
         Args:
             relevant_assistant_files: The relevant assistant files.
         """
-        langfuse_client = langfuse.get_client()
-        # Use `update_current_span` to update the current span of the trace.
-        langfuse_client.update_current_span(
-            output={
-                "relevant_assistant_files": relevant_assistant_files,
-            },
-        )
+        with with_langfuse() as lf:
+            if not lf:
+                return
+            langfuse_client = lf.get_client()
+            # Use `update_current_span` to update the current span of the trace.
+            langfuse_client.update_current_span(
+                output={
+                    "relevant_assistant_files": relevant_assistant_files,
+                },
+            )
 
     @staticmethod
     def setup_copilot_endpoint_call_trace_attributes(
@@ -86,7 +94,7 @@ class CopilotLangfuseTelemetry:
         chat_id: str,
         user_id: str,
         request: CopilotTurnRequest,
-        handler: CopilotResponseHandler,
+        handler: "CopilotResponseHandler",
         relevant_documents: list[Document],
         copilot_context: "CopilotContext",
     ) -> None:
@@ -99,61 +107,70 @@ class CopilotLangfuseTelemetry:
             request: The parsed CopilotTurnRequest object.
             handler: The response handler containing generated responses.
             relevant_documents: The relevant documents used to generate the response.
-        """
-        langfuse_client = langfuse.get_client()
-        user_message = request.message.get_flattened_text_content()
-        tracker_event_attachments = (
-            CopilotLangfuseTelemetry._extract_tracker_event_attachments_from_turn(
-                request
-            )
-        )
-        response_category = CopilotLangfuseTelemetry._extract_response_category(handler)
-        reference_section_entries = CopilotLangfuseTelemetry._extract_references(
-            handler, relevant_documents
-        )
+            copilot_context: The copilot context containing additional context.
 
-        # Create a session ID as a composite ID from project id, user id and chat id
-        session_id = CopilotLangfuseTelemetry._create_session_id(
-            hello_rasa_project_id, user_id, chat_id
-        )
-        # Use `update_current_trace` to update the top level trace.
-        langfuse_client.update_current_trace(
-            user_id=user_id,
-            session_id=session_id,
-            input={
-                "message": user_message,
-                "tracker_event_attachments": tracker_event_attachments,
-            },
-            output={
-                "answer": CopilotLangfuseTelemetry._full_text(handler),
-                "response_category": response_category,
-                "references": reference_section_entries,
-            },
-            metadata={
-                "ids": {
-                    "user_id": user_id,
-                    "project_id": hello_rasa_project_id,
-                    "chat_history_id": chat_id,
+        Returns:
+            None
+        """
+        with with_langfuse() as lf:
+            if not lf:
+                return
+            langfuse_client = lf.get_client()
+            user_message = request.message.get_flattened_text_content()
+            tracker_event_attachments = (
+                CopilotLangfuseTelemetry._extract_tracker_event_attachments_from_turn(
+                    request
+                )
+            )
+            response_category = CopilotLangfuseTelemetry._extract_response_category(
+                handler
+            )
+            reference_section_entries = CopilotLangfuseTelemetry._extract_references(
+                handler, relevant_documents
+            )
+
+            # Create a session ID as a composite ID from project id, user id and chat id
+            session_id = CopilotLangfuseTelemetry._create_session_id(
+                hello_rasa_project_id, user_id, chat_id
+            )
+            # Use `update_current_trace` to update the top level trace.
+            langfuse_client.update_current_trace(
+                user_id=user_id,
+                session_id=session_id,
+                input={
+                    "message": user_message,
+                    "tracker_event_attachments": tracker_event_attachments,
                 },
-                "copilot_additional_context": {
-                    "relevant_documents": [
-                        doc.model_dump() for doc in relevant_documents
-                    ],
-                    "relevant_assistant_files": copilot_context.assistant_files,
-                    "assistant_tracker_context": (
-                        copilot_context.tracker_context.model_dump()
-                        if copilot_context.tracker_context
-                        else None
-                    ),
-                    "assistant_logs": copilot_context.assistant_logs,
-                    "copilot_chat_history": [
-                        message.model_dump()
-                        for message in copilot_context.copilot_chat_history
-                    ],
+                output={
+                    "answer": CopilotLangfuseTelemetry._full_text(handler),
+                    "response_category": response_category,
+                    "references": reference_section_entries,
                 },
-            },
-            tags=[response_category] if response_category else [],
-        )
+                metadata={
+                    "ids": {
+                        "user_id": user_id,
+                        "project_id": hello_rasa_project_id,
+                        "chat_history_id": chat_id,
+                    },
+                    "copilot_additional_context": {
+                        "relevant_documents": [
+                            doc.model_dump() for doc in relevant_documents
+                        ],
+                        "relevant_assistant_files": copilot_context.assistant_files,
+                        "assistant_tracker_context": (
+                            copilot_context.tracker_context.model_dump()
+                            if copilot_context.tracker_context
+                            else None
+                        ),
+                        "assistant_logs": copilot_context.assistant_logs,
+                        "copilot_chat_history": [
+                            message.model_dump()
+                            for message in copilot_context.copilot_chat_history
+                        ],
+                    },
+                },
+                tags=[response_category] if response_category else [],
+            )
 
     @staticmethod
     def trace_copilot_streaming_generation(
@@ -165,10 +182,12 @@ class CopilotLangfuseTelemetry:
         generation by manually managing the generation span and updating it with usage
         statistics after the stream completes.
         """
+        if not is_langfuse_available():
+            return func
 
         @wraps(func)
         async def wrapper(
-            self: "Copilot", messages: List[Dict[str, Any]]
+            self: "BaseCopilot", messages: List[Dict[str, Any]]
         ) -> AsyncGenerator[str, None]:
             langfuse_client = langfuse.get_client()
 
@@ -205,6 +224,8 @@ class CopilotLangfuseTelemetry:
         This decorator handles Langfuse tracing for document retrieval API calls
         by manually managing the generation span and updating it with usage statistics.
         """
+        if not is_langfuse_available():
+            return func
 
         @wraps(func)
         async def wrapper(
@@ -267,7 +288,9 @@ class CopilotLangfuseTelemetry:
         ]
 
     @staticmethod
-    def _extract_response_category(handler: CopilotResponseHandler) -> Optional[str]:
+    def _extract_response_category(
+        handler: "CopilotResponseHandler",
+    ) -> Optional[str]:
         """Extract the response category from the response handler.
 
         Args:
@@ -284,7 +307,7 @@ class CopilotLangfuseTelemetry:
         return handler.generated_responses[0].response_category.value
 
     @staticmethod
-    def _full_text(handler: CopilotResponseHandler) -> str:
+    def _full_text(handler: "CopilotResponseHandler") -> str:
         """Extract full text from the response handler.
 
         Args:
@@ -301,7 +324,7 @@ class CopilotLangfuseTelemetry:
 
     @staticmethod
     def _extract_references(
-        handler: CopilotResponseHandler,
+        handler: "CopilotResponseHandler",
         relevant_documents: list[Document],
     ) -> List[Dict[str, Any]]:
         """Extract reference entries from the response handler.

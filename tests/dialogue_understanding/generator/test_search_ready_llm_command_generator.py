@@ -1909,10 +1909,15 @@ class TestSearchReadyLLMCommandGenerator:
         assert loaded.prompt_template == "This is a custom prompt"
         assert loaded.config["prompt_template"] == "test_prompt.jinja2"
 
+    @patch(
+        "rasa.shared.utils.health_check.health_check.perform_llm_health_check",
+        return_value=None,
+    )
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval")
     def test_train_with_no_flows(
         self,
         mock_flow_retrieval: Mock,
+        mock_perform_llm_health_check: Mock,
         model_storage: ModelStorage,
     ):
         # Given

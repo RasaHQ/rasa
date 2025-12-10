@@ -8,10 +8,16 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import structlog
-from langfuse.experiment import ExperimentItem, ExperimentResult
 
-from rasa.builder.evaluator.dataset.models import DatasetEntry
-from rasa.builder.evaluator.shared.copilot_executor import (
+from rasa.builder.telemetry.langfuse_compat import require_langfuse
+
+# Ensure langfuse is available - raises ImportError if not
+require_langfuse()
+
+from langfuse.experiment import ExperimentItem, ExperimentResult  # noqa: E402, TID251
+
+from rasa.builder.evaluator.dataset.models import DatasetEntry  # noqa: E402
+from rasa.builder.evaluator.shared.copilot_executor import (  # noqa: E402
     CopilotRunResult,
     run_copilot_with_response_handler,
 )

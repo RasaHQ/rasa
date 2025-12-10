@@ -34,6 +34,8 @@ async def train_and_load_agent(input: TrainingInput, role: str, action: str) -> 
 
     Args:
         input: Training input with importer and endpoints file
+        role: Role of the agent
+        action: Action of the agent
 
     Returns:
         Loaded and ready agent

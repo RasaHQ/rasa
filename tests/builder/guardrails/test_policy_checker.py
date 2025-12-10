@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from rasa.builder.copilot import CopilotResponseHandler
 from rasa.builder.copilot.constants import ROLE_COPILOT, ROLE_USER
-from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
     CopilotContext,

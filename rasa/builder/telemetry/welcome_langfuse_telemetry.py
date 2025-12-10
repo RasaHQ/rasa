@@ -1,9 +1,12 @@
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Callable
 
-import langfuse
-
 from rasa.builder.copilot.models import UsageStatistics
+from rasa.builder.telemetry.langfuse_compat import (
+    is_langfuse_available,
+    langfuse,
+    with_langfuse,
+)
 from rasa.builder.telemetry.shared import update_generation_span_with_usage_statistics
 
 if TYPE_CHECKING:
@@ -24,13 +27,16 @@ class WelcomeMessageGenerationLangfuseTelemetry:
             flows: The generated flows data.
             prompt: The full prompt sent to the LLM.
         """
-        langfuse_client = langfuse.get_client()
-        langfuse_client.update_current_span(
-            input={
-                "flows": flows,
-                "prompt": prompt,
-            }
-        )
+        with with_langfuse() as lf:
+            if not lf:
+                return
+            langfuse_client = lf.get_client()
+            langfuse_client.update_current_span(
+                input={
+                    "flows": flows,
+                    "prompt": prompt,
+                }
+            )
 
     @staticmethod
     def update_welcome_message_generation_output(
@@ -38,18 +44,22 @@ class WelcomeMessageGenerationLangfuseTelemetry:
         welcome_message: str,
     ) -> None:
         """Update the current Langfuse span with welcome message generation output.
+
         Args:
             response_content: The response content from the LLM.
             example_questions: The extracted example questions from the response.
             welcome_message: The cleaned and validated welcome message.
         """
-        langfuse_client = langfuse.get_client()
-        langfuse_client.update_current_span(
-            output={
-                "response_content": response_content,
-                "welcome_message": welcome_message,
-            }
-        )
+        with with_langfuse() as lf:
+            if not lf:
+                return
+            langfuse_client = lf.get_client()
+            langfuse_client.update_current_span(
+                output={
+                    "response_content": response_content,
+                    "welcome_message": welcome_message,
+                }
+            )
 
     @staticmethod
     def trace_text_generation(
@@ -60,6 +70,8 @@ class WelcomeMessageGenerationLangfuseTelemetry:
         This decorator handles Langfuse tracing for document retrieval API calls
         by manually managing the generation span and updating it with usage statistics.
         """
+        if not is_langfuse_available():
+            return func
 
         @wraps(func)
         async def wrapper(

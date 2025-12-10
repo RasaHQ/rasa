@@ -6,11 +6,14 @@ import pytest
 
 from rasa.builder.copilot.constants import PROMPT_TO_BOT_KEY, PROMPT_TO_BOT_TEMPLATE_KEY
 from rasa.builder.copilot.copilot_templated_message_provider import (
-    load_copilot_welcome_messages,
+    copilot_welcome_messages,
 )
 from rasa.builder.exceptions import ProjectGenerationError, ValidationError
 from rasa.builder.models import GitCommitInfo
-from rasa.builder.project_generator.project_generator import ProjectGenerator
+from rasa.builder.project_generator.project_generator import (
+    ProjectGenerator,
+    is_restricted_path,
+)
 from rasa.cli.scaffold import ProjectTemplateName
 from rasa.utils.io import InvalidPathException
 
@@ -54,54 +57,50 @@ class TestProjectGenerator:
 
     def test_is_restricted_path_hidden_files(self, tmp_path: Path) -> None:
         """Test is_restricted_path correctly identifies hidden files."""
-        generator = ProjectGenerator(str(tmp_path))
 
         # Hidden files should be restricted
         hidden_file = tmp_path / ".hidden_file"
-        assert generator.is_restricted_path(hidden_file) is True
+        assert is_restricted_path(tmp_path, hidden_file) is True
 
         # Hidden directories should be restricted
         hidden_dir = tmp_path / ".hidden_dir"
-        assert generator.is_restricted_path(hidden_dir) is True
+        assert is_restricted_path(tmp_path, hidden_dir) is True
 
         # .rasa directory should be restricted
         rasa_dir = tmp_path / ".rasa"
-        assert generator.is_restricted_path(rasa_dir) is True
+        assert is_restricted_path(tmp_path, rasa_dir) is True
 
     def test_is_restricted_path_models_directory(self, tmp_path: Path) -> None:
         """Test is_restricted_path correctly identifies models directory."""
-        generator = ProjectGenerator(str(tmp_path))
 
         # Models directory should be restricted
         models_dir = tmp_path / "models"
-        assert generator.is_restricted_path(models_dir) is True
+        assert is_restricted_path(tmp_path, models_dir) is True
 
         # Files in models directory should be restricted
         models_file = tmp_path / "models" / "model.tar.gz"
-        assert generator.is_restricted_path(models_file) is True
+        assert is_restricted_path(tmp_path, models_file) is True
 
     def test_is_restricted_path_pycache_directory(self, tmp_path: Path) -> None:
         """Test is_restricted_path correctly identifies __pycache__ directory."""
-        generator = ProjectGenerator(str(tmp_path))
 
         # __pycache__ directory should be restricted
         pycache_dir = tmp_path / "actions" / "__pycache__"
-        assert generator.is_restricted_path(pycache_dir) is True
+        assert is_restricted_path(tmp_path, pycache_dir) is True
 
     def test_is_restricted_path_normal_files(self, tmp_path: Path) -> None:
         """Test is_restricted_path allows normal files."""
-        generator = ProjectGenerator(str(tmp_path))
 
         # Normal files should not be restricted
         config_file = tmp_path / "config.yml"
-        assert generator.is_restricted_path(config_file) is False
+        assert is_restricted_path(tmp_path, config_file) is False
 
         domain_file = tmp_path / "domain.yml"
-        assert generator.is_restricted_path(domain_file) is False
+        assert is_restricted_path(tmp_path, domain_file) is False
 
         # Files in subdirectories should not be restricted
         data_file = tmp_path / "data" / "nlu.yml"
-        assert generator.is_restricted_path(data_file) is False
+        assert is_restricted_path(tmp_path, data_file) is False
 
     def test_bot_file_paths_excludes_restricted_paths(self, tmp_path: Path) -> None:
         """Test bot_file_paths only returns non-restricted file paths."""
@@ -199,7 +198,7 @@ class TestProjectGenerator:
         # Mock the commit method since we're testing file operations, not git
         with patch.object(
             generator,
-            "_commit_changes",
+            "unsafe_commit_changes",
             new_callable=AsyncMock,
             return_value="mock_sha",
         ):
@@ -236,7 +235,7 @@ class TestProjectGenerator:
         # Mock the commit method since we're testing file operations, not git
         with patch.object(
             generator,
-            "_commit_changes",
+            "unsafe_commit_changes",
             new_callable=AsyncMock,
             return_value="mock_sha",
         ):
@@ -281,7 +280,7 @@ class TestProjectGenerator:
         # Mock the commit method since we're testing file operations, not git
         with patch.object(
             generator,
-            "_commit_changes",
+            "unsafe_commit_changes",
             new_callable=AsyncMock,
             return_value="mock_sha",
         ):
@@ -313,7 +312,7 @@ class TestProjectGenerator:
         # Mock the commit method since we're testing file operations, not git
         with patch.object(
             generator,
-            "_commit_changes",
+            "unsafe_commit_changes",
             new_callable=AsyncMock,
             return_value="mock_sha",
         ):
@@ -342,7 +341,7 @@ class TestProjectGenerator:
             # Mock the commit method since we're testing file operations, not git
             with patch.object(
                 generator,
-                "_commit_changes",
+                "unsafe_commit_changes",
                 new_callable=AsyncMock,
                 return_value="mock_sha",
             ):
@@ -366,7 +365,7 @@ class TestProjectGenerator:
         # Mock the commit method since we're testing file operations, not git
         with patch.object(
             generator,
-            "_commit_changes",
+            "unsafe_commit_changes",
             new_callable=AsyncMock,
             return_value="mock_sha",
         ):
@@ -1149,7 +1148,7 @@ class TestProjectGenerator:
         """Test welcome message generation"""
         generator = ProjectGenerator(str(tmp_path))
 
-        welcome_messages = load_copilot_welcome_messages()
+        welcome_messages = copilot_welcome_messages()
         default_welcome_message = welcome_messages.get(PROMPT_TO_BOT_KEY)
         template_welcome_message = welcome_messages.get(PROMPT_TO_BOT_TEMPLATE_KEY)
 

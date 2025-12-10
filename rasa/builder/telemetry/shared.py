@@ -1,15 +1,15 @@
-import langfuse
+from typing import Any
 
 from rasa.builder.copilot.models import UsageStatistics
 
 
 def update_generation_span_with_usage_statistics(
-    generation_span: langfuse.LangfuseGeneration,
+    generation_span: Any,
     usage_statistics: UsageStatistics,
 ) -> None:
     """Update the generation span with the usage statistics.
 
-    Args:
+    Args:ga
         generation_span: The generation span.
         usage_statistics: The usage statistics of the generation.
     """

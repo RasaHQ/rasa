@@ -9,7 +9,7 @@ from typing import List, Optional
 import structlog
 from pydantic import BaseModel
 
-from rasa.builder.config import COPILOT_HANDLER_ROLLING_BUFFER_SIZE
+from rasa.builder.copilot import Copilot
 from rasa.builder.copilot.models import (
     CopilotContext,
     CopilotGenerationContext,
@@ -17,7 +17,6 @@ from rasa.builder.copilot.models import (
     ReferenceSection,
     ResponseCategory,
 )
-from rasa.builder.llm_service import llm_service
 
 structlogger = structlog.get_logger()
 
@@ -52,20 +51,18 @@ async def run_copilot_with_response_handler(
         Any exceptions from the copilot or response handler execution.
     """
     # Instantiate the copilot and response handler
-    copilot = llm_service.instantiate_copilot()
-    copilot_response_handler = llm_service.instantiate_handler(
-        COPILOT_HANDLER_ROLLING_BUFFER_SIZE
-    )
+    copilot = Copilot()
 
     # Call the copilot to generate a response and handle it with the response
     # handler
-    (original_stream, generation_context) = await copilot.generate_response(context)
-    intercepted_stream = copilot_response_handler.handle_response(original_stream)
+    (copilot_response_handler, generation_context) = await copilot.generate_response(
+        context
+    )
 
     # Exhaust the stream to get the complete response for evaluation
     response_chunks: List[str] = []
     response_category = None
-    async for chunk in intercepted_stream:
+    async for chunk in copilot_response_handler.stream():
         if not isinstance(chunk, GeneratedContent):
             continue
         response_chunks.append(chunk.content)

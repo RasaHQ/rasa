@@ -1,12 +1,12 @@
 import copy
 import re
 from collections import deque
-from typing import AsyncGenerator, Deque, Dict, List, Optional, Tuple
+from typing import AsyncGenerator, Deque, Dict, List, Optional
 
 import structlog
 
 from rasa.builder.copilot.copilot_templated_message_provider import (
-    load_copilot_handler_default_responses,
+    copilot_handler_default_responses,
 )
 from rasa.builder.copilot.exceptions import (
     CopilotFinalBufferReached,
@@ -32,7 +32,7 @@ ERROR_FALLBACK_PREDICTION = "[ERROR_FALLBACK]"
 KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION = "[NO_KNOWLEDGE_BASE_ACCESS]"
 
 # Load predefined for controlled predictions from YAML
-_handler_responses = load_copilot_handler_default_responses()
+_handler_responses = copilot_handler_default_responses()
 
 # Prediction marker to response mapping
 PREDICTION_RESPONSES = {
@@ -93,9 +93,11 @@ class CopilotResponseHandler:
 
     def __init__(
         self,
+        response_stream: AsyncGenerator[str, None],
         rolling_buffer_size: int = 20,
     ):
         self._rolling_buffer_size = rolling_buffer_size
+        self._response_stream = response_stream
 
         # Rolling buffer for handling special tokens and prefix/suffix removal.
         self._rolling_buffer: Deque[str] = deque(maxlen=self._rolling_buffer_size)
@@ -190,13 +192,8 @@ class CopilotResponseHandler:
             )
             raise e
 
-    async def handle_response(
-        self, response_stream: AsyncGenerator[str, None]
-    ) -> AsyncGenerator[CopilotOutput, None]:
+    async def stream(self) -> AsyncGenerator[CopilotOutput, None]:
         """Intercept a streaming response and handle special responses from the Copilot.
-
-        Args:
-            response_stream: The original streaming response from the LLM.
 
         Yields:
             ResponseEvent objects representing either generated tokens, default
@@ -208,7 +205,7 @@ class CopilotResponseHandler:
         try:
             # Exhaust the buffer early to check for controlled predictions and prefix
             # detection.
-            await self._exhaust_buffer_for_early_detection(response_stream)
+            await self._exhaust_buffer_for_early_detection(self._response_stream)
 
             # Check for controlled predictions in the collected tokens
             controlled_response = self._check_for_controlled_predictions(
@@ -232,7 +229,7 @@ class CopilotResponseHandler:
                 yield generated_content
 
             # Continue streaming remaining chunks with rolling buffer handling
-            async for chunk in self._buffer_stream(response_stream):
+            async for chunk in self._buffer_stream(self._response_stream):
                 generated_content = GeneratedContent(
                     content=chunk,
                     response_category=ResponseCategory.COPILOT,
@@ -558,11 +555,3 @@ class CopilotResponseHandler:
                 last_category = response.response_category
 
         return last_category or ResponseCategory.COPILOT
-
-    def extract_full_text_and_category(self) -> Tuple[str, ResponseCategory]:
-        """Extract full text and response category from the handler's responses.
-
-        Returns:
-            Tuple[str, ResponseCategory]: Text and the last response category.
-        """
-        return self.extract_full_text(), self.extract_response_category()

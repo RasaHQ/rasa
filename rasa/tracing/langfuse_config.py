@@ -92,9 +92,9 @@ def configure_langfuse(
 
 def _is_langfuse_available() -> bool:
     """Check if Langfuse is available."""
-    try:
-        import langfuse  # noqa: F401
-    except ImportError as e:
+    from rasa.builder.telemetry.langfuse_compat import is_langfuse_available
+
+    if not is_langfuse_available():
         structlogger.error(
             "langfuse_configuration.langfuse_not_available",
             event_info=(
@@ -102,7 +102,6 @@ def _is_langfuse_available() -> bool:
                 "Please install langfuse via `pip install rasa-pro[monitoring]`. "
                 "Langfuse will not be configured."
             ),
-            error=str(e),
         )
         return False
     return True

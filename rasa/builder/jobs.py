@@ -4,7 +4,6 @@ import tarfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import langfuse
 import structlog
 from sanic import Sanic
 
@@ -14,14 +13,15 @@ from rasa.builder.constants import (
     MAX_ARCHIVE_FILES,
     MAX_ARCHIVE_TOTAL_SIZE,
 )
+from rasa.builder.copilot import Copilot
 from rasa.builder.copilot.constants import (
     PROMPT_TO_BOT_KEY,
     PROMPT_TO_BOT_TEMPLATE_KEY,
 )
 from rasa.builder.copilot.copilot_templated_message_provider import (
-    load_copilot_handler_default_responses,
-    load_copilot_template_prompts,
-    load_copilot_welcome_messages,
+    copilot_handler_default_responses,
+    copilot_template_prompts,
+    copilot_welcome_messages,
 )
 from rasa.builder.copilot.history_store import (
     persist_copilot_message_to_history,
@@ -54,12 +54,12 @@ from rasa.builder.job_helpers import (
     train_and_load_and_link_agent,
 )
 from rasa.builder.job_manager import JobInfo, job_manager
-from rasa.builder.llm_service import llm_service
 from rasa.builder.models import (
     GitCommitInfo,
     JobStatus,
 )
 from rasa.builder.project_generator.project_generator import ProjectGenerator
+from rasa.builder.telemetry.langfuse_compat import observe
 from rasa.builder.telemetry.prompt_to_bot_langfuse_telemetry import (
     PromptToBotLangfuseTelemetry,
 )
@@ -84,7 +84,7 @@ async def send_heartbeat(job: JobInfo, interval: int = 15) -> None:
         raise
 
 
-@langfuse.observe(
+@observe(
     capture_input=False,
     capture_output=False,
 )
@@ -100,6 +100,7 @@ async def run_prompt_to_bot_job(
         app: The Sanic application instance.
         job: The job information instance.
         prompt: The natural language prompt for bot generation.
+        user_id: The user ID for the trace.
     """
     PromptToBotLangfuseTelemetry.setup_prompt_to_bot_trace(
         prompt=prompt,
@@ -295,8 +296,7 @@ async def run_template_to_bot_job(
         # Persist template prompt to history after template initialization
         # This ensures the project directory and .rasa folder exist
         try:
-            template_prompts = load_copilot_template_prompts()
-            template_prompt = template_prompts.get(template_name.value)
+            template_prompt = copilot_template_prompts().get(template_name.value)
             if template_prompt:
                 await persist_user_message_to_history(text=template_prompt)
         except Exception as persist_exc:
@@ -548,16 +548,11 @@ async def run_copilot_training_error_analysis_job(
         )
 
         # Generate copilot response
-        copilot_client = llm_service.instantiate_copilot()
+        copilot_client = Copilot()
         (
-            original_stream,
+            copilot_response_handler,
             generation_context,
         ) = await copilot_client.generate_response(context)
-
-        copilot_response_handler = llm_service.instantiate_handler(
-            config.COPILOT_HANDLER_ROLLING_BUFFER_SIZE
-        )
-        intercepted_stream = copilot_response_handler.handle_response(original_stream)
 
         commit_info = None
         if job.commit_sha:
@@ -586,7 +581,7 @@ async def run_copilot_training_error_analysis_job(
         )
 
         # Stream the copilot response as job events
-        async for token in intercepted_stream:
+        async for token in copilot_response_handler.stream():
             # Send each token as a job event using the same format as /copilot endpoint
             await push_job_status_event(
                 job, JobStatus.copilot_analyzing, payload=token.sse_data
@@ -602,7 +597,7 @@ async def run_copilot_training_error_analysis_job(
             )
 
         # Persist the training error analysis to history
-        full_text, _ = copilot_response_handler.extract_full_text_and_category()
+        full_text = copilot_response_handler.extract_full_text()
 
         # Extract references if available
         references = None
@@ -658,7 +653,7 @@ async def run_copilot_welcome_message_job(
     """
     try:
         # Load welcome messages from YAML
-        welcome_messages = load_copilot_welcome_messages()
+        welcome_messages = copilot_welcome_messages()
 
         # Get the appropriate welcome message
         if template_name:
@@ -744,7 +739,7 @@ async def run_copilot_training_success_job(
     """
     try:
         # Load copilot default messages from YAML
-        internal_messages = load_copilot_handler_default_responses()
+        internal_messages = copilot_handler_default_responses()
 
         # Get the appropriate training success message
         training_success_message = internal_messages.get("training_success_response")
@@ -827,7 +822,7 @@ async def run_copilot_rollback_message_job(
     """
     try:
         # Load copilot default messages from YAML
-        internal_messages = load_copilot_handler_default_responses()
+        internal_messages = copilot_handler_default_responses()
 
         # Get the appropriate rollback message
         rollback_message = internal_messages.get(internal_message_key)
@@ -1100,7 +1095,7 @@ async def run_copilot_template_prompt_job(
         custom_prompt: Optional custom prompt by user.
     """
     try:
-        template_prompts = load_copilot_template_prompts()
+        template_prompts = copilot_template_prompts()
         prompt = custom_prompt or (
             template_prompts.get(template_name.value) if template_name else None
         )

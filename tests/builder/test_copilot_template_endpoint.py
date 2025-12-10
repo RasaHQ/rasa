@@ -25,15 +25,21 @@ class TestCopilotTemplateEndpoint:
     async def test_get_valid_template(self, mock_llm_service: Mock):
         """Test getting a valid template for a template name."""
         # Given
-        expected_template = "The assistant training failed."
-        (
-            mock_llm_service.copilot_internal_message_templates.get.return_value
-        ) = expected_template
+        expected_template = (
+            "The assistant training failed. Your task is to "
+            "analyze provided error logs\n"
+            "and help me fix the issue.\n"
+        )
         mock_request = Mock()
         template_name = "training_error_log_analysis"
 
+        mock_templates_func = Mock(return_value={template_name: expected_template})
+
         # When
-        with patch("rasa.builder.service.llm_service", mock_llm_service):
+        with patch(
+            "rasa.builder.service.copilot_internal_message_templates",
+            mock_templates_func,
+        ):
             response = await get_copilot_internal_message_template(
                 mock_request, template_name
             )
@@ -47,23 +53,23 @@ class TestCopilotTemplateEndpoint:
         assert response_data["template_name"] == template_name
 
         # Verify the formatter was called correctly
-        mock_llm_service.copilot_internal_message_templates.get.assert_called_once_with(
-            template_name
-        )
+        mock_templates_func.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_nonexistent_template(self, mock_llm_service: Mock):
         """Test getting a template for a template name that doesn't exist."""
-        # Mock the formatter to return None
-        (mock_llm_service.copilot_internal_message_templates.get.return_value) = None
-
         # Mock request
         mock_request = Mock()
 
         # Test with template name that has no template
         template_name = "copilot"
 
-        with patch("rasa.builder.service.llm_service", mock_llm_service):
+        mock_templates_func = Mock(return_value={})
+
+        with patch(
+            "rasa.builder.service.copilot_internal_message_templates",
+            mock_templates_func,
+        ):
             response = await get_copilot_internal_message_template(
                 mock_request, template_name
             )

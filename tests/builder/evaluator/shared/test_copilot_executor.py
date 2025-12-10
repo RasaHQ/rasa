@@ -23,7 +23,7 @@ class TestRunCopilotWithResponseHandler:
     """Tests for run_copilot_with_response_handler function."""
 
     @pytest.mark.asyncio
-    @patch("rasa.builder.evaluator.shared.copilot_executor.llm_service")
+    @patch("rasa.builder.evaluator.shared.copilot_executor.Copilot")
     @pytest.mark.parametrize(
         "response_chunks,"
         "response_category,"
@@ -97,7 +97,7 @@ class TestRunCopilotWithResponseHandler:
     )
     async def test_run_copilot_with_response_handler(
         self,
-        mock_llm_service: MagicMock,
+        mock_copilot_class: MagicMock,
         response_chunks: List[str],
         response_category: Optional[ResponseCategory],
         has_relevant_documents: bool,
@@ -158,7 +158,9 @@ class TestRunCopilotWithResponseHandler:
             else None
         )
 
-        # Create mock stream with GeneratedContent chunks
+        # Create mock response handler that yields chunks
+        mock_response_handler = MagicMock()
+
         async def mock_stream() -> AsyncIterator[GeneratedContent]:
             for chunk in response_chunks:
                 yield GeneratedContent(
@@ -166,20 +168,17 @@ class TestRunCopilotWithResponseHandler:
                     response_category=response_category or ResponseCategory.COPILOT,
                 )
 
-        # Mock copilot
-        mock_copilot = AsyncMock()
-        mock_copilot.generate_response = AsyncMock(
-            return_value=(mock_stream(), generation_context)
+        mock_response_handler.stream = mock_stream
+        mock_response_handler.extract_references = MagicMock(
+            return_value=reference_section
         )
 
-        # Mock response handler
-        mock_handler = MagicMock()
-        mock_handler.handle_response = MagicMock(return_value=mock_stream())
-        mock_handler.extract_references = MagicMock(return_value=reference_section)
-
-        # Mock llm_service
-        mock_llm_service.instantiate_copilot.return_value = mock_copilot
-        mock_llm_service.instantiate_handler.return_value = mock_handler
+        # Mock copilot instance
+        mock_copilot_instance = MagicMock()
+        mock_copilot_instance.generate_response = AsyncMock(
+            return_value=(mock_response_handler, generation_context)
+        )
+        mock_copilot_class.return_value = mock_copilot_instance
 
         # When
         result = await run_copilot_with_response_handler(context)
@@ -191,14 +190,14 @@ class TestRunCopilotWithResponseHandler:
         assert result.generation_context == generation_context
 
         if should_extract_references:
-            mock_handler.extract_references.assert_called_once_with(documents)
+            mock_response_handler.extract_references.assert_called_once_with(documents)
             assert result.reference_section == reference_section
         else:
-            mock_handler.extract_references.assert_not_called()
+            mock_response_handler.extract_references.assert_not_called()
             assert result.reference_section is None
 
     @pytest.mark.asyncio
-    @patch("rasa.builder.evaluator.shared.copilot_executor.llm_service")
+    @patch("rasa.builder.evaluator.shared.copilot_executor.Copilot")
     @pytest.mark.parametrize(
         "exception,expected_error",
         [
@@ -212,7 +211,7 @@ class TestRunCopilotWithResponseHandler:
     )
     async def test_run_copilot_with_response_handler_exception_handling(
         self,
-        mock_llm_service: MagicMock,
+        mock_copilot_class: MagicMock,
         exception: Exception,
         expected_error: type[Exception],
     ) -> None:
@@ -225,13 +224,10 @@ class TestRunCopilotWithResponseHandler:
             copilot_chat_history=[],
         )
 
-        # Mock copilot to raise an exception
-        mock_copilot = AsyncMock()
-        mock_copilot.generate_response = AsyncMock(side_effect=exception)
-
-        # Mock llm_service
-        mock_llm_service.instantiate_copilot.return_value = mock_copilot
-        mock_llm_service.instantiate_handler = MagicMock()
+        # Mock copilot instance to raise an exception
+        mock_copilot_instance = MagicMock()
+        mock_copilot_instance.generate_response = AsyncMock(side_effect=exception)
+        mock_copilot_class.return_value = mock_copilot_instance
 
         # When/Then
         with pytest.raises(expected_error):

@@ -2,15 +2,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import langfuse
 import structlog
 import yaml  # type: ignore[import-untyped]
-from langfuse import Evaluation
-from langfuse._client.datasets import DatasetClient
-from langfuse.experiment import (
-    ExperimentItemResult,
-    ExperimentResult,
-)
 
 from rasa.builder.copilot.models import (
     ResponseCategory,
@@ -65,6 +58,18 @@ from rasa.builder.evaluator.shared.copilot_executor import (
 from rasa.builder.evaluator.shared.langfuse_utils import (
     report_langfuse_run_results_to_txt_file,
     run_copilot_task,
+)
+from rasa.builder.telemetry.langfuse_compat import langfuse, require_langfuse
+
+# Ensure langfuse is available - raises ImportError if not
+require_langfuse()
+
+# These imports are safe now that we've verified langfuse is available
+from langfuse import Evaluation  # noqa: E402, TID251
+from langfuse._client.datasets import DatasetClient  # noqa: E402, TID251
+from langfuse.experiment import (  # noqa: E402, TID251
+    ExperimentItemResult,
+    ExperimentResult,
 )
 
 structlogger = structlog.get_logger()

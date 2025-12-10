@@ -3,7 +3,13 @@ import sys
 from typing import Any, List, Optional
 
 import structlog
-from langfuse.experiment import ExperimentResult
+
+from rasa.builder.telemetry.langfuse_compat import require_langfuse
+
+# Ensure langfuse is available - raises ImportError if not
+require_langfuse()
+
+from langfuse.experiment import ExperimentResult  # noqa: E402, TID251
 
 structlogger = structlog.get_logger()
 

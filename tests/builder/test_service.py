@@ -52,21 +52,27 @@ def sanic_app() -> Sanic:
 
 @pytest.fixture(autouse=True)
 def patch_copilot_dependencies(monkeypatch):
-    """
-    Patch all Copilot/LLM bits so that the /api/copilot route can run
+    """Patch Copilot/LLM for offline testing.
+
+    Patches all Copilot/LLM bits so that the /api/copilot route can run
     entirely offline and without hitting third-party services.
     """
     # 1. Patch project generator to return a mock project
     project_folder = SimpleNamespace(name="proj")
+    mock_git_service = MagicMock()
+    mock_git_service.git_operation = MagicMock(
+        return_value=AsyncMock().__aenter__.return_value
+    )
+    mock_git_service.get_current_commit_sha = AsyncMock(return_value="mock_sha_before")
     pg = SimpleNamespace(
-        project_folder=project_folder, get_bot_files=lambda *args, **kwargs: {}
+        project_folder=project_folder,
+        get_bot_files=lambda *args, **kwargs: {},
+        git_service=mock_git_service,
+        unsafe_commit_changes=AsyncMock(return_value="mock_sha_after"),
     )
     monkeypatch.setattr("rasa.builder.service.get_project_generator", lambda _: pg)
 
-    # 2. Patch Copilot's generate_response method to return a mock stream
-    async def fake_stream():
-        yield "token"
-
+    # 2. Patch Copilot's generate_response method to return a mock handler
     # make sure all keys expected by log_copilot_from_handler are present
     usage_stats = SimpleNamespace(
         model_dump=lambda: {
@@ -77,10 +83,31 @@ def patch_copilot_dependencies(monkeypatch):
         }
     )
 
+    # 3. Patch CopilotResponseHandler to return a mock
+    token = SimpleNamespace(
+        content="hi",
+        response_category=ResponseCategory.COPILOT,
+        response_completeness=ResponseCompleteness.COMPLETE,
+        to_sse_event=lambda: SimpleNamespace(format=lambda: ""),
+    )
+
+    async def _stream():
+        yield token
+
+    handler = SimpleNamespace(
+        generated_responses=[token],
+        stream=_stream,
+        extract_references=lambda *_: SimpleNamespace(
+            to_sse_event=lambda: SimpleNamespace(format=lambda: "")
+        ),
+        extract_response_category=lambda: ResponseCategory.COPILOT,
+        extract_full_text=lambda: "hi",
+    )
+
     fake_copilot = SimpleNamespace(
         generate_response=AsyncMock(
             return_value=(
-                fake_stream(),
+                handler,
                 CopilotGenerationContext(
                     relevant_documents=[
                         Document(
@@ -100,32 +127,13 @@ def patch_copilot_dependencies(monkeypatch):
     )
 
     monkeypatch.setattr(
-        "rasa.builder.llm_service.LLMService.instantiate_copilot",
-        lambda _self: fake_copilot,
-    )
-
-    # 3. Patch `instantiate_handler` to return a mock CopilotResponseHandler
-    token = SimpleNamespace(
-        content="hi",
-        response_category=ResponseCategory.COPILOT,
-        response_completeness=ResponseCompleteness.COMPLETE,
-        to_sse_event=lambda: SimpleNamespace(format=lambda: ""),
-    )
-
-    async def _handle(_):
-        yield token
-
-    handler = SimpleNamespace(
-        generated_responses=[token],
-        handle_response=_handle,
-        extract_references=lambda *_: SimpleNamespace(
-            to_sse_event=lambda: SimpleNamespace(format=lambda: "")
-        ),
+        "rasa.builder.service.Copilot",
+        lambda: fake_copilot,
     )
 
     monkeypatch.setattr(
-        "rasa.builder.llm_service.LLMService.instantiate_handler",
-        lambda _self, *_args, **_kwargs: handler,
+        "rasa.builder.service.CopilotResponseHandler",
+        lambda *args, **kwargs: handler,
     )
 
     # 4. Additional patches to avoid errors in the service
@@ -173,44 +181,44 @@ def _setup_copilot_mocks(
         content=expected_response, response_category=ResponseCategory.COPILOT
     )
 
-    async def mock_handle_response(stream):
-        async for item in stream:
-            yield item
+    async def mock_stream():
+        for text in expected_response.split():
+            token = MagicMock()
+            token.to_sse_event.return_value.format.return_value = f"data: {text}\n\n"
+            yield token
 
     def mock_instantiate_handler(*args, **kwargs):
         handler = MagicMock()
         handler.generated_responses = [mock_generated_response]
-        handler.handle_response = mock_handle_response
+        handler.stream = mock_stream
         mock_reference = MagicMock()
         mock_reference.to_sse_event.return_value.format.return_value = ""
         handler.extract_references.return_value = mock_reference
-        handler.extract_full_text_and_category.return_value = (
-            expected_response,
-            ResponseCategory.COPILOT,
-        )
+        handler.extract_response_category.return_value = ResponseCategory.COPILOT
+        handler.extract_full_text.return_value = expected_response
         return handler
 
     # Mock copilot client
     async def mock_generate_response(context):
-        async def mock_stream():
-            for text in expected_response.split():
-                token = MagicMock()
-                token.to_sse_event.return_value.format.return_value = (
-                    f"data: {text}\n\n"
-                )
-                yield token
+        # Create a handler instance
+        handler = mock_instantiate_handler()
 
-        # Return the stream and a proper generation context
+        # Return the handler and a proper generation context
         mock_generation_context = MagicMock()
         mock_generation_context.relevant_documents = []
-        return mock_stream(), mock_generation_context
+        return handler, mock_generation_context
 
     mock_copilot = MagicMock()
     mock_copilot.generate_response = mock_generate_response
 
+    # Patch Copilot and CopilotResponseHandler classes
+    monkeypatch.setattr("rasa.builder.service.Copilot", lambda: mock_copilot)
+    monkeypatch.setattr(
+        "rasa.builder.service.CopilotResponseHandler", mock_instantiate_handler
+    )
+
+    # Mock llm_service for history_store and guardrails
     mock_llm_service = MagicMock()
-    mock_llm_service.instantiate_handler = mock_instantiate_handler
-    mock_llm_service.instantiate_copilot.return_value = mock_copilot
     mock_llm_service.history_store = history_store
 
     # Mock guardrails_policy_checker to return None (no violations)
@@ -613,9 +621,10 @@ async def test_copilot_endpoint_stores_messages_to_sqlite(
         expected_response = "Hello! I can help you build a bot."
         test_store = SQLiteCopilotHistoryStore(temp_db_path)
 
-        # Configure the mocked llm_service to use our test store
+        # Configure the llm_service singleton to use our test store
+        # (both service.py and history_store.py import from llm_service module)
         monkeypatch.setattr(
-            "rasa.builder.service.llm_service._history_store", test_store
+            "rasa.builder.llm_service.llm_service._history_store", test_store
         )
         _setup_copilot_mocks(monkeypatch, expected_response, history_store=test_store)
 
@@ -949,3 +958,194 @@ class TestDownloadEndpoint:
         )
         call_args = self.mock_create_archive.call_args
         assert call_args[0][1] == "full-bot"
+
+
+class TestInternalEndpoints:
+    """Test internal endpoints for MCP server communication."""
+
+    @pytest.fixture
+    def sanic_app_with_agent(self, sanic_app: Sanic, tmp_path: Path) -> Sanic:
+        """Create a Sanic app with a mock agent."""
+        # Use a mock project generator with a real path
+        mock_pg = MagicMock()
+        mock_pg.project_folder = tmp_path
+        sanic_app.ctx.project_generator = mock_pg
+
+        mock_agent = MagicMock()
+        mock_agent.is_ready.return_value = True
+        mock_agent.tracker_store = MagicMock()
+        sanic_app.ctx.agent = mock_agent
+        return sanic_app
+
+    @pytest.mark.asyncio
+    async def test_reload_agent_internal_from_localhost(
+        self, sanic_app_with_agent: Sanic, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test reload_agent_internal endpoint from localhost."""
+        # Mock _is_localhost_request to return True (ASGI test client uses "mockserver")
+        monkeypatch.setattr(
+            "rasa.builder.service._is_localhost_request", lambda _: True
+        )
+
+        # Mock try_load_existing_agent to return a mock agent
+        mock_agent = MagicMock()
+        monkeypatch.setattr(
+            "rasa.builder.service.try_load_existing_agent",
+            AsyncMock(return_value=mock_agent),
+        )
+        monkeypatch.setattr("rasa.builder.service.update_agent", MagicMock())
+
+        async with sanic_app_with_agent.asgi_client as client:
+            _, response = await client.post("/api/internal/reload-agent")
+
+        # Should succeed since we're from localhost
+        assert response.status == 200
+        payload = json.loads(response.body)
+        assert payload["success"] is True
+        assert payload["message"] == "Agent reloaded"
+
+    @pytest.mark.asyncio
+    async def test_reload_agent_internal_no_agent(
+        self, sanic_app_with_agent: Sanic, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test reload_agent_internal when no agent exists."""
+        # Mock _is_localhost_request to return True
+        monkeypatch.setattr(
+            "rasa.builder.service._is_localhost_request", lambda _: True
+        )
+
+        # Mock try_load_existing_agent to return None
+        monkeypatch.setattr(
+            "rasa.builder.service.try_load_existing_agent",
+            AsyncMock(return_value=None),
+        )
+
+        async with sanic_app_with_agent.asgi_client as client:
+            _, response = await client.post("/api/internal/reload-agent")
+
+        assert response.status == 404
+        payload = json.loads(response.body)
+        assert payload["success"] is False
+        assert "No agent found" in payload["message"]
+
+    @pytest.mark.asyncio
+    async def test_reload_agent_internal_forbidden_non_localhost(
+        self, sanic_app_with_agent: Sanic, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test reload_agent_internal rejects non-localhost requests."""
+        # Mock _is_localhost_request to return False
+        monkeypatch.setattr(
+            "rasa.builder.service._is_localhost_request", lambda _: False
+        )
+
+        async with sanic_app_with_agent.asgi_client as client:
+            _, response = await client.post("/api/internal/reload-agent")
+
+        assert response.status == 403
+        payload = json.loads(response.body)
+        assert payload["error"] == "Forbidden"
+        assert "localhost" in payload["details"]["message"]
+
+    @pytest.mark.asyncio
+    async def test_get_tracker_internal_success(
+        self, sanic_app_with_agent: Sanic, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test get_tracker_internal endpoint with valid session."""
+        # Mock _is_localhost_request to return True
+        monkeypatch.setattr(
+            "rasa.builder.service._is_localhost_request", lambda _: True
+        )
+
+        # Mock the tracker store to return a mock tracker
+        mock_tracker = MagicMock()
+        mock_tracker.events = []
+        sanic_app_with_agent.ctx.agent.tracker_store.retrieve = AsyncMock(
+            return_value=mock_tracker
+        )
+
+        async with sanic_app_with_agent.asgi_client as client:
+            _, response = await client.get("/api/internal/tracker/test-session-123")
+
+        assert response.status == 200
+        payload = json.loads(response.body)
+        assert "conversation_turns" in payload or "current_state" in payload
+
+    @pytest.mark.asyncio
+    async def test_get_tracker_internal_session_not_found(
+        self, sanic_app_with_agent: Sanic, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test get_tracker_internal when session doesn't exist."""
+        # Mock _is_localhost_request to return True
+        monkeypatch.setattr(
+            "rasa.builder.service._is_localhost_request", lambda _: True
+        )
+
+        # Mock tracker store to return None for unknown session
+        sanic_app_with_agent.ctx.agent.tracker_store.retrieve = AsyncMock(
+            return_value=None
+        )
+
+        async with sanic_app_with_agent.asgi_client as client:
+            _, response = await client.get("/api/internal/tracker/nonexistent-session")
+
+        assert response.status == 404
+        payload = json.loads(response.body)
+        assert payload["error"] == "Tracker not found"
+
+    @pytest.mark.asyncio
+    async def test_get_tracker_internal_forbidden_non_localhost(
+        self, sanic_app_with_agent: Sanic, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test get_tracker_internal rejects non-localhost requests."""
+        # Mock _is_localhost_request to return False
+        monkeypatch.setattr(
+            "rasa.builder.service._is_localhost_request", lambda _: False
+        )
+
+        async with sanic_app_with_agent.asgi_client as client:
+            _, response = await client.get("/api/internal/tracker/test-session")
+
+        assert response.status == 403
+        payload = json.loads(response.body)
+        assert payload["error"] == "Forbidden"
+        assert "localhost" in payload["details"]["message"]
+
+
+class TestIsLocalhostRequest:
+    """Test _is_localhost_request helper function."""
+
+    def test_localhost_127_0_0_1(self) -> None:
+        """Test that 127.0.0.1 is recognized as localhost."""
+        from rasa.builder.service import _is_localhost_request
+
+        mock_request = MagicMock()
+        mock_request.ip = "127.0.0.1"
+
+        assert _is_localhost_request(mock_request) is True
+
+    def test_localhost_ipv6(self) -> None:
+        """Test that ::1 (IPv6 localhost) is recognized as localhost."""
+        from rasa.builder.service import _is_localhost_request
+
+        mock_request = MagicMock()
+        mock_request.ip = "::1"
+
+        assert _is_localhost_request(mock_request) is True
+
+    def test_non_localhost_ip(self) -> None:
+        """Test that external IPs are not recognized as localhost."""
+        from rasa.builder.service import _is_localhost_request
+
+        mock_request = MagicMock()
+        mock_request.ip = "192.168.1.100"
+
+        assert _is_localhost_request(mock_request) is False
+
+    def test_public_ip_not_localhost(self) -> None:
+        """Test that public IPs are not recognized as localhost."""
+        from rasa.builder.service import _is_localhost_request
+
+        mock_request = MagicMock()
+        mock_request.ip = "8.8.8.8"
+
+        assert _is_localhost_request(mock_request) is False

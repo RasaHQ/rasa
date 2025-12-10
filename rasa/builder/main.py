@@ -4,16 +4,17 @@
 import asyncio
 import logging
 import os
+import socket
 import sys
+import threading
+import time
 from typing import Optional
 
 import structlog
-from langfuse import Langfuse
 from sanic import HTTPResponse, Sanic
 from sanic.request import Request
 from sanic_openapi import openapi3_blueprint
 
-import rasa.core.utils
 import rasa.telemetry
 from rasa.builder import config
 from rasa.builder.logging_utils import (
@@ -25,6 +26,7 @@ from rasa.builder.logging_utils import (
 )
 from rasa.builder.service import bp, setup_project_generator
 from rasa.builder.training_service import try_load_existing_agent, update_agent
+from rasa.core.channels.rest import RestInput
 from rasa.core.channels.studio_chat import StudioChatInput
 from rasa.model_manager.warm_rasa_process import warmup
 from rasa.server import configure_cors
@@ -91,7 +93,13 @@ def setup_middleware(app: Sanic) -> None:
 
 
 def setup_langfuse() -> None:
-    """Setup langfuse configuration"""
+    """Setup langfuse configuration."""
+    from rasa.builder.telemetry.langfuse_compat import require_langfuse
+
+    require_langfuse()
+
+    from langfuse import Langfuse  # noqa: TID251
+
     Langfuse(
         public_key=config.LANGFUSE_PUBLIC_KEY,
         secret_key=config.LANGFUSE_SECRET_KEY,
@@ -146,7 +154,9 @@ def create_app(project_folder: str) -> Sanic:
     # Register input channel webhooks
     from rasa.core import channels
 
-    channels.channel.register([app.ctx.input_channel], app, route="/webhooks/")
+    channels.channel.register(
+        [app.ctx.input_channel, RestInput()], app, route="/webhooks/"
+    )
 
     # Register startup event handler for agent loading
     @app.after_server_start
@@ -196,6 +206,60 @@ def _apply_llm_overrides_from_builder_env() -> None:
         os.environ["OPENAI_API_KEY"] = config.RASA_PRO_LICENSE
 
 
+def _wait_for_port(
+    host: str, port: int, timeout: float, poll_interval: float = 0.1
+) -> bool:
+    """Wait until a port is accepting connections.
+
+    Args:
+        host: The host to connect to
+        port: The port to check
+        timeout: Maximum time to wait in seconds
+        poll_interval: Time between connection attempts in seconds
+
+    Returns:
+        True if the port became available, False if timeout was reached
+    """
+    start_time = time.monotonic()
+    while time.monotonic() - start_time < timeout:
+        try:
+            with socket.create_connection((host, port), timeout=1.0):
+                return True
+        except (OSError, socket.timeout):
+            time.sleep(poll_interval)
+    return False
+
+
+def start_mcp_server(project_folder: str) -> None:
+    """Start the MCP server in a background thread.
+
+    Args:
+        project_folder: The project folder to pass to the MCP server
+    """
+    try:
+        # Set the project folder in environment for MCP server
+        os.environ["RASA_PROJECT_FOLDER"] = project_folder
+
+        structlogger.info(
+            "builder.main.starting_mcp_server",
+            event_info="Starting MCP server in background thread",
+            host=config.MCP_SERVER_HOST,
+            port=config.MCP_SERVER_PORT,
+            project_folder=project_folder,
+        )
+
+        from rasa.builder.copilot.mcp_server.server import run_server
+
+        run_server(host=config.MCP_SERVER_HOST, port=config.MCP_SERVER_PORT)
+
+    except Exception as e:
+        structlogger.error(
+            "builder.main.mcp_server_startup_error",
+            event_info="Failed to start MCP server",
+            error=str(e),
+        )
+
+
 def main(project_folder: Optional[str] = None) -> None:
     """Main entry point."""
     try:
@@ -223,6 +287,49 @@ def main(project_folder: Optional[str] = None) -> None:
             project_folder = tempfile.mkdtemp(prefix="rasa_builder_")
 
         os.chdir(project_folder)
+
+        if config.USE_AGENT_SDK_COPILOT:
+            # Start MCP server in background thread
+            mcp_thread = threading.Thread(
+                target=start_mcp_server,
+                args=(project_folder,),
+                daemon=True,
+                name="mcp-server",
+            )
+            mcp_thread.start()
+
+            # Wait for MCP server to be ready before starting Sanic
+            structlogger.info(
+                "builder.main.waiting_for_mcp_server",
+                event_info="Waiting for MCP server to accept connections",
+                host=config.MCP_SERVER_HOST,
+                port=config.MCP_SERVER_PORT,
+                timeout=config.MCP_SERVER_STARTUP_TIMEOUT,
+            )
+
+            if _wait_for_port(
+                config.MCP_SERVER_HOST,
+                config.MCP_SERVER_PORT,
+                config.MCP_SERVER_STARTUP_TIMEOUT,
+            ):
+                structlogger.info(
+                    "builder.main.mcp_server_ready",
+                    event_info="MCP server is ready to accept connections",
+                    host=config.MCP_SERVER_HOST,
+                    port=config.MCP_SERVER_PORT,
+                )
+            else:
+                structlogger.error(
+                    "builder.main.mcp_server_startup_timeout",
+                    event_info="MCP server failed to start within timeout",
+                    host=config.MCP_SERVER_HOST,
+                    port=config.MCP_SERVER_PORT,
+                    timeout=config.MCP_SERVER_STARTUP_TIMEOUT,
+                )
+                raise RuntimeError(
+                    f"MCP server failed to start within "
+                    f"{config.MCP_SERVER_STARTUP_TIMEOUT}s timeout"
+                )
 
         # Create and configure app
         app = create_app(project_folder)

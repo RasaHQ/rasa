@@ -5,7 +5,6 @@ import time
 from http import HTTPStatus
 from typing import Any, Optional
 
-import langfuse
 import structlog
 from sanic import Blueprint, HTTPResponse, response
 from sanic.request import Request
@@ -20,15 +19,18 @@ from rasa.builder.auth import (
 )
 from rasa.builder.config import (
     COPILOT_ASSISTANT_TRACKER_MAX_TURNS,
-    COPILOT_HANDLER_ROLLING_BUFFER_SIZE,
     DEFAULT_BOT_BUILDER_EMAIL,
     GUARDRAILS_ENABLE_BLOCKING,
     HELLO_RASA_PROJECT_ID,
     LAKERA_ASSISTANT_HISTORY_GUARDRAIL_PROJECT_ID,
     LAKERA_COPILOT_HISTORY_GUARDRAIL_PROJECT_ID,
+    USE_AGENT_SDK_COPILOT,
 )
+from rasa.builder.copilot import Copilot, CopilotResponseHandler
 from rasa.builder.copilot.constants import DEFAULT_COPILOT_CHAT_ID, ROLE_USER
-from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
+from rasa.builder.copilot.copilot_templated_message_provider import (
+    copilot_internal_message_templates,
+)
 from rasa.builder.copilot.exceptions import CopilotStreamError
 from rasa.builder.copilot.history_store import persist_copilot_message_to_history
 from rasa.builder.copilot.models import (
@@ -45,6 +47,7 @@ from rasa.builder.copilot.models import (
     TextContent,
 )
 from rasa.builder.download import create_bot_project_archive
+from rasa.builder.git_service import DEFAULT_COMMIT_INFO
 from rasa.builder.guardrails.constants import (
     BLOCK_SCOPE_PROJECT,
     BLOCK_SCOPE_USER,
@@ -86,6 +89,8 @@ from rasa.builder.project_generator.project_generator import ProjectGenerator
 from rasa.builder.shared.tracker_context import TrackerContext
 from rasa.builder.telemetry.copilot_langfuse_telemetry import CopilotLangfuseTelemetry
 from rasa.builder.telemetry.copilot_segment_telemetry import CopilotSegmentTelemetry
+from rasa.builder.telemetry.langfuse_compat import observe
+from rasa.builder.training_service import try_load_existing_agent, update_agent
 from rasa.core.agent import Agent
 from rasa.core.channels.studio_chat import StudioChatInput
 from rasa.core.exceptions import AgentNotReady
@@ -96,10 +101,28 @@ from rasa.shared.importers.utils import DOMAIN_KEYS
 from rasa.utils.json_utils import extract_values
 from rasa.utils.openapi import model_to_schema
 
+# Error message constant for agent not ready state
+AGENT_NOT_READY_ERROR = "Agent not ready"
+
 structlogger = structlog.get_logger()
 
 # Create the blueprint
 bp = Blueprint("bot_builder", url_prefix="/api")
+
+
+def _is_localhost_request(request: Request) -> bool:
+    """Check if the request originates from localhost.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        True if the request is from localhost, False otherwise
+    """
+    # Check the actual client IP
+    client_ip = request.ip
+    localhost_ips = {"127.0.0.1", "::1", "localhost"}
+    return client_ip in localhost_ips
 
 
 def setup_project_generator(project_folder: str) -> ProjectGenerator:
@@ -195,6 +218,134 @@ async def health(request: Request) -> HTTPResponse:
             ),
         }
     )
+
+
+@bp.route("/internal/reload-agent", methods=["POST"])
+async def reload_agent_internal(request: Request) -> HTTPResponse:
+    """Internal endpoint to reload the agent after MCP training.
+
+    This endpoint is protected and can only be called from localhost.
+    It's used by the MCP server to notify the main Sanic server
+    to reload the agent after successful training.
+    """
+    # Security: Only allow requests from localhost
+    if not _is_localhost_request(request):
+        structlogger.warning(
+            "builder.service.reload_agent_internal.forbidden",
+            event_info="Reload agent request from non-localhost rejected",
+            client_ip=request.ip,
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Forbidden",
+                details={"message": "This endpoint is only accessible from localhost"},
+            ).model_dump(),
+            status=HTTPStatus.FORBIDDEN,
+        )
+
+    try:
+        project_generator = get_project_generator(request)
+
+        agent = await try_load_existing_agent(project_generator.project_folder)
+        if agent:
+            update_agent(agent, request.app)
+            structlogger.info(
+                "builder.service.reload_agent_internal.success",
+                event_info="Agent reloaded successfully via internal endpoint",
+            )
+            return response.json({"success": True, "message": "Agent reloaded"})
+
+        structlogger.warning(
+            "builder.service.reload_agent_internal.no_agent",
+            event_info="No agent found to reload",
+        )
+        return response.json(
+            {"success": False, "message": "No agent found"},
+            status=HTTPStatus.NOT_FOUND,
+        )
+
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "builder.service.reload_agent_internal.error",
+            tags={"endpoint": "/api/internal/reload-agent"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to reload agent",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/internal/tracker/<session_id>", methods=["GET"])
+async def get_tracker_internal(request: Request, session_id: str) -> HTTPResponse:
+    """Internal endpoint to get tracker context for a session.
+
+    This endpoint is protected and can only be called from localhost.
+    It's used by the MCP server to fetch conversation context after
+    sending test messages to the assistant.
+    """
+    # Security: Only allow requests from localhost
+    if not _is_localhost_request(request):
+        structlogger.warning(
+            "builder.service.get_tracker_internal.forbidden",
+            event_info="Get tracker request from non-localhost rejected",
+            client_ip=request.ip,
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Forbidden",
+                details={"message": "This endpoint is only accessible from localhost"},
+            ).model_dump(),
+            status=HTTPStatus.FORBIDDEN,
+        )
+
+    try:
+        from rasa.builder.shared.tracker_context import TrackerContext
+
+        agent: Optional[Agent] = request.app.ctx.agent
+        if not agent or not agent.is_ready():
+            return response.json(
+                ApiErrorResponse(
+                    error=AGENT_NOT_READY_ERROR,
+                    details={"message": "No agent loaded or agent not ready"},
+                ).model_dump(),
+                status=HTTPStatus.CONFLICT,
+            )
+
+        tracker = await agent.tracker_store.retrieve(session_id)
+        if tracker is None:
+            return response.json(
+                ApiErrorResponse(
+                    error="Tracker not found",
+                    details={"session_id": session_id},
+                ).model_dump(),
+                status=HTTPStatus.NOT_FOUND,
+            )
+
+        tracker_context = TrackerContext.from_tracker(tracker, max_turns=50)
+        if tracker_context is None:
+            return response.json(
+                {"conversation_turns": [], "current_state": {}},
+            )
+
+        return response.json(tracker_context.model_dump())
+
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "builder.service.get_tracker_internal.error",
+            tags={"endpoint": "/api/internal/tracker/<session_id>"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to get tracker",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
 
 @bp.route("/job-events/<job_id>", methods=["GET"])
@@ -354,7 +505,7 @@ async def job_events(request: Request, job_id: str) -> HTTPResponse:
     required=False,
     schema=str,
 )
-@langfuse.observe(capture_input=False, capture_output=False)
+@observe(capture_input=False, capture_output=False)
 async def handle_prompt_to_bot(request: Request) -> HTTPResponse:
     """Handle prompt-to-bot generation requests."""
     try:
@@ -797,7 +948,7 @@ async def replace_all_bot_files(request: Request) -> HTTPResponse:
 @openapi.response(
     409,
     {"application/json": model_to_schema(ApiErrorResponse)},
-    description="Agent not ready",
+    description=AGENT_NOT_READY_ERROR,
 )
 @openapi.response(
     500,
@@ -828,7 +979,7 @@ async def get_bot_data(request: Request) -> HTTPResponse:
     except AgentNotReady as e:
         return response.json(
             ApiErrorResponse(
-                error="Agent not ready",
+                error=AGENT_NOT_READY_ERROR,
                 details={"error": str(e)},
             ).model_dump(),
             status=HTTPStatus.CONFLICT,
@@ -863,7 +1014,7 @@ async def get_bot_data(request: Request) -> HTTPResponse:
 @openapi.response(
     409,
     {"application/json": model_to_schema(ApiErrorResponse)},
-    description="Agent not ready",
+    description=AGENT_NOT_READY_ERROR,
 )
 @openapi.response(
     500,
@@ -898,7 +1049,7 @@ async def get_bot_info(request: Request) -> HTTPResponse:
     except AgentNotReady as e:
         return response.json(
             ApiErrorResponse(
-                error="Agent not ready",
+                error=AGENT_NOT_READY_ERROR,
                 details={"error": str(e)},
             ).model_dump(),
             status=HTTPStatus.CONFLICT,
@@ -1142,7 +1293,7 @@ async def download_bot_project(request: Request) -> HTTPResponse:
 @protected()
 # Disable automatic input/output capture for langfuse tracing
 # This allows manual control over what data is sent to langfuse
-@langfuse.observe(capture_input=False, capture_output=False)
+@observe(capture_input=False, capture_output=False)
 async def copilot(request: Request) -> None:
     """Handle copilot requests with streaming markdown responses."""
     sse = await request.respond(content_type="text/event-stream")
@@ -1261,19 +1412,30 @@ async def copilot(request: Request) -> None:
         # 6. Get the original response stream from copilot and handle it with the
         #    copilot response handler
         start_timestamp = time.perf_counter()
-        copilot_client = llm_service.instantiate_copilot()
-        (original_stream, generation_context) = await copilot_client.generate_response(
-            context
-        )
 
-        copilot_response_handler = llm_service.instantiate_handler(
-            COPILOT_HANDLER_ROLLING_BUFFER_SIZE
-        )
-        intercepted_stream = copilot_response_handler.handle_response(original_stream)
+        async with project_generator.git_service.git_operation():
+            copilot_client = Copilot()
+            (
+                copilot_response_handler,
+                generation_context,
+            ) = await copilot_client.generate_response(context)
 
-        # 7. Stream the intercepted response
-        async for token in intercepted_stream:
-            await sse.send(token.to_sse_event().format())
+            # 7. Stream the intercepted response
+            async for token in copilot_response_handler.stream():
+                await sse.send(token.to_sse_event().format())
+
+            commit_prior_to_changes = (
+                await project_generator.git_service.get_current_commit_sha()
+            )
+            commit_info = DEFAULT_COMMIT_INFO.model_copy(update={"message": None})
+            commit_sha_after_changes = await project_generator.unsafe_commit_changes(
+                commit_info
+            )
+
+            if commit_sha_after_changes != commit_prior_to_changes:
+                newly_created_commit_sha = commit_sha_after_changes
+            else:
+                newly_created_commit_sha = None
 
         # 8a. Offload metabase telemetry logging to a background task
         usage_stats = copilot_client.usage_statistics
@@ -1291,13 +1453,11 @@ async def copilot(request: Request) -> None:
                     else None
                 ),
                 tracker_event_attachments=generation_context.tracker_event_attachments,
-                model=usage_stats.model or "N/A",
+                model=usage_stats.model or "",
+                cached_prompt_tokens=usage_stats.cached_prompt_tokens or 0,
                 prompt_tokens=usage_stats.prompt_tokens or 0,
                 completion_tokens=usage_stats.completion_tokens or 0,
                 total_tokens=usage_stats.total_tokens or 0,
-                cached_prompt_tokens=(
-                    copilot_client.usage_statistics.cached_prompt_tokens or 0
-                ),
             )
         )
         # 8b. Setup output trace attributes for Langfuse
@@ -1318,28 +1478,40 @@ async def copilot(request: Request) -> None:
             reference_section = copilot_response_handler.extract_references(
                 generation_context.relevant_documents
             )
+
             await sse.send(reference_section.to_sse_event().format())
 
         # 10. Append final assistant message to server-side history
-        full_text, category = copilot_response_handler.extract_full_text_and_category()
+        full_text = copilot_response_handler.extract_full_text()
+        category = copilot_response_handler.extract_response_category()
+
         if full_text:
             try:
                 # Pass references directly if they exist
                 references = reference_section.references if reference_section else None
+                # Build commit dict if we have a new commit SHA
+                commit_info_dict = (
+                    {"sha": newly_created_commit_sha}
+                    if newly_created_commit_sha
+                    else None
+                )
                 await persist_copilot_message_to_history(
                     text=full_text,
                     chat_id=chat_id,
                     response_category=category,
                     references=references,
+                    commit=commit_info_dict,
                 )
             except Exception as exc:
                 structlogger.error(
                     "builder.copilot.history.persist_failed", error=str(exc)
                 )
         else:
+            # Warn if no text was generated to persist
             structlogger.warning(
                 "builder.copilot.history.no_assistant_text",
                 session_id=req.session_id,
+                implementation="agent_sdk" if USE_AGENT_SDK_COPILOT else "legacy",
             )
 
     except CopilotStreamError as e:
@@ -1420,7 +1592,7 @@ async def get_copilot_internal_message_template(
     """Get templated response for copilot internal message formatter."""
     try:
         # Try to get the template for the given template name
-        template = llm_service.copilot_internal_message_templates.get(template_name)
+        template = copilot_internal_message_templates().get(template_name)
         structlogger.info(
             "bot_builder_service.get_copilot_internal_message_template.template_found",
             template_name=template_name,
@@ -1924,7 +2096,7 @@ async def handle_get_commit_diff(request: Request, commit_sha: str) -> HTTPRespo
         )
 
 
-@langfuse.observe(capture_input=False, capture_output=False)
+@observe(capture_input=False, capture_output=False)
 async def get_tracker_context_for_copilot(
     request: Request,
     req: CopilotTurnRequest,
@@ -1965,7 +2137,7 @@ async def get_tracker_context_for_copilot(
     return tracker_context
 
 
-@langfuse.observe(capture_input=False, capture_output=False)
+@observe(capture_input=False, capture_output=False)
 def get_relevant_assistant_files_for_copilot(
     project_generator: ProjectGenerator,
 ) -> BotFiles:

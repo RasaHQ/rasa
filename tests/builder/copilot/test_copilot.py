@@ -3,12 +3,13 @@ from typing import Any, Dict, List, Optional
 
 import pytest
 
+from rasa.builder.copilot import Copilot
 from rasa.builder.copilot.constants import (
     ROLE_COPILOT,
     ROLE_COPILOT_INTERNAL,
     ROLE_SYSTEM,
 )
-from rasa.builder.copilot.copilot import Copilot
+from rasa.builder.copilot.legacy_copilot import LegacyCopilot
 from rasa.builder.copilot.models import (
     ChatMessage,
     CopilotChatMessage,
@@ -569,7 +570,10 @@ class TestCopilotFormattingContents:
     def test_create_documentation_search_query(
         self, chat_history: List[ChatMessage], expected_query: str
     ):
-        """Test _create_documentation_search_query method with chat history."""
+        """Test _create_documentation_search_query method with chat history.
+
+        Note: This method is specific to LegacyCopilot implementation.
+        """
         # Given
         context = CopilotContext(
             tracker_context=None,
@@ -578,8 +582,8 @@ class TestCopilotFormattingContents:
             copilot_chat_history=chat_history,
         )
 
-        # When
-        result = Copilot._create_documentation_search_query(context)
+        # When - Use LegacyCopilot directly as this method is specific to legacy
+        result = LegacyCopilot._create_documentation_search_query(context)
 
         # Then
         assert result == expected_query
@@ -801,7 +805,6 @@ class TestCopilotPromptRendering:
                 [],  # No tracker events
                 [
                     "Assistant files are not available",
-                    "No relevant documentation source found",
                 ],
                 [
                     "## Assistant Logs",
@@ -879,7 +882,6 @@ class TestCopilotPromptRendering:
                 ),
                 [],
                 [
-                    "No relevant documentation source found",
                     "No modified assistant project files",
                     "No assistant logs available",
                 ],

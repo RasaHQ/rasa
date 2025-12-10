@@ -1,0 +1,1 @@
+"""MCP resource implementations."""

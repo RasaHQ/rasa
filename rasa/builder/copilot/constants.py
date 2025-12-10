@@ -3,6 +3,7 @@ from typing import Literal
 # A dot-path for importlib to the copilot prompt
 COPILOT_PROMPTS_DIR = "builder.copilot.prompts"
 COPILOT_PROMPTS_FILE = "copilot_system_prompt.jinja2"
+COPILOT_PROMPTS_FILE_AGENT_SDK = "copilot_system_prompt_agent_sdk.jinja2"
 COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE = (
     "latest_user_message_context_prompt.jinja2"
 )

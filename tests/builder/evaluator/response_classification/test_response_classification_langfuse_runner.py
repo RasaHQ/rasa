@@ -5,9 +5,11 @@ from typing import List
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from langfuse import Evaluation
-from langfuse._client.datasets import DatasetClient
-from langfuse.experiment import (
+
+# OK to import langfuse here because we are testing the langfuse runner
+from langfuse import Evaluation  # noqa: TID251
+from langfuse._client.datasets import DatasetClient  # noqa: TID251
+from langfuse.experiment import (  # noqa: TID251
     ExperimentItem,
     ExperimentItemResult,
     ExperimentResult,

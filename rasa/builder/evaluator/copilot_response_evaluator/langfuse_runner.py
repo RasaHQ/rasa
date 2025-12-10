@@ -11,16 +11,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
 
-import langfuse
 import structlog
 import yaml  # type: ignore[import-untyped]
-from langfuse import Evaluation
-from langfuse._client.datasets import DatasetClient
-from langfuse.experiment import (
-    ExperimentResult,
-)
 
-from rasa.builder.evaluator.copilot_response_evaluator.constants import (
+from rasa.builder.telemetry.langfuse_compat import langfuse, require_langfuse
+
+# Ensure langfuse is available - raises ImportError if not
+require_langfuse()
+
+from langfuse import Evaluation  # noqa: E402, TID251
+from langfuse._client.datasets import DatasetClient  # noqa: E402, TID251
+from langfuse.experiment import ExperimentResult  # noqa: E402, TID251
+
+from rasa.builder.evaluator.copilot_response_evaluator.constants import (  # noqa: E402
     COMPLETENESS_CONFIDENCE_DESCRIPTION,
     COMPLETENESS_CONFIDENCE_METRIC,
     COMPLETENESS_COVERAGE_RATE_DESCRIPTION,
@@ -50,25 +53,25 @@ from rasa.builder.evaluator.copilot_response_evaluator.constants import (
     FAITHFULNESS_SUPPORTED_CLAIMS_COUNT_DESCRIPTION,
     FAITHFULNESS_SUPPORTED_CLAIMS_COUNT_METRIC,
 )
-from rasa.builder.evaluator.copilot_response_evaluator.evaluator import (
+from rasa.builder.evaluator.copilot_response_evaluator.evaluator import (  # noqa: E402
     CopilotResponseEvaluator,
 )
-from rasa.builder.evaluator.copilot_response_evaluator.models import (
+from rasa.builder.evaluator.copilot_response_evaluator.models import (  # noqa: E402
     CopilotResponseCompletenessEvaluationResult,
     CopilotResponseFaithfulnessEvaluationResult,
 )
-from rasa.builder.evaluator.dataset.models import (
+from rasa.builder.evaluator.dataset.models import (  # noqa: E402
     DatasetEntry,
     DatasetExpectedOutput,
     DatasetInput,
     DatasetMetadata,
 )
-from rasa.builder.evaluator.shared.constants import (
+from rasa.builder.evaluator.shared.constants import (  # noqa: E402
     COPILOT_RESPONSE_EVALUATION_RESULTS_DIR,
     COPILOT_RESPONSE_EVALUATION_YAML_OUTPUT_FILENAME,
     DEFAULT_COPILOT_RESPONSE_EVALUATION_TEXT_OUTPUT_FILENAME,
 )
-from rasa.builder.evaluator.shared.langfuse_utils import (
+from rasa.builder.evaluator.shared.langfuse_utils import (  # noqa: E402
     report_langfuse_run_results_to_txt_file,
     run_copilot_task,
 )

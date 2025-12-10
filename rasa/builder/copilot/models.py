@@ -129,6 +129,8 @@ class EventContent(BaseContent):
         return data
 
     class Config:
+        """Config for EventContent."""
+
         extra = "forbid"
 
 
@@ -871,11 +873,14 @@ class CopilotGenerationContext(BaseModel):
     a tuple for the non-streaming data.
     """
 
+    # TODO: (agent-sdk) this should be removed once the LegacyCopilot is removed
+    # this is not needed by the agent copilot, as that will retrieve docs using
+    # a tool call.
     relevant_documents: List["Document"] = Field(
-        ...,
         description=(
             "The relevant documents used as supporting evidence for the respons."
         ),
+        default_factory=list,
     )
     system_message: Dict[str, Any] = Field(
         ..., description="The system message with instructions."

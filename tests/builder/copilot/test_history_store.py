@@ -656,7 +656,6 @@ class TestSQLiteCopilotHistoryStore:
         store1 = service.history_store
         assert isinstance(store1, CopilotHistoryStore)
         assert isinstance(store1, SQLiteCopilotHistoryStore)
-        assert service._history_store is not None
 
         # Second access should return the same instance (not create new one)
         store2 = service.history_store
