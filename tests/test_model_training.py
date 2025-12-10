@@ -22,6 +22,7 @@ import rasa.model
 import rasa.model_training
 import rasa.nlu
 import rasa.shared.utils.io
+from rasa.core.config.configuration import Configuration
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -59,6 +60,11 @@ else:
     TEDPolicy: Optional[Type[Any]] = None
     DIETClassifier: Optional[Type[Any]] = None
     EPOCHS: Optional[str] = None
+
+
+@pytest.fixture(autouse=True, scope="function")
+def empty_configuration() -> None:
+    Configuration.initialise_empty()
 
 
 def skip_if_tensorflow_not_available() -> None:
@@ -1162,7 +1168,8 @@ def test_model_finetuning_blocked(
     use_latest_model: bool,
 ):
     """Test that incremental training is blocked in Rasa 3.14.0+
-    and raises SystemExit"""
+    and raises SystemExit
+    """
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 

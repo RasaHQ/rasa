@@ -1,13 +1,29 @@
 import logging
 import math
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, cast
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+    cast,
+)
 
 import numpy as np
 import scipy.sparse
+import tensorflow as tf
 from tensorflow.keras.utils import Sequence
 
 from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
-from rasa.utils.tensorflow.model_data import Data, FeatureArray, RasaModelData
+from rasa.utils.tensorflow.model_data import (
+    Data,
+    FeatureArray,
+    FeatureSignature,
+    RasaModelData,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -451,3 +467,208 @@ class RasaBatchDataGenerator(RasaDataGenerator):
             )
         else:
             return int(self.batch_size[0])
+
+
+def tf_data_generator_from_rasa_data_generator(
+    generator: RasaDataGenerator,
+) -> tf.data.Dataset:
+    """Convert a RasaDataGenerator to a tf.data.Dataset.
+
+    This adapter bridges the gap between Rasa's custom data generator (which produces
+    variable-length batches) and TensorFlow's stricter shape validation in 2.19+.
+
+    It performs two main functions:
+
+    1.  **Defines an Explicit Signature**: It constructs a `tf.TensorSpec` signature
+        with `None` dimensions for batch size and sequence length. This prevents
+        TensorFlow from inferring fixed shapes from the first batch.
+    2.  **Flattens Data Structure**: It transforms the nested dictionary output of
+        `RasaDataGenerator` into a flat tuple of tensors, as expected by `RasaModel`.
+        *Note*: Previously, when passing a Keras Sequence directly to `model.fit`, Keras
+        handled this flattening implicitly by mapping dictionary keys to model inputs.
+        With `tf.data.Dataset`, we must perform this flattening explicitly to match
+        the model's input signature.
+
+    Returns:
+        A `tf.data.Dataset` that yields tuples of `(inputs, targets)` where:
+        - `inputs` is a flat tuple of tensors matching the model's signature.
+        - `targets` is a tensor (or tuple of tensors) for labels.
+    """
+    signature = generator.model_data.get_signature()
+
+    flat_specs = _determine_flat_specs(generator)
+    target_spec = _determine_target_spec(generator)
+    output_signature = (tuple(flat_specs), target_spec)
+
+    def generator_func() -> Iterator[Tuple[Any, Any]]:
+        # This function is called by TensorFlow once per epoch (or iteration).
+        # It iterates over the RasaDataGenerator, yielding batches.
+        for i in range(len(generator)):
+            batch = generator[i]
+            inputs = batch[0]
+            batch_targets = batch[1]
+
+            # RasaBatchDataGenerator.prepare_batch returns a tuple of arrays.
+            # We yield it as is, matching the flat signature.
+            if isinstance(inputs, (list, tuple)):
+                yield tuple(inputs), batch_targets
+            elif isinstance(inputs, dict):
+                # Legacy/Fallback: If it happens to be a dict, we flatten it
+                flat_inputs = []
+                for key, attribute_data in signature.items():
+                    for sub_key, features in attribute_data.items():
+                        arrays = inputs[key][sub_key]
+                        for array in arrays:
+                            flat_inputs.append(array)
+                yield tuple(flat_inputs), batch_targets
+            else:
+                # Fallback
+                yield inputs, batch_targets
+
+        # Trigger shuffling for the next epoch
+        generator.on_epoch_end()
+
+    return tf.data.Dataset.from_generator(
+        generator_func, output_signature=output_signature
+    )
+
+
+def _determine_flat_specs(generator: RasaDataGenerator) -> List[tf.TensorSpec]:
+    """Determine the flat list of TensorSpecs for the generator's inputs.
+
+    Args:
+        generator: The Rasa data generator.
+
+    Returns:
+        A list of TensorSpecs corresponding to the flattened input structure.
+    """
+    signature = generator.model_data.get_signature()
+
+    # RasaModel expects a flat list of tensors as input, corresponding to the
+    # flattened signature. We must construct the output_signature as a flat tuple.
+    flat_specs = []
+
+    for key, attribute_data in signature.items():
+        for sub_key, features in attribute_data.items():
+            for feature in features:
+                if feature.is_sparse:
+                    flat_specs.extend(_get_sparse_feature_specs())
+                else:
+                    flat_specs.extend(_get_dense_feature_specs(feature))
+    return flat_specs
+
+
+def _get_sparse_feature_specs() -> List[tf.TensorSpec]:
+    """Get TensorSpecs for a sparse feature (e.g., Bag-of-Words).
+
+    Returns:
+        List of TensorSpecs for indices, values, and shape.
+    """
+    specs = []
+    # RasaModel expects decomposed sparse tensor parts: indices, values, shape
+
+    # 1. Indices: (n_elements, rank)
+    #    - n_elements: Total number of non-zero values in the batch (variable).
+    #    - rank: Number of dimensions (fixed at 3 for Rasa sparse features).
+    specs.append(tf.TensorSpec(shape=(None, 3), dtype=tf.int64))
+
+    # 2. Values: (n_elements,)
+    #    - The actual values at the indices.
+    specs.append(tf.TensorSpec(shape=(None,), dtype=tf.float32))
+
+    # 3. Dense Shape: (rank,) -> (3,)
+    #    - The logical shape of the sparse tensor: (batch_size, max_seq_len, n_features)
+    specs.append(tf.TensorSpec(shape=(3,), dtype=tf.int64))
+
+    return specs
+
+
+def _get_dense_feature_specs(feature: FeatureSignature) -> List[tf.TensorSpec]:
+    """Get TensorSpecs for a dense feature.
+
+    Args:
+        feature: The feature array to determine specs for.
+
+    Returns:
+        List containing the single TensorSpec for this dense feature.
+    """
+    if feature.number_of_dimensions == 1:
+        # 1D Feature (e.g., Labels)
+        # Shape: (batch_size,)
+        shape = [None]
+    else:
+        # Dense Feature
+        # Shape depends on dimensionality:
+        # - 2D: (batch_size, n_features) -> [None, units]
+        # - 3D: (batch_size, max_seq_len, n_features) -> [None, None, units]
+
+        # We use None for all dimensions except the last one (units)
+        shape = [None] * (feature.number_of_dimensions - 1)
+
+        if feature.number_of_dimensions == 4:
+            # 4D features (Dialogue) are flattened to 3D in `prepare_batch`.
+            # Source Shape: (batch_size, dialog_len, seq_len, n_features)
+            # Yielded Shape: (flattened_batch, max_seq_len, n_features)
+            # where flattened_batch = sum(dialog_len) over the batch.
+
+            # We override the shape to match the yielded 3D data:
+            shape = [None, None]
+
+        shape.append(feature.units)
+
+    return [tf.TensorSpec(shape=shape, dtype=tf.float32)]
+
+
+def _determine_target_spec(
+    generator: RasaDataGenerator,
+) -> Union[tf.TensorSpec, Tuple[tf.TensorSpec, ...]]:
+    """Determine the target Tensor spec from the first batch of the generator.
+
+    Args:
+        generator: The Rasa data generator.
+
+    Returns:
+        The TensorSpec (or tuple of specs) for the targets.
+    """
+    target_spec = None
+    if isinstance(generator, RasaBatchDataGenerator):
+        # Optimization: RasaBatchDataGenerator always returns default empty
+        # targets (shape (0, 1)).
+        # We can skip inspecting the first batch in this common case to avoid
+        # performance cost of computing the batch twice.
+        target_spec = tf.TensorSpec(shape=(None, 1), dtype=tf.float32)
+    else:
+        # For other generators, we must inspect the first batch to determine target
+        # shape.
+        # Note: Accessing generator[0] should be side-effect free (idempotent) regarding
+        # the generator's internal state (e.g., shuffling), as __getitem__ is typically
+        # read-only.
+        try:
+            first_batch = generator[0]
+            targets = first_batch[1]
+
+            if isinstance(targets, np.ndarray):
+                # Targets shape is (batch_size, n_targets)
+                # We set the batch dimension (0) to None
+                target_shape = [None] + list(targets.shape[1:])
+                target_spec = tf.TensorSpec(shape=target_shape, dtype=targets.dtype)
+            elif isinstance(targets, list):
+                # If targets is a list of arrays
+                target_specs = []
+                for t in targets:
+                    # Shape: (batch_size, n_targets)
+                    target_shape = [None] + list(t.shape[1:])
+                    target_specs.append(
+                        tf.TensorSpec(shape=target_shape, dtype=t.dtype)
+                    )
+                target_spec = tuple(target_specs)
+        except Exception:
+            # Fallback if generator is empty or fails
+            pass
+
+    if target_spec is None:
+        # Fallback or empty targets
+        # Shape: (batch_size, 1)
+        target_spec = tf.TensorSpec(shape=(None, 1), dtype=tf.float32)
+
+    return target_spec

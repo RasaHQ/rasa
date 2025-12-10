@@ -133,7 +133,6 @@ async def test_predict_action_probabilities_abstains_in_coexistence(
     assert prediction.max_confidence == 0.0
 
 
-@pytest.mark.skip()  # skipped due to TEDPolicy shape mismatch issue
 class TestTEDPolicy(PolicyTestCollection):
     @staticmethod
     def _policy_class_to_test() -> Type[TEDPolicy]:
@@ -152,7 +151,6 @@ class TestTEDPolicy(PolicyTestCollection):
     ):
         pass
 
-    @pytest.mark.skip()  # skipped due to TEDPolicy shape mismatch issue
     async def test_train_model_checkpointing(
         self, tmp_path: Path, tmp_path_factory: TempPathFactory
     ):

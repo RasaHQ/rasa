@@ -120,6 +120,9 @@ from rasa.utils.tensorflow.constants import (
     USE_MAX_NEG_SIM,
     VALUE_RELATIVE_ATTENTION,
 )
+from rasa.utils.tensorflow.data_generator import (
+    tf_data_generator_from_rasa_data_generator,
+)
 from rasa.utils.tensorflow.feature_array import (
     FeatureArray,
     deserialize_nested_feature_arrays,
@@ -694,9 +697,13 @@ class TEDPolicy(Policy):
             raise ModelNotFound("No model was detected prior to training.")
 
         self.model.fit(
-            data_generator,
+            tf_data_generator_from_rasa_data_generator(data_generator),
             epochs=self.config[EPOCHS],
-            validation_data=validation_data_generator,
+            validation_data=tf_data_generator_from_rasa_data_generator(
+                validation_data_generator
+            )
+            if validation_data_generator
+            else None,
             validation_freq=self.config[EVAL_NUM_EPOCHS],
             callbacks=callbacks,
             verbose=False,

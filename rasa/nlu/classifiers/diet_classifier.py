@@ -11,6 +11,9 @@ import scipy.sparse
 
 from rasa.utils.installation_utils import check_for_installation_issues
 from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+from rasa.utils.tensorflow.data_generator import (
+    tf_data_generator_from_rasa_data_generator,
+)
 
 if TENSORFLOW_AVAILABLE:
     check_for_installation_issues()
@@ -1023,9 +1026,13 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         )
 
         self.model.fit(
-            data_generator,
+            tf_data_generator_from_rasa_data_generator(data_generator),
             epochs=self.component_config[EPOCHS],
-            validation_data=validation_data_generator,
+            validation_data=tf_data_generator_from_rasa_data_generator(
+                validation_data_generator
+            )
+            if validation_data_generator
+            else None,
             validation_freq=self.component_config[EVAL_NUM_EPOCHS],
             callbacks=callbacks,
             verbose=False,
