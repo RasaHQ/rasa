@@ -20,7 +20,7 @@ class TestRasaLLMClient:
 
     @pytest.fixture
     def mock_retrieve_license(self, monkeypatch: MonkeyPatch) -> Mock:
-        mock = Mock(return_value="mock-license")
+        mock = Mock(return_value=("mock-license", "RASA_LICENSE"))
         monkeypatch.setattr(
             "rasa.shared.providers.llm.rasa_llm_client.retrieve_license_from_env", mock
         )

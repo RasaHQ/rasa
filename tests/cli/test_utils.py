@@ -740,9 +740,16 @@ def test_rasa_version_raises_no_warnings(
 
     # Get the standard output and error
     stderr = "\n".join(result.stderr.lines)
+    stderr_lower = stderr.lower()
 
-    # Check if there are any warnings in the output
-    assert "warning" not in stderr.lower()
+    # Filter out expected warnings by checking the full stderr text
+    has_unexpected_warning = (
+        "warning" in stderr_lower
+        and "'rasa_pro_license' is deprecated" not in stderr_lower
+    )
+
+    # Assert no unexpected warnings
+    assert not has_unexpected_warning
 
 
 @pytest.mark.parametrize("results_type", ["passed", "failed"])

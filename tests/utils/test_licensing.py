@@ -43,9 +43,16 @@ def test_validate_valid_license(monkeypatch: MonkeyPatch, valid_license: Text) -
 def test_validate_valid_license_legacy(
     monkeypatch: MonkeyPatch, valid_license: Text
 ) -> None:
+    """Test that legacy env var works and triggers deprecation warning."""
     monkeypatch.delenv(LICENSE_ENV_VAR, raising=False)
     monkeypatch.setenv(LICENSE_ENV_VAR_LEGACY, valid_license)
-    validate_license_from_env()
+
+    with patch.object(licensing, "raise_deprecation_warning") as mock_warning:
+        validate_license_from_env()
+
+    mock_warning.assert_called_once()
+    assert LICENSE_ENV_VAR_LEGACY in mock_warning.call_args[0][0]
+    assert LICENSE_ENV_VAR in mock_warning.call_args[0][0]
 
 
 def test_validate_license_env_var_not_set(monkeypatch: MonkeyPatch) -> None:

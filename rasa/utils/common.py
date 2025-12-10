@@ -145,6 +145,11 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         FutureWarning,
         "ResponseSelector is deprecated and will be removed in a future version.*",
     ),
+    # ignore deprecation warning for legacy rasa pro license env var
+    (
+        FutureWarning,
+        "The environment variable 'RASA_PRO_LICENSE' is deprecated.*",
+    ),
     # Suppress Pydantic serialization warnings from LiteLLM responses
     # https://rasahq.atlassian.net/browse/VO-327
     (

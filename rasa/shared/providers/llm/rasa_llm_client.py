@@ -87,10 +87,11 @@ class RasaLLMClient(_BaseLiteLLMClient):
     def _completion_fn_args(self) -> Dict[str, Any]:
         """Returns the completion arguments for invoking a call using completions."""
         fn_args = super()._completion_fn_args
+        license_value, _ = retrieve_license_from_env()
         fn_args.update(
             {
                 LITE_LLM_API_BASE_FIELD: self.api_base,
-                LITE_LLM_API_KEY_FIELD: retrieve_license_from_env(),
+                LITE_LLM_API_KEY_FIELD: license_value,
             }
         )
         return fn_args

@@ -36,8 +36,8 @@ audiocodes:
 def test_missing_license(
     monkeypatch: MonkeyPatch, run_in_simple_project: Callable[..., RunResult]
 ):
-    monkeypatch.setenv(LICENSE_ENV_VAR, "")
-    monkeypatch.setenv(LICENSE_ENV_VAR_LEGACY, "")
+    monkeypatch.delenv(LICENSE_ENV_VAR, raising=False)
+    monkeypatch.delenv(LICENSE_ENV_VAR_LEGACY, raising=False)
     result = run_in_simple_project("--help")
 
     assert result.ret == 1
@@ -61,6 +61,24 @@ def test_missing_license_scope(
     ) in str(result.stderr)
 
 
+def test_missing_license_scope_legacy_var(
+    monkeypatch: MonkeyPatch, run_in_simple_project: Callable[..., RunResult]
+):
+    """Test that using legacy env var shows correct error message."""
+    monkeypatch.setenv(LICENSE_ENV_VAR_LEGACY, LICENSE_STUDIO)
+    result = run_in_simple_project("--help")
+
+    assert result.ret == 1
+    assert (
+        f"Failed to validate Rasa license which was read from environment "
+        f"variable `{LICENSE_ENV_VAR_LEGACY}`. Please ensure "
+        f"`{LICENSE_ENV_VAR_LEGACY}` is set to a valid license string."
+    ) in str(result.stderr)
+    assert f"The environment variable '{LICENSE_ENV_VAR_LEGACY}' is deprecated" in str(
+        result.stderr
+    )
+
+
 def test_license_scope_ok(
     monkeypatch: MonkeyPatch,
     run_in_simple_project: Callable[..., RunResult],
@@ -69,6 +87,20 @@ def test_license_scope_ok(
     result = run_in_simple_project("--help")
 
     assert result.ret == 0
+
+
+def test_license_scope_ok_legacy_var(
+    monkeypatch: MonkeyPatch,
+    run_in_simple_project: Callable[..., RunResult],
+):
+    """Test that using legacy env var works but shows deprecation warning."""
+    monkeypatch.setenv(LICENSE_ENV_VAR_LEGACY, LICENSE_PRO)
+    result = run_in_simple_project("--help")
+
+    assert result.ret == 0
+    assert f"The environment variable '{LICENSE_ENV_VAR_LEGACY}' is deprecated" in str(
+        result.stderr
+    )
 
 
 @pytest.mark.timeout(180)

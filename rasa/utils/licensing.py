@@ -7,7 +7,7 @@ import typing
 import uuid
 from asyncio import AbstractEventLoop
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Optional, Set, Text, TypeVar
+from typing import Any, Callable, Dict, Optional, Set, Text, Tuple, TypeVar
 
 import jwt
 import structlog
@@ -16,6 +16,7 @@ from sanic import Sanic
 
 from rasa import telemetry
 from rasa.shared.utils.cli import print_error_and_exit
+from rasa.shared.utils.io import raise_deprecation_warning
 
 if typing.TYPE_CHECKING:
     from rasa.core.tracker_stores.tracker_store import TrackerStore
@@ -264,24 +265,37 @@ class License:
         return jwt.encode(self.as_dict(), key=private_key, algorithm=ALGORITHM)
 
 
-def retrieve_license_from_env() -> Text:
+def retrieve_license_from_env() -> Tuple[Text, Text]:
     """Return the license found in the env var."""
     # Check environment variables first
-    license_value = os.environ.get(LICENSE_ENV_VAR) or os.environ.get(
-        LICENSE_ENV_VAR_LEGACY
-    )
+    license_value = os.environ.get(LICENSE_ENV_VAR)
     if license_value:
-        return license_value
+        return license_value, LICENSE_ENV_VAR
+
+    legacy_license_value = os.environ.get(LICENSE_ENV_VAR_LEGACY)
+    if legacy_license_value:
+        _warn_legacy_env_var()
+        return legacy_license_value, LICENSE_ENV_VAR_LEGACY
 
     # Fall back to .env file
     stored_env_values = dotenv_values(".env")
-    license_value = stored_env_values.get(LICENSE_ENV_VAR) or stored_env_values.get(
-        LICENSE_ENV_VAR_LEGACY
-    )
+    license_value = stored_env_values.get(LICENSE_ENV_VAR)
     if license_value:
-        return license_value
+        return license_value, LICENSE_ENV_VAR
 
+    legacy_license_value = stored_env_values.get(LICENSE_ENV_VAR_LEGACY)
+    if legacy_license_value:
+        _warn_legacy_env_var()
+        return legacy_license_value, LICENSE_ENV_VAR_LEGACY
     raise LicenseNotFoundException()
+
+
+def _warn_legacy_env_var() -> None:
+    """Warn about deprecated legacy environment variable."""
+    raise_deprecation_warning(
+        f"The environment variable '{LICENSE_ENV_VAR_LEGACY}' is deprecated. "
+        f"Please use '{LICENSE_ENV_VAR}' instead."
+    )
 
 
 def is_license_expiring_soon(license: License) -> bool:
@@ -290,8 +304,9 @@ def is_license_expiring_soon(license: License) -> bool:
 
 
 def validate_license_from_env(product_area: Text = PRODUCT_AREA) -> None:
+    """Validate the license from environment variables."""
     try:
-        license_text = retrieve_license_from_env()
+        license_text, license_env_var_name = retrieve_license_from_env()
         license = License.decode(license_text, product_area=product_area)
 
         if is_license_expiring_soon(license):
@@ -316,8 +331,8 @@ def validate_license_from_env(product_area: Text = PRODUCT_AREA) -> None:
         structlogger.error("license.validation.error", error=e)
         raise SystemExit(
             f"Failed to validate Rasa license "
-            f"which was read from environment variable `{LICENSE_ENV_VAR}`. "
-            f"Please ensure `{LICENSE_ENV_VAR}` is set to a valid license string. "
+            f"which was read from environment variable `{license_env_var_name}`. "
+            f"Please ensure `{license_env_var_name}` is set to a valid license string. "
         )
 
 
@@ -377,7 +392,7 @@ def property_of_active_license(prop: Callable[[License], T]) -> Optional[T]:
     The property of the license if it exists, otherwise None.
     """
     try:
-        retrieved_license = retrieve_license_from_env()
+        retrieved_license, _ = retrieve_license_from_env()
         if not retrieved_license:
             return None
         decoded = License.decode(retrieved_license)
@@ -391,7 +406,7 @@ def property_of_active_license(prop: Callable[[License], T]) -> Optional[T]:
 
 def get_license_hash() -> Optional[Text]:
     """Return the hash of the current active license."""
-    license_value = retrieve_license_from_env()
+    license_value, _ = retrieve_license_from_env()
     return hashlib.sha256(license_value.encode("utf-8")).hexdigest()
 
 
