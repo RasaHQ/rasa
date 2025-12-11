@@ -1620,8 +1620,7 @@ jobs:
           NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
           UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
           VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
-        run: |
-          make test-policies
+        run: bash scripts/run_pytest_with_splits.sh test-policies
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Prepare test results
@@ -1715,8 +1714,7 @@ jobs:
           NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
           UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
           VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
-        run: |
-          make test-agents
+        run: bash scripts/run_pytest_with_splits.sh test-agents
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Prepare test results
@@ -1810,8 +1808,7 @@ jobs:
           NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
           UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
           VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
-        run: |
-          make ${{ matrix.test }}
+        run: bash scripts/run_pytest_with_splits.sh ${{ matrix.test }}
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Prepare test results
@@ -1884,8 +1881,7 @@ jobs:
           NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
           UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
           VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
-        run: |
-          make test-cli
+        run: bash scripts/run_pytest_with_splits.sh test-cli
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Prepare test results
@@ -2009,8 +2005,7 @@ jobs:
           VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
           API_DOCS_FORMAT: yaml
           TEST: ${{ matrix.test }}
-        run: |
-          make "${TEST}"
+        run: bash scripts/run_pytest_with_splits.sh "${TEST}"
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Prepare test results

@@ -89,9 +89,15 @@ async def payload_from_button_question(button_question: "Question") -> Text:
     """Prompt user with a button question and returns the nlu payload."""
     response = await button_question.ask_async()
     if response != FREE_TEXT_INPUT_PROMPT:
-        # Extract intent slash command if it's a button
-        response = response[response.rfind("(") + 1 : response.rfind(")")]
-    return response
+        # Find the button payload wrapped in (/payload)
+        # The payload always starts with "/" so we look for "(/"
+        payload_start = response.find("(/")
+        if payload_start != -1:
+            # Extract content between the outer parens: (/payload) → /payload
+            payload_end = response.rfind(")")
+            response = response[payload_start + 1 : payload_end]
+    # Strip whitespace for clean output (handles free text with trailing newlines)
+    return response.strip() if response else response
 
 
 def signal_handler(_: int, __: FrameType) -> None:

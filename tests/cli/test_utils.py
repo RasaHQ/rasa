@@ -707,6 +707,18 @@ def test_validate_assistant_id_in_config_preserves_comment() -> None:
         ("hi this is test text\n", "hi this is test text"),
         ("hi this is test text (/button_one)", "/button_one"),
         ("hi this is test text (and something) (/button_one)", "/button_one"),
+        # Test SetSlots with single slot
+        ("1: Yes (/SetSlots(confirmation=true))", "/SetSlots(confirmation=true)"),
+        # Test SetSlots with multiple slots
+        (
+            "1: Yes (/SetSlots(itsm_attachment_ak=yes, infa_itsm_attachment=yes))",
+            "/SetSlots(itsm_attachment_ak=yes, infa_itsm_attachment=yes)",
+        ),
+        # Test SetSlots with multiple slots without spaces
+        (
+            "1: No (/SetSlots(itsm_attachment_ak=no,infa_itsm_attachment=no))",
+            "/SetSlots(itsm_attachment_ak=no,infa_itsm_attachment=no)",
+        ),
     ],
 )
 async def test_payload_from_button_question(text_input: str, button: str) -> None:
