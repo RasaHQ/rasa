@@ -7,7 +7,6 @@ pipeline:
     timeout: 7
     temperature: 0.0
     top_p: 0.0
-  prompt_template: templates/command-generator.jinja2
 
 policies:
 - name: FlowPolicy

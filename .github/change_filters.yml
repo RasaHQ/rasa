@@ -62,6 +62,7 @@ lock_file:
 
 pii-management:
   - rasa/privacy/**
+  - tests_deployment/integration_tests_pii_management_in_calm/**
 
 voice-files:
   - rasa/core/channels/voice_ready/**
@@ -79,6 +80,7 @@ tracing-and-metrics-files:
   - rasa/dialogue_understanding/generator/**
   - rasa/engine/**
   - rasa/shared/core/domain.py
+  - tests_deployment/integration_tests_metrics_setup/**
 
 sequential-integration-files: # files related to sequential integration feature.Only tests run here are from tests/integration_tests/core/test_tracker_store.py
   - rasa/core/tracker_stores/redis_tracker_store.py
@@ -119,15 +121,18 @@ enterprise-search-policy-files:
   - rasa/dialogue_understanding/**
   - rasa/engine/**
   - rasa/shared/core/policies/**
+  - tests_deployment/integration_tests_enterprise_search/**
 
 custom-action-files:
   - rasa/core/actions/**
   - rasa/shared/core/**
   - rasa/shared/utils/**
+  - tests_deployment/integration_tests_custom_action_server/**
 
 channel-connector-files:
   - rasa/core/brokers/**
   - rasa/core/channels/**
+  - tests_deployment/integration_tests_channel_connectors/**
 
 mongo-db-files:
   - rasa/core/tracker_stores/mongo_tracker_store.py
@@ -155,6 +160,7 @@ concurrent-lockstore-files:
   - rasa/core/concurrent_lock_store.py
   - rasa/core/lock_store.py
   - rasa/utils/endpoints.py
+
 cli-files:
   - rasa/cli/**
   - rasa/shared/**

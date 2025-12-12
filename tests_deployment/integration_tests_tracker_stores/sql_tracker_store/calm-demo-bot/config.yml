@@ -7,7 +7,6 @@ pipeline:
     provider: openai
     model: gpt-4o-2024-11-20
     timeout: 7
-  prompt_template: templates/command-generator.jinja2
 
 policies:
 - name: FlowPolicy
