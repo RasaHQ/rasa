@@ -107,6 +107,7 @@ def setup_langfuse() -> None:
         additional_headers={
             config.DEPLOYMENT_STACK_HEADER_NAME: config.DEPLOYMENT_STACK
         },
+        environment=config.DEPLOYMENT_STACK or config.LANGFUSE_DEFAULT_ENVIRONMENT,
     )
 
 

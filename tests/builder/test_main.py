@@ -144,6 +144,7 @@ class TestSetupLangfuse:
                 secret_key="test-secret-key",
                 host="https://test-langfuse-host.com",
                 additional_headers={"deployment-stack": "unit-test"},
+                environment="unit-test",
             )
 
             # Get the client using langfuse.get_client()

@@ -1,6 +1,7 @@
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Callable
 
+from rasa.builder import config
 from rasa.builder.copilot.models import UsageStatistics
 from rasa.builder.telemetry.langfuse_compat import (
     is_langfuse_available,
@@ -100,7 +101,10 @@ class WelcomeMessageGenerationLangfuseTelemetry:
 
                 # Update usage statistics if available
                 usage_statistics = UsageStatistics.from_chat_completion_response(
-                    response
+                    response,
+                    input_token_price=config.COPILOT_INPUT_TOKEN_PRICE,
+                    output_token_price=config.COPILOT_OUTPUT_TOKEN_PRICE,
+                    cached_token_price=config.COPILOT_CACHED_TOKEN_PRICE,
                 )
 
                 if usage_statistics:
