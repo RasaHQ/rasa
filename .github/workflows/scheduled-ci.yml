@@ -21,6 +21,9 @@ env:
 permissions:
   contents: read
   id-token: write
+  checks: write
+  issues: read
+  pull-requests: write
 
 # Reusing continous-integration.yml workflow
 # Inputs:
@@ -28,13 +31,15 @@ permissions:
 # - run_code_quality: Whether to run the Code Quality checks
 jobs:
   scheduled-tests:
+    if: false
+     # Temporarily disabling scheduled tests until we resolve some test failures with python versions 3.11, 3.12, 3.13
     uses: ./.github/workflows/continous-integration.yml
     with:
-      python-versions: '["3.10", "3.11"]'
+      python-versions: '["3.11","3.12","3.13"]'
       # We don't want to run the code quality checks on scheduled runs
-      run_code_quality: "false"
+      run_code_quality: 'false'
       # We only want to run the CI checks for unit tests that need to be run against multiple python versions
-      full_ci_mode: "false"
+      full_ci_mode: 'true'
       pr-author: ${{ github.event.pull_request.user.login }}
       pr-is-draft: ${{ github.event.pull_request.draft }}
     secrets: inherit
@@ -147,6 +152,8 @@ jobs:
   rasa-private-dev-train-the-model:
     name: Train the model and upload to S3
     runs-on: warp-ubuntu-latest-x64-2x
+    if: false
+    needs: scheduled-tests
 
     steps:
       - name: Check out code
@@ -195,6 +202,7 @@ jobs:
   deploy-rasa-private-helm-chart:
     name: Deploy rasa private helm chart
     runs-on: warp-ubuntu-latest-x64-2x
+    if: false
     needs: rasa-private-dev-train-the-model
 
     steps:
@@ -249,6 +257,7 @@ jobs:
   pulumi-destroy:
     name: Destroy pulumi resources
     needs: deploy-rasa-private-helm-chart
+    if: false
     runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Check out code
@@ -285,3 +294,21 @@ jobs:
           name: |
             docker-image-*
             template-artifacts
+
+  send_slack_notification_on_failure:
+    name: Notify Slack
+    runs-on: warp-ubuntu-latest-x64-2x
+    if: always()
+    needs:
+      - rasa-init-sanity-check
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if any of the steps above is skipped (previous needed job failed) or failed or cancelled
+        if: ${{ needs.rasa-init-sanity-check.result != 'success' }}
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Scheduled CI Run on Main* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+

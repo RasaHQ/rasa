@@ -17,6 +17,6 @@ jobs:
     secrets: inherit
     with:
       run_code_quality: 'true'
-      full_ci_mode: 'true'
+      full_ci_mode: 'false'
       pr-author: ${{ github.event.pull_request.user.login }}
       pr-is-draft: ${{ github.event.pull_request.draft }}

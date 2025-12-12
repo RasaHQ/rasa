@@ -19,7 +19,7 @@ on:
       full_ci_mode:
         type: string
         required: false
-        default: "true"
+        default: "false"
         description: "Whether to run all the CI checks."
       pr-author: # new input: PR author login (passed by caller)
         type: string
@@ -172,8 +172,8 @@ jobs:
 
   quality:
     name: Code Quality
+    if: ${{ inputs.run_code_quality == 'true' }}
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ inputs.run_code_quality != 'false' }}
     needs: install-and-cache-rasa
 
     steps:
@@ -236,7 +236,6 @@ jobs:
   train-templates-dev:
     name: Train Project Templates for Dev
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ inputs.full_ci_mode != 'false' }}
     outputs:
       tag_version: ${{ steps.set-tag.outputs.tag_version }}
     steps:
@@ -258,7 +257,6 @@ jobs:
   check-code-changes:
     name: Check for code changes
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ inputs.full_ci_mode != 'false' }}
     outputs:
       # Unit test related outputs
       voice-files: ${{ steps.filter.outputs.voice-files }}
@@ -313,7 +311,7 @@ jobs:
   rasa-private-dev-docker-image:
     name: rasa-private dev docker image
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ needs.check-code-changes.outputs.create_dev_docker_images == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.create_dev_docker_images == 'true') }}
     needs: [train-templates-dev, check-code-changes]
     outputs:
       rasa_image_tag: ${{ steps.set-tag.outputs.rasa_image_tag }}
@@ -407,7 +405,6 @@ jobs:
   check_inspector_build:
     name: Check Inspector Build
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ inputs.full_ci_mode != 'false' }}
     defaults:
       run:
         shell: bash
@@ -455,7 +452,7 @@ jobs:
 
   tracing-integration-test:
     name: Tracing Integration Tests
-    if: ${{ needs.check-code-changes.outputs.tracing-and-metrics-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.tracing-and-metrics-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     needs:
       [
         install-and-cache-rasa,
@@ -533,7 +530,7 @@ jobs:
 
   metric-integration-test:
     name: Metric Integration Tests
-    if: ${{ needs.check-code-changes.outputs.tracing-and-metrics-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.tracing-and-metrics-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     needs:
       [
         install-and-cache-rasa,
@@ -598,7 +595,7 @@ jobs:
 
   custom-action-integration-tests:
     name: Custom Action Integration Tests With NLU bot and CALM bot
-    if: ${{ needs.check-code-changes.outputs.custom-action-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.custom-action-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     needs:
       [
         install-and-cache-rasa,
@@ -753,7 +750,7 @@ jobs:
 
   enterprise-search-integration-tests:
     name: Run Enterprise Search Integration Tests
-    if: ${{ needs.check-code-changes.outputs.enterprise-search-policy-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.enterprise-search-policy-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     needs:
       [
         install-and-cache-rasa,
@@ -910,7 +907,7 @@ jobs:
   sequential-integration-test:
     name: Run Sequential Integration Tests
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ needs.check-code-changes.outputs.sequential-integration-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.sequential-integration-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     needs: [install-and-cache-rasa, check-code-changes]
     timeout-minutes: 60
     env:
@@ -969,7 +966,7 @@ jobs:
   non-sequential-integration-test:
     name: Run Non-Sequential Integration Tests
     runs-on: warp-ubuntu-latest-x64-8x
-    if: ${{ needs.check-code-changes.outputs.non-sequential-integration-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.non-sequential-integration-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     needs: [install-and-cache-rasa, check-code-changes]
     timeout-minutes: 60
     env:
@@ -1040,7 +1037,7 @@ jobs:
   mongo-tracker-store-integration-test:
     name: Run Mongo Tracker Store Integration Tests
     runs-on: warp-ubuntu-latest-x64-8x
-    if: ${{ needs.check-code-changes.outputs.mongo-db-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.mongo-db-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     needs: [install-and-cache-rasa, check-code-changes]
     timeout-minutes: 60
     env:
@@ -1116,7 +1113,7 @@ jobs:
   dynamo-tracker-store-integration-test:
     name: Run Dynamo Tracker Store Integration Tests
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ needs.check-code-changes.outputs.dynamo-db-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.dynamo-db-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     needs: [install-and-cache-rasa, check-code-changes]
     timeout-minutes: 60
 
@@ -1181,7 +1178,7 @@ jobs:
   concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ needs.check-code-changes.outputs.concurrent-lockstore-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.concurrent-lockstore-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     needs: [install-and-cache-rasa, check-code-changes]
     timeout-minutes: 60
     env:
@@ -1234,7 +1231,7 @@ jobs:
     name: Run Broker Integration Tests
     runs-on: warp-ubuntu-latest-x64-2x
     needs: [install-and-cache-rasa, check-code-changes]
-    if: ${{ needs.check-code-changes.outputs.broker-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.broker-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     timeout-minutes: 60
 
     steps:
@@ -1325,7 +1322,7 @@ jobs:
         rasa-private-dev-docker-image,
         check-code-changes,
       ]
-    if: ${{ needs.check-code-changes.outputs.channel-connector-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.channel-connector-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     runs-on: warp-ubuntu-latest-x64-2x
     steps:
       - name: Check out code
@@ -1392,7 +1389,7 @@ jobs:
   pii-management-in-calm-integration-tests:
     name: PII Management in CALM Bot Integration Tests
     needs: [rasa-private-dev-docker-image, check-code-changes]
-    if: ${{ needs.check-code-changes.outputs.pii-management == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.pii-management == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     runs-on: warp-ubuntu-latest-x64-4x
     env:
       RASA_SDK_IMAGE_TAG: latest
@@ -1480,7 +1477,7 @@ jobs:
   voice_unit_tests:
     name: Run Voice Unit Tests
     needs: [check-code-changes, install-and-cache-rasa]
-    if: ${{ needs.check-code-changes.outputs.voice-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.voice-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     runs-on: warp-ubuntu-latest-x64-4x
     timeout-minutes: 60
     strategy:
@@ -1545,7 +1542,7 @@ jobs:
   unit-test-policies:
     name: Run Policies Unit Tests
     runs-on: warp-ubuntu-latest-x64-4x
-    if: ${{ inputs.full_ci_mode != 'false' && (needs.check-code-changes.outputs.policy-files == 'true') }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.policy-files == 'true') }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -1639,7 +1636,7 @@ jobs:
   unit-test-agents:
     name: Run Agents Unit Tests
     runs-on: warp-ubuntu-latest-x64-4x
-    if: ${{ inputs.full_ci_mode != 'false' && (needs.check-code-changes.outputs.agent-files == 'true') }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.agent-files == 'true') }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -1733,7 +1730,7 @@ jobs:
   unit-test-nlu:
     name: Run NLU Unit Tests
     runs-on: warp-ubuntu-latest-x64-8x
-    if: ${{ inputs.full_ci_mode != 'false' && (needs.check-code-changes.outputs.nlu-files == 'true' || needs.check-code-changes.outputs.dm1-tensorflow-files == 'true' ) }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.nlu-files == 'true' || needs.check-code-changes.outputs.dm1-tensorflow-files == 'true' ) }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -1827,7 +1824,7 @@ jobs:
   unit-test-cli:
     name: Run CLI Unit Tests
     runs-on: warp-ubuntu-latest-x64-8x
-    if: ${{ inputs.full_ci_mode != 'false' && (needs.check-code-changes.outputs.cli-files == 'true') }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.cli-files == 'true') }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -1900,7 +1897,6 @@ jobs:
   unit-test:
     name: Run Unit Tests
     runs-on: warp-ubuntu-latest-x64-8x
-    if: ${{ !(github.event_name == 'pull_request' && inputs.pr-author == 'rasabot' && inputs.pr-is-draft == 'true') }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -2119,7 +2115,7 @@ jobs:
     name: Run test to monitor memory consumption and display on PR
     runs-on: warp-ubuntu-latest-x64-2x
     needs: [install-and-cache-rasa, check-code-changes]
-    if: ${{ needs.check-code-changes.outputs.rasa-core-dependencies-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.rasa-core-dependencies-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     timeout-minutes: 30
 
     steps:
@@ -2213,9 +2209,18 @@ jobs:
     name: SonarQube
     runs-on: warp-ubuntu-latest-x64-8x
     needs:
-      [unit-test, test-anonymization]
+      [unit-test, test-anonymization, unit-test-cli, unit-test-nlu, unit-test-agents, unit-test-policies, voice_unit_tests]
       # We don't want to run the code quality checks on scheduled runs
-    if: ${{ inputs.full_ci_mode != 'false' && !cancelled() }}
+    if: >-
+      ${{ always() && (
+        needs.unit-test.result != 'skipped' ||
+        needs.test-anonymization.result != 'skipped' ||
+        needs.unit-test-cli.result != 'skipped' ||
+        needs.unit-test-nlu.result != 'skipped' ||
+        needs.unit-test-agents.result != 'skipped' ||
+        needs.unit-test-policies.result != 'skipped' ||
+        needs.voice_unit_tests.result != 'skipped'
+      ) }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
