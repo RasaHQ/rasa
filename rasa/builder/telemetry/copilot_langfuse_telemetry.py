@@ -11,6 +11,7 @@ from typing import (
 
 import structlog
 
+from rasa.builder import config
 from rasa.builder.copilot.models import (
     CopilotTurnRequest,
     EventContent,
@@ -258,7 +259,10 @@ class CopilotLangfuseTelemetry:
 
                 # Update usage statistics if available
                 usage_statistics = UsageStatistics.from_chat_completion_response(
-                    response
+                    response,
+                    input_token_price=config.COPILOT_INPUT_TOKEN_PRICE,
+                    output_token_price=config.COPILOT_OUTPUT_TOKEN_PRICE,
+                    cached_token_price=config.COPILOT_CACHED_TOKEN_PRICE,
                 )
                 if usage_statistics:
                     update_generation_span_with_usage_statistics(
