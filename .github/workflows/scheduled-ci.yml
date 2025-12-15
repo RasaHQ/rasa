@@ -109,7 +109,7 @@ jobs:
 
       - name: Set up Python 3.9
         if: ${{ matrix.python-version == '3.9' }}
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -168,7 +168,7 @@ jobs:
 
       - name: Load Docker image
         run: |
-          gunzip -c rasa-docker-image | docker load
+          gunzip -c rasa-docker-image.tar.gz | docker load
 
       - name: Rasa Train
         run: |
@@ -177,7 +177,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile')
+          RASA_IMAGE_TAG: ${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}
           MODEL_NAME: model-${{ hashFiles('poetry.lock', 'rasa/**/*.py', '!rasa/builder/**', 'docker/**/*', 'Makefile') }}.tar.gz
           postgres-host: ${{ env.POSTGRES_HOST }} # required if tracker-store-type is sql
           postgres-port: ${{ env.POSTGRES_PORT }} # required if tracker-store-type is sql
@@ -211,7 +211,7 @@ jobs:
 
       - name: Set up Python 3.10 🐍
         id: setup-python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 

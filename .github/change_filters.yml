@@ -123,12 +123,6 @@ enterprise-search-policy-files:
   - rasa/shared/core/policies/**
   - tests_deployment/integration_tests_enterprise_search/**
 
-custom-action-files:
-  - rasa/core/actions/**
-  - rasa/shared/core/**
-  - rasa/shared/utils/**
-  - tests_deployment/integration_tests_custom_action_server/**
-
 channel-connector-files:
   - rasa/core/brokers/**
   - rasa/core/channels/**
@@ -186,10 +180,11 @@ policy-files:
   - rasa/core/policies/**
   - rasa/shared/core/policies/**
 
-action-files:
+custom-action-files:
   - rasa/core/actions/**
   - rasa/shared/core/**
   - rasa/shared/utils/**
+  - tests_deployment/integration_tests_custom_action_server/**
 
 channel-files:
   - rasa/core/channels/**

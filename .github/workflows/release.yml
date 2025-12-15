@@ -196,7 +196,7 @@ jobs:
 
       - name: Create virtual environment
         if: steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
-        run: python -m venv create .venv
+        run: python -m venv .venv
 
       - name: Set up virtual environment
         run: poetry config virtualenvs.in-project true

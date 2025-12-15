@@ -76,7 +76,9 @@ class TestMCPBaseAgent:
             ),
             configuration=AgentConfiguration(
                 llm={"provider": "openai", "model": "gpt-4"},
-                prompt_template="Test template: {{user_message}}",
+                # prompt_template is set to None to use the default template
+                # (prompt_template is interpreted as a file path, not template content)
+                prompt_template=None,
                 timeout=30,
                 max_retries=3,
             ),

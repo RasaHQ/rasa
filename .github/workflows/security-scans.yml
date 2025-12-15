@@ -74,9 +74,6 @@ jobs:
           if [ "${{ needs.gitleaks.result }}" == "failure" ]; then
             failed_jobs="${failed_jobs}• Gitleaks: ${{ needs.gitleaks.result }}\n"
           fi
-          if [ "${{ needs.bandit.result }}" == "failure" ]; then
-            failed_jobs="${failed_jobs}• Bandit: ${{ needs.bandit.result }}\n"
-          fi
           
           if [ -n "$failed_jobs" ]; then
             echo "failed=true" >> $GITHUB_OUTPUT

@@ -73,7 +73,7 @@ jobs:
           path: rasa-calm-demo
           token: ${{ env.RASA_CALM_DEMO_READ_TOKEN }}
       - name: Set up Python 🐍
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Read Poetry Version 🔢

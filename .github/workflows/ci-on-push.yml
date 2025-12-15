@@ -1,11 +1,11 @@
 name: Continous Integration Tests
 
 on:
-    push:
-        branches:
-            - main
-    pull_request:
-    merge_group:
+  push:
+    branches:
+      - main
+  pull_request:
+  merge_group:
 
 # Reusing continous-integration.yml workflow with default values
 # Inputs:
@@ -16,7 +16,26 @@ jobs:
     uses: ./.github/workflows/continous-integration.yml
     secrets: inherit
     with:
-      run_code_quality: 'true'
-      full_ci_mode: 'false'
+      # Disable code quality checks on push events (e.g., pushes to main), enable for pull requests and merge groups
+      run_code_quality: ${{ github.event_name == 'push' && 'false' || 'true' }}
+      # Full CI mode is only enabled for push on main branch
+      full_ci_mode: ${{ github.event_name == 'push' && 'true' || 'false' }}
       pr-author: ${{ github.event.pull_request.user.login }}
       pr-is-draft: ${{ github.event.pull_request.draft }}
+
+  send_slack_notification_on_failure:
+    name: Notify Slack
+    runs-on: warp-ubuntu-latest-x64-2x
+    if: always() && github.event_name == 'push'
+    needs:
+      - ci-tests
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if ci-tests is skipped (previous needed job failed) or failed or cancelled
+        if: ${{ needs.ci-tests.result != 'success' }}
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *CI on Main* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

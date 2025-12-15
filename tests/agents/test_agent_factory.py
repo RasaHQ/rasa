@@ -258,6 +258,9 @@ class TestAgentFactory:
             OPENAI_API_KEY_ENV_VAR,
             "mock key in test_create_client_builtin_agent_mcp_open",
         )
+        # Set prompt_template to None to use the default template
+        # (prompt_template is interpreted as a file path, not template content)
+        mock_agent_config.configuration.prompt_template = None
 
         # Create the actual agent instance
         result = AgentFactory.create_client(ProtocolType.MCP_OPEN, mock_agent_config)
@@ -278,6 +281,9 @@ class TestAgentFactory:
             OPENAI_API_KEY_ENV_VAR,
             "mock key in test_create_client_builtin_agent_mcp_task",
         )
+        # Set prompt_template to None to use the default template
+        # (prompt_template is interpreted as a file path, not template content)
+        mock_agent_config.configuration.prompt_template = None
 
         # Create the actual agent instance
         result = AgentFactory.create_client(ProtocolType.MCP_TASK, mock_agent_config)

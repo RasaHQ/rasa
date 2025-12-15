@@ -72,7 +72,7 @@ jobs:
         # that's why we use venv to create virtual environment
       - name: Create virtual environment
         if: steps.cache-poetry.outputs.cache-hit != 'true'
-        run: python -m venv create .venv
+        run: python -m venv .venv
 
       - name: Set up virtual environment
         # Poetry on Windows cannot pick up the virtual environments directory properly,
@@ -188,7 +188,7 @@ jobs:
         # that's why we use venv to create virtual environment
       - name: Create virtual environment
         if: steps.cache-poetry.outputs.cache-hit != 'true'
-        run: python -m venv create .venv
+        run: python -m venv .venv
 
       - name: Set up virtual environment
         # Poetry on Windows cannot pick up the virtual environments directory properly,
@@ -312,7 +312,7 @@ jobs:
         # that's why we use venv to create virtual environment
       - name: Create virtual environment
         if: steps.cache-poetry.outputs.cache-hit != 'true'
-        run: python -m venv create .venv
+        run: python -m venv .venv
 
       - name: Set up virtual environment
         # Poetry on Windows cannot pick up the virtual environments directory properly,
