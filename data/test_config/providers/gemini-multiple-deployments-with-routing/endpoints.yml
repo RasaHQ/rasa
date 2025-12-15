@@ -10,7 +10,7 @@ model_groups:
   - id: gemini_llm
     models:
       - provider: gemini
-        model: gemini-2.0-flash-lite-001
+        model: gemini-2.0-flash-lite
         api_key: ${GEMINI_API_KEY_1}
         timeout: 20
         temperature: 0.0

@@ -5,7 +5,7 @@ nlg:
  type: rephrase
  llm:
     provider: gemini
-    model: gemini-2.0-flash-lite-001
+    model: gemini-2.0-flash-lite
     timeout: 7
 
 tracing:

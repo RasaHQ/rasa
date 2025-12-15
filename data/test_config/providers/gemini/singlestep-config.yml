@@ -5,7 +5,7 @@ pipeline:
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: gemini
-      model: gemini-2.0-flash-lite-001
+      model: gemini-2.0-flash-lite
       timeout: 7
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
@@ -35,7 +35,7 @@ pipeline:
     prompt_template: rasa-private/data/test_config/providers/command_prompt.jinja2
     llm:
       provider: gemini
-      model: gemini-2.0-flash-lite-001
+      model: gemini-2.0-flash-lite
       timeout: 7
     # embeddings:
     #   provider: gemini
@@ -65,12 +65,12 @@ policies:
     #   timeout: 7
     llm:
       provider: gemini
-      model: gemini-2.0-flash-lite-001
+      model: gemini-2.0-flash-lite
       timeout: 7
   - name: IntentlessPolicy
     llm:
       provider: gemini
-      model: gemini-2.0-flash-lite-001
+      model: gemini-2.0-flash-lite
       timeout: 7
     # embeddings:
     #   provider: gemini
