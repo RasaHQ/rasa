@@ -32,8 +32,8 @@ jobs:
 
     steps:
       - name: Notify Slack of failure ⛔️
-        # send notification if ci-tests is skipped (previous needed job failed) or failed or cancelled
-        if: ${{ needs.ci-tests.result != 'success' }}
+        # send notification only if ci-tests actually failed (not on skipped or cancelled)
+        if: ${{ needs.ci-tests.result == 'failure' }}
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
