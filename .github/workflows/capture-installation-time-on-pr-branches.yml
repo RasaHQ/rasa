@@ -7,6 +7,7 @@ jobs:
   check_poetry_lock:
     name: Detect changes in poetry.lock
     runs-on: warp-ubuntu-latest-x64-2x
+    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
     outputs:
       lock_file: ${{ steps.filter.outputs.lock_file }}
     steps:
@@ -22,7 +23,7 @@ jobs:
     needs: check_poetry_lock
     name: Trigger installation workflow
     runs-on: warp-ubuntu-latest-x64-2x
-    if: ${{ needs.check_poetry_lock.outputs.lock_file == 'true' }}
+    if: ${{ needs.check_poetry_lock.outputs.lock_file == 'true' && github.event.pull_request.user.login != 'dependabot[bot]' }}
     steps:
       - name: Trigger installation workflow
         uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0  #v3.0.0

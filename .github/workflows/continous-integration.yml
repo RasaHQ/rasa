@@ -104,6 +104,7 @@ jobs:
   install-and-cache-rasa:
     name: Install and cache Rasa for reuse across jobs
     runs-on: warp-ubuntu-latest-x64-2x
+    if: inputs.pr-author != 'dependabot[bot]'
     strategy:
       matrix:
         installation:
@@ -258,6 +259,7 @@ jobs:
 
   check-code-changes:
     name: Check for code changes
+    if: inputs.pr-author != 'dependabot[bot]'
     runs-on: warp-ubuntu-latest-x64-2x
     timeout-minutes: 10
     outputs:
@@ -405,6 +407,7 @@ jobs:
 
   check-inspector-build:
     name: Check Inspector Build
+    if: inputs.pr-author != 'dependabot[bot]'
     runs-on: warp-ubuntu-latest-x64-2x
     timeout-minutes: 15
     defaults:
@@ -2323,6 +2326,12 @@ jobs:
       - publish-test-results
       - clean-docker-image-artifact
     steps:
+      - name: Block CI merge for Dependabot PRs
+        if: ${{ inputs.pr-author == 'dependabot[bot]' }}
+        run: |
+          echo "❌ CI blocked: PR author is dependabot[bot]."
+          exit 1
+
       - name: Check job results
         run: |
           set -eo pipefail
