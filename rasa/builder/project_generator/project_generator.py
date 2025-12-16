@@ -1012,7 +1012,7 @@ class ProjectGenerator:
 
     @WelcomeMessageGenerationLangfuseTelemetry.trace_text_generation
     async def _generate_text(
-        self, prompt: str, max_tokens: int = 100
+        self, prompt: str, max_completion_tokens: int = 100
     ) -> ChatCompletion:
         """Generate simple text using OpenAI.
 
@@ -1032,7 +1032,7 @@ class ProjectGenerator:
                     model=config.OPENAI_MODEL,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.1,  # Lower temperature for consistent messages
-                    max_tokens=max_tokens,
+                    max_completion_tokens=max_completion_tokens,
                 )
 
                 if not response.choices[0].message.content:
@@ -1079,6 +1079,7 @@ class ProjectGenerator:
             prompt = self._commit_message_prompt_template.render(
                 diff_output=diff_output,
                 detailed_diff=detailed_diff,
+                desired_length=config.COMMIT_MESSAGE_DESIRED_LENGTH,
             )
 
             # Update Langfuse span with input data
@@ -1089,14 +1090,19 @@ class ProjectGenerator:
             )
 
             # Use the existing LLM service to generate the commit message
-            response = await self._generate_text(prompt, max_tokens=50)
+            response = await self._generate_text(
+                prompt, max_completion_tokens=config.COMMIT_MESSAGE_MAX_TOKENS
+            )
             response_content = response.choices[0].message.content or ""
 
             # Clean up the response
             commit_message = response_content.strip().strip('"').strip("'")
 
             # Fallback to a reasonable default if generation fails or is too long
-            if not commit_message or len(commit_message) > 36:
+            if (
+                not commit_message
+                or len(commit_message) > config.COMMIT_MESSAGE_MAX_CHARACTERS
+            ):
                 commit_message = DEFAULT_COMMIT_MESSAGE
 
             # Update Langfuse span with output data
@@ -1172,7 +1178,9 @@ class ProjectGenerator:
             )
 
             # Use the existing LLM service to generate the example questions
-            response = await self._generate_text(prompt, max_tokens=50)
+            response = await self._generate_text(
+                prompt, max_completion_tokens=config.WELCOME_MESSAGE_MAX_TOKENS
+            )
             response_content = response.choices[0].message.content or ""
 
             # Initialize variables with defaults

@@ -78,7 +78,7 @@ class WelcomeMessageGenerationLangfuseTelemetry:
         async def wrapper(
             self: "ProjectGenerator",
             prompt: str,
-            max_tokens: float,
+            max_completion_tokens: float,
         ) -> Any:
             langfuse_client = langfuse.get_client()
 
@@ -86,16 +86,16 @@ class WelcomeMessageGenerationLangfuseTelemetry:
                 name=f"{self.__class__.__name__}.{func.__name__}",
                 input={
                     "prompt": prompt,
-                    "max_tokens": max_tokens,
+                    "max_completion_tokens": max_completion_tokens,
                 },
             ) as generation:
                 # Call the original function
-                response = await func(self, prompt, max_tokens)
+                response = await func(self, prompt, max_completion_tokens)
                 # Update the span with response content
                 generation.update(
                     output=response,
                     model_parameters={
-                        "max_tokens": str(max_tokens),
+                        "max_completion_tokens": str(max_completion_tokens),
                     },
                 )
 

@@ -1004,7 +1004,9 @@ class TestProjectGenerator:
 
         diff_output = "M\tconfig.yml\nA\tdomain.yml"
         detailed_diff = "diff --git a/config.yml b/config.yml\n+version: 3.1"
-        llm_response = "Update all flows, domain data and config > 36"
+        llm_response = (
+            "Commit message updating flows, and domain > COMMIT_MESSAGE_MAX_CHARACTERS"
+        )
 
         # Create a mock ChatCompletion response
         from unittest.mock import MagicMock

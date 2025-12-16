@@ -111,6 +111,25 @@ AUTH_REQUIRED_AFTER_MINUTES = int(os.getenv("AUTH_REQUIRED_AFTER_MINUTES", "480"
 
 DEFAULT_BOT_BUILDER_EMAIL = "noreply@rasa.com"
 
+# Maximum characters/tokens for commit messages
+CHARS_PER_TOKEN_ESTIMATE = 4
+# Desired length for commit messages in prompting
+COMMIT_MESSAGE_DESIRED_LENGTH = int(
+    os.getenv("COMMIT_MESSAGE_LENGTH_WARNING_THRESHOLD", "42")
+)
+# Recommended max characters for commit messages
+COMMIT_MESSAGE_MAX_CHARACTERS = int(os.getenv("COMMIT_MESSAGE_MAX_CHARACTERS", "72"))
+# Calculate max tokens based on max characters
+COMMIT_MESSAGE_MAX_TOKENS = int(
+    os.getenv(
+        "COMMIT_MESSAGE_MAX_TOKENS",
+        COMMIT_MESSAGE_MAX_CHARACTERS // CHARS_PER_TOKEN_ESTIMATE,
+    )
+)
+
+# Maximum tokens for welcome messages
+WELCOME_MESSAGE_MAX_TOKENS = int(os.getenv("WELCOME_MESSAGE_MAX_TOKENS", "50"))
+
 # Agent SDK Configuration
 USE_AGENT_SDK_COPILOT = os.getenv("USE_AGENT_SDK_COPILOT", "false").lower() == "true"
 
