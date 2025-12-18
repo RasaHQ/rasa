@@ -99,7 +99,7 @@ from rasa.core.channels.channel import (
 )
 
 class MyIO(InputChannel):
-    def name() -> Text:
+    def name(self) -> Text:
         """Name of your custom channel."""
         return "myio"
 
@@ -182,7 +182,7 @@ To test your custom connector, you can `POST` messages to the webhook using a js
 ```json
 {
   "sender": "test_user",  // sender ID of the user sending the message
-  "message": "Hi there!",
+  "text": "Hi there!",
   "metadata": {}  // optional, any extra info you want to add for processing in NLU or custom actions
 }
 ```
@@ -195,7 +195,7 @@ curl --request POST \
      --header 'Content-Type: application/json' \
      --data '{
             "sender": "test_user",
-            "message": "Hi there!",
+            "text": "Hi there!",
             "metadata": {}
           }'
 ```
