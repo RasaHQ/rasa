@@ -220,7 +220,7 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud auth
-      - uses: google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
           service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
           credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -906,7 +906,7 @@ jobs:
 
     steps:
       # Setup gcloud auth
-      - uses: google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
           service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
           credentials_json: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
