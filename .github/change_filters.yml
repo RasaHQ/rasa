@@ -55,6 +55,9 @@ docker:
   - poetry.lock
   - rasa/**/*
   - docker/**/*
+  - Dockerfile
+  - .dockerignore
+  - Makefile.docker
   - Makefile
 
 lock_file:

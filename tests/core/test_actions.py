@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Text
 from unittest.mock import MagicMock, Mock
 
+import aiohttp
 import freezegun
 import pytest
 from aioresponses import aioresponses
@@ -724,9 +725,17 @@ async def test_remote_action_endpoint_not_running(
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
 
-    with pytest.raises(Exception) as execinfo:
-        await remote_action.run(default_channel, default_nlg, default_tracker, domain)
-    assert "Failed to execute custom action" in str(execinfo.value)
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            exception=aiohttp.ClientConnectionError("Connection refused"),
+        )
+
+        with pytest.raises(Exception) as execinfo:
+            await remote_action.run(
+                default_channel, default_nlg, default_tracker, domain
+            )
+        assert "Failed to execute custom action" in str(execinfo.value)
 
 
 async def test_remote_action_endpoint_responds_500(
