@@ -1161,7 +1161,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             port = parsed.port or port
             host = parsed.hostname or host
 
-        return sa.engine.url.URL(
+        return sa.engine.url.URL.create(
             dialect,
             username,
             password,
@@ -1183,7 +1183,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         self._create_database(self.engine, db)
         self.engine.dispose()
-        engine_url = sa.engine.url.URL(
+        engine_url = sa.engine.url.URL.create(
             drivername=engine_url.drivername,
             username=engine_url.username,
             password=engine_url.password,
