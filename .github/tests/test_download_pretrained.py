@@ -18,7 +18,7 @@ def test_download_pretrained_lmf_exists_no_params():
     assert lmf_specs[0].model_weights == "rasa/LaBSE"
 
 
-def test_download_pretrained_lmf_exists_with_model_name():
+def _common_step_cofig():
     yaml = YAML(typ="safe")
     config = yaml.load(CONFIG_FPATH)
 
@@ -26,6 +26,11 @@ def test_download_pretrained_lmf_exists_with_model_name():
     step = list(  # noqa: RUF015
         filter(lambda x: x["name"] == download_pretrained.COMP_NAME, steps)
     )[0]
+    return step, steps, yaml, config
+
+
+def test_download_pretrained_lmf_exists_with_model_name():
+    step, _, yaml, config = _common_step_cofig()
     step["model_name"] = "roberta"
     step["cache_dir"] = "/this/dir"
 
@@ -39,13 +44,7 @@ def test_download_pretrained_lmf_exists_with_model_name():
 
 
 def test_download_pretrained_unknown_model_name():
-    yaml = YAML(typ="safe")
-    config = yaml.load(CONFIG_FPATH)
-
-    steps = config.get("pipeline", [])
-    step = list(  # noqa: RUF015
-        filter(lambda x: x["name"] == download_pretrained.COMP_NAME, steps)
-    )[0]
+    step, _, yaml, config = _common_step_cofig()
     step["model_name"] = "unknown"
 
     with tempfile.NamedTemporaryFile("w+") as fp:
@@ -56,13 +55,7 @@ def test_download_pretrained_unknown_model_name():
 
 
 def test_download_pretrained_multiple_model_names():
-    yaml = YAML(typ="safe")
-    config = yaml.load(CONFIG_FPATH)
-
-    steps = config.get("pipeline", [])
-    step = list(  # noqa: RUF015
-        filter(lambda x: x["name"] == download_pretrained.COMP_NAME, steps)
-    )[0]
+    step, steps, yaml, config = _common_step_cofig()
     step_new = deepcopy(step)
     step_new["model_name"] = "roberta"
     steps.append(step_new)
@@ -76,13 +69,7 @@ def test_download_pretrained_multiple_model_names():
 
 
 def test_download_pretrained_with_model_name_and_nondefault_weight():
-    yaml = YAML(typ="safe")
-    config = yaml.load(CONFIG_FPATH)
-
-    steps = config.get("pipeline", [])
-    step = list(  # noqa: RUF015
-        filter(lambda x: x["name"] == download_pretrained.COMP_NAME, steps)
-    )[0]
+    step, _, yaml, config = _common_step_cofig()
     step["model_name"] = "bert"
     step["model_weights"] = "bert-base-uncased"
 
@@ -95,13 +82,7 @@ def test_download_pretrained_with_model_name_and_nondefault_weight():
 
 
 def test_download_pretrained_lmf_doesnt_exists():
-    yaml = YAML(typ="safe")
-    config = yaml.load(CONFIG_FPATH)
-
-    steps = config.get("pipeline", [])
-    step = list(  # noqa: RUF015
-        filter(lambda x: x["name"] == download_pretrained.COMP_NAME, steps)
-    )[0]
+    step, steps, yaml, config = _common_step_cofig()
     steps.remove(step)
 
     with tempfile.NamedTemporaryFile("w+") as fp:

@@ -1,11 +1,12 @@
-# Collect the results of the various model test runs which are done as part of
-# the model regression CI pipeline and dump them as a single file artifact.
-# This artifact will the then be published at the end of the tests.
-from collections import defaultdict
-import json
+"""Collect the results of the various model test runs which are done as part of
+the model regression CI pipeline and dump them as a single file artifact.
+This artifact will the then be published at the end of the tests."""
 import os
-from pathlib import Path
+import json
+
 from typing import Dict, List
+from collections import defaultdict
+from pathlib import Path
 
 
 def combine_result(
