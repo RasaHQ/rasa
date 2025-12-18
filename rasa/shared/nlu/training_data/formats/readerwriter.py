@@ -192,7 +192,7 @@ class TrainingDataWriter:
                 [(k, v) for k, v in entity_dict.items() if v is not None]
             )
 
-            return f"{json.dumps(entity_dict)}"
+            return f"{json.dumps(entity_dict, ensure_ascii=False)}"
 
     @staticmethod
     def generate_entity(
