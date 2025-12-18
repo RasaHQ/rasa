@@ -199,7 +199,7 @@ Rasa 3.6.3 (2023-07-20)
 
 ### Bugfixes
 - [#12638](https://github.com/rasahq/rasa/issues/12638): Fix the issue with the most recent model not being selected if the owner or permissions where modified on the model file.
-- [#12661](https://github.com/rasahq/rasa/issues/12661): Fixed `BlockingIOError` which occured as a result of too large data passed to strulogs.
+- [#12661](https://github.com/rasahq/rasa/issues/12661): Fixed `BlockingIOError` which occurred as a result of too large data passed to strulogs.
 
 ### Improved Documentation
 - [#12659](https://github.com/rasahq/rasa/issues/12659): Update action server documentation with new capability to extend Sanic features by using plugins.
@@ -1716,7 +1716,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   by a factor of 3.
 - [#8801](https://github.com/rasahq/rasa/issues/8801): Change the confidence score assigned by [`FallbackClassifier`](components.mdx#fallbackclassifier) to fallback intent to be the same as the fallback threshold.
 - [#8926](https://github.com/rasahq/rasa/issues/8926): Issue a UserWarning if a specified **domain folder** contains files that look like YML files but cannot be parsed successfully.
-  Only invoked if user specifies a folder path in `--domain` paramater. Previously those invalid files in the specified folder were silently ignored.
+  Only invoked if user specifies a folder path in `--domain` parameter. Previously those invalid files in the specified folder were silently ignored.
   **Does not apply** to individually specified domain YAML files, e.g. `--domain /some/path/domain.yml`, those being invalid will still raise an exception.
 
 ### Bugfixes
@@ -2530,7 +2530,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Improvements
 - [#3998](https://github.com/rasahq/rasa/issues/3998): Added a message showing the location where the failed stories file was saved.
-- [#7232](https://github.com/rasahq/rasa/issues/7232): Add support for the top-level response keys `quick_replies`, `attachment` and `elements` refered to in `rasa.core.channels.OutputChannel.send_reponse`, as well as `metadata`.
+- [#7232](https://github.com/rasahq/rasa/issues/7232): Add support for the top-level response keys `quick_replies`, `attachment` and `elements` referred to in `rasa.core.channels.OutputChannel.send_response`, as well as `metadata`.
 - [#7257](https://github.com/rasahq/rasa/issues/7257): Changed the format of the histogram of confidence values for both correct and incorrect predictions produced by running `rasa test`.
 - [#7284](https://github.com/rasahq/rasa/issues/7284): Run [`bandit`](https://bandit.readthedocs.io/en/latest/) checks on pull requests.
   Introduce `make static-checks` command to run all static checks locally.
@@ -4386,7 +4386,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 * [#5111](https://github.com/rasahq/rasa/issues/5111): Fixes `Exception 'Loop' object has no attribute '_ready'` error when running
   `rasa init`.
 
-* [#5126](https://github.com/rasahq/rasa/issues/5126): Updated the end-to-end ValueError you recieve when you have a invalid story format to point
+* [#5126](https://github.com/rasahq/rasa/issues/5126): Updated the end-to-end ValueError you receive when you have an invalid story format to point
   to the updated doc link.
 
 ## [1.6.1] - 2020-01-07
@@ -4394,7 +4394,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ### Bugfixes
 
 * [#4989](https://github.com/rasahq/rasa/issues/4989): Use an empty domain in case a model is loaded which has no domain
-  (avoids errors when accessing `agent.doman.<some attribute>`).
+  (avoids errors when accessing `agent.domain.<some attribute>`).
 
 * [#4995](https://github.com/rasahq/rasa/issues/4995): Replace error message with warning in tokenizers and featurizers if default parameter not set.
 
@@ -5040,7 +5040,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 
 * evaluation of NER does not include 'no-entity' anymore
 
-* `--successes` for `rasa test nlu` is now boolean values. If set incorrect/successful predictions
+* `--successes` for `rasa test nlu` is now boolean values. If set, incorrect and successful predictions
   are saved in a file.
 
 * `--errors` is renamed to `--no-errors` and is now a boolean value. By default incorrect predictions are saved

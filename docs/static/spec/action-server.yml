@@ -42,7 +42,7 @@ paths:
                   $ref: "./rasa.yml#/components/schemas/Domain"
       responses:
         200:
-          description: Action was executed succesfully.
+          description: Action was executed successfully.
           content:
             application/json:
               schema:

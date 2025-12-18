@@ -792,7 +792,7 @@ paths:
         Unloads the currently loaded trained model from the server.
       responses:
         204:
-          description: Model was sucessfully unloaded.
+          description: Model was successfully unloaded.
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:

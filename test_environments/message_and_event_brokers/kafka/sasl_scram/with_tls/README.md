@@ -88,7 +88,7 @@ Client will use the CA certificate to verify the identity of the Kafka broker.
 
 You can create the certificates and store them in the keystore using the following commands:
 ```shell
-# Create private and public key (public key is usually reffered to as Certificate Authority's certificate or CA certificate)
+# Create private and public key (public key is usually referred to as Certificate Authority's certificate or CA certificate)
 openssl req -x509 -newkey rsa:4096 -keyout ca-key -out ca-cert -days 365 -nodes -subj '/CN=localhost/OU=Atom/O=Rasa/L=Berlin/ST=Germany/C=GE' -passin pass:123456 -passout pass:123456
 
 # Create server keystore protected with storepass and keypass

@@ -1532,7 +1532,7 @@ async def combine_result(
         data: training data
         intent_results: intent evaluation results
         entity_results: entity evaluation results
-        response_selection_results: reponse selection evaluation results
+        response_selection_results: response selection evaluation results
 
     Returns: intent, entity, and response selection metrics
     """
