@@ -30,6 +30,7 @@ VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/c
 TRACKER_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/tracker_stores
 CUSTOM_COMPONENT_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/custom_components
 CALM_PII_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/privacy
+CALM_KAFKA_RESTART_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/brokers/test_calm_kafka_restart.py
 INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
 TRANSFORMERS_OFFLINE ?= 1
 CONCURRENT_LOCK_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/concurrent_lock_stores
@@ -188,6 +189,7 @@ ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))
 			--ignore $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH) \
 			--ignore $(CUSTOM_COMPONENT_INTEGRATION_TEST_PATH) \
 			--ignore $(CALM_PII_INTEGRATION_TEST_PATH) \
+			--ignore $(CALM_KAFKA_RESTART_INTEGRATION_TEST_PATH) \
 			--ignore tests/integration_tests/core/brokers/test_pika.py \
 			--junitxml=report_integration.xml
 else
@@ -719,8 +721,7 @@ test-pii-integration-with-calm-bot:  ## Run the pii integration tests with CALM 
 	$(TEST_PII_INTEGRATION_COMMAND)
 
 # Run the CALM Kafka restart integration test
-CALM_KAFKA_RESTART_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/brokers/test_calm_kafka_restart.py
-test-calm-kafka-restart: INTEGRATION_TEST_PATH = $(CALM_KAFKA_RESTART_TEST_PATH)
+test-calm-kafka-restart: INTEGRATION_TEST_PATH = $(CALM_KAFKA_RESTART_INTEGRATION_TEST_PATH)
 test-calm-kafka-restart: RESULTS_FILE = calm-kafka-restart-integration-results.xml
 test-calm-kafka-restart:  ## Run the CALM Kafka restart integration test. Requires run-pii-calm-containers to be running.
 	$(TEST_PII_INTEGRATION_COMMAND)

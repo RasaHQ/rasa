@@ -627,7 +627,7 @@ jobs:
       ]
     runs-on: warp-ubuntu-latest-x64-4x
     env:
-      RASA_SDK_IMAGE_TAG: "3.15.0"
+      RASA_SDK_IMAGE_TAG: latest
 
     steps:
       - name: Check out code
