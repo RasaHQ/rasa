@@ -43,7 +43,7 @@ jobs:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Set up Node 12.x 🦙
-        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
+        uses: actions/setup-node@5e21ff4d9bc1a8cf6de233a3057d20ec6b3fb69d
         with:
           node-version: "12.x"
 
@@ -114,7 +114,7 @@ jobs:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Set up Node 12.x 🦙
-        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
+        uses: actions/setup-node@5e21ff4d9bc1a8cf6de233a3057d20ec6b3fb69d
         with:
           node-version: "12.x"
 
