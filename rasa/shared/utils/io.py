@@ -123,7 +123,7 @@ def write_text_file(
 def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) -> Any:
     """Read text from a file."""
     try:
-        with open(filename, encoding=encoding) as f:
+        with open(filename, 'r', encoding=encoding) as f:
             return f.read()
     except FileNotFoundError:
         raise FileNotFoundException(
