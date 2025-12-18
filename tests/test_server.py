@@ -269,6 +269,98 @@ def shared_statuses() -> DictProxy:
     return Manager().dict()
 
 
+async def test_train_status_tracks_active_training_jobs(
+    rasa_app: SanicASGITestClient,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+):
+    """Test that the status endpoint correctly tracks active training jobs.
+
+    This test verifies that:
+    1. num_active_training_jobs is 0 when no training is running
+    2. num_active_training_jobs increments when training starts
+    3. The status endpoint is accessible during training (not blocked)
+    4. num_active_training_jobs decrements when training completes
+    """
+    fake_model = Path(tmp_path) / "fake_model.tar.gz"
+    fake_model.touch()
+    fake_model_path = str(fake_model)
+
+    # Use threading.Event since training runs in a thread pool (due to @run_in_thread)
+    # The training function runs in a separate thread with its own event loop
+    training_complete = threading.Event()
+
+    async def mocked_training_function(*_, **__) -> TrainingResult:
+        """Mock training function that simulates a training process."""
+        # Wait for the test to check status during training
+        # Poll the event with async sleep to avoid blocking
+        max_wait = 30.0
+        elapsed = 0.0
+        while not training_complete.is_set() and elapsed < max_wait:
+            await asyncio.sleep(0.1)
+            elapsed += 0.1
+        return TrainingResult(model=fake_model_path)
+
+    monkeypatch.setattr(rasa.model_training, "train", mocked_training_function)
+
+    training_data = """
+stories: []
+rules: []
+intents: []
+nlu: []
+responses: {}
+recipe: default.v1
+language: en
+policies: []
+pipeline: []
+"""
+
+    # Check initial status - should be 0 active training jobs
+    _, initial_status = await rasa_app.get("/status")
+    assert initial_status.status == HTTPStatus.OK
+    assert initial_status.json["num_active_training_jobs"] == 0
+
+    # Start training in the background
+    training_task = asyncio.create_task(
+        rasa_app.post(
+            "/model/train",
+            data=training_data,
+            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+        )
+    )
+
+    # Poll the status endpoint until training starts (counter > 0)
+    # This verifies the status endpoint is not blocked by training
+    max_attempts = 50
+    for attempt in range(max_attempts):
+        await asyncio.sleep(0.1)  # Small delay between checks
+        _, status_check = await rasa_app.get("/status")
+        assert status_check.status == HTTPStatus.OK
+        num_jobs = status_check.json["num_active_training_jobs"]
+        if num_jobs == 1:
+            # Training has started, verify status is accessible
+            assert num_jobs == 1
+            break
+    else:
+        pytest.fail(
+            f"Training did not start within {max_attempts * 0.1}s. "
+            f"Final num_active_training_jobs: "
+            f"{status_check.json['num_active_training_jobs']}"
+        )
+
+    # Allow training to complete
+    training_complete.set()
+
+    # Wait for training to finish
+    _, training_response = await training_task
+    assert training_response.status == HTTPStatus.OK
+
+    # Check final status - should be back to 0 active training jobs
+    _, final_status = await rasa_app.get("/status")
+    assert final_status.status == HTTPStatus.OK
+    assert final_status.json["num_active_training_jobs"] == 0
+
+
 @pytest.mark.parametrize(
     "response_test",
     [

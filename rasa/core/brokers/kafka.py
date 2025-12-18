@@ -358,6 +358,7 @@ class KafkaEventBroker(EventBroker):
             )
 
     async def close(self) -> None:
+        """Flush the producer."""
         self._cancelled = True
         self._poll_thread.join()
         if self.producer:

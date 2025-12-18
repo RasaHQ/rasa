@@ -1,0 +1,19 @@
+version: "3.1"
+
+slots:
+  rsa_token:
+    type: categorical
+    values:
+      - unknown
+      - hard
+      - soft
+    mappings:
+      - type: custom
+        action: action_ask_rsa_token
+
+actions:
+  - action_ask_rsa_token
+
+responses:
+  utter_confirm_rsa_token:
+    - text: "Confirming your RSA token choice: {rsa_token}."

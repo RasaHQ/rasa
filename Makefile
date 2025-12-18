@@ -718,6 +718,13 @@ test-pii-integration-with-calm-bot: RESULTS_FILE = pii-management-in-calm-integr
 test-pii-integration-with-calm-bot:  ## Run the pii integration tests with CALM bot.
 	$(TEST_PII_INTEGRATION_COMMAND)
 
+# Run the CALM Kafka restart integration test
+CALM_KAFKA_RESTART_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/brokers/test_calm_kafka_restart.py
+test-calm-kafka-restart: INTEGRATION_TEST_PATH = $(CALM_KAFKA_RESTART_TEST_PATH)
+test-calm-kafka-restart: RESULTS_FILE = calm-kafka-restart-integration-results.xml
+test-calm-kafka-restart:  ## Run the CALM Kafka restart integration test. Requires run-pii-calm-containers to be running.
+	$(TEST_PII_INTEGRATION_COMMAND)
+
 NON_SEQUENTIAL_INTEGRATION_TEST_DOCKER_COMPOSE = $(TRACKER_STORE_INTEGRATION_TEST_PATH)/docker-compose.yml
 
 run-non-sequential-container:

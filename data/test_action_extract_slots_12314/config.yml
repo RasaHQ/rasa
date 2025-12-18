@@ -1,0 +1,16 @@
+recipe: default.v1
+
+assistant_id: custom_action_set_slot_same_value
+
+language: en
+
+pipeline:
+  - name: CompactLLMCommandGenerator
+    llm:
+      model_group: openai-gpt-4o
+    flow_retrieval:
+      embeddings:
+        model_group: openai-embeddings
+
+policies:
+  - name: FlowPolicy

@@ -1,0 +1,14 @@
+version: "3.1"
+
+flows:
+  install_rsa_token_flow:
+    description: "Handle RSA token installation requests"
+    steps:
+    - collect: rsa_token
+      description: "Collect the type of RSA token needed"
+      next:
+        - if: slots.rsa_token
+          then:
+            - action: utter_confirm_rsa_token
+              next: END
+        - else: END
