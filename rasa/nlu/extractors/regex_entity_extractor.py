@@ -99,6 +99,9 @@ class RegexEntityExtractor(GraphComponent, EntityExtractorMixin):
         Args:
             training_data: the training data
         """
+        for lookup in training_data.lookup_tables:
+            lookup["elements"] = sorted(lookup["elements"], key=len, reverse=True)
+
         self.patterns = pattern_utils.extract_patterns(
             training_data,
             use_lookup_tables=self._config["use_lookup_tables"],
