@@ -652,7 +652,7 @@ class MessageProcessor:
     def _log_slots(tracker: DialogueStateTracker) -> None:
         # Log currently set slots
         slot_values = "\n".join(
-            [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
+            sorted(f"\t{s.name}: {s.value}" for s in tracker.slots.values())
         )
         if slot_values.strip():
             structlogger.debug(
