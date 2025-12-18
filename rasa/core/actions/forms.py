@@ -197,6 +197,11 @@ class FormAction(LoopAction):
         Returns:
             Value of entity.
         """
+
+        # Return None if latest entity values were gathered before the active loop was set
+        if not tracker.active_loop_name:
+            return None
+
         # list is used to cover the case of list slot type
         value = list(
             tracker.get_latest_entity_values(name, entity_group=group, entity_role=role)
