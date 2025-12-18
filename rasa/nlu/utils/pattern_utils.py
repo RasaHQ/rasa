@@ -77,20 +77,18 @@ def read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
         Elements listed in the lookup table file.
     """
     try:
-        f = open(lookup_table_file, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING)
+        with open(lookup_table_file, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING) as f:
+            elements_to_regex = []
+            for line in f:
+                new_element = line.strip()
+                if new_element:
+                    elements_to_regex.append(new_element)
+            return elements_to_regex
     except OSError:
         raise ValueError(
             f"Could not load lookup table {lookup_table_file}. "
             f"Please make sure you've provided the correct path."
         )
-
-    elements_to_regex = []
-    with f:
-        for line in f:
-            new_element = line.strip()
-            if new_element:
-                elements_to_regex.append(new_element)
-    return elements_to_regex
 
 
 def _collect_regex_features(
