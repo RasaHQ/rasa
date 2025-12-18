@@ -187,7 +187,7 @@ parameter of `UnexpecTEDIntentPolicy`.
 
 ### Customization
 
-You can customize your assistant's behaviour to configure what should happen once `action_unlikely_intent`
+You can customize your assistant's behavior to configure what should happen once `action_unlikely_intent`
 is triggered. For example, as a follow up you can trigger a hand-off to a human agent with a rule:
 
 ```yaml
@@ -199,8 +199,8 @@ is triggered. For example, as a follow up you can trigger a hand-off to a human 
     - action: trigger_human_handoff
 ```
 
-Alternatively, you can also override it's behaviour as a [`custom action`](./custom-actions.mdx) by
-adding `action_unlikely_intent` to the list of actions in the domain and implementing the custom behaviour:
+Alternatively, you can also override it's behavior as a [`custom action`](./custom-actions.mdx) by
+adding `action_unlikely_intent` to the list of actions in the domain and implementing the custom behavior:
 
 ```python
 class ActionUnlikelyIntent(Action):
@@ -220,7 +220,7 @@ class ActionUnlikelyIntent(Action):
 Since `action_unlikely_intent` can be triggered at any conversation step during inference,
 all policies which are trained on only story data, for example - `TEDPolicy`, `UnexpecTEDIntentPolicy`,
 `MemoizationPolicy` ignore its presence in the tracker when making a prediction. However, `RulePolicy`
-takes its presence into account so that [conversation behaviour is customizable](./default-actions.mdx#customization-1).
+takes its presence into account so that [conversation behavior is customizable](./default-actions.mdx#customization-1).
 
 :::
 

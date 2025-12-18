@@ -347,7 +347,7 @@ DynamoDB is a hosted NoSQL database offered by Amazon Web Services (AWS).
 
 If you need a tracker store which is not available out of the box, you can implement your own.
 This is done by extending the base class `TrackerStore` and one of the provided mixin classes that implement the
-`serialise_tracker` method: `SerializedTrackerAsText` or `SerializedTrackerAsDict`.
+`serialize_tracker` method: `SerializedTrackerAsText` or `SerializedTrackerAsDict`.
 
 To write a custom tracker store, extend the `TrackerStore` base class. Your constructor has to
 provide a parameter `host`.

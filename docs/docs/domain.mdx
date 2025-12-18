@@ -92,7 +92,7 @@ As of 3.1, you can use the `influence_conversation` flag under entities.
 The flag can be set to `false` to declare that an entity should not
 be featurized for any intents. It is a shorthand syntax for adding an entity to
 the `ignore_entities` list of every intent in the domain. The flag is optional 
-and default behaviour remains unchanged.
+and default behavior remains unchanged.
 
 :::
 
@@ -147,7 +147,7 @@ entities:
 This syntax has the same effect as adding the entity to the `ignore_entities` 
 list for every intent in the domain.
 
-Explicitly setting `influence_conversation: true` does not change any behaviour. This is the default setting.
+Explicitly setting `influence_conversation: true` does not change any behavior. This is the default setting.
 
 ## Slots
 
@@ -878,7 +878,7 @@ This parameter is used only in the context of reading stories and turning them i
 to `True`, this will result in slots being implicitly set from entities if applicable entities are present in the story.
 When an entity matches the `from_entity` slot mapping, `store_entities_as_slots` defines whether the entity value should
 be placed in that slot. Therefore, this parameter skips adding an explicit `slot_was_set` step manually in the story.
-By default, this behaviour is switched on.
+By default, this behavior is switched on.
 
 You can turn off this functionality by setting the `store_entities_as_slots` parameter to `false`:
 

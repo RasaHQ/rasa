@@ -1450,9 +1450,9 @@ If you have used `FormValidationAction` to define custom extraction and validati
 You must make this replacement to continue using your custom code.
 
 If you have been dynamically filling slots not present in the form's `required_slots` defined in the `domain.yml`
-file, note that this behaviour is no longer supported in 3.x. Any dynamic slots with custom mappings, which are set in
+file, note that this behavior is no longer supported in 3.x. Any dynamic slots with custom mappings, which are set in
 the last user turn, will be filled **only if** they are returned by the `required_slots` method of the custom action
-inheriting from `FormValidationAction`. To maintain the 2.x behaviour, you must now override the `required_slots` method
+inheriting from `FormValidationAction`. To maintain the 2.x behavior, you must now override the `required_slots` method
 of this custom action as per the strong recommendation listed in the [dynamic form documentation](./forms.mdx#dynamic-form-behavior).
 
 To extract custom slots that are not defined in any form's `required_slots`, you should now use a global [custom slot mapping](./domain.mdx#custom-slot-mappings)
@@ -1817,7 +1817,7 @@ However when using [incremental training](./command-line-interface.mdx#increment
 ### Deprecations
 
 `ConveRTTokenizer` is now deprecated. [ConveRTFeaturizer](./components.mdx#convertfeaturizer) now implements
-its behaviour. To migrate, replace `ConveRTTokenizer` with any other tokenizer, for e.g.:
+its behavior. To migrate, replace `ConveRTTokenizer` with any other tokenizer, for e.g.:
 
 ```yaml
 pipeline:
@@ -1828,7 +1828,7 @@ pipeline:
 ```
 
 `HFTransformersNLP` and `LanguageModelTokenizer` components are now deprecated.
-[LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) now implements their behaviour.
+[LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) now implements their behavior.
 To migrate, replace both the above components with any tokenizer and specify the model architecture and model weights
 as part of `LanguageModelFeaturizer`, for e.g.:
 
