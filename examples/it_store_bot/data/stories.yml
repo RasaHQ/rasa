@@ -1,0 +1,78 @@
+version: "3.1"
+
+stories:
+  - story: greet and search laptop
+    steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: search_product
+        entities:
+          - product_type: "laptop"
+      - action: action_search_product
+
+  - story: search product with price range
+    steps:
+      - intent: search_product
+        entities:
+          - product_type: "laptop"
+          - price_range: "25 triệu"
+      - action: action_search_product
+
+  - story: compare products
+    steps:
+      - intent: compare_products
+        entities:
+          - product_type: "server"
+      - action: action_compare_products
+
+  - story: ask price
+    steps:
+      - intent: ask_price
+        entities:
+          - product_type: "laptop"
+      - action: action_show_price
+
+  - story: check stock
+    steps:
+      - intent: ask_stock
+        entities:
+          - product_type: "camera"
+      - action: action_check_stock
+
+  - story: ask for recommendations
+    steps:
+      - intent: recommend_product
+        entities:
+          - product_type: "laptop"
+          - use_case: "gaming"
+      - action: action_recommend_product
+
+  - story: ask promotions
+    steps:
+      - intent: ask_promotion
+      - action: action_show_promotions
+
+  - story: ask warranty
+    steps:
+      - intent: ask_warranty
+      - action: action_show_warranty
+
+  - story: technical support
+    steps:
+      - intent: technical_support
+      - action: action_provide_support
+
+  - story: show categories
+    steps:
+      - intent: ask_category
+      - action: action_show_category
+
+  - story: out of scope
+    steps:
+      - intent: out_of_scope
+      - action: utter_out_of_scope
+
+  - story: goodbye
+    steps:
+      - intent: goodbye
+      - action: utter_goodbye

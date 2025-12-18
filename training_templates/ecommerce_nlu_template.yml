@@ -1,0 +1,374 @@
+version: "3.1"
+
+# ========================================
+# TEMPLATE: E-Commerce Chatbot NLU Data
+# Use Case: Bán hàng online (sản phẩm công nghệ)
+# ========================================
+
+nlu:
+  # ============ GREETINGS & PLEASANTRIES ============
+
+  - intent: greet
+    examples: |
+      - xin chào
+      - chào bạn
+      - hello
+      - hi
+      - chào buổi sáng
+      - chào buổi chiều
+      - chào buổi tối
+      - hey
+      - hế lô
+      - alo
+
+  - intent: goodbye
+    examples: |
+      - tạm biệt
+      - bye
+      - goodbye
+      - hẹn gặp lại
+      - tạm biệt nhé
+      - bye bye
+      - thôi tôi đi đây
+      - ok tạm biệt
+
+  - intent: thank
+    examples: |
+      - cảm ơn
+      - cảm ơn bạn
+      - thanks
+      - thank you
+      - cảm ơn nhiều
+      - cảm ơn nhé
+      - thanks a lot
+      - cảm ơn bạn nhiều
+
+  - intent: affirm
+    examples: |
+      - đúng
+      - đúng rồi
+      - ok
+      - được
+      - đồng ý
+      - yes
+      - yeah
+      - vâng
+      - ừ
+      - okie
+
+  - intent: deny
+    examples: |
+      - không
+      - không phải
+      - no
+      - không đúng
+      - sai rồi
+      - thôi
+      - không cần
+
+  # ============ PRODUCT SEARCH ============
+
+  - intent: search_product
+    examples: |
+      - tìm [laptop](product_type)
+      - tìm [máy tính](product_type)
+      - cho tôi xem [laptop](product_type)
+      - có [laptop](product_type) nào không
+      - tôi muốn mua [laptop](product_type)
+      - [laptop](product_type) gaming
+      - tìm [laptop](product_type) [ASUS](brand)
+      - [laptop](product_type) [Dell](brand) có không
+      - cho xem [máy chủ](product_type)
+      - tìm [server](product_type) [HP](brand)
+      - [camera](product_type) an ninh
+      - tìm [switch](product_type) mạng
+      - [phần mềm](product_type) [Windows](product_name)
+      - tìm [laptop](product_type) dưới [20 triệu](price_range)
+      - [laptop](product_type) giá [từ 15 đến 25 triệu](price_range)
+      - tìm [laptop](product_type) cho [sinh viên](use_case)
+      - [máy tính](product_type) cho [văn phòng](use_case)
+      - [laptop](product_type) [chơi game](use_case)
+      - tìm [máy chủ](product_type) cho [doanh nghiệp](use_case)
+
+  - intent: browse_category
+    examples: |
+      - xem danh mục
+      - có những loại sản phẩm gì
+      - categories
+      - cho tôi xem tất cả sản phẩm
+      - sản phẩm nào có
+      - bán gì
+      - xem [laptop](product_type)
+      - danh sách [máy chủ](product_type)
+
+  # ============ PRODUCT INFORMATION ============
+
+  - intent: ask_price
+    examples: |
+      - giá bao nhiêu
+      - bao nhiêu tiền
+      - giá
+      - giá cả
+      - [laptop](product_type) này giá bao nhiêu
+      - giá [Dell R740](product_name)
+      - hỏi giá [máy chủ](product_type)
+      - giá thành sản phẩm
+      - giá bán
+      - giá bao nhiêu vậy
+      - giá bn
+      - bao nhiu
+      - mấy tiền
+
+  - intent: ask_specifications
+    examples: |
+      - thông số kỹ thuật
+      - cấu hình
+      - specs
+      - chi tiết sản phẩm
+      - [laptop](product_type) này cấu hình gì
+      - [máy chủ](product_type) có bao nhiêu RAM
+      - thông tin kỹ thuật
+      - [camera](product_type) độ phân giải bao nhiêu
+      - [switch](product_type) có mấy port
+      - CPU gì
+      - RAM bao nhiêu
+      - dùng ổ cứng gì
+
+  - intent: ask_stock
+    examples: |
+      - còn hàng không
+      - có sẵn không
+      - còn không
+      - hết hàng chưa
+      - khi nào có hàng
+      - [laptop](product_type) này còn không
+      - kiểm tra tồn kho
+      - có sẵn hàng không
+      - còn bán không
+
+  - intent: ask_warranty
+    examples: |
+      - bảo hành bao lâu
+      - chế độ bảo hành
+      - warranty
+      - thời gian bảo hành
+      - [laptop](product_type) bảo hành thế nào
+      - chính sách bảo hành
+      - bảo hành như thế nào
+      - bảo hành mấy tháng
+
+  - intent: ask_promotion
+    examples: |
+      - có khuyến mãi không
+      - chương trình giảm giá
+      - promotion
+      - ưu đãi
+      - deal
+      - giảm giá không
+      - có sale không
+      - khuyến mãi gì
+      - khuyến mãi tháng này
+
+  # ============ PRODUCT COMPARISON ============
+
+  - intent: compare_products
+    examples: |
+      - so sánh [Dell R740](product_name) và [HP DL380](product_name)
+      - so sánh 2 [laptop](product_type) này
+      - khác nhau gì
+      - khác biệt gì giữa [ASUS ROG](product_name) và [MSI](brand)
+      - [Dell](brand) tốt hơn [HP](brand) không
+      - so sánh [laptop](product_type) [Dell](brand) với [HP](brand)
+      - nên chọn cái nào
+      - sản phẩm nào tốt hơn
+      - compare [server](product_type)
+
+  - intent: recommend_product
+    examples: |
+      - tư vấn [laptop](product_type)
+      - gợi ý sản phẩm
+      - nên mua gì
+      - recommend
+      - [laptop](product_type) nào tốt
+      - tư vấn cho tôi
+      - giúp tôi chọn [laptop](product_type)
+      - [laptop](product_type) cho [sinh viên](use_case)
+      - tư vấn [máy chủ](product_type) cho [doanh nghiệp nhỏ](use_case)
+
+  # ============ SHOPPING CART ============
+
+  - intent: add_to_cart
+    examples: |
+      - thêm vào giỏ
+      - cho vào giỏ hàng
+      - add to cart
+      - tôi lấy cái này
+      - mua cái này
+      - đặt [2](quantity) cái
+      - thêm [3](quantity) [laptop](product_type)
+      - lấy [1](quantity) [Dell R740](product_name)
+
+  - intent: view_cart
+    examples: |
+      - xem giỏ hàng
+      - giỏ hàng của tôi
+      - xem cart
+      - tôi đặt gì rồi
+      - kiểm tra giỏ hàng
+
+  - intent: remove_from_cart
+    examples: |
+      - xóa khỏi giỏ
+      - bỏ ra
+      - remove
+      - không lấy cái này
+      - xóa [laptop](product_type)
+
+  - intent: checkout
+    examples: |
+      - thanh toán
+      - checkout
+      - đặt hàng
+      - order
+      - tôi muốn đặt hàng
+      - tiến hành thanh toán
+      - mua hàng
+
+  # ============ ORDER & DELIVERY ============
+
+  - intent: track_order
+    examples: |
+      - kiểm tra đơn hàng
+      - đơn hàng của tôi
+      - track order
+      - đơn hàng [#12345](order_id) đâu rồi
+      - kiểm tra đơn [#12345](order_id)
+      - order đã giao chưa
+
+  - intent: ask_delivery
+    examples: |
+      - giao hàng mất bao lâu
+      - ship bao lâu
+      - thời gian giao hàng
+      - phí vận chuyển
+      - có giao hàng miễn phí không
+      - ship hàng thế nào
+      - giao hàng như thế nào
+
+  - intent: cancel_order
+    examples: |
+      - hủy đơn hàng
+      - cancel order
+      - tôi muốn hủy đơn
+      - hủy đơn [#12345](order_id)
+      - không đặt nữa
+
+  # ============ CUSTOMER SUPPORT ============
+
+  - intent: technical_support
+    examples: |
+      - hỗ trợ kỹ thuật
+      - support
+      - cần hỗ trợ
+      - help
+      - hướng dẫn cài đặt
+      - cách sử dụng
+      - không hoạt động
+      - bị lỗi
+
+  - intent: contact_agent
+    examples: |
+      - nói chuyện với người thật
+      - tôi muốn gặp nhân viên
+      - chuyển cho nhân viên
+      - talk to human
+      - live chat
+
+  - intent: complaint
+    examples: |
+      - khiếu nại
+      - complaint
+      - sản phẩm bị lỗi
+      - tôi không hài lòng
+      - dịch vụ kém
+
+  # ============ OUT OF SCOPE ============
+
+  - intent: out_of_scope
+    examples: |
+      - thời tiết hôm nay
+      - bạn tên gì
+      - bạn là ai
+      - kể chuyện cười
+      - hát bài hát
+      - đặt vé máy bay
+      - nhà hàng gần đây
+
+  # ============ ENTITIES ============
+
+  # Synonyms
+  - synonym: laptop
+    examples: |
+      - laptop
+      - máy tính
+      - máy tính xách tay
+      - notebook
+      - pc xách tay
+
+  - synonym: máy chủ
+    examples: |
+      - máy chủ
+      - server
+      - may chu
+      - máy chủ server
+
+  - synonym: camera
+    examples: |
+      - camera
+      - cam
+      - camera an ninh
+      - camera giám sát
+
+  # Lookup Tables
+  - lookup: brands
+    examples: |
+      - Dell
+      - HP
+      - Lenovo
+      - ASUS
+      - MSI
+      - Cisco
+      - HPE
+      - Hikvision
+      - Dahua
+      - Microsoft
+
+  - lookup: product_types
+    examples: |
+      - laptop
+      - máy tính
+      - máy chủ
+      - server
+      - switch
+      - switch mạng
+      - camera
+      - camera an ninh
+      - phần mềm
+      - software
+
+  # Regex
+  - regex: order_id
+    examples: |
+      - \#\d{5,8}
+      - ORDER-\d{6}
+      - ORD\d{4,6}
+
+  - regex: price_pattern
+    examples: |
+      - \d+\s?(triệu|tr|trieu)
+      - \d+\s?(ngàn|k|ngan)
+      - \d+\s?(đồng|dong|vnd)
+
+  - regex: quantity_pattern
+    examples: |
+      - \d+\s?(cái|chiếc|con|bộ)

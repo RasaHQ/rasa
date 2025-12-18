@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechStore AI - Trợ Lý Tư Vấn Sản Phẩm IT Thông Minh</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-microchip"></i>
+                <span>TechStore AI</span>
+            </div>
+            <nav class="nav">
+                <a href="#products">Sản Phẩm</a>
+                <a href="#features">Tính Năng</a>
+                <a href="#contact">Liên Hệ</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Trợ Lý AI Tư Vấn Sản Phẩm IT</h1>
+                <p>Tìm kiếm, so sánh và tư vấn sản phẩm công nghệ thông tin chuyên nghiệp với AI</p>
+                <div class="hero-features">
+                    <div class="feature-tag">
+                        <i class="fas fa-robot"></i> AI Thông Minh
+                    </div>
+                    <div class="feature-tag">
+                        <i class="fas fa-bolt"></i> Tư Vấn Nhanh
+                    </div>
+                    <div class="feature-tag">
+                        <i class="fas fa-shield-alt"></i> Chuyên Nghiệp
+                    </div>
+                </div>
+                <button class="cta-button" onclick="openChat()">
+                    <i class="fas fa-comments"></i> Bắt Đầu Tư Vấn Ngay
+                </button>
+            </div>
+            <div class="hero-image">
+                <div class="floating-card">
+                    <i class="fas fa-server"></i>
+                    <span>Máy Chủ</span>
+                </div>
+                <div class="floating-card" style="animation-delay: 0.2s;">
+                    <i class="fas fa-laptop"></i>
+                    <span>Máy Tính</span>
+                </div>
+                <div class="floating-card" style="animation-delay: 0.4s;">
+                    <i class="fas fa-network-wired"></i>
+                    <span>Switch</span>
+                </div>
+                <div class="floating-card" style="animation-delay: 0.6s;">
+                    <i class="fas fa-video"></i>
+                    <span>Camera</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section id="products" class="categories">
+        <div class="container">
+            <h2 class="section-title">Danh Mục Sản Phẩm</h2>
+            <div class="category-grid">
+                <div class="category-card" onclick="askAboutCategory('máy tính')">
+                    <div class="category-icon">
+                        <i class="fas fa-desktop"></i>
+                    </div>
+                    <h3>Máy Tính</h3>
+                    <p>PC Desktop, Workstation, Gaming PC</p>
+                </div>
+                <div class="category-card" onclick="askAboutCategory('laptop')">
+                    <div class="category-icon">
+                        <i class="fas fa-laptop"></i>
+                    </div>
+                    <h3>Laptop</h3>
+                    <p>Laptop văn phòng, Gaming, Workstation</p>
+                </div>
+                <div class="category-card" onclick="askAboutCategory('máy chủ')">
+                    <div class="category-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <h3>Máy Chủ</h3>
+                    <p>Server Dell, HP, Lenovo, Tower/Rack</p>
+                </div>
+                <div class="category-card" onclick="askAboutCategory('switch mạng')">
+                    <div class="category-icon">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <h3>Switch Mạng</h3>
+                    <p>Switch Cisco, HPE, Managed/Unmanaged</p>
+                </div>
+                <div class="category-card" onclick="askAboutCategory('camera')">
+                    <div class="category-icon">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <h3>Camera An Ninh</h3>
+                    <p>IP Camera, NVR, DVR, Camera AI</p>
+                </div>
+                <div class="category-card" onclick="askAboutCategory('phần mềm')">
+                    <div class="category-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3>Phần Mềm</h3>
+                    <p>Windows, Office, Antivirus, CAD</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Tính Năng Chatbot AI</h2>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Tìm Kiếm Thông Minh</h3>
+                    <p>Tìm sản phẩm theo tên, thông số kỹ thuật, giá cả, hoặc nhu cầu sử dụng</p>
+                    <div class="feature-example" onclick="askExample('Tôi cần laptop gaming dưới 25 triệu')">
+                        <i class="fas fa-play-circle"></i> Xem ví dụ
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <h3>So Sánh Sản Phẩm</h3>
+                    <p>So sánh chi tiết 2-3 sản phẩm về cấu hình, giá cả, ưu nhược điểm</p>
+                    <div class="feature-example" onclick="askExample('So sánh Dell PowerEdge R740 và HP ProLiant DL380')">
+                        <i class="fas fa-play-circle"></i> Xem ví dụ
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3>Tư Vấn Chuyên Nghiệp</h3>
+                    <p>Gợi ý sản phẩm phù hợp dựa trên mục đích sử dụng và ngân sách</p>
+                    <div class="feature-example" onclick="askExample('Tư vấn giải pháp camera cho văn phòng 500m2')">
+                        <i class="fas fa-play-circle"></i> Xem ví dụ
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3>Thông Số Kỹ Thuật</h3>
+                    <p>Giải thích chi tiết cấu hình, tính năng, khả năng tương thích</p>
+                    <div class="feature-example" onclick="askExample('Switch 48 port managed là gì?')">
+                        <i class="fas fa-play-circle"></i> Xem ví dụ
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <h3>Báo Giá & Khuyến Mãi</h3>
+                    <p>Kiểm tra giá, tồn kho, chương trình khuyến mãi hiện hành</p>
+                    <div class="feature-example" onclick="askExample('Có khuyến mãi gì cho máy chủ không?')">
+                        <i class="fas fa-play-circle"></i> Xem ví dụ
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3>Hỗ Trợ Kỹ Thuật</h3>
+                    <p>Hướng dẫn cài đặt, khắc phục sự cố, chính sách bảo hành</p>
+                    <div class="feature-example" onclick="askExample('Hướng dẫn cài đặt Windows Server')">
+                        <i class="fas fa-play-circle"></i> Xem ví dụ
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Stats -->
+    <section class="stats">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">5000+</div>
+                    <div class="stat-label">Sản Phẩm</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">95%</div>
+                    <div class="stat-label">Độ Chính Xác</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Hoạt Động</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">&lt;3s</div>
+                    <div class="stat-label">Thời Gian Phản Hồi</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chat Widget -->
+    <div id="chatWidget" class="chat-widget">
+        <div class="chat-header">
+            <div class="chat-header-content">
+                <div class="bot-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="chat-header-text">
+                    <h3>TechStore AI Assistant</h3>
+                    <p class="chat-status">
+                        <span class="status-dot"></span> Đang hoạt động
+                    </p>
+                </div>
+            </div>
+            <button class="chat-close" onclick="closeChat()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div id="chatMessages" class="chat-messages">
+            <div class="message bot-message">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <p>Xin chào! Tôi là trợ lý AI của TechStore. Tôi có thể giúp bạn:</p>
+                    <ul>
+                        <li>🔍 Tìm kiếm sản phẩm IT</li>
+                        <li>⚖️ So sánh máy tính, máy chủ, switch, camera</li>
+                        <li>💡 Tư vấn giải pháp phù hợp</li>
+                        <li>💰 Báo giá và kiểm tra khuyến mãi</li>
+                        <li>🛠️ Hỗ trợ kỹ thuật</li>
+                    </ul>
+                    <p>Bạn cần tìm sản phẩm gì hôm nay?</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <div id="quickReplies" class="quick-replies">
+                <button class="quick-reply" onclick="sendQuickReply('Laptop gaming dưới 30 triệu')">
+                    <i class="fas fa-gamepad"></i> Laptop gaming
+                </button>
+                <button class="quick-reply" onclick="sendQuickReply('Máy chủ cho doanh nghiệp')">
+                    <i class="fas fa-building"></i> Máy chủ doanh nghiệp
+                </button>
+                <button class="quick-reply" onclick="sendQuickReply('Camera an ninh giá rẻ')">
+                    <i class="fas fa-camera"></i> Camera an ninh
+                </button>
+            </div>
+            <div class="chat-input-wrapper">
+                <input
+                    type="text"
+                    id="chatInput"
+                    class="chat-input"
+                    placeholder="Nhập câu hỏi của bạn..."
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button class="chat-send" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Toggle Button -->
+    <button id="chatToggle" class="chat-toggle" onclick="toggleChat()">
+        <i class="fas fa-comments"></i>
+        <span class="chat-badge">1</span>
+    </button>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 TechStore AI - Trợ Lý Tư Vấn Sản Phẩm IT Thông Minh</p>
+            <p>Powered by Rasa + OpenAI/Claude AI</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

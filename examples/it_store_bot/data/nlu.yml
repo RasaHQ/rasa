@@ -1,0 +1,193 @@
+version: "3.1"
+
+nlu:
+  - intent: greet
+    examples: |
+      - xin chào
+      - chào bạn
+      - hello
+      - hi
+      - chào
+      - hế lô
+      - chào buổi sáng
+      - chào buổi chiều
+      - chúc buổi tối tốt lành
+
+  - intent: goodbye
+    examples: |
+      - tạm biệt
+      - bye
+      - goodbye
+      - hẹn gặp lại
+      - cảm ơn tạm biệt
+      - thôi tôi đi đây
+      - ok bye
+
+  - intent: affirm
+    examples: |
+      - đúng
+      - đúng rồi
+      - ok
+      - được
+      - đồng ý
+      - chính xác
+      - yes
+      - yeah
+      - vâng
+
+  - intent: deny
+    examples: |
+      - không
+      - không phải
+      - sai rồi
+      - no
+      - không đúng
+      - chưa đúng
+      - không đồng ý
+
+  - intent: thank
+    examples: |
+      - cảm ơn
+      - cảm ơn bạn
+      - thanks
+      - thank you
+      - cảm ơn nhiều
+      - cảm ơn nhé
+      - thanks a lot
+
+  - intent: search_product
+    examples: |
+      - tìm [laptop](product_type)
+      - tìm [máy tính](product_type) gaming
+      - tôi cần [laptop](product_type) gaming dưới [25 triệu](price_range)
+      - tìm [máy chủ](product_type) [Dell](brand)
+      - cho tôi xem [camera](product_type) an ninh
+      - tìm [switch](product_type) mạng [48 port](specification)
+      - cần [laptop](product_type) cho [văn phòng](use_case)
+      - tìm [máy tính](product_type) cho [thiết kế đồ họa](use_case)
+      - có [laptop](product_type) [ASUS](brand) nào không
+      - tìm [server](product_type) dưới [100 triệu](price_range)
+      - [phần mềm](product_type) [Windows](product_name)
+      - tìm [máy chủ](product_type) cho [doanh nghiệp](use_case)
+      - [laptop](product_type) gaming tầm [30 triệu](price_range)
+      - [camera IP](product_type) [4MP](specification)
+      - [switch](product_type) [Cisco](brand) [24 port](specification)
+      - tìm [laptop](product_type) [Dell Latitude](product_name)
+      - [máy tính](product_type) chơi game
+      - [server](product_type) [HPE](brand)
+
+  - intent: compare_products
+    examples: |
+      - so sánh [Dell PowerEdge R740](product_name) và [HP ProLiant DL380](product_name)
+      - so sánh 2 [laptop](product_type) này
+      - khác nhau gì giữa [ASUS ROG](product_name) và [MSI](brand)
+      - [switch Cisco](product_type) so với [HPE](brand) thế nào
+      - so sánh [camera Hikvision](product_name) với [Dahua](brand)
+      - [Windows 11 Pro](product_name) khác [Windows 11 Home](product_name) gì
+      - nên mua [laptop](product_type) nào
+      - sản phẩm nào tốt hơn
+      - cho tôi so sánh [máy chủ](product_type) [Dell](brand) và [HP](brand)
+
+  - intent: ask_price
+    examples: |
+      - giá [laptop](product_type) này bao nhiêu
+      - [máy chủ Dell](product_name) giá bao nhiêu
+      - bao nhiêu tiền
+      - giá
+      - giá bán
+      - giá cả thế nào
+      - [camera](product_type) này bao nhiêu
+      - hỏi giá [switch](product_type)
+      - [Windows Server](product_name) giá bao nhiêu
+      - có khuyến mãi gì không
+      - giảm giá không
+
+  - intent: ask_specifications
+    examples: |
+      - thông số kỹ thuật
+      - cấu hình
+      - specs
+      - [laptop](product_type) này cấu hình thế nào
+      - [máy chủ](product_type) có bao nhiêu RAM
+      - [camera](product_type) độ phân giải bao nhiêu
+      - [switch](product_type) có mấy port
+      - chi tiết sản phẩm
+      - thông tin kỹ thuật
+      - [server](product_type) dùng CPU gì
+
+  - intent: ask_stock
+    examples: |
+      - còn hàng không
+      - có sẵn không
+      - còn không
+      - hết hàng chưa
+      - khi nào có hàng
+      - [laptop](product_type) này còn không
+      - [máy chủ](product_type) có sẵn không
+      - kiểm tra tồn kho
+
+  - intent: ask_warranty
+    examples: |
+      - bảo hành bao lâu
+      - chế độ bảo hành
+      - warranty
+      - thời gian bảo hành
+      - [laptop](product_type) bảo hành thế nào
+      - [máy chủ](product_type) có bảo hành không
+      - chính sách bảo hành
+
+  - intent: ask_promotion
+    examples: |
+      - có khuyến mãi gì không
+      - chương trình giảm giá
+      - promotion
+      - ưu đãi
+      - có giảm giá không
+      - khuyến mãi tháng này
+      - deal tốt nhất
+
+  - intent: technical_support
+    examples: |
+      - hướng dẫn cài đặt
+      - cách setup
+      - support
+      - hỗ trợ kỹ thuật
+      - cài [Windows Server](product_name) thế nào
+      - cấu hình [switch](product_type)
+      - kết nối [camera](product_type)
+      - sửa lỗi
+      - troubleshoot
+      - không hoạt động
+
+  - intent: recommend_product
+    examples: |
+      - tư vấn [laptop](product_type)
+      - gợi ý sản phẩm
+      - nên mua gì
+      - recommend
+      - [máy tính](product_type) nào tốt
+      - tư vấn giải pháp [camera](product_type) cho [văn phòng 500m2](use_case)
+      - [laptop](product_type) cho [sinh viên](use_case)
+      - [server](product_type) phù hợp cho [doanh nghiệp nhỏ](use_case)
+      - chọn [switch](product_type) gì cho [50 nhân viên](use_case)
+
+  - intent: ask_category
+    examples: |
+      - có những loại sản phẩm gì
+      - danh mục
+      - categories
+      - bán gì
+      - sản phẩm nào
+      - tôi muốn xem [laptop](product_type)
+      - xem [máy chủ](product_type)
+      - danh sách [camera](product_type)
+
+  - intent: out_of_scope
+    examples: |
+      - thời tiết hôm nay thế nào
+      - bạn tên gì
+      - bạn là ai
+      - đặt vé máy bay
+      - nhà hàng gần đây
+      - kể chuyện cười
+      - hát bài hát
