@@ -81,7 +81,7 @@ tracker_store = InMemoryTrackerStore(domain=domain, event_broker=pika_broker)
 ### Implementing a Pika Event Consumer
 
 You need to have a RabbitMQ server running, as well as another application
-that consumes the events. This consumer to needs to implement Pika's
+that consumes the events. This consumer too needs to implement Pika's
 `start_consuming()` method with a `callback` action. Here's a simple
 example:
 
