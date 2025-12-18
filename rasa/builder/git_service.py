@@ -9,7 +9,11 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 
 import structlog
 
-from rasa.builder.models import GitCommitInfo
+from rasa.builder.models import (
+    CommitDiffWithContentsResponse,
+    CommitFileContents,
+    GitCommitInfo,
+)
 
 structlogger = structlog.get_logger()
 
@@ -23,6 +27,12 @@ DEFAULT_COMMIT_INFO = GitCommitInfo(
 
 class GitOperationInProgressError(Exception):
     """Raised when a git operation is requested while another is in progress."""
+
+    pass
+
+
+class CommitNotFoundError(Exception):
+    """Raised when a commit is not found in the repository."""
 
     pass
 
@@ -316,40 +326,146 @@ class GitService:
             )
             return new_sha
 
-    async def get_commit_diff(
-        self, commit_sha: str, file_path: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """Get diff for a specific commit.
-
-        Args:
-            commit_sha: SHA of the commit
-            file_path: Optional specific file to get diff for
-
-        Returns:
-            Dictionary with before/after content and metadata
-        """
+    async def get_commit_diff_with_contents(
+        self, commit_sha: str
+    ) -> CommitDiffWithContentsResponse:
+        """Get commit diff with contents."""
+        # First verify the commit exists
         try:
-            diff_output = await self._get_commit_diff_output(commit_sha, file_path)
-            commit_info = await self._get_commit_info(commit_sha)
-
-            return {
-                "commit": commit_info,
-                "diff": diff_output or "",
-                "file_path": file_path,
-            }
+            if not await self._commit_exists(commit_sha):
+                structlogger.error(
+                    "git_service.get_commit_diff_with_content_not_found",
+                    commit_sha=commit_sha,
+                )
+                raise CommitNotFoundError(
+                    f"Commit {commit_sha} does not exist in this repository"
+                )
+            parent_sha = await self._get_parent_sha(commit_sha)
+            files = await self._get_changed_files(commit_sha)
+            file_diffs: dict[str, CommitFileContents] = await self._build_file_diffs(
+                files, parent_sha, commit_sha
+            )
+            return CommitDiffWithContentsResponse(
+                files=file_diffs,
+            )
         except subprocess.CalledProcessError as e:
-            structlogger.error("git_service.get_commit_diff_failed", error=str(e))
+            structlogger.error(
+                "git_service.get_commit_diff_with_content_failed", error=str(e)
+            )
             raise
 
-    async def _get_commit_diff_output(
-        self, commit_sha: str, file_path: Optional[str] = None
-    ) -> Optional[str]:
-        """Get the diff output for a commit."""
-        cmd = ["show", "--format=", commit_sha]
-        if file_path:
-            cmd.extend(["--", file_path])
+    async def _build_file_diffs(
+        self, files: list[tuple[str, str, str | None]], parent_sha: str, commit_sha: str
+    ) -> dict[str, CommitFileContents]:
+        file_diffs: dict[str, CommitFileContents] = {}
+        for status, old_path, new_path in files:
+            path = new_path or old_path
 
-        return await self.run_git_command(cmd, check_output=True)
+            original_path = None
+            modified_path = None
+            original = ""
+            modified = ""
+
+            # If no parent (initial commit), treat all files as added
+            if not parent_sha:
+                original = ""
+                modified = await self._git_show(commit_sha, path) or ""
+            elif status.startswith("R"):  # rename
+                if status == "R100":
+                    original = await self._git_show(parent_sha, old_path) or ""
+                    modified = original
+                else:
+                    original = await self._git_show(parent_sha, old_path) or ""
+                    modified = await self._git_show(commit_sha, new_path) or ""
+                original_path = old_path
+                modified_path = new_path
+                status = "R"
+            elif status == "D":  # deleted
+                original = await self._git_show(parent_sha, old_path) or ""
+                modified = ""
+            elif status == "A":  # added
+                original = ""
+                modified = await self._git_show(commit_sha, path) or ""
+            elif status == "M":  # modified
+                original = await self._git_show(parent_sha, old_path) or ""
+                modified = await self._git_show(commit_sha, path) or ""
+            else:  # others are not supported
+                structlogger.error(
+                    "git_service.get_commit_diff_with_contents_unsupported_status",
+                    status=status,
+                    commit_sha=commit_sha,
+                    parent_sha=parent_sha,
+                    old_path=old_path,
+                    new_path=new_path,
+                )
+                raise ValueError(
+                    f"Unsupported status: {status} for file {path} "
+                    f"in commit {commit_sha}"
+                )
+            file_diffs[path] = CommitFileContents(
+                status=status,
+                content_original=original,
+                content_modified=modified,
+                path_original=original_path,
+                path_modified=modified_path,
+            )
+        return file_diffs
+
+    async def _commit_exists(self, commit_sha: str) -> bool:
+        """Check if a commit exists in the repository."""
+        try:
+            await self.run_git_command(
+                ["cat-file", "-e", commit_sha], check_output=False
+            )
+            return True
+        except subprocess.CalledProcessError:
+            return False
+
+    async def _get_parent_sha(self, commit_sha: str) -> str:
+        """Get parent SHA of a commit. Returns empty string if no parent exists."""
+        try:
+            result = await self.run_git_command(
+                ["rev-parse", f"{commit_sha}^1"], check_output=True
+            )
+            return (result or "").strip()
+        except subprocess.CalledProcessError:
+            # Commit has no parent (initial commit)
+            return ""
+
+    async def _get_changed_files(
+        self, commit_sha: str
+    ) -> List[tuple[str, str, str | None]]:
+        """Get changed files for a commit."""
+        diff_tree_result = await self.run_git_command(
+            [
+                "diff-tree",
+                "--root",
+                "--no-commit-id",
+                "--name-status",
+                "-r",
+                "-M",
+                commit_sha,
+            ],
+            check_output=True,
+        )
+        if not diff_tree_result:
+            return []
+
+        files: list[tuple[str, str, str | None]] = []
+        for line in diff_tree_result.strip().splitlines():
+            parts = line.split("\t")
+            # R0-100, A, M, D
+            status = parts[0]
+            if status.startswith("R"):  # R0-100 old new
+                files.append((status, parts[1], parts[2]))
+            else:
+                files.append((status, parts[1], None))
+        return files
+
+    async def _git_show(self, sha: str, path: str) -> Optional[str]:
+        if not sha or not path:
+            return ""
+        return await self.run_git_command(["show", f"{sha}:{path}"], check_output=True)
 
     async def _get_commit_info(self, commit_sha: str) -> Dict[str, Any]:
         """Get commit information (author, timestamp, message)."""
@@ -514,6 +630,7 @@ class GitService:
             "show",
             "log",
             "diff",
+            "diff-tree",
             "status",
             "branch",
             "rev-parse",

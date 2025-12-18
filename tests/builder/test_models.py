@@ -3,6 +3,8 @@ from typing import Any, Dict
 import pytest
 
 from rasa.builder.models import (
+    CommitDiffWithContentsResponse,
+    CommitFileContents,
     JobStatus,
     JobStatusEvent,
     RestoreFromBackupRequest,
@@ -175,3 +177,86 @@ class TestRestoreFromBackupRequest:
     def test_presigned_url_request_invalid_url_fails(self):
         with pytest.raises(ValueError, match="must be a valid HTTP/HTTPS URL"):
             RestoreFromBackupRequest(presigned_url="not-a-valid-url")
+
+
+class TestCommitFileContents:
+    """Test CommitFileContents model validation."""
+
+    def test_valid_commit_file_contents(self):
+        valid_commit_file_contents = CommitFileContents(
+            status="R",
+            content_original="original content",
+            content_modified="modified content",
+            path_original="path/to/original.txt",
+            path_modified="path/to/modified.txt",
+        )
+        assert valid_commit_file_contents.status == "R"
+        assert valid_commit_file_contents.content_original == "original content"
+        assert valid_commit_file_contents.content_modified == "modified content"
+        assert valid_commit_file_contents.path_original == "path/to/original.txt"
+        assert valid_commit_file_contents.path_modified == "path/to/modified.txt"
+
+    def test_invalid_status(self):
+        with pytest.raises(
+            ValueError, match="Invalid status: X, must be one of R, A, M, D"
+        ):
+            CommitFileContents(
+                status="X",
+                content_original="original content",
+                content_modified="modified content",
+                path_original="path/to/original.txt",
+                path_modified="path/to/modified.txt",
+            )
+
+    def test_optional_path_defaults_to_none(self):
+        valid_commit_file_contents = CommitFileContents(
+            status="D",
+            content_original="original content",
+            content_modified="modified content",
+        )
+        assert valid_commit_file_contents.path_original is None
+        assert valid_commit_file_contents.path_modified is None
+
+    @pytest.mark.parametrize(
+        "status",
+        ["R", "A", "M", "D"],
+        ids=["Renamed", "Added", "Modified", "Deleted"],
+    )
+    def test_all_valid_statuses(self, status: str):
+        """Test that all valid statuses are accepted."""
+        commit_file_contents = CommitFileContents(
+            status=status,
+            content_original="original",
+            content_modified="modified",
+        )
+        assert commit_file_contents.status == status
+
+
+class TestCommitDiffWithContentsResponse:
+    """Test CommitDiffWithContentsResponse model."""
+
+    def test_valid_response_with_files(self):
+        """Test creating response with multiple files."""
+        files = {
+            "domain.yml": CommitFileContents(
+                status="M",
+                content_original="old content",
+                content_modified="new content",
+            ),
+            "flows.yml": CommitFileContents(
+                status="A",
+                content_original="",
+                content_modified="new flow content",
+            ),
+        }
+        response = CommitDiffWithContentsResponse(files=files)
+        assert len(response.files) == 2
+        assert "domain.yml" in response.files
+        assert "flows.yml" in response.files
+        assert response.files["domain.yml"].status == "M"
+        assert response.files["flows.yml"].status == "A"
+
+    def test_empty_files_dict(self):
+        """Test creating response with empty files dict."""
+        response = CommitDiffWithContentsResponse(files={})
+        assert response.files == {}

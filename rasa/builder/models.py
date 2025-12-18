@@ -88,6 +88,38 @@ class GitCommitInfo(BaseModel):
     message: Optional[str] = Field(None, description="Message of the commit")
 
 
+class CommitFileContents(BaseModel):
+    """Original and modified contents of a file in a commit."""
+
+    status: str = Field(..., description="Status of the file")
+    content_original: str = Field(..., description="Original file content")
+    content_modified: str = Field(..., description="Modified file content")
+    path_original: str | None = Field(
+        None, description="Original file path (Only for renamed files)"
+    )
+    path_modified: str | None = Field(
+        None, description="Modified file path (Only for renamed files)"
+    )
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        if v not in ["R", "A", "M", "D"]:
+            raise ValueError(f"Invalid status: {v}, must be one of R, A, M, D")
+        return v
+
+
+class CommitDiffWithContentsResponse(BaseModel):
+    """Response model for commit diff with file contents."""
+
+    files: Dict[str, CommitFileContents] = Field(
+        ...,
+        description=(
+            "Dictionary mapping file paths to their original and " "modified contents"
+        ),
+    )
+
+
 class RestoreFromBackupRequest(BaseModel):
     """Request model for backup-to-bot endpoint."""
 

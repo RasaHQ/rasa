@@ -9,8 +9,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from rasa.builder.git_service import GitOperationInProgressError, GitService
-from rasa.builder.models import GitCommitInfo
+from rasa.builder.git_service import (
+    CommitNotFoundError,
+    GitOperationInProgressError,
+    GitService,
+)
+from rasa.builder.models import CommitFileContents, GitCommitInfo
 
 
 class TestGitService:
@@ -217,21 +221,377 @@ class TestGitService:
         assert result == "newcommitsha"
 
     @pytest.mark.asyncio
-    async def test_get_commit_diff(
+    async def test_commit_exists_returns_true(
         self, git_service: GitService, mock_git_command_async: MagicMock
     ) -> None:
-        """Test getting commit diff."""
-        mock_git_command_async.side_effect = [
-            "diff content here",  # show command
-            "abc123def456|user|user@example.com|1640995200|Test commit",
+        """Test _commit_exists returns True when commit exists."""
+        mock_git_command_async.return_value = None
+
+        result = await git_service._commit_exists("abc123def456")
+
+        assert result is True
+        mock_git_command_async.assert_called_once_with(
+            ["cat-file", "-e", "abc123def456"], check_output=False
+        )
+
+    @pytest.mark.asyncio
+    async def test_commit_exists_returns_false(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test _commit_exists returns False when commit doesn't exist."""
+        mock_git_command_async.side_effect = subprocess.CalledProcessError(1, "git")
+
+        result = await git_service._commit_exists("nonexistent")
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_get_parent_sha_returns_empty_string(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test getting parent SHA when commit has no parent."""
+        mock_git_command_async.side_effect = subprocess.CalledProcessError(1, "git")
+
+        result = await git_service._get_parent_sha("abc123def456")
+
+        assert result == ""
+
+        assert mock_git_command_async.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_get_parent_sha_returns_empty_string2(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test getting parent SHA when commit has no parent."""
+        mock_git_command_async.return_value = None
+
+        result = await git_service._get_parent_sha("abc123def456")
+
+        assert result == ""
+
+        assert mock_git_command_async.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_get_parent_sha_returns_parent_sha(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test getting parent SHA when commit has a parent."""
+        mock_parent_sha = "abc123def456"
+        mock_git_command_async.return_value = mock_parent_sha
+
+        result = await git_service._get_parent_sha("12312312331")
+
+        assert result == mock_parent_sha
+
+        assert mock_git_command_async.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_get_changes_files_when_output_is_none(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test getting changed files when output is empty."""
+        mock_git_command_async.return_value = None
+
+        result = await git_service._get_changed_files("asdasdsdad")
+
+        assert result == []
+
+        assert mock_git_command_async.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_get_changes_files_when_output_is_rich(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test getting changed files when output is rich in scenarios M, Rx, A, D."""
+        mock_git_command_async.return_value = """D\tREADME.md
+R054\tscrpt.sh\tscrpt-renamed.sh
+M\tdemo.html
+A\ttest.added.ts"""
+
+        result = await git_service._get_changed_files("asdasdsdad")
+
+        assert result == [
+            ("D", "README.md", None),
+            ("R054", "scrpt.sh", "scrpt-renamed.sh"),
+            ("M", "demo.html", None),
+            ("A", "test.added.ts", None),
         ]
 
-        diff_data = await git_service.get_commit_diff("abc123def456")
+        assert mock_git_command_async.call_count == 1
 
-        assert diff_data["diff"] == "diff content here"
-        assert diff_data["commit"]["sha"] == "abc123def456"
-        assert diff_data["commit"]["author"] == "user"
-        assert diff_data["commit"]["message"] == "Test commit"
+    @pytest.mark.asyncio
+    async def test_build_file_diffs_when_files_are_empty(
+        self, git_service: GitService
+    ) -> None:
+        """Test building file diffs when files are empty."""
+        result = await git_service._build_file_diffs([], "abc123123123", "abc123def456")
+
+        assert result == {}
+
+    @pytest.mark.asyncio
+    async def test_build_file_diffs_when_parent_sha_is_empty(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test building file diffs when parent SHA is empty.
+
+        This is the case of an initial commit, when all files are added.
+        """
+        files = [
+            ("A", "file.txt", None),
+            ("A", "path/to/file2.txt", None),
+            ("A", "path/to/file3.txt", None),
+        ]
+        mock_git_command_async.side_effect = [
+            "New file content",
+            "New file2 content",
+            "New file3 content",
+        ]
+        mock_commit_sha = "abc123def456"
+        result = await git_service._build_file_diffs(files, "", mock_commit_sha)
+
+        assert result == {
+            "file.txt": CommitFileContents(
+                status="A",
+                content_original="",
+                content_modified="New file content",
+            ),
+            "path/to/file2.txt": CommitFileContents(
+                status="A",
+                content_original="",
+                content_modified="New file2 content",
+            ),
+            "path/to/file3.txt": CommitFileContents(
+                status="A",
+                content_original="",
+                content_modified="New file3 content",
+            ),
+        }
+
+        assert mock_git_command_async.call_count == 3
+        assert mock_git_command_async.call_args_list[0].args[0] == [
+            "show",
+            f"{mock_commit_sha}:file.txt",
+        ]
+        assert mock_git_command_async.call_args_list[1].args[0] == [
+            "show",
+            f"{mock_commit_sha}:path/to/file2.txt",
+        ]
+        assert mock_git_command_async.call_args_list[2].args[0] == [
+            "show",
+            f"{mock_commit_sha}:path/to/file3.txt",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_build_file_diffs_when_commit_sha_is_empty(
+        self, git_service: GitService
+    ) -> None:
+        """Test building file diffs when commit SHA is empty."""
+        files = [("A", "file.txt", None)]
+        result = await git_service._build_file_diffs(files, "abc123123123", "")
+
+        assert result == {
+            "file.txt": CommitFileContents(
+                status="A",
+                content_original="",
+                content_modified="",
+            ),
+        }
+
+    @pytest.mark.asyncio
+    async def test_build_file_diffs_when_files_are_unsupported(
+        self, git_service: GitService
+    ) -> None:
+        """Test building file diffs when files are unsupported."""
+        # Unsupported status is X
+        files = [("X", "file.txt", None)]
+
+        mock_commit_sha = "abc123def456"
+
+        with pytest.raises(ValueError) as exc_info:
+            await git_service._build_file_diffs(files, "abc123123123", mock_commit_sha)
+
+        assert (
+            f"Unsupported status: {files[0][0]} "
+            f"for file file.txt in commit {mock_commit_sha}" in str(exc_info.value)
+        )
+
+    @pytest.mark.asyncio
+    async def test_build_file_diffs_when_files_are_rich(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test building file diffs when files are rich.
+
+        These tests should have R, A, M, D statuses to cover for
+        file rename, add, modify and delete scenarios.
+        """
+        files = [
+            ("R100", "file.txt", "file-renamed.txt"),
+            ("A", "file-added.txt", None),
+            ("M", "file-modified.txt", None),
+            ("D", "file-deleted.txt", None),
+        ]
+        mock_parent_sha = "abc123123123"
+        mock_commit_sha = "abc123def456"
+
+        mock_git_command_async.side_effect = [
+            # rename mock
+            "Original file content",
+            # add mock
+            "Added file content",
+            # modify mock
+            "Before modified file content",
+            "After modified file content",
+            # delete mock
+            "Deleted file content",
+        ]
+
+        result = await git_service._build_file_diffs(
+            files, mock_parent_sha, mock_commit_sha
+        )
+
+        assert result == {
+            "file-renamed.txt": CommitFileContents(
+                status="R",
+                content_original="Original file content",
+                content_modified="Original file content",
+                path_original="file.txt",
+                path_modified="file-renamed.txt",
+            ),
+            "file-added.txt": CommitFileContents(
+                status="A",
+                content_original="",
+                content_modified="Added file content",
+                path_original=None,
+                path_modified=None,
+            ),
+            "file-modified.txt": CommitFileContents(
+                status="M",
+                content_original="Before modified file content",
+                content_modified="After modified file content",
+                path_original=None,
+                path_modified=None,
+            ),
+            "file-deleted.txt": CommitFileContents(
+                status="D",
+                content_original="Deleted file content",
+                content_modified="",
+                path_original=None,
+                path_modified=None,
+            ),
+        }
+
+        assert mock_git_command_async.call_count == 5
+        assert mock_git_command_async.call_args_list[0].args[0] == [
+            "show",
+            f"{mock_parent_sha}:file.txt",
+        ]
+        assert mock_git_command_async.call_args_list[1].args[0] == [
+            "show",
+            f"{mock_commit_sha}:file-added.txt",
+        ]
+        assert mock_git_command_async.call_args_list[2].args[0] == [
+            "show",
+            f"{mock_parent_sha}:file-modified.txt",
+        ]
+        assert mock_git_command_async.call_args_list[3].args[0] == [
+            "show",
+            f"{mock_commit_sha}:file-modified.txt",
+        ]
+        assert mock_git_command_async.call_args_list[4].args[0] == [
+            "show",
+            f"{mock_parent_sha}:file-deleted.txt",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_build_file_diffs_when_rename_is_not_100(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test building file diffs when files are rich.
+
+        This test should have R less 100% similarity status
+        to cover for file rename with file modifications.
+        """
+        files = [("R75", "domain/file.txt", "domain/file-renamed.txt")]
+        mock_parent_sha = "abc123123123"
+        mock_commit_sha = "abc123def456"
+
+        # For renames other than R100 we check diff for new and old path
+        # therefore now we have to calls to git show
+        mock_git_command_async.side_effect = [
+            "Original file content",
+            "Modified file content",
+        ]
+        result = await git_service._build_file_diffs(
+            files, mock_parent_sha, mock_commit_sha
+        )
+
+        assert result == {
+            "domain/file-renamed.txt": CommitFileContents(
+                status="R",
+                content_original="Original file content",
+                content_modified="Modified file content",
+                path_original="domain/file.txt",
+                path_modified="domain/file-renamed.txt",
+            ),
+        }
+
+        assert mock_git_command_async.call_count == 2
+        assert mock_git_command_async.call_args_list[0].args[0] == [
+            "show",
+            f"{mock_parent_sha}:domain/file.txt",
+        ]
+        assert mock_git_command_async.call_args_list[1].args[0] == [
+            "show",
+            f"{mock_commit_sha}:domain/file-renamed.txt",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_get_commit_diff_with_contents_when_commit_does_not_exist(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test getting commit diff with contents."""
+        mock_git_command_async.side_effect = subprocess.CalledProcessError(1, "git")
+
+        commit_sha = "abc123def456"
+
+        with pytest.raises(CommitNotFoundError) as exc_info:
+            await git_service.get_commit_diff_with_contents(commit_sha)
+
+        assert commit_sha in str(exc_info.value)
+        assert "does not exist" in str(exc_info.value)
+
+        assert mock_git_command_async.call_count == 1
+        assert mock_git_command_async.call_args[0][0] == ["cat-file", "-e", commit_sha]
+
+    @pytest.mark.asyncio
+    async def test_get_commit_diff_with_contents_when_build_diff_fails(
+        self, git_service: GitService
+    ) -> None:
+        """Test getting commit diff with contents when build diff fails."""
+        commit_sha = "abc123def456"
+
+        # mock tested functions
+        with (
+            patch.object(
+                git_service, "_commit_exists", return_value=True
+            ) as mock_commit_exists,
+            patch.object(
+                git_service, "_get_parent_sha", return_value="abc123123123"
+            ) as mock_get_parent_sha,
+            patch.object(
+                git_service, "_get_changed_files", side_effect=ValueError("Test error")
+            ) as mock_get_changed_files,
+        ):
+            with pytest.raises(ValueError) as exc_info:
+                await git_service.get_commit_diff_with_contents(commit_sha)
+
+            assert "Test error" in str(exc_info.value)
+            assert mock_commit_exists.call_count == 1
+            assert mock_commit_exists.call_args[0][0] == commit_sha
+            assert mock_get_parent_sha.call_count == 1
+            assert mock_get_parent_sha.call_args[0][0] == commit_sha
+            assert mock_get_changed_files.call_count == 1
+            assert mock_get_changed_files.call_args[0][0] == commit_sha
 
     @pytest.mark.asyncio
     async def test_get_commit_info(

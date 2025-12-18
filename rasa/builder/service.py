@@ -47,7 +47,7 @@ from rasa.builder.copilot.models import (
     TextContent,
 )
 from rasa.builder.download import create_bot_project_archive
-from rasa.builder.git_service import DEFAULT_COMMIT_INFO
+from rasa.builder.git_service import DEFAULT_COMMIT_INFO, CommitNotFoundError
 from rasa.builder.guardrails.constants import (
     BLOCK_SCOPE_PROJECT,
     BLOCK_SCOPE_USER,
@@ -75,6 +75,7 @@ from rasa.builder.models import (
     BotData,
     BotFiles,
     ChangeBranchRequest,
+    CommitDiffWithContentsResponse,
     GitCommitInfo,
     GitStatusResponse,
     JobCreateResponse,
@@ -2035,28 +2036,26 @@ async def handle_rollback_to_commit(request: Request, commit_sha: str) -> HTTPRe
         )
 
 
-@bp.route("/commits/<commit_sha>/diff", methods=["GET"])
-@openapi.summary("Get commit diff")
+@bp.route("/commits/<commit_sha>/diff-with-contents", methods=["GET"])
+@openapi.summary("Get commit diff with contents")
 @openapi.description(
-    "Returns the diff for a specific commit, showing what changes were made."
+    "Returns all original and modified file contents for a specific commit."
 )
 @openapi.tag("git")
-@openapi.parameter(
-    "file_path",
-    description="Optional specific file to get diff for",
-    _in="query",
-    required=False,
-    schema=str,
-)
 @openapi.response(
     200,
-    {"application/json": {"commit": dict, "diff": str, "file_path": str}},
-    description="Commit diff retrieved successfully",
+    {"application/json": model_to_schema(CommitDiffWithContentsResponse)},
+    description="Commit diff with contents retrieved successfully",
 )
 @openapi.response(
     400,
     {"application/json": model_to_schema(ApiErrorResponse)},
     description="Invalid commit SHA",
+)
+@openapi.response(
+    404,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Commit not found",
 )
 @openapi.response(
     500,
@@ -2072,24 +2071,42 @@ async def handle_rollback_to_commit(request: Request, commit_sha: str) -> HTTPRe
     required=False,
     schema=str,
 )
-async def handle_get_commit_diff(request: Request, commit_sha: str) -> HTTPResponse:
-    """Handle get commit diff requests."""
+async def handle_get_commit_diff_with_contents(
+    request: Request, commit_sha: str
+) -> HTTPResponse:
+    """Handle get commit diff with contents requests."""
     try:
+        # Validate commit SHA format
+        if not commit_sha or len(commit_sha) < 7:
+            return response.json(
+                ApiErrorResponse(
+                    error="Invalid commit SHA", details={"commit_sha": commit_sha}
+                ).model_dump(),
+                status=400,
+            )
+
         project_generator = get_project_generator(request)
-        file_path = request.args.get("file_path")
-        diff_data = await project_generator.git_service.get_commit_diff(
-            commit_sha, file_path
+        diff_data = await project_generator.git_service.get_commit_diff_with_contents(
+            commit_sha
         )
-        return response.json(diff_data)
+        return response.json(diff_data.model_dump())
+    except CommitNotFoundError as exc:
+        return response.json(
+            ApiErrorResponse(
+                error="Commit not found",
+                details={"error": str(exc), "commit_sha": commit_sha},
+            ).model_dump(),
+            status=HTTPStatus.NOT_FOUND,
+        )
     except Exception as exc:
         capture_exception_with_context(
             exc,
-            "bot_builder_service.get_commit_diff.unexpected_error",
-            tags={"endpoint": "/api/commits/<commit_sha>/diff"},
+            "bot_builder_service.get_commit_diff_with_contents.unexpected_error",
+            tags={"endpoint": "/api/commits/<commit_sha>/diff-with-contents"},
         )
         return response.json(
             ApiErrorResponse(
-                error="Failed to get commit diff",
+                error="Failed to get commit diff with contents",
                 details={"error": str(exc)},
             ).model_dump(),
             status=HTTPStatus.INTERNAL_SERVER_ERROR,
