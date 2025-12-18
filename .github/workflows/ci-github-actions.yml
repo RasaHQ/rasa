@@ -29,7 +29,7 @@ jobs:
           sudo chmod +x /usr/local/bin/gomplate
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
