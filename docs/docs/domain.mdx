@@ -412,8 +412,11 @@ information before it is able to predict the weather.
 * **Description**
 
   Slots of type `any` are always ignored during conversations. The property
-  `influence_conversation` cannot be set to `true` for this slot type. If you want to
-  store a custom data structure which should influence the conversation, use a
+  `influence_conversation` cannot be set to `true` for this slot type. 
+  
+  In stories, while annotating slots of type `any` that are in a list or dictionary format, include the set slot value inside single quotes. See example here in [stories](./writing-stories.mdx).
+  
+  If you want to store a custom data structure which should influence the conversation, use a
   [custom slot type](domain.mdx#custom-slot-types).
 
 #### Custom Slot Types
