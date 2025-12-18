@@ -37,6 +37,11 @@ def create_jieba(config: Optional[Dict] = None) -> JiebaTokenizer:
             ["Micheal", "你好", "吗", "？"],
             [(0, 7), (7, 9), (9, 10), (10, 11)],
         ),
+        (
+            "安装 rasa 应用",
+            ["安装", "rasa", "应用"],
+            [(0, 2), (3, 7), (8, 10)],
+        ),
     ],
 )
 def test_jieba(text, expected_tokens, expected_indices):
