@@ -3,11 +3,10 @@ updates:
   - package-ecosystem: pip
     directory: "/"
     schedule:
-      interval: weekly
-      time: "13:00"
+      interval: monthly
     pull-request-branch-name:
       separator: "-"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     labels:
       - type:dependencies
       - release:main
@@ -22,12 +21,10 @@ updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
-      day: monday
-      time: "12:00"
+      interval: monthly
     pull-request-branch-name:
       separator: "-"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     reviewers:
       - RasaHQ/infrastructure-squad
     labels:
