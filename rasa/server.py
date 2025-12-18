@@ -523,7 +523,7 @@ def add_root_route(app: Sanic) -> None:
     @app.get("/")
     async def hello(request: Request) -> HTTPResponse:
         """Check if the server is running and responds with the version."""
-        return response.text("Hello from Rasa: " + rasa.__version__)
+        return response.text("")
 
 
 def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
