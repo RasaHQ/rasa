@@ -9,6 +9,12 @@ description: Build a Rasa Chat Bot on Rocketchat
 
 **How to set up Rocket.Chat:**
 
+:::info Rocketchat Marketplace
+
+For Rocket.Chat newest 6.x version, you can also use the official app in the Rocket.Chat Marketplace. For more info, see [Rocket.Chat Rasa App Guide](https://docs.rocket.chat/extend-rocket.chat-capabilities/rocket.chat-marketplace/rocket.chat-public-apps-guides/omnichannel-apps/rasa-app).
+
+:::
+
 1. Create a user that will be used to post messages, and set its
    credentials at credentials file.
 
@@ -42,7 +48,6 @@ rocketchat:
   password: "YOUR_PASSWORD"
   server_url: "https://demo.rocket.chat"
 ```
-
 
 Restart your Rasa server
 to make the new channel endpoint available for RocketChat to send messages to.
