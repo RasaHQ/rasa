@@ -126,17 +126,31 @@ jobs:
           - nlu
           - full
           - anonymisation
+          - full-with-spacy-mitie-and-transformer-models
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       # Check if cached Rasa exists
       - name: Check Rasa cache
+        if: ${{ matrix.installation != 'full-with-spacy-mitie-and-transformer-models' }}
         id: cached-rasa
         uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: ${{ github.workspace }}/.venv
           key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+          lookup-only: true
+          fail-on-cache-miss: true
+        continue-on-error: true
+
+      # Check if cached Rasa (with Spacy, Mitie and Transformer models) exists
+      - name: Check Rasa (with Spacy, Mitie and Transformer models) cache
+        if: ${{ matrix.installation == 'full-with-spacy-mitie-and-transformer-models' }}
+        id: cached-rasa-with-spacy-mitie-and-transformer-models
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: ${{ github.workspace }}/.venv
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile') }}
           lookup-only: true
           fail-on-cache-miss: true
         continue-on-error: true
@@ -177,12 +191,38 @@ jobs:
           make install-monitoring | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
 
+      - name: Setup Poetry
+        if: ${{ steps.cached-rasa-with-spacy-mitie-and-transformer-models.outcome == 'failure' && matrix.installation == 'full-with-spacy-mitie-and-transformer-models' }}
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          LOAD_CACHE: 'false'
+
+      # Install if no cache hits
+      - name: Install Rasa with full installation, and Spacy, Mitie and Transformer models included also
+        if: ${{ steps.cached-rasa-with-spacy-mitie-and-transformer-models.outcome == 'failure' && matrix.installation == 'full-with-spacy-mitie-and-transformer-models' }}
+        run: |
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-spacy
+          make prepare-mitie
+          make prepare-transformers
+
+
       # Save new Cache if no existing cache hits
       - name: Save Rasa
-        if: steps.cached-rasa.outcome == 'failure'
+        if: ${{ matrix.installation != 'full-with-spacy-mitie-and-transformer-models' && steps.cached-rasa.outcome == 'failure' }}
         uses: WarpBuilds/cache/save@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+          path: ${{ github.workspace }}/.venv
+
+      # Save new Cache if no existing cache hits
+      - name: Save Rasa (with Spacy, Mitie and Transformer models) cache
+        if: ${{ matrix.installation == 'full-with-spacy-mitie-and-transformer-models' && steps.cached-rasa-with-spacy-mitie-and-transformer-models.outcome == 'failure' }}
+        uses: WarpBuilds/cache/save@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile') }}
           path: ${{ github.workspace }}/.venv
 
   quality:
@@ -1891,6 +1931,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ matrix.python-version }}
+          RASA_INSTALL_GROUP: 'full-with-spacy-mitie-and-transformer-models'
 
       - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
         id: linux-dependencies
@@ -2085,6 +2126,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ matrix.python-version }}
+          RASA_INSTALL_GROUP: 'full-with-spacy-mitie-and-transformer-models'
 
       - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
         id: linux-dependencies

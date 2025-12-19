@@ -50,16 +50,20 @@ runs:
         path: ${{ github.workspace }}/.venv
         key: rasa-${{ inputs.RASA_INSTALL_GROUP }}-install-${{ runner.os }}-${{ inputs.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
 
-    # Install if no cache hits. This is a workaround for the fact that a cache could get evicted.
-    - name: Install Rasa dependencies
-      if: ${{ steps.cached-poetry-dependencies.outputs.cache-hit != 'true' }}
-      run: |
-        if [ "${{ env.RASA_INSTALL_GROUP }}" = "default" ]; then
-          make install | tee .output
-        else
-          make install-${{ env.RASA_INSTALL_GROUP }} | tee .output
-        fi
-        if grep 'The lock file is not up to date' .output; then exit 1; fi
-      shell: bash
-      env:
-        RASA_INSTALL_GROUP: ${{ inputs.RASA_INSTALL_GROUP }}
+    # Load cached Rasa if exists, save cache after job on miss
+    - name: Cache Rasa
+      id: cached-rasa
+      if: ${{ inputs.LOAD_CACHE == 'true' && inputs.RASA_INSTALL_GROUP != 'full-with-spacy-mitie-and-transformer-models' }}
+      uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+      with:
+        path: ${{ github.workspace }}/.venv
+        key: rasa-${{ inputs.RASA_INSTALL_GROUP }}-install-${{ runner.os }}-${{ inputs.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+
+    # Load cached Rasa (with Spacy, Mitie and Transformer models) if exists, save cache after job on miss
+    - name: Cache Rasa with Spacy, Mitie and Transformer models
+      id: cached-rasa-with-spacy-mitie-and-transformer-models
+      if: ${{ inputs.LOAD_CACHE == 'true' && inputs.RASA_INSTALL_GROUP == 'full-with-spacy-mitie-and-transformer-models' }}
+      uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+      with:
+        path: ${{ github.workspace }}/.venv
+        key: rasa-${{ inputs.RASA_INSTALL_GROUP }}-install-${{ runner.os }}-${{ inputs.PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile') }}

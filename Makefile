@@ -232,19 +232,19 @@ test-policies: test-marker  ## Run policies tests
 
 test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
 test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
-test-nlu-featurizers: prepare-spacy prepare-mitie prepare-transformers test-marker  ## Run nlu featurizers tests
+test-nlu-featurizers: test-marker  ## Run nlu featurizers tests
 
 test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
-test-nlu-predictors: prepare-spacy prepare-mitie test-marker  ## Run nlu predictors tests
+test-nlu-predictors: test-marker  ## Run nlu predictors tests
 
 test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
-test-full-model-training: prepare-spacy prepare-mitie prepare-transformers test-marker  ## Run full model training tests
+test-full-model-training: test-marker  ## Run full model training tests
 
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
-test-other-unit-tests: prepare-spacy prepare-mitie test-marker  ## Run other unit tests
+test-other-unit-tests: test-marker  ## Run other unit tests
 
 test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
 test-performance: DD_ARGS := $(or $(DD_ARGS),)
@@ -252,7 +252,7 @@ test-performance: test-marker  ## Run performance tests
 
 test-flaky: PYTEST_MARKER=flaky and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
 test-flaky: DD_ARGS := $(or $(DD_ARGS),)
-test-flaky: prepare-spacy prepare-mitie test-marker  ## Run flaky tests
+test-flaky: test-marker  ## Run flaky tests
 
 test-acceptance: PYTEST_MARKER=acceptance and (not flaky) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
 test-acceptance: DD_ARGS := $(or $(DD_ARGS),)
