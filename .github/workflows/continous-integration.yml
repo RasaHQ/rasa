@@ -1699,9 +1699,9 @@ jobs:
 
   unit-test-policies:
     name: Run Policies Unit Tests
-    runs-on: warp-ubuntu-latest-x64-4x
+    runs-on: warp-ubuntu-latest-x64-8x
     if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.policy-files == 'true') }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -1714,24 +1714,7 @@ jobs:
           [
             1,
             2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19,
-            20,
+            3
           ]
     needs: [install-and-cache-rasa, check-code-changes]
 
@@ -1762,7 +1745,7 @@ jobs:
           PYTHONUTF8: 1
           DD_ARGS: --junitxml=unit-tests-results.xml
           RUNNER_ID: ${{ matrix.runner }}
-          NUMBER_OF_RUNNERS: 20
+          NUMBER_OF_RUNNERS: 3
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
           CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
@@ -1793,9 +1776,9 @@ jobs:
 
   unit-test-agents:
     name: Run Agents Unit Tests
-    runs-on: warp-ubuntu-latest-x64-4x
+    runs-on: warp-ubuntu-latest-x64-8x
     if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.agent-files == 'true') }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -1808,24 +1791,7 @@ jobs:
           [
             1,
             2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19,
-            20,
+            3
           ]
     needs: [install-and-cache-rasa, check-code-changes]
 
@@ -1856,7 +1822,7 @@ jobs:
           PYTHONUTF8: 1
           DD_ARGS: --junitxml=unit-tests-results.xml
           RUNNER_ID: ${{ matrix.runner }}
-          NUMBER_OF_RUNNERS: 20
+          NUMBER_OF_RUNNERS: 3
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
           CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
@@ -1889,7 +1855,7 @@ jobs:
     name: Run NLU Unit Tests
     runs-on: warp-ubuntu-latest-x64-8x
     if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.nlu-files == 'true' || needs.check-code-changes.outputs.dm1-tensorflow-files == 'true' ) }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -1904,23 +1870,7 @@ jobs:
         # intermittently some jobs get stuck in queue for a GHA-hosted
         # runner to be available, becoming a bottleneck and slowing down
         # overall CI completion time.
-        runner: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        # Performance-tests have only 3 but large tests, so not using more than 3 runners for it.
-        exclude:
-          - test: test-performance
-            runner: 4
-          - test: test-performance
-            runner: 5
-          - test: test-performance
-            runner: 6
-          - test: test-performance
-            runner: 7
-          - test: test-performance
-            runner: 8
-          - test: test-performance
-            runner: 9
-          - test: test-performance
-            runner: 10
+        runner: [1, 2, 3]
     needs: [install-and-cache-rasa, check-code-changes]
 
     steps:
@@ -1951,7 +1901,7 @@ jobs:
           PYTHONUTF8: 1
           DD_ARGS: --junitxml=unit-tests-results.xml
           RUNNER_ID: ${{ matrix.runner }}
-          NUMBER_OF_RUNNERS: ${{ matrix.test == 'test-performance' && 3 || 10 }}
+          NUMBER_OF_RUNNERS: 3
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
           CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
@@ -1984,7 +1934,7 @@ jobs:
     name: Run CLI Unit Tests
     runs-on: warp-ubuntu-latest-x64-8x
     if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.cli-files == 'true') }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -1994,7 +1944,7 @@ jobs:
         # runner to be available, becoming a bottleneck and slowing down
         # overall CI completion time.
         runner:
-          [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+          [1, 2, 3]
     needs: [install-and-cache-rasa, check-code-changes]
 
     steps:
@@ -2024,7 +1974,7 @@ jobs:
           PYTHONUTF8: 1
           DD_ARGS: --junitxml=unit-tests-results.xml
           RUNNER_ID: ${{ matrix.runner }}
-          NUMBER_OF_RUNNERS: 19
+          NUMBER_OF_RUNNERS: 3
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
           CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
@@ -2056,7 +2006,7 @@ jobs:
   unit-test:
     name: Run Unit Tests
     runs-on: warp-ubuntu-latest-x64-8x
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -2073,49 +2023,8 @@ jobs:
           [
             1,
             2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19,
-            20,
+            3
           ]
-        exclude:
-          # test-flaky only needs runners 1-9
-          - test: test-flaky
-            runner: 10
-          - test: test-flaky
-            runner: 11
-          - test: test-flaky
-            runner: 12
-          - test: test-flaky
-            runner: 13
-          - test: test-flaky
-            runner: 14
-          - test: test-flaky
-            runner: 15
-          - test: test-flaky
-            runner: 16
-          - test: test-flaky
-            runner: 17
-          - test: test-flaky
-            runner: 18
-          - test: test-flaky
-            runner: 19
-          - test: test-flaky
-            runner: 20
     needs: [install-and-cache-rasa]
 
     steps:
@@ -2146,7 +2055,7 @@ jobs:
           PYTHONUTF8: 1
           DD_ARGS: --junitxml=unit-tests-results.xml
           RUNNER_ID: ${{ matrix.runner }}
-          NUMBER_OF_RUNNERS: ${{ matrix.test == 'test-flaky' && 9 || 20 }}
+          NUMBER_OF_RUNNERS: 3
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
           CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
@@ -2180,7 +2089,7 @@ jobs:
   test-anonymization:
     name: Run Anonymization Unit Tests
     runs-on: warp-ubuntu-latest-x64-4x
-    timeout-minutes: 60
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -2365,9 +2274,26 @@ jobs:
           files: "artifacts/**/integration-results-*.xml"
           check_name: "Integration Test Results"
 
+  checkout-code-for-sonarscan:
+    runs-on: warp-ubuntu-latest-x64-4x
+    # Do not run on scheduled-runs, as SonarScan does not run on them
+    if: ${{ github.workflow != 'Scheduled CI Tests' }}
+    steps:
+      - name: Save Code
+        id: save-code
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: ${{ github.workspace }}
+          key: rasa-private-code-${{ github.ref }}-${{ github.sha }}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        if: ${{ steps.save-code.outputs.cache-hit != 'true' }}
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis, removing this messes with PR analysis
+      
+
   sonarqube:
     name: SonarQube
-    runs-on: warp-ubuntu-latest-x64-8x
+    runs-on: warp-ubuntu-latest-x64-4x
     needs:
       [
         unit-test,
@@ -2377,6 +2303,7 @@ jobs:
         unit-test-agents,
         unit-test-policies,
         voice-unit-tests,
+        checkout-code-for-sonarscan
       ]
       # We don't want to run the code quality checks on scheduled runs
     if: >-
@@ -2390,9 +2317,12 @@ jobs:
         needs.voice-unit-tests.result != 'skipped'
       ) }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Restore checked-out code
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
-          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis, removing this messes with PR analysis
+          path: ${{ github.workspace }}
+          key: rasa-private-code-${{ github.ref }}-${{ github.sha }}
+          fail-on-cache-miss: true
 
       - name: Download test reports
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
