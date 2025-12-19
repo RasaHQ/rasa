@@ -1814,7 +1814,7 @@ def _instrument_endpoint_config(
                 )
                 end_time = time.perf_counter_ns()
 
-                record_callable_duration_metrics(self, start_time, end_time)
+                record_callable_duration_metrics(self, start_time, end_time, **attrs)
                 record_request_size_in_bytes(attrs)
 
                 return result

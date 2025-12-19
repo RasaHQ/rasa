@@ -470,8 +470,9 @@ async def test_record_callable_duration_metrics(
     assert data_points.get("min") > 0
     assert data_points.get("max") > 0
 
-    url = data_points.get("attributes", {}).get("url")
-    if url is not None:
+    if instrumentation_arg == "endpoint_config_class":
+        url = data_points.get("attributes", {}).get("url")
+        assert url is not None
         assert url == ACTION_SERVER_TEST_URL
 
 

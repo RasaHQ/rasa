@@ -388,7 +388,8 @@ def record_callable_duration_metrics(
         metric_instrument = instrument_provider.get_instrument(
             RASA_CLIENT_REQUEST_DURATION_METRIC_NAME
         )
-        attributes = {"url": kwargs.get("url")}
+        url = kwargs.get("url")
+        attributes = {"url": url if url is not None else "None"}
 
     if isinstance(self, MCPBaseAgent):
         metric_instrument = instrument_provider.get_instrument(

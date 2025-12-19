@@ -1,4 +1,5 @@
 import json
+import time
 from typing import Any, Dict, Generator, List
 
 import pytest
@@ -9,6 +10,7 @@ from rasa.tracing.constants import (
     COMPACT_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    DURATION_UNIT_NAME,
     ENTERPRISE_SEARCH_POLICY_CPU_USAGE_METRIC_NAME,
     ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME,
     ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME,
@@ -21,6 +23,7 @@ from rasa.tracing.constants import (
     MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
     RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME,
+    RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
     SEARCH_READY_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     SEARCH_READY_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
@@ -30,12 +33,14 @@ from rasa.tracing.constants import (
     SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
 )
 from rasa.tracing.instrumentation.metrics import (
+    record_callable_duration_metrics,
     record_llm_based_component_cpu_usage,
     record_llm_based_component_memory_usage,
     record_llm_based_component_prompt_token,
     record_request_size_in_bytes,
 )
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
+from rasa.utils.endpoints import EndpointConfig
 from tests.tracing.conftest import set_up_test_meter_provider
 
 
@@ -65,6 +70,53 @@ def test_meter_provider(
 
     yield meter_provider
     meter_provider.shutdown()
+
+
+@pytest.fixture
+def endpoint_config() -> EndpointConfig:
+    """Fixture providing an EndpointConfig instance for testing."""
+    return EndpointConfig(url="http://localhost:5055/webhook")
+
+
+def _get_latest_url_attribute_from_metrics(
+    metric_reader: InMemoryMetricReader,
+) -> str:
+    """Helper function to extract the latest url attribute from metrics.
+
+    Args:
+        metric_reader: The InMemoryMetricReader containing the metrics data.
+
+    Returns:
+        The url attribute value from the most recent data point.
+
+    Raises:
+        AssertionError: If the metric or url attribute is not found.
+    """
+    metrics_data = metric_reader.get_metrics_data()
+    metrics_data = json.loads(metrics_data.to_json())
+
+    resource_metrics = metrics_data.get("resource_metrics")[0]
+    scope_metrics = resource_metrics.get("scope_metrics")[0]
+
+    metrics = scope_metrics.get("metrics")
+    duration_metric = find_metric_by_name(
+        metrics, RASA_CLIENT_REQUEST_DURATION_METRIC_NAME
+    )
+
+    assert (
+        duration_metric is not None
+    ), "RASA_CLIENT_REQUEST_DURATION_METRIC_NAME not found"
+    assert duration_metric.get("unit") == DURATION_UNIT_NAME
+
+    data_points = duration_metric.get("data", {}).get("data_points")
+    assert len(data_points) > 0, "No data points found"
+
+    # Get the most recent data point
+    latest_data_point = data_points[-1]
+    attributes = latest_data_point.get("attributes", {})
+    url = attributes.get("url")
+
+    return url
 
 
 def test_record_llm_command_generator_cpu_usage(
@@ -754,3 +806,82 @@ def test_record_request_size_in_bytes(
         == data_points.get("max")
         == request_body_size
     )
+
+
+# this test case must be first among the three test cases below
+# to avoid interference from the other test cases
+def test_record_callable_duration_metrics_endpoint_config_url_missing_key(
+    test_meter_provider: MeterProvider,
+    in_memory_metric_reader: InMemoryMetricReader,
+    endpoint_config: EndpointConfig,
+) -> None:
+    """Test that when url key is missing from kwargs, it defaults to string "None".
+
+    This test verifies that when the url key is not provided in kwargs,
+    it defaults to the string "None" instead of being None.
+    """
+    # arrange
+    start_time = time.perf_counter_ns()
+    end_time = time.perf_counter_ns()
+
+    # act
+    record_callable_duration_metrics(endpoint_config, start_time, end_time)
+
+    # assert
+    url = _get_latest_url_attribute_from_metrics(in_memory_metric_reader)
+
+    assert url is not None, "url attribute should never be None in metrics"
+    assert isinstance(url, str), "url attribute should be a string"
+    assert url == "None", f"Expected url to be 'None' when key is missing, got: {url}"
+
+
+def test_record_callable_duration_metrics_endpoint_config_url_none_converted_to_string(
+    test_meter_provider: MeterProvider,
+    in_memory_metric_reader: InMemoryMetricReader,
+    endpoint_config: EndpointConfig,
+) -> None:
+    """Test that url=None in kwargs is converted to string "None" in metrics.
+
+    This test verifies the fix for a bug where the url attribute could be
+    recorded as None value. When url=None is passed, it should be converted
+    to the string "None".
+    """
+    # arrange
+    start_time = time.perf_counter_ns()
+    end_time = time.perf_counter_ns()
+
+    # act
+    record_callable_duration_metrics(endpoint_config, start_time, end_time, url=None)
+
+    # assert
+    url = _get_latest_url_attribute_from_metrics(in_memory_metric_reader)
+
+    # The key assertion: url should never be None
+    assert url is not None, "url attribute should never be None in metrics"
+    # If url was None, it should be converted to the string "None"
+    assert isinstance(url, str), "url attribute should be a string"
+    assert url == "None", f"Expected url to be 'None' when None is passed, got: {url}"
+
+
+def test_record_callable_duration_metrics_endpoint_config_url_valid_string(
+    test_meter_provider: MeterProvider,
+    in_memory_metric_reader: InMemoryMetricReader,
+    endpoint_config: EndpointConfig,
+) -> None:
+    """Test that a valid url string is recorded correctly in metrics."""
+    # arrange
+    start_time = time.perf_counter_ns()
+    end_time = time.perf_counter_ns()
+    test_url = "http://example.com"
+
+    # act
+    record_callable_duration_metrics(
+        endpoint_config, start_time, end_time, url=test_url
+    )
+
+    # assert
+    url = _get_latest_url_attribute_from_metrics(in_memory_metric_reader)
+
+    assert url is not None, "url attribute should never be None in metrics"
+    assert isinstance(url, str), "url attribute should be a string"
+    assert url == test_url, f"Expected url to be '{test_url}', got: {url}"
