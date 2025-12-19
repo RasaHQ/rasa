@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import datetime
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Union
 
@@ -113,24 +113,32 @@ class KeycloakToken:
             TOKEN_TYPE_KEY: self.token_type,
         }
 
-    def expires_at(self) -> datetime.datetime:
+    def expires_at(self) -> datetime:
         jwt_access_token = KeycloakToken._decode_token(self.access_token)
         expires_at = jwt_access_token[JWT_TOKEN_EXPIRES_AT_KEY]
-        return datetime.datetime.utcfromtimestamp(expires_at)
+        # fromtimestamp with tz=timezone.utc creates timezone-aware UTC datetime.
+        # Without tz, it would interpret the timestamp as local time, causing
+        # incorrect comparisons on non-UTC servers.
+        return datetime.fromtimestamp(expires_at, tz=timezone.utc)
 
     def is_expired(self) -> bool:
-        return self.expires_at() < datetime.datetime.now()
+        # Both datetimes must use UTC to avoid timezone mismatch
+        return self.expires_at() < datetime.now(timezone.utc)
 
     def can_refresh(self) -> bool:
         return self._has_refresh_token() and not self._has_refresh_token_expired()
 
-    def _refresh_expiration_time(self) -> datetime.datetime:
+    def _refresh_expiration_time(self) -> datetime:
         jwt_refresh_token = KeycloakToken._decode_token(self.refresh_token)
         expires_at = jwt_refresh_token[JWT_TOKEN_EXPIRES_AT_KEY]
-        return datetime.datetime.utcfromtimestamp(expires_at)
+        # fromtimestamp with tz=timezone.utc creates timezone-aware UTC datetime.
+        # Without tz, it would interpret the timestamp as local time, causing
+        # incorrect comparisons on non-UTC servers.
+        return datetime.fromtimestamp(expires_at, tz=timezone.utc)
 
     def _has_refresh_token_expired(self) -> bool:
-        return self._refresh_expiration_time() < datetime.datetime.now()
+        # Both datetimes must use UTC to avoid timezone mismatch
+        return self._refresh_expiration_time() < datetime.now(timezone.utc)
 
     def _has_refresh_token(self) -> bool:
         return self.refresh_token is not None and self.refresh_token != ""

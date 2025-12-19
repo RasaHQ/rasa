@@ -1,7 +1,9 @@
 # file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests. # noqa: E501
 
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Text
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -62,6 +64,31 @@ def mock_keycloak_open_id(monkeypatch: MonkeyPatch) -> MagicMock:
     mock = MagicMock()
     monkeypatch.setattr("rasa.studio.auth.KeycloakOpenID", mock)
     return mock
+
+
+@pytest.fixture
+def create_token_with_expiry():
+    """Factory fixture to create a token with a specific expiry offset."""
+
+    @contextmanager
+    def _create(hours_offset: int, refresh_token: str = "refresh_token"):
+        timestamp = int(
+            (datetime.now(timezone.utc) + timedelta(hours=hours_offset)).timestamp()
+        )
+
+        with patch("rasa.studio.auth.KeycloakToken._decode_token") as mock_decode:
+            mock_decode.return_value = {"exp": timestamp}
+
+            token = KeycloakToken(
+                access_token="access_token",
+                expires_in=1800,
+                refresh_expires_in=2400,
+                refresh_token=refresh_token,
+                token_type="Bearer",
+            )
+            yield token
+
+    return _create
 
 
 def test_studio_auth(mock_keycloak_instance: MagicMock) -> None:
@@ -285,3 +312,41 @@ def test_write_token_to_file(mock_write_yaml: MagicMock) -> None:
     )
 
     mock_write_yaml.assert_called_once_with(token.to_dict(), path)
+
+
+@pytest.mark.parametrize(
+    "hours_offset,expected_expired",
+    [
+        (-1, True),  # Token expired 1 hour ago
+        (1, False),  # Token expires 1 hour from now
+    ],
+)
+def test_keycloak_token_expiration_uses_utc(
+    create_token_with_expiry, hours_offset: int, expected_expired: bool
+) -> None:
+    """Test token expiration checks use UTC."""
+    with create_token_with_expiry(hours_offset) as token:
+        assert token.is_expired() is expected_expired
+        assert token._has_refresh_token_expired() is expected_expired
+        assert token.expires_at().tzinfo == timezone.utc
+        assert token._refresh_expiration_time().tzinfo == timezone.utc
+
+
+@pytest.mark.parametrize(
+    "refresh_token,hours_offset,expected_can_refresh",
+    [
+        ("refresh_token", 1, True),  # Valid refresh token, not expired
+        ("refresh_token", -1, False),  # Valid refresh token, expired
+        ("", 1, False),  # Empty refresh token
+        (None, 1, False),  # No refresh token
+    ],
+)
+def test_keycloak_token_can_refresh(
+    create_token_with_expiry,
+    refresh_token: str,
+    hours_offset: int,
+    expected_can_refresh: bool,
+) -> None:
+    """Test can_refresh validates token existence and expiration."""
+    with create_token_with_expiry(hours_offset, refresh_token) as token:
+        assert token.can_refresh() is expected_can_refresh
