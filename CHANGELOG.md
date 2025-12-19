@@ -10,6 +10,34 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.4] - 2025-12-19
+
+Rasa Pro 3.15.4 (2025-12-19)                             
+### Bugfixes
+- [#4257](https://github.com/rasahq/rasa-private/issues/4257): Fixed token expiration validation failing on servers running in non-UTC timezones.
+  Token expiration checks now use timezone-aware UTC datetimes consistently, preventing premature "access token expired" errors on systems in timezones like UTC+8.
+
+
+## [3.15.3] - 2025-12-11
+
+Rasa Pro 3.15.3 (2025-12-11)                             
+### Bugfixes
+- [#4064](https://github.com/rasahq/rasa-private/issues/4064): Fix potential Tensor shape mismatch error in `TEDPolicy` and `DIETClassifier`.
+- [#4165](https://github.com/rasahq/rasa-private/issues/4165): Update `mcp` version to `~1.23.0` to address security vulnerability CVE-2025-66416.
+- [#4168](https://github.com/rasahq/rasa-private/issues/4168): Fix bug in `CommandPayloadReader` where regex matching did not account for list slots, leading to incorrect parsing of slot keys and values. Now, slot names and values are correctly extracted even if a list is provided.
+- [#4169](https://github.com/rasahq/rasa-private/issues/4169): Previously, `DialogueStateTracker.has_coexistence_routing_slot` could incorrectly return `True` when the tracker was created without domain slots (i.e., using `AnySlotDict`), because `AnySlotDict` pretends all slots exist. Now, the property returns False in that case, so the routing slot is only considered present if it is actually defined in the domain.
+- [#4174](https://github.com/rasahq/rasa-private/issues/4174): Fix LLM prompt template loading to raise an error instead of just printing a warning when a custom prompt file is missing or cannot be read.
+- [#4177](https://github.com/rasahq/rasa-private/issues/4177): Fix `AttributeError: 'str' object has no attribute 'pop'` when using `KnowledgeAnswerCommand` with tracing enabled.
+- [#4178](https://github.com/rasahq/rasa-private/issues/4178): Fix `UnboundLocalError` in `E2ETestRunner._handle_fail_diff` that caused e2e tests to crash when processing `slot_was_not_set` assertion failures.
+- [#4184](https://github.com/rasahq/rasa-private/issues/4184): Fixed button payloads with nested parentheses (e.g., `/SetSlots(slot=value)`) not being parsed correctly in `rasa shell`.
+  The payload was incorrectly stripped of its `/SetSlots` prefix, causing it to be treated as text instead of a slot-setting command.
+- [#4187](https://github.com/rasahq/rasa-private/issues/4187): Add missing deprecation warning for legacy `RASA_PRO_LICENSE` environment variable.
+  Update license validation error messages to reference the actual environment variable used.
+
+### Miscellaneous internal changes
+- [#4206](https://github.com/rasahq/rasa-private/issues/4206)
+
+
 ## [3.15.2] - 2025-12-04
                         
 Rasa Pro 3.15.2 (2025-12-04)                             
@@ -163,6 +191,34 @@ Rasa Pro 3.15.0 (2025-11-26)
 
 ### Miscellaneous internal changes
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
+
+
+## [3.14.8] - 2025-12-19
+
+Rasa Pro 3.14.8 (2025-12-19)                             
+### Bugfixes
+- [#4257](https://github.com/rasahq/rasa-private/issues/4257): Fixed token expiration validation failing on servers running in non-UTC timezones.
+  Token expiration checks now use timezone-aware UTC datetimes consistently, preventing premature "access token expired" errors on systems in timezones like UTC+8.
+
+
+## [3.14.7] - 2025-12-11
+                        
+Rasa Pro 3.14.7 (2025-12-11)                             
+### Bugfixes
+- [#4064](https://github.com/rasahq/rasa-private/issues/4064): Fix potential Tensor shape mismatch error in `TEDPolicy` and `DIETClassifier`.
+- [#4165](https://github.com/rasahq/rasa-private/issues/4165): Update `mcp` version to `~1.23.0` to address security vulnerability CVE-2025-66416.
+- [#4168](https://github.com/rasahq/rasa-private/issues/4168): Fix bug in `CommandPayloadReader` where regex matching did not account for list slots, leading to incorrect parsing of slot keys and values. Now, slot names and values are correctly extracted even if a list is provided.
+- [#4169](https://github.com/rasahq/rasa-private/issues/4169): Previously, `DialogueStateTracker.has_coexistence_routing_slot` could incorrectly return `True` when the tracker was created without domain slots (i.e., using `AnySlotDict`), because `AnySlotDict` pretends all slots exist. Now, the property returns False in that case, so the routing slot is only considered present if it is actually defined in the domain.
+- [#4174](https://github.com/rasahq/rasa-private/issues/4174): Fix LLM prompt template loading to raise an error instead of just printing a warning when a custom prompt file is missing or cannot be read.
+- [#4177](https://github.com/rasahq/rasa-private/issues/4177): Fix `AttributeError: 'str' object has no attribute 'pop'` when using `KnowledgeAnswerCommand` with tracing enabled.
+- [#4178](https://github.com/rasahq/rasa-private/issues/4178): Fix `UnboundLocalError` in `E2ETestRunner._handle_fail_diff` that caused e2e tests to crash when processing `slot_was_not_set` assertion failures.
+- [#4184](https://github.com/rasahq/rasa-private/issues/4184): Fixed button payloads with nested parentheses (e.g., `/SetSlots(slot=value)`) not being parsed correctly in `rasa shell`.
+  The payload was incorrectly stripped of its `/SetSlots` prefix, causing it to be treated as text instead of a slot-setting command.
+- [#4187](https://github.com/rasahq/rasa-private/issues/4187): Add missing deprecation warning for legacy `RASA_PRO_LICENSE` environment variable.
+  Update license validation error messages to reference the actual environment variable used.
+
+### Miscellaneous internal changes
+- [#4206](https://github.com/rasahq/rasa-private/issues/4206)
 
 
 ## [3.14.6] - 2025-12-05
@@ -617,6 +673,32 @@ Rasa Pro 3.14.0 (2025-10-09)
 - [#1892](https://github.com/rasahq/rasa-private/issues/1892), [#2184](https://github.com/rasahq/rasa-private/issues/2184), [#2767](https://github.com/rasahq/rasa-private/issues/2767), [#2814](https://github.com/rasahq/rasa-private/issues/2814), [#2863](https://github.com/rasahq/rasa-private/issues/2863), [#2911](https://github.com/rasahq/rasa-private/issues/2911), [#2913](https://github.com/rasahq/rasa-private/issues/2913), [#2916](https://github.com/rasahq/rasa-private/issues/2916), [#2957](https://github.com/rasahq/rasa-private/issues/2957), [#2990](https://github.com/rasahq/rasa-private/issues/2990), [#3018](https://github.com/rasahq/rasa-private/issues/3018), [#3019](https://github.com/rasahq/rasa-private/issues/3019), [#3052](https://github.com/rasahq/rasa-private/issues/3052), [#3078](https://github.com/rasahq/rasa-private/issues/3078), [#3094](https://github.com/rasahq/rasa-private/issues/3094), [#3121](https://github.com/rasahq/rasa-private/issues/3121), [#3125](https://github.com/rasahq/rasa-private/issues/3125), [#3207](https://github.com/rasahq/rasa-private/issues/3207), [#3208](https://github.com/rasahq/rasa-private/issues/3208), [#3260](https://github.com/rasahq/rasa-private/issues/3260), [#3289](https://github.com/rasahq/rasa-private/issues/3289), [#3319](https://github.com/rasahq/rasa-private/issues/3319), [#3374](https://github.com/rasahq/rasa-private/issues/3374), [#3375](https://github.com/rasahq/rasa-private/issues/3375), [#3411](https://github.com/rasahq/rasa-private/issues/3411)
 
 
+## [3.13.20] - 2025-12-19
+                  
+Rasa Pro 3.13.20 (2025-12-19)                              
+### Bugfixes
+- [#4257](https://github.com/rasahq/rasa-private/issues/4257): Fixed token expiration validation failing on servers running in non-UTC timezones.
+  Token expiration checks now use timezone-aware UTC datetimes consistently, preventing premature "access token expired" errors on systems in timezones like UTC+8.
+
+
+## [3.13.19] - 2025-12-11
+
+Rasa Pro 3.13.19 (2025-12-11)                              
+### Bugfixes
+- [#4168](https://github.com/rasahq/rasa-private/issues/4168): Fix bug in `CommandPayloadReader` where regex matching did not account for list slots, leading to incorrect parsing of slot keys and values. Now, slot names and values are correctly extracted even if a list is provided.
+- [#4169](https://github.com/rasahq/rasa-private/issues/4169): Previously, `DialogueStateTracker.has_coexistence_routing_slot` could incorrectly return `True` when the tracker was created without domain slots (i.e., using `AnySlotDict`), because `AnySlotDict` pretends all slots exist. Now, the property returns False in that case, so the routing slot is only considered present if it is actually defined in the domain.
+- [#4174](https://github.com/rasahq/rasa-private/issues/4174): Fix LLM prompt template loading to raise an error instead of just printing a warning when a custom prompt file is missing or cannot be read.
+- [#4177](https://github.com/rasahq/rasa-private/issues/4177): Fix `AttributeError: 'str' object has no attribute 'pop'` when using `KnowledgeAnswerCommand` with tracing enabled.
+- [#4178](https://github.com/rasahq/rasa-private/issues/4178): Fix `UnboundLocalError` in `E2ETestRunner._handle_fail_diff` that caused e2e tests to crash when processing `slot_was_not_set` assertion failures.
+- [#4184](https://github.com/rasahq/rasa-private/issues/4184): Fixed button payloads with nested parentheses (e.g., `/SetSlots(slot=value)`) not being parsed correctly in `rasa shell`.
+  The payload was incorrectly stripped of its `/SetSlots` prefix, causing it to be treated as text instead of a slot-setting command.
+- [#4187](https://github.com/rasahq/rasa-private/issues/4187): Add missing deprecation warning for legacy `RASA_PRO_LICENSE` environment variable.
+  Update license validation error messages to reference the actual environment variable used.
+
+### Miscellaneous internal changes
+- [#4206](https://github.com/rasahq/rasa-private/issues/4206) 
+
+
 ## [3.13.18] - 2025-12-04
                          
 Rasa Pro 3.13.18 (2025-12-04)                              
@@ -1033,6 +1115,22 @@ Rasa Pro 3.13.0 (2025-07-07)
 
 ### Miscellaneous internal changes
 - [#2125](https://github.com/rasahq/rasa-private/issues/2125), [#2134](https://github.com/rasahq/rasa-private/issues/2134), [#2361](https://github.com/rasahq/rasa-private/issues/2361), [#2419](https://github.com/rasahq/rasa-private/issues/2419), [#2471](https://github.com/rasahq/rasa-private/issues/2471), [#2496](https://github.com/rasahq/rasa-private/issues/2496), [#2506](https://github.com/rasahq/rasa-private/issues/2506), [#2513](https://github.com/rasahq/rasa-private/issues/2513), [#2538](https://github.com/rasahq/rasa-private/issues/2538), [#2571](https://github.com/rasahq/rasa-private/issues/2571), [#2615](https://github.com/rasahq/rasa-private/issues/2615), [#2629](https://github.com/rasahq/rasa-private/issues/2629), [#2668](https://github.com/rasahq/rasa-private/issues/2668), [#2672](https://github.com/rasahq/rasa-private/issues/2672), [#2682](https://github.com/rasahq/rasa-private/issues/2682), [#2707](https://github.com/rasahq/rasa-private/issues/2707), [#2712](https://github.com/rasahq/rasa-private/issues/2712), [#2720](https://github.com/rasahq/rasa-private/issues/2720), [#2745](https://github.com/rasahq/rasa-private/issues/2745), [#2769](https://github.com/rasahq/rasa-private/issues/2769)
+
+
+## [3.12.42] - 2025-12-11
+
+Rasa Pro 3.12.42 (2025-12-11)                              
+### Bugfixes
+- [#4168](https://github.com/rasahq/rasa-private/issues/4168): Fix bug in `CommandPayloadReader` where regex matching did not account for list slots, leading to incorrect parsing of slot keys and values. Now, slot names and values are correctly extracted even if a list is provided.
+- [#4169](https://github.com/rasahq/rasa-private/issues/4169): Previously, `DialogueStateTracker.has_coexistence_routing_slot` could incorrectly return `True` when the tracker was created without domain slots (i.e., using `AnySlotDict`), because `AnySlotDict` pretends all slots exist. Now, the property returns False in that case, so the routing slot is only considered present if it is actually defined in the domain.
+- [#4174](https://github.com/rasahq/rasa-private/issues/4174): Fix LLM prompt template loading to raise an error instead of just printing a warning when a custom prompt file is missing or cannot be read.
+- [#4177](https://github.com/rasahq/rasa-private/issues/4177): Fix `AttributeError: 'str' object has no attribute 'pop'` when using `KnowledgeAnswerCommand` with tracing enabled.
+- [#4178](https://github.com/rasahq/rasa-private/issues/4178): Fix `UnboundLocalError` in `E2ETestRunner._handle_fail_diff` that caused e2e tests to crash when processing `slot_was_not_set` assertion failures.
+- [#4184](https://github.com/rasahq/rasa-private/issues/4184): Fixed button payloads with nested parentheses (e.g., `/SetSlots(slot=value)`) not being parsed correctly in `rasa shell`.
+  The payload was incorrectly stripped of its `/SetSlots` prefix, causing it to be treated as text instead of a slot-setting command.
+
+### Miscellaneous internal changes
+- [#4206](https://github.com/rasahq/rasa-private/issues/4206)
 
 
 ## [3.12.41] - 2025-12-04
