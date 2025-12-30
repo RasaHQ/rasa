@@ -142,7 +142,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -247,12 +247,12 @@ jobs:
           - test-full-model-training
           - test-other-unit-tests
           - test-performance
-        os: [ubuntu-24.04, windows-2019]
+        os: [ubuntu-24.04, windows-2022]
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
       - name: Run DataDog Agent
-        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2019' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
+        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2022' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
         run: |
           docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
           docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
@@ -284,7 +284,7 @@ jobs:
           installer-parallel: true
 
       - name: Install poetry (Windows) 🦄
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2022'
         uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -299,7 +299,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -335,7 +335,7 @@ jobs:
           make prepare-tests-ubuntu
 
       - name: Install Dependencies (Windows) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2022'
         # Restoring cache doesn't work properly on Windows due to symlinks.
         # We create symlinks for spacy models, that's why we need to clean them up
         # before caching the dependencies directory.
@@ -361,7 +361,7 @@ jobs:
         run: pip install pytest-github-actions-annotate-failures
 
       - name: Disable "LongPathsEnabled" option on Windows
-        if: matrix.os == 'windows-2019'
+        if: matrix.os == 'windows-2022'
         # On Windows laptops, a default preset prevents path names from being longer than
         # 260 characters. Some of our users can't enable this setting due to company policies.
         # We implemented a fix for model storage. The Windows container in GitHub
@@ -376,7 +376,7 @@ jobs:
         run: poetry run pip install -U 'ddtrace<2.0.0'
 
       - name: Install ddtrace on Windows
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2022'
         run: |
           .\.venv\Scripts\activate
           py -m pip install -U 'ddtrace<2.0.0'
@@ -416,12 +416,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2019]
+        os: [ubuntu-24.04, windows-2022]
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
       - name: Run DataDog Agent
-        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2019' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
+        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2022' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
         run: |
           docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
           docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
@@ -453,7 +453,7 @@ jobs:
           installer-parallel: true
 
       - name: Install poetry (Windows) 🦄
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2022'
         uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -461,7 +461,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -495,7 +495,7 @@ jobs:
           make prepare-tests-ubuntu
 
       - name: Install Dependencies (Windows) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2022'
         # Restoring cache doesn't work properly on Windows due to symlinks.
         # We create symlinks for spacy models, that's why we need to clean them up
         # before caching the dependencies' directory.
@@ -519,7 +519,7 @@ jobs:
         run: pip install pytest-github-actions-annotate-failures
 
       - name: Disable "LongPathsEnabled" option on Windows
-        if: matrix.os == 'windows-2019'
+        if: matrix.os == 'windows-2022'
         # On Windows laptops, a default preset prevents path names from being longer than
         # 260 characters. Some of our users can't enable this setting due to company policies.
         # We implemented a fix for model storage. The Windows container in GitHub
@@ -534,7 +534,7 @@ jobs:
         run: poetry run pip install -U 'ddtrace<2.0.0'
 
       - name: Install ddtrace on Windows
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
+        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2022'
         run: |
           .\.venv\Scripts\activate
           py -m pip install -U 'ddtrace<2.0.0'
@@ -699,7 +699,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -789,7 +789,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
