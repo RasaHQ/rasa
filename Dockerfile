@@ -37,7 +37,8 @@ RUN chgrp -R 0 /app && chmod -R g=u /app && chmod o+wr /app
 USER 1001
 
 # create a volume for temporary data
-VOLUME /tmp
+RUN mkdir -p /app/tmp && chmod -R 777 /app/tmp
+ENV TMPDIR=/app/tmp
 
 # change shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
