@@ -324,6 +324,94 @@ class TestDialogueUnderstandingOutput:
             KEY_CHOICES: "test LLM response 2",
         }
 
+    def test_get_component_name_to_prompt_info_when_llm_response_metadata_is_none(self):
+        output = DialogueUnderstandingOutput(
+            commands={
+                "componentA": [SetSlotCommand("slotA", "valA")],
+            },
+            prompts=[
+                {
+                    KEY_COMPONENT_NAME: "componentA",
+                    KEY_PROMPT_NAME: "promptA",
+                    KEY_USER_PROMPT: "User prompt content A",
+                    KEY_LLM_RESPONSE_METADATA: None,
+                },
+            ],
+        )
+        result = output.get_component_name_to_prompt_info()
+        assert list(result.keys()) == ["componentA"]
+        assert result["componentA"][0] == {
+            KEY_PROMPT_NAME: "promptA",
+            KEY_USER_PROMPT: "User prompt content A",
+        }
+
+    def test_get_component_name_to_prompt_info_when_llm_response_metadata_is_string(
+        self,
+    ):
+        output = DialogueUnderstandingOutput(
+            commands={
+                "componentA": [SetSlotCommand("slotA", "valA")],
+            },
+            prompts=[
+                {
+                    KEY_COMPONENT_NAME: "componentA",
+                    KEY_PROMPT_NAME: "promptA",
+                    KEY_USER_PROMPT: "User prompt content A",
+                    KEY_LLM_RESPONSE_METADATA: "invalid_string_value",
+                },
+            ],
+        )
+        result = output.get_component_name_to_prompt_info()
+        assert list(result.keys()) == ["componentA"]
+        assert result["componentA"][0] == {
+            KEY_PROMPT_NAME: "promptA",
+            KEY_USER_PROMPT: "User prompt content A",
+        }
+
+    def test_get_component_name_to_prompt_info_when_llm_response_metadata_is_empty(
+        self,
+    ):
+        output = DialogueUnderstandingOutput(
+            commands={
+                "componentA": [SetSlotCommand("slotA", "valA")],
+            },
+            prompts=[
+                {
+                    KEY_COMPONENT_NAME: "componentA",
+                    KEY_PROMPT_NAME: "promptA",
+                    KEY_USER_PROMPT: "User prompt content A",
+                    KEY_LLM_RESPONSE_METADATA: {},
+                },
+            ],
+        )
+        result = output.get_component_name_to_prompt_info()
+        assert list(result.keys()) == ["componentA"]
+        assert result["componentA"][0] == {
+            KEY_PROMPT_NAME: "promptA",
+            KEY_USER_PROMPT: "User prompt content A",
+        }
+
+    def test_get_component_name_to_prompt_info_when_llm_response_metadata_missing(self):
+        output = DialogueUnderstandingOutput(
+            commands={
+                "componentA": [SetSlotCommand("slotA", "valA")],
+            },
+            prompts=[
+                {
+                    KEY_COMPONENT_NAME: "componentA",
+                    KEY_PROMPT_NAME: "promptA",
+                    KEY_USER_PROMPT: "User prompt content A",
+                    # KEY_LLM_RESPONSE_METADATA is not present
+                },
+            ],
+        )
+        result = output.get_component_name_to_prompt_info()
+        assert list(result.keys()) == ["componentA"]
+        assert result["componentA"][0] == {
+            KEY_PROMPT_NAME: "promptA",
+            KEY_USER_PROMPT: "User prompt content A",
+        }
+
 
 class TestDialogueUnderstandingTestStep:
     def test_valid_creation(self, sample_test_step: DialogueUnderstandingTestStep):

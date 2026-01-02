@@ -176,14 +176,17 @@ class DialogueUnderstandingOutput(BaseModel):
                 KEY_USER_PROMPT: prompt_data[KEY_USER_PROMPT],
             }
 
-            latency = prompt_data.get(KEY_LLM_RESPONSE_METADATA, {}).get(KEY_LATENCY)
+            llm_response_metadata = prompt_data.get(KEY_LLM_RESPONSE_METADATA, {})
+            if not llm_response_metadata or not isinstance(llm_response_metadata, dict):
+                llm_response_metadata = {}
+            latency = llm_response_metadata.get(KEY_LATENCY)
             if latency:
                 prompt_info[KEY_LATENCY] = latency
 
             if prompt_data.get(KEY_SYSTEM_PROMPT):
                 prompt_info[KEY_SYSTEM_PROMPT] = prompt_data[KEY_SYSTEM_PROMPT]
 
-            usage_object = prompt_data.get(KEY_LLM_RESPONSE_METADATA, {}).get(KEY_USAGE)
+            usage_object = llm_response_metadata.get(KEY_USAGE)
             if usage_object:
                 if usage_object.get(KEY_PROMPT_TOKENS):
                     prompt_info[KEY_PROMPT_TOKENS] = usage_object.get(KEY_PROMPT_TOKENS)
@@ -192,7 +195,7 @@ class DialogueUnderstandingOutput(BaseModel):
                         KEY_COMPLETION_TOKENS
                     )
 
-            choices = prompt_data.get(KEY_LLM_RESPONSE_METADATA, {}).get(KEY_CHOICES)
+            choices = llm_response_metadata.get(KEY_CHOICES)
             if choices and len(choices) > 0:
                 # Add the action list returned by the LLM to the prompt_info
                 prompt_info[KEY_CHOICES] = choices[0]
