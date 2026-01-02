@@ -75,6 +75,7 @@ from rasa.shared.utils.llm import (
     get_prompt_template,
     llm_factory,
     resolve_model_client_config,
+    serialize_bot_response_for_prompt,
 )
 from rasa.shared.utils.mcp.server_connection import MCPServerConnection
 
@@ -624,9 +625,10 @@ class MCPBaseAgent(AgentProtocol):
                     continue
                 messages.append({KEY_ROLE: ROLE_USER, KEY_CONTENT: event.text})
             elif isinstance(event, BotUttered):
-                if not event.text:
+                bot_response = serialize_bot_response_for_prompt(event)
+                if not bot_response:
                     continue
-                messages.append({KEY_ROLE: ROLE_ASSISTANT, KEY_CONTENT: event.text})
+                messages.append({KEY_ROLE: ROLE_ASSISTANT, KEY_CONTENT: bot_response})
 
         if context.user_message != messages[-1][KEY_CONTENT]:
             messages.append({KEY_ROLE: ROLE_USER, KEY_CONTENT: context.user_message})

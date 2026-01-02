@@ -105,6 +105,7 @@ from rasa.shared.utils.llm import (
     llm_router_factory,
     resolve_model_client_config,
     sanitize_message_for_prompt,
+    serialize_bot_response_for_prompt,
     tracker_as_readable_transcript,
 )
 from rasa.shared.utils.yaml import read_yaml
@@ -361,6 +362,88 @@ def test_sanitize_message_for_prompt_handles_empty_string():
 
 def test_sanitize_message_for_prompt_handles_string_with_newlines():
     assert sanitize_message_for_prompt("hello\nworld") == "hello world"
+
+
+def test_serialize_bot_response_for_prompt_with_text_only():
+    """Test serialization of bot response with only text."""
+    event = BotUttered("Hello, how can I help you?")
+    result = serialize_bot_response_for_prompt(event)
+    assert result == "Hello, how can I help you?"
+
+
+def test_serialize_bot_response_for_prompt_with_buttons_only():
+    """Test serialization of bot response with buttons but no text."""
+    event = BotUttered(
+        text=None,
+        data={
+            "buttons": [
+                {"title": "Transfer Money", "payload": "/SetSlots(action=transfer)"},
+                {"title": "Check Balance", "payload": "/SetSlots(action=balance)"},
+            ]
+        },
+    )
+    result = serialize_bot_response_for_prompt(event)
+    assert result == 'button 1: "Transfer Money", button 2: "Check Balance"'
+
+
+def test_serialize_bot_response_for_prompt_with_text_and_buttons():
+    """Test serialization of bot response with both text and buttons."""
+    event = BotUttered(
+        text="What would you like to do?",
+        data={
+            "buttons": [
+                {"title": "credit", "payload": "/SetSlots(card_type=credit)"},
+                {"title": "debit", "payload": "/SetSlots(card_type=debit)"},
+            ]
+        },
+    )
+    result = serialize_bot_response_for_prompt(event)
+    assert result == 'What would you like to do? button 1: "credit", button 2: "debit"'
+
+
+def test_serialize_bot_response_for_prompt_with_empty_response():
+    """Test serialization of bot response with no content."""
+    event = BotUttered(text=None, data={})
+    result = serialize_bot_response_for_prompt(event)
+    assert result == ""
+
+
+def test_tracker_as_readable_transcript_with_buttons(domain: Domain):
+    """Test that tracker transcript includes button information."""
+    tracker = DialogueStateTracker(sender_id="test", slots=domain.slots)
+    tracker.update_with_events(
+        [
+            UserUttered("I want to transfer money"),
+            BotUttered(
+                text="Which card would you like to use?",
+                data={
+                    "buttons": [
+                        {"title": "credit", "payload": "/SetSlots(card_type=credit)"},
+                        {"title": "debit", "payload": "/SetSlots(card_type=debit)"},
+                    ]
+                },
+            ),
+        ],
+    )
+    result = tracker_as_readable_transcript(tracker)
+    assert "USER: I want to transfer money" in result
+    assert "AI: Which card would you like to use?" in result
+    assert 'button 1: "credit", button 2: "debit"' in result
+
+
+def test_tracker_as_readable_transcript_skips_empty_bot_response(domain: Domain):
+    """Test that empty bot responses are skipped in transcript."""
+    tracker = DialogueStateTracker(sender_id="test", slots=domain.slots)
+    tracker.update_with_events(
+        [
+            UserUttered("hello"),
+            BotUttered(text=None, data={}),  # Empty response
+            UserUttered("world"),
+        ],
+    )
+    result = tracker_as_readable_transcript(tracker)
+    # Should not have an empty "AI:" line
+    assert result == "USER: hello\nUSER: world"
 
 
 @pytest.mark.parametrize(

@@ -706,6 +706,41 @@ class TestMCPBaseAgent:
             assert messages[0]["role"] == "system"
             assert messages[0]["content"] == "System prompt"
 
+    def test_build_messages_for_llm_request_with_buttons(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Test that bot messages with buttons include button info in LLM request."""
+        mock_agent_input.events = [
+            UserUttered(text="What can I do?"),
+            BotUttered(
+                text="Please choose an option:",
+                data={
+                    "buttons": [
+                        {"title": "Transfer Money", "payload": "/transfer"},
+                        {"title": "Check Balance", "payload": "/balance"},
+                    ]
+                },
+            ),
+            UserUttered(text="I want to transfer"),
+        ]
+
+        with patch.object(mock_mcp_base_agent, "render_prompt_template") as mock_render:
+            mock_render.return_value = "System prompt"
+
+            messages = mock_mcp_base_agent.build_messages_for_llm_request(
+                mock_agent_input
+            )
+
+            # Find the assistant message
+            assistant_messages = [m for m in messages if m["role"] == "assistant"]
+            assert len(assistant_messages) == 1
+
+            # Verify buttons are included in the message content
+            assistant_content = assistant_messages[0]["content"]
+            assert "Please choose an option:" in assistant_content
+            assert 'button 1: "Transfer Money"' in assistant_content
+            assert 'button 2: "Check Balance"' in assistant_content
+
     @pytest.mark.parametrize(
         "tool_calls, expected_result_keys",
         [

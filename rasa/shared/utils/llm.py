@@ -33,6 +33,7 @@ import rasa.shared.utils.io
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import (
+    BUTTONS,
     CONFIG_NAME_KEY,
     CONFIG_PIPELINE_KEY,
     CONFIG_POLICIES_KEY,
@@ -50,6 +51,7 @@ from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     ROUTER_CONFIG_KEY,
+    TITLE,
 )
 from rasa.shared.core.events import (
     AgentCancelled,
@@ -369,9 +371,9 @@ def tracker_as_readable_transcript(
                 message = sanitize_message_for_prompt(event.text)
             transcript.append(f"{human_prefix}: {message}")
         elif isinstance(event, BotUttered):
-            transcript.append(
-                f"{current_ai_prefix}: {sanitize_message_for_prompt(event.text)}"
-            )
+            bot_response = serialize_bot_response_for_prompt(event)
+            if bot_response:
+                transcript.append(f"{current_ai_prefix}: {bot_response}")
 
         if highlight_agent_turns:
             if isinstance(event, AgentStarted) or isinstance(event, AgentResumed):
@@ -402,6 +404,49 @@ def sanitize_message_for_prompt(text: Optional[str]) -> str:
     A string with new lines removed.
     """
     return text.replace("\n", " ") if text else ""
+
+
+def _serialize_buttons_for_prompt(buttons: List[Dict[str, Any]]) -> str:
+    """Serialize buttons into a readable format for the prompt.
+
+    Args:
+        buttons: A list of button dictionaries with 'title' and 'payload' keys.
+
+    Returns:
+        A string representation of the button titles.
+    """
+    button_parts = [
+        f'button {i}: "{sanitize_message_for_prompt(button.get(TITLE))}"'
+        for i, button in enumerate(buttons, 1)
+        if sanitize_message_for_prompt(button.get(TITLE))
+    ]
+    return ", ".join(button_parts)
+
+
+def serialize_bot_response_for_prompt(event: BotUttered) -> str:
+    """Serialize a bot response including text and buttons.
+
+    This function creates a readable representation of the bot response
+    that includes the text and buttons (if present).
+
+    Args:
+        event: The BotUttered event to serialize.
+
+    Returns:
+        A string representation of the bot response for inclusion in prompts.
+    """
+    parts = []
+
+    text = sanitize_message_for_prompt(event.text)
+    buttons = event.data.get(BUTTONS, [])
+
+    if text:
+        parts.append(text)
+
+    if buttons:
+        parts.append(_serialize_buttons_for_prompt(buttons))
+
+    return " ".join(parts)
 
 
 @_cache_combine_custom_and_default_configs
