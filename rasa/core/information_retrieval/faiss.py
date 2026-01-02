@@ -78,11 +78,9 @@ class FAISS_Store(InformationRetrieval):
         self, docs_folder: Optional[str], embedding: "Embeddings"
     ) -> FAISS:
         """Creates a document index from the documents in the given folder.
-
         Args:
             docs_folder: The folder containing the documents.
             embedding: The embedding to use.
-
         Returns:
             The document index.
         """
@@ -105,12 +103,54 @@ class FAISS_Store(InformationRetrieval):
             "information_retrieval.faiss_store._create_document_index",
             len_chunks=len(parsed_documents),
         )
-        if parsed_documents:
-            texts = [document.page_content for document in parsed_documents]
-            metadatas = [document.metadata for document in parsed_documents]
-            return FAISS.from_texts(texts, embedding, metadatas=metadatas, ids=None)
-        else:
+
+        if not parsed_documents:
             raise ValueError(f"No documents found at '{docs_folder}'.")
+
+        texts = [document.page_content for document in parsed_documents]
+        metadatas = [document.metadata for document in parsed_documents]
+
+        # Warn if document size exceeds 2GB - FAISS in-memory performance degrades
+        ONE_GB = 1024 * 1024 * 1024
+        total_size_bytes = sum(len(text.encode("utf-8")) for text in texts)
+        size_limit_bytes = 2 * ONE_GB  # 2GB
+        if total_size_bytes > size_limit_bytes:
+            logger.warning(
+                "information_retrieval.faiss_store.large_document_size",
+                message="Document size exceeds 2GB. FAISS in-memory vector store "
+                "performance may degrade significantly with large datasets. "
+                "Consider using a dedicated vector database for better performance.",
+                total_size_gb=round(total_size_bytes / ONE_GB, 2),
+            )
+
+        # Batch size to avoid hitting embedding API token limits
+        # Use a conservative batch size for large documents
+        batch_size = 50
+        total_batches = (len(texts) + batch_size - 1) // batch_size
+
+        # Create index with first batch
+        logger.info(
+            "information_retrieval.faiss_store._create_document_index.embedding_batch",
+            batch=1,
+            total_batches=total_batches,
+        )
+        index = FAISS.from_texts(
+            texts[:batch_size], embedding, metadatas=metadatas[:batch_size]
+        )
+
+        # Add remaining documents in batches
+        for i in range(batch_size, len(texts), batch_size):
+            batch_num = (i // batch_size) + 1
+            logger.info(
+                "information_retrieval.faiss_store._create_document_index.embedding_batch",
+                batch=batch_num,
+                total_batches=total_batches,
+            )
+            batch_texts = texts[i : i + batch_size]
+            batch_metadatas = metadatas[i : i + batch_size]
+            index.add_texts(batch_texts, metadatas=batch_metadatas)
+
+        return index
 
     def _persist(self, path: Path) -> None:
         persist_faiss_vector_store(path, self.index)
