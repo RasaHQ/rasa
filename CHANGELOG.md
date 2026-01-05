@@ -192,6 +192,16 @@ Rasa Pro 3.15.0 (2025-11-26)
 ### Miscellaneous internal changes
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
 
+## [3.14.9] - 2025-12-29
+                        
+Rasa Pro 3.14.9 (2025-12-29)                             
+### Bugfixes
+- [#4189](https://github.com/rasahq/rasa-private/issues/4189): Include response button titles in conversation history in prompts of LLM based components.
+- [#4284](https://github.com/rasahq/rasa-private/issues/4284): Fix OpenTelemetry exporter `Invalid type <class 'NoneType'> of value None` error when recording the request duration metric
+  for requests made from Rasa server to the custom action server.
+  This error occurred because the url parameter was not being passed to the method that records the request duration metric,
+  resulting in a NoneType value.
+- [#4291](https://github.com/rasahq/rasa-private/issues/4291): Fix DUT fails with AttributeError when running with custom CommandGenerator
 
 ## [3.14.8] - 2025-12-19
 
