@@ -524,7 +524,9 @@ class TestRunCopilotTrainingErrorAnalysisJob:
 
         mock_handler.stream.return_value = mock_stream()
         mock_handler.extract_references.return_value = mock_reference_section
-        mock_handler.extract_full_text.return_value = "Analysis result"
+        mock_handler.extract_text_from_generated_responses.return_value = (
+            "Analysis result"
+        )
         mock_copilot.generate_response = AsyncMock(
             return_value=(mock_handler, mock_generation_context)
         )

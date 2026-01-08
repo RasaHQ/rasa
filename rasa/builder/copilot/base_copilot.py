@@ -1,6 +1,6 @@
 import json
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from jinja2 import Template
 
@@ -28,7 +28,16 @@ from rasa.builder.shared.tracker_context import TrackerContext
 from rasa.utils.io import read_text_from_package
 
 if TYPE_CHECKING:
-    from rasa.builder.copilot import CopilotResponseHandler
+    from rasa.builder.copilot.response_handling.agent_copilot_response_handler import (
+        AgentCopilotResponseHandler,
+    )
+    from rasa.builder.copilot.response_handling.legacy_copilot_response_handler import (
+        LegacyCopilotResponseHandler,
+    )
+
+    CopilotResponseHandler = Union[
+        AgentCopilotResponseHandler, LegacyCopilotResponseHandler
+    ]
 
 
 def _last_user_message_context_prompt_template() -> Template:

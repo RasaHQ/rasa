@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 import structlog
 
 from rasa import telemetry
-from rasa.builder.copilot import CopilotResponseHandler
+from rasa.builder.copilot import BaseCopilotResponseHandler
 from rasa.builder.copilot.constants import COPILOT_SEGMENT_WRITE_KEY_ENV_VAR
 from rasa.builder.copilot.models import (
     EventContent,
@@ -171,7 +171,7 @@ class CopilotSegmentTelemetry:
         )
 
     @staticmethod
-    def _extract_flags(handler: CopilotResponseHandler) -> list[str]:
+    def _extract_flags(handler: BaseCopilotResponseHandler) -> list[str]:
         """Extract flags from the response handler.
 
         Args:
@@ -184,7 +184,7 @@ class CopilotSegmentTelemetry:
         return sorted(flags)
 
     @staticmethod
-    def _full_text(handler: CopilotResponseHandler) -> str:
+    def _full_text(handler: BaseCopilotResponseHandler) -> str:
         """Extract full text from the response handler.
 
         Args:
@@ -202,7 +202,7 @@ class CopilotSegmentTelemetry:
     def log_copilot_from_handler(
         self,
         *,
-        handler: CopilotResponseHandler,
+        handler: BaseCopilotResponseHandler,
         used_documents: list[Document],
         latency_ms: int,
         model: str,

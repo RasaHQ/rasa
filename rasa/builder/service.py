@@ -3,7 +3,7 @@ import asyncio
 import sys
 import time
 from http import HTTPStatus
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import structlog
 from sanic import Blueprint, HTTPResponse, response
@@ -40,6 +40,8 @@ from rasa.builder.copilot.models import (
     CopilotHistoryResponse,
     CopilotTurnRequest,
     GeneratedContent,
+    GuardrailBlockedContent,
+    GuardrailPolicyViolationContent,
     ReferenceEntry,
     ReferenceSection,
     ResponseCategory,
@@ -1374,7 +1376,7 @@ async def copilot(request: Request) -> None:
 
         # 5. Run guardrail policy checks. If any policy violations are detected,
         #    send a response and end the stream.
-        guardrail_response: Optional[GeneratedContent] = None
+        guardrail_response: Optional[GuardrailPolicyViolationContent] = None
         if llm_service.guardrails_policy_checker is not None:
             guardrail_response = await llm_service.guardrails_policy_checker.check_copilot_chat_for_policy_violations(  # noqa: E501
                 context=context,
@@ -1483,7 +1485,7 @@ async def copilot(request: Request) -> None:
             await sse.send(reference_section.to_sse_event().format())
 
         # 10. Append final assistant message to server-side history
-        full_text = copilot_response_handler.extract_full_text()
+        full_text = copilot_response_handler.extract_text_from_generated_responses()
         category = copilot_response_handler.extract_response_category()
 
         if full_text:
@@ -1712,9 +1714,9 @@ async def _get_copilot_block_scope(user_id: str) -> Optional[BlockScope]:
 
 async def _handle_guardrail_violation_and_maybe_block(
     sse: Any,
-    violation_response: GeneratedContent,
+    violation_response: GuardrailPolicyViolationContent,
     user_id: str,
-) -> GeneratedContent:
+) -> Union[GuardrailPolicyViolationContent, GuardrailBlockedContent]:
     """Record a violation, apply block if threshold crossed, and respond.
 
     Args:
@@ -1723,7 +1725,8 @@ async def _handle_guardrail_violation_and_maybe_block(
         user_id: User identifier.
 
     Returns:
-        The GeneratedContent message that was sent to the client.
+        The GeneratedContent message that was sent to the client. Either of type
+        GuardrailPolicyViolationContent or GuardrailBlockedContent.
     """
     if not GUARDRAILS_ENABLE_BLOCKING:
         await sse.send(violation_response.to_sse_event().format())
@@ -1731,6 +1734,7 @@ async def _handle_guardrail_violation_and_maybe_block(
 
     result = await guardrails_store.record_violation(user_id)
 
+    message: Union[GuardrailPolicyViolationContent, GuardrailBlockedContent]
     if result.user_blocked_now:
         message = CopilotResponseHandler.respond_to_guardrail_blocked(BLOCK_SCOPE_USER)
     elif result.project_blocked_now:

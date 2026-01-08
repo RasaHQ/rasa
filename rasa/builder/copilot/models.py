@@ -38,8 +38,17 @@ class ResponseCompleteness(Enum):
 class ResponseCategory(Enum):
     """Enum for different categories of responses."""
 
-    # Copilot generated content
+    # Copilot generated content. Used for regular generated responses.
+    # For agent handler, content part types (START, DELTA, END) are categorized
+    # as COPILOT when extracting response category for telemetry/categorization.
     COPILOT = "copilot"
+    # The three categories for the agentic copilot response with streaming tokens.
+    # These are internal categories for content parts. When categorizing responses as a
+    # whole (via extract_response_category), these map to COPILOT.
+    COPILOT_TEXT_CONTENT_PART_START = "copilot_text_content_part_start"
+    COPILOT_TEXT_CONTENT_PART_DELTA = "copilot_text_content_part_delta"
+    COPILOT_TEXT_CONTENT_PART_END = "copilot_text_content_part_end"
+    # Reference categories
     REFERENCE = "reference"
     REFERENCE_ENTRY = "reference_entry"
     # When Copilot detects a roleplay request / intent
@@ -54,6 +63,8 @@ class ResponseCategory(Enum):
     GUARDRAILS_BLOCKED = "guardrails_blocked"
     # When Copilot detects request for KB content
     KNOWLEDGE_BASE_ACCESS_REQUESTED = "knowledge_base_access_requested"
+    # When Copilot is generating reasoning steps
+    REASONING = "reasoning"
     # When Copilot analyzes error logs and provides suggestions
     TRAINING_ERROR_LOG_ANALYSIS = "training_error_log_analysis"
     E2E_TESTING_ERROR_LOG_ANALYSIS = "e2e_testing_error_log_analysis"
@@ -61,6 +72,8 @@ class ResponseCategory(Enum):
     E2E_TESTING_ERROR_LOG = "e2e_testing_error_log"
     # Conversation history signature
     SIGNATURE = "signature"
+    # When an exception occurs during streaming
+    EXCEPTION = "exception"
 
 
 class BaseContent(BaseModel):
@@ -544,6 +557,244 @@ class GeneratedContent(CopilotOutput):
         }
 
 
+class ExceptionContent(GeneratedContent):
+    """Generated content for exceptions."""
+
+    content: str
+    response_category: ResponseCategory = Field(
+        default=ResponseCategory.EXCEPTION, frozen=True
+    )
+    response_completeness: ResponseCompleteness = Field(
+        default=ResponseCompleteness.COMPLETE, frozen=True
+    )
+    original_exception: Optional[Exception] = Field(
+        default=None,
+        description="The original exception that occurred.",
+    )
+
+    class Config:
+        """Config for ExceptionContent."""
+
+        arbitrary_types_allowed = True
+
+    @field_serializer("original_exception")
+    def serialize_exception(self, value: Optional[Exception]) -> Optional[str]:
+        """Serialize exception to string representation."""
+        if value is None:
+            return None
+        return str(value)
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "ExceptionContent":
+        """Validate that response_category is EXCEPTION."""
+        _validate_response_category(
+            ResponseCategory.EXCEPTION,
+            self.response_category,
+            type(self),
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_response_completeness(self) -> "ExceptionContent":
+        """Validate that response_completeness is COMPLETE."""
+        _validate_response_completeness(
+            ResponseCompleteness.COMPLETE,
+            self.response_completeness,
+            type(self),
+        )
+        return self
+
+
+class GuardrailPolicyViolationContent(GeneratedContent):
+    """Generated content for guardrail policy violations."""
+
+    content: str
+    response_category: ResponseCategory = Field(
+        default=ResponseCategory.GUARDRAILS_POLICY_VIOLATION, frozen=True
+    )
+    response_completeness: ResponseCompleteness = Field(
+        default=ResponseCompleteness.COMPLETE, frozen=True
+    )
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "GuardrailPolicyViolationContent":
+        """Validate that response_category is GUARDRAILS_POLICY_VIOLATION."""
+        _validate_response_category(
+            ResponseCategory.GUARDRAILS_POLICY_VIOLATION,
+            self.response_category,
+            type(self),
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_response_completeness(self) -> "GuardrailPolicyViolationContent":
+        """Validate that response_completeness is COMPLETE."""
+        _validate_response_completeness(
+            ResponseCompleteness.COMPLETE,
+            self.response_completeness,
+            type(self),
+        )
+        return self
+
+
+class GuardrailBlockedContent(GeneratedContent):
+    """Generated content for guardrail blocks."""
+
+    content: str
+    response_category: ResponseCategory = Field(
+        default=ResponseCategory.GUARDRAILS_BLOCKED, frozen=True
+    )
+    response_completeness: ResponseCompleteness = Field(
+        default=ResponseCompleteness.COMPLETE, frozen=True
+    )
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "GuardrailBlockedContent":
+        """Validate that response_category is GUARDRAILS_BLOCKED."""
+        _validate_response_category(
+            ResponseCategory.GUARDRAILS_BLOCKED,
+            self.response_category,
+            type(self),
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_response_completeness(self) -> "GuardrailBlockedContent":
+        """Validate that response_completeness is COMPLETE."""
+        _validate_response_completeness(
+            ResponseCompleteness.COMPLETE,
+            self.response_completeness,
+            type(self),
+        )
+        return self
+
+
+class ControlledPredictionContent(GeneratedContent):
+    """Content for controlled predictions.
+
+    Controlled predictions result in predefined templated responses.
+    """
+
+    content: str
+    response_category: ResponseCategory = Field(frozen=True)
+    response_completeness: ResponseCompleteness = Field(
+        default=ResponseCompleteness.COMPLETE, frozen=True
+    )
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "ControlledPredictionContent":
+        """Validate that response_category is a valid controlled prediction category."""
+        valid_categories = {
+            ResponseCategory.ROLEPLAY_DETECTION,
+            ResponseCategory.OUT_OF_SCOPE_DETECTION,
+            ResponseCategory.ERROR_FALLBACK,
+            ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
+        }
+        if self.response_category not in valid_categories:
+            raise ValueError(
+                f"ControlledPredictionContent response_category must be one of "
+                f"{[c.value for c in valid_categories]}, "
+                f"got `{self.response_category}`."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_response_completeness(self) -> "ControlledPredictionContent":
+        """Validate that response_completeness is COMPLETE."""
+        _validate_response_completeness(
+            ResponseCompleteness.COMPLETE,
+            self.response_completeness,
+            type(self),
+        )
+        return self
+
+
+class CopilotTextContent(GeneratedContent):
+    """Content for Copilot text deltas."""
+
+    content: str
+    response_category: ResponseCategory = Field(
+        default=ResponseCategory.COPILOT_TEXT_CONTENT_PART_DELTA, frozen=True
+    )
+    response_completeness: ResponseCompleteness = Field(
+        default=ResponseCompleteness.TOKEN, frozen=True
+    )
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "CopilotTextContent":
+        """Validate that response_category is COPILOT_TEXT_PART_DELTA."""
+        _validate_response_category(
+            ResponseCategory.COPILOT_TEXT_CONTENT_PART_DELTA,
+            self.response_category,
+            type(self),
+        )
+        return self
+
+
+class CopilotTextStartContent(GeneratedContent):
+    """Content for the start of a Copilot text part."""
+
+    content: str = Field(default="")
+    response_category: ResponseCategory = Field(
+        default=ResponseCategory.COPILOT_TEXT_CONTENT_PART_START, frozen=True
+    )
+    response_completeness: ResponseCompleteness = Field(
+        default=ResponseCompleteness.COMPLETE, frozen=True
+    )
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "CopilotTextStartContent":
+        """Validate that response_category is COPILOT_TEXT_PART_START."""
+        _validate_response_category(
+            ResponseCategory.COPILOT_TEXT_CONTENT_PART_START,
+            self.response_category,
+            type(self),
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_response_completeness(self) -> "CopilotTextStartContent":
+        """Validate that response_completeness is COMPLETE."""
+        _validate_response_completeness(
+            ResponseCompleteness.COMPLETE,
+            self.response_completeness,
+            type(self),
+        )
+        return self
+
+
+class CopilotTextEndContent(GeneratedContent):
+    """Content for the end of a Copilot text part."""
+
+    content: str = Field(default="")
+    response_category: ResponseCategory = Field(
+        default=ResponseCategory.COPILOT_TEXT_CONTENT_PART_END, frozen=True
+    )
+    response_completeness: ResponseCompleteness = Field(
+        default=ResponseCompleteness.COMPLETE, frozen=True
+    )
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "CopilotTextEndContent":
+        """Validate that response_category is COPILOT_CONTENT_PART_END."""
+        _validate_response_category(
+            ResponseCategory.COPILOT_TEXT_CONTENT_PART_END,
+            self.response_category,
+            type(self),
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_response_completeness(self) -> "CopilotTextEndContent":
+        """Validate that response_completeness is COMPLETE."""
+        _validate_response_completeness(
+            ResponseCompleteness.COMPLETE,
+            self.response_completeness,
+            type(self),
+        )
+        return self
+
+
 class ReferenceEntry(CopilotOutput):
     """Represents a reference entry with title and url."""
 
@@ -559,11 +810,11 @@ class ReferenceEntry(CopilotOutput):
     @model_validator(mode="after")
     def validate_response_category(self) -> "ReferenceEntry":
         """Validate that response_category has the correct default value."""
-        if self.response_category != ResponseCategory.REFERENCE_ENTRY:
-            raise ValueError(
-                f"ReferenceEntry response_category must be "
-                f"{ResponseCategory.REFERENCE_ENTRY}, got `{self.response_category}`."
-            )
+        _validate_response_category(
+            ResponseCategory.REFERENCE_ENTRY,
+            self.response_category,
+            type(self),
+        )
         return self
 
     def to_sse_event(self) -> ServerSentEvent:
@@ -598,11 +849,11 @@ class ReferenceSection(CopilotOutput):
     @model_validator(mode="after")
     def validate_response_category(self) -> "ReferenceSection":
         """Validate that response_category has the correct default value."""
-        if self.response_category != ResponseCategory.REFERENCE:
-            raise ValueError(
-                f"ReferenceSection response_category must be "
-                f"{ResponseCategory.REFERENCE}, got `{self.response_category}`."
-            )
+        _validate_response_category(
+            ResponseCategory.REFERENCE,
+            self.response_category,
+            type(self),
+        )
         return self
 
     def to_sse_event(self) -> ServerSentEvent:
@@ -646,12 +897,68 @@ class TrainingErrorLog(CopilotOutput):
     @model_validator(mode="after")
     def validate_response_category(self) -> "TrainingErrorLog":
         """Validate that response_category has the correct default value."""
-        if self.response_category != ResponseCategory.TRAINING_ERROR_LOG:
-            raise ValueError(
-                f"TrainingErrorLog response_category must be "
-                f"{ResponseCategory.TRAINING_ERROR_LOG}, "
-                f"got `{self.response_category}`."
-            )
+        _validate_response_category(
+            ResponseCategory.TRAINING_ERROR_LOG,
+            self.response_category,
+            type(self),
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_response_completeness(self) -> "TrainingErrorLog":
+        """Validate that response_completeness is COMPLETE."""
+        _validate_response_completeness(
+            ResponseCompleteness.COMPLETE,
+            self.response_completeness,
+            type(self),
+        )
+        return self
+
+    def to_sse_event(self) -> ServerSentEvent:
+        """Convert to SSE event format."""
+        return ServerSentEvent(
+            event="copilot_response",
+            data=self.sse_data,
+        )
+
+    @property
+    def sse_data(self) -> Dict[str, Any]:
+        """Extract the SSE data payload."""
+        return {
+            "logs": [log.model_dump() for log in self.logs],
+            "response_category": self.response_category.value,
+            "completeness": self.response_completeness.value,
+        }
+
+
+class E2ETestingErrorLog(CopilotOutput):
+    """Represents an E2E testing error log."""
+
+    logs: List[LogContent]
+    response_category: ResponseCategory = Field(
+        default=ResponseCategory.E2E_TESTING_ERROR_LOG,
+        frozen=True,
+    )
+    response_completeness: ResponseCompleteness = ResponseCompleteness.COMPLETE
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "E2ETestingErrorLog":
+        """Validate that response_category has the correct default value."""
+        _validate_response_category(
+            ResponseCategory.E2E_TESTING_ERROR_LOG,
+            self.response_category,
+            type(self),
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_response_completeness(self) -> "E2ETestingErrorLog":
+        """Validate that response_completeness is COMPLETE."""
+        _validate_response_completeness(
+            ResponseCompleteness.COMPLETE,
+            self.response_completeness,
+            type(self),
+        )
         return self
 
     def to_sse_event(self) -> ServerSentEvent:
@@ -906,3 +1213,59 @@ class CopilotGenerationContext(BaseModel):
         """Config for CopilotGenerationContext."""
 
         arbitrary_types_allowed = True
+
+
+def _validate_response_category(
+    expected_response_category: ResponseCategory,
+    actual_response_category: ResponseCategory,
+    pydantic_class: Type[Any],
+) -> None:
+    """Validate that the response category is valid for the given pydantic class.
+
+    Args:
+        expected_response_category: The expected ResponseCategory value.
+        actual_response_category: The actual ResponseCategory value to validate.
+        pydantic_class: The Pydantic class type (used for error messages).
+
+    Raises:
+        ValueError: If the actual category doesn't match the expected value.
+    """
+    if expected_response_category != actual_response_category:
+        error_message = (
+            f"{pydantic_class.__name__} response_category must be "
+            f"{expected_response_category}, got `{actual_response_category}`."
+        )
+        structlogger.error(
+            f"{pydantic_class.__name__}.validate_response_category",
+            event_info=error_message,
+        )
+        raise ValueError(error_message)
+
+
+def _validate_response_completeness(
+    expected_response_completeness: ResponseCompleteness,
+    actual_response_completeness: ResponseCompleteness,
+    pydantic_class: Type[Any],
+) -> None:
+    """Validate that the response completeness is valid for the given pydantic class.
+
+    Args:
+        expected_response_completeness: The expected ResponseCompleteness value.
+        actual_response_completeness: The actual ResponseCompleteness value to validate.
+        pydantic_class: The Pydantic class type (used for error messages).
+
+    Raises:
+        ValueError: If the actual completeness doesn't match the expected value.
+    """
+    if expected_response_completeness != actual_response_completeness:
+        error_message = (
+            f"{pydantic_class.__name__} response_completeness must be "
+            f"{expected_response_completeness}, got `{actual_response_completeness}`."
+        )
+        structlogger.error(
+            f"{pydantic_class.__name__}.validate_response_completeness",
+            event_info=error_message,
+            expected_response_completeness=expected_response_completeness,
+            actual_response_completeness=actual_response_completeness,
+        )
+        raise ValueError(error_message)

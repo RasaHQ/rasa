@@ -83,7 +83,7 @@ def patch_copilot_dependencies(monkeypatch):
         }
     )
 
-    # 3. Patch CopilotResponseHandler to return a mock
+    # 3. Create a mock handler (returned by Copilot.generate_response)
     token = SimpleNamespace(
         content="hi",
         response_category=ResponseCategory.COPILOT,
@@ -101,7 +101,7 @@ def patch_copilot_dependencies(monkeypatch):
             to_sse_event=lambda: SimpleNamespace(format=lambda: "")
         ),
         extract_response_category=lambda: ResponseCategory.COPILOT,
-        extract_full_text=lambda: "hi",
+        extract_text_from_generated_responses=lambda: "hi",
     )
 
     fake_copilot = SimpleNamespace(
@@ -129,11 +129,6 @@ def patch_copilot_dependencies(monkeypatch):
     monkeypatch.setattr(
         "rasa.builder.service.Copilot",
         lambda: fake_copilot,
-    )
-
-    monkeypatch.setattr(
-        "rasa.builder.service.CopilotResponseHandler",
-        lambda *args, **kwargs: handler,
     )
 
     # 4. Additional patches to avoid errors in the service
@@ -195,7 +190,7 @@ def _setup_copilot_mocks(
         mock_reference.to_sse_event.return_value.format.return_value = ""
         handler.extract_references.return_value = mock_reference
         handler.extract_response_category.return_value = ResponseCategory.COPILOT
-        handler.extract_full_text.return_value = expected_response
+        handler.extract_text_from_generated_responses.return_value = expected_response
         return handler
 
     # Mock copilot client
@@ -211,11 +206,8 @@ def _setup_copilot_mocks(
     mock_copilot = MagicMock()
     mock_copilot.generate_response = mock_generate_response
 
-    # Patch Copilot and CopilotResponseHandler classes
+    # Patch Copilot class
     monkeypatch.setattr("rasa.builder.service.Copilot", lambda: mock_copilot)
-    monkeypatch.setattr(
-        "rasa.builder.service.CopilotResponseHandler", mock_instantiate_handler
-    )
 
     # Mock llm_service for history_store and guardrails
     mock_llm_service = MagicMock()

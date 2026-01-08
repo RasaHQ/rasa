@@ -6,13 +6,12 @@ while maintaining full compatibility with the existing copilot interface.
 
 import importlib.resources
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
+from typing import Any, AsyncGenerator, Dict, List, Tuple
 
 import structlog
-from agents import Agent, ModelSettings, RawResponsesStreamEvent, Runner, StreamEvent
+from agents import Agent, ModelSettings, Runner, StreamEvent
 from agents.mcp import MCPServerStreamableHttp
 from jinja2 import Template
-from openai.types.responses import ResponseTextDeltaEvent
 
 from rasa.builder import config
 from rasa.builder.copilot.base_copilot import BaseCopilot
@@ -20,14 +19,14 @@ from rasa.builder.copilot.constants import (
     COPILOT_PROMPTS_DIR,
     COPILOT_PROMPTS_FILE_AGENT_SDK,
 )
-from rasa.builder.copilot.copilot_response_handler import (
-    CopilotResponseHandler,
-)
 from rasa.builder.copilot.models import (
     CopilotContext,
     CopilotGenerationContext,
     EventContent,
     UsageStatistics,
+)
+from rasa.builder.copilot.response_handling.agent_copilot_response_handler import (
+    AgentCopilotResponseHandler,
 )
 from rasa.builder.document_retrieval.models import Document
 from rasa.shared.constants import PACKAGE_NAME
@@ -54,6 +53,16 @@ class AgentCopilot(BaseCopilot):
             output_token_price=config.COPILOT_OUTPUT_TOKEN_PRICE,
             cached_token_price=config.COPILOT_CACHED_TOKEN_PRICE,
         )
+
+    @property
+    def llm_config(self) -> Dict[str, Any]:
+        """The LLM config used to generate the response."""
+        return {
+            "model": config.OPENAI_MODEL,
+            "temperature": config.OPENAI_TEMPERATURE,
+            "stream": True,
+            "stream_options": {"include_usage": True},
+        }
 
     @property
     def usage_statistics(self) -> UsageStatistics:
@@ -172,7 +181,7 @@ class AgentCopilot(BaseCopilot):
     async def generate_response(
         self,
         context: CopilotContext,
-    ) -> Tuple[CopilotResponseHandler, CopilotGenerationContext]:
+    ) -> Tuple[AgentCopilotResponseHandler, CopilotGenerationContext]:
         """Generate a response from the copilot.
 
         This method matches the signature of the existing copilot's generate_response
@@ -205,7 +214,7 @@ class AgentCopilot(BaseCopilot):
             tracker_event_attachments=tracker_event_attachments,
         )
 
-        copilot_response_handler = CopilotResponseHandler(
+        copilot_response_handler = AgentCopilotResponseHandler(
             self._stream_response(system_prompt, messages),
             rolling_buffer_size=config.COPILOT_HANDLER_ROLLING_BUFFER_SIZE,
         )
@@ -270,19 +279,11 @@ class AgentCopilot(BaseCopilot):
                 converted.append(msg)
         return converted
 
-    def extract_text_response_delta(self, event: StreamEvent) -> Optional[str]:
-        """Extract the text response delta from the event."""
-        if not isinstance(event, RawResponsesStreamEvent) or not isinstance(
-            event.data, ResponseTextDeltaEvent
-        ):
-            return None
-        return event.data.delta
-
     async def _stream_response(
         self,
         system_prompt: str,
         messages: List[Dict[str, Any]],
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[StreamEvent, None]:
         """Stream response tokens from the agent.
 
         Args:
@@ -300,17 +301,9 @@ class AgentCopilot(BaseCopilot):
         try:
             # Run the agent with streaming enabled
             async with self._create_agent(system_prompt) as agent:
-                result = Runner.run_streamed(
-                    agent,
-                    input=messages,
-                )
-
-                # Stream the response tokens
-                # TODO: (agent-sdk) Ticket https://rasahq.atlassian.net/browse/SWI-859
+                result = Runner.run_streamed(agent, input=messages)
                 async for event in result.stream_events():
-                    text_delta = self.extract_text_response_delta(event)
-                    if text_delta:
-                        yield text_delta
+                    yield event
 
         except Exception as e:
             structlogger.error(
@@ -319,13 +312,3 @@ class AgentCopilot(BaseCopilot):
                 error=str(e),
             )
             raise
-
-    @property
-    def llm_config(self) -> Dict[str, Any]:
-        """The LLM config used to generate the response."""
-        return {
-            "model": config.OPENAI_MODEL,
-            "temperature": config.OPENAI_TEMPERATURE,
-            "stream": True,
-            "stream_options": {"include_usage": True},
-        }

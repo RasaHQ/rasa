@@ -28,7 +28,7 @@ from rasa.builder.telemetry.langfuse_compat import (
 from rasa.builder.telemetry.shared import update_generation_span_with_usage_statistics
 
 if TYPE_CHECKING:
-    from rasa.builder.copilot import BaseCopilot, CopilotResponseHandler
+    from rasa.builder.copilot import BaseCopilot, BaseCopilotResponseHandler
     from rasa.builder.copilot.models import CopilotContext
     from rasa.builder.document_retrieval.inkeep_document_retrieval import (
         InKeepDocumentRetrieval,
@@ -95,7 +95,7 @@ class CopilotLangfuseTelemetry:
         chat_id: str,
         user_id: str,
         request: CopilotTurnRequest,
-        handler: "CopilotResponseHandler",
+        handler: "BaseCopilotResponseHandler",
         relevant_documents: list[Document],
         copilot_context: "CopilotContext",
     ) -> None:
@@ -174,7 +174,7 @@ class CopilotLangfuseTelemetry:
             )
 
     @staticmethod
-    def trace_copilot_streaming_generation(
+    def trace_legacy_copilot_streaming_generation(
         func: Callable[..., AsyncGenerator[str, None]],
     ) -> Callable[..., AsyncGenerator[str, None]]:
         """Custom decorator for tracing async streaming of the Copilot's LLM generation.
@@ -293,7 +293,7 @@ class CopilotLangfuseTelemetry:
 
     @staticmethod
     def _extract_response_category(
-        handler: "CopilotResponseHandler",
+        handler: "BaseCopilotResponseHandler",
     ) -> Optional[str]:
         """Extract the response category from the response handler.
 
@@ -311,7 +311,7 @@ class CopilotLangfuseTelemetry:
         return handler.generated_responses[0].response_category.value
 
     @staticmethod
-    def _full_text(handler: "CopilotResponseHandler") -> str:
+    def _full_text(handler: "BaseCopilotResponseHandler") -> str:
         """Extract full text from the response handler.
 
         Args:
@@ -328,7 +328,7 @@ class CopilotLangfuseTelemetry:
 
     @staticmethod
     def _extract_references(
-        handler: "CopilotResponseHandler",
+        handler: "BaseCopilotResponseHandler",
         relevant_documents: list[Document],
     ) -> List[Dict[str, Any]]:
         """Extract reference entries from the response handler.

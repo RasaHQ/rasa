@@ -9,7 +9,7 @@ from rasa.builder.copilot.constants import ROLE_COPILOT, ROLE_USER
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
     CopilotContext,
-    GeneratedContent,
+    GuardrailPolicyViolationContent,
     ResponseCategory,
 )
 from rasa.builder.guardrails.clients import GuardrailsClient
@@ -96,10 +96,10 @@ class GuardrailsPolicyChecker:
         hello_rasa_user_id: Optional[str],
         hello_rasa_project_id: Optional[str],
         **kwargs: Any,
-    ) -> Optional[GeneratedContent]:
+    ) -> Optional[GuardrailPolicyViolationContent]:
         """Check the copilot chat history for guardrail policy violations.
 
-        Only user messages are moderated – assistant messages are assumed safe.
+        Only user messages are moderated, assistant messages are assumed safe.
         LRU cache is used, so each unique user text is checked once.
 
         Args:

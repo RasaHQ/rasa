@@ -585,7 +585,7 @@ class ProjectGenerator:
                 pass
 
             # Extract the full text from the handler
-            full_text = copilot_response_handler.extract_full_text()
+            full_text = copilot_response_handler.extract_text_from_generated_responses()
             return full_text if full_text else None
 
         except Exception as e:

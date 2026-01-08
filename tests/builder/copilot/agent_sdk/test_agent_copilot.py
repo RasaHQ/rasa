@@ -165,8 +165,10 @@ class TestAgentCopilot:
         self, mock_config, sample_context
     ):
         """Test generate_response returns handler and generation context."""
-        from rasa.builder.copilot import CopilotResponseHandler
         from rasa.builder.copilot.agent_sdk.agent_copilot import AgentCopilot
+        from rasa.builder.copilot.response_handling.agent_copilot_response_handler import (  # noqa: E501
+            AgentCopilotResponseHandler,
+        )
 
         # Mock the _stream_response method to avoid MCP server connection
         async def mock_stream():
@@ -176,7 +178,7 @@ class TestAgentCopilot:
             copilot = AgentCopilot()
             handler, gen_context = await copilot.generate_response(sample_context)
 
-            assert isinstance(handler, CopilotResponseHandler)
+            assert isinstance(handler, AgentCopilotResponseHandler)
             assert isinstance(gen_context, CopilotGenerationContext)
             assert gen_context.system_message is not None
             assert gen_context.last_user_message is not None

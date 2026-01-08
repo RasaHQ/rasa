@@ -17,9 +17,6 @@ from rasa.builder.copilot.constants import (
     ROLE_COPILOT_INTERNAL,
     ROLE_USER,
 )
-from rasa.builder.copilot.copilot_response_handler import (
-    CopilotResponseHandler,
-)
 from rasa.builder.copilot.exceptions import CopilotStreamError
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
@@ -30,6 +27,9 @@ from rasa.builder.copilot.models import (
     ResponseCategory,
     UsageStatistics,
     UserChatMessage,
+)
+from rasa.builder.copilot.response_handling.legacy_copilot_response_handler import (
+    LegacyCopilotResponseHandler,
 )
 from rasa.builder.document_retrieval.inkeep_document_retrieval import (
     InKeepDocumentRetrieval,
@@ -129,7 +129,7 @@ class LegacyCopilot(BaseCopilot):
     async def generate_response(
         self,
         context: CopilotContext,
-    ) -> Tuple[CopilotResponseHandler, CopilotGenerationContext]:
+    ) -> Tuple[LegacyCopilotResponseHandler, CopilotGenerationContext]:
         """Generate a response from the copilot.
 
         This method performs document retrieval and response generation as a single
@@ -164,7 +164,7 @@ class LegacyCopilot(BaseCopilot):
             tracker_event_attachments=tracker_event_attachments,
         )
 
-        copilot_response_handler = CopilotResponseHandler(
+        copilot_response_handler = LegacyCopilotResponseHandler(
             response_stream=self._stream_response(messages),
             rolling_buffer_size=config.COPILOT_HANDLER_ROLLING_BUFFER_SIZE,
         )
@@ -174,7 +174,7 @@ class LegacyCopilot(BaseCopilot):
             support_evidence,
         )
 
-    @CopilotLangfuseTelemetry.trace_copilot_streaming_generation
+    @CopilotLangfuseTelemetry.trace_legacy_copilot_streaming_generation
     async def _stream_response(
         self, messages: List[Dict[str, Any]]
     ) -> AsyncGenerator[str, None]:

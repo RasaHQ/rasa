@@ -230,7 +230,7 @@ class TestCopilotLangfuseTelemetry:
         )
 
         # Create the decorator and apply it to the mock streamingfunction
-        decorator = CopilotLangfuseTelemetry.trace_copilot_streaming_generation
+        decorator = CopilotLangfuseTelemetry.trace_legacy_copilot_streaming_generation
 
         async def mock_streaming_function(
             self: Any, messages: List[Dict[str, Any]]

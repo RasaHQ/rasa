@@ -597,7 +597,7 @@ async def run_copilot_training_error_analysis_job(
             )
 
         # Persist the training error analysis to history
-        full_text = copilot_response_handler.extract_full_text()
+        full_text = copilot_response_handler.extract_text_from_generated_responses()
 
         # Extract references if available
         references = None
