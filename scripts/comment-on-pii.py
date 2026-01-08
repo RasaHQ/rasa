@@ -270,30 +270,14 @@ def handle_no_findings(
     """Handle the case when no Semgrep findings are detected."""
     # Check if there are any existing PII comments from previous runs
     existing_pii_comments = [
-        comment for comment in existing_review_comments 
-        if PII_COMMENT_MARKER in comment.get('body', '') and not comment.get('outdated', False)
+        comment for comment in existing_review_comments
+        if PII_COMMENT_MARKER in comment.get('body', '') and not comment.get('outdated', False) and not comment.get('resolved', False)
     ]
     
     if existing_pii_comments:
-        no_issues_message = f"{SUMMARY_COMMENT_MARKER}\n\n✅ No new PII issues detected in latest scan!\n\n*Note: {len(existing_pii_comments)} existing PII comment(s) from previous scans remain active.*"
+        logger.info(f"No new PII issues detected. {len(existing_pii_comments)} existing PII comment(s) from previous scans remain active. No new comment will be posted.")
     else:
-        no_issues_message = f"{SUMMARY_COMMENT_MARKER}\n\n✅ No PII issues detected!"
-
-    # Check if summary comment already exists
-    existing_summary = find_existing_summary_comment(existing_issue_comments)
-    if existing_summary:
-        if should_update_comment(existing_summary['body'], no_issues_message):
-            # Delete old summary and create new one
-            if github_api_client.delete_general_pr_comment(existing_summary['id']):
-                success = github_api_client.create_general_pr_comment(pr_number, no_issues_message)
-                if success:
-                    logger.info("Replaced existing 'no issues detected' summary comment")
-        else:
-            logger.info("Skipping summary update - content unchanged")
-    else:
-        success = github_api_client.create_general_pr_comment(pr_number, no_issues_message)
-        if success:
-            logger.info("Posted 'no issues detected' summary comment")
+        logger.info("No PII issues detected. No comment will be posted.")
 
 
 def process_semgrep_findings(
@@ -378,15 +362,21 @@ def create_and_post_summary(
 ) -> None:
     """Create or update summary comment."""
     total_actions = comments_posted_count + comments_updated_count
-    if total_actions > 0:
-        if comments_posted_count > 0 and comments_updated_count > 0:
-            summary_status_message = f'⚠️ {comments_posted_count} new comments posted, {comments_updated_count} existing comments updated.'
-        elif comments_posted_count > 0:
-            summary_status_message = f'⚠️ {comments_posted_count} new comments posted.'
-        else:
-            summary_status_message = f'⚠️ {comments_updated_count} existing comments updated.'
+    
+    if len(semgrep_findings) == findings_skipped_count:
+        logger.info("All findings were skipped (existing lines only). No summary comment will be posted.")
+        return
+    
+    if total_actions == 0:
+        logger.info("No actionable PII issues in added lines - exiting silently (no comment posted)")
+        return
+    
+    if comments_posted_count > 0 and comments_updated_count > 0:
+        summary_status_message = f'⚠️ {comments_posted_count} new comments posted, {comments_updated_count} existing comments updated.'
+    elif comments_posted_count > 0:
+        summary_status_message = f'⚠️ {comments_posted_count} new comments posted.'
     else:
-        summary_status_message = '✅ No new PII issues in added lines!'
+        summary_status_message = f'⚠️ {comments_updated_count} existing comments updated.'
 
     summary_comment_text = f"""{SUMMARY_COMMENT_MARKER}
 
