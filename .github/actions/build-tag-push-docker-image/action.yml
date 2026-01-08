@@ -1,0 +1,39 @@
+name: 'Build, Tag and Push Docker Image'
+description: 'Builds a Rasa Private dev Docker image and pushes it to Amazon ECR. Assumes AWS credentials and ECR login are already configured.'
+
+inputs:
+  platform:
+    description: 'Target platform for the Docker build (e.g., linux/amd64).'
+    required: true
+  repository:
+    description: 'ECR repository URI where the image will be pushed (e.g., 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-private-dev).'
+    required: true
+  image-tag:
+    description: 'Tag to apply to the Docker image (e.g., branch-timestamp).'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build Rasa Private Dev Docker Image 🐳
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+        RASA_REPOSITORY: ${{ inputs.repository }}
+        RASA_IMAGE_TAG: ${{ inputs.image-tag }}
+      run: |
+        echo "Building Docker image with:"
+        echo "  Platform: $PLATFORM"
+        echo "  Repository: $RASA_REPOSITORY"
+        echo "  Tag: $RASA_IMAGE_TAG"
+        make build-docker
+
+    - name: Push image to Amazon ECR 📤
+      shell: bash
+      env:
+        REPOSITORY: ${{ inputs.repository }}
+        IMAGE_TAG: ${{ inputs.image-tag }}
+      run: |
+        echo "Pushing image $REPOSITORY:$IMAGE_TAG to ECR"
+        docker push "$REPOSITORY:$IMAGE_TAG"
+        echo "Successfully pushed $REPOSITORY:$IMAGE_TAG"

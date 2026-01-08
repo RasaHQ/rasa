@@ -1,0 +1,82 @@
+# .github/actions/train-and-upload-model/action.yml
+name: 'Train and Upload Rasa Model'
+description: 'Runs the Rasa Pro training process and uploads the resulting model artifact to S3.'
+
+inputs:
+  # --- Training Inputs ---
+  tag-version:
+    description: 'A unique timestamp/branch ID for tagging the model file.'
+    required: true
+  rasa-pro-dev-repository:
+    description: 'The ECR repository where the Rasa Pro image is tagged.'
+    required: true
+  rasa-image-tag:
+    description: 'The unique tag for the Docker image to use during training.'
+    required: true
+  
+  make-target:
+    description: 'The make target to run for training (e.g., train-rds-tracker-bot, train-action-server-calm-bot). If not provided, defaults to train-rds-tracker-bot.'
+    required: false
+    
+  # --- S3 Upload Inputs ---
+  aws-region:
+    description: 'The AWS region for S3 operations.'
+    required: true
+  
+  model-file-path:
+    description: 'Full path to the model file. If not provided, will be constructed as tests_deployment/integration_tests_tracker_stores/sql_tracker_store/calm-demo-bot/models/model-{tag-version}.tar.gz'
+    required: false
+  
+  # --- Secret Inputs (passed as environment variables) ---
+  openai-api-key:
+    description: 'OpenAI API key for training (passed to MAKE command).'
+    required: false
+  rasa-pro-license:
+    description: 'Rasa Pro license key (passed to MAKE command).'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set Model and File Path Variables
+      shell: bash
+      env:
+        INPUT_TAG_VERSION: ${{ inputs.tag-version }}
+        INPUT_MODEL_FILE_PATH: ${{ inputs.model-file-path }}
+      # Setting environment variables used in the following steps
+      run: |
+        MODEL_NAME="model-${INPUT_TAG_VERSION}.tar.gz"
+        if [ -n "$INPUT_MODEL_FILE_PATH" ]; then
+          MODEL_FILE_PATH="$INPUT_MODEL_FILE_PATH"
+        else
+          # Default path construction
+          MODEL_FILE_PATH="tests_deployment/integration_tests_tracker_stores/sql_tracker_store/calm-demo-bot/models/$MODEL_NAME"
+        fi
+        echo "MODEL_NAME=$MODEL_NAME" >> $GITHUB_ENV
+        echo "MODEL_FILE_PATH=$MODEL_FILE_PATH" >> $GITHUB_ENV
+
+    - name: Rasa Train 🧠
+      shell: bash
+      env:
+        OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_REPOSITORY: ${{ inputs.rasa-pro-dev-repository }}
+        RASA_IMAGE_TAG: ${{ inputs.rasa-image-tag }}
+        MODEL_NAME: ${{ env.MODEL_NAME }} # Use the derived variable
+        INPUT_MAKE_TARGET: ${{ inputs.make-target }}
+      run: |
+        MAKE_TARGET="${INPUT_MAKE_TARGET:-train-rds-tracker-bot}"
+        echo "Starting Rasa training with image ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}"
+        echo "Using make target: ${MAKE_TARGET}"
+        make "${MAKE_TARGET}"
+        
+    - name: Upload the model to S3 💾
+      shell: bash
+      env:
+        MODEL_FILE_PATH: ${{ env.MODEL_FILE_PATH }} # Use the derived variable
+        AWS_REGION: ${{ inputs.aws-region }}
+      run: |
+        echo "Uploading trained model to S3 from path: $MODEL_FILE_PATH"
+        aws s3 cp $MODEL_FILE_PATH s3://rasa-pro-ci-trained-models/ \
+          --region $AWS_REGION \
+          --endpoint-url https://s3.$AWS_REGION.amazonaws.com

@@ -1,11 +1,130 @@
-name: rasa-pro-eks-helm
-description: Deploy Rasa Pro Helm chart on EKS cluster from base infra
-runtime:
-  name: python
-  options:
-    toolchain: pip
-    virtualenv: venv
+name: eks-helm
+description: Deploy a Rasa Pro instance on EKS using Helm via Pulumi
+runtime: yaml
 config:
-  pulumi:tags:
-    value:
-      pulumi:template: aws-python
+  clusterName:
+    type: string
+  projectName:
+    type: string
+  rasaPro:
+    type: string
+  rasaProRepository:
+    type: string
+  rasaProHelmRepo:
+    type: string
+  rasaProHelmVersion:
+    type: string
+  rasaProModelBucketName:
+    type: string
+  rasaProModelFileName:
+    type: string
+packages:
+  rasa-aws: github.com/RasaHQ/pulumi-components/rasa-aws@1.0.0-rasa-aws
+  rasa-apps: github.com/RasaHQ/pulumi-components/rasa-apps@0.6.0-rasa-apps
+resources:
+  githubProvider:
+    type: pulumi:providers:github
+    properties:
+      owner: RasaHQ
+  clusterRef:
+    type: pulumi:pulumi:StackReference
+    properties:
+      name: ${clusterName}
+  k8sProvider:
+    type: pulumi:providers:kubernetes
+    properties:
+      kubeconfig: ${clusterRef.outputs["kubeConfig"]}
+  rasa-pro:
+    type: rasa-apps:RasaPro
+    properties:
+      rasaProHelmRepo: ${rasaProHelmRepo}
+      rasaProHelmVersion: ${rasaProHelmVersion}
+      rasaProLicense: ${rasaProLicense}
+      openaiApiKey: ${rasaProOpenaiApiKey}
+      namespace: ${projectName}
+      helmValues: ${rasaProHelmValues}
+    options:
+      provider: ${k8sProvider}
+  rasaProDns:
+    type: rasa-aws:Route53IngressDnsRecord
+    properties:
+      route53ZoneName: ${awsRoute53ZoneName}
+      dnsHostname: ${projectName}.${awsRoute53ZoneName}
+      albTags:
+        elbv2.k8s.aws/cluster: ${clusterRef.outputs["clusterName"]}
+        ingress.k8s.aws/stack: ${pulumi.project}-${pulumi.stack}-alb-group
+    options:
+      provider: ${k8sProvider}
+      dependsOn:
+        - ${rasa-pro}
+outputs:
+  rasaProServerUrl: https://${rasaProDns.dnsRecordName}/version
+variables:
+  rasaProHelmValues:
+    fullnameOverride: rasa
+    rasa:
+      enabled: true
+      image:
+        tag: ${rasaPro}
+        repository: ${rasaProRepository}
+      settings:
+        debugMode: true
+        credentials:
+          enabled: true
+          additionalChannelCredentials:
+            rest: null
+        endpoints:
+          actionEndpoint:
+            actions_module: "actions"
+      ingress:
+        enabled: true
+        className: alb
+        annotations:
+          kubernetes.io/ingress.class: alb
+          alb.ingress.kubernetes.io/scheme: internet-facing
+          alb.ingress.kubernetes.io/target-type: ip
+          alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+          alb.ingress.kubernetes.io/backend-protocol: 'HTTP'
+          alb.ingress.kubernetes.io/certificate-arn: ${awsCertificateArn}
+          alb.ingress.kubernetes.io/group.name: ${pulumi.project}-${pulumi.stack}-alb-group
+        hosts:
+          - host: ${projectName}.${awsRoute53ZoneName}
+            paths:
+              - path: /
+                pathType: Prefix
+            extraPaths: []
+        tls:
+          - secretName: rasa-tls
+            hosts:
+              - ${projectName}.${awsRoute53ZoneName}
+      additionalArgs: ["--model", "${rasaProModelFileName}", "--remote-storage", "aws"]
+      additionalEnv:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rasa-secrets
+              key: OpenaiApiKey
+        - name: RASA_PRO_LICENSE
+          valueFrom:
+            secretKeyRef:
+              name: rasa-secrets
+              key: rasaProLicense
+        - name: AWS_DEFAULT_REGION
+          value: ${rasaProModelBucketRegion}
+        - name: BUCKET_NAME
+          value: ${rasaProModelBucketName}
+        - name: AWS_ENDPOINT_URL
+          value: ${rasaProModelS3EndpointUrl}
+        - name: AWS_SECRET_ACCESS_KEY
+          value: ${rasaProModelAWSSecretAccessKey}
+        - name: AWS_ACCESS_KEY_ID
+          value: ${rasaProModelAWSAccessKeyId}
+      resources:
+        requests:
+          cpu: 1000m
+          memory: 2Gi
+        limits:
+          cpu: 2000m
+          memory: 4Gi
+    rasaProServices:
+      enabled: false

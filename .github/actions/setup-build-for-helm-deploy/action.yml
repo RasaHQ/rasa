@@ -102,7 +102,7 @@ runs:
           AWS_REGION: ${{ inputs.aws-region }}
       shell: bash
       run: |
-        aws eks update-kubeconfig --name rasa-pro-cluster --region $AWS_REGION
+        aws eks update-kubeconfig --name rasa-pro-ci-cluster --region $AWS_REGION
 
     - name: Pulumi Up (Deploy)
       uses: pulumi/actions@v5
@@ -131,11 +131,11 @@ runs:
         AWS_DEFAULT_REGION: ${{ inputs.aws-region }}
         AWS_MODEL_S3_ACCESS_KEY_ID: ${{ inputs.aws-model-s3-access-key-id }}
         AWS_MODEL_S3_SECRET_ACCESS_KEY: ${{ inputs.aws-model-s3-secret-access-key }}
-        POSTGRES_USER: ${{ inputs.postgres-user }}
-        POSTGRES_PASSWORD: ${{ inputs.postgres-password }}
-        POSTGRES_HOST: ${{ inputs.postgres-host }}
-        POSTGRES_PORT: ${{ inputs.postgres-port }}
-        POSTGRES_DB: ${{ inputs.postgres-db }}
+        # POSTGRES_USER: ${{ inputs.postgres-user }}
+        # POSTGRES_PASSWORD: ${{ inputs.postgres-password }}
+        # POSTGRES_HOST: ${{ inputs.postgres-host }}
+        # POSTGRES_PORT: ${{ inputs.postgres-port }}
+        # POSTGRES_DB: ${{ inputs.postgres-db }}
 
 #    - name: Add deployment details as comment
 #      if: success()

@@ -1,0 +1,71 @@
+# ------------------------------------------------------------------------------
+# EKS CI Cluster Update
+#
+# This workflow is responsible for updating the CI EKS cluster using Pulumi.
+# It is intentionally triggered manually via `workflow_dispatch` to ensure
+# controlled and explicit infrastructure changes.
+#
+# Update flow for the CI cluster:
+# 1. Make the required infrastructure changes in the Pulumi configuration
+#    `Pulumi.ci.yaml` under `infrastructure/eks-cluster`.
+# 2. Open a pull request and get the changes reviewed and approved.
+# 3. Merge the approved changes into the main branch.
+# 4. Manually trigger this workflow via GitHub Actions (workflow_dispatch)
+#    to apply the changes to the CI cluster.
+#
+# This separation ensures:
+# - Infrastructure changes are reviewed before being applied
+# - Cluster updates are intentional and traceable
+# - Accidental updates on every push are avoided
+# ------------------------------------------------------------------------------
+
+name: EKS CI cluster update
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  ci-cluster-update:
+    name: EKS CI Cluster Update
+    runs-on: warp-ubuntu-latest-x64-2x
+
+    env:
+      PULUMI_ACCESS_TOKEN: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.PULUMI_COMPONENTS_GITHUB_TOKEN }}
+      AWS_REGION: eu-west-1
+      CI_CLUSTER_NAME: rasa-pro-ci-cluster
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
+
+      - name: Set up kubeconfig
+        env:
+            AWS_REGION: ${{ env.AWS_REGION }}
+        shell: bash
+        run: |
+            aws eks update-kubeconfig --name $CI_CLUSTER_NAME --region $AWS_REGION
+    
+      - name: Pulumi
+        uses: pulumi/actions@8582a9e8cc630786854029b4e09281acd6794b58 #v6.6.1
+            
+      - name: Run pulumi up
+        working-directory: ./infrastructure/eks-cluster
+        run: |
+            pulumi stack select rasa/eks-cluster/ci
+            pulumi install
+            pulumi up --yes

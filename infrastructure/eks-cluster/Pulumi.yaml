@@ -1,0 +1,125 @@
+name: eks-cluster
+description: Pulumi stack for deploying Rasa Pro infrastructure on EKS
+runtime: yaml
+config:
+  clusterName:
+    type: string
+  minClusterSize:
+    type: integer
+    default: 1
+  maxClusterSize:
+    type: integer
+    default: 1
+  clusterDiskSize:
+    type: integer
+    default: 100
+  nodegroupInstanceType:
+    type: string
+    default: t3.xlarge
+  albControllerChartVersion:
+    type: string
+    default: "1.7.1"
+  headlampHelmVersion:
+    type: string
+    default: "0.32.1"
+  pulumi:tags:
+    value:
+      pulumi:template: https://github.com/RasaHQ/pulumi-templates/tree/HEAD/aws-eks-cluster
+packages:
+  rasa-aws: github.com/RasaHQ/pulumi-components/rasa-aws@1.0.1-rasa-aws
+  rasa-apps: github.com/RasaHQ/pulumi-components/rasa-apps@1.0.0-rasa-apps
+resources:
+  cluster:
+    type: rasa-aws:EksCluster
+    properties:
+      name: ${clusterName}
+      vpcAvailabilityZones: 2
+      vpcSingleNatGateway: true
+      nodegroupInstanceType: ${nodegroupInstanceType}
+      nodegroupMinSize: ${minClusterSize}
+      nodegroupMaxSize: ${maxClusterSize}
+      nodegroupDiskSize: ${clusterDiskSize}
+      enableIngressNginx: false
+      enableEbsDriver: true
+      k8sVersion: "1.33"
+      amiType: AL2023_x86_64_STANDARD
+      ebsDriverVersion: "2.45.1"
+  k8sProvider:
+    type: pulumi:providers:kubernetes
+    properties:
+      kubeconfig: ${cluster.kubeConfig}
+  albController:
+    type: rasa-aws:AlbController
+    properties:
+      clusterName: ${cluster.clusterName}
+      clusterOidcProviderUrl: ${cluster.oidcProviderUrl}
+      clusterOidcProviderArn: ${cluster.oidcProviderArn}
+      vpcId: ${cluster.vpcId}
+      awsRegion: ${aws:region}
+      controllerChartVersion: ${albControllerChartVersion}
+      controllerChartValues: {}
+    options:
+      provider: ${k8sProvider}
+      dependsOn:
+        - ${cluster}
+  headlamp:
+    type: rasa-apps:Headlamp
+    properties:
+      headlampHelmRepo: https://kubernetes-sigs.github.io/headlamp/
+      headlampHelmVersion: ${headlampHelmVersion}
+      namespace: headlamp
+      helmValues: ${headlampHelmValues}
+    options:
+      provider: ${k8sProvider}
+      dependsOn:
+        - ${albController}
+  headlampDns:
+    type: rasa-aws:Route53IngressDnsRecord
+    properties:
+      route53ZoneName: rasapro.rasa-dev.io
+      dnsHostname: headlamp-${clusterName}.rasapro.rasa-dev.io
+      albTags:
+        elbv2.k8s.aws/cluster: ${cluster.clusterName}
+        ingress.k8s.aws/stack: ${pulumi.project}-${pulumi.stack}-alb-group
+    options:
+      provider: ${k8sProvider}
+      dependsOn:
+        - ${headlamp}
+outputs:
+  clusterName: ${cluster.clusterName}
+  kubeConfig: ${cluster.kubeConfig}
+  headlampUrl: https://${headlampDns.dnsRecordName}
+variables:
+  headlampHelmValues:
+    fullnameOverride: headlamp
+    config:
+      inCluster: true
+      baseURL: ""
+    service:
+      type: ClusterIP
+      port: 80
+    ingress:
+      enabled: true
+      ingressClassName: alb
+      annotations:
+        alb.ingress.kubernetes.io/scheme: internet-facing
+        alb.ingress.kubernetes.io/target-type: ip
+        alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+        alb.ingress.kubernetes.io/backend-protocol: 'HTTP'
+        alb.ingress.kubernetes.io/certificate-arn:  arn:aws:acm:eu-west-1:329710836760:certificate/fa9c2053-b0d6-48ff-b6a2-5e521544416b 
+        alb.ingress.kubernetes.io/group.name: ${pulumi.project}-${pulumi.stack}-alb-group
+      hosts:
+        - host: headlamp-${clusterName}.rasapro.rasa-dev.io
+          paths:
+            - path: /
+              type: Prefix
+      tls:
+        - secretName: headlamp-tls
+          hosts:
+            - headlamp-${clusterName}.rasapro.rasa-dev.io
+    serviceAccount:
+      create: true
+      name: headlamp-admin
+    clusterRoleBinding:
+      create: true
+      clusterRoleName: cluster-admin
