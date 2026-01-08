@@ -1687,15 +1687,15 @@ jobs:
 
       - name: Prepare test results
         if: success() || failure()
-        run: mv coverage.xml  ${{ github.workspace }}/unit-tests-results-python-${{ matrix.python-version }}.xml
+        run: mv coverage.xml  ${{ github.workspace }}/unit-tests-results-test-audio-manual-python-${{ matrix.python-version }}.xml
 
       - name: Save Test Results
         if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: unit-tests-results-python-${{ matrix.python-version }}
+          name: unit-tests-results-test-audio-manual-python-${{ matrix.python-version }}
           path: |
-            ${{ github.workspace }}/unit-tests-results-python-${{ matrix.python-version }}.xml
+            ${{ github.workspace }}/unit-tests-results-test-audio-manual-python-${{ matrix.python-version }}.xml
 
   unit-test-policies:
     name: Run Policies Unit Tests
@@ -1764,15 +1764,15 @@ jobs:
       - name: Prepare test results
         if: success() || failure()
         run: |
-          mv coverage.xml ${{ github.workspace }}/unit-tests-results-policies-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-test-policies-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
       - name: Save Test Results
         if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: unit-tests-results-policies-python-${{ matrix.python-version }}-${{ matrix.runner }}
+          name: unit-tests-results-test-policies-python-${{ matrix.python-version }}-${{ matrix.runner }}
           path: |
-            ${{ github.workspace }}/unit-tests-results-policies-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+            ${{ github.workspace }}/unit-tests-results-test-policies-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
   unit-test-agents:
     name: Run Agents Unit Tests
@@ -1841,15 +1841,15 @@ jobs:
       - name: Prepare test results
         if: success() || failure()
         run: |
-          mv coverage.xml ${{ github.workspace }}/unit-tests-results-agents-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-test-agents-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
       - name: Save Test Results
         if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: unit-tests-results-agents-python-${{ matrix.python-version }}-${{ matrix.runner }}
+          name: unit-tests-results-test-agents-python-${{ matrix.python-version }}-${{ matrix.runner }}
           path: |
-            ${{ github.workspace }}/unit-tests-results-agents-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+            ${{ github.workspace }}/unit-tests-results-test-agents-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
   unit-test-nlu:
     name: Run NLU Unit Tests
@@ -1993,15 +1993,15 @@ jobs:
       - name: Prepare test results
         if: success() || failure()
         run: |
-          mv coverage.xml ${{ github.workspace }}/unit-tests-results-cli-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-test-cli-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
       - name: Save Test Results
         if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: unit-tests-results-cli-python-${{ matrix.python-version }}-${{ matrix.runner }}
+          name: unit-tests-results-test-cli-python-${{ matrix.python-version }}-${{ matrix.runner }}
           path: |
-            ${{ github.workspace }}/unit-tests-results-cli-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+            ${{ github.workspace }}/unit-tests-results-test-cli-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
   unit-test:
     name: Run Unit Tests
@@ -2176,7 +2176,7 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: unit-tests-results-test-anonymization-python-${{ matrix.python-version }}-runner
+          name: unit-tests-results-test-anonymization-python-${{ matrix.python-version }}
           path: |
             ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
 
