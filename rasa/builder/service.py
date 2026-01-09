@@ -26,7 +26,7 @@ from rasa.builder.config import (
     LAKERA_COPILOT_HISTORY_GUARDRAIL_PROJECT_ID,
     USE_AGENT_SDK_COPILOT,
 )
-from rasa.builder.copilot import Copilot, CopilotResponseHandler
+from rasa.builder.copilot import get_copilot_class
 from rasa.builder.copilot.constants import DEFAULT_COPILOT_CHAT_ID, ROLE_USER
 from rasa.builder.copilot.copilot_templated_message_provider import (
     copilot_internal_message_templates,
@@ -1341,7 +1341,15 @@ async def copilot(request: Request) -> None:
 
         # 2. Check if we need to block the request due to too many guardrails violations
         if (scope := await _get_copilot_block_scope(user_id)) is not None:
-            message = CopilotResponseHandler.respond_to_guardrail_blocked(scope)
+            from rasa.builder.copilot.response_handling import (
+                base_copilot_response_handler as handler_module,
+            )
+
+            message = (
+                handler_module.BaseCopilotResponseHandler.respond_to_guardrail_blocked(
+                    scope
+                )
+            )
             await sse.send(message.to_sse_event().format())
             return
 
@@ -1417,7 +1425,8 @@ async def copilot(request: Request) -> None:
         start_timestamp = time.perf_counter()
 
         async with project_generator.git_service.git_operation():
-            copilot_client = Copilot()
+            copilot_class = get_copilot_class()
+            copilot_client = copilot_class()
             (
                 copilot_response_handler,
                 generation_context,
@@ -1687,6 +1696,111 @@ async def delete_copilot_history(request: Request) -> HTTPResponse:
     return response.json({"status": "deleted"})
 
 
+@bp.route("/copilot/mode", methods=["GET"])
+@openapi.summary("Get current copilot mode")
+@openapi.description("Returns the current copilot mode (agent_sdk or legacy).")
+@openapi.tag("copilot")
+@openapi.response(
+    200,
+    {"application/json": {"mode": str}},
+    description="Current copilot mode retrieved successfully",
+    example={"mode": "legacy"},
+)
+async def get_copilot_mode(request: Request) -> HTTPResponse:
+    """Get current copilot mode."""
+    from rasa.builder.copilot import get_copilot_mode
+
+    return response.json({"mode": get_copilot_mode()})
+
+
+@bp.route("/copilot/mode", methods=["POST"])
+@openapi.summary("Switch copilot mode")
+@openapi.description(
+    "Switches between AgentCopilot and LegacyCopilot implementations at runtime. "
+    "No service restart required."
+)
+@openapi.tag("copilot")
+@openapi.body(
+    {"application/json": {"mode": str}},
+    description="Mode to switch to: 'agent_sdk' or 'legacy'",
+    required=True,
+    example={"mode": "agent_sdk"},
+)
+@openapi.response(
+    200,
+    {"application/json": {"mode": str, "message": str}},
+    description="Copilot mode switched successfully",
+    example={"mode": "agent_sdk", "message": "Copilot mode switched to agent_sdk"},
+)
+@openapi.response(
+    400,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Invalid mode specified",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+async def switch_copilot_mode(request: Request) -> HTTPResponse:
+    """Switch copilot mode at runtime."""
+    try:
+        if request.json is None:
+            return response.json(
+                ApiErrorResponse(
+                    error="Invalid request",
+                    details={"message": "Request body is required"},
+                ).model_dump(),
+                status=400,
+            )
+
+        mode = request.json.get("mode")
+        if not mode:
+            return response.json(
+                ApiErrorResponse(
+                    error="Invalid request",
+                    details={"message": "Mode parameter is required"},
+                ).model_dump(),
+                status=400,
+            )
+
+        from rasa.builder.copilot import set_copilot_mode
+
+        set_copilot_mode(mode)
+
+        structlogger.info(
+            "builder.service.switch_copilot_mode.success",
+            event_info=f"Copilot mode switched to {mode}",
+            mode=mode,
+        )
+
+        return response.json(
+            {"mode": mode, "message": f"Copilot mode switched to {mode}"}
+        )
+
+    except ValueError as exc:
+        return response.json(
+            ApiErrorResponse(
+                error="Invalid mode",
+                details={"message": str(exc)},
+            ).model_dump(),
+            status=400,
+        )
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "builder.service.switch_copilot_mode.error",
+            tags={"endpoint": "/api/copilot/mode"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to switch copilot mode",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
 async def current_tracker_from_input_channel(
     app: Any, session_id: str
 ) -> Optional[DialogueStateTracker]:
@@ -1734,11 +1848,17 @@ async def _handle_guardrail_violation_and_maybe_block(
 
     result = await guardrails_store.record_violation(user_id)
 
+    from rasa.builder.copilot.response_handling.base_copilot_response_handler import (
+        BaseCopilotResponseHandler,
+    )
+
     message: Union[GuardrailPolicyViolationContent, GuardrailBlockedContent]
     if result.user_blocked_now:
-        message = CopilotResponseHandler.respond_to_guardrail_blocked(BLOCK_SCOPE_USER)
+        message = BaseCopilotResponseHandler.respond_to_guardrail_blocked(
+            BLOCK_SCOPE_USER
+        )
     elif result.project_blocked_now:
-        message = CopilotResponseHandler.respond_to_guardrail_blocked(
+        message = BaseCopilotResponseHandler.respond_to_guardrail_blocked(
             BLOCK_SCOPE_PROJECT
         )
     else:

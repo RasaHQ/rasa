@@ -19,7 +19,7 @@ from openai.types.chat import ChatCompletion
 
 from rasa.builder import config
 from rasa.builder.config import PROJECT_GENERATION_TIMEOUT
-from rasa.builder.copilot import Copilot
+from rasa.builder.copilot import get_copilot_class
 from rasa.builder.copilot.constants import (
     DEFAULT_COMMIT_MESSAGE,
 )
@@ -574,7 +574,8 @@ class ProjectGenerator:
                 ],
             )
 
-            copilot = Copilot()
+            copilot_class = get_copilot_class()
+            copilot = copilot_class()
             # Generate copilot response and handle it with the response handler.
             # Consume the stream to get the full response.
             (

@@ -126,9 +126,10 @@ def patch_copilot_dependencies(monkeypatch):
         usage_statistics=usage_stats,
     )
 
+    # Patch get_copilot_class to return a lambda that returns fake_copilot
     monkeypatch.setattr(
-        "rasa.builder.service.Copilot",
-        lambda: fake_copilot,
+        "rasa.builder.service.get_copilot_class",
+        lambda: lambda: fake_copilot,
     )
 
     # 4. Additional patches to avoid errors in the service
@@ -206,8 +207,10 @@ def _setup_copilot_mocks(
     mock_copilot = MagicMock()
     mock_copilot.generate_response = mock_generate_response
 
-    # Patch Copilot class
-    monkeypatch.setattr("rasa.builder.service.Copilot", lambda: mock_copilot)
+    # Patch get_copilot_class to return a lambda that returns mock_copilot
+    monkeypatch.setattr(
+        "rasa.builder.service.get_copilot_class", lambda: lambda: mock_copilot
+    )
 
     # Mock llm_service for history_store and guardrails
     mock_llm_service = MagicMock()
@@ -1141,3 +1144,103 @@ class TestIsLocalhostRequest:
         mock_request.ip = "8.8.8.8"
 
         assert _is_localhost_request(mock_request) is False
+
+
+class TestCopilotModeEndpoints:
+    """Test copilot mode GET and POST endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_get_copilot_mode_returns_current_mode(
+        self, sanic_app: Sanic, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test GET /api/copilot/mode returns the current copilot mode."""
+        mock_get_mode = MagicMock(return_value="legacy")
+        monkeypatch.setattr("rasa.builder.copilot.get_copilot_mode", mock_get_mode)
+
+        async with sanic_app.asgi_client as client:
+            _, response = await client.get("/api/copilot/mode")
+
+        assert response.status == 200
+        payload = json.loads(response.body)
+        assert payload == {"mode": "legacy"}
+
+    @pytest.mark.asyncio
+    async def test_get_copilot_mode_returns_agent_sdk(
+        self, sanic_app: Sanic, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test GET /api/copilot/mode returns agent_sdk mode."""
+        mock_get_mode = MagicMock(return_value="agent_sdk")
+        monkeypatch.setattr("rasa.builder.copilot.get_copilot_mode", mock_get_mode)
+
+        async with sanic_app.asgi_client as client:
+            _, response = await client.get("/api/copilot/mode")
+
+        assert response.status == 200
+        payload = json.loads(response.body)
+        assert payload == {"mode": "agent_sdk"}
+
+    @pytest.mark.asyncio
+    async def test_switch_copilot_mode_success_to_agent_sdk(
+        self, sanic_app: Sanic, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test POST /api/copilot/mode successfully switches to agent_sdk."""
+        mock_set_mode = MagicMock()
+        monkeypatch.setattr("rasa.builder.copilot.set_copilot_mode", mock_set_mode)
+
+        request_data = {"mode": "agent_sdk"}
+
+        async with sanic_app.asgi_client as client:
+            _, response = await client.post("/api/copilot/mode", json=request_data)
+
+        assert response.status == 200
+        payload = json.loads(response.body)
+        assert payload["mode"] == "agent_sdk"
+        assert payload["message"] == "Copilot mode switched to agent_sdk"
+        mock_set_mode.assert_called_once_with("agent_sdk")
+
+    @pytest.mark.asyncio
+    async def test_switch_copilot_mode_success_to_legacy(
+        self, sanic_app: Sanic, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test POST /api/copilot/mode successfully switches to legacy."""
+        mock_set_mode = MagicMock()
+        monkeypatch.setattr("rasa.builder.copilot.set_copilot_mode", mock_set_mode)
+
+        request_data = {"mode": "legacy"}
+
+        async with sanic_app.asgi_client as client:
+            _, response = await client.post("/api/copilot/mode", json=request_data)
+
+        assert response.status == 200
+        payload = json.loads(response.body)
+        assert payload["mode"] == "legacy"
+        assert payload["message"] == "Copilot mode switched to legacy"
+        mock_set_mode.assert_called_once_with("legacy")
+
+    @pytest.mark.asyncio
+    async def test_switch_copilot_mode_empty_body_returns_400(
+        self, sanic_app: Sanic
+    ) -> None:
+        """Test POST /api/copilot/mode with empty body returns 400."""
+        async with sanic_app.asgi_client as client:
+            _, response = await client.post("/api/copilot/mode", data="")
+
+        assert response.status == 400
+        payload = json.loads(response.body)
+        assert payload["error"] == "Invalid request"
+        assert payload["details"]["message"] == "Request body is required"
+
+    @pytest.mark.asyncio
+    async def test_switch_copilot_mode_missing_mode_parameter_returns_400(
+        self, sanic_app: Sanic
+    ) -> None:
+        """Test POST /api/copilot/mode with missing mode parameter returns 400."""
+        request_data = {}
+
+        async with sanic_app.asgi_client as client:
+            _, response = await client.post("/api/copilot/mode", json=request_data)
+
+        assert response.status == 400
+        payload = json.loads(response.body)
+        assert payload["error"] == "Invalid request"
+        assert payload["details"]["message"] == "Mode parameter is required"

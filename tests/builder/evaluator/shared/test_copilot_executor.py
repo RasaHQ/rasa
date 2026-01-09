@@ -23,7 +23,7 @@ class TestRunCopilotWithResponseHandler:
     """Tests for run_copilot_with_response_handler function."""
 
     @pytest.mark.asyncio
-    @patch("rasa.builder.evaluator.shared.copilot_executor.Copilot")
+    @patch("rasa.builder.evaluator.shared.copilot_executor.get_copilot_class")
     @pytest.mark.parametrize(
         "response_chunks,"
         "response_category,"
@@ -178,7 +178,7 @@ class TestRunCopilotWithResponseHandler:
         mock_copilot_instance.generate_response = AsyncMock(
             return_value=(mock_response_handler, generation_context)
         )
-        mock_copilot_class.return_value = mock_copilot_instance
+        mock_copilot_class.return_value.return_value = mock_copilot_instance
 
         # When
         result = await run_copilot_with_response_handler(context)
@@ -197,7 +197,7 @@ class TestRunCopilotWithResponseHandler:
             assert result.reference_section is None
 
     @pytest.mark.asyncio
-    @patch("rasa.builder.evaluator.shared.copilot_executor.Copilot")
+    @patch("rasa.builder.evaluator.shared.copilot_executor.get_copilot_class")
     @pytest.mark.parametrize(
         "exception,expected_error",
         [
@@ -227,7 +227,7 @@ class TestRunCopilotWithResponseHandler:
         # Mock copilot instance to raise an exception
         mock_copilot_instance = MagicMock()
         mock_copilot_instance.generate_response = AsyncMock(side_effect=exception)
-        mock_copilot_class.return_value = mock_copilot_instance
+        mock_copilot_class.return_value.return_value = mock_copilot_instance
 
         # When/Then
         with pytest.raises(expected_error):

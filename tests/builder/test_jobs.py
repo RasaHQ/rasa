@@ -482,14 +482,14 @@ class TestRunCopilotTrainingErrorAnalysisJob:
 
         monkeypatch.setattr("rasa.builder.jobs.push_job_status_event", mock_push_event)
         monkeypatch.setattr(
-            "rasa.builder.jobs.Copilot",
+            "rasa.builder.jobs.get_copilot_class",
             mock_copilot_class,
         )
 
         # Given
         mock_copilot = MagicMock()
         mock_handler = MagicMock()
-        mock_copilot_class.return_value = mock_copilot
+        mock_copilot_class.return_value.return_value = mock_copilot
 
         mock_token = GeneratedContent(
             content="Analysis result",
@@ -614,12 +614,12 @@ class TestRunCopilotTrainingErrorAnalysisJob:
 
         monkeypatch.setattr("rasa.builder.jobs.push_job_status_event", mock_push_event)
         monkeypatch.setattr(
-            "rasa.builder.jobs.Copilot",
+            "rasa.builder.jobs.get_copilot_class",
             mock_copilot_class,
         )
 
         # Given
-        mock_copilot_class.side_effect = Exception("Copilot error")
+        mock_copilot_class.return_value.side_effect = Exception("Copilot error")
 
         # When
         await run_copilot_training_error_analysis_job(

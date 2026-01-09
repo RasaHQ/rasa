@@ -127,6 +127,17 @@ def create_app(project_folder: str) -> Sanic:
         rasa_version=rasa.__version__,
     )
 
+    # Initialize copilot mode from environment variable
+    from rasa.builder.copilot import set_copilot_mode
+
+    initial_mode = "agent_sdk" if config.USE_AGENT_SDK_COPILOT else "legacy"
+    set_copilot_mode(initial_mode)
+    structlogger.info(
+        "builder.main.copilot_mode_initialized",
+        mode=initial_mode,
+        event_info=f"Copilot mode initialized to {initial_mode}",
+    )
+
     # Set up project generator and store in app context
     app.ctx.project_generator = setup_project_generator(project_folder)
 
@@ -289,48 +300,47 @@ def main(project_folder: Optional[str] = None) -> None:
 
         os.chdir(project_folder)
 
-        if config.USE_AGENT_SDK_COPILOT:
-            # Start MCP server in background thread
-            mcp_thread = threading.Thread(
-                target=start_mcp_server,
-                args=(project_folder,),
-                daemon=True,
-                name="mcp-server",
-            )
-            mcp_thread.start()
+        # Start MCP server in background thread
+        mcp_thread = threading.Thread(
+            target=start_mcp_server,
+            args=(project_folder,),
+            daemon=True,
+            name="mcp-server",
+        )
+        mcp_thread.start()
 
-            # Wait for MCP server to be ready before starting Sanic
+        # Wait for MCP server to be ready before starting Sanic
+        structlogger.info(
+            "builder.main.waiting_for_mcp_server",
+            event_info="Waiting for MCP server to accept connections",
+            host=config.MCP_SERVER_HOST,
+            port=config.MCP_SERVER_PORT,
+            timeout=config.MCP_SERVER_STARTUP_TIMEOUT,
+        )
+
+        if _wait_for_port(
+            config.MCP_SERVER_HOST,
+            config.MCP_SERVER_PORT,
+            config.MCP_SERVER_STARTUP_TIMEOUT,
+        ):
             structlogger.info(
-                "builder.main.waiting_for_mcp_server",
-                event_info="Waiting for MCP server to accept connections",
+                "builder.main.mcp_server_ready",
+                event_info="MCP server is ready to accept connections",
+                host=config.MCP_SERVER_HOST,
+                port=config.MCP_SERVER_PORT,
+            )
+        else:
+            structlogger.error(
+                "builder.main.mcp_server_startup_timeout",
+                event_info="MCP server failed to start within timeout",
                 host=config.MCP_SERVER_HOST,
                 port=config.MCP_SERVER_PORT,
                 timeout=config.MCP_SERVER_STARTUP_TIMEOUT,
             )
-
-            if _wait_for_port(
-                config.MCP_SERVER_HOST,
-                config.MCP_SERVER_PORT,
-                config.MCP_SERVER_STARTUP_TIMEOUT,
-            ):
-                structlogger.info(
-                    "builder.main.mcp_server_ready",
-                    event_info="MCP server is ready to accept connections",
-                    host=config.MCP_SERVER_HOST,
-                    port=config.MCP_SERVER_PORT,
-                )
-            else:
-                structlogger.error(
-                    "builder.main.mcp_server_startup_timeout",
-                    event_info="MCP server failed to start within timeout",
-                    host=config.MCP_SERVER_HOST,
-                    port=config.MCP_SERVER_PORT,
-                    timeout=config.MCP_SERVER_STARTUP_TIMEOUT,
-                )
-                raise RuntimeError(
-                    f"MCP server failed to start within "
-                    f"{config.MCP_SERVER_STARTUP_TIMEOUT}s timeout"
-                )
+            raise RuntimeError(
+                f"MCP server failed to start within "
+                f"{config.MCP_SERVER_STARTUP_TIMEOUT}s timeout"
+            )
 
         # Create and configure app
         app = create_app(project_folder)

@@ -9,7 +9,7 @@ from typing import List, Optional
 import structlog
 from pydantic import BaseModel
 
-from rasa.builder.copilot import Copilot
+from rasa.builder.copilot import get_copilot_class
 from rasa.builder.copilot.models import (
     CopilotContext,
     CopilotGenerationContext,
@@ -51,7 +51,8 @@ async def run_copilot_with_response_handler(
         Any exceptions from the copilot or response handler execution.
     """
     # Instantiate the copilot and response handler
-    copilot = Copilot()
+    copilot_class = get_copilot_class()
+    copilot = copilot_class()
 
     # Call the copilot to generate a response and handle it with the response
     # handler

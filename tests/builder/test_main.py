@@ -251,14 +251,11 @@ class TestStartMcpServer:
 class TestMcpServerStartup:
     """Test MCP server startup integration in main."""
 
-    def test_main_starts_mcp_server_when_enabled(
-        self, monkeypatch, tmp_path: Path
-    ) -> None:
-        """Test that main starts MCP server when USE_AGENT_SDK_COPILOT is True."""
+    def test_main_starts_mcp_server(self, monkeypatch, tmp_path: Path) -> None:
+        """Test that main starts MCP server"""
         import threading
 
         # Enable Agent SDK
-        monkeypatch.setattr("rasa.builder.config.USE_AGENT_SDK_COPILOT", True)
         monkeypatch.setattr("rasa.builder.config.MCP_SERVER_HOST", "127.0.0.1")
         monkeypatch.setattr("rasa.builder.config.MCP_SERVER_PORT", 5051)
         monkeypatch.setattr("rasa.builder.config.MCP_SERVER_STARTUP_TIMEOUT", 5)
@@ -276,12 +273,15 @@ class TestMcpServerStartup:
 
         # Mock the rest to prevent actual startup
         with (
+            patch("rasa.builder.main.setup_langfuse"),
             patch("rasa.builder.main.create_app") as mock_create_app,
             patch("rasa.builder.main.start_mcp_server"),
             patch("rasa.builder.main._wait_for_port", return_value=True),
             patch.object(threading.Thread, "start"),
         ):
             mock_app = MagicMock()
+            # Mock app.run to prevent actual server startup
+            mock_app.run = MagicMock()
             mock_create_app.return_value = mock_app
 
             from rasa.builder import main
@@ -294,37 +294,3 @@ class TestMcpServerStartup:
 
             # Verify create_app was called
             mock_create_app.assert_called_once_with(str(tmp_path))
-
-    def test_main_does_not_start_mcp_when_disabled(
-        self, monkeypatch, tmp_path: Path
-    ) -> None:
-        """Test that main does NOT start MCP server when disabled."""
-        import threading
-
-        # Disable Agent SDK
-        monkeypatch.setattr("rasa.builder.config.USE_AGENT_SDK_COPILOT", False)
-
-        thread_created = False
-        original_thread_init = threading.Thread.__init__
-
-        def mock_thread_init(self, *args, **kwargs):
-            nonlocal thread_created
-            if kwargs.get("name") == "mcp-server":
-                thread_created = True
-            original_thread_init(self, *args, **kwargs)
-
-        monkeypatch.setattr(threading.Thread, "__init__", mock_thread_init)
-
-        with patch("rasa.builder.main.create_app") as mock_create_app:
-            mock_app = MagicMock()
-            mock_create_app.return_value = mock_app
-
-            from rasa.builder import main
-
-            try:
-                main.main(str(tmp_path))
-            except SystemExit:
-                pass
-
-            # MCP thread should NOT have been created
-            assert thread_created is False

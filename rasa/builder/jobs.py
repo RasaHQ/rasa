@@ -13,7 +13,7 @@ from rasa.builder.constants import (
     MAX_ARCHIVE_FILES,
     MAX_ARCHIVE_TOTAL_SIZE,
 )
-from rasa.builder.copilot import Copilot
+from rasa.builder.copilot import get_copilot_class
 from rasa.builder.copilot.constants import (
     PROMPT_TO_BOT_KEY,
     PROMPT_TO_BOT_TEMPLATE_KEY,
@@ -548,7 +548,8 @@ async def run_copilot_training_error_analysis_job(
         )
 
         # Generate copilot response
-        copilot_client = Copilot()
+        copilot_class = get_copilot_class()
+        copilot_client = copilot_class()
         (
             copilot_response_handler,
             generation_context,
