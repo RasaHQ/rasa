@@ -16,7 +16,7 @@ inputs:
 outputs:
   CACHE_LOADED:
     description: "Cache hit and cache loaded or not"
-    value: ${{ steps.cached-poetry-dependencies.outputs.cache-hit }}
+    value: ${{ steps.cached-rasa.outputs.cache-hit || steps.cached-rasa-with-spacy-mitie-and-transformer-models.outputs.cache-hit }}
 
 runs:
   using: "composite"
@@ -40,15 +40,6 @@ runs:
         virtualenvs-create: true
         virtualenvs-in-project: true
         installer-parallel: true
-
-    # Load cached venv if exists, save cache after job on miss
-    - name: Cache venv
-      id: cached-poetry-dependencies
-      if: ${{ inputs.LOAD_CACHE == 'true' }}
-      uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
-      with:
-        path: ${{ github.workspace }}/.venv
-        key: rasa-${{ inputs.RASA_INSTALL_GROUP }}-install-${{ runner.os }}-${{ inputs.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
 
     # Load cached Rasa if exists, save cache after job on miss
     - name: Cache Rasa
