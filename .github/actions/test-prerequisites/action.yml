@@ -57,4 +57,4 @@ runs:
       uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
       with:
         path: ${{ github.workspace }}/.venv
-        key: rasa-${{ inputs.RASA_INSTALL_GROUP }}-install-${{ runner.os }}-${{ inputs.PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile') }}
+        key: rasa-${{ inputs.RASA_INSTALL_GROUP }}-install-${{ runner.os }}-${{ inputs.PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile', 'data/test/hf_transformers_models.txt') }}

@@ -62,6 +62,7 @@ env:
   POSTGRES_USER: integration_tests_user
   POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD_AWS }}
   POSTGRES_DB: integrationtestsdb
+  CI: true
 
 permissions:
   checks: write
@@ -150,7 +151,7 @@ jobs:
         uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: ${{ github.workspace }}/.venv
-          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile') }}
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile', 'data/test/hf_transformers_models.txt') }}
           lookup-only: true
           fail-on-cache-miss: true
         continue-on-error: true
@@ -222,7 +223,7 @@ jobs:
         if: ${{ matrix.installation == 'full-with-spacy-mitie-and-transformer-models' && steps.cached-rasa-with-spacy-mitie-and-transformer-models.outcome == 'failure' }}
         uses: WarpBuilds/cache/save@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
-          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile') }}
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile', 'data/test/hf_transformers_models.txt') }}
           path: ${{ github.workspace }}/.venv
 
   quality:
@@ -1914,6 +1915,7 @@ jobs:
           NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
           UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
           VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
+          HUGGINGFACE_HUB_CACHE_DIR: ${{ github.workspace }}/.venv
         run: bash scripts/run_pytest_with_splits.sh ${{ matrix.test }}
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 

@@ -40,8 +40,14 @@ def create_language_model_featurizer(
     default_execution_context: ExecutionContext,
 ) -> Callable[[Dict[Text, Any]], LanguageModelFeaturizer]:
     def inner(config: Dict[Text, Any]) -> LanguageModelFeaturizer:
+        config = {**LanguageModelFeaturizer.get_default_config(), **config}
+        # Use HUGGINGFACE_HUB_CACHE_DIR if set and `cache_dir` is not already specified
+        if config["cache_dir"] is None:
+            cache_dir = os.environ.get("HUGGINGFACE_HUB_CACHE_DIR")
+            if cache_dir:
+                config["cache_dir"] = cache_dir
         return LanguageModelFeaturizer.create(
-            config={**LanguageModelFeaturizer.get_default_config(), **config},
+            config=config,
             model_storage=default_model_storage,
             resource=resource_language_model_featurizer,
             execution_context=default_execution_context,
@@ -83,6 +89,10 @@ def create_pretrained_transformers_config(
     config = {"model_name": model_name}
     if model_weights:
         config["model_weights"] = model_weights
+    # Use HUGGINGFACE_HUB_CACHE_DIR if set
+    cache_dir = os.environ.get("HUGGINGFACE_HUB_CACHE_DIR")
+    if cache_dir:
+        config["cache_dir"] = cache_dir
     return config
 
 

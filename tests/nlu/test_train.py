@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 from unittest.mock import Mock, patch
@@ -37,9 +38,15 @@ COMPONENTS_TEST_PARAMS = {
 
 
 def get_test_params_for_component(component: Text) -> Dict[Text, Union[Text, int]]:
-    return (
+    params = (
         COMPONENTS_TEST_PARAMS[component] if component in COMPONENTS_TEST_PARAMS else {}
     )
+    # For LanguageModelFeaturizer, add Huggingface cache_dir from environment if set
+    if component == "LanguageModelFeaturizer":
+        cache_dir = os.environ.get("HUGGINGFACE_HUB_CACHE_DIR")
+        if cache_dir:
+            params = {**params, "cache_dir": cache_dir}
+    return params
 
 
 def as_pipeline(*components) -> List[Dict[Text, Dict]]:
