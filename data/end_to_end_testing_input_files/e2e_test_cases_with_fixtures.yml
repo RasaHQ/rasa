@@ -1,13 +1,13 @@
 fixtures:
-  - premium:
+  - premium_membership:
       - membership_type: premium
-  - standard:
+  - standard_membership:
       - membership_type: standard
 
 test_cases:
   - test_case: "test_standard_booking"
     fixtures:
-      - standard
+      - standard_membership
     steps:
       - user: "Hi!"
       - utter: "utter_greet"

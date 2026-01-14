@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, List, Optional, Text
 
 import jsonschema
 from ruamel.yaml.error import (
@@ -226,3 +226,24 @@ class AgentAuthInitializationException(RasaException):
 
 class AuthenticationError(RasaException):
     """Raised when there is an authentication error."""
+
+
+class DuplicateFixtureException(RasaException):
+    """Raised when duplicate fixture names are found."""
+
+    def __init__(self, fixture_names: List[str], source_file: str) -> None:
+        """Initialize the exception.
+
+        Args:
+            fixture_names: The name(s) of the duplicate fixture(s).
+            source_file: The source file of the duplicate fixture(s).
+        """
+        if len(fixture_names) == 1:
+            message = (
+                f"Duplicate fixture '{fixture_names[0]}' found in '{source_file}'."
+            )
+        else:
+            names = ", ".join(f"'{name}'" for name in fixture_names)
+            message = f"Duplicate fixtures {names} found in '{source_file}'."
+
+        super().__init__(message)

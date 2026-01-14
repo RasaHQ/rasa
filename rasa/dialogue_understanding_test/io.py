@@ -39,6 +39,7 @@ from rasa.e2e_test.utils.io import (
     validate_test_case,
 )
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.exceptions import DuplicateFixtureException, RasaException
 from rasa.shared.nlu.constants import (
     KEY_LATENCY,
     KEY_PROMPT_NAME,
@@ -138,6 +139,7 @@ def read_test_suite(
     fixtures: Dict[str, Fixture] = {}
     metadata: Dict[str, Metadata] = {}
     stub_custom_actions: Dict[str, StubCustomAction] = {}
+    fixture_errors: List[str] = []
 
     # Process each test file
     for test_file in test_files:
@@ -155,12 +157,21 @@ def read_test_suite(
             custom_command_classes,
             remove_default_commands,
         )
-        fixtures.update(extract_fixtures(test_file_content, fixtures))
+        try:
+            fixtures.update(extract_fixtures(test_file_content, fixtures, test_file))
+        except DuplicateFixtureException as e:
+            fixture_errors.append(str(e))
         metadata.update(extract_metadata(test_file_content, metadata))
         stub_custom_actions.update(
             extract_stub_custom_actions(test_file_content, test_file)
         )
         input_test_cases.extend(test_cases)
+
+    # Report all fixture errors at once
+    if fixture_errors:
+        raise RasaException(
+            "Duplicate fixtures found in file(s):\n  - " + "\n  - ".join(fixture_errors)
+        )
 
     validate_test_case(test_case_name, input_test_cases, fixtures, metadata)
     if stub_custom_actions:

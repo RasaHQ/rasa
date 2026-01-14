@@ -41,6 +41,7 @@ from rasa.e2e_test.utils.io import (
     write_failed_tests_to_file,
     write_test_results_to_file,
 )
+from rasa.shared.exceptions import RasaException
 
 
 def test_get_test_results_summary() -> None:
@@ -141,13 +142,17 @@ def test_color_difference() -> None:
         (
             "data/end_to_end_testing_input_files/e2e_test_cases_with_fixtures.yml",
             [
-                Fixture(name="premium", slots_set={"membership_type": "premium"}),
-                Fixture(name="standard", slots_set={"membership_type": "standard"}),
+                Fixture(
+                    name="premium_membership", slots_set={"membership_type": "premium"}
+                ),
+                Fixture(
+                    name="standard_membership",
+                    slots_set={"membership_type": "standard"},
+                ),
             ],
         ),
-        # Path to directory with files with global fixtures key
         (
-            "data/end_to_end_testing_input_files",
+            "data/end_to_end_testing_input_files/e2e_one_test_with_fixtures.yml",
             [
                 Fixture(name="premium", slots_set={"membership_type": "premium"}),
                 Fixture(name="standard", slots_set={"membership_type": "standard"}),
@@ -158,7 +163,104 @@ def test_color_difference() -> None:
 def test_read_fixtures(input_tests_path: str, expected_results: List[Fixture]) -> None:
     adjusted_path = Path(__file__).parent.parent.parent.parent / input_tests_path
     test_suite = read_test_cases(str(adjusted_path))
-    assert test_suite.fixtures == expected_results
+    assert sorted(test_suite.fixtures, key=lambda f: f.name) == sorted(
+        expected_results, key=lambda f: f.name
+    )
+
+
+def test_duplicate_fixture_in_same_file_raises_error(
+    tmp_path: Path,
+) -> None:
+    """Test that duplicate fixture names in the same file raise an error."""
+    test_file = tmp_path / "test_with_duplicate_fixtures.yml"
+    test_file.write_text(
+        textwrap.dedent("""
+            fixtures:
+              - premium:
+                  - membership_type: premium
+              - premium:
+                  - membership_type: gold
+
+            test_cases:
+              - test_case: "test_booking"
+                steps:
+                  - user: "Hi!"
+                  - bot: "Hello!"
+        """)
+    )
+
+    with pytest.raises(RasaException) as exc_info:
+        read_test_cases(str(test_file))
+
+    assert "Duplicate fixture 'premium'" in str(exc_info.value)
+    assert str(test_file) in str(exc_info.value)
+
+
+def test_duplicate_fixtures_across_files_collects_all_errors(
+    tmp_path: Path,
+) -> None:
+    """Test that duplicate fixtures across files are all collected and reported."""
+    # Create first file with fixtures
+    file1 = tmp_path / "test_file_1.yml"
+    file1.write_text(
+        textwrap.dedent("""
+            fixtures:
+              - premium:
+                  - membership_type: premium
+              - standard:
+                  - membership_type: standard
+
+            test_cases:
+              - test_case: "test_booking_1"
+                steps:
+                  - user: "Hi!"
+                  - bot: "Hello!"
+        """)
+    )
+
+    # Create second file with duplicate fixtures
+    file2 = tmp_path / "test_file_2.yml"
+    file2.write_text(
+        textwrap.dedent("""
+            fixtures:
+              - premium:
+                  - membership_type: gold
+              - gold:
+                  - membership_type: gold
+
+            test_cases:
+              - test_case: "test_booking_2"
+                steps:
+                  - user: "Hi!"
+                  - bot: "Hello!"
+        """)
+    )
+
+    # Create third file with another duplicate
+    file3 = tmp_path / "test_file_3.yml"
+    file3.write_text(
+        textwrap.dedent("""
+            fixtures:
+              - standard:
+                  - membership_type: basic
+
+            test_cases:
+              - test_case: "test_booking_3"
+                steps:
+                  - user: "Hi!"
+                  - bot: "Hello!"
+        """)
+    )
+
+    with pytest.raises(RasaException) as exc_info:
+        read_test_cases(str(tmp_path))
+
+    error_message = str(exc_info.value)
+    # Should report multiple errors
+    assert "Duplicate fixtures found in file(s):\n  - " in error_message
+    # Should mention both duplicate fixtures
+    assert "premium" in error_message
+    assert "standard" in error_message
 
 
 @pytest.mark.parametrize(

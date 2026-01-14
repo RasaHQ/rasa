@@ -37,6 +37,7 @@ from rasa.e2e_test.utils.validation import (
     validate_path_to_test_cases,
     validate_test_case,
 )
+from rasa.shared.exceptions import DuplicateFixtureException, RasaException
 from rasa.shared.utils.yaml import (
     is_key_in_yaml,
     parse_raw_yaml,
@@ -340,23 +341,52 @@ def extract_test_cases(
 
 
 def extract_fixtures(
-    test_file_content: dict, existing_fixtures: Dict[str, Fixture]
+    test_file_content: dict,
+    existing_fixtures: Dict[str, Fixture],
+    source_file: Optional[str] = None,
 ) -> Dict[str, Fixture]:
     """Extract fixtures from the test file content.
 
+    Duplicate fixture names are not allowed. This function collects all
+    duplicates (both within the file and across files) before raising,
+    so users can see all issues at once.
+
     Args:
         test_file_content: Content of the test file.
-        existing_fixtures: Existing fixtures.
+        existing_fixtures: Existing fixtures from previously processed files.
+        source_file: Path to the source file (used for error messages).
 
     Returns:
         Dict of fixtures.
+
+    Raises:
+        DuplicateFixtureException: If any duplicate fixture names are found.
     """
     fixtures_content = test_file_content.get(KEY_FIXTURES) or []
     _fixtures = {}
+    seen_in_this_file: set = set()
+    duplicates: List[str] = []
+
     for fixture in fixtures_content:
         fixture_obj = Fixture.from_dict(fixture_dict=fixture)
-        if existing_fixtures.get(fixture_obj.name) is None:
-            _fixtures[fixture_obj.name] = fixture_obj
+
+        # Check for duplicates within the same file
+        if fixture_obj.name in seen_in_this_file:
+            duplicates.append(fixture_obj.name)
+            continue
+        seen_in_this_file.add(fixture_obj.name)
+
+        # Check for duplicates across files
+        if fixture_obj.name in existing_fixtures:
+            duplicates.append(fixture_obj.name)
+            continue
+
+        _fixtures[fixture_obj.name] = fixture_obj
+
+    # Report all duplicates found in this file
+    if duplicates:
+        raise DuplicateFixtureException(duplicates, source_file or "")
+
     return _fixtures
 
 
@@ -431,6 +461,7 @@ def read_test_cases(path: str) -> TestSuite:
     fixtures: Dict[str, Fixture] = {}
     metadata: Dict[str, Metadata] = {}
     stub_custom_actions: Dict[str, StubCustomAction] = {}
+    fixture_errors: List[str] = []
 
     # Process each test file
     for test_file in test_files:
@@ -443,12 +474,21 @@ def read_test_cases(path: str) -> TestSuite:
 
         # Parse test cases, fixtures, metadata, and stub custom actions
         test_cases = extract_test_cases(test_file_content, test_case_name, test_file)
-        fixtures.update(extract_fixtures(test_file_content, fixtures))
+        try:
+            fixtures.update(extract_fixtures(test_file_content, fixtures, test_file))
+        except DuplicateFixtureException as e:
+            fixture_errors.append(str(e))
         metadata.update(extract_metadata(test_file_content, metadata))
         stub_custom_actions.update(
             extract_stub_custom_actions(test_file_content, test_file)
         )
         input_test_cases.extend(test_cases)
+
+    # Report all fixture errors at once
+    if fixture_errors:
+        raise RasaException(
+            "Duplicate fixtures found in file(s):\n  - " + "\n  - ".join(fixture_errors)
+        )
 
     validate_test_case(test_case_name, input_test_cases, fixtures, metadata)
     if stub_custom_actions:
