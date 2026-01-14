@@ -1,6 +1,7 @@
 import warnings
 from asyncio import AbstractEventLoop
 from pathlib import Path
+from time import sleep, time
 from typing import Text
 from unittest.mock import MagicMock, Mock
 
@@ -72,6 +73,16 @@ async def test_load_agent_on_start_with_good_model_file(
         rasa_server,
         loop,
     )
+
+    start_time = time()
+    delay_in_sec = 2
+
+    # Poll for upto 30 sec (with increasing delay) for agent to be ready
+    while not agent.is_ready():
+        sleep(delay_in_sec)
+        delay_in_sec += delay_in_sec + 2
+        if time() - start_time > 30:
+            break
 
     assert agent.is_ready()
     assert isinstance(agent.domain, rasa.shared.core.domain.Domain)
