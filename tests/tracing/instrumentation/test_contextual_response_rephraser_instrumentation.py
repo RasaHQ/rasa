@@ -172,13 +172,8 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
         # llm attributes
         "llm_temperature": "0.3",
         "llm_request_timeout": "5",
-        # embeddings attributes
-        "embeddings_model": "None",
-        "embeddings_type": "None",
-        "embeddings_model_group_id": "None",
         # deprecated
         "request_timeout": "5",
-        "embeddings": "{}",
     }
     expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes
@@ -242,13 +237,8 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response_no_mo
         # llm attributes
         "llm_temperature": "0.3",
         "llm_request_timeout": "5",
-        # embeddings attributes
-        "embeddings_model": "None",
-        "embeddings_type": "None",
-        "embeddings_model_group_id": "None",
         # deprecated
         "request_timeout": "5",
-        "embeddings": "{}",
     }
     expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes
@@ -350,13 +340,8 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
         "llm_model_group_id": "None",
         "llm_temperature": "0.3",
         "llm_request_timeout": "5",
-        # embeddings attributes
-        "embeddings_model": "None",
-        "embeddings_type": "None",
-        "embeddings_model_group_id": "None",
         # deprecated
         "request_timeout": "5",
-        "embeddings": "{}",
     }
     assert captured_span.attributes == expected_attributes
 
@@ -510,13 +495,8 @@ async def test_tracing_contextual_response_rephraser_create_history(
         "llm_type": "openai",
         "llm_temperature": "0.3",
         "llm_request_timeout": "5",
-        # embeddings attributes
-        "embeddings_model": "None",
-        "embeddings_type": "None",
-        "embeddings_model_group_id": "None",
         # deprecated
         "request_timeout": "5",
-        "embeddings": "{}",
     }
     expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes
@@ -579,13 +559,8 @@ async def test_tracing_contextual_response_rephraser_create_history_no_model_gro
         "llm_type": "openai",
         "llm_temperature": "0.3",
         "llm_request_timeout": "5",
-        # embeddings attributes
-        "embeddings_model": "None",
-        "embeddings_type": "None",
-        "embeddings_model_group_id": "None",
         # deprecated
         "request_timeout": "5",
-        "embeddings": "{}",
     }
     expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes

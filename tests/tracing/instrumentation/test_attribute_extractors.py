@@ -254,12 +254,21 @@ def test_extract_attrs_for_llm_based_command_generator_includes_datetime_config(
     component.trace_prompt_tokens = False
     component.get_default_llm_config.return_value = {"model": "test-model"}
 
-    with patch(
-        "rasa.tracing.instrumentation.attribute_extractors.extract_llm_config"
-    ) as mock_extract_llm:
+    with (
+        patch(
+            "rasa.tracing.instrumentation.attribute_extractors.extract_llm_config"
+        ) as mock_extract_llm,
+        patch(
+            "rasa.tracing.instrumentation.attribute_extractors.extract_embedding_config"
+        ) as mock_extract_embedding,
+    ):
         mock_extract_llm.return_value = {
             "llm_model": "test-model",
             "llm_type": "openai",
+        }
+        mock_extract_embedding.return_value = {
+            "embeddings_model": "test-embedding-model",
+            "embeddings_type": "openai",
         }
 
         # When
@@ -284,12 +293,21 @@ def test_extract_attrs_for_enterprise_search_invoke_llm_includes_datetime_config
     component.timezone = "America/Los_Angeles"
     component.trace_prompt_tokens = False
 
-    with patch(
-        "rasa.tracing.instrumentation.attribute_extractors.extract_llm_config"
-    ) as mock_extract_llm:
+    with (
+        patch(
+            "rasa.tracing.instrumentation.attribute_extractors.extract_llm_config"
+        ) as mock_extract_llm,
+        patch(
+            "rasa.tracing.instrumentation.attribute_extractors.extract_embedding_config"
+        ) as mock_extract_embedding,
+    ):
         mock_extract_llm.return_value = {
             "llm_model": "test-model",
             "llm_type": "openai",
+        }
+        mock_extract_embedding.return_value = {
+            "embeddings_model": "test-embedding-model",
+            "embeddings_type": "openai",
         }
 
         # When

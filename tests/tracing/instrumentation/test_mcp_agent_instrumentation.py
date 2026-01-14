@@ -120,9 +120,7 @@ def test_extract_attrs_basic_functionality(
     assert "llm_model" in result
     assert "llm_temperature" in result
     assert "llm_type" in result
-    mock_extract_llm.assert_called_once_with(
-        agent, default_llm_config=expected_config, default_embeddings_config={}
-    )
+    mock_extract_llm.assert_called_once_with(agent, default_llm_config=expected_config)
 
 
 @pytest.mark.parametrize(

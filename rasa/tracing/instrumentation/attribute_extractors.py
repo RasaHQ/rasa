@@ -357,8 +357,16 @@ def extract_attrs_for_command(
 def extract_llm_config(
     self: Any,
     default_llm_config: Dict[str, Any],
-    default_embeddings_config: Dict[str, Any],
 ) -> Dict[str, Any]:
+    """Extract LLM configuration attributes from a component instance.
+
+    Args:
+        self: The component instance.
+        default_llm_config: The default LLM configuration.
+
+    Returns:
+        A dictionary containing the LLM configuration attributes.
+    """
     if isinstance(self, ContextualResponseRephraser):
         # ContextualResponseRephraser is not a graph component, so it's
         # not having a full config.
@@ -372,6 +380,41 @@ def extract_llm_config(
 
     llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY))
     llm_property = combine_custom_and_default_config(llm_config, default_llm_config)
+
+    attributes = {
+        "class_name": self.__class__.__name__,
+        # llm client attributes
+        "llm_model": str(llm_property.get(MODEL_CONFIG_KEY)),
+        "llm_type": str(llm_property.get(PROVIDER_CONFIG_KEY)),
+        "llm_model_group_id": str(llm_property.get(MODEL_GROUP_ID_CONFIG_KEY)),
+        "llm_temperature": str(llm_property.get("temperature")),
+        "llm_request_timeout": str(llm_property.get(TIMEOUT_CONFIG_KEY)),
+        "request_timeout": str(llm_property.get(TIMEOUT_CONFIG_KEY)),
+    }
+
+    if DEPLOYMENT_CONFIG_KEY in llm_property:
+        attributes["llm_engine"] = str(llm_property.get(DEPLOYMENT_CONFIG_KEY))
+
+    return attributes
+
+
+def extract_embedding_config(
+    self: Any,
+    default_embeddings_config: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Extract embedding configuration attributes from a component instance.
+
+    Args:
+        self: The component instance.
+        default_embeddings_config: The default embeddings configuration.
+
+    Returns:
+        A dictionary containing the embedding configuration attributes.
+    """
+    if hasattr(self, "config"):
+        config = self.config
+    else:
+        config = {}
 
     if isinstance(self, LLMBasedCommandGenerator):
         flow_retrieval_config = config.get(FLOW_RETRIEVAL_KEY, {}) or {}
@@ -388,13 +431,6 @@ def extract_llm_config(
         )
 
     attributes = {
-        "class_name": self.__class__.__name__,
-        # llm client attributes
-        "llm_model": str(llm_property.get(MODEL_CONFIG_KEY)),
-        "llm_type": str(llm_property.get(PROVIDER_CONFIG_KEY)),
-        "llm_model_group_id": str(llm_property.get(MODEL_GROUP_ID_CONFIG_KEY)),
-        "llm_temperature": str(llm_property.get("temperature")),
-        "llm_request_timeout": str(llm_property.get(TIMEOUT_CONFIG_KEY)),
         # embedding client attributes
         "embeddings_model": str(embeddings_property.get(MODEL_CONFIG_KEY)),
         "embeddings_type": str(embeddings_property.get(PROVIDER_CONFIG_KEY)),
@@ -403,11 +439,7 @@ def extract_llm_config(
         ),
         # TODO: Keeping this to avoid potential breaking changes
         "embeddings": json.dumps(embeddings_property, sort_keys=True),
-        "request_timeout": str(llm_property.get(TIMEOUT_CONFIG_KEY)),
     }
-
-    if DEPLOYMENT_CONFIG_KEY in llm_property:
-        attributes["llm_engine"] = str(llm_property.get(DEPLOYMENT_CONFIG_KEY))
 
     return attributes
 
@@ -447,7 +479,14 @@ def extract_attrs_for_llm_based_command_generator(
     attributes = extract_llm_config(
         self,
         default_llm_config=self.get_default_llm_config(),
-        default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
+    )
+
+    # Add embedding configuration attributes
+    attributes.update(
+        extract_embedding_config(
+            self,
+            default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
+        )
     )
 
     # Add datetime configuration attributes
@@ -467,8 +506,6 @@ def extract_attrs_for_contextual_response_rephraser(
     attributes = extract_llm_config(
         self,
         default_llm_config=DEFAULT_LLM_CONFIG,
-        # rephraser is not using embeddings
-        default_embeddings_config={},
     )
 
     return extend_attributes_with_prompt_tokens_length(self, attributes, llm_input)
@@ -483,8 +520,6 @@ def extract_attrs_for_create_history(
     return extract_llm_config(
         self,
         default_llm_config=DEFAULT_LLM_CONFIG,
-        # rephraser is not using embeddings
-        default_embeddings_config={},
     )
 
 
@@ -929,7 +964,14 @@ def extract_attrs_for_intentless_policy_generate_llm_answer(
     attributes = extract_llm_config(
         self,
         default_llm_config=DEFAULT_LLM_CONFIG,
-        default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
+    )
+
+    # Add embedding configuration attributes
+    attributes.update(
+        extract_embedding_config(
+            self,
+            default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
+        )
     )
 
     return extend_attributes_with_prompt_tokens_length(self, attributes, llm_input)
@@ -946,7 +988,14 @@ def extract_attrs_for_enterprise_search_invoke_llm(
     attributes = extract_llm_config(
         self,
         default_llm_config=DEFAULT_LLM_CONFIG,
-        default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
+    )
+
+    # Add embedding configuration attributes
+    attributes.update(
+        extract_embedding_config(
+            self,
+            default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
+        )
     )
 
     # Add datetime configuration attributes
@@ -1076,7 +1125,6 @@ def extract_attrs_for_mcp_agent_llm_call(
     attributes = extract_llm_config(
         self,
         default_llm_config=self.llm_client.config,
-        default_embeddings_config={},  # MCP agents don't use embeddings
     )
 
     # Build messages
