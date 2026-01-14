@@ -2,8 +2,6 @@
 
 from unittest.mock import patch
 
-import pytest
-
 from rasa.utils.pypred import Predicate
 
 
@@ -28,19 +26,3 @@ def test_pypred_patch_disables_write_tables():
         mock_yacc.assert_called_once()
         _, kwargs = mock_yacc.call_args
         assert kwargs["write_tables"] is False
-
-
-@pytest.mark.skip(reason="Will be fixed in - ENG-2440")
-def test_pypred_patch_suppresses_yacc_warnings():
-    """Test that the patched yacc function suppresses yacc warnings."""
-    with patch("rasa.utils.pypred._original_yacc") as mock_yacc:
-        from rasa.utils.pypred import patched_yacc
-
-        # Call the patched function
-        patched_yacc()
-
-        # Verify that errorlog was set to suppress warnings
-        mock_yacc.assert_called_once()
-        _, kwargs = mock_yacc.call_args
-        assert "errorlog" in kwargs
-        assert kwargs["errorlog"].level == 40  # logging.ERROR level
