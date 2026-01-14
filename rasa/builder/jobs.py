@@ -59,8 +59,8 @@ from rasa.builder.models import (
     JobStatus,
 )
 from rasa.builder.project_generator.project_generator import ProjectGenerator
-from rasa.builder.telemetry.langfuse_compat import observe
-from rasa.builder.telemetry.prompt_to_bot_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse.langfuse_compat import observe
+from rasa.builder.telemetry.langfuse.prompt_to_bot_langfuse_telemetry import (
     PromptToBotLangfuseTelemetry,
 )
 from rasa.builder.training_service import (

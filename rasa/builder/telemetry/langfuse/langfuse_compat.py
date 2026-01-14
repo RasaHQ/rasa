@@ -9,7 +9,7 @@ This provides:
 - Context manager that only executes block when langfuse is available
 
 Usage:
-    from rasa.builder.telemetry.langfuse_compat import observe, with_langfuse
+    from rasa.builder.telemetry.langfuse.langfuse_compat import observe, with_langfuse
 
     # For decorators (works whether langfuse is installed or not):
     @observe()

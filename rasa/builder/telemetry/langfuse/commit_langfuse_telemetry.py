@@ -1,4 +1,4 @@
-from rasa.builder.telemetry.langfuse_compat import with_langfuse
+from rasa.builder.telemetry.langfuse.langfuse_compat import with_langfuse
 
 
 class CommitMessageGenerationLangfuseTelemetry:

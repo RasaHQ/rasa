@@ -59,7 +59,7 @@ from rasa.builder.evaluator.shared.langfuse_utils import (
     report_langfuse_run_results_to_txt_file,
     run_copilot_task,
 )
-from rasa.builder.telemetry.langfuse_compat import langfuse, require_langfuse
+from rasa.builder.telemetry.langfuse.langfuse_compat import langfuse, require_langfuse
 
 # Ensure langfuse is available - raises ImportError if not
 require_langfuse()

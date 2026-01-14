@@ -1,43 +1,19 @@
-from functools import wraps
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncGenerator,
-    Callable,
-    Dict,
-    List,
-    Optional,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-import structlog
-
-from rasa.builder import config
-from rasa.builder.copilot.models import (
-    CopilotTurnRequest,
-    EventContent,
-    UsageStatistics,
-)
+from rasa.builder.copilot.models import CopilotTurnRequest, EventContent
 from rasa.builder.document_retrieval.models import Document
 from rasa.builder.models import BotFiles
 from rasa.builder.shared.tracker_context import TrackerContext
-from rasa.builder.telemetry.langfuse_compat import (
-    is_langfuse_available,
-    langfuse,
-    with_langfuse,
-)
-from rasa.builder.telemetry.shared import update_generation_span_with_usage_statistics
+from rasa.builder.telemetry.langfuse.langfuse_compat import with_langfuse
 
 if TYPE_CHECKING:
-    from rasa.builder.copilot import BaseCopilot, BaseCopilotResponseHandler
+    from rasa.builder.copilot import BaseCopilotResponseHandler
     from rasa.builder.copilot.models import CopilotContext
-    from rasa.builder.document_retrieval.inkeep_document_retrieval import (
-        InKeepDocumentRetrieval,
-    )
-
-structlogger = structlog.get_logger()
 
 
-class CopilotLangfuseTelemetry:
+class CopilotEndpointLangfuseTelemetry:
+    """Telemetry for copilot endpoint calls (not copilot LLM generation)."""
+
     @staticmethod
     def trace_copilot_tracker_context(
         tracker_context: Optional[TrackerContext],
@@ -118,20 +94,18 @@ class CopilotLangfuseTelemetry:
                 return
             langfuse_client = lf.get_client()
             user_message = request.message.get_flattened_text_content()
-            tracker_event_attachments = (
-                CopilotLangfuseTelemetry._extract_tracker_event_attachments_from_turn(
-                    request
+            tracker_event_attachments = CopilotEndpointLangfuseTelemetry._extract_tracker_event_attachments_from_turn(  # noqa: E501
+                request
+            )
+            response_category = handler.extract_response_category().value
+            reference_section_entries = (
+                CopilotEndpointLangfuseTelemetry._extract_references(
+                    handler, relevant_documents
                 )
-            )
-            response_category = CopilotLangfuseTelemetry._extract_response_category(
-                handler
-            )
-            reference_section_entries = CopilotLangfuseTelemetry._extract_references(
-                handler, relevant_documents
             )
 
             # Create a session ID as a composite ID from project id, user id and chat id
-            session_id = CopilotLangfuseTelemetry._create_session_id(
+            session_id = CopilotEndpointLangfuseTelemetry._create_session_id(
                 hello_rasa_project_id, user_id, chat_id
             )
             # Use `update_current_trace` to update the top level trace.
@@ -143,7 +117,7 @@ class CopilotLangfuseTelemetry:
                     "tracker_event_attachments": tracker_event_attachments,
                 },
                 output={
-                    "answer": CopilotLangfuseTelemetry._full_text(handler),
+                    "answer": handler.extract_text_from_generated_responses(),
                     "response_category": response_category,
                     "references": reference_section_entries,
                 },
@@ -170,108 +144,8 @@ class CopilotLangfuseTelemetry:
                         ],
                     },
                 },
-                tags=[response_category] if response_category else [],
+                tags=[response_category],
             )
-
-    @staticmethod
-    def trace_legacy_copilot_streaming_generation(
-        func: Callable[..., AsyncGenerator[str, None]],
-    ) -> Callable[..., AsyncGenerator[str, None]]:
-        """Custom decorator for tracing async streaming of the Copilot's LLM generation.
-
-        This decorator handles Langfuse tracing for async streaming of the Copilot's LLM
-        generation by manually managing the generation span and updating it with usage
-        statistics after the stream completes.
-        """
-        if not is_langfuse_available():
-            return func
-
-        @wraps(func)
-        async def wrapper(
-            self: "BaseCopilot", messages: List[Dict[str, Any]]
-        ) -> AsyncGenerator[str, None]:
-            langfuse_client = langfuse.get_client()
-
-            with langfuse_client.start_as_current_generation(
-                name=f"{self.__class__.__name__}.{func.__name__}",
-                input={"messages": messages},
-            ) as generation:
-                output = []
-                # Call the original streaming function and start capturing the output
-                async for chunk in func(self, messages):
-                    output.append(chunk)
-                    yield chunk
-
-                # Update the span's model parameters and output after streaming is
-                # complete
-                generation.update(
-                    model_parameters=self.llm_config, output="".join(output)
-                )
-
-                # Update the span's usage statistics after streaming is complete
-                if self.usage_statistics:
-                    update_generation_span_with_usage_statistics(
-                        generation, self.usage_statistics
-                    )
-
-        return wrapper
-
-    @staticmethod
-    def trace_document_retrieval_generation(
-        func: Callable[..., Any],
-    ) -> Callable[..., Any]:
-        """Custom decorator for tracing document retrieval generation with Langfuse.
-
-        This decorator handles Langfuse tracing for document retrieval API calls
-        by manually managing the generation span and updating it with usage statistics.
-        """
-        if not is_langfuse_available():
-            return func
-
-        @wraps(func)
-        async def wrapper(
-            self: "InKeepDocumentRetrieval",
-            query: str,
-            temperature: float,
-            timeout: float,
-        ) -> Any:
-            langfuse_client = langfuse.get_client()
-
-            with langfuse_client.start_as_current_generation(
-                name=f"{self.__class__.__name__}.{func.__name__}",
-                input={
-                    "query": query,
-                    "temperature": temperature,
-                    "timeout": timeout,
-                },
-            ) as generation:
-                # Call the original function
-                response = await func(self, query, temperature, timeout)
-
-                # Update the span with response content
-                generation.update(
-                    output=response,
-                    model_parameters={
-                        "temperature": str(temperature),
-                        "timeout": str(timeout),
-                    },
-                )
-
-                # Update usage statistics if available
-                usage_statistics = UsageStatistics.from_chat_completion_response(
-                    response,
-                    input_token_price=config.COPILOT_INPUT_TOKEN_PRICE,
-                    output_token_price=config.COPILOT_OUTPUT_TOKEN_PRICE,
-                    cached_token_price=config.COPILOT_CACHED_TOKEN_PRICE,
-                )
-                if usage_statistics:
-                    update_generation_span_with_usage_statistics(
-                        generation, usage_statistics
-                    )
-
-                return response
-
-        return wrapper
 
     @staticmethod
     def _extract_tracker_event_attachments_from_turn(
@@ -290,41 +164,6 @@ class CopilotLangfuseTelemetry:
             attachment.model_dump()
             for attachment in request.message.get_content_blocks_by_type(EventContent)
         ]
-
-    @staticmethod
-    def _extract_response_category(
-        handler: "BaseCopilotResponseHandler",
-    ) -> Optional[str]:
-        """Extract the response category from the response handler.
-
-        Args:
-            handler: The response handler containing generated response.
-
-        Returns:
-            The response category of the first generated response, or None if no
-            responses.
-        """
-        if not handler.generated_responses:
-            return None
-        # The handler contains multiple chunks of one response. We use the first chunk's
-        # response category.
-        return handler.generated_responses[0].response_category.value
-
-    @staticmethod
-    def _full_text(handler: "BaseCopilotResponseHandler") -> str:
-        """Extract full text from the response handler.
-
-        Args:
-            handler: The response handler containing generated responses.
-
-        Returns:
-            The concatenated content of all generated responses.
-        """
-        return "".join(
-            response.content
-            for response in handler.generated_responses
-            if getattr(response, "content", None)
-        )
 
     @staticmethod
     def _extract_references(

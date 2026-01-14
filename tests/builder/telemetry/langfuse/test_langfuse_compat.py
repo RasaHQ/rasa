@@ -12,7 +12,7 @@ class TestLangfuseCompat:
         """Test is_langfuse_available returns True when langfuse is installed."""
         with patch.dict("sys.modules", {"langfuse": MagicMock()}):
             # Re-import to pick up the mock
-            from rasa.builder.telemetry import langfuse_compat
+            from rasa.builder.telemetry.langfuse import langfuse_compat
 
             # When langfuse is installed (in test environment), it should be True
             # This test may return True or False depending on the actual environment
@@ -21,7 +21,7 @@ class TestLangfuseCompat:
 
     def test_with_langfuse_context_manager_when_available(self):
         """Test with_langfuse yields module when available."""
-        from rasa.builder.telemetry.langfuse_compat import with_langfuse
+        from rasa.builder.telemetry.langfuse.langfuse_compat import with_langfuse
 
         with with_langfuse():
             # Should yield either the module or None depending on installation
@@ -31,15 +31,17 @@ class TestLangfuseCompat:
     def test_require_langfuse_raises_when_not_installed(self):
         """Test require_langfuse raises ImportError when not available."""
         # Mock the module to simulate langfuse not being installed
-        with patch("rasa.builder.telemetry.langfuse_compat._LANGFUSE_AVAILABLE", False):
-            from rasa.builder.telemetry.langfuse_compat import require_langfuse
+        with patch(
+            "rasa.builder.telemetry.langfuse.langfuse_compat._LANGFUSE_AVAILABLE", False
+        ):
+            from rasa.builder.telemetry.langfuse.langfuse_compat import require_langfuse
 
             with pytest.raises(ImportError, match="langfuse is required"):
                 require_langfuse()
 
     def test_require_langfuse_returns_module_when_installed(self):
         """Test require_langfuse returns module when available."""
-        from rasa.builder.telemetry import langfuse_compat
+        from rasa.builder.telemetry.langfuse import langfuse_compat
 
         if langfuse_compat.is_langfuse_available():
             result = langfuse_compat.require_langfuse()
@@ -51,7 +53,7 @@ class TestMockLangfuse:
 
     def test_no_op_observe_decorator_preserves_function(self):
         """Test _no_op_observe decorator returns a working function."""
-        from rasa.builder.telemetry.langfuse_compat import _no_op_observe
+        from rasa.builder.telemetry.langfuse.langfuse_compat import _no_op_observe
 
         @_no_op_observe()
         def test_function(x: int, y: int) -> int:
@@ -62,7 +64,7 @@ class TestMockLangfuse:
 
     def test_no_op_observe_decorator_with_args(self):
         """Test _no_op_observe decorator accepts arguments."""
-        from rasa.builder.telemetry.langfuse_compat import _no_op_observe
+        from rasa.builder.telemetry.langfuse.langfuse_compat import _no_op_observe
 
         @_no_op_observe(name="test", capture_input=True, capture_output=True)
         def test_function(x: int) -> int:
@@ -73,7 +75,7 @@ class TestMockLangfuse:
 
     def test_mock_langfuse_observe_attribute(self):
         """Test _MockLangfuse has observe attribute when langfuse not installed."""
-        from rasa.builder.telemetry import langfuse_compat
+        from rasa.builder.telemetry.langfuse import langfuse_compat
 
         if langfuse_compat.is_langfuse_available():
             pytest.skip("_MockLangfuse only exists when langfuse is not installed")
@@ -86,7 +88,7 @@ class TestMockLangfuse:
 
     def test_mock_langfuse_get_client_returns_none(self):
         """Test _MockLangfuse.get_client returns None when langfuse not installed."""
-        from rasa.builder.telemetry import langfuse_compat
+        from rasa.builder.telemetry.langfuse import langfuse_compat
 
         if langfuse_compat.is_langfuse_available():
             pytest.skip("_MockLangfuse only exists when langfuse is not installed")
@@ -101,13 +103,13 @@ class TestLangfuseObserveExport:
 
     def test_observe_is_exported(self):
         """Test that observe attribute is exported at module level."""
-        from rasa.builder.telemetry import langfuse_compat
+        from rasa.builder.telemetry.langfuse import langfuse_compat
 
         assert hasattr(langfuse_compat, "observe")
 
     def test_observe_works_as_decorator(self):
         """Test that observe can be used as a decorator."""
-        from rasa.builder.telemetry.langfuse_compat import observe
+        from rasa.builder.telemetry.langfuse.langfuse_compat import observe
 
         @observe()
         def decorated_function(value: str) -> str:
@@ -123,7 +125,7 @@ class TestWithLangfuseContextManager:
 
     def test_with_langfuse_executes_block(self):
         """Test that the block inside with_langfuse executes."""
-        from rasa.builder.telemetry.langfuse_compat import with_langfuse
+        from rasa.builder.telemetry.langfuse.langfuse_compat import with_langfuse
 
         executed = False
         with with_langfuse():
@@ -133,7 +135,7 @@ class TestWithLangfuseContextManager:
 
     def test_with_langfuse_conditional_execution(self):
         """Test conditional execution pattern with with_langfuse."""
-        from rasa.builder.telemetry.langfuse_compat import with_langfuse
+        from rasa.builder.telemetry.langfuse.langfuse_compat import with_langfuse
 
         result = None
         with with_langfuse() as lf:
@@ -153,7 +155,7 @@ class TestLangfuseCompatIntegration:
         """Test observe decorator on async functions."""
         import asyncio
 
-        from rasa.builder.telemetry.langfuse_compat import observe
+        from rasa.builder.telemetry.langfuse.langfuse_compat import observe
 
         @observe()
         async def async_function(value: int) -> int:
@@ -164,7 +166,7 @@ class TestLangfuseCompatIntegration:
 
     def test_observe_preserves_function_metadata(self):
         """Test that observe preserves function name and docstring."""
-        from rasa.builder.telemetry.langfuse_compat import observe
+        from rasa.builder.telemetry.langfuse.langfuse_compat import observe
 
         @observe()
         def documented_function():
@@ -179,7 +181,7 @@ class TestLangfuseCompatIntegration:
 
     def test_langfuse_module_attribute_exists(self):
         """Test that the langfuse attribute exists and is usable."""
-        from rasa.builder.telemetry.langfuse_compat import langfuse
+        from rasa.builder.telemetry.langfuse.langfuse_compat import langfuse
 
         # Should have observe attribute regardless of whether real langfuse is installed
         assert hasattr(langfuse, "observe")

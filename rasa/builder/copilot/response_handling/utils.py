@@ -6,6 +6,7 @@ import structlog
 from agents import RawResponsesStreamEvent, RunItemStreamEvent, StreamEvent
 from agents.items import ToolCallItem, ToolCallOutputItem
 from openai.types.responses import (
+    ResponseCompletedEvent,
     ResponseContentPartAddedEvent,
     ResponseContentPartDoneEvent,
     ResponseFunctionToolCall,
@@ -322,3 +323,21 @@ def is_function_tool_output_event(event: StreamEvent) -> bool:
     # "function_call_output" is the Literal type value from FunctionCallOutput
     # TypedDict definition. It's not exported as a constant by the OpenAI SDK.
     return isinstance(raw_item, dict) and raw_item.get("type") == "function_call_output"
+
+
+def is_response_completed_event(event: StreamEvent) -> bool:
+    """Check if this event indicates a completed response.
+
+    This checks if the event is a RawResponsesStreamEvent and the data is a
+    ResponseCompletedEvent, which contains the final response with usage statistics.
+
+    Args:
+        event: The stream event to check.
+
+    Returns:
+        True if the event is a response.completed event, False otherwise.
+    """
+    if not isinstance(event, RawResponsesStreamEvent):
+        return False
+
+    return isinstance(event.data, ResponseCompletedEvent)

@@ -90,9 +90,11 @@ from rasa.builder.models import (
 )
 from rasa.builder.project_generator.project_generator import ProjectGenerator
 from rasa.builder.shared.tracker_context import TrackerContext
-from rasa.builder.telemetry.copilot_langfuse_telemetry import CopilotLangfuseTelemetry
 from rasa.builder.telemetry.copilot_segment_telemetry import CopilotSegmentTelemetry
-from rasa.builder.telemetry.langfuse_compat import observe
+from rasa.builder.telemetry.langfuse.copilot_endpoint_langfuse_telemetry import (
+    CopilotEndpointLangfuseTelemetry,
+)
+from rasa.builder.telemetry.langfuse.langfuse_compat import observe
 from rasa.builder.training_service import try_load_existing_agent, update_agent
 from rasa.core.agent import Agent
 from rasa.core.channels.studio_chat import StudioChatInput
@@ -1473,7 +1475,7 @@ async def copilot(request: Request) -> None:
             )
         )
         # 8b. Setup output trace attributes for Langfuse
-        CopilotLangfuseTelemetry.setup_copilot_endpoint_call_trace_attributes(
+        CopilotEndpointLangfuseTelemetry.setup_copilot_endpoint_call_trace_attributes(
             hello_rasa_project_id=HELLO_RASA_PROJECT_ID or "N/A",
             chat_id=req.session_id or "N/A",
             user_id=user_id,
@@ -2269,7 +2271,7 @@ async def get_tracker_context_for_copilot(
         )
 
     # Track the retrieved tracker context
-    CopilotLangfuseTelemetry.trace_copilot_tracker_context(
+    CopilotEndpointLangfuseTelemetry.trace_copilot_tracker_context(
         tracker_context=tracker_context,
         max_conversation_turns=COPILOT_ASSISTANT_TRACKER_MAX_TURNS,
         session_id=req.session_id,
@@ -2298,7 +2300,7 @@ def get_relevant_assistant_files_for_copilot(
     )
 
     # Track the retrieved assistant files
-    CopilotLangfuseTelemetry.trace_copilot_relevant_assistant_files(
+    CopilotEndpointLangfuseTelemetry.trace_copilot_relevant_assistant_files(
         relevant_assistant_files=files,
     )
     return files

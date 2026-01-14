@@ -28,7 +28,11 @@ from rasa.builder.copilot.models import (
 from rasa.builder.copilot.response_handling.agent_copilot_response_handler import (
     AgentCopilotResponseHandler,
 )
+from rasa.builder.copilot.response_handling.utils import is_response_completed_event
 from rasa.builder.document_retrieval.models import Document
+from rasa.builder.telemetry.langfuse.agent_copilot_langfuse_telemetry import (
+    AgentCopilotLangfuseTelemetry,
+)
 from rasa.shared.constants import PACKAGE_NAME
 
 structlogger = structlog.get_logger()
@@ -279,6 +283,7 @@ class AgentCopilot(BaseCopilot):
                 converted.append(msg)
         return converted
 
+    @AgentCopilotLangfuseTelemetry.trace_streaming_generation
     async def _stream_response(
         self,
         system_prompt: str,
@@ -303,6 +308,12 @@ class AgentCopilot(BaseCopilot):
             async with self._create_agent(system_prompt) as agent:
                 result = Runner.run_streamed(agent, input=messages)
                 async for event in result.stream_events():
+                    # Extract usage statistics from ResponseCompletedEvent
+                    if is_response_completed_event(event):
+                        # event.data is ResponseCompletedEvent
+                        self.usage_statistics.update_from_response_completed_event(
+                            event.data  # type: ignore[union-attr]
+                        )
                     yield event
 
         except Exception as e:

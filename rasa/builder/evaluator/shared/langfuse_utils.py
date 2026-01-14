@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 
 import structlog
 
-from rasa.builder.telemetry.langfuse_compat import require_langfuse
+from rasa.builder.telemetry.langfuse.langfuse_compat import require_langfuse
 
 # Ensure langfuse is available - raises ImportError if not
 require_langfuse()

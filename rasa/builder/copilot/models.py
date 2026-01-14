@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Literal, Optional, Type, TypeVar, Union
 import structlog
 from openai.types.chat import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
+from openai.types.responses import ResponseCompletedEvent
 from pydantic import (
     BaseModel,
     Field,
@@ -1170,6 +1171,38 @@ class UsageStatistics(BaseModel):
             self.cached_prompt_tokens = getattr(
                 usage.prompt_tokens_details, "cached_tokens", None
             )
+
+    def update_from_response_completed_event(
+        self, event: ResponseCompletedEvent
+    ) -> None:
+        """Update usage statistics from a ResponseCompletedEvent.
+
+        This method checks if the event is a ResponseCompletedEvent and, if so,
+        extracts the usage statistics from the response and updates this
+        UsageStatistics object.
+
+        Args:
+            event: The stream event to extract usage statistics from.
+        """
+        self.reset()
+
+        if not event.response.usage:
+            return
+
+        # Convert model to string if needed
+        model_str = str(event.response.model) if event.response.model else None
+        if model_str:
+            self.model = model_str
+
+        # Update the usage statistics with the values from ResponseUsage
+        self.prompt_tokens = event.response.usage.input_tokens
+        self.completion_tokens = event.response.usage.output_tokens
+        self.total_tokens = event.response.usage.total_tokens
+
+        # Extract cached tokens from input_tokens_details
+        self.cached_prompt_tokens = (
+            event.response.usage.input_tokens_details.cached_tokens
+        )
 
 
 class CopilotGenerationContext(BaseModel):

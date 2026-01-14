@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Union, cast
 import structlog
 import yaml  # type: ignore[import-untyped]
 
-from rasa.builder.telemetry.langfuse_compat import langfuse, require_langfuse
+from rasa.builder.telemetry.langfuse.langfuse_compat import langfuse, require_langfuse
 
 # Ensure langfuse is available - raises ImportError if not
 require_langfuse()

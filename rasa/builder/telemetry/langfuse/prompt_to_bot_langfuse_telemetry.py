@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 import structlog
 
 from rasa.builder.models import BotFiles
-from rasa.builder.telemetry.langfuse_compat import with_langfuse
+from rasa.builder.telemetry.langfuse.langfuse_compat import with_langfuse
 
 if TYPE_CHECKING:
     from rasa.builder.copilot.models import UsageStatistics

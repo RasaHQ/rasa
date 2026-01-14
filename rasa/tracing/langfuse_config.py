@@ -92,7 +92,7 @@ def configure_langfuse(
 
 def _is_langfuse_available() -> bool:
     """Check if Langfuse is available."""
-    from rasa.builder.telemetry.langfuse_compat import is_langfuse_available
+    from rasa.builder.telemetry.langfuse.langfuse_compat import is_langfuse_available
 
     if not is_langfuse_available():
         structlogger.error(

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import yaml
 
-from rasa.builder.telemetry.langfuse_compat import require_langfuse
+from rasa.builder.telemetry.langfuse.langfuse_compat import require_langfuse
 
 require_langfuse()
 

@@ -38,7 +38,9 @@ from rasa.builder.document_retrieval.models import Document
 from rasa.builder.exceptions import (
     DocumentRetrievalError,
 )
-from rasa.builder.telemetry.copilot_langfuse_telemetry import CopilotLangfuseTelemetry
+from rasa.builder.telemetry.langfuse.legacy_copilot_langfuse_telemetry import (
+    LegacyCopilotLangfuseTelemetry,
+)
 from rasa.utils.io import read_text_from_package
 
 structlogger = structlog.get_logger()
@@ -174,7 +176,7 @@ class LegacyCopilot(BaseCopilot):
             support_evidence,
         )
 
-    @CopilotLangfuseTelemetry.trace_legacy_copilot_streaming_generation
+    @LegacyCopilotLangfuseTelemetry.trace_streaming_generation
     async def _stream_response(
         self, messages: List[Dict[str, Any]]
     ) -> AsyncGenerator[str, None]:
