@@ -259,6 +259,7 @@ test-acceptance: DD_ARGS := $(or $(DD_ARGS),)
 test-acceptance: prepare-spacy prepare-mitie test-marker ## Run acceptance tests
 
 test-audio-manual:  ## Run audio manual tests
+	poetry install --extras "channels"
 	OMP_NUM_THREADS=1 \
 	TF_CPP_MIN_LOG_LEVEL=2 \
 	poetry run \
