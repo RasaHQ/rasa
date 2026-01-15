@@ -2998,11 +2998,6 @@ class SessionEnded(AlwaysEqualEventMixin):
             f"'{self.type_name}' events cannot be serialised as story strings."
         )
 
-    def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        """Applies event to current conversation state."""
-        # noinspection PyProtectedMember
-        tracker._reset()
-
 
 class ErrorHandled(Event):
     """An error occurred during the conversation.

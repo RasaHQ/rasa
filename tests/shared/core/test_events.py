@@ -985,6 +985,23 @@ def test_session_started_event_is_not_serialised():
     assert SessionStarted().as_story_string() is None
 
 
+def test_session_ended_does_not_reset_tracker():
+    """Test that SessionEnded event does not reset the tracker state."""
+    # Create a tracker with a slot set
+    events = [SlotSet("test_slot", "test_value")]
+    tracker = DialogueStateTracker.from_events("sender", events)
+
+    # Verify the slot is set
+    assert tracker.get_slot("test_slot") == "test_value"
+
+    # Apply SessionEnded event
+    session_ended = SessionEnded()
+    session_ended.apply_to(tracker)
+
+    # Verify the slot is still set (tracker was not reset)
+    assert tracker.get_slot("test_slot") == "test_value"
+
+
 @pytest.mark.parametrize(
     "event",
     [
