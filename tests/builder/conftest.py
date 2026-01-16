@@ -31,12 +31,13 @@ def sanic_app() -> Sanic:
     return app
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def default_event_loop_policy():
     """Ensure default event loop policy is used to avoid uvloop issues with subprocess.
 
-    This fixture ensures that asyncio.create_subprocess_exec works correctly
-    by temporarily setting the event loop policy to DefaultEventLoopPolicy.
+    This fixture automatically applies to all tests in this directory to ensure
+    that asyncio.create_subprocess_exec works correctly by temporarily setting
+    the event loop policy to DefaultEventLoopPolicy.
     uvloop doesn't support child watchers required by create_subprocess_exec.
     """
     original_policy = asyncio.get_event_loop_policy()
