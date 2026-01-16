@@ -694,6 +694,19 @@ Rasa Pro 3.14.0 (2025-10-09)
 ### Miscellaneous internal changes
 - [#1892](https://github.com/rasahq/rasa-private/issues/1892), [#2184](https://github.com/rasahq/rasa-private/issues/2184), [#2767](https://github.com/rasahq/rasa-private/issues/2767), [#2814](https://github.com/rasahq/rasa-private/issues/2814), [#2863](https://github.com/rasahq/rasa-private/issues/2863), [#2911](https://github.com/rasahq/rasa-private/issues/2911), [#2913](https://github.com/rasahq/rasa-private/issues/2913), [#2916](https://github.com/rasahq/rasa-private/issues/2916), [#2957](https://github.com/rasahq/rasa-private/issues/2957), [#2990](https://github.com/rasahq/rasa-private/issues/2990), [#3018](https://github.com/rasahq/rasa-private/issues/3018), [#3019](https://github.com/rasahq/rasa-private/issues/3019), [#3052](https://github.com/rasahq/rasa-private/issues/3052), [#3078](https://github.com/rasahq/rasa-private/issues/3078), [#3094](https://github.com/rasahq/rasa-private/issues/3094), [#3121](https://github.com/rasahq/rasa-private/issues/3121), [#3125](https://github.com/rasahq/rasa-private/issues/3125), [#3207](https://github.com/rasahq/rasa-private/issues/3207), [#3208](https://github.com/rasahq/rasa-private/issues/3208), [#3260](https://github.com/rasahq/rasa-private/issues/3260), [#3289](https://github.com/rasahq/rasa-private/issues/3289), [#3319](https://github.com/rasahq/rasa-private/issues/3319), [#3374](https://github.com/rasahq/rasa-private/issues/3374), [#3375](https://github.com/rasahq/rasa-private/issues/3375), [#3411](https://github.com/rasahq/rasa-private/issues/3411)
 
+## [3.13.22] - 2026-01-15
+                         
+Rasa Pro 3.13.22 (2026-01-15)                              
+### Bugfixes
+- [#4261](https://github.com/rasahq/rasa-private/issues/4261): Fixed an issue where storing documents in FAISS individually could hit the token limit.
+  Now, documents are stored in batches to avoid exceeding the token limit.
+- [#4326](https://github.com/rasahq/rasa-private/issues/4326): Throw error when duplicate fixtures are found in the same file or across files.
+- [#4333](https://github.com/rasahq/rasa-private/issues/4333): `SessionEnded` does not reset the tracker anymore.
+- [#4359](https://github.com/rasahq/rasa-private/issues/4359): Updated `werkzeug`, `filelock`, `fonttools`, `marshmallow`, `urllib3` and `langchain-core`to resolve security vulnerabilities.
+
+### Miscellaneous internal changes
+- [#4295](https://github.com/rasahq/rasa-private/issues/4295)
+
 
 ## [3.13.21] - 2025-12-29
                          
