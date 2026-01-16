@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   merge_group:
 
 # Reusing continous-integration.yml workflow with default values
@@ -18,8 +19,8 @@ jobs:
     with:
       # Disable code quality checks on push events (e.g., pushes to main), enable for pull requests and merge groups
       run_code_quality: ${{ github.event_name == 'push' && 'false' || 'true' }}
-      # Full CI mode is only enabled for push on main branch
-      full_ci_mode: ${{ github.event_name == 'push' && 'true' || 'false' }}
+      # Full CI mode is enabled for push on main branch or when PR has 'full_ci_mode' label
+      full_ci_mode: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'full_ci_mode'))) && 'true' || 'false' }}
       pr-author: ${{ github.event.pull_request.user.login }}
       pr-is-draft: ${{ github.event.pull_request.draft }}
 

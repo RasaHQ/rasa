@@ -2578,7 +2578,6 @@ def mock_available_agents(monkeypatch: MonkeyPatch) -> Iterator[MagicMock]:
 
 @pytest.mark.asyncio
 async def test_reset_silence_timeout_to_global_at_step_collect(
-    default_config: Configuration,
     monkeypatch: MonkeyPatch,
 ) -> None:
     """Test that silence timeout is reset to the global value.
@@ -2600,7 +2599,7 @@ async def test_reset_silence_timeout_to_global_at_step_collect(
     )
 
     monkeypatch.setattr(
-        default_config,
+        Configuration.get_instance(),
         "credentials",
         credentials,
     )

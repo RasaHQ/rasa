@@ -8,7 +8,7 @@ import sys
 import tempfile
 import textwrap
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, Text
+from typing import Any, Callable, Dict, Text
 from unittest.mock import AsyncMock
 
 import pytest
@@ -47,15 +47,6 @@ from rasa.validator import Validator
 from tests.cli.conftest import RASA_EXE
 from tests.conftest import filter_expected_warnings
 from tests.utilities import filter_logs
-
-
-@pytest.fixture(autouse=True)
-def reset_configuration_singleton() -> Generator[None, None, None]:
-    """Reset the Configuration singleton before each test."""
-    yield
-    from rasa.core.config.configuration import Configuration
-
-    Configuration._instance = None
 
 
 @contextlib.contextmanager

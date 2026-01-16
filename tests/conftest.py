@@ -1768,9 +1768,22 @@ def system_prompts() -> Dict[Text, Text]:
     }
 
 
-@pytest.fixture
-def default_configuration() -> None:
-    Configuration.initialise_empty()
+@pytest.fixture(autouse=True)
+def reset_configuration_singleton() -> Generator[None, None, None]:
+    """Ensure Configuration is initialized before each test and reset after.
+
+    This is needed because model loading operations and flow step operations
+    (like validate_model_group_configuration_setup, CallFlowStep.is_calling_agent)
+    access Configuration.get_instance(), which requires initialization. When tests run
+    in parallel across multiple CI runners, each runner starts fresh without the
+    Configuration singleton initialized.
+    """
+    # Initialize to empty before the test if not already initialized
+    if Configuration._instance is None:
+        Configuration.initialise_empty()
+    yield
+    # Reset after the test to ensure clean state for next test
+    Configuration._instance = None
 
 
 def get_model_groups() -> List[Dict[str, Any]]:

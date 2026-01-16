@@ -254,7 +254,9 @@ def test_setup_project_generator_avoids_duplicate_sys_path_entries(
 
 
 async def test_template_loads_actions_module(
-    self_removable_path: Path, monkeypatch: MonkeyPatch
+    self_removable_path: Path,
+    monkeypatch: MonkeyPatch,
+    default_event_loop_policy,
 ):
     """Test that template loads actions module correctly."""
     # Set up isolated environment

@@ -382,11 +382,20 @@ class TestProjectGeneratorGitIntegration:
 
     @pytest.mark.asyncio
     async def test_project_generator_uses_git_service_for_checkout(
-        self, project_generator: ProjectGenerator
+        self,
+        project_generator: ProjectGenerator,
+        default_event_loop_policy,
     ) -> None:
         """Test that ProjectGenerator uses GitService for checkout operations."""
-        with patch.object(
-            project_generator.git_service, "checkout_branch"
-        ) as mock_checkout:
+        with (
+            patch.object(
+                project_generator.git_service, "checkout_branch"
+            ) as mock_checkout,
+            patch.object(
+                project_generator.git_service,
+                "get_current_commit_sha",
+                return_value="abc123",
+            ),
+        ):
             await project_generator.checkout_branch("feature-branch", True)
             mock_checkout.assert_called_once_with("feature-branch", True)

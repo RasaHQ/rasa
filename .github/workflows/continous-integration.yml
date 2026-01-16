@@ -46,7 +46,7 @@ concurrency:
 
 env:
   # Disable CUDA to prevent "failed call to cuInit" errors on CPU-only runners
-  CUDA_VISIBLE_DEVICES: ""
+  CUDA_VISIBLE_DEVICES: "-1"
   AWS_REGION: eu-west-1
   RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-private-dev
   RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-sdk-dev
@@ -197,7 +197,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          LOAD_CACHE: 'false'
+          LOAD_CACHE: "false"
 
       # Install if no cache hits
       - name: Install Rasa with full installation, and Spacy, Mitie and Transformer models included also
@@ -208,7 +208,6 @@ jobs:
           make prepare-spacy
           make prepare-mitie
           make prepare-transformers
-
 
       # Save new Cache if no existing cache hits
       - name: Save Rasa
@@ -1547,7 +1546,12 @@ jobs:
 
   calm-kafka-restart-integration-tests:
     name: CALM Kafka Restart Integration Tests
-    needs: [rasa-private-dev-docker-image, check-code-changes, compute-docker-image-hash]
+    needs:
+      [
+        rasa-private-dev-docker-image,
+        check-code-changes,
+        compute-docker-image-hash,
+      ]
     if: ${{ inputs.full_ci_mode == 'true' || needs.check-code-changes.outputs.broker-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
     runs-on: warp-ubuntu-latest-x64-4x
     env:
@@ -1711,12 +1715,7 @@ jobs:
         # intermittently some jobs get stuck in queue for a GHA-hosted
         # runner to be available, becoming a bottleneck and slowing down
         # overall CI completion time.
-        runner:
-          [
-            1,
-            2,
-            3
-          ]
+        runner: [1, 2, 3]
     needs: [install-and-cache-rasa, check-code-changes]
 
     steps:
@@ -1788,12 +1787,7 @@ jobs:
         # intermittently some jobs get stuck in queue for a GHA-hosted
         # runner to be available, becoming a bottleneck and slowing down
         # overall CI completion time.
-        runner:
-          [
-            1,
-            2,
-            3
-          ]
+        runner: [1, 2, 3]
     needs: [install-and-cache-rasa, check-code-changes]
 
     steps:
@@ -1882,7 +1876,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ matrix.python-version }}
-          RASA_INSTALL_GROUP: 'full-with-spacy-mitie-and-transformer-models'
+          RASA_INSTALL_GROUP: "full-with-spacy-mitie-and-transformer-models"
 
       - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
         id: linux-dependencies
@@ -1945,8 +1939,7 @@ jobs:
         # intermittently some jobs get stuck in queue for a GHA-hosted
         # runner to be available, becoming a bottleneck and slowing down
         # overall CI completion time.
-        runner:
-          [1, 2, 3]
+        runner: [1, 2, 3]
     needs: [install-and-cache-rasa, check-code-changes]
 
     steps:
@@ -2021,12 +2014,7 @@ jobs:
         # runner to be available, becoming a bottleneck and slowing down
         # overall CI completion time.
         # test-other-unit-tests uses runners 1-20, test-flaky uses runners 1-9
-        runner:
-          [
-            1,
-            2,
-            3
-          ]
+        runner: [1, 2, 3]
     needs: [install-and-cache-rasa]
 
     steps:
@@ -2037,7 +2025,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ matrix.python-version }}
-          RASA_INSTALL_GROUP: 'full-with-spacy-mitie-and-transformer-models'
+          RASA_INSTALL_GROUP: "full-with-spacy-mitie-and-transformer-models"
 
       - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
         id: linux-dependencies
@@ -2291,7 +2279,6 @@ jobs:
         if: ${{ steps.save-code.outputs.cache-hit != 'true' }}
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis, removing this messes with PR analysis
-      
 
   sonarqube:
     name: SonarQube
@@ -2305,7 +2292,7 @@ jobs:
         unit-test-agents,
         unit-test-policies,
         voice-unit-tests,
-        checkout-code-for-sonarscan
+        checkout-code-for-sonarscan,
       ]
       # We don't want to run the code quality checks on scheduled runs
     if: >-

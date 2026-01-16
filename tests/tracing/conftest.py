@@ -21,7 +21,6 @@ from opentelemetry.sdk.metrics.export import (
 )
 from pytest import MonkeyPatch
 
-from rasa.core.config.configuration import Configuration
 from rasa.engine.caching import LocalTrainingCache
 from rasa.tracing.constants import (
     LANGFUSE_ENV_VAR_DEBUG,
@@ -147,12 +146,6 @@ def set_up_test_meter_provider(
     opentelemetry.metrics.set_meter_provider(meter_provider)
     yield meter_provider
     meter_provider.shutdown()
-
-
-@pytest.fixture(autouse=True)
-def default_empty_config() -> Configuration:
-    """Initialize Configuration singleton for all tests in the tracing module."""
-    return Configuration.initialise_empty()
 
 
 # Cleanup any LANGFUSE_* env vars after each test to prevent leakage across tests

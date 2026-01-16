@@ -10,14 +10,6 @@ from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
 
 
-@pytest.fixture(autouse=True)
-def reset_configuration_singleton() -> None:
-    # ensure clean Configuration between tests
-    yield
-    # reset private singleton
-    Configuration._instance = None  # type: ignore[attr-defined]
-
-
 @pytest.fixture
 def empty_available_agents() -> AvailableAgents:
     return AvailableAgents(agents={})
