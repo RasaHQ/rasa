@@ -10,6 +10,20 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.6] - 2026-01-15
+
+Rasa Pro 3.15.6 (2026-01-15)                             
+### Bugfixes
+- [#4261](https://github.com/rasahq/rasa-private/issues/4261): Fixed an issue where storing documents in FAISS individually could hit the token limit.
+  Now, documents are stored in batches to avoid exceeding the token limit.
+- [#4326](https://github.com/rasahq/rasa-private/issues/4326): Throw error when duplicate fixtures are found in the same file or across files.
+- [#4333](https://github.com/rasahq/rasa-private/issues/4333): `SessionEnded` does not reset the tracker anymore.
+- [#4359](https://github.com/rasahq/rasa-private/issues/4359): Updated `werkzeug`, `aiohttp`, `filelock`, `fonttools`, `marshmallow`, `urllib3` and `langchain-core`to resolve security vulnerabilities.
+
+### Miscellaneous internal changes
+- [#4295](https://github.com/rasahq/rasa-private/issues/4295), [#4359](https://github.com/rasahq/rasa-private/issues/4359)
+
+
 ## [3.15.5] - 2025-12-29
                         
 Rasa Pro 3.15.5 (2025-12-29)                             
@@ -203,6 +217,19 @@ Rasa Pro 3.15.0 (2025-11-26)
 
 ### Miscellaneous internal changes
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
+
+## [3.14.10] - 2026-01-15
+                         
+Rasa Pro 3.14.10 (2026-01-15)                              
+### Bugfixes
+- [#4261](https://github.com/rasahq/rasa-private/issues/4261): Fixed an issue where storing documents in FAISS individually could hit the token limit.
+  Now, documents are stored in batches to avoid exceeding the token limit.
+- [#4333](https://github.com/rasahq/rasa-private/issues/4333): `SessionEnded` does not reset the tracker anymore.
+- [#4359](https://github.com/rasahq/rasa-private/issues/4359): Updated `werkzeug`, `aiohttp`, `filelock`, `fonttools`, `marshmallow`, `urllib3` and `langchain-core`to resolve security vulnerabilities.
+
+### Miscellaneous internal changes
+- [#4295](https://github.com/rasahq/rasa-private/issues/4295), [#4359](https://github.com/rasahq/rasa-private/issues/4359)
+
 
 ## [3.14.9] - 2025-12-29
                         
