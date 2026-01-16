@@ -1451,6 +1451,24 @@ async def copilot(request: Request) -> None:
             else:
                 newly_created_commit_sha = None
 
+        # 7b. Send commit info via SSE if a new commit was created
+        commit_info_dict = None
+        if newly_created_commit_sha:
+            try:
+                commit_event = await copilot_response_handler.respond_to_commit(
+                    git_service=project_generator.git_service,
+                    commit_sha=newly_created_commit_sha,
+                    training_success=True,
+                )
+                commit_info_dict = commit_event.commit
+                await sse.send(commit_event.to_sse_event().format())
+            except Exception as exc:
+                structlogger.warning(
+                    "builder.copilot.send_commit_info_failed",
+                    error=str(exc),
+                    commit_sha=newly_created_commit_sha,
+                )
+
         # 8a. Offload metabase telemetry logging to a background task
         usage_stats = copilot_client.usage_statistics
         request.app.add_task(
@@ -1503,12 +1521,6 @@ async def copilot(request: Request) -> None:
             try:
                 # Pass references directly if they exist
                 references = reference_section.references if reference_section else None
-                # Build commit dict if we have a new commit SHA
-                commit_info_dict = (
-                    {"sha": newly_created_commit_sha}
-                    if newly_created_commit_sha
-                    else None
-                )
                 await persist_copilot_message_to_history(
                     text=full_text,
                     chat_id=chat_id,

@@ -64,6 +64,17 @@ def patch_copilot_dependencies(monkeypatch):
         return_value=AsyncMock().__aenter__.return_value
     )
     mock_git_service.get_current_commit_sha = AsyncMock(return_value="mock_sha_before")
+    mock_git_service.get_commit_info = AsyncMock(
+        return_value={
+            "sha": "mock_sha_after",
+            "short_sha": "mock_sh",
+            "author": "Test Author",
+            "email": "test@example.com",
+            "timestamp": 1234567890,
+            "message": "Test commit",
+        }
+    )
+
     pg = SimpleNamespace(
         project_folder=project_folder,
         get_bot_files=lambda *args, **kwargs: {},

@@ -34,6 +34,7 @@ from rasa.builder.copilot.models import (
     InternalCopilotRequestChatMessage,
     LogContent,
     ResponseCategory,
+    ResponseCompleteness,
     TrainingErrorLog,
 )
 from rasa.builder.download import download_backup_from_url
@@ -569,9 +570,9 @@ async def run_copilot_training_error_analysis_job(
                 job,
                 JobStatus.copilot_analyzing,
                 payload={
-                    "response_category": "copilot",
+                    "response_category": ResponseCategory.COMMIT.value,
                     "commit": commit_info,
-                    "completeness": "complete",
+                    "completeness": ResponseCompleteness.COMPLETE.value,
                 },
             )
 
@@ -684,9 +685,9 @@ async def run_copilot_welcome_message_job(
                 job,
                 JobStatus.copilot_welcome_message,
                 payload={
-                    "response_category": "copilot",
+                    "response_category": ResponseCategory.COMMIT.value,
                     "commit": commit_info,
-                    "completeness": "complete",
+                    "completeness": ResponseCompleteness.COMPLETE.value,
                 },
             )
 
@@ -696,8 +697,8 @@ async def run_copilot_welcome_message_job(
             JobStatus.copilot_welcome_message,
             payload={
                 "content": welcome_message,
-                "response_category": "copilot",
-                "completeness": "complete",
+                "response_category": ResponseCategory.COPILOT.value,
+                "completeness": ResponseCompleteness.COMPLETE.value,
             },
         )
 
@@ -755,14 +756,14 @@ async def run_copilot_training_success_job(
             # Add training success
             commit_info["training_success"] = True
 
-            # Send the training success message
+            # Send commit
             await push_job_status_event(
                 job,
                 JobStatus.train_success_message,
                 payload={
-                    "response_category": "copilot",
+                    "response_category": ResponseCategory.COMMIT.value,
                     "commit": commit_info,
-                    "completeness": "complete",
+                    "completeness": ResponseCompleteness.COMPLETE.value,
                 },
             )
 
@@ -772,8 +773,8 @@ async def run_copilot_training_success_job(
             JobStatus.train_success_message,
             payload={
                 "content": training_success_message,
-                "response_category": "copilot",
-                "completeness": "complete",
+                "response_category": ResponseCategory.COPILOT.value,
+                "completeness": ResponseCompleteness.COMPLETE.value,
             },
         )
 
@@ -851,9 +852,9 @@ async def run_copilot_rollback_message_job(
                 job,
                 status,
                 payload={
-                    "response_category": "copilot",
+                    "response_category": ResponseCategory.COMMIT.value,
                     "commit": commit_info,
-                    "completeness": "complete",
+                    "completeness": ResponseCompleteness.COMPLETE.value,
                 },
             )
 
@@ -863,8 +864,8 @@ async def run_copilot_rollback_message_job(
             status,
             payload={
                 "content": rollback_message,
-                "response_category": "copilot",
-                "completeness": "complete",
+                "response_category": ResponseCategory.COPILOT.value,
+                "completeness": ResponseCompleteness.COMPLETE.value,
             },
         )
 
@@ -1117,7 +1118,7 @@ async def run_copilot_template_prompt_job(
             JobStatus.copilot_template_prompt,
             payload={
                 "content": prompt,
-                "completeness": "complete",
+                "completeness": ResponseCompleteness.COMPLETE.value,
             },
         )
 

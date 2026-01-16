@@ -762,8 +762,7 @@ class ProjectGenerator:
         # Acquire lock for entire operation (file writes + commit)
         async with self.git_service.git_operation():
             # Ensure git repository exists before committing
-            if not self.git_service.git_dir.exists():
-                self._ensure_git_repository()
+            self._ensure_git_repository()
 
             unsafe_write_to_bot_files(
                 self.project_folder, files, fail_on_restricted_path=False
@@ -800,50 +799,53 @@ class ProjectGenerator:
             Commit SHA of the created commit
         """
         self.ensure_all_files_are_writable(files)
-        # Collect all existing files - any files not in the new `files` dict will be
-        # deleted from this set
-        existing_files = set(
-            path.as_posix()
-            for path in self.bot_file_paths(exclude_models_directory=True)
-        )
 
-        # Write all new files
-        for filename, content in files.items():
-            try:
-                file_path = path_relative_to_project(self.project_folder, filename)
-                unsafe_write_to_bot_files(
-                    self.project_folder,
-                    {filename: content},
-                    fail_on_restricted_path=False,
-                )
-                # Remove from deletion set since this file is
-                # in the new set of files
-                existing_files.discard(file_path.as_posix())
-            except Exception as e:
-                # Log write failure and avoid deleting an existing file by mistake
-                capture_exception_with_context(
-                    e,
-                    "project_generator.replace_all_bot_files.write_error",
-                    extra={"file_path": filename},
-                )
-                continue
+        # Acquire lock for entire operation
+        async with self.git_service.git_operation():
+            # Ensure git repository exists before committing
+            self._ensure_git_repository()
 
-        # Delete files that weren't in the request
-        for file_to_delete in existing_files:
-            file_path = Path(file_to_delete)
-            try:
-                file_path.unlink()
-            except Exception as e:
-                capture_exception_with_context(
-                    e,
-                    "project_generator.replace_all_bot_files.delete_error",
-                    extra={"file_path": file_path},
-                )
+            # Collect all existing files - any files not in the new `files` dict will be
+            # deleted from this set
+            existing_files = set(
+                path.as_posix()
+                for path in self.bot_file_paths(exclude_models_directory=True)
+            )
 
-        # Clean up empty directories (except excluded ones)
-        self._cleanup_empty_directories()
-        # Commit changes to Git with AI-generated message
-        return await self.unsafe_commit_changes(commit_info)
+            # Write all new files
+            for filename, content in files.items():
+                try:
+                    file_path = path_relative_to_project(self.project_folder, filename)
+                    unsafe_write_to_bot_files(
+                        self.project_folder,
+                        {filename: content},
+                        fail_on_restricted_path=False,
+                    )
+                    existing_files.discard(file_path.as_posix())
+                except Exception as e:
+                    capture_exception_with_context(
+                        e,
+                        "project_generator.replace_all_bot_files.write_error",
+                        extra={"file_path": filename},
+                    )
+                    continue
+
+            # Delete files that weren't in the request
+            for file_to_delete in existing_files:
+                file_path = Path(file_to_delete)
+                try:
+                    file_path.unlink()
+                except Exception as e:
+                    capture_exception_with_context(
+                        e,
+                        "project_generator.replace_all_bot_files.delete_error",
+                        extra={"file_path": file_path},
+                    )
+
+            # Clean up empty directories (except excluded ones)
+            self._cleanup_empty_directories()
+            # Commit changes to Git with AI-generated message
+            return await self.unsafe_commit_changes(commit_info)
 
     def _cleanup_empty_directories(self) -> None:
         """Remove empty directories from the project folder.
@@ -991,14 +993,14 @@ class ProjectGenerator:
         """
         try:
             # Ensure git repository exists (defensive in case migration didn't run)
-            if not self.git_service.git_dir.exists():
-                self._ensure_git_repository()
+            self._ensure_git_repository()
+
             # Generate commit message if not provided
             if commit_info.message is None:
                 commit_info.message = await self._generate_commit_message()
 
-            # Commit changes using GitService
-            commit_sha = await self.git_service.commit_changes(commit_info)
+            # Commit changes using internal method (lock already held)
+            commit_sha = await self.git_service._commit_changes_internal(commit_info)
 
             return commit_sha
 

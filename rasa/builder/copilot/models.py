@@ -75,6 +75,8 @@ class ResponseCategory(Enum):
     SIGNATURE = "signature"
     # When an exception occurs during streaming
     EXCEPTION = "exception"
+    # When a commit info is sent
+    COMMIT = "commit"
 
 
 class BaseContent(BaseModel):
@@ -977,6 +979,51 @@ class E2ETestingErrorLog(CopilotOutput):
             "response_category": self.response_category.value,
             "completeness": self.response_completeness.value,
         }
+
+
+class CommitInformationContent(GeneratedContent):
+    """Represents commit information content to be sent via SSE."""
+
+    content: str = Field(default="")
+    commit: Dict[str, Any] = Field(
+        ...,
+        description="The commit information dictionary.",
+    )
+    response_category: ResponseCategory = Field(
+        default=ResponseCategory.COMMIT,
+        frozen=True,
+    )
+    response_completeness: ResponseCompleteness = Field(
+        default=ResponseCompleteness.COMPLETE,
+        frozen=True,
+    )
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "CommitInformationContent":
+        """Validate that response_category is COMMIT."""
+        _validate_response_category(
+            ResponseCategory.COMMIT,
+            self.response_category,
+            type(self),
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_response_completeness(self) -> "CommitInformationContent":
+        """Validate that response_completeness is COMPLETE."""
+        _validate_response_completeness(
+            ResponseCompleteness.COMPLETE,
+            self.response_completeness,
+            type(self),
+        )
+        return self
+
+    @property
+    def sse_data(self) -> Dict[str, Any]:
+        """Extract the SSE data payload including commit information."""
+        base_data = super().sse_data
+        base_data["commit"] = self.commit
+        return base_data
 
 
 class UsageStatistics(BaseModel):

@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 import structlog
 
 from rasa.builder.copilot.models import (
+    CommitInformationContent,
     ControlledPredictionContent,
     GeneratedContent,
     GuardrailBlockedContent,
@@ -165,6 +166,27 @@ class BaseCopilotResponseHandler(ABC):
             category=category,
         )
         raise ValueError(f"No response found for category: {category}")
+
+    @staticmethod
+    async def respond_to_commit(
+        git_service: Any, commit_sha: str, training_success: bool = True
+    ) -> CommitInformationContent:
+        """Create a response by fetching commit information.
+
+        Args:
+            git_service: The git service to fetch commit info from.
+            commit_sha: The commit SHA to fetch information for.
+            training_success: Whether training was successful (default: True).
+
+        Returns:
+            CommitInformationContent with the commit data formatted for SSE streaming.
+
+        Raises:
+            Exception: If fetching commit info fails.
+        """
+        commit_info_dict = await git_service.get_commit_info(commit_sha)
+        commit_info_dict["training_success"] = training_success
+        return CommitInformationContent(commit=commit_info_dict)
 
     @staticmethod
     def get_copilot_redacted_message() -> str:
