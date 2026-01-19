@@ -561,21 +561,25 @@ async def trained_spacybot_path(trained_async: TrainedAsync) -> Text:
 
 @pytest.fixture(scope="session")
 async def stack_agent(trained_rasa_model: Text) -> Agent:
+    _ensure_configuration_initialized()
     return await load_agent(model_path=trained_rasa_model)
 
 
 @pytest.fixture(scope="session")
 async def core_agent(trained_core_model: Text) -> Agent:
+    _ensure_configuration_initialized()
     return await load_agent(model_path=trained_core_model)
 
 
 @pytest.fixture(scope="session")
 async def nlu_agent(trained_nlu_model: Text) -> Agent:
+    _ensure_configuration_initialized()
     return await load_agent(model_path=trained_nlu_model)
 
 
 @pytest.fixture(scope="session")
 async def agent_with_flows(trained_rasa_model_with_flows: Text) -> Agent:
+    _ensure_configuration_initialized()
     return await load_agent(model_path=trained_rasa_model_with_flows)
 
 
@@ -583,11 +587,13 @@ async def agent_with_flows(trained_rasa_model_with_flows: Text) -> Agent:
 async def unexpected_intent_policy_agent(
     trained_unexpected_intent_policy_path: Text,
 ) -> Agent:
+    _ensure_configuration_initialized()
     return await load_agent(model_path=trained_unexpected_intent_policy_path)
 
 
 @pytest.fixture(scope="module")
 async def mood_agent(trained_moodbot_path: Text) -> Agent:
+    _ensure_configuration_initialized()
     return await load_agent(model_path=trained_moodbot_path)
 
 
@@ -989,11 +995,13 @@ async def e2e_bot(
 
 @pytest.fixture(scope="module")
 async def response_selector_agent(trained_response_selector_bot: Path) -> Agent:
+    _ensure_configuration_initialized()
     return await load_agent(str(trained_response_selector_bot))
 
 
 @pytest.fixture(scope="module")
 async def e2e_bot_agent(e2e_bot: Path) -> Agent:
+    _ensure_configuration_initialized()
     return await load_agent(str(e2e_bot))
 
 
@@ -1766,6 +1774,11 @@ def system_prompts() -> Dict[Text, Text]:
         COMMAND_GENERATOR_NAME: system_prompts.command_generator,
         ENTERPRISE_SEARCH_NAME: system_prompts.enterprise_search,
     }
+
+
+def _ensure_configuration_initialized() -> None:
+    if Configuration._instance is None:
+        Configuration.initialise_empty()
 
 
 @pytest.fixture(autouse=True)
