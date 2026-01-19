@@ -115,13 +115,20 @@ jobs:
           .\.venv\Scripts\activate
           py -m pip install -U ddtrace
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: 2
           PYTHONUTF8: 1
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
-          DD_ARGS: --ddtrace --ddtrace-patch-all
+          ARGS: --ddtrace --ddtrace-patch-all
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
@@ -249,12 +256,19 @@ jobs:
           .\.venv\Scripts\activate
           py -m pip install -U ddtrace
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: 1
           PYTHONUTF8: 1
           DD_SERVICE: rasa
-          DD_ARGS: --ddtrace --ddtrace-patch-all
+          ARGS: --ddtrace --ddtrace-patch-all
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           HUGGINGFACE_HUB_CACHE_DIR: ${{ github.workspace }}/models
           GLINER_MODEL_PATH: ${{ github.workspace }}/models
@@ -353,13 +367,20 @@ jobs:
           .\.venv\Scripts\activate
           py -m pip install -U ddtrace
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: 2
           PYTHONIOENCODING: "utf-8"
           DD_ENV: test-flaky
           DD_SERVICE: rasa
-          DD_ARGS: --ddtrace --ddtrace-patch-all
+          ARGS: --ddtrace --ddtrace-patch-all
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
         run: |
           make test-flaky

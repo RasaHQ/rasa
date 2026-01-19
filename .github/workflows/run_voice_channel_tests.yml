@@ -77,6 +77,13 @@ jobs:
         run: |
           poetry run python -m pip install azure-cognitiveservices-speech
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: 2

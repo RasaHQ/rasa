@@ -35,6 +35,9 @@ INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
 TRANSFORMERS_OFFLINE ?= 1
 CONCURRENT_LOCK_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/concurrent_lock_stores
 
+# Optional pytest arguments that can be passed via environment variable
+ARGS ?=
+
 BOT_PATH ?=
 MODEL_NAME ?= model
 
@@ -214,7 +217,6 @@ else
 endif
 
 test-anonymization: PYTEST_MARKER=category_anonymization and (not flaky) and (not acceptance) and (not category_large_data_tests) and (not category_dm1_tensorflow)
-test-anonymization: DD_ARGS := $(or $(DD_ARGS),)
 test-anonymization: test-marker  ## Run anonymization tests
 
 test-with-large-data: ## Run tests on large data set
@@ -223,39 +225,30 @@ test-with-large-data: ## Run tests on large data set
 			-n $(JOBS)
 
 test-cli: PYTEST_MARKER=category_cli and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
-test-cli: DD_ARGS := $(or $(DD_ARGS),)
 test-cli: test-marker  ## Run cli tests
 
 test-policies: PYTEST_MARKER=category_policies and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
-test-policies: DD_ARGS := $(or $(DD_ARGS),)
 test-policies: test-marker  ## Run policies tests
 
 test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
-test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-featurizers: test-marker  ## Run nlu featurizers tests
 
 test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
-test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-predictors: test-marker  ## Run nlu predictors tests
 
 test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
-test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
 test-full-model-training: test-marker  ## Run full model training tests
 
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
-test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
 test-other-unit-tests: test-marker  ## Run other unit tests
 
 test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
-test-performance: DD_ARGS := $(or $(DD_ARGS),)
 test-performance: test-marker  ## Run performance tests
 
 test-flaky: PYTEST_MARKER=flaky and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
-test-flaky: DD_ARGS := $(or $(DD_ARGS),)
 test-flaky: test-marker  ## Run flaky tests
 
 test-acceptance: PYTEST_MARKER=acceptance and (not flaky) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
-test-acceptance: DD_ARGS := $(or $(DD_ARGS),)
 test-acceptance: prepare-spacy prepare-mitie test-marker ## Run acceptance tests
 
 test-audio-manual:  ## Run audio manual tests
@@ -272,7 +265,6 @@ test-audio-manual:  ## Run audio manual tests
 		--cov-branch \
 
 test-agents: PYTEST_MARKER=category_agents
-test-agents: DD_ARGS := $(or $(DD_ARGS),)
 test-agents: test-marker
 
 test-voice-integration: ## Run voice integration tests
@@ -309,7 +301,8 @@ test-marker: clean ## Run marker tests
 			--cov=rasa \
 			--cov-report=xml \
 			--cov-branch \
-			--ignore $(INTEGRATION_TEST_FOLDER)/ $(DD_ARGS)
+			--ignore $(INTEGRATION_TEST_FOLDER)/ \
+			$(ARGS)
 
 ## Note : running pytest with poetry run will set the PYTHONPATH to the root of the project automatically.
 ## Removing this will cause issues with imports in tests and `pytest not found` errors.

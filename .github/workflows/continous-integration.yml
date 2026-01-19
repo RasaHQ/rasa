@@ -564,6 +564,13 @@ jobs:
         run: |
           make run-tracing-integration-containers
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Tracing integration testing - Test Code with Services 🩺
         env:
           PYTHONIOENCODING: "utf-8"
@@ -630,6 +637,13 @@ jobs:
           RASA_SDK_IMAGE_TAG: "3.15.0"
         run: |
           make run-metrics-integration-containers
+
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
 
       - name: Metric Integration Testing -  Test Code with Services 🩺
         env:
@@ -727,6 +741,13 @@ jobs:
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Custom Actions Testing NLU - Test Code with Services 🩺
         run: |
           make test-custom-action-integration-with-nlu-bot
@@ -779,6 +800,13 @@ jobs:
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
+
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
 
       - name: Custom Actions Testing CALM -  Test Code with Services 🩺
         run: |
@@ -939,6 +967,13 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Enterprise Search Integration Testing -  Test Code with Services 🩺
         run: |
           make test-enterprise-search-integration-with-calm-bot
@@ -1008,6 +1043,13 @@ jobs:
 
       # these integration tests need to be run in a sequential fashion,
       # due to environment constraints, so we're running them in a single process.
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code with Services 🩺 (sequential)
         env:
           JOBS: 1
@@ -1060,6 +1102,13 @@ jobs:
         with:
           packages: libpq-dev graphviz graphviz-dev python3-tk
           version: ubuntu-${{ runner.os }}-dependencies-non-sequential-integration-test
+
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
 
       - name: Test Code with Services 🩺
         env:
@@ -1132,6 +1181,13 @@ jobs:
           packages: libpq-dev graphviz graphviz-dev python3-tk
           version: ubuntu-${{ runner.os }}-dependencies-mongo-tracker-store-integration-test
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code with Services 🩺
         env:
           JOBS: logical
@@ -1201,6 +1257,13 @@ jobs:
           packages: libpq-dev graphviz graphviz-dev python3-tk
           version: ubuntu-${{ runner.os }}-dependencies-dynamo-tracker-store-integration-test
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code with Services 🩺
         env:
           JOBS: 1
@@ -1264,6 +1327,13 @@ jobs:
           make run-concurrent-lock-store-container
 
         # these integration tests need to be run separately
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code with Services 🩺 (concurrent_lock_store)
         env:
           JOBS: 1
@@ -1349,6 +1419,13 @@ jobs:
         run: |
           docker compose -f tests_deployment/docker-compose.broker.yml up -d
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code with Services 🩺(broker-integration-test)
         env:
           JOBS: 1
@@ -1420,6 +1497,13 @@ jobs:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
+
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
 
       - name: Channel connector Integration Tests -  Test Code with Services 🩺
         run: |
@@ -1516,6 +1600,13 @@ jobs:
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: PII Management in CALM Testing -  Test Code with Services 🩺
         run: |
           make test-pii-integration-with-calm-bot
@@ -1609,6 +1700,13 @@ jobs:
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: CALM Kafka Restart Testing - Test Code with Services 🩺
         run: |
           make test-calm-kafka-restart
@@ -1677,6 +1775,13 @@ jobs:
       - name: Install additional dependencies
         run: poetry add azure-cognitiveservices-speech
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: logical
@@ -1739,11 +1844,17 @@ jobs:
           sudo apt-get -y install libpq-dev
           make prepare-tests-ubuntu
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: logical
           PYTHONUTF8: 1
-          DD_ARGS: --junitxml=unit-tests-results.xml
           RUNNER_ID: ${{ matrix.runner }}
           NUMBER_OF_RUNNERS: 3
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
@@ -1811,11 +1922,17 @@ jobs:
           sudo apt-get -y install libpq-dev
           make prepare-tests-ubuntu
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: logical
           PYTHONUTF8: 1
-          DD_ARGS: --junitxml=unit-tests-results.xml
           RUNNER_ID: ${{ matrix.runner }}
           NUMBER_OF_RUNNERS: 3
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
@@ -1890,11 +2007,17 @@ jobs:
           sudo apt-get -y install libpq-dev
           make prepare-tests-ubuntu
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: logical
           PYTHONUTF8: 1
-          DD_ARGS: --junitxml=unit-tests-results.xml
           RUNNER_ID: ${{ matrix.runner }}
           NUMBER_OF_RUNNERS: 3
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
@@ -1963,11 +2086,17 @@ jobs:
           sudo apt-get -y install libpq-dev
           make prepare-tests-ubuntu
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: logical
           PYTHONUTF8: 1
-          DD_ARGS: --junitxml=unit-tests-results.xml
           RUNNER_ID: ${{ matrix.runner }}
           NUMBER_OF_RUNNERS: 3
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
@@ -2039,11 +2168,17 @@ jobs:
           sudo apt-get -y install libpq-dev
           make prepare-tests-ubuntu
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: logical
           PYTHONUTF8: 1
-          DD_ARGS: --junitxml=unit-tests-results.xml
           RUNNER_ID: ${{ matrix.runner }}
           NUMBER_OF_RUNNERS: 3
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
@@ -2144,11 +2279,17 @@ jobs:
           hf download urchade/gliner_multi_pii-v1 --repo-type model --local-dir models --cache-dir models
         shell: bash
 
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: logical
           PYTHONUTF8: 1
-          DD_ARGS: --junitxml=unit-tests-results.xml
           HUGGINGFACE_HUB_CACHE_DIR: ${{ github.workspace }}/models
           GLINER_MODEL_PATH: ${{ github.workspace }}/models
           TRANSFORMERS_OFFLINE: 0

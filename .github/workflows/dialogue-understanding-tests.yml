@@ -181,9 +181,13 @@ jobs:
 
       - name: Set provider API key
         continue-on-error: true
+        env:
+          PROVIDER: ${{ inputs.provider }}
+          API_KEY_NAME: ${{ fromJson(env.API_KEY_NAMES)[inputs.provider] }}
+          API_KEY_VALUE: ${{ secrets[fromJson(env.API_KEY_NAMES)[inputs.provider]] }}
         run: |
           : Set provider API key
-          echo "${{ fromJson(env.API_KEY_NAMES)[inputs.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[inputs.provider]] }}" >> "$GITHUB_ENV"
+          echo "$API_KEY_NAME=$API_KEY_VALUE" >> "$GITHUB_ENV"
 
       - name: Update endpoint and config files to use specified model config
         if: ${{ !(inputs.llm-model-name == '' && inputs.embeddings-model-name == '' && inputs.llm-deployment == '' && inputs.embeddings-deployment == '' && inputs.llm-api-version == '' && inputs.embeddings-api-version == '' && inputs.llm-api-base == '' && inputs.embeddings-api-base == '') }}

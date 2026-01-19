@@ -40,5 +40,5 @@ jobs:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           # Send notification to #prodeng-internal slack channel
           payload: |
-            channel: "C36SS4N8M"
+            channel: "C01M5TAHDHA"
             text: "⛔️ *Semgrep scan failed on main branch! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
