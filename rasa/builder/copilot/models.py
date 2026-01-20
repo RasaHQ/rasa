@@ -75,6 +75,10 @@ class ResponseCategory(Enum):
     SIGNATURE = "signature"
     # When an exception occurs during streaming
     EXCEPTION = "exception"
+    # When Copilot invokes an MCP tool
+    MCP_TOOL_CALL = "mcp_tool_call"
+    # When Copilot creates or updates a task plan
+    TASK_PLANNING = "task_planning"
     # When a commit info is sent
     COMMIT = "commit"
 
@@ -166,6 +170,15 @@ class CommitContent(BaseContent):
     commit: Dict[str, Any]
 
 
+class PlanContent(BaseContent):
+    """Content block for task planning data."""
+
+    type: Literal["plan"]
+    tasks: List[Dict[str, Any]] = Field(
+        description="List of task items with id, content, and status"
+    )
+
+
 class LogItem(BaseModel):
     type: Literal["log"] = "log"
     content: str
@@ -190,6 +203,7 @@ ContentBlock = Annotated[
         ReferencesContent,
         LogsContent,
         CommitContent,
+        PlanContent,
     ],
     Field(
         discriminator="type",
@@ -197,7 +211,7 @@ ContentBlock = Annotated[
             "The content of the message. "
             "The content is expected to be a list of content blocks. "
             "The content blocks are expected to be one of the following types: "
-            "text, link, code, file, references, logs, or event."
+            "text, link, code, file, references, logs, plan, or event."
         ),
     ),
 ]
@@ -976,6 +990,115 @@ class E2ETestingErrorLog(CopilotOutput):
         """Extract the SSE data payload."""
         return {
             "logs": [log.model_dump() for log in self.logs],
+            "response_category": self.response_category.value,
+            "completeness": self.response_completeness.value,
+        }
+
+
+class MCPToolCall(CopilotOutput):
+    """Represents MCP tool execution status."""
+
+    tool_name: str
+    status: Literal["called", "running", "completed", "failed"]
+    response_category: ResponseCategory = Field(
+        default=ResponseCategory.MCP_TOOL_CALL,
+        frozen=True,
+    )
+    response_completeness: ResponseCompleteness = ResponseCompleteness.COMPLETE
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "MCPToolCall":
+        """Validate that response_category has the correct default value."""
+        if self.response_category != ResponseCategory.MCP_TOOL_CALL:
+            raise ValueError(
+                f"MCPToolCall response_category must be "
+                f"{ResponseCategory.MCP_TOOL_CALL}, got `{self.response_category}`."
+            )
+        return self
+
+    def to_sse_event(self) -> ServerSentEvent:
+        """Convert to SSE event format."""
+        return ServerSentEvent(
+            event="copilot_response",
+            data=self.sse_data,
+        )
+
+    @property
+    def sse_data(self) -> Dict[str, Any]:
+        """Extract the SSE data payload."""
+        return {
+            "tool_name": self.tool_name,
+            "status": self.status,
+            "response_category": self.response_category.value,
+            "completeness": self.response_completeness.value,
+        }
+
+
+class TodoItem(BaseModel):
+    """Represents a single task in a plan."""
+
+    id: str = Field(description="Unique identifier for the task")
+    content: str = Field(description="Description of the task")
+    status: Literal["pending", "in_progress", "completed", "cancelled"] = Field(
+        default="pending",
+        description="Current status of the task",
+    )
+
+
+class TaskPlan(BaseModel):
+    """Input model for creating a task plan."""
+
+    tasks: List[str] = Field(
+        description=(
+            "List of task descriptions. Each task should be a clear, "
+            "actionable item that describes a step in completing the user's request."
+        ),
+    )
+
+
+class TaskStatusUpdate(BaseModel):
+    """Input model for updating a task's status."""
+
+    task_id: str = Field(
+        description="The ID of the task to update (e.g., '1', '2', '3')."
+    )
+    status: Literal["pending", "in_progress", "completed", "cancelled"] = Field(
+        description="The new status of the task."
+    )
+
+
+class TodoPlanUpdate(CopilotOutput):
+    """Represents a task plan update event for the frontend."""
+
+    tasks: List[TodoItem] = Field(description="List of tasks in the plan")
+    response_category: ResponseCategory = Field(
+        default=ResponseCategory.TASK_PLANNING,
+        frozen=True,
+    )
+    response_completeness: ResponseCompleteness = ResponseCompleteness.COMPLETE
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "TodoPlanUpdate":
+        """Validate that response_category has the correct default value."""
+        if self.response_category != ResponseCategory.TASK_PLANNING:
+            raise ValueError(
+                f"TodoPlanUpdate response_category must be "
+                f"{ResponseCategory.TASK_PLANNING}, got `{self.response_category}`."
+            )
+        return self
+
+    def to_sse_event(self) -> ServerSentEvent:
+        """Convert to SSE event format."""
+        return ServerSentEvent(
+            event="copilot_response",
+            data=self.sse_data,
+        )
+
+    @property
+    def sse_data(self) -> Dict[str, Any]:
+        """Extract the SSE data payload."""
+        return {
+            "tasks": [task.model_dump() for task in self.tasks],
             "response_category": self.response_category.value,
             "completeness": self.response_completeness.value,
         }

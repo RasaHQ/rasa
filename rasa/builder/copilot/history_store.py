@@ -33,11 +33,13 @@ from rasa.builder.copilot.models import (
     LogContent,
     LogItem,
     LogsContent,
+    PlanContent,
     ReferenceEntry,
     ReferenceItem,
     ReferencesContent,
     ResponseCategory,
     TextContent,
+    TodoItem,
     UserChatMessage,
 )
 
@@ -134,6 +136,16 @@ class SQLiteCopilotHistoryStore(CopilotHistoryStore):
                 ON copilot_messages(chat_id, created_at)
                 """
             )
+
+            # Create partial unique index for task_planning upserts
+            # This ensures only one plan per chat_id exists
+            connection.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_plan_per_chat
+                ON copilot_messages(chat_id, response_category)
+                WHERE response_category = 'task_planning'
+                """
+            )
             connection.commit()
 
     @staticmethod
@@ -204,6 +216,7 @@ class SQLiteCopilotHistoryStore(CopilotHistoryStore):
             "references": ReferencesContent,
             "logs": LogsContent,
             "commit": CommitContent,
+            "plan": PlanContent,
         }
 
         if content_type in constructors:
@@ -511,6 +524,7 @@ async def persist_copilot_message_to_history(
     response_category: ResponseCategory = ResponseCategory.COPILOT,
     commit: Optional[Dict[str, Any]] = None,
     logs: Optional[List[LogContent]] = None,
+    plan: Optional[List[TodoItem]] = None,
 ) -> None:
     """Persist a copilot message to conversation history.
 
@@ -524,6 +538,8 @@ async def persist_copilot_message_to_history(
         chat_id: The chat ID to persist the message to
         response_category: The response category for the message
         commit: Optional commit information to include
+        logs: Optional list of LogContent objects to include
+        plan: Optional list of TodoItem objects representing the task plan
     """
     # If neither content nor text provided, nothing to persist
     if not content and not text:
@@ -539,7 +555,16 @@ async def persist_copilot_message_to_history(
         if content:
             message_content = content
         else:
-            message_content = [TextContent(type="text", text=text)]
+            message_content = []
+
+            # Add plan as a content block if provided (at the start)
+            if plan:
+                plan_tasks = [item.model_dump() for item in plan]
+                message_content.append(PlanContent(type="plan", tasks=plan_tasks))
+
+            # Add text content
+            if text:
+                message_content.append(TextContent(type="text", text=text))
 
             # Add references as a content block if provided
             if references:
@@ -581,6 +606,7 @@ async def persist_copilot_message_to_history(
             chat_id=chat_id,
             response_category=response_category.value,
             content_blocks=len(message_content),
+            has_plan=plan is not None,
         )
     except Exception as persist_exc:
         structlogger.error(

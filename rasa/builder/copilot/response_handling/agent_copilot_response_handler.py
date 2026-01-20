@@ -1,10 +1,21 @@
+import asyncio
 import copy
 from collections import defaultdict, deque
+from contextvars import Token
 from typing import AsyncGenerator, Deque, Dict, List, Optional, Tuple
 
 import structlog
 from agents import StreamEvent
 
+from rasa.builder.copilot.agent_sdk.planning_context import (
+    get_final_plan,
+    init_planning_context,
+    reset_planning_context,
+)
+from rasa.builder.copilot.agent_sdk.planning_tools import (
+    reset_plan_queue,
+    set_plan_queue,
+)
 from rasa.builder.copilot.exceptions import (
     CopilotFinalBufferReached,
     CopilotStreamEndedEarly,
@@ -16,8 +27,11 @@ from rasa.builder.copilot.models import (
     CopilotTextStartContent,
     ExceptionContent,
     GeneratedContent,
+    MCPToolCall,
     ResponseCategory,
     ResponseCompleteness,
+    TodoItem,
+    TodoPlanUpdate,
 )
 from rasa.builder.copilot.response_handling.base_copilot_response_handler import (
     BaseCopilotResponseHandler,
@@ -59,9 +73,18 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         self,
         response_stream: AsyncGenerator[StreamEvent, None],
         rolling_buffer_size: int = 20,
+        mcp_tool_queue: Optional[asyncio.Queue[MCPToolCall]] = None,
+        plan_queue: Optional[asyncio.Queue[TodoPlanUpdate]] = None,
     ):
         self._rolling_buffer_size = rolling_buffer_size
         self._response_stream = response_stream
+
+        # Queues for MCP tool calls and planning updates.
+        # These queues are updated by the Copilot class, and since Python passes
+        # objects by reference, any updates made in the Copilot class will be
+        # reflected here in the response handler.
+        self._mcp_tool_queue = mcp_tool_queue
+        self._plan_queue = plan_queue
 
         # Rolling buffer that allows look-ahead for handling special tokens and
         # prefix/suffix removal.
@@ -82,6 +105,12 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         # A list of cleaned and generated responses.
         self._generated_responses: List[GeneratedContent] = []
 
+        # Tokens for planning context cleanup
+        self._planning_token: Optional[Token] = None
+        self._plan_queue_token: Optional[
+            Token[Optional[asyncio.Queue[TodoPlanUpdate]]]
+        ] = None
+
         # Maximum number of tokens to check for special responses (e.g. roleplay,
         # out-of-scope, etc.).
         self._max_expected_special_response_tokens: int = 20
@@ -89,6 +118,10 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         # Prefix/suffix tracking state
         self._prefix_found: Optional[str] = None
         self._suffix_found: Optional[str] = None
+
+        # Task planning - captures the latest plan state during streaming
+        # This is needed because the planning context is reset after streaming ends
+        self._final_plan: Optional[List[TodoItem]] = None
 
     @property
     def generated_responses(self) -> List[GeneratedContent]:
@@ -125,13 +158,76 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         return total
 
     def reset(self) -> None:
-        """Clear all buffers and reset the handler."""
+        """Clear all buffers and reset the handler.
+
+        This method also cleans up any planning context state from the previous
+        stream by resetting the ContextVar tokens if they exist.
+        """
+        # Clean up planning context state from previous stream
+        if self._planning_token is not None:
+            reset_planning_context(self._planning_token)
+            self._planning_token = None
+        if self._plan_queue_token is not None:
+            reset_plan_queue(self._plan_queue_token)
+            self._plan_queue_token = None
+
+        # Clear buffers and state
         self._rolling_buffer.clear()
         self._llm_streamed_events.clear()
         self._current_content_part_index = 0
         self._generated_responses.clear()
         self._prefix_found = None
         self._suffix_found = None
+        self._final_plan = None
+
+    def _drain_queues_without_yielding(self, capture_final_plan: bool = False) -> None:
+        """Drain MCP tool and plan queues without yielding events.
+
+        This method clears any remaining events from the queues to prevent
+        leakage to subsequent requests. The queues are instance variables on
+        AgentCopilot and persist across requests, so they must be cleared
+        even when an exception occurs during streaming.
+
+        Args:
+            capture_final_plan: If True, update _final_plan with the last plan
+                event from the queue before discarding. This ensures the plan
+                is persisted even when an exception occurs.
+
+        Note: This discards events rather than yielding them, which is
+        appropriate for cleanup after exceptions where we don't want to
+        send potentially incomplete/stale events to the client.
+        """
+        if self._mcp_tool_queue is not None:
+            drained_mcp_count = 0
+            try:
+                while True:
+                    self._mcp_tool_queue.get_nowait()
+                    drained_mcp_count += 1
+            except asyncio.QueueEmpty:
+                pass
+            if drained_mcp_count > 0:
+                structlogger.debug(
+                    "copilot_response_handler.drain_queues.mcp_drained",
+                    drained_count=drained_mcp_count,
+                )
+
+        if self._plan_queue is not None:
+            drained_plan_count = 0
+            try:
+                while True:
+                    plan_event = self._plan_queue.get_nowait()
+                    drained_plan_count += 1
+                    # Capture the final plan if requested (for persistence)
+                    if capture_final_plan:
+                        self._final_plan = plan_event.tasks
+            except asyncio.QueueEmpty:
+                pass
+            if drained_plan_count > 0:
+                structlogger.debug(
+                    "copilot_response_handler.drain_queues.plan_drained",
+                    drained_count=drained_plan_count,
+                    captured_final_plan=capture_final_plan,
+                )
 
     def _reset_for_content_part(self) -> None:
         """Reset the handler for processing a new content part.
@@ -159,6 +255,77 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
 
     # Streaming methods ----------------------------------------------------------------
 
+    def _capture_final_plan_from_context(self, planning_token: Optional[Token]) -> None:
+        """Capture the final plan from the planning context.
+
+        This method retrieves the final plan from the planning context (if available)
+        and updates the internal _final_plan state before the context is reset.
+
+        Args:
+            planning_token: Token for the planning context, or None if planning
+                           context was not initialized.
+        """
+        if planning_token is not None:
+            context_plan = get_final_plan()
+            if context_plan:
+                self._final_plan = context_plan
+                structlogger.debug(
+                    "copilot_response_handler.capture_final_plan_from_context",
+                    task_count=len(context_plan),
+                    task_statuses=[t.status for t in context_plan],
+                )
+
+    async def _yield_queued_mcp_tool_events(
+        self,
+    ) -> AsyncGenerator[CopilotOutput, None]:
+        """Yield any queued MCP tool call events.
+
+        This method drains the MCP tool queue non-blocking and yields all events.
+
+        Yields:
+            MCPToolCall: MCP tool call events from the queue.
+        """
+        if self._mcp_tool_queue is not None:
+            try:
+                while True:
+                    mcp_event = self._mcp_tool_queue.get_nowait()
+                    structlogger.debug(
+                        "copilot_response_handler.yield_queued_mcp_tool_events.mcp_event_yielded",
+                        mcp_event=mcp_event,
+                    )
+                    yield mcp_event
+            except asyncio.QueueEmpty:
+                structlogger.debug(
+                    "copilot_response_handler.yield_queued_mcp_tool_events.mcp_drained",
+                    event_info="No MCP tool events to yield",
+                )
+
+    async def _yield_queued_plan_events(self) -> AsyncGenerator[CopilotOutput, None]:
+        """Yield any queued plan update events.
+
+        This method drains the plan queue non-blocking and yields all events.
+        It also updates _final_plan with the latest plan state.
+
+        Yields:
+            TodoPlanUpdate: Plan update events from the queue.
+        """
+        if self._plan_queue is not None:
+            try:
+                while True:
+                    plan_event = self._plan_queue.get_nowait()
+                    self._final_plan = plan_event.tasks
+                    structlogger.debug(
+                        "copilot_response_handler.yield_queued_plan_events.plan_captured",
+                        task_count=len(self._final_plan),
+                        task_statuses=[t.status for t in self._final_plan],
+                    )
+                    yield plan_event
+            except asyncio.QueueEmpty:
+                structlogger.debug(
+                    "copilot_response_handler.yield_queued_plan_events.plan_drained",
+                    event_info="No plan update events to yield",
+                )
+
     async def stream(self) -> AsyncGenerator[CopilotOutput, None]:
         """Stream and process Copilot responses from the response stream.
 
@@ -166,25 +333,70 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         processed CopilotOutput objects. It handles multiple content parts and
         processes each text content part through the streaming pipeline.
 
+        It also manages:
+        - Planning context lifecycle (ContextVar initialization/cleanup)
+        - Queue draining for MCP tool calls and planning updates
+        - Interleaving of StreamEvents with MCP/planning events
+
+        Queue events (MCP tool calls, plan updates) are yielded:
+        - After each stream event from the LLM
+        - After text content streaming completes
+        - At the end of the stream
+
+        Note: Queue events may be delayed during long-running tool calls where
+        the LLM stream is blocked waiting for tool results. This is a limitation
+        of the current architecture where queue polling is tied to stream events.
+
         Yields:
             CopilotOutput: Processed output objects including text content, controlled
-                predictions, exceptions, and content part markers.
+                predictions, exceptions, content part markers, MCP tool calls, and
+                planning updates.
 
         Note:
             This method resets the handler state before processing.
         """
         self.reset()
+
+        # Initialize planning context if we have the necessary components
+        # Both tokens use ContextVar to ensure request isolation
+        if self._plan_queue is not None:
+            self._planning_token = init_planning_context()
+            self._plan_queue_token = set_plan_queue(self._plan_queue)
+
         try:
             async for stream_event in self._response_stream:
+                # Yield any queued events (MCP tool calls, plan updates) that
+                # accumulated since the last stream event
+                async for queued_event in self._yield_queued_mcp_tool_events():
+                    yield queued_event
+                async for queued_event in self._yield_queued_plan_events():
+                    yield queued_event
+
                 # Check if the stream event signals the start of the text content part
                 # streaming.
                 if is_text_content_part_start_event(stream_event):
                     self._reset_for_content_part()
                     async for generated_content in self._stream_text_content_part():
                         yield generated_content
+                    # After text streaming, yield any queued events that accumulated
+                    async for queued_event in self._yield_queued_mcp_tool_events():
+                        yield queued_event
+                    async for queued_event in self._yield_queued_plan_events():
+                        yield queued_event
 
                 # TODO: Add handling for other types of the content parts
                 #      (reasoning, tool calls, audio, refusals, etc.)
+
+                # For now, continue processing until the stream ends naturally
+                # (don't break on non-text events as the Agent SDK sends many
+                # event types before text content parts)
+
+            # Final drain of queues to catch any remaining events
+            # (tools may have added events after the last stream event)
+            async for queued_event in self._yield_queued_mcp_tool_events():
+                yield queued_event
+            async for queued_event in self._yield_queued_plan_events():
+                yield queued_event
 
         except Exception as e:
             exception_content = ExceptionContent(
@@ -193,6 +405,11 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
             )
             self._generated_responses.append(exception_content)
             yield exception_content
+        finally:
+            self._drain_queues_without_yielding(capture_final_plan=True)
+
+            # Capture the final plan from planning context before it's reset
+            self._capture_final_plan_from_context(self._planning_token)
 
     async def _stream_text_content_part(self) -> AsyncGenerator[GeneratedContent, None]:
         """Stream the text content part.
@@ -391,7 +608,6 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         try:
             while True:
                 # Get the next chunk from LLM stream and add it to the rolling buffer
-                # and the LLM stream buffer.
                 chunk = await anext(self._response_stream)
                 self._rolling_buffer.append(chunk)
 
@@ -575,3 +791,16 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
             primary_categories=AGENT_PRIMARY_TEXT_CATEGORIES,
             controlled_prediction_categories=CONTROLLED_PREDICTION_CATEGORIES,
         )
+
+    def extract_final_plan(self) -> Optional[List[TodoItem]]:
+        """Extract the final task plan captured during streaming.
+
+        This method returns the plan state that was captured during streaming.
+        The plan is updated each time a TodoPlanUpdate event is received from
+        the planning tools queue.
+
+        Returns:
+            List of TodoItem objects representing the final plan state,
+            or None if no plan was created during the stream.
+        """
+        return self._final_plan

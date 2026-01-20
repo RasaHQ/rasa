@@ -668,7 +668,14 @@ async def test_copilot_endpoint_stores_messages_to_sqlite(
         # Verify copilot message
         copilot_msg = stored_messages[1]
         assert copilot_msg.role == "copilot"
-        assert copilot_msg.content[0].text == expected_response
+        # Find TextContent block (may not be first if plan exists)
+        text_content = None
+        for content_block in copilot_msg.content:
+            if isinstance(content_block, TextContent):
+                text_content = content_block
+                break
+        assert text_content is not None
+        assert text_content.text == expected_response
         assert copilot_msg.response_category == ResponseCategory.COPILOT
     finally:
         if os.path.exists(temp_db_path):

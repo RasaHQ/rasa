@@ -1521,12 +1521,14 @@ async def copilot(request: Request) -> None:
             try:
                 # Pass references directly if they exist
                 references = reference_section.references if reference_section else None
+                final_plan = copilot_response_handler.extract_final_plan()
                 await persist_copilot_message_to_history(
                     text=full_text,
                     chat_id=chat_id,
                     response_category=category,
                     references=references,
                     commit=commit_info_dict,
+                    plan=final_plan,
                 )
             except Exception as exc:
                 structlogger.error(

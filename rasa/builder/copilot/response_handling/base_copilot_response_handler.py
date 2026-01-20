@@ -1,6 +1,6 @@
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import structlog
 
@@ -13,6 +13,7 @@ from rasa.builder.copilot.models import (
     ReferenceEntry,
     ReferenceSection,
     ResponseCategory,
+    TodoItem,
 )
 from rasa.builder.copilot.response_handling.constants import (
     CONTROLLED_PREDICTION_CATEGORIES,
@@ -354,3 +355,20 @@ class BaseCopilotResponseHandler(ABC):
 
         # Return COPILOT for all regular content (DELTA, START, END, etc.)
         return ResponseCategory.COPILOT
+
+    def extract_final_plan(self) -> Optional[List[TodoItem]]:
+        """Extract the final task plan captured during streaming.
+
+        This method returns the plan state that was captured during streaming.
+        The plan is updated each time a TodoPlanUpdate event is received from
+        the planning tools queue.
+
+        Returns:
+            List of TodoItem objects representing the final plan state,
+            or None if no plan was created during the stream.
+
+        Note:
+            The default implementation returns None. Subclasses that support
+            task planning should override this method.
+        """
+        return None

@@ -1573,6 +1573,121 @@ class TestAgentCopilotResponseHandler:
         assert len(exception_in_generated) == 1
         assert handler.extract_response_category() == ResponseCategory.EXCEPTION
 
+    @pytest.mark.asyncio
+    async def test_queues_drained_on_exception(self):
+        """Test that MCP tool and plan queues are drained when an exception occurs.
+
+        This test verifies the fix for a bug where queues were not drained in the
+        exception path, causing tool call events from failed requests to leak into
+        subsequent requests.
+
+        Scenario:
+        1. Create handler with queues that have items
+        2. Simulate an exception during streaming
+        3. Verify queues are empty after streaming (drained in finally block)
+        """
+        from rasa.builder.copilot.models import MCPToolCall, TodoItem, TodoPlanUpdate
+
+        # Given: Create queues with pre-existing items (simulating events added
+        # before an exception)
+        mcp_queue: asyncio.Queue[MCPToolCall] = asyncio.Queue()
+        plan_queue: asyncio.Queue[TodoPlanUpdate] = asyncio.Queue()
+
+        # Add items to queues before streaming
+        await mcp_queue.put(MCPToolCall(tool_name="test_tool", status="called"))
+        await mcp_queue.put(MCPToolCall(tool_name="test_tool", status="completed"))
+        plan_queue.put_nowait(
+            TodoPlanUpdate(
+                tasks=[TodoItem(id="1", content="Test task", status="pending")]
+            )
+        )
+
+        # Verify queues have items
+        assert mcp_queue.qsize() == 2
+        assert plan_queue.qsize() == 1
+
+        async def exception_stream() -> AsyncGenerator[StreamEvent, None]:
+            """Create a stream that raises an exception."""
+            # Yield some events first
+            yield create_text_content_part_start_event_mock()
+            yield create_text_delta_event_mock("Some content ")
+            # Then raise an exception
+            raise RuntimeError("Test exception")
+
+        handler = AgentCopilotResponseHandler(
+            exception_stream(),
+            mcp_tool_queue=mcp_queue,
+            plan_queue=plan_queue,
+        )
+
+        # When: Process the stream (which will raise an exception)
+        responses: List[CopilotOutput] = []
+        async for response in handler.stream():
+            responses.append(response)
+
+        # Then: Verify the exception was handled
+        exception_responses = [r for r in responses if isinstance(r, ExceptionContent)]
+        assert len(exception_responses) == 1
+
+        # Verify queues are empty (drained in finally block)
+        assert mcp_queue.empty(), (
+            f"MCP queue should be empty after exception, "
+            f"but has {mcp_queue.qsize()} items"
+        )
+        assert plan_queue.empty(), (
+            f"Plan queue should be empty after exception, "
+            f"but has {plan_queue.qsize()} items"
+        )
+
+    @pytest.mark.asyncio
+    async def test_queues_drained_on_successful_completion(self):
+        """Test that queues are also drained on successful stream completion.
+
+        This ensures the finally block cleanup works for both success and error cases.
+        """
+        from rasa.builder.copilot.models import MCPToolCall, TodoPlanUpdate
+
+        # Given: Create queues
+        mcp_queue: asyncio.Queue[MCPToolCall] = asyncio.Queue()
+        plan_queue: asyncio.Queue[TodoPlanUpdate] = asyncio.Queue()
+
+        # Add items that won't be consumed during normal streaming
+        # (simulating events added after the main loop but before finally)
+        # We'll add them during the stream iteration
+
+        async def stream_with_late_queue_items() -> AsyncGenerator[StreamEvent, None]:
+            """Stream that adds items to queues during processing."""
+            yield create_text_content_part_start_event_mock()
+            yield create_text_delta_event_mock("Content ")
+            # Normally the hooks would add items here during tool calls
+            # For this test, we'll add them manually after yielding
+            yield create_text_output_done_event_mock()
+            yield create_text_content_part_end_event_mock()
+
+        handler = AgentCopilotResponseHandler(
+            stream_with_late_queue_items(),
+            mcp_tool_queue=mcp_queue,
+            plan_queue=plan_queue,
+        )
+
+        # When: Process the stream normally
+        responses: List[CopilotOutput] = []
+        async for response in handler.stream():
+            responses.append(response)
+            # Add items to queue during iteration (simulating late arrivals)
+            if isinstance(response, CopilotTextContent):
+                await mcp_queue.put(MCPToolCall(tool_name="late_tool", status="called"))
+
+        # Then: Verify queues are empty after successful completion
+        assert mcp_queue.empty(), (
+            f"MCP queue should be empty after successful completion, "
+            f"but has {mcp_queue.qsize()} items"
+        )
+        assert plan_queue.empty(), (
+            f"Plan queue should be empty after successful completion, "
+            f"but has {plan_queue.qsize()} items"
+        )
+
     @pytest.mark.parametrize(
         (
             "max_tokens,rolling_buffer_size,stream_events,"

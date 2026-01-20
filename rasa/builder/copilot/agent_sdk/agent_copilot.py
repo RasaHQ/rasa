@@ -4,6 +4,7 @@ This copilot uses OpenAI's Agents SDK with MCP (Model Context Protocol) integrat
 while maintaining full compatibility with the existing copilot interface.
 """
 
+import asyncio
 import importlib.resources
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Dict, List, Tuple
@@ -14,6 +15,8 @@ from agents.mcp import MCPServerStreamableHttp
 from jinja2 import Template
 
 from rasa.builder import config
+from rasa.builder.copilot.agent_sdk.hooks import RasaCopilotHooks
+from rasa.builder.copilot.agent_sdk.planning_tools import PLANNING_TOOLS
 from rasa.builder.copilot.base_copilot import BaseCopilot
 from rasa.builder.copilot.constants import (
     COPILOT_PROMPTS_DIR,
@@ -23,6 +26,8 @@ from rasa.builder.copilot.models import (
     CopilotContext,
     CopilotGenerationContext,
     EventContent,
+    MCPToolCall,
+    TodoPlanUpdate,
     UsageStatistics,
 )
 from rasa.builder.copilot.response_handling.agent_copilot_response_handler import (
@@ -58,6 +63,12 @@ class AgentCopilot(BaseCopilot):
             cached_token_price=config.COPILOT_CACHED_TOKEN_PRICE,
         )
 
+        # Queue for MCP tool call events from hooks
+        self._mcp_tool_queue: asyncio.Queue[MCPToolCall] = asyncio.Queue()
+
+        # Queue for task planning updates from function tools
+        self._plan_queue: asyncio.Queue[TodoPlanUpdate] = asyncio.Queue()
+
     @property
     def llm_config(self) -> Dict[str, Any]:
         """The LLM config used to generate the response."""
@@ -72,18 +83,6 @@ class AgentCopilot(BaseCopilot):
     def usage_statistics(self) -> UsageStatistics:
         """Get usage statistics for the copilot."""
         return self._usage_statistics
-
-    # TODO: (agent-sdk) Implement custom hooks by subclassing AgentHooks
-    # def _create_hooks(self) -> AgentHooks:
-    #     """Create custom AgentHooks subclass for observability."""
-    #     class RasaCopilotHooks(AgentHooks):
-    #         async def on_tool_start(self, context, agent, tool) -> None:
-    #             structlogger.info("agent_sdk.tool.start", tool_name=tool.name)
-    #
-    #         async def on_tool_end(self, context, agent, tool) -> None:
-    #             structlogger.info("agent_sdk.tool.end", tool_name=tool.name)
-    #
-    #     return RasaCopilotHooks()
 
     @asynccontextmanager
     async def _create_mcp_server(self) -> AsyncGenerator[MCPServerStreamableHttp, None]:
@@ -154,8 +153,8 @@ class AgentCopilot(BaseCopilot):
             temperature=config.OPENAI_TEMPERATURE,
         )
 
-        # Note: AgentHooks in openai-agents 0.4.2 needs to be subclassed, not
-        # instantiated with params. For now, we create agent without hooks.
+        # Create agent with hooks to track MCP tool calls
+        # Include both MCP server tools and local planning tools
         async with self._create_mcp_server() as server:
             yield Agent(
                 name="Rasa Copilot",
@@ -163,6 +162,8 @@ class AgentCopilot(BaseCopilot):
                 model=config.OPENAI_MODEL,
                 model_settings=model_settings,
                 mcp_servers=[server],
+                tools=PLANNING_TOOLS,  # Local function tools for task planning
+                hooks=RasaCopilotHooks(self._mcp_tool_queue),
             )
 
     def _get_last_user_message(self, context: CopilotContext) -> str:
@@ -219,8 +220,10 @@ class AgentCopilot(BaseCopilot):
         )
 
         copilot_response_handler = AgentCopilotResponseHandler(
-            self._stream_response(system_prompt, messages),
+            response_stream=self._stream_response(system_prompt, messages),
             rolling_buffer_size=config.COPILOT_HANDLER_ROLLING_BUFFER_SIZE,
+            mcp_tool_queue=self._mcp_tool_queue,
+            plan_queue=self._plan_queue,
         )
 
         # Return the stream and generation context
@@ -289,24 +292,35 @@ class AgentCopilot(BaseCopilot):
         system_prompt: str,
         messages: List[Dict[str, Any]],
     ) -> AsyncGenerator[StreamEvent, None]:
-        """Stream response tokens from the agent.
+        """Stream response events from the agent.
+
+        This is a simple passthrough from the Agent SDK to the response handler.
+        All event processing, queue draining, and context management happens in
+        the CopilotResponseHandler.
 
         Args:
             system_prompt: The system prompt for the agent
             messages: The messages to send to the agent
 
         Yields:
-            Response tokens as strings
+            StreamEvent objects from the Agent SDK
         """
         structlogger.debug(
             "agent_sdk.agent_copilot.stream_response.start",
             messages_count=len(messages),
+            max_turns=config.COPILOT_MAX_AGENT_STEPS,
         )
 
         try:
             # Run the agent with streaming enabled
             async with self._create_agent(system_prompt) as agent:
-                result = Runner.run_streamed(agent, input=messages)
+                result = Runner.run_streamed(
+                    agent,
+                    input=messages,
+                    max_turns=config.COPILOT_MAX_AGENT_STEPS,
+                )
+
+                # Simple passthrough of StreamEvents to the response handler
                 async for event in result.stream_events():
                     # Extract usage statistics from ResponseCompletedEvent
                     if is_response_completed_event(event):
