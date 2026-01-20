@@ -28,7 +28,12 @@ import rasa.shared.utils.io
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
-from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
+from rasa.core.constants import (
+    ACTIVE_FLOW_METADATA_KEY,
+    PARENT_FLOW_ID_METADATA_KEY,
+    PARENT_STEP_ID_METADATA_KEY,
+    STEP_ID_METADATA_KEY,
+)
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import StorageType
 from rasa.dialogue_understanding_test.du_test_case import DialogueUnderstandingTestCase
@@ -71,6 +76,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from rasa.core.agent import Agent
+    from rasa.shared.core.flows import FlowsList
 
 structlogger = structlog.get_logger()
 
@@ -1019,9 +1025,13 @@ class E2ETestRunner:
             if coverage:
                 tracker = await self.agent.tracker_store.retrieve(sender_id)
                 if tracker:
+                    # Get flows for slot-to-step mapping (to track collect steps)
+                    flows = None
+                    if self.agent.processor:
+                        flows = await self.agent.processor.get_flows()
                     test_result.tested_paths, test_result.tested_commands = (
                         self._get_tested_flow_paths_and_commands(
-                            tracker.events, test_result
+                            tracker.events, test_result, flows
                         )
                     )
 
@@ -1380,15 +1390,20 @@ class E2ETestRunner:
         )
 
     def _get_tested_flow_paths_and_commands(
-        self, events: List[Event], test_result: TestResult
+        self,
+        events: List[Event],
+        test_result: TestResult,
+        flows: Optional["FlowsList"] = None,
     ) -> Tuple[Optional[List[FlowPath]], Dict[str, Dict[str, int]]]:
         """Extract tested paths and commands from dialog events.
 
-        A flow path consists of bot utterances and custom actions.
+        A flow path consists of bot utterances, custom actions, and inferred
+        step executions (call/link steps, collect steps with prefilled slots).
 
         Args:
             events: The list of dialog events.
             test_result: The result of the test incl. the pass status.
+            flows: Optional flow definitions for slot-to-step mapping.
 
         Returns:
             Tuple[flow_paths: Optional[List[FlowPath]], tested_commands:
@@ -1403,12 +1418,37 @@ class E2ETestRunner:
         _tested_commands: DefaultDict[str, DefaultDict[str, int]] = defaultdict(
             lambda: defaultdict(int)
         )
-        flow_paths_stack = []
+        flow_paths_stack: list[FlowPath] = []
+
+        # Build slot-to-step mapping for tracking collect steps with prefilled slots
+        slot_to_collect_step = self._build_slot_to_collect_step_mapping(flows)
 
         for event in events:
             if isinstance(event, FlowStarted) and not event.flow_id.startswith(
                 RASA_DEFAULT_FLOW_PATTERN_PREFIX
             ):
+                # When a child flow starts due to a call/link step,
+                # mark the parent's call/link step as visited using the metadata
+                # that was added by the flow executor.
+                if (
+                    flow_paths_stack
+                    and PARENT_FLOW_ID_METADATA_KEY in event.metadata
+                    and PARENT_STEP_ID_METADATA_KEY in event.metadata
+                ):
+                    parent_flow_id = event.metadata[PARENT_FLOW_ID_METADATA_KEY]
+                    parent_step_id = event.metadata[PARENT_STEP_ID_METADATA_KEY]
+                    # Find the parent flow path on the stack and add the call/link step
+                    for flow_path in reversed(flow_paths_stack):
+                        if flow_path.flow == parent_flow_id:
+                            call_step_node = PathNode(
+                                step_id=parent_step_id,
+                                flow=parent_flow_id,
+                            )
+                            # Only add if not already present
+                            if call_step_node not in flow_path.nodes:
+                                flow_path.nodes.append(call_step_node)
+                            break
+
                 flow_paths_stack.append(FlowPath(event.flow_id))
 
             elif (
@@ -1438,6 +1478,24 @@ class E2ETestRunner:
                 ):
                     flow_paths_stack[-1].nodes.append(self._create_path_node(event))
 
+            elif isinstance(event, SlotSet):
+                # Track collect steps with prefilled slots.
+                # When a slot is set (e.g., from user message extraction), find the
+                # collect step in the current flow that collects this slot.
+                if flow_paths_stack and slot_to_collect_step:
+                    current_flow_id = flow_paths_stack[-1].flow
+                    slot_name = event.key
+                    # Look up the collect step for this slot in the current flow
+                    if (current_flow_id, slot_name) in slot_to_collect_step:
+                        step_id = slot_to_collect_step[(current_flow_id, slot_name)]
+                        collect_step_node = PathNode(
+                            step_id=step_id,
+                            flow=current_flow_id,
+                        )
+                        # Only add if not already present (avoid duplicates)
+                        if collect_step_node not in flow_paths_stack[-1].nodes:
+                            flow_paths_stack[-1].nodes.append(collect_step_node)
+
             # Time to gather tested commands
             elif isinstance(event, UserUttered):
                 if event.parse_data and COMMANDS in event.parse_data:
@@ -1465,3 +1523,31 @@ class E2ETestRunner:
         flow_id = event.metadata[ACTIVE_FLOW_METADATA_KEY]
         step_id = event.metadata[STEP_ID_METADATA_KEY]
         return PathNode(step_id=step_id, flow=flow_id)
+
+    @staticmethod
+    def _build_slot_to_collect_step_mapping(
+        flows: Optional["FlowsList"],
+    ) -> Dict[Tuple[str, str], str]:
+        """Build a mapping from (flow_id, slot_name) to collect step_id.
+
+        This allows looking up which collect step corresponds to a given slot
+        when the slot is set, so we can track collect steps even when the slot
+        was prefilled (and thus no BotUttered event was emitted).
+
+        Args:
+            flows: The flow definitions.
+
+        Returns:
+            Dict mapping (flow_id, slot_name) to the collect step's step_id.
+        """
+        mapping: Dict[Tuple[str, str], str] = {}
+        if not flows:
+            return mapping
+
+        for flow in flows.underlying_flows:
+            for step in flow.get_collect_steps():
+                # step.collect is the slot name being collected
+                # step.id is the step's ID
+                mapping[(flow.id, step.collect)] = step.id
+
+        return mapping

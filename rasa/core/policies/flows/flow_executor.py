@@ -11,7 +11,12 @@ from rasa.core.channels.voice_stream.call_state import (
     call_state,
 )
 from rasa.core.config.configuration import Configuration
-from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
+from rasa.core.constants import (
+    ACTIVE_FLOW_METADATA_KEY,
+    PARENT_FLOW_ID_METADATA_KEY,
+    PARENT_STEP_ID_METADATA_KEY,
+    STEP_ID_METADATA_KEY,
+)
 from rasa.core.policies.flows.agent_executor import run_agent
 from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
@@ -227,6 +232,29 @@ def update_top_flow_step_id(updated_id: str, stack: DialogueStack) -> DialogueSt
     if (top := stack.top()) and isinstance(top, BaseFlowStackFrame):
         top.step_id = updated_id
     return stack
+
+
+def _get_parent_user_flow_frame(stack: DialogueStack) -> Optional[UserFlowStackFrame]:
+    """Get the parent user flow frame from the stack.
+
+    When a flow is called/linked, the parent flow's frame is the second-to-last
+    user flow frame on the stack. This is useful for tracking which step in the
+    parent flow triggered the call/link.
+
+    Args:
+        stack: The dialogue stack.
+
+    Returns:
+        The parent user flow frame, or None if there is no parent.
+    """
+    user_flow_frames = [
+        frame for frame in stack.frames if isinstance(frame, UserFlowStackFrame)
+    ]
+    # Need at least 2 user flow frames: current flow and parent flow
+    if len(user_flow_frames) >= 2:
+        # Return the second-to-last user flow frame (parent of current)
+        return user_flow_frames[-2]
+    return None
 
 
 def events_from_set_slots_step(step: SetSlotsFlowStep) -> List[Event]:
@@ -638,7 +666,14 @@ async def run_step(
         # first step in the flow -> other steps might link to this flow, so the
         # only reliable way to check if we are starting a new flow is checking for
         # the START_STEP meta step
-        initial_events.append(FlowStarted(flow.id, metadata=stack.current_context()))
+        flow_started_metadata = stack.current_context()
+        # Add parent step info if this flow was called/linked from another flow.
+        # This allows the coverage report to track call/link steps as visited.
+        parent_frame = _get_parent_user_flow_frame(stack)
+        if parent_frame is not None:
+            flow_started_metadata[PARENT_FLOW_ID_METADATA_KEY] = parent_frame.flow_id
+            flow_started_metadata[PARENT_STEP_ID_METADATA_KEY] = parent_frame.step_id
+        initial_events.append(FlowStarted(flow.id, metadata=flow_started_metadata))
 
     # FLow does not start with collect step or we are not in collect information pattern
     if _first_step_is_not_collect(step, previous_step_id) and not (

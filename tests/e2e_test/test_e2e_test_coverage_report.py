@@ -27,6 +27,8 @@ from rasa.e2e_test.e2e_test_coverage_report import (
     UNTESTED_LINES_KEY,
     _append_total_row,
     _calculate_coverage,
+    _collect_all_testable_nodes,
+    _collect_all_tested_nodes,
     _construct_dataframe,
     _create_coverage_report_data,
     _empty_dataframe,
@@ -230,6 +232,7 @@ def test_create_coverage_report_data() -> None:
 
 
 def test_get_unvisited_nodes_per_flow():
+    """Test _get_unvisited_nodes_per_flow with nodes grouped by actual flow ID."""
     flow_to_testable_paths = {
         "flow_a": FlowPathsList(
             "flow_a",
@@ -298,8 +301,12 @@ def test_get_unvisited_nodes_per_flow():
         )
     }
 
+    # Collect nodes by their actual flow ID
+    all_testable_nodes = _collect_all_testable_nodes(flow_to_testable_paths)
+    all_tested_nodes = _collect_all_tested_nodes(flow_to_tested_paths)
+
     unvisited_nodes_per_flow = _get_unvisited_nodes_per_flow(
-        flow_to_testable_paths, flow_to_tested_paths
+        all_testable_nodes, all_tested_nodes
     )
 
     assert unvisited_nodes_per_flow["flow_a"] == {PathNode("step_3", "flow_a")}
@@ -533,3 +540,115 @@ def test_extract_tested_commands(
     test_results: List[TestResult], expected_output: Dict[str, int]
 ) -> None:
     assert expected_output == extract_tested_commands(test_results)
+
+
+def test_collect_all_testable_nodes_separates_by_actual_flow_id():
+    """Test that nodes from called/linked flows are grouped by their actual flow ID.
+
+    When a parent flow calls a child flow, the nodes from the child flow
+    should be attributed to the child flow's ID, not the parent's.
+    """
+    from rasa.e2e_test.e2e_test_coverage_report import _collect_all_testable_nodes
+
+    # Simulate paths where parent_flow calls child_flow
+    # Nodes in the path have their ACTUAL flow ID
+    flow_to_testable_paths = {
+        "parent_flow": FlowPathsList(
+            "parent_flow",
+            paths=[
+                FlowPath(
+                    "parent_flow",
+                    [
+                        # Step from parent flow
+                        PathNode("call_child", "parent_flow", lines="5-7"),
+                        # Steps from child flow (with their actual flow ID)
+                        PathNode("child_step_1", "child_flow", lines="10-12"),
+                        PathNode("child_step_2", "child_flow", lines="13-15"),
+                        # Back to parent flow
+                        PathNode("parent_action", "parent_flow", lines="8-10"),
+                    ],
+                ),
+            ],
+        ),
+    }
+
+    nodes_per_flow = _collect_all_testable_nodes(flow_to_testable_paths)
+
+    # Nodes should be grouped by their ACTUAL flow ID
+    assert "parent_flow" in nodes_per_flow
+    assert "child_flow" in nodes_per_flow
+
+    # Parent flow's nodes
+    parent_nodes = nodes_per_flow["parent_flow"]
+    assert len(parent_nodes) == 2
+    assert PathNode("call_child", "parent_flow", lines="5-7") in parent_nodes
+    assert PathNode("parent_action", "parent_flow", lines="8-10") in parent_nodes
+
+    # Child flow's nodes (NOT merged into parent)
+    child_nodes = nodes_per_flow["child_flow"]
+    assert len(child_nodes) == 2
+    assert PathNode("child_step_1", "child_flow", lines="10-12") in child_nodes
+    assert PathNode("child_step_2", "child_flow", lines="13-15") in child_nodes
+
+
+def test_coverage_report_with_called_flows():
+    """Test that coverage for called flows is tracked separately.
+
+    When a parent flow calls a child flow that has low coverage,
+    the parent flow's coverage should NOT be polluted by the child's low coverage.
+    """
+    # Testable paths: parent flow has 2 steps, child flow has 4 steps
+    # All nodes have their ACTUAL flow ID
+    flow_to_testable_paths = {
+        "parent_flow": FlowPathsList(
+            "parent_flow",
+            paths=[
+                FlowPath(
+                    "parent_flow",
+                    [
+                        PathNode("call_child", "parent_flow"),
+                        PathNode("child_step_1", "child_flow"),
+                        PathNode("child_step_2", "child_flow"),
+                        PathNode("child_step_3", "child_flow"),
+                        PathNode("child_step_4", "child_flow"),
+                        PathNode("parent_action", "parent_flow"),
+                    ],
+                ),
+            ],
+        ),
+    }
+
+    # Tested paths: parent flow fully covered, but only 1 of 4 child steps tested
+    flow_to_tested_paths = {
+        "parent_flow": FlowPathsList(
+            "parent_flow",
+            paths=[
+                FlowPath(
+                    "parent_flow",
+                    [
+                        PathNode("call_child", "parent_flow"),
+                        PathNode(
+                            "child_step_1", "child_flow"
+                        ),  # Only 1 child step tested
+                        PathNode("parent_action", "parent_flow"),
+                    ],
+                ),
+            ],
+        ),
+    }
+
+    all_testable_nodes = _collect_all_testable_nodes(flow_to_testable_paths)
+    all_tested_nodes = _collect_all_tested_nodes(flow_to_tested_paths)
+
+    unvisited = _get_unvisited_nodes_per_flow(all_testable_nodes, all_tested_nodes)
+
+    # Parent flow should have 100% coverage (0 unvisited)
+    assert "parent_flow" in unvisited
+    assert len(unvisited["parent_flow"]) == 0  # Both parent steps were visited
+
+    # Child flow should have 25% coverage (3 unvisited out of 4)
+    assert "child_flow" in unvisited
+    assert len(unvisited["child_flow"]) == 3  # Only child_step_1 was visited
+
+    # Without this fix, parent_flow would have had 50% coverage
+    # because all 6 nodes would be attributed to parent_flow, and only 3 visited

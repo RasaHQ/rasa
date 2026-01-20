@@ -15,7 +15,12 @@ import rasa.cli.e2e_test
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.config.available_endpoints import AvailableEndpoints
-from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
+from rasa.core.constants import (
+    ACTIVE_FLOW_METADATA_KEY,
+    PARENT_FLOW_ID_METADATA_KEY,
+    PARENT_STEP_ID_METADATA_KEY,
+    STEP_ID_METADATA_KEY,
+)
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.e2e_test.e2e_test_case import (
@@ -2536,6 +2541,98 @@ def test_slice_turn_events(
             ],
             {},
         ),
+        (
+            # Issue 1 fix: call step is tracked via parent step metadata in FlowStarted
+            [
+                FlowStarted("parent_flow"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "parent_flow",
+                        STEP_ID_METADATA_KEY: "collect_info",
+                    }
+                ),
+                # FlowStarted for called flow includes parent step info
+                FlowStarted(
+                    "called_flow",
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "called_flow",
+                        STEP_ID_METADATA_KEY: "START",
+                        PARENT_FLOW_ID_METADATA_KEY: "parent_flow",
+                        PARENT_STEP_ID_METADATA_KEY: "call_step",
+                    },
+                ),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "called_flow",
+                        STEP_ID_METADATA_KEY: "utter_in_called_flow",
+                    }
+                ),
+                FlowCompleted("called_flow", "END"),
+                FlowCompleted("parent_flow", "END"),
+            ],
+            [
+                FlowPath(
+                    "called_flow",
+                    nodes=[
+                        PathNode(step_id="utter_in_called_flow", flow="called_flow"),
+                    ],
+                ),
+                FlowPath(
+                    "parent_flow",
+                    nodes=[
+                        PathNode(step_id="collect_info", flow="parent_flow"),
+                        # call_step is added from FlowStarted metadata
+                        PathNode(step_id="call_step", flow="parent_flow"),
+                    ],
+                ),
+            ],
+            {},
+        ),
+        (
+            # SlotSet events with call step tracking (SlotSet without flows won't track)
+            [
+                FlowStarted("flow_with_collect"),
+                # SlotSet event (slot prefilled from user message)
+                # Note: without flows passed, this won't be tracked by slot name
+                SlotSet("transfer_type", "third_party"),
+                # FlowStarted for called flow - call step IS tracked via metadata
+                FlowStarted(
+                    "called_flow",
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "called_flow",
+                        STEP_ID_METADATA_KEY: "START",
+                        PARENT_FLOW_ID_METADATA_KEY: "flow_with_collect",
+                        PARENT_STEP_ID_METADATA_KEY: "call_third_party_flow",
+                    },
+                ),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "called_flow",
+                        STEP_ID_METADATA_KEY: "utter_in_called_flow",
+                    }
+                ),
+                FlowCompleted("called_flow", "END"),
+                FlowCompleted("flow_with_collect", "END"),
+            ],
+            [
+                FlowPath(
+                    "called_flow",
+                    nodes=[
+                        PathNode(step_id="utter_in_called_flow", flow="called_flow"),
+                    ],
+                ),
+                FlowPath(
+                    "flow_with_collect",
+                    nodes=[
+                        # call step tracked via FlowStarted metadata
+                        PathNode(
+                            step_id="call_third_party_flow", flow="flow_with_collect"
+                        ),
+                    ],
+                ),
+            ],
+            {},
+        ),
     ],
 )
 def test_get_tested_flow_paths_and_commands(
@@ -2555,6 +2652,58 @@ def test_get_tested_flow_paths_and_commands(
 
     assert actual_flow_paths == expected_flow_paths
     assert actual_tested_commands == expected_tested_commands
+
+
+def test_get_tested_flow_paths_with_slot_tracking(
+    mock_e2e_test_runner: E2ETestRunner,
+    mock_domain,
+):
+    """Test that SlotSet events track collect steps via slot-to-step mapping.
+
+    When flows are provided, the method builds a mapping from (flow_id, slot_name)
+    to step_id. When a SlotSet event occurs, the corresponding collect step is
+    marked as visited even if no BotUttered event was emitted (prefilled slot).
+    """
+    from unittest.mock import MagicMock
+
+    # Create mock flows with a collect step
+    mock_flow = MagicMock()
+    mock_flow.id = "flow_with_collect"
+    mock_collect_step = MagicMock()
+    mock_collect_step.collect = "transfer_type"
+    mock_collect_step.id = "collect_transfer_type"
+    mock_flow.get_collect_steps.return_value = [mock_collect_step]
+
+    mock_flows = MagicMock()
+    mock_flows.underlying_flows = [mock_flow]
+
+    # Create events with a SlotSet for the collected slot
+    events = [
+        FlowStarted("flow_with_collect"),
+        SlotSet("transfer_type", "third_party"),  # Prefilled slot - no BotUttered
+        FlowCompleted("flow_with_collect", "END"),
+    ]
+
+    mock_e2e_test_runner.agent.domain = mock_domain
+    mock_e2e_test_runner.agent.tracker_store = InMemoryTrackerStore(domain=mock_domain)
+    test_result = TestResult(TestCase("test_case", []), pass_status=True, difference=[])
+
+    # Call with flows to enable slot tracking
+    actual_flow_paths, _ = mock_e2e_test_runner._get_tested_flow_paths_and_commands(
+        events, test_result, flows=mock_flows
+    )
+
+    # The collect step should be tracked via the slot-to-step mapping
+    expected_flow_paths = [
+        FlowPath(
+            "flow_with_collect",
+            nodes=[
+                PathNode(step_id="collect_transfer_type", flow="flow_with_collect"),
+            ],
+        ),
+    ]
+
+    assert actual_flow_paths == expected_flow_paths
 
 
 async def test_error_logging_with_partial_custom_action_stubbing(

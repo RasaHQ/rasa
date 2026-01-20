@@ -66,18 +66,36 @@ class FlowPathsList:
     flow: str
     paths: List[FlowPath] = field(default=list)
 
-    def get_unique_nodes(self) -> Set[PathNode]:
-        """Returns the unique nodes of all flow paths."""
+    def get_unique_nodes(self, flow_id: Optional[str] = None) -> Set[PathNode]:
+        """Returns the unique nodes of all flow paths.
+
+        Args:
+            flow_id: Optional flow ID to filter nodes by. If provided, only nodes
+                belonging to that specific flow will be returned. If None, all nodes
+                are returned.
+
+        Returns:
+            Set of unique PathNodes, optionally filtered by flow_id.
+        """
         nodes = set()
 
         for path in self.paths:
             for node in path.nodes:
-                nodes.add(node)
+                if flow_id is None or node.flow == flow_id:
+                    nodes.add(node)
 
         return nodes
 
-    def get_number_of_unique_nodes(self) -> int:
-        return len(self.get_unique_nodes())
+    def get_number_of_unique_nodes(self, flow_id: Optional[str] = None) -> int:
+        """Returns the count of unique nodes.
+
+        Args:
+            flow_id: Optional flow ID to filter nodes by.
+
+        Returns:
+            Count of unique nodes, optionally filtered by flow_id.
+        """
+        return len(self.get_unique_nodes(flow_id))
 
     def is_path_part_of_list(self, flow_path: FlowPath) -> bool:
         """Checks if the FlowPath exists in a list of FlowPaths."""

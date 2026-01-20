@@ -2706,3 +2706,94 @@ def test_set_dtmf_state_if_available_without_dtmf_config():
         # No logs should be created since we return early
         logs = filter_logs(caplog, "flow.step.run.collect.skip_dtmf", "debug")
         assert len(logs) == 0
+
+
+class TestGetParentUserFlowFrame:
+    """Tests for _get_parent_user_flow_frame helper function."""
+
+    def test_no_frames_returns_none(self):
+        """Test that an empty stack returns None."""
+        stack = DialogueStack(frames=[])
+        assert flow_executor._get_parent_user_flow_frame(stack) is None
+
+    def test_single_user_frame_returns_none(self):
+        """Test that a stack with only one user flow frame returns None."""
+        stack = DialogueStack(
+            frames=[
+                UserFlowStackFrame(
+                    flow_id="flow_a",
+                    step_id="step_1",
+                    frame_type=FlowStackFrameType.REGULAR,
+                )
+            ]
+        )
+        assert flow_executor._get_parent_user_flow_frame(stack) is None
+
+    def test_two_user_frames_returns_parent(self):
+        """Test that a stack with two user flow frames returns the parent."""
+        parent_frame = UserFlowStackFrame(
+            flow_id="parent_flow",
+            step_id="call_step",
+            frame_type=FlowStackFrameType.REGULAR,
+        )
+        child_frame = UserFlowStackFrame(
+            flow_id="child_flow",
+            step_id="first_step",
+            frame_type=FlowStackFrameType.CALL,
+        )
+        stack = DialogueStack(frames=[parent_frame, child_frame])
+
+        result = flow_executor._get_parent_user_flow_frame(stack)
+
+        assert result == parent_frame
+        assert result.flow_id == "parent_flow"
+        assert result.step_id == "call_step"
+
+    def test_mixed_frames_returns_correct_parent(self):
+        """Test that non-user frames are ignored when finding parent."""
+        parent_frame = UserFlowStackFrame(
+            flow_id="parent_flow",
+            step_id="collect_step",
+            frame_type=FlowStackFrameType.REGULAR,
+        )
+        pattern_frame = CollectInformationPatternFlowStackFrame(
+            collect="my_slot",
+            utter="utter_ask_my_slot",
+        )
+        child_frame = UserFlowStackFrame(
+            flow_id="child_flow",
+            step_id="first_step",
+            frame_type=FlowStackFrameType.CALL,
+        )
+        stack = DialogueStack(frames=[parent_frame, pattern_frame, child_frame])
+
+        result = flow_executor._get_parent_user_flow_frame(stack)
+
+        # Should return parent_frame, ignoring the pattern frame
+        assert result == parent_frame
+        assert result.flow_id == "parent_flow"
+
+    def test_nested_calls_returns_immediate_parent(self):
+        """Test that with multiple nested calls, the immediate parent is returned."""
+        grandparent_frame = UserFlowStackFrame(
+            flow_id="grandparent_flow",
+            step_id="call_parent",
+            frame_type=FlowStackFrameType.REGULAR,
+        )
+        parent_frame = UserFlowStackFrame(
+            flow_id="parent_flow",
+            step_id="call_child",
+            frame_type=FlowStackFrameType.CALL,
+        )
+        child_frame = UserFlowStackFrame(
+            flow_id="child_flow",
+            step_id="first_step",
+            frame_type=FlowStackFrameType.CALL,
+        )
+        stack = DialogueStack(frames=[grandparent_frame, parent_frame, child_frame])
+
+        result = flow_executor._get_parent_user_flow_frame(stack)
+
+        # Should return parent_frame (immediate parent of child_frame)
+        assert result == parent_frame
+        assert result.flow_id == "parent_flow"

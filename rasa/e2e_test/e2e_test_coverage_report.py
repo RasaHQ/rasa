@@ -54,6 +54,12 @@ def create_coverage_report(
     of one flow to obtain untested nodes. It then generates
     a report that highlights areas of the flows that are not adequately tested.
 
+    Coverage is calculated per flow based on the nodes' actual flow ID, not the
+    parent flow that triggered the path extraction. This ensures that:
+    - Called/linked flows have their coverage tracked separately
+    - Line numbers in the report match the actual flow files
+    - Low coverage in a called flow doesn't pollute parent flows' coverage
+
     Args:
         flows: List of flows.
         test_results: List of e2e test results.
@@ -76,16 +82,21 @@ def create_coverage_report(
     # Step 3: Group flow paths by flow
     flow_to_tested_paths = _group_flow_paths_by_flow(tested_flow_paths)
 
-    # Step 4: Get the unvisited nodes and number of unique nodes per flow
+    # Step 4: Get all testable nodes grouped by their actual flow ID
+    # (nodes may belong to different flows than the path's starting flow)
+    all_testable_nodes = _collect_all_testable_nodes(flow_to_testable_paths)
+    all_tested_nodes = _collect_all_tested_nodes(flow_to_tested_paths)
+
+    # Step 5: Get the unvisited nodes and number of unique nodes per flow
+    # based on each node's actual flow ID
     unvisited_nodes_per_flow = _get_unvisited_nodes_per_flow(
-        flow_to_testable_paths, flow_to_tested_paths
+        all_testable_nodes, all_tested_nodes
     )
     number_of_nodes_per_flow = {
-        flow: flow_paths.get_number_of_unique_nodes()
-        for flow, flow_paths in flow_to_testable_paths.items()
+        flow: len(nodes) for flow, nodes in all_testable_nodes.items()
     }
 
-    # Step 5: Produce the report
+    # Step 6: Produce the report
     coverage_report_data = _create_coverage_report_data(
         flows,
         number_of_nodes_per_flow,
@@ -94,33 +105,84 @@ def create_coverage_report(
     return _create_data_frame(coverage_report_data)
 
 
-def _get_unvisited_nodes_per_flow(
+def _collect_all_testable_nodes(
     flow_to_testable_paths: Dict[str, FlowPathsList],
-    flow_to_tested_paths: Dict[str, FlowPathsList],
 ) -> Dict[str, Set[PathNode]]:
-    """Returns the unvisited path nodes per flow.
+    """Collects all testable nodes grouped by their actual flow ID.
 
-    Compares the set of unique nodes of the testable paths to the unique nodes of the
-    tested paths.
+    Nodes are grouped by the node's own flow attribute, not the flow that
+    triggered the path extraction. This handles called/linked flows correctly.
 
     Args:
         flow_to_testable_paths: Testable paths per flow.
+
+    Returns:
+        Dict mapping flow ID to set of testable nodes belonging to that flow.
+    """
+    nodes_per_flow: Dict[str, Set[PathNode]] = {}
+
+    for flow_paths in flow_to_testable_paths.values():
+        for path in flow_paths.paths:
+            for node in path.nodes:
+                if node.flow not in nodes_per_flow:
+                    nodes_per_flow[node.flow] = set()
+                nodes_per_flow[node.flow].add(node)
+
+    return nodes_per_flow
+
+
+def _collect_all_tested_nodes(
+    flow_to_tested_paths: Dict[str, FlowPathsList],
+) -> Dict[str, Set[PathNode]]:
+    """Collects all tested nodes grouped by their actual flow ID.
+
+    Nodes are grouped by the node's own flow attribute, not the flow that
+    triggered the path extraction. This handles called/linked flows correctly.
+
+    Args:
         flow_to_tested_paths: Tested paths per flow.
 
     Returns:
-        The unvisited nodes per flow.
+        Dict mapping flow ID to set of tested nodes belonging to that flow.
+    """
+    nodes_per_flow: Dict[str, Set[PathNode]] = {}
+
+    for flow_paths in flow_to_tested_paths.values():
+        for path in flow_paths.paths:
+            for node in path.nodes:
+                if node.flow not in nodes_per_flow:
+                    nodes_per_flow[node.flow] = set()
+                nodes_per_flow[node.flow].add(node)
+
+    return nodes_per_flow
+
+
+def _get_unvisited_nodes_per_flow(
+    all_testable_nodes: Dict[str, Set[PathNode]],
+    all_tested_nodes: Dict[str, Set[PathNode]],
+) -> Dict[str, Set[PathNode]]:
+    """Returns the unvisited nodes per flow based on each node's actual flow ID.
+
+    Compares testable nodes to tested nodes for each flow. Nodes are grouped
+    by their actual flow ID, ensuring that coverage for called/linked flows
+    is tracked separately from the parent flow.
+
+    Args:
+        all_testable_nodes: Dict mapping flow ID to set of testable nodes.
+        all_tested_nodes: Dict mapping flow ID to set of tested nodes.
+
+    Returns:
+        Dict mapping flow ID to set of unvisited nodes.
     """
     unvisited_nodes_per_flow: Dict[str, Set[PathNode]] = {}
 
-    for flow, testable_paths in flow_to_testable_paths.items():
-        if flow in flow_to_tested_paths:
+    for flow, testable_nodes in all_testable_nodes.items():
+        if flow in all_tested_nodes:
             # get the difference of testable and tested nodes
-            testable_nodes = testable_paths.get_unique_nodes()
-            tested_nodes = flow_to_tested_paths[flow].get_unique_nodes()
-            unvisited_nodes = testable_nodes.difference(tested_nodes)
+            unvisited_nodes = testable_nodes.difference(all_tested_nodes[flow])
         else:
             # the flow was not tested at all
-            unvisited_nodes = testable_paths.get_unique_nodes()
+            unvisited_nodes = testable_nodes
         unvisited_nodes_per_flow[flow] = unvisited_nodes
 
     return unvisited_nodes_per_flow
@@ -181,30 +243,34 @@ def _create_coverage_report_data(
     """Creates the data for the coverage report.
 
     Args:
-        flows: All available flow names
+        flows: All available flows
         number_of_nodes_per_flow: Number of nodes per flow
         unvisited_nodes_per_flow: Unvisited nodes per flow
 
     Returns:
         A dictionary with processed data needed to construct the DataFrame.
     """
-    flow_ids = [flow.id for flow in flows.user_flows.underlying_flows]
+    # Include all flows that have testable nodes (including called/linked flows)
+    # Use number_of_nodes_per_flow keys to get all flows with testable nodes
+    flow_ids = list(number_of_nodes_per_flow.keys())
 
-    flow_full_names = ["unknown"] * len(flow_ids)
-    number_of_steps = [0] * len(flow_ids)
-    number_of_untested_steps = [0] * len(flow_ids)
-    untested_lines: List[List[str]] = [[]] * len(flow_ids)
+    flow_full_names: List[str] = []
+    number_of_steps: List[int] = []
+    number_of_untested_steps: List[int] = []
+    untested_lines: List[List[str]] = []
 
     for flow in flow_ids:
-        nodes = unvisited_nodes_per_flow[flow]
+        nodes = unvisited_nodes_per_flow.get(flow, set())
         lines: List[str] = [node.lines for node in nodes if node.lines]
 
-        index = flow_ids.index(flow)
         if flow_object := flows.flow_by_id(flow):
-            flow_full_names[index] = flow_object.get_full_name()
-        number_of_steps[index] = number_of_nodes_per_flow[flow]
-        number_of_untested_steps[index] = len(nodes)
-        untested_lines[index] = lines
+            flow_full_names.append(flow_object.get_full_name())
+        else:
+            # Flow might be a pattern or default flow
+            flow_full_names.append(flow)
+        number_of_steps.append(number_of_nodes_per_flow.get(flow, 0))
+        number_of_untested_steps.append(len(nodes))
+        untested_lines.append(lines)
 
     return {
         FLOWS_KEY: flow_full_names,

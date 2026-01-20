@@ -570,9 +570,12 @@ class Flow:
         )
         if should_add_node:
             # Add current step to the current path that is being constructed.
+            # Use self.id (actual flow's ID) instead of current_path.flow
+            # so that nodes from called/linked flows have correct flow attribution.
+            # This allows the coverage report to correctly group nodes by flow.
             current_path.nodes.append(
                 PathNode(
-                    flow=current_path.flow,
+                    flow=self.id,
                     step_id=current_step.id,
                     lines=current_step.metadata["line_numbers"],
                 )
