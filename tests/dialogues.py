@@ -274,3 +274,34 @@ TEST_DOMAINS_FOR_DIALOGUES = [
     "examples/nlu_based/formbot/domain.yml",
     "data/test_moodbot/domain.yml",
 ]
+
+TEST_DIALOGUE_WITH_USER_ID = Dialogue(
+    name="default",
+    events=[
+        ActionExecuted(action_name="action_listen", timestamp=1551952977.4850519),
+        UserUttered(
+            entities=[{"end": 19, "entity": "name", "start": 14, "value": "Peter"}],
+            intent={"confidence": 0.0, "name": "greet"},
+            message_id=None,
+            parse_data={
+                "entities": [
+                    {"end": 19, "entity": "name", "start": 14, "value": "Peter"}
+                ],
+                "intent": {"confidence": 0.0, "name": "greet"},
+                "message_id": None,
+                "metadata": {},
+                "text": "Hi my name is Peter",
+            },
+            text="Hi my name is Peter",
+            timestamp=1551953035.076376,
+        ),
+        SlotSet(key="name", timestamp=1551953035.076385, value="Peter"),
+        ActionExecuted(action_name="utter_greet", timestamp=1551953040.607782),
+        BotUttered(
+            data={"attachment": None, "buttons": None, "elements": None},
+            text="hey there Peter!",
+            timestamp=1551953040.60779,
+        ),
+    ],
+    user_id="test_user_id",
+)

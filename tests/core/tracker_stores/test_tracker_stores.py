@@ -1,5 +1,6 @@
 # file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests. # noqa: E501
 
+import json
 import uuid
 from typing import List, Optional, Text, Tuple, Type
 from unittest.mock import AsyncMock, MagicMock, Mock
@@ -21,7 +22,7 @@ from rasa.core.tracker_stores.tracker_store import (
     TrackerStore,
 )
 from rasa.plugin import plugin_manager
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import DEFAULT_SENDER_ID, DEFAULT_USER_ID
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
@@ -631,3 +632,149 @@ async def test_fail_safe_tracker_store_with_delete_error():
 
     fallback_tracker_store.delete.assert_called_once()
     on_error_callback.assert_called_once()
+
+
+@pytest.mark.parametrize("user_id", [DEFAULT_USER_ID, None])
+async def test_init_tracker_with_and_without_user_id(
+    test_domain: Domain, user_id: Optional[Text]
+):
+    """Test that init_tracker handles user_id correctly."""
+    store = InMemoryTrackerStore(test_domain)
+
+    tracker = store.init_tracker(DEFAULT_SENDER_ID, user_id=user_id)
+
+    assert tracker.sender_id == DEFAULT_SENDER_ID
+    assert tracker.user_id == user_id
+
+
+@pytest.mark.parametrize(
+    "user_id,serialized_data",
+    [
+        (
+            DEFAULT_USER_ID,
+            {"name": DEFAULT_SENDER_ID, "events": [], "user_id": DEFAULT_USER_ID},
+        ),
+        (None, {"name": DEFAULT_SENDER_ID, "events": []}),
+    ],
+)
+async def test_deserialise_tracker(
+    test_domain: Domain, user_id: Optional[Text], serialized_data: dict
+):
+    """Test deserializing tracker with and without user_id."""
+    store = InMemoryTrackerStore(test_domain)
+
+    serialized = json.dumps(serialized_data)
+    tracker = store.deserialise_tracker(DEFAULT_SENDER_ID, serialized)
+
+    assert tracker.sender_id == DEFAULT_SENDER_ID
+    assert tracker.user_id == user_id
+
+
+@pytest.mark.parametrize("user_id", [DEFAULT_USER_ID, None])
+async def test_tracker_serialisation_with_user_id(
+    test_domain: Domain, user_id: Optional[Text]
+):
+    """Test tracker serialization preserves user_id correctly."""
+    store = InMemoryTrackerStore(test_domain)
+    tracker = await store.get_or_create_tracker(DEFAULT_SENDER_ID, user_id=user_id)
+
+    event = SlotSet("cuisine", "French")
+    tracker.update(event)
+
+    serialised = store.serialise_tracker(tracker)
+    deserialised = store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
+
+    assert deserialised.user_id == user_id
+    assert deserialised == tracker
+
+
+@pytest.mark.parametrize("user_id", [DEFAULT_USER_ID, None])
+async def test_in_memory_store_save_and_retrieve(
+    test_domain: Domain, user_id: Optional[Text]
+):
+    """Test InMemoryTrackerStore saves and retrieves user_id correctly."""
+    store = InMemoryTrackerStore(test_domain)
+
+    tracker = DialogueStateTracker(DEFAULT_SENDER_ID, [], user_id=user_id)
+    tracker.update(UserUttered("test message"))
+
+    await store.save(tracker)
+
+    retrieved = await store.retrieve(DEFAULT_SENDER_ID)
+
+    assert retrieved is not None
+    assert retrieved.sender_id == DEFAULT_SENDER_ID
+    assert retrieved.user_id == user_id
+
+
+@pytest.mark.parametrize("user_id", [DEFAULT_USER_ID, None])
+async def test_in_memory_store_retrieve_full_tracker(
+    test_domain: Domain, user_id: Optional[Text]
+):
+    """Test retrieve_full_tracker preserves user_id correctly."""
+    store = InMemoryTrackerStore(test_domain)
+
+    tracker = DialogueStateTracker(DEFAULT_SENDER_ID, [], user_id=user_id)
+    tracker.update(UserUttered("test message"))
+
+    await store.save(tracker)
+
+    full_tracker = await store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+
+    assert full_tracker is not None
+    assert full_tracker.user_id == user_id
+
+
+@pytest.mark.parametrize("user_id", [DEFAULT_USER_ID, None])
+async def test_in_memory_store_get_or_create(
+    test_domain: Domain, user_id: Optional[Text]
+):
+    """Test get_or_create_tracker with and without user_id."""
+    store = InMemoryTrackerStore(test_domain)
+
+    tracker = await store.get_or_create_tracker(DEFAULT_SENDER_ID, user_id=user_id)
+
+    assert tracker.sender_id == DEFAULT_SENDER_ID
+    assert tracker.user_id == user_id
+
+    # Retrieve existing tracker should preserve user_id
+    retrieved = await store.get_or_create_tracker(DEFAULT_SENDER_ID)
+    assert retrieved.user_id == user_id
+
+
+@pytest.mark.parametrize("user_id", [DEFAULT_USER_ID, None])
+async def test_fail_safe_tracker_store_retrieve(
+    test_domain: Domain, user_id: Optional[Text]
+):
+    """Test FailSafeTrackerStore preserves user_id on retrieve."""
+    primary_store = InMemoryTrackerStore(test_domain)
+    tracker_store = FailSafeTrackerStore(primary_store)
+
+    tracker = DialogueStateTracker(DEFAULT_SENDER_ID, [], user_id=user_id)
+    tracker.update(UserUttered("test message"))
+
+    await tracker_store.save(tracker)
+
+    retrieved = await tracker_store.retrieve(DEFAULT_SENDER_ID)
+
+    assert retrieved is not None
+    assert retrieved.user_id == user_id
+
+
+@pytest.mark.parametrize("user_id", [DEFAULT_USER_ID, None])
+async def test_fail_safe_tracker_store_retrieve_full_tracker_with_user_id(
+    test_domain: Domain, user_id: Optional[Text]
+):
+    """Test FailSafeTrackerStore preserves user_id on retrieve_full_tracker."""
+    primary_store = InMemoryTrackerStore(test_domain)
+    tracker_store = FailSafeTrackerStore(primary_store)
+
+    tracker = DialogueStateTracker(DEFAULT_SENDER_ID, [], user_id=user_id)
+    tracker.update(UserUttered("test message"))
+
+    await tracker_store.save(tracker)
+
+    full_tracker = await tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+
+    assert full_tracker is not None
+    assert full_tracker.user_id == user_id

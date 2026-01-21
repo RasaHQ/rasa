@@ -277,6 +277,7 @@ async def test_remote_action_runs(
                 },
                 "events": [],
                 "latest_input_channel": None,
+                "user_id": None,
             },
         }
 
@@ -346,6 +347,7 @@ async def test_remote_action_logs_events(
                 },
                 "events": [],
                 "latest_input_channel": None,
+                "user_id": None,
             },
         }
     assert len(events) == 3  # first two events are bot utterances

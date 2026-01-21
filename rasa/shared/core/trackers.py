@@ -150,6 +150,7 @@ class DialogueStateTracker:
         events_as_dict: List[Dict[Text, Any]],
         slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
+        user_id: Optional[Text] = None,
     ) -> "DialogueStateTracker":
         """Create a tracker from dump.
 
@@ -158,7 +159,9 @@ class DialogueStateTracker:
         """
         evts = events.deserialise_events(events_as_dict)
 
-        return cls.from_events(sender_id, evts, slots, max_event_history)
+        return cls.from_events(
+            sender_id, evts, slots, max_event_history, user_id=user_id
+        )
 
     @classmethod
     def from_events(
@@ -169,6 +172,7 @@ class DialogueStateTracker:
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
         domain: Optional[Domain] = None,
+        user_id: Optional[Text] = None,
     ) -> "DialogueStateTracker":
         """Creates tracker from existing events.
 
@@ -179,12 +183,15 @@ class DialogueStateTracker:
             max_event_history: Maximum number of events which should be stored.
             sender_source: File source of the messages.
             domain: The current model domain.
+            user_id: The ID of the end user participating in the conversation.
 
         Returns:
             Instantiated tracker with its state updated according to the given
             events.
         """
-        tracker = cls(sender_id, slots, max_event_history, sender_source)
+        tracker = cls(
+            sender_id, slots, max_event_history, sender_source, user_id=user_id
+        )
 
         for e in evts:
             tracker.update(e, domain)
@@ -198,6 +205,7 @@ class DialogueStateTracker:
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
         is_rule_tracker: bool = False,
+        user_id: Optional[Text] = None,
     ) -> None:
         """Initialize the tracker.
 
@@ -244,6 +252,9 @@ class DialogueStateTracker:
         self.model_id: Optional[Text] = None
         self.assistant_id: Optional[Text] = None
 
+        # Optional user_id to add to the tracker.
+        self.user_id: Optional[Text] = user_id
+
     ###
     # Public tracker interface
     ###
@@ -272,6 +283,7 @@ class DialogueStateTracker:
             ),
             "latest_action": self.latest_action,
             "latest_action_name": self.latest_action_name,
+            "user_id": self.user_id,
         }
 
     def _events_for_verbosity(
@@ -563,6 +575,7 @@ class DialogueStateTracker:
             self.slots.values(),
             self._max_event_history,
             is_rule_tracker=self.is_rule_tracker,
+            user_id=self.user_id,
         )
 
     def generate_all_prior_trackers(
@@ -764,7 +777,7 @@ class DialogueStateTracker:
         This can be serialised and later used to recover the state
         of this tracker exactly.
         """
-        return Dialogue(self.sender_id, list(self.events))
+        return Dialogue(self.sender_id, list(self.events), self.user_id)
 
     def update(self, event: Event, domain: Optional[Domain] = None) -> None:
         """Modify the state of the tracker according to an ``Event``."""
@@ -1289,6 +1302,7 @@ def get_trackers_for_conversation_sessions(
             tracker.slots.values(),
             sender_source=tracker.sender_source,
             max_event_history=tracker._max_event_history,
+            user_id=tracker.user_id,
         )
         for evts in split_conversations
     ]

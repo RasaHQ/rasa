@@ -844,6 +844,7 @@ async def _predict_tracker_actions(
         events[:1],
         slots,
         sender_source=tracker.sender_source,
+        user_id=tracker.user_id,
     )
     tracker_actions = []
     policy_entity_results = []

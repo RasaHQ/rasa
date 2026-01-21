@@ -68,11 +68,16 @@ class TrackerWithCachedStates(DialogueStateTracker):
         max_event_history: Optional[int] = None,
         domain: Optional[Domain] = None,
         is_augmented: bool = False,
+        user_id: Optional[Text] = None,
         is_rule_tracker: bool = False,
     ) -> None:
         """Initializes a tracker with cached states."""
         super().__init__(
-            sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
+            sender_id,
+            slots,
+            max_event_history,
+            user_id=user_id,
+            is_rule_tracker=is_rule_tracker,
         )
         self._states_for_hashing: Deque[FrozenState] = deque()
         self.domain = domain if domain is not None else Domain.empty()
@@ -89,11 +94,17 @@ class TrackerWithCachedStates(DialogueStateTracker):
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
         domain: Optional[Domain] = None,
+        user_id: Optional[Text] = None,
         is_rule_tracker: bool = False,
     ) -> "TrackerWithCachedStates":
         """Initializes a tracker with given events."""
         tracker = cls(
-            sender_id, slots, max_event_history, domain, is_rule_tracker=is_rule_tracker
+            sender_id,
+            slots,
+            max_event_history,
+            domain,
+            user_id=user_id,
+            is_rule_tracker=is_rule_tracker,
         )
         for e in evts:
             tracker.update(e)
@@ -182,6 +193,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             self._max_event_history,
             self.domain,
             self.is_augmented,
+            self.user_id,
             self.is_rule_tracker,
         )
 

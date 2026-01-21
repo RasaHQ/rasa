@@ -116,7 +116,9 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
 
         # return the latest events since the last user message
         new_tracker = DialogueStateTracker.from_dict(
-            serialized["sender_id"], events_as_dict=serialized["events"]
+            serialized["sender_id"],
+            events_as_dict=serialized["events"],
+            user_id=serialized.get("user_id"),
         )
         new_events = new_tracker.get_last_turn_events()
         new_serialized_events = [event.as_dict() for event in new_events]
@@ -204,6 +206,9 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
             return None
 
         events_with_floats = []
+        # Extract user_id from the first dialogue that has it
+        user_id = dialogues[0].get("user_id") if dialogues else None
+
         for dialogue in dialogues:
             if dialogue.get("events"):
                 events = rasa.utils.json_utils.replace_decimals_with_floats(
@@ -216,7 +221,9 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
         else:
             slots = self.domain.slots
 
-        tracker = DialogueStateTracker.from_dict(sender_id, events_with_floats, slots)
+        tracker = DialogueStateTracker.from_dict(
+            sender_id, events_with_floats, slots, user_id=user_id
+        )
 
         if fetch_all_sessions:
             return tracker

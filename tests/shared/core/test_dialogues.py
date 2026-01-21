@@ -5,9 +5,13 @@ import pytest
 from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import Domain
-from tests.core.utilities import tracker_from_dialogue
+from tests.core.utilities import (
+    tracker_from_dialogue,
+    tracker_from_dialogue_with_user_id,
+)
 from tests.dialogues import (
     TEST_DEFAULT_DIALOGUE,
+    TEST_DIALOGUE_WITH_USER_ID,
     TEST_DIALOGUES,
     TEST_DOMAINS_FOR_DIALOGUES,
 )
@@ -34,4 +38,17 @@ def test_dialogue_from_parameters(domain: Domain):
     tracker = tracker_from_dialogue(TEST_DEFAULT_DIALOGUE, domain)
     serialised_dialogue = InMemoryTrackerStore.serialise_tracker(tracker)
     deserialised_dialogue = Dialogue.from_parameters(json.loads(serialised_dialogue))
+
+    assert deserialised_dialogue.user_id is None
+    assert tracker.as_dialogue().as_dict()["user_id"] is None
+    assert tracker.as_dialogue().as_dict() == deserialised_dialogue.as_dict()
+
+
+def test_dialogue_from_parameters_with_user_id(domain: Domain):
+    tracker = tracker_from_dialogue_with_user_id(TEST_DIALOGUE_WITH_USER_ID, domain)
+    serialised_dialogue = InMemoryTrackerStore.serialise_tracker(tracker)
+    deserialised_dialogue = Dialogue.from_parameters(json.loads(serialised_dialogue))
+
+    assert deserialised_dialogue.user_id == "test_user_id"
+    assert tracker.as_dialogue().as_dict()["user_id"] == "test_user_id"
     assert tracker.as_dialogue().as_dict() == deserialised_dialogue.as_dict()

@@ -191,7 +191,7 @@ class BackgroundPrivacyManager:
             processed_events = resulting_events[1]
             prior_events = resulting_events[0]
             prior_tracker = DialogueStateTracker.from_events(
-                sender_id=tracker.sender_id, evts=prior_events
+                sender_id=tracker.sender_id, evts=prior_events, user_id=tracker.user_id
             )
             prior_sensitive_slot_events = [
                 event
@@ -336,6 +336,7 @@ class BackgroundPrivacyManager:
                 sender_id=key,
                 evts=all_events,
                 slots=full_tracker.slots.values(),
+                user_id=full_tracker.user_id,
             )
             await self.tracker_store.delete(sender_id=key)
             await self.tracker_store.save(updated_tracker)
@@ -383,6 +384,7 @@ class BackgroundPrivacyManager:
                 sender_id=key,
                 evts=events_to_be_retained,
                 slots=full_tracker.slots.values(),
+                user_id=full_tracker.user_id,
             )
             await self.tracker_store.update(tracker)
 

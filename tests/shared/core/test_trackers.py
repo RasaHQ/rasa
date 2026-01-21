@@ -41,6 +41,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     DEFAULT_SENDER_ID,
+    DEFAULT_USER_ID,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
 )
@@ -1449,6 +1450,7 @@ def test_policy_prediction_reflected_in_tracker_state():
         "active_loop": {},
         "latest_action": {"action_name": "action_listen"},
         "latest_action_name": "action_listen",
+        "user_id": None,
     }
 
     assert tracker_state == expected_state
@@ -2680,3 +2682,58 @@ def test_agent_methods_with_no_agent_frames():
     assert tracker.stack._find_agent_frame_by_predicate(lambda f: True) == []
     assert tracker.stack.find_active_agent_stack_frame_for_flow("any_flow") is None
     assert tracker.stack.find_agent_stack_frame_by_agent("any_agent") is None
+
+
+def test_tracker_with_user_id():
+    """Test that tracker can be created with user_id."""
+    #  creation via different methods
+    tracker1 = DialogueStateTracker(DEFAULT_SENDER_ID, [], user_id=DEFAULT_USER_ID)
+    tracker2 = DialogueStateTracker.from_events(
+        DEFAULT_SENDER_ID, [], user_id=DEFAULT_USER_ID
+    )
+
+    assert tracker1.user_id == DEFAULT_USER_ID
+    assert tracker2.user_id == DEFAULT_USER_ID
+    # State representation includes user_id
+    state = tracker1.current_state()
+    assert state["user_id"] == DEFAULT_USER_ID
+
+    # Dialogue conversion preserves user_id
+    dialogue = tracker1.as_dialogue()
+    assert dialogue.user_id == DEFAULT_USER_ID
+
+    serialised_dialogue = dialogue.as_dict()
+    assert serialised_dialogue["user_id"] == DEFAULT_USER_ID
+
+    # deserialization preserves user_id
+    tracker3 = DialogueStateTracker.from_dict(
+        DEFAULT_SENDER_ID, [], user_id=DEFAULT_USER_ID
+    )
+    assert tracker3.user_id == DEFAULT_USER_ID
+
+
+def test_tracker_without_user_id():
+    """Test that tracker can be created without user_id."""
+    sender_id = "test_sender_id"
+
+    #  creation via different methods
+    tracker1 = DialogueStateTracker(sender_id, [])
+    tracker2 = DialogueStateTracker.from_events(sender_id, [])
+
+    assert tracker1.user_id is None
+    assert tracker2.user_id is None
+
+    # State representation includes user_id
+    state = tracker1.current_state()
+    assert state["user_id"] is None
+
+    # Dialogue conversion preserves user_id
+    dialogue = tracker1.as_dialogue()
+    assert dialogue.user_id is None
+
+    serialised_dialogue = dialogue.as_dict()
+    assert serialised_dialogue["user_id"] is None
+
+    # deserialization preserves user_id
+    tracker3 = DialogueStateTracker.from_dict(sender_id, [])
+    assert tracker3.user_id is None

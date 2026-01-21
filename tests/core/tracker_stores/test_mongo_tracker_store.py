@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import List, Optional, Text
 from unittest.mock import Mock
 
 import pytest
@@ -9,6 +9,7 @@ from structlog.testing import capture_logs
 
 from rasa.core.agent import Agent
 from rasa.core.tracker_stores.tracker_store import TrackerStore
+from rasa.shared.constants import DEFAULT_SENDER_ID, DEFAULT_USER_ID
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -304,3 +305,111 @@ async def test_mongo_tracker_store_update_tracker(domain: Domain) -> None:
     # Then
     updated_tracker = await tracker_store.retrieve(sender_id)
     assert updated_tracker == new_tracker
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("user_id", [DEFAULT_USER_ID, None])
+async def test_mongo_tracker_store_preserves_user_id(
+    domain: Domain, user_id: Optional[Text]
+) -> None:
+    """Test MongoTrackerStore preserves user_id on save/retrieve."""
+    # Given
+    conversation_id = uuid.uuid4().hex
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [SessionStarted(), UserUttered("Hello")],
+        user_id=user_id,
+    )
+
+    # When
+    await tracker_store.save(tracker)
+
+    # Then
+    retrieved_tracker = await tracker_store.retrieve(conversation_id)
+    assert retrieved_tracker is not None
+    assert retrieved_tracker.user_id == user_id
+
+    # Test with retrieve_full_tracker as well
+    retrieved_full_tracker = await tracker_store.retrieve_full_tracker(conversation_id)
+    assert retrieved_full_tracker is not None
+    assert retrieved_full_tracker.user_id == user_id
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("user_id", [DEFAULT_USER_ID, None])
+async def test_mongo_tracker_store_get_or_create(
+    domain: Domain, user_id: Optional[Text]
+) -> None:
+    """Test get_or_create_tracker with and without user_id."""
+    # Given
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    # When
+    tracker = await tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID, user_id=user_id
+    )
+
+    # Then
+    assert tracker.user_id == user_id
+
+    retrieved = await tracker_store.get_or_create_tracker(DEFAULT_SENDER_ID)
+    assert retrieved.user_id == user_id
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("user_id", [DEFAULT_USER_ID, None])
+async def test_mongo_tracker_store_update_preserves_user_id(
+    domain: Domain, user_id: Optional[Text]
+) -> None:
+    """Test update operation preserves user_id."""
+    # Given
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    # Create and save initial tracker
+    tracker = DialogueStateTracker.from_events(
+        DEFAULT_SENDER_ID,
+        [SessionStarted(), UserUttered("Hello")],
+        user_id=user_id,
+    )
+    await tracker_store.save(tracker)
+
+    # When
+    await tracker_store.update(tracker)
+
+    # Then
+    retrieved = await tracker_store.retrieve(DEFAULT_SENDER_ID)
+
+    assert retrieved is not None
+    assert retrieved.user_id == user_id
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("user_id", [DEFAULT_USER_ID, None])
+async def test_mongo_tracker_store_save_appends_events_preserves_user_id(
+    domain: Domain, user_id: Optional[Text]
+) -> None:
+    """Test incremental saves preserve user_id."""
+    # Given
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    # Create initial tracker
+    tracker = DialogueStateTracker.from_events(
+        DEFAULT_SENDER_ID,
+        [SessionStarted(), UserUttered("Hello")],
+        user_id=user_id,
+    )
+    await tracker_store.save(tracker)
+
+    # When
+    tracker.update_with_events(
+        [ActionExecuted("action_listen"), BotUttered("Hi")],
+        domain=domain,
+    )
+    await tracker_store.save(tracker)
+
+    # Then
+    retrieved = await tracker_store.retrieve(DEFAULT_SENDER_ID)
+    assert retrieved is not None
+    assert retrieved.user_id == user_id

@@ -664,6 +664,7 @@ class SlotFillingManager:
                 self.tracker.sender_id,
                 self.tracker.events_after_latest_restart() + slot_events,
                 slots=self.domain.slots,
+                user_id=self.tracker.user_id,
             )
             if recreate_tracker
             else self.tracker

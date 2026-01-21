@@ -19,6 +19,16 @@ def tracker_from_dialogue(dialogue: "Dialogue", domain: Domain) -> DialogueState
     return tracker
 
 
+def tracker_from_dialogue_with_user_id(
+    dialogue: "Dialogue", domain: Domain
+) -> DialogueStateTracker:
+    tracker = DialogueStateTracker(
+        dialogue.name, domain.slots, user_id=dialogue.user_id
+    )
+    tracker.recreate_from_dialogue(dialogue)
+    return tracker
+
+
 @contextlib.contextmanager
 def cwd(path: Text):
     CWD = os.getcwd()

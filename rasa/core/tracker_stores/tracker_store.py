@@ -162,6 +162,7 @@ class TrackerStore:
         sender_id: Text,
         max_event_history: Optional[int] = None,
         append_action_listen: bool = True,
+        user_id: Optional[Text] = None,
     ) -> "DialogueStateTracker":
         """Returns tracker or creates one if the retrieval returns None.
 
@@ -169,6 +170,7 @@ class TrackerStore:
             sender_id: Conversation ID associated with the requested tracker.
             max_event_history: Value to update the tracker store's max event history to.
             append_action_listen: Whether or not to append an initial `action_listen`.
+            user_id: Optional user ID associated with the tracker.
         """
         self.max_event_history = max_event_history
 
@@ -176,21 +178,27 @@ class TrackerStore:
 
         if tracker is None:
             tracker = await self.create_tracker(
-                sender_id, append_action_listen=append_action_listen
+                sender_id, append_action_listen=append_action_listen, user_id=user_id
             )
 
         return tracker
 
-    def init_tracker(self, sender_id: Text) -> "DialogueStateTracker":
+    def init_tracker(
+        self, sender_id: Text, user_id: Optional[Text] = None
+    ) -> "DialogueStateTracker":
         """Returns a Dialogue State Tracker."""
         return DialogueStateTracker(
             sender_id,
             self.domain.slots,
             max_event_history=self.max_event_history,
+            user_id=user_id,
         )
 
     async def create_tracker(
-        self, sender_id: Text, append_action_listen: bool = True
+        self,
+        sender_id: Text,
+        append_action_listen: bool = True,
+        user_id: Optional[Text] = None,
     ) -> DialogueStateTracker:
         """Creates a new tracker for `sender_id`.
 
@@ -199,11 +207,12 @@ class TrackerStore:
         Args:
             sender_id: Conversation ID associated with the tracker.
             append_action_listen: Whether or not to append an initial `action_listen`.
+            user_id: Optional user ID associated with the tracker.
 
         Returns:
             The newly created tracker for `sender_id`.
         """
-        tracker = self.init_tracker(sender_id)
+        tracker = self.init_tracker(sender_id, user_id=user_id)
 
         if append_action_listen:
             tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
@@ -367,8 +376,6 @@ class TrackerStore:
         self, sender_id: Text, serialised_tracker: Union[Text, bytes]
     ) -> Optional[DialogueStateTracker]:
         """Deserializes the tracker and returns it."""
-        tracker = self.init_tracker(sender_id)
-
         try:
             dialogue = Dialogue.from_parameters(json.loads(serialised_tracker))
         except UnicodeDecodeError as e:
@@ -377,6 +384,9 @@ class TrackerStore:
                 "Trackers must be serialised as json. "
                 "Support for deserialising pickled trackers has been removed."
             ) from e
+
+        # Create tracker with user_id from dialogue
+        tracker = self.init_tracker(sender_id, user_id=dialogue.user_id)
 
         tracker.recreate_from_dialogue(dialogue)
 

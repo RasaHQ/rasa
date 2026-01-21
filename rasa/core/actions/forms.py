@@ -304,6 +304,7 @@ class FormAction(LoopAction):
             + [ActionExecuted(self.name())]
             + additional_events,
             slots=domain.slots,
+            user_id=current_tracker.user_id,
         )
 
     def _user_rejected_manually(self, validation_events: List[Event]) -> bool:

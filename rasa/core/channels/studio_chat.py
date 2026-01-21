@@ -296,7 +296,10 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         async with self.agent.lock_store.lock(data["sender_id"]):
             try:
                 tracker = DialogueStateTracker.from_dict(
-                    data["sender_id"], data["events"], domain.slots
+                    data["sender_id"],
+                    data["events"],
+                    domain.slots,
+                    user_id=data.get("user_id"),
                 )
 
                 # will override an existing tracker with the same id!

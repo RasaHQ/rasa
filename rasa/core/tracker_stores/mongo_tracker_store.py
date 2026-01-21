@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 from datetime import datetime
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Text
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Text, Tuple
 
 import structlog
 from pymongo.synchronous.collection import Collection
@@ -154,7 +154,7 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
 
     async def _retrieve(
         self, sender_id: Text, fetch_events_from_all_sessions: bool
-    ) -> Optional[List[Dict[Text, Any]]]:
+    ) -> Optional[Tuple[List[Dict[Text, Any]], Optional[Text]]]:
         stored = self.conversations.find_one({"sender_id": sender_id})
 
         # look for conversations which have used an `int` sender_id in the past
@@ -176,30 +176,46 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         if not fetch_events_from_all_sessions:
             events = self._events_since_last_session_start(events)
 
-        return events
+        # Return both events and user_id
+        return events, stored.get("user_id")
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieves tracker for the latest conversation session."""
-        events = await self._retrieve(sender_id, fetch_events_from_all_sessions=False)
+        result = await self._retrieve(sender_id, fetch_events_from_all_sessions=False)
 
-        if not events:
+        if result is None:
             return None
 
-        return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
-
-    async def retrieve_full_tracker(
-        self, conversation_id: Text
-    ) -> Optional[DialogueStateTracker]:
-        """Fetching all tracker events across conversation sessions."""
-        events = await self._retrieve(
-            conversation_id, fetch_events_from_all_sessions=True
-        )
+        events, user_id = result
 
         if not events:
             return None
 
         return DialogueStateTracker.from_dict(
-            conversation_id, events, self.domain.slots
+            sender_id, events, self.domain.slots, user_id=user_id
+        )
+
+    async def retrieve_full_tracker(
+        self, conversation_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Fetching all tracker events across conversation sessions."""
+        result = await self._retrieve(
+            conversation_id, fetch_events_from_all_sessions=True
+        )
+
+        if result is None:
+            return None
+
+        events, user_id = result
+
+        if not events:
+            return None
+
+        return DialogueStateTracker.from_dict(
+            conversation_id,
+            events,
+            self.domain.slots,
+            user_id=user_id,
         )
 
     async def keys(self) -> Iterable[Text]:

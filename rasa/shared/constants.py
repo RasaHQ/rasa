@@ -98,6 +98,7 @@ ENV_LOG_LEVEL_LLM_MODULE_NAMES = {
 TCP_PROTOCOL = "TCP"
 
 DEFAULT_SENDER_ID = "default"
+DEFAULT_USER_ID = "default_user"
 UTTER_PREFIX = "utter_"
 UTTER_ASK_PREFIX = "utter_ask_"
 ACTION_ASK_PREFIX = "action_ask_"
