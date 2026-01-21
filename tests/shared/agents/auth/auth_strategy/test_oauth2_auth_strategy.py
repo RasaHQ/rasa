@@ -355,95 +355,6 @@ class TestOAuth2AuthStrategy:
                 await oauth2_strategy._refresh_access_token()
 
     @pytest.mark.asyncio
-    async def test_get_headers_resolves_environment_variables(
-        self, monkeypatch: MonkeyPatch
-    ):
-        """Test that environment variables are resolved before making the request."""
-        # Set environment variables
-        monkeypatch.setenv("TEST_CLIENT_ID", "resolved_client_id")
-        monkeypatch.setenv("TEST_CLIENT_SECRET", "resolved_client_secret")
-        monkeypatch.setenv("TEST_SCOPE", "resolved_scope")
-        monkeypatch.setenv("TEST_AUDIENCE", "resolved_audience")
-
-        # Create strategy with environment variables in config
-        strategy = OAuth2AuthStrategy(
-            token_url="https://auth.example.com/oauth/token",
-            client_id="${TEST_CLIENT_ID}",
-            client_secret="${TEST_CLIENT_SECRET}",
-            scope="${TEST_SCOPE}",
-            audience="${TEST_AUDIENCE}",
-        )
-
-        # Mock httpx response
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            "access_token": "new_access_token",
-            "expires_in": 7200,
-        }
-        mock_response.raise_for_status.return_value = None
-
-        with patch("httpx.AsyncClient") as mock_client:
-            mock_post = AsyncMock(return_value=mock_response)
-            mock_client.return_value.__aenter__.return_value.post = mock_post
-
-            await strategy.get_headers()
-
-            # Verify that the post was called with resolved data
-            mock_post.assert_called_once()
-            call_args = mock_post.call_args
-
-            # Check that the data contains resolved values
-            resolved_data = call_args[1]["data"]  # data is passed as keyword argument
-            assert resolved_data["client_id"] == "resolved_client_id"
-            assert resolved_data["client_secret"] == "resolved_client_secret"
-            assert resolved_data["scope"] == "resolved_scope"
-            assert resolved_data["audience"] == "resolved_audience"
-            assert resolved_data["grant_type"] == "client_credentials"
-
-    @pytest.mark.asyncio
-    async def test_get_headers_with_mixed_environment_variables(
-        self, monkeypatch: MonkeyPatch
-    ):
-        """Test getting headers with mixed environment variables."""
-        # Set environment variables
-        monkeypatch.setenv("TEST_CLIENT_ID", "resolved_client_id")
-        monkeypatch.setenv("TEST_SCOPE", "resolved_scope")
-        monkeypatch.setenv("TEST_AUDIENCE", "resolved_audience")
-
-        # Create strategy with mixed environment variables and static values
-        strategy = OAuth2AuthStrategy(
-            token_url="https://auth.example.com/oauth/token",
-            client_id="${TEST_CLIENT_ID}",
-            client_secret="static_secret",  # No environment variable
-            scope="${TEST_SCOPE}",
-            audience="${TEST_AUDIENCE}",
-        )
-
-        # Mock httpx response
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            "access_token": "new_access_token",
-            "expires_in": 7200,
-        }
-        mock_response.raise_for_status.return_value = None
-
-        with patch("httpx.AsyncClient") as mock_client:
-            mock_post = AsyncMock(return_value=mock_response)
-            mock_client.return_value.__aenter__.return_value.post = mock_post
-
-            await strategy.get_headers()
-
-            # Verify that the post was called with mixed resolved data
-            call_args = mock_post.call_args
-            resolved_data = call_args[1]["data"]
-
-            assert resolved_data["client_id"] == "resolved_client_id"
-            assert resolved_data["client_secret"] == "static_secret"
-            assert resolved_data["scope"] == "resolved_scope"
-            assert resolved_data["audience"] == "resolved_audience"
-            assert resolved_data["grant_type"] == "client_credentials"
-
-    @pytest.mark.asyncio
     async def test_concurrent_get_headers_prevents_race_condition(
         self, oauth2_strategy: OAuth2AuthStrategy
     ):
@@ -529,3 +440,81 @@ class TestOAuth2AuthStrategy:
 
     def test_inherits_from_httpx_auth(self, oauth2_strategy: OAuth2AuthStrategy):
         assert isinstance(oauth2_strategy, httpx.Auth)
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_uses_basic_auth_header(self, monkeypatch: MonkeyPatch):
+        """Test that credentials are sent in Authorization header via Basic Auth."""
+        monkeypatch.setenv("TEST_CLIENT_ID", "resolved_client_id")
+        monkeypatch.setenv("TEST_CLIENT_SECRET", "resolved_client_secret")
+
+        strategy = OAuth2AuthStrategy(
+            token_url="https://auth.example.com/oauth/token",
+            client_id="${TEST_CLIENT_ID}",
+            client_secret="${TEST_CLIENT_SECRET}",
+            scope="read write",
+        )
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "access_token": "new_access_token",
+            "expires_in": 7200,
+        }
+        mock_response.raise_for_status.return_value = None
+
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_post = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.post = mock_post
+
+            await strategy.get_headers()
+
+            mock_post.assert_called_once()
+            call_args = mock_post.call_args
+
+            # Verify Basic Auth is used (RFC 6749 Section 2.3.1)
+            auth = call_args[1].get("auth")
+            assert auth is not None
+            assert isinstance(auth, httpx.BasicAuth)
+
+            # Verify client_id and client_secret are NOT in the body
+            resolved_data = call_args[1]["data"]
+            assert "client_id" not in resolved_data
+            assert "client_secret" not in resolved_data
+            assert resolved_data["grant_type"] == "client_credentials"
+            assert resolved_data["scope"] == "read write"
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_basic_auth_resolves_env_vars(
+        self, monkeypatch: MonkeyPatch
+    ):
+        """Test that Basic Auth credentials are resolved from environment variables."""
+        monkeypatch.setenv("TEST_CLIENT_ID", "env_client_id")
+        monkeypatch.setenv("TEST_CLIENT_SECRET", "env_client_secret")
+
+        strategy = OAuth2AuthStrategy(
+            token_url="https://auth.example.com/oauth/token",
+            client_id="${TEST_CLIENT_ID}",
+            client_secret="${TEST_CLIENT_SECRET}",
+        )
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "access_token": "new_access_token",
+            "expires_in": 7200,
+        }
+        mock_response.raise_for_status.return_value = None
+
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_post = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.post = mock_post
+
+            await strategy.get_headers()
+
+            call_args = mock_post.call_args
+            auth = call_args[1].get("auth")
+
+            # Verify the auth object has resolved credentials
+            assert auth is not None
+            assert (
+                auth._auth_header
+                == httpx.BasicAuth("env_client_id", "env_client_secret")._auth_header
+            )

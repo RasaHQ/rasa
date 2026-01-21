@@ -115,26 +115,29 @@ class OAuth2AuthStrategy(AgentAuthStrategy):
 
     async def _refresh_access_token(self) -> None:
         """Fetch a new access token using client credentials flow."""
-        # Prepare data and headers
+        # Prepare headers
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        data = {
-            "grant_type": self._grant_type,
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-        }
+
+        # Prepare request body (credentials sent via Basic Auth, not in body)
+        data: Dict[str, Any] = {"grant_type": self._grant_type}
         if self.scope:
             data["scope"] = self.scope
         if self.audience:
             data["audience"] = self.audience
 
-        # Resolve environment variables in data.
+        # Resolve environment variables
         resolved_data = resolve_environment_variables(data)
+        resolved_client_id = resolve_environment_variables(self.client_id)
+        resolved_client_secret = resolve_environment_variables(self.client_secret)
+
+        # Use HTTP Basic Auth for client authentication (RFC 6749 Section 2.3.1)
+        auth = httpx.BasicAuth(resolved_client_id, resolved_client_secret)
 
         # Fetch access token
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 resp = await client.post(
-                    self.token_url, data=resolved_data, headers=headers
+                    self.token_url, data=resolved_data, headers=headers, auth=auth
                 )
                 resp.raise_for_status()
                 token_data = resp.json()
