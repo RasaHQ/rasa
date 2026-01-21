@@ -11,6 +11,15 @@ COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE = (
     "copilot_training_error_handler_prompt.jinja2"
 )
 
+# A dot-path for importlib to the message classifier prompt
+MESSAGE_CLASSIFIER_PROMPTS_DIR = "builder.copilot.message_classifier.prompts"
+MESSAGE_CLASSIFIER_PROMPT_FILE = "message_classifier_prompt.jinja2"
+
+# A dot-path for importlib to the response handler prompts
+RESPONSE_HANDLER_PROMPTS_DIR = "builder.copilot.response_handling.prompts"
+GREETING_PROMPT_FILE = "greeting_prompt.jinja2"
+GOODBYE_PROMPT_FILE = "goodbye_prompt.jinja2"
+
 # A dot-path for importlib to the rasa internal messages templates
 COPILOT_MESSAGE_TEMPLATES_DIR = "builder.copilot.templated_messages"
 RASA_INTERNAL_MESSAGES_TEMPLATES_FILE = "copilot_internal_messages_templates.yml"

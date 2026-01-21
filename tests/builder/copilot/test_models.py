@@ -6,6 +6,7 @@ from pydantic import ValidationError
 
 from rasa.builder.copilot.constants import ROLE_COPILOT, ROLE_USER
 from rasa.builder.copilot.models import (
+    ControlledPredictionContent,
     CopilotChatMessage,
     CopilotTurnRequest,
     GeneratedContent,
@@ -644,6 +645,42 @@ class TestUsageStatistics:
         assert initial_stats.total_tokens == expected_stats.total_tokens
         assert initial_stats.cached_prompt_tokens == expected_stats.cached_prompt_tokens
         assert initial_stats.model == expected_stats.model
+
+
+class TestControlledPredictionContent:
+    def test_valid_controlled_prediction_categories(self):
+        valid_categories = [
+            ResponseCategory.ROLEPLAY_DETECTION,
+            ResponseCategory.OUT_OF_SCOPE_DETECTION,
+            ResponseCategory.UNCLEAR_INPUT_DETECTION,
+            ResponseCategory.ERROR_FALLBACK,
+            ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
+        ]
+
+        for category in valid_categories:
+            content = ControlledPredictionContent(
+                content="Test response",
+                response_category=category,
+                response_completeness=ResponseCompleteness.COMPLETE,
+            )
+            assert content.response_category == category
+
+    def test_invalid_controlled_prediction_category(self):
+        invalid_categories = [
+            ResponseCategory.COPILOT,
+            ResponseCategory.GREETING_DETECTION,
+            ResponseCategory.GOODBYE_DETECTION,
+            ResponseCategory.REASONING,
+        ]
+
+        for category in invalid_categories:
+            with pytest.raises(ValidationError) as exc_info:
+                ControlledPredictionContent(
+                    content="Test response",
+                    response_category=category,
+                    response_completeness=ResponseCompleteness.COMPLETE,
+                )
+            assert "response_category must be one of" in str(exc_info.value)
 
 
 class TestCreateChatMessageFromDict:

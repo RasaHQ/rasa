@@ -28,6 +28,9 @@ from rasa.builder.shared.tracker_context import TrackerContext
 from rasa.utils.io import read_text_from_package
 
 if TYPE_CHECKING:
+    from rasa.builder.copilot.response_handling import (
+        message_classifier_response_handler as mc_handler,
+    )
     from rasa.builder.copilot.response_handling.agent_copilot_response_handler import (
         AgentCopilotResponseHandler,
     )
@@ -35,8 +38,12 @@ if TYPE_CHECKING:
         LegacyCopilotResponseHandler,
     )
 
+    MessageClassifierResponseHandler = mc_handler.MessageClassifierResponseHandler
+
     CopilotResponseHandler = Union[
-        AgentCopilotResponseHandler, LegacyCopilotResponseHandler
+        AgentCopilotResponseHandler,
+        LegacyCopilotResponseHandler,
+        MessageClassifierResponseHandler,
     ]
 
 

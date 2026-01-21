@@ -17,25 +17,36 @@ OUT_OF_SCOPE_PREDICTION = "[OUT_OF_SCOPE_REQUEST_DETECTED]"
 ERROR_FALLBACK_PREDICTION = "[ERROR_FALLBACK]"
 KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION = "[NO_KNOWLEDGE_BASE_ACCESS]"
 
+# Response template keys (used to fetch responses from YAML)
+GREETING_FALLBACK_RESPONSE_KEY = "greeting_fallback_response"
+GOODBYE_FALLBACK_RESPONSE_KEY = "goodbye_fallback_response"
+ROLEPLAY_RESPONSE_KEY = "roleplay_response"
+OUT_OF_SCOPE_RESPONSE_KEY = "out_of_scope_response"
+UNCLEAR_INPUT_RESPONSE_KEY = "unclear_input_response"
+ERROR_FALLBACK_RESPONSE_KEY = "error_fallback_response"
+KNOWLEDGE_BASE_ACCESS_REQUESTED_RESPONSE_KEY = (
+    "knowledge_base_access_requested_response"
+)
+
 # Load predefined for controlled predictions from YAML
 _handler_responses = copilot_handler_default_responses()
 
 # Prediction marker to response mapping
 PREDICTION_RESPONSES: Dict[str, Tuple[str, ResponseCategory]] = {
     ROLEPLAY_PREDICTION: (
-        _handler_responses.get("roleplay_response", ""),
+        _handler_responses.get(ROLEPLAY_RESPONSE_KEY, ""),
         ResponseCategory.ROLEPLAY_DETECTION,
     ),
     OUT_OF_SCOPE_PREDICTION: (
-        _handler_responses.get("out_of_scope_response", ""),
+        _handler_responses.get(OUT_OF_SCOPE_RESPONSE_KEY, ""),
         ResponseCategory.OUT_OF_SCOPE_DETECTION,
     ),
     ERROR_FALLBACK_PREDICTION: (
-        _handler_responses.get("error_fallback_response", ""),
+        _handler_responses.get(ERROR_FALLBACK_RESPONSE_KEY, ""),
         ResponseCategory.ERROR_FALLBACK,
     ),
     KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION: (
-        _handler_responses.get("knowledge_base_access_requested_response", ""),
+        _handler_responses.get(KNOWLEDGE_BASE_ACCESS_REQUESTED_RESPONSE_KEY, ""),
         ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
     ),
 }
@@ -64,6 +75,7 @@ INLINE_CITATION_PATTERN = r"\[([^\]]+)\]\(([^)]+)\)"
 CONTROLLED_PREDICTION_CATEGORIES: Set[ResponseCategory] = {
     ResponseCategory.ROLEPLAY_DETECTION,
     ResponseCategory.OUT_OF_SCOPE_DETECTION,
+    ResponseCategory.UNCLEAR_INPUT_DETECTION,
     ResponseCategory.ERROR_FALLBACK,
     ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
 }

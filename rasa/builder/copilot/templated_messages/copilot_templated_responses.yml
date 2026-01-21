@@ -13,6 +13,10 @@ responses:
     Do you want me to show you what your assistant can do right now, or help you add
     something new?
 
+  unclear_input_response: |
+    I'm not quite sure what you're asking. Could you rephrase your question or provide
+    more details? I'm here to help you build and improve your Rasa assistant.
+
   error_fallback_response: |
     Your project ran into an error, but I'm not sure what caused it. Take a look at the
     logs for the full details.
@@ -45,3 +49,9 @@ responses:
 
   rollback_message_response: |
     I've restored your agent to the previous version.
+
+  greeting_fallback_response: |
+    Hello! How can I help with your assistant today?
+
+  goodbye_fallback_response: |
+    Goodbye! Happy building!

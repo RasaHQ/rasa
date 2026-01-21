@@ -1,9 +1,10 @@
 from typing import Type
 
-# Always import both copilot implementations
+from rasa.builder.config import ORCHESTRATOR_ENABLED
 from rasa.builder.copilot.agent_sdk.agent_copilot import AgentCopilot
 from rasa.builder.copilot.base_copilot import BaseCopilot
 from rasa.builder.copilot.legacy_copilot import LegacyCopilot
+from rasa.builder.copilot.orchestrated_copilot import OrchestratedCopilot
 from rasa.builder.copilot.response_handling.agent_copilot_response_handler import (
     AgentCopilotResponseHandler,
 )
@@ -43,12 +44,15 @@ def get_copilot_mode() -> str:
 
 
 def get_copilot_class() -> Type[BaseCopilot]:
-    """Get the appropriate copilot class based on runtime mode.
+    """Get the appropriate copilot class based on runtime mode and config.
 
     Returns:
-        AgentCopilot or LegacyCopilot class
+        OrchestratedCopilot (if orchestrator enabled), AgentCopilot, or LegacyCopilot.
     """
     if _runtime_copilot_mode == "agent_sdk":
+        # Use orchestrated copilot if orchestrator is enabled
+        if ORCHESTRATOR_ENABLED:
+            return OrchestratedCopilot
         return AgentCopilot
     return LegacyCopilot
 
@@ -57,7 +61,7 @@ def get_copilot_response_handler_class() -> Type[BaseCopilotResponseHandler]:
     """Get the appropriate copilot response handler class based on runtime mode.
 
     Returns:
-        AgentCopilotResponseHandler or LegacyCopilotResponseHandler class
+        AgentCopilotResponseHandler or LegacyCopilotResponseHandler class.
     """
     if _runtime_copilot_mode == "agent_sdk":
         return AgentCopilotResponseHandler

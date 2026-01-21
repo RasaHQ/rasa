@@ -82,6 +82,14 @@ class ResponseCategory(Enum):
     # When a commit info is sent
     COMMIT = "commit"
 
+    # Orchestrator detection categories
+    # When orchestrator cannot understand the user's input (unclear/gibberish)
+    UNCLEAR_INPUT_DETECTION = "unclear_input_detection"
+    # When Copilot detects a greeting message
+    GREETING_DETECTION = "greeting_detection"
+    # When Copilot detects a goodbye message
+    GOODBYE_DETECTION = "goodbye_detection"
+
 
 class BaseContent(BaseModel):
     type: str
@@ -704,6 +712,7 @@ class ControlledPredictionContent(GeneratedContent):
         valid_categories = {
             ResponseCategory.ROLEPLAY_DETECTION,
             ResponseCategory.OUT_OF_SCOPE_DETECTION,
+            ResponseCategory.UNCLEAR_INPUT_DETECTION,
             ResponseCategory.ERROR_FALLBACK,
             ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
         }
