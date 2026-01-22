@@ -4,6 +4,7 @@ actions:
   - check_transfer_funds
   - execute_transfer
   - execute_recurrent_payment
+  - validate_payee
 
 slots:
 

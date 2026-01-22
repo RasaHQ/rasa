@@ -9,9 +9,22 @@ slots:
     mappings:
       - type: from_llm
 
+  is_valid_payee:
+    type: bool
+    mappings:
+      - type: controlled
+
 responses:
   utter_ask_recipient_account:
     - text: Who should receive the payment?
 
   utter_ask_amount_of_money:
     - text: How much money should be transferred?
+
+  utter_invalid_payee:
+    - text: |
+        I couldn't find {recipient_account} in your contacts list. 
+        You can only transfer money to people in your contacts. 
+        Would you like to add them as a contact first, or check your contacts list?
+      metadata:
+        rephrase: True

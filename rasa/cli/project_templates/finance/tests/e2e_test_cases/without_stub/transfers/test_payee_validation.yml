@@ -1,0 +1,41 @@
+test_cases:
+  - test_case: list payees
+    steps:
+    - user: "who are my payees"
+      assertions:
+        - flow_started: "list_payees"
+        - action_executed: list_payees
+        - bot_uttered:
+            text_matches: "You are authorised to transfer money to:"
+    
+  - test_case: transfer to valid payee
+    steps:
+    - user: "Transfer $50 to Joe"
+      assertions:
+        - slot_was_set:
+          - name: "recipient_account"
+            value: "Joe"
+          - name: "transfer_type"
+            value: "third party"
+        - flow_started: "transfer_money"
+        - flow_started: "transfer_money_to_a_third_party"
+        - action_executed: validate_payee
+        - slot_was_set:
+          - name: "is_valid_payee"
+            value: true
+    
+  - test_case: transfer to invalid payee (should be blocked)
+    steps:
+    - user: "Transfer $50 to james"
+      assertions:
+        - slot_was_set:
+          - name: "recipient_account"
+            value: "james"
+        - flow_started: "transfer_money"
+        - flow_started: "transfer_money_to_a_third_party"
+        - action_executed: validate_payee
+        - slot_was_set:
+          - name: "is_valid_payee"
+            value: false
+        - bot_uttered:
+            utter_name: "utter_invalid_payee"

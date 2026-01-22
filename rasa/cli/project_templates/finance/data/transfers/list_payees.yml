@@ -1,0 +1,9 @@
+flows:
+  list_payees:
+    name: list payees
+    description: |
+      List your payees or authorised recipients for money transfers. 
+      Show the people in your contact list who are valid payees you can transfer money to.
+    steps:
+      - action: list_payees
+        next: END

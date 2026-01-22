@@ -13,8 +13,19 @@ flows:
     steps:
       - collect: recipient_account
         description: |
-          The recipient’s contact handle, if one is available; otherwise, a properly
+          The recipient's contact handle, if one is available; otherwise, a properly
           formatted account number.
+
+      - action: validate_payee
+        next:
+          - if: not slots.is_valid_payee
+            then:
+              - action: utter_invalid_payee
+              - set_slots:
+                  - recipient_account: null
+                  - is_valid_payee: null
+                next: END
+          - else: ask_amount
 
       - id: ask_amount
         collect: amount_of_money
