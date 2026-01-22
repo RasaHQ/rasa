@@ -19,22 +19,26 @@ from rasa.builder.copilot.agent_sdk.hooks import RasaCopilotHooks
 from rasa.builder.copilot.agent_sdk.planning_tools import PLANNING_TOOLS
 from rasa.builder.copilot.base_copilot import BaseCopilot
 from rasa.builder.copilot.constants import (
+    COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE_AGENT_SDK,
     COPILOT_PROMPTS_DIR,
     COPILOT_PROMPTS_FILE_AGENT_SDK,
+    COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE_AGENT_SDK,
 )
 from rasa.builder.copilot.models import (
     CopilotContext,
     CopilotGenerationContext,
     EventContent,
+    FileContent,
+    InternalCopilotRequestChatMessage,
     MCPToolCall,
     TodoPlanUpdate,
     UsageStatistics,
+    UserChatMessage,
 )
 from rasa.builder.copilot.response_handling.agent_copilot_response_handler import (
     AgentCopilotResponseHandler,
 )
 from rasa.builder.copilot.response_handling.utils import is_response_completed_event
-from rasa.builder.document_retrieval.models import Document
 from rasa.builder.telemetry.langfuse.agent_copilot_langfuse_telemetry import (
     AgentCopilotLangfuseTelemetry,
 )
@@ -53,6 +57,20 @@ class AgentCopilot(BaseCopilot):
             importlib.resources.read_text(
                 f"{PACKAGE_NAME}.{COPILOT_PROMPTS_DIR}",
                 COPILOT_PROMPTS_FILE_AGENT_SDK,
+            )
+        )
+
+        self._last_user_message_context_prompt_template = Template(
+            importlib.resources.read_text(
+                f"{PACKAGE_NAME}.{COPILOT_PROMPTS_DIR}",
+                COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE_AGENT_SDK,
+            )
+        )
+
+        self._training_error_handler_prompt_template = Template(
+            importlib.resources.read_text(
+                f"{PACKAGE_NAME}.{COPILOT_PROMPTS_DIR}",
+                COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE_AGENT_SDK,
             )
         )
 
@@ -209,7 +227,7 @@ class AgentCopilot(BaseCopilot):
         user_message = self._get_last_user_message(context)
         tracker_event_attachments = self._get_tracker_event_attachments(context)
 
-        messages = await self._build_messages(context, relevant_documents=[])
+        messages = await self._build_messages(context)
 
         # Create generation context for telemetry/tracking
         generation_context = CopilotGenerationContext(
@@ -235,13 +253,11 @@ class AgentCopilot(BaseCopilot):
     async def _build_messages(
         self,
         context: CopilotContext,
-        relevant_documents: List[Document],
     ) -> List[Dict[str, Any]]:
         """Build the complete message list for the OpenAI API.
 
         Args:
             context: The context of the copilot.
-            relevant_documents: The relevant documents to use in the context.
 
         Returns:
             A list of messages in OpenAI format.
@@ -254,7 +270,7 @@ class AgentCopilot(BaseCopilot):
         )
 
         latest_message = self._process_latest_message(
-            context.copilot_chat_history[-1], context, relevant_documents
+            context.copilot_chat_history[-1], context
         )
 
         messages = [*past_messages, latest_message]
@@ -337,3 +353,87 @@ class AgentCopilot(BaseCopilot):
                 error=str(e),
             )
             raise
+
+    # HELPERS
+
+    def _process_latest_message(
+        self,
+        latest_message: Any,
+        context: CopilotContext,
+    ) -> Dict[str, Any]:
+        """Process the latest message and convert it to OpenAI format.
+
+        Args:
+            latest_message: The most recent message from the chat history.
+            context: The copilot context containing conversation state.
+            relevant_documents: List of relevant documents for context.
+
+        Returns:
+            Message in OpenAI format.
+
+        Raises:
+            ValueError: If the message type is not supported.
+        """
+        if isinstance(latest_message, UserChatMessage):
+            tracker_event_attachments = latest_message.get_content_blocks_by_type(
+                EventContent
+            )
+            # TODO: Update the render method not to take the context once the
+            #       tracker context is available through a tool call. In other words,
+            #       the context should only contain the attachments.
+            rendered_prompt = self._render_last_user_message_context_prompt(
+                context, tracker_event_attachments
+            )
+            return latest_message.build_openai_message(prompt=rendered_prompt)
+
+        elif isinstance(latest_message, InternalCopilotRequestChatMessage):
+            rendered_prompt = self._render_training_error_handler_prompt(latest_message)
+            return latest_message.build_openai_message(prompt=rendered_prompt)
+
+        else:
+            raise ValueError(f"Unexpected message type: {type(latest_message)}")
+
+    def _render_last_user_message_context_prompt(
+        self,
+        context: CopilotContext,
+        tracker_event_attachments: List[EventContent],
+    ) -> str:
+        # TODO: Make this available through a tool call. Once available, remove the
+        #       context from the prompt.
+        conversation = self._format_conversation_history(context.tracker_context)
+        # TODO: Make this available through a tool call. Once available, remove the
+        #       context from the prompt.
+        current_state = self._format_current_state(context.tracker_context)
+        # Format tracker events
+        attachments = self._format_tracker_event_attachments(tracker_event_attachments)
+
+        rendered_prompt = self._last_user_message_context_prompt_template.render(
+            current_conversation=conversation,
+            current_state=current_state,
+            attachments=attachments,
+        )
+        return rendered_prompt
+
+    def _render_training_error_handler_prompt(
+        self,
+        internal_request_message: InternalCopilotRequestChatMessage,
+    ) -> str:
+        """Render the training error handler prompt with documentation and context.
+
+        Args:
+            internal_request_message: Internal request message.
+            context: The copilot context.
+
+        Returns:
+            Rendered prompt string for training error analysis.
+        """
+        modified_files_dicts: Dict[str, str] = {
+            file.file_path: file.file_content
+            for file in internal_request_message.get_content_blocks_by_type(FileContent)
+        }
+        rendered_prompt = self._training_error_handler_prompt_template.render(
+            logs=internal_request_message.get_flattened_log_content(),
+            modified_files=modified_files_dicts,
+        )
+
+        return rendered_prompt

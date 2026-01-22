@@ -4,11 +4,7 @@ import json
 
 # Import Copilot for testing (uses LegacyCopilot or AgentCopilot based on config)
 from rasa.builder.copilot import Copilot
-from rasa.builder.copilot.base_copilot import (
-    BaseCopilot,
-    _last_user_message_context_prompt_template,
-    _training_error_handler_prompt_template,
-)
+from rasa.builder.copilot.base_copilot import BaseCopilot
 from rasa.builder.copilot.constants import ROLE_COPILOT, ROLE_USER
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
@@ -29,23 +25,6 @@ from rasa.builder.shared.tracker_context import (
     TrackerEvent,
     UserMessage,
 )
-
-
-class TestPromptTemplateLoaders:
-    """Test prompt template loading functions."""
-
-    def test_last_user_message_context_prompt_template_loads(self) -> None:
-        """Test that the last user message context prompt template loads."""
-        template = _last_user_message_context_prompt_template()
-        assert template is not None
-        # Template should have render method
-        assert hasattr(template, "render")
-
-    def test_training_error_handler_prompt_template_loads(self) -> None:
-        """Test that the training error handler prompt template loads."""
-        template = _training_error_handler_prompt_template()
-        assert template is not None
-        assert hasattr(template, "render")
 
 
 class TestCreateChatHistoryMessages:

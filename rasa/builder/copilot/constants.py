@@ -7,8 +7,14 @@ COPILOT_PROMPTS_FILE_AGENT_SDK = "copilot_system_prompt_agent_sdk.jinja2"
 COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE = (
     "latest_user_message_context_prompt.jinja2"
 )
+COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE_AGENT_SDK = (
+    "latest_user_message_context_prompt_agent_sdk.jinja2"
+)
 COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE = (
     "copilot_training_error_handler_prompt.jinja2"
+)
+COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE_AGENT_SDK = (
+    "copilot_training_error_handler_prompt_agent_sdk.jinja2"
 )
 
 # A dot-path for importlib to the message classifier prompt

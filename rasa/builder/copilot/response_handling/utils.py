@@ -15,7 +15,8 @@ from openai.types.responses import (
 )
 from openai.types.responses.response_output_item import McpCall
 
-from rasa.builder.copilot.models import GeneratedContent, ResponseCategory
+from rasa.builder.copilot.mcp_server.constants import MCP_TOOL_SEARCH_DOCS
+from rasa.builder.copilot.models import GeneratedContent, MCPToolCall, ResponseCategory
 from rasa.builder.copilot.response_handling.constants import (
     LLM_PREFIXES_TO_SUFFIX_REMOVE,
 )
@@ -341,3 +342,20 @@ def is_response_completed_event(event: StreamEvent) -> bool:
         return False
 
     return isinstance(event.data, ResponseCompletedEvent)
+
+
+def is_document_retrieval_mcp_tool_output_event(mcp_tool_call: MCPToolCall) -> bool:
+    """Check if this event indicates a document retrieval MCP tool call.
+
+    This checks if the MCP tool call is a document retrieval tool call.
+
+    Args:
+        mcp_tool_call: The MCP tool call to check.
+
+    Returns:
+        True if the MCP tool call is a document retrieval tool call, False otherwise.
+    """
+    return (
+        mcp_tool_call.tool_name == MCP_TOOL_SEARCH_DOCS
+        and mcp_tool_call.status == "completed"
+    )

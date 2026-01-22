@@ -2,12 +2,7 @@ import json
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
-from jinja2 import Template
-
 from rasa.builder.copilot.constants import (
-    COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE,
-    COPILOT_PROMPTS_DIR,
-    COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE,
     ROLE_COPILOT,
     ROLE_USER,
 )
@@ -17,7 +12,6 @@ from rasa.builder.copilot.models import (
     CopilotContext,
     CopilotGenerationContext,
     EventContent,
-    FileContent,
     InternalCopilotRequestChatMessage,
     ResponseCategory,
     UsageStatistics,
@@ -25,7 +19,6 @@ from rasa.builder.copilot.models import (
 )
 from rasa.builder.document_retrieval.models import Document
 from rasa.builder.shared.tracker_context import TrackerContext
-from rasa.utils.io import read_text_from_package
 
 if TYPE_CHECKING:
     from rasa.builder.copilot.response_handling import (
@@ -45,22 +38,6 @@ if TYPE_CHECKING:
         LegacyCopilotResponseHandler,
         MessageClassifierResponseHandler,
     ]
-
-
-def _last_user_message_context_prompt_template() -> Template:
-    return Template(
-        read_text_from_package(
-            COPILOT_PROMPTS_DIR, COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE
-        )
-    )
-
-
-def _training_error_handler_prompt_template() -> Template:
-    return Template(
-        read_text_from_package(
-            COPILOT_PROMPTS_DIR, COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE
-        )
-    )
 
 
 class BaseCopilot(ABC):
@@ -123,96 +100,6 @@ class BaseCopilot(ABC):
                 filtered_messages.append(message)
 
         return [message.build_openai_message() for message in filtered_messages]
-
-    def _process_latest_message(
-        self,
-        latest_message: Any,
-        context: CopilotContext,
-        relevant_documents: List[Document],
-    ) -> Dict[str, Any]:
-        """Process the latest message and convert it to OpenAI format.
-
-        Args:
-            latest_message: The most recent message from the chat history.
-            context: The copilot context containing conversation state.
-            relevant_documents: List of relevant documents for context.
-
-        Returns:
-            Message in OpenAI format.
-
-        Raises:
-            ValueError: If the message type is not supported.
-        """
-        if isinstance(latest_message, UserChatMessage):
-            tracker_event_attachments = latest_message.get_content_blocks_by_type(
-                EventContent
-            )
-            rendered_prompt = self._render_last_user_message_context_prompt(
-                context, relevant_documents, tracker_event_attachments
-            )
-            return latest_message.build_openai_message(prompt=rendered_prompt)
-
-        elif isinstance(latest_message, InternalCopilotRequestChatMessage):
-            rendered_prompt = self._render_training_error_handler_prompt(
-                latest_message, relevant_documents
-            )
-            return latest_message.build_openai_message(prompt=rendered_prompt)
-
-        else:
-            raise ValueError(f"Unexpected message type: {type(latest_message)}")
-
-    def _render_last_user_message_context_prompt(
-        self,
-        context: CopilotContext,
-        relevant_documents: List[Document],
-        tracker_event_attachments: List[EventContent],
-    ) -> str:
-        # Format relevant documentation
-        # TODO: (agent-sdk) remove this after the legacy copilot is removed
-        documents = [doc.model_dump() for doc in relevant_documents]
-        # Format conversation history
-        conversation = self._format_conversation_history(context.tracker_context)
-        # Format current state
-        current_state = self._format_current_state(context.tracker_context)
-        # Format tracker events
-        attachments = self._format_tracker_event_attachments(tracker_event_attachments)
-
-        rendered_prompt = _last_user_message_context_prompt_template().render(
-            current_conversation=conversation,
-            current_state=current_state,
-            assistant_logs=context.assistant_logs,
-            assistant_files=context.assistant_files,
-            documentation_results=documents,
-            attachments=attachments,
-        )
-        return rendered_prompt
-
-    def _render_training_error_handler_prompt(
-        self,
-        internal_request_message: InternalCopilotRequestChatMessage,
-        relevant_documents: List[Document],
-    ) -> str:
-        """Render the training error handler prompt with documentation and context.
-
-        Args:
-            internal_request_message: Internal request message.
-            context: The copilot context.
-            relevant_documents: List of relevant documents for context.
-
-        Returns:
-            Rendered prompt string for training error analysis.
-        """
-        modified_files_dicts: Dict[str, str] = {
-            file.file_path: file.file_content
-            for file in internal_request_message.get_content_blocks_by_type(FileContent)
-        }
-        rendered_prompt = _training_error_handler_prompt_template().render(
-            logs=internal_request_message.get_flattened_log_content(),
-            modified_files=modified_files_dicts,
-            documentation_results=self._format_documents(relevant_documents),
-        )
-
-        return rendered_prompt
 
     @staticmethod
     def _format_documents(results: List[Document]) -> Optional[str]:

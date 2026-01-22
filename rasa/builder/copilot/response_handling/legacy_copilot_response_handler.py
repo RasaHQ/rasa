@@ -27,6 +27,7 @@ from rasa.builder.copilot.response_handling.utils import (
     remove_prefix,
     remove_suffix,
 )
+from rasa.builder.document_retrieval.models import Document
 
 structlogger = structlog.get_logger()
 
@@ -37,6 +38,7 @@ class LegacyCopilotResponseHandler(BaseCopilotResponseHandler):
     This handler manages two types of data:
     - llm_stream_buffer: A list of tokens streamed from the LLM during processing.
     - generated_responses: A list of cleaned responses.
+    - relevant_documents: A list of relevant documents retrieved from the InKeep API.
 
     Parameters:
         rolling_buffer_size: Size of the rolling buffer for prefix/suffix handling.
@@ -46,6 +48,7 @@ class LegacyCopilotResponseHandler(BaseCopilotResponseHandler):
         self,
         response_stream: AsyncGenerator[str, None],
         rolling_buffer_size: int = 20,
+        relevant_documents: Optional[List[Document]] = None,
     ):
         self._rolling_buffer_size = rolling_buffer_size
         self._response_stream = response_stream
@@ -68,6 +71,8 @@ class LegacyCopilotResponseHandler(BaseCopilotResponseHandler):
         self._prefix_found: Optional[str] = None
         self._suffix_found: Optional[str] = None
 
+        self._retrieved_documents: List[Document] = relevant_documents or []
+
     @property
     def generated_responses(self) -> List[GeneratedContent]:
         return copy.deepcopy(self._generated_responses)
@@ -87,6 +92,10 @@ class LegacyCopilotResponseHandler(BaseCopilotResponseHandler):
     @property
     def raw_llm_stream_item_count(self) -> int:
         return len(self._llm_stream_buffer)
+
+    @property
+    def retrieved_documents(self) -> List[Document]:
+        return copy.deepcopy(self._retrieved_documents)
 
     def reset(self) -> None:
         """Clear all buffers and reset the handler."""

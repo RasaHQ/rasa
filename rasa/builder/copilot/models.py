@@ -1014,6 +1014,7 @@ class MCPToolCall(CopilotOutput):
         frozen=True,
     )
     response_completeness: ResponseCompleteness = ResponseCompleteness.COMPLETE
+    output: Optional[Any] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_response_category(self) -> "MCPToolCall":

@@ -1475,7 +1475,7 @@ async def copilot(request: Request) -> None:
             asyncio.to_thread(
                 telemetry.log_copilot_from_handler,
                 handler=copilot_response_handler,
-                used_documents=generation_context.relevant_documents,
+                used_documents=copilot_response_handler.retrieved_documents,
                 latency_ms=int((time.perf_counter() - start_timestamp) * 1000),
                 system_message=generation_context.system_message,
                 chat_history=generation_context.chat_history,
@@ -1499,29 +1499,26 @@ async def copilot(request: Request) -> None:
             user_id=user_id,
             request=req,
             handler=copilot_response_handler,
-            relevant_documents=generation_context.relevant_documents,
+            relevant_documents=copilot_response_handler.retrieved_documents,
             copilot_context=context,
         )
 
-        # 9. Once the stream is over, extract and send references
-        #    if any documents were used
-        reference_section = None
-        if generation_context.relevant_documents:
-            reference_section = copilot_response_handler.extract_references(
-                generation_context.relevant_documents
-            )
-
+        # 9. Once the stream is over, extract and send references (if any)
+        reference_section = copilot_response_handler.extract_references()
+        if reference_section.references:
             await sse.send(reference_section.to_sse_event().format())
 
         # 10. Append final assistant message to server-side history
         full_text = copilot_response_handler.extract_text_from_generated_responses()
+        final_plan = copilot_response_handler.extract_final_plan()
         category = copilot_response_handler.extract_response_category()
+        references = (
+            reference_section.references if reference_section.references else None
+        )
 
         if full_text:
             try:
                 # Pass references directly if they exist
-                references = reference_section.references if reference_section else None
-                final_plan = copilot_response_handler.extract_final_plan()
                 await persist_copilot_message_to_history(
                     text=full_text,
                     chat_id=chat_id,

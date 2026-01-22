@@ -31,15 +31,23 @@ async def search_rasa_documentation(query: str) -> DocumentSearchResponse:
         documents: List[Document] = await document_retrieval.retrieve_documents(query)
 
         # Format documents as structured results
-        results = [
-            DocumentSearchResult(
-                index=idx,
-                title=doc.title,
-                url=doc.url,
-                content=doc.content,
+        results: List[DocumentSearchResult] = []
+        for idx, doc in enumerate(documents, start=1):
+            if not doc.url:
+                structlogger.warning(
+                    "mcp_server.tools.document_search.warning",
+                    event_info="Document URL is None",
+                    document=doc,
+                )
+                continue
+            results.append(
+                DocumentSearchResult(
+                    index=idx,
+                    title=doc.title or "Untitled",
+                    url=doc.url,
+                    content=doc.content,
+                )
             )
-            for idx, doc in enumerate(documents, start=1)
-        ]
 
         return DocumentSearchResponse(documents=results)
 

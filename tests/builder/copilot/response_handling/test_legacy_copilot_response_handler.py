@@ -545,14 +545,16 @@ class TestLegacyCopilotResponseHandler:
         async def mock_stream():
             yield buffer_content
 
-        handler = LegacyCopilotResponseHandler(mock_stream())
+        handler = LegacyCopilotResponseHandler(
+            mock_stream(), relevant_documents=documents
+        )
         # Process the stream to populate generated_responses
         async for _ in handler.stream():
             pass
 
         # When
         with structlog.testing.capture_logs() as caplog:
-            result = handler.extract_references(documents)
+            result = handler.extract_references()
 
         # Then
         assert isinstance(result, ReferenceSection)
@@ -629,13 +631,15 @@ class TestLegacyCopilotResponseHandler:
         async def mock_stream():
             yield content
 
-        handler = LegacyCopilotResponseHandler(mock_stream())
+        handler = LegacyCopilotResponseHandler(
+            mock_stream(), relevant_documents=documents
+        )
         # Process the stream to populate generated_responses
         async for _ in handler.stream():
             pass
 
         # When
-        result = handler.extract_references(documents)
+        result = handler.extract_references()
 
         # Then
         assert isinstance(result, ReferenceSection)

@@ -99,6 +99,16 @@ class BaseCopilotResponseHandler(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def retrieved_documents(self) -> List[Document]:
+        """Get the retrieved documents.
+
+        Returns:
+            List of retrieved documents.
+        """
+        pass
+
     def has_been_run(self) -> bool:
         """Check if the Copilot response has been run.
 
@@ -200,17 +210,14 @@ class BaseCopilotResponseHandler(ABC):
 
     # Content extraction methods -------------------------------------------------------
 
-    def extract_references(self, documents: List[Document]) -> ReferenceSection:
+    def extract_references(self) -> ReferenceSection:
         """Extract references from the generated responses content.
 
         This method performs regex matching to find markdown links in the format:
         [text](url).
 
-        The matched links are validated against the provided documents, and a
+        The matched links are validated against the relevant documents, and a
         ReferenceSection is returned with valid references.
-
-        Args:
-            documents: List of Document objects to match URLs against
 
         Returns:
             ReferenceSection containing reference entries ordered by reference text.
@@ -252,7 +259,9 @@ class BaseCopilotResponseHandler(ABC):
 
         # Create document lookup for O(1) access
         document_urls_to_documents: Dict[str, Document] = {
-            document.url: document for document in documents if document.url
+            document.url: document
+            for document in self.retrieved_documents
+            if document.url
         }
 
         # Use regular dict to collect references, keyed by reference_text

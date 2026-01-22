@@ -1,8 +1,9 @@
 import asyncio
 import copy
+import json
 from collections import defaultdict, deque
 from contextvars import Token
-from typing import AsyncGenerator, Deque, Dict, List, Optional, Tuple
+from typing import AsyncGenerator, Deque, Dict, List, Optional, Tuple, Union
 
 import structlog
 from agents import StreamEvent
@@ -20,6 +21,7 @@ from rasa.builder.copilot.exceptions import (
     CopilotFinalBufferReached,
     CopilotStreamEndedEarly,
 )
+from rasa.builder.copilot.mcp_server.models import DocumentSearchResponse
 from rasa.builder.copilot.models import (
     CopilotOutput,
     CopilotTextContent,
@@ -46,12 +48,14 @@ from rasa.builder.copilot.response_handling.utils import (
     extract_text_by_categories,
     extract_text_content_from_events,
     is_content_part_end_event,
+    is_document_retrieval_mcp_tool_output_event,
     is_text_content_part_delta_event,
     is_text_content_part_start_event,
     remove_prefix,
     remove_prefix_and_suffix,
     remove_suffix,
 )
+from rasa.builder.document_retrieval.models import Document
 
 structlogger = structlog.get_logger()
 
@@ -105,6 +109,9 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         # A list of cleaned and generated responses.
         self._generated_responses: List[GeneratedContent] = []
 
+        # A list of retrieved documents from document retrieval's tool call
+        self._retrieved_documents: List[Document] = []
+
         # Tokens for planning context cleanup
         self._planning_token: Optional[Token] = None
         self._plan_queue_token: Optional[
@@ -157,6 +164,10 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
             total += len(buffer)
         return total
 
+    @property
+    def retrieved_documents(self) -> List[Document]:
+        return copy.deepcopy(self._retrieved_documents)
+
     def reset(self) -> None:
         """Clear all buffers and reset the handler.
 
@@ -179,6 +190,9 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         self._prefix_found = None
         self._suffix_found = None
         self._final_plan = None
+
+        # Clear the retrieved documents list
+        self._retrieved_documents.clear()
 
     def _drain_queues_without_yielding(self, capture_final_plan: bool = False) -> None:
         """Drain MCP tool and plan queues without yielding events.
@@ -275,9 +289,33 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
                     task_statuses=[t.status for t in context_plan],
                 )
 
+    async def _yield_queued_events(
+        self,
+    ) -> AsyncGenerator[Union[MCPToolCall, TodoPlanUpdate], None]:
+        """Yield and process any queued events.
+
+        This method drains the MCP tool and plan queues non-blocking and yields
+        and processes all events.
+        """
+        # Yield and process any queued MCP tool call events that accumulated since
+        # the last stream event
+        async for queued_event in self._yield_queued_mcp_tool_events():
+            # Update the retrieved documents list with the documents from the
+            # document retrieval MCP tool call created by the hook.
+            if is_document_retrieval_mcp_tool_output_event(queued_event):
+                self._update_retrieved_documents(queued_event)
+
+            # Yield the MCP tool call event.
+            yield queued_event
+
+        # Yield any queued plan update events that accumulated since the
+        # last stream event
+        async for plan_event in self._yield_queued_plan_events():
+            yield plan_event
+
     async def _yield_queued_mcp_tool_events(
         self,
-    ) -> AsyncGenerator[CopilotOutput, None]:
+    ) -> AsyncGenerator[MCPToolCall, None]:
         """Yield any queued MCP tool call events.
 
         This method drains the MCP tool queue non-blocking and yields all events.
@@ -300,7 +338,7 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
                     event_info="No MCP tool events to yield",
                 )
 
-    async def _yield_queued_plan_events(self) -> AsyncGenerator[CopilotOutput, None]:
+    async def _yield_queued_plan_events(self) -> AsyncGenerator[TodoPlanUpdate, None]:
         """Yield any queued plan update events.
 
         This method drains the plan queue non-blocking and yields all events.
@@ -365,11 +403,9 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
 
         try:
             async for stream_event in self._response_stream:
-                # Yield any queued events (MCP tool calls, plan updates) that
-                # accumulated since the last stream event
-                async for queued_event in self._yield_queued_mcp_tool_events():
-                    yield queued_event
-                async for queued_event in self._yield_queued_plan_events():
+                # Yield and process any queued events (MCP tool calls, plan updates)
+                # that have accumulated since the last stream event
+                async for queued_event in self._yield_queued_events():
                     yield queued_event
 
                 # Check if the stream event signals the start of the text content part
@@ -379,9 +415,7 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
                     async for generated_content in self._stream_text_content_part():
                         yield generated_content
                     # After text streaming, yield any queued events that accumulated
-                    async for queued_event in self._yield_queued_mcp_tool_events():
-                        yield queued_event
-                    async for queued_event in self._yield_queued_plan_events():
+                    async for queued_event in self._yield_queued_events():
                         yield queued_event
 
                 # TODO: Add handling for other types of the content parts
@@ -393,9 +427,7 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
 
             # Final drain of queues to catch any remaining events
             # (tools may have added events after the last stream event)
-            async for queued_event in self._yield_queued_mcp_tool_events():
-                yield queued_event
-            async for queued_event in self._yield_queued_plan_events():
+            async for queued_event in self._yield_queued_events():
                 yield queued_event
 
         except Exception as e:
@@ -651,6 +683,92 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         """Preserve any remaining events from rolling buffer."""
         self._llm_streamed_events[self._current_content_part_index].extend(
             self._rolling_buffer
+        )
+
+    def _update_retrieved_documents(self, mcp_tool_call: MCPToolCall) -> None:
+        # Check if the MCP tool call is a document retrieval tool call.
+        if not is_document_retrieval_mcp_tool_output_event(mcp_tool_call):
+            return
+
+        if not mcp_tool_call.output:
+            structlogger.warning(
+                "copilot_response_handler._update_retrieved_documents"
+                ".no_output_from_documentation_search",
+                event_info="No output from documentation search. Skipping.",
+            )
+            return
+
+        try:
+            # # MCP tool search results are wrapped into a "text" content block:
+            # # {"type":"text","text":"{...DocumentSearchResponse json string...}", ...}
+            if isinstance(mcp_tool_call.output, str):
+                raw_output = json.loads(mcp_tool_call.output)
+            else:
+                structlogger.error(
+                    "copilot_response_handler._update_retrieved_documents"
+                    ".invalid_output_type",
+                    event_info=(
+                        f"Invalid output type. Got {type(mcp_tool_call.output)} "
+                        "instead of json string. Skipping."
+                    ),
+                    output_type=type(mcp_tool_call.output),
+                )
+                return
+
+            # The raw output is a dictionary with a "type" and "text" key. Under the
+            # "text" key is a JSON string that contains the DocumentSearchResponse.
+            if raw_output.get("type") == "text" and raw_output.get("text"):
+                raw_document_search_response = json.loads(raw_output.get("text"))
+            else:
+                structlogger.error(
+                    "copilot_response_handler._update_retrieved_documents"
+                    ".invalid_output_format",
+                    event_info=(
+                        f"Invalid output format. Got {raw_output} instead of a text "
+                        "content block with a JSON string. Skipping."
+                    ),
+                    output_format=raw_output,
+                )
+                return
+
+            documentation_search_results = DocumentSearchResponse.model_validate(
+                raw_document_search_response
+            )
+
+        except Exception as e:
+            structlogger.error(
+                "copilot_response_handler._update_retrieved_documents"
+                ".documentation_search_result_validation_error",
+                event_info=(
+                    "Documentation search result cannot be parsed due to the "
+                    "validation error. Skipping."
+                ),
+                error=e,
+            )
+            return
+
+        if documentation_search_results.error:
+            structlogger.error(
+                "copilot_response_handler._update_retrieved_documents"
+                ".documentation_search_resulted_in_error",
+                event_info="Documentation search resulted in error. Skipping.",
+                error=documentation_search_results.error,
+            )
+            return
+
+        for found_document in documentation_search_results.documents:
+            document = Document(
+                content=found_document.content,
+                url=found_document.url,
+                title=found_document.title,
+            )
+            self._retrieved_documents.append(document)
+
+        structlogger.debug(
+            "copilot_response_handler._update_retrieved_documents"
+            ".retrieved_documents_updated",
+            event_info="Retrieved documents updated.",
+            retrieved_documents=self._retrieved_documents,
         )
 
     # Stream event processing methods ------------------------------------------------

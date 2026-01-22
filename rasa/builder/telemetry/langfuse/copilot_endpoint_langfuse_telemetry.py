@@ -99,9 +99,7 @@ class CopilotEndpointLangfuseTelemetry:
             )
             response_category = handler.extract_response_category().value
             reference_section_entries = (
-                CopilotEndpointLangfuseTelemetry._extract_references(
-                    handler, relevant_documents
-                )
+                CopilotEndpointLangfuseTelemetry._extract_references(handler)
             )
 
             # Create a session ID as a composite ID from project id, user id and chat id
@@ -168,22 +166,17 @@ class CopilotEndpointLangfuseTelemetry:
     @staticmethod
     def _extract_references(
         handler: "BaseCopilotResponseHandler",
-        relevant_documents: list[Document],
     ) -> List[Dict[str, Any]]:
         """Extract reference entries from the response handler.
 
         Args:
             handler: The response handler containing generated responses.
-            relevant_documents: The relevant documents used to generate the response.
 
         Returns:
             A list of reference entries in dictionary format.
         """
-        if not relevant_documents:
-            return []
-
         reference_entries: list[Dict[str, Any]] = []
-        reference_section = handler.extract_references(relevant_documents)
+        reference_section = handler.extract_references()
         for reference_entry in reference_section.references:
             reference_entries.append(
                 reference_entry.model_dump(

@@ -1,6 +1,7 @@
 import asyncio
+import json
 import re
-from typing import Any, AsyncGenerator, Dict, List
+from typing import Any, AsyncGenerator, Dict, List, Literal
 from unittest.mock import MagicMock
 
 import pytest
@@ -14,6 +15,11 @@ from openai.types.responses import (
     ResponseTextDoneEvent,
 )
 
+from rasa.builder.copilot.mcp_server.constants import MCP_TOOL_SEARCH_DOCS
+from rasa.builder.copilot.mcp_server.models import (
+    DocumentSearchResponse,
+    DocumentSearchResult,
+)
 from rasa.builder.copilot.models import (
     ControlledPredictionContent,
     CopilotOutput,
@@ -22,6 +28,7 @@ from rasa.builder.copilot.models import (
     CopilotTextStartContent,
     ExceptionContent,
     GeneratedContent,
+    MCPToolCall,
     ReferenceSection,
     ResponseCategory,
 )
@@ -41,6 +48,7 @@ from rasa.builder.copilot.response_handling.utils import (
     is_text_content_part_start_event,
 )
 from rasa.builder.document_retrieval.models import Document
+from tests.utilities import filter_logs
 
 
 def create_text_delta_event_mock(delta: str) -> StreamEvent:
@@ -856,6 +864,127 @@ class TestAgentCopilotResponseHandler:
         ), "Second part should contain the normal content text"
 
     @pytest.mark.parametrize(
+        "mcp_tool_call,expected_documents_count,expected_tool_name",
+        [
+            # Test case 1: Document search tool call - should update documents
+            (
+                MCPToolCall(
+                    tool_name=MCP_TOOL_SEARCH_DOCS,
+                    status="completed",
+                    output=json.dumps(
+                        {
+                            "type": "text",
+                            "text": DocumentSearchResponse(
+                                documents=[
+                                    DocumentSearchResult(
+                                        index=1,
+                                        title="Guide 1",
+                                        url="https://docs.rasa.com/guide1",
+                                        content="Content 1",
+                                    ),
+                                    DocumentSearchResult(
+                                        index=2,
+                                        title="Guide 2",
+                                        url="https://docs.rasa.com/guide2",
+                                        content="Content 2",
+                                    ),
+                                ],
+                                error=None,
+                            ).model_dump_json(),
+                        }
+                    ),
+                ),
+                2,
+                MCP_TOOL_SEARCH_DOCS,
+            ),
+            # Test case 2: No MCP tool call - should not update documents
+            (None, 0, None),
+            # Test case 3: Other MCP tool call - should not update documents
+            (
+                MCPToolCall(
+                    tool_name="other_tool",
+                    status="completed",
+                    output='{"result": "some output"}',
+                ),
+                0,
+                "other_tool",
+            ),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_stream_updates_documents_if_document_search_tool_is_called(
+        self,
+        mcp_tool_call: MCPToolCall | None,
+        expected_documents_count: int,
+        expected_tool_name: str | None,
+    ):
+        """Test that streaming updates retrieved documents only for document search.
+
+        This test verifies that:
+        - When a document search MCP tool call is in the queue, documents are updated
+        - When no MCP tool call is in the queue, documents are not updated
+        - When a non-document-search MCP tool call is in the queue,
+          documents are not updated
+        """
+
+        # Given
+        async def create_stream_with_content() -> AsyncGenerator[StreamEvent, None]:
+            yield create_text_content_part_start_event_mock()
+            yield create_text_delta_event_mock("Some content")
+            yield create_text_output_done_event_mock()
+            yield create_text_content_part_end_event_mock()
+
+        # Create a queue for MCP tool calls
+        mcp_queue: asyncio.Queue[MCPToolCall] = asyncio.Queue()
+        if mcp_tool_call is not None:
+            await mcp_queue.put(mcp_tool_call)
+
+        handler = AgentCopilotResponseHandler(
+            create_stream_with_content(), mcp_tool_queue=mcp_queue
+        )
+
+        # When
+        responses: List[CopilotOutput] = []
+        async for response in handler.stream():
+            responses.append(response)
+
+        # Then: Verify documents were updated (or not) as expected
+        assert len(handler._retrieved_documents) == expected_documents_count, (
+            f"Expected {expected_documents_count} documents to be retrieved, "
+            f"but got {len(handler._retrieved_documents)}"
+        )
+        assert len(handler.retrieved_documents) == expected_documents_count, (
+            f"Expected retrieved_documents property to return "
+            f"{expected_documents_count} documents, "
+            f"but got {len(handler.retrieved_documents)}"
+        )
+
+        # Verify document content if documents were expected
+        if expected_documents_count > 0:
+            retrieved_docs = handler.retrieved_documents
+            assert retrieved_docs[0].url == "https://docs.rasa.com/guide1"
+            assert retrieved_docs[0].title == "Guide 1"
+            assert retrieved_docs[0].content == "Content 1"
+            assert retrieved_docs[1].url == "https://docs.rasa.com/guide2"
+            assert retrieved_docs[1].title == "Guide 2"
+            assert retrieved_docs[1].content == "Content 2"
+
+        # Verify the MCP tool call was yielded in the stream (if one was provided)
+        mcp_tool_call_responses = [r for r in responses if isinstance(r, MCPToolCall)]
+        if expected_tool_name is not None:
+            assert len(mcp_tool_call_responses) == 1, (
+                f"Expected 1 MCP tool call in responses, "
+                f"got {len(mcp_tool_call_responses)}"
+            )
+            assert mcp_tool_call_responses[0].tool_name == expected_tool_name
+            assert mcp_tool_call_responses[0].status == "completed"
+        else:
+            assert len(mcp_tool_call_responses) == 0, (
+                f"Expected no MCP tool calls in responses, "
+                f"got {len(mcp_tool_call_responses)}"
+            )
+
+    @pytest.mark.parametrize(
         "buffer_content,documents,expected_references,expected_warnings",
         [
             # Test case 1: Valid numeric references with matching URLs
@@ -1217,10 +1346,12 @@ class TestAgentCopilotResponseHandler:
         # We need to consume the stream first to populate the buffer
         async for _ in handler.stream():
             pass
+        # Once the stream is over, assume that the right documents are retrieved
+        handler._retrieved_documents = documents
 
         # When
         with structlog.testing.capture_logs() as caplog:
-            result = handler.extract_references(documents)
+            result = handler.extract_references()
 
         # Then
         assert isinstance(result, ReferenceSection)
@@ -1305,10 +1436,12 @@ class TestAgentCopilotResponseHandler:
         # Process the stream to populate the buffer
         async for _ in handler.stream():
             pass
+        # Once the stream is over, assume that the right documents are retrieved
+        handler._retrieved_documents = documents
 
         # When
         with structlog.testing.capture_logs() as caplog:
-            result = handler.extract_references(documents)
+            result = handler.extract_references()
 
         # Then
         assert isinstance(result, ReferenceSection)
@@ -1403,9 +1536,11 @@ class TestAgentCopilotResponseHandler:
         # Process the stream to populate generated_responses
         async for _ in handler.stream():
             pass
+        # Once the stream is over, assume that the right documents are retrieved
+        handler._retrieved_documents = documents
 
         # When
-        result = handler.extract_references(documents)
+        result = handler.extract_references()
 
         # Then
         assert isinstance(result, ReferenceSection)
@@ -1981,3 +2116,337 @@ class TestAgentCopilotResponseHandler:
                 f"Token {i} not found in extracted text for {description}. "
                 f"Extracted text: {extracted_text}"
             )
+
+    @pytest.mark.asyncio
+    async def test_reset_clears_all_state(self):
+        """Test that reset() clears all buffers, state, and resets the handler."""
+        from rasa.builder.copilot.models import TodoItem
+
+        # Given
+        async def create_empty_stream() -> AsyncGenerator[StreamEvent, None]:
+            yield create_text_content_part_start_event_mock()
+            yield create_text_output_done_event_mock()
+            yield create_text_content_part_end_event_mock()
+
+        handler = AgentCopilotResponseHandler(create_empty_stream())
+
+        # Manually populate all state to test reset functionality
+        # Add events to rolling buffer
+        handler._rolling_buffer.append(create_text_delta_event_mock("test"))
+        # Add events to LLM streamed events
+        handler._llm_streamed_events[0].append(create_text_delta_event_mock("test"))
+        # Set content part index
+        handler._current_content_part_index = 5
+        # Add generated responses
+        handler._generated_responses.append(CopilotTextContent(content="test content"))
+        # Set prefix and suffix
+        handler._prefix_found = "```"
+        handler._suffix_found = "```"
+        # Set final plan
+        handler._final_plan = [TodoItem(id="1", content="Test task", status="pending")]
+        # Add retrieved documents
+        handler._retrieved_documents = [
+            Document(
+                content="Guide 1",
+                url="https://docs.rasa.com/guide1",
+                title="Rasa Guide 1",
+                metadata=None,
+            ),
+            Document(
+                content="Guide 2",
+                url="https://docs.rasa.com/guide2",
+                title="Rasa Guide 2",
+                metadata=None,
+            ),
+        ]
+
+        # Verify state is populated before reset
+        assert len(handler._rolling_buffer) > 0, "Rolling buffer should have content"
+        assert len(handler._llm_streamed_events) > 0, "LLM streamed events should exist"
+        assert (
+            handler._current_content_part_index == 5
+        ), "Content part index should be set"
+        assert len(handler._generated_responses) > 0, "Generated responses should exist"
+        assert handler._prefix_found == "```", "Prefix should be set"
+        assert handler._suffix_found == "```", "Suffix should be set"
+        assert handler._final_plan is not None, "Final plan should be set"
+        assert (
+            len(handler._retrieved_documents) == 2
+        ), "Retrieved documents should exist"
+
+        # When
+        handler.reset()
+
+        # Then - verify all state is reset
+        assert (
+            len(handler._rolling_buffer) == 0
+        ), "Rolling buffer should be empty after reset()"
+        assert (
+            len(handler._llm_streamed_events) == 0
+        ), "LLM streamed events should be cleared after reset()"
+        assert handler._current_content_part_index == 0, (
+            f"Content part index should be reset to 0, "
+            f"got {handler._current_content_part_index}"
+        )
+        assert (
+            len(handler._generated_responses) == 0
+        ), "Generated responses should be cleared after reset()"
+        assert (
+            handler._prefix_found is None
+        ), f"Prefix should be None after reset(), got {handler._prefix_found}"
+        assert (
+            handler._suffix_found is None
+        ), f"Suffix should be None after reset(), got {handler._suffix_found}"
+        assert (
+            handler._final_plan is None
+        ), f"Final plan should be None after reset(), got {handler._final_plan}"
+        assert (
+            len(handler._retrieved_documents) == 0
+        ), "Retrieved documents should be cleared after reset()"
+        assert (
+            len(handler.retrieved_documents) == 0
+        ), "Retrieved documents property should return empty list after reset()"
+
+    @pytest.mark.parametrize(
+        "tool_name,status,output,expected_documents_count,expected_log_event",
+        [
+            # Test case 1: Success - Valid document retrieval with single document
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                json.dumps(
+                    {
+                        "type": "text",
+                        "text": DocumentSearchResponse(
+                            documents=[
+                                DocumentSearchResult(
+                                    index=1,
+                                    title="Guide 1",
+                                    url="https://docs.rasa.com/guide1",
+                                    content="Content 1",
+                                )
+                            ],
+                            error=None,
+                        ).model_dump_json(),
+                    }
+                ),
+                1,
+                None,
+            ),
+            # Test case 2: Success - Multiple documents
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                json.dumps(
+                    {
+                        "type": "text",
+                        "text": DocumentSearchResponse(
+                            documents=[
+                                DocumentSearchResult(
+                                    index=1,
+                                    title="Guide 1",
+                                    url="https://docs.rasa.com/guide1",
+                                    content="Content 1",
+                                ),
+                                DocumentSearchResult(
+                                    index=2,
+                                    title="Guide 2",
+                                    url="https://docs.rasa.com/guide2",
+                                    content="Content 2",
+                                ),
+                            ],
+                            error=None,
+                        ).model_dump_json(),
+                    }
+                ),
+                2,
+                None,
+            ),
+            # Test case 3: Success - Empty documents list
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                json.dumps(
+                    {
+                        "type": "text",
+                        "text": DocumentSearchResponse(
+                            documents=[], error=None
+                        ).model_dump_json(),
+                    }
+                ),
+                0,
+                None,
+            ),
+            # Test case 4: Early return - Not document retrieval (wrong tool_name)
+            (
+                "other_tool",
+                "completed",
+                json.dumps(
+                    {
+                        "type": "text",
+                        "text": DocumentSearchResponse(
+                            documents=[], error=None
+                        ).model_dump_json(),
+                    }
+                ),
+                0,
+                None,
+            ),
+            # Test case 5: Early return - Not document retrieval (wrong status)
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "called",
+                json.dumps(
+                    {
+                        "type": "text",
+                        "text": DocumentSearchResponse(
+                            documents=[], error=None
+                        ).model_dump_json(),
+                    }
+                ),
+                0,
+                None,
+            ),
+            # Test case 6: No output - output is None
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                None,
+                0,
+                "no_output_from_documentation_search",
+            ),
+            # Test case 7: No output - output is empty string
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                "",
+                0,
+                "no_output_from_documentation_search",
+            ),
+            # Test case 8: Invalid output type - output is not a string (dict)
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                {"type": "text", "text": "{}"},
+                0,
+                "invalid_output_type",
+            ),
+            # Test case 9: Invalid output type - output is not a string (int)
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                123,
+                0,
+                "invalid_output_type",
+            ),
+            # Test case 10: Invalid JSON - output is not valid JSON
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                "not valid json{",
+                0,
+                "documentation_search_result_validation_error",
+            ),
+            # Test case 11: Invalid format
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                DocumentSearchResponse(documents=[], error=None).model_dump_json(),
+                0,
+                "invalid_output_format",
+            ),
+            # Test case 12: Invalid inner JSON - text field is not valid JSON
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                json.dumps({"type": "text", "text": "not valid json{"}),
+                0,
+                "documentation_search_result_validation_error",
+            ),
+            # Test case 15: Validation error - invalid DocumentSearchResponse structure
+            # (documents should be a list, not a string)
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                json.dumps(
+                    {
+                        "type": "text",
+                        "text": json.dumps({"documents": "not a list", "error": None}),
+                    }
+                ),
+                0,
+                "documentation_search_result_validation_error",
+            ),
+            # Test case 16: Search error - DocumentSearchResponse has error field set
+            (
+                MCP_TOOL_SEARCH_DOCS,
+                "completed",
+                json.dumps(
+                    {
+                        "type": "text",
+                        "text": DocumentSearchResponse(
+                            documents=[], error="Search failed"
+                        ).model_dump_json(),
+                    }
+                ),
+                0,
+                "documentation_search_resulted_in_error",
+            ),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_update_retrieved_documents(
+        self,
+        tool_name: str,
+        status: Literal["called", "running", "completed", "failed"],
+        output: Any,
+        expected_documents_count: int,
+        expected_log_event: str | None,
+    ):
+        """Test _update_retrieved_documents with various scenarios."""
+
+        # Given
+        async def create_empty_stream() -> AsyncGenerator[StreamEvent, None]:
+            yield create_text_content_part_start_event_mock()
+            yield create_text_output_done_event_mock()
+            yield create_text_content_part_end_event_mock()
+
+        handler = AgentCopilotResponseHandler(create_empty_stream())
+        initial_documents_count = len(handler._retrieved_documents)
+
+        mcp_tool_call = MCPToolCall(
+            tool_name=tool_name,
+            status=status,
+            output=output,
+        )
+
+        # When
+        with structlog.testing.capture_logs() as caplog:
+            handler._update_retrieved_documents(mcp_tool_call)
+
+        # Then
+        final_documents_count = len(handler._retrieved_documents)
+        documents_added = final_documents_count - initial_documents_count
+        assert documents_added == expected_documents_count, (
+            f"Expected {expected_documents_count} documents to be added, "
+            f"but got {documents_added}"
+        )
+
+        # Verify logs if expected
+        if expected_log_event:
+            logs = filter_logs(caplog, log_level="warning") + filter_logs(
+                caplog, log_level="error"
+            )
+            # Check if expected_warning appears in event, event_info, or the full log
+            warning_found = any(
+                expected_log_event in str(log.get("event", "")) for log in logs
+            )
+            assert warning_found, (
+                f"Expected log event '{expected_log_event}' not found in logs. "
+                f"Logs: {[str(log) for log in logs]}"
+            )
+        else:
+            # For success cases, verify documents were added correctly
+            if expected_documents_count > 0:
+                added_documents = handler._retrieved_documents[initial_documents_count:]
+                assert len(added_documents) == expected_documents_count

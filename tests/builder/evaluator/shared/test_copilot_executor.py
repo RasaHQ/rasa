@@ -169,6 +169,9 @@ class TestRunCopilotWithResponseHandler:
                 )
 
         mock_response_handler.stream = mock_stream
+        # The executor decides whether to extract references based on what the
+        # response handler reports as retrieved documents.
+        mock_response_handler.retrieved_documents = documents
         mock_response_handler.extract_references = MagicMock(
             return_value=reference_section
         )
@@ -190,7 +193,7 @@ class TestRunCopilotWithResponseHandler:
         assert result.generation_context == generation_context
 
         if should_extract_references:
-            mock_response_handler.extract_references.assert_called_once_with(documents)
+            mock_response_handler.extract_references.assert_called_once()
             assert result.reference_section == reference_section
         else:
             mock_response_handler.extract_references.assert_not_called()

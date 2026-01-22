@@ -72,10 +72,8 @@ async def run_copilot_with_response_handler(
     complete_response = "".join(response_chunks) if response_chunks else None
 
     # Extract the reference section from the response handler
-    if generation_context.relevant_documents:
-        reference_section = copilot_response_handler.extract_references(
-            generation_context.relevant_documents
-        )
+    if copilot_response_handler.retrieved_documents:
+        reference_section = copilot_response_handler.extract_references()
     else:
         reference_section = None
 

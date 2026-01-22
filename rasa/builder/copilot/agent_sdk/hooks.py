@@ -1,6 +1,7 @@
 """Agent hooks for tracking tool execution events."""
 
 import asyncio
+from typing import Any
 
 import structlog
 from agents import Agent, AgentHooks, Tool
@@ -43,7 +44,7 @@ class RasaCopilotHooks(AgentHooks):
         )
 
     async def on_tool_end(
-        self, context: RunContextWrapper, agent: Agent, tool: Tool, result: str
+        self, context: RunContextWrapper, agent: Agent, tool: Tool, result: Any
     ) -> None:
         """Called when a tool completes execution."""
         structlogger.debug(
@@ -55,5 +56,6 @@ class RasaCopilotHooks(AgentHooks):
             MCPToolCall(
                 tool_name=tool.name,
                 status="completed",
+                output=result,
             )
         )

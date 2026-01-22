@@ -19,6 +19,18 @@ import structlog
 from mcp.server.fastmcp import Context, FastMCP
 from pydantic import Field
 
+from rasa.builder.copilot.mcp_server.constants import (
+    MCP_TOOL_GET_ASSISTANT_LOGS,
+    MCP_TOOL_GET_PROJECT_FILE,
+    MCP_TOOL_LIST_PROJECT_FILES,
+    MCP_TOOL_READ_PROJECT_FILES,
+    MCP_TOOL_SEARCH_DOCS,
+    MCP_TOOL_TALK_TO_ASSISTANT,
+    MCP_TOOL_TRAIN_MODEL,
+    MCP_TOOL_UPDATE_MULTIPLE_FILES,
+    MCP_TOOL_VALIDATE_PROJECT,
+    MCP_TOOL_WRITE_PROJECT_FILE,
+)
 from rasa.builder.copilot.mcp_server.models import (
     DocumentSearchResponse,
     FileContentResponse,
@@ -119,15 +131,18 @@ def _get_project_folder() -> str:
 
 
 @mcp.tool(
+    name=MCP_TOOL_SEARCH_DOCS,
     description=(
-        "Search Rasa documentation for relevant information about concepts, "
-        "APIs, and best practices"
+        "Search Rasa documentation for relevant information about concepts, APIs, and "
+        "best practices. This is the AUTHORITATIVE source for Rasa documentation that "
+        "returns the most relevant documentation entries matching your query, with "
+        "valid links."
     ),
     annotations={
         "title": "Search Documentation",
         "readOnlyHint": True,
         "openWorldHint": True,  # Searches external documentation service
-        "idempotentHint": True,
+        "idempotentHint": False,
     },
     structured_output=True,
 )
@@ -152,6 +167,7 @@ async def search_docs(
 
 
 @mcp.tool(
+    name=MCP_TOOL_READ_PROJECT_FILES,
     description="Read all bot project files with their complete contents",
     annotations={
         "title": "Read All Project Files",
@@ -189,6 +205,7 @@ async def read_project_files(
 
 
 @mcp.tool(
+    name=MCP_TOOL_GET_PROJECT_FILE,
     description="Get the content of a specific file in the bot project",
     annotations={
         "title": "Read Single File",
@@ -221,6 +238,7 @@ async def get_project_file(
 
 
 @mcp.tool(
+    name=MCP_TOOL_LIST_PROJECT_FILES,
     description="List all files in the bot project as a directory tree",
     annotations={
         "title": "List Project Files",
@@ -243,6 +261,7 @@ async def list_project_files() -> FileListResponse:
 
 
 @mcp.tool(
+    name=MCP_TOOL_WRITE_PROJECT_FILE,
     description="Write or overwrite a file in the bot project",
     annotations={
         "title": "Write Project File",
@@ -277,6 +296,7 @@ async def write_project_file(
 
 
 @mcp.tool(
+    name=MCP_TOOL_UPDATE_MULTIPLE_FILES,
     description="Write multiple files in a single coordinated operation",
     annotations={
         "title": "Update Multiple Files",
@@ -312,6 +332,7 @@ async def update_multiple_files(
 
 
 @mcp.tool(
+    name=MCP_TOOL_VALIDATE_PROJECT,
     description="Validate the bot project configuration and training data",
     annotations={
         "title": "Validate Project",
@@ -342,6 +363,7 @@ async def validate_project(ctx: Context) -> ValidationResponse:
 
 
 @mcp.tool(
+    name=MCP_TOOL_TRAIN_MODEL,
     description="Train a new bot model with the current project configuration",
     annotations={
         "title": "Train Model",
@@ -374,6 +396,7 @@ async def train_model(ctx: Context) -> TrainingResponse:
 
 
 @mcp.tool(
+    name=MCP_TOOL_GET_ASSISTANT_LOGS,
     description="Get recent log entries from the Rasa assistant for troubleshooting",
     annotations={
         "title": "Assistant Logs",
@@ -396,6 +419,7 @@ async def get_assistant_logs() -> str:
 
 
 @mcp.tool(
+    name=MCP_TOOL_TALK_TO_ASSISTANT,
     description=(
         "Test the assistant by sending a sequence of messages and verifying responses. "
         "Use this to validate conversation flows work as expected after making changes."

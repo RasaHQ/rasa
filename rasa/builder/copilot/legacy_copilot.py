@@ -1,4 +1,5 @@
 import asyncio
+import importlib.resources
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Tuple
 
@@ -11,8 +12,10 @@ from rasa.builder import config
 from rasa.builder.config import COPILOT_DOCUMENTATION_SEARCH_QUERY_HISTORY_MESSAGES
 from rasa.builder.copilot.base_copilot import BaseCopilot
 from rasa.builder.copilot.constants import (
+    COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE,
     COPILOT_PROMPTS_DIR,
     COPILOT_PROMPTS_FILE,
+    COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE,
     ROLE_COPILOT,
     ROLE_COPILOT_INTERNAL,
     ROLE_USER,
@@ -23,6 +26,8 @@ from rasa.builder.copilot.models import (
     CopilotContext,
     CopilotGenerationContext,
     CopilotSystemMessage,
+    EventContent,
+    FileContent,
     InternalCopilotRequestChatMessage,
     ResponseCategory,
     UsageStatistics,
@@ -41,6 +46,7 @@ from rasa.builder.exceptions import (
 from rasa.builder.telemetry.langfuse.legacy_copilot_langfuse_telemetry import (
     LegacyCopilotLangfuseTelemetry,
 )
+from rasa.shared.constants import PACKAGE_NAME
 from rasa.utils.io import read_text_from_package
 
 structlogger = structlog.get_logger()
@@ -56,6 +62,20 @@ class LegacyCopilot(BaseCopilot):
     def __init__(self) -> None:
         """Initialize the legacy copilot."""
         self._inkeep_document_retrieval = InKeepDocumentRetrieval()
+
+        self._last_user_message_context_prompt_template = Template(
+            importlib.resources.read_text(
+                f"{PACKAGE_NAME}.{COPILOT_PROMPTS_DIR}",
+                COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE,
+            )
+        )
+
+        self._training_error_handler_prompt_template = Template(
+            importlib.resources.read_text(
+                f"{PACKAGE_NAME}.{COPILOT_PROMPTS_DIR}",
+                COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE,
+            )
+        )
 
         # The final stream chunk includes usage statistics.
         self._usage_statistics = UsageStatistics(
@@ -169,6 +189,7 @@ class LegacyCopilot(BaseCopilot):
         copilot_response_handler = LegacyCopilotResponseHandler(
             response_stream=self._stream_response(messages),
             rolling_buffer_size=config.COPILOT_HANDLER_ROLLING_BUFFER_SIZE,
+            relevant_documents=relevant_documents,
         )
 
         return (
@@ -297,3 +318,95 @@ class LegacyCopilot(BaseCopilot):
             query_chat_history.insert(0, f"{prefix}: {text}")
 
         return "\n".join(query_chat_history)
+
+    # HELPERS
+
+    def _process_latest_message(
+        self,
+        latest_message: Any,
+        context: CopilotContext,
+        relevant_documents: List[Document],
+    ) -> Dict[str, Any]:
+        """Process the latest message and convert it to OpenAI format.
+
+        Args:
+            latest_message: The most recent message from the chat history.
+            context: The copilot context containing conversation state.
+            relevant_documents: List of relevant documents for context.
+
+        Returns:
+            Message in OpenAI format.
+
+        Raises:
+            ValueError: If the message type is not supported.
+        """
+        if isinstance(latest_message, UserChatMessage):
+            tracker_event_attachments = latest_message.get_content_blocks_by_type(
+                EventContent
+            )
+            rendered_prompt = self._render_last_user_message_context_prompt(
+                context, relevant_documents, tracker_event_attachments
+            )
+            return latest_message.build_openai_message(prompt=rendered_prompt)
+
+        elif isinstance(latest_message, InternalCopilotRequestChatMessage):
+            rendered_prompt = self._render_training_error_handler_prompt(
+                latest_message, relevant_documents
+            )
+            return latest_message.build_openai_message(prompt=rendered_prompt)
+
+        else:
+            raise ValueError(f"Unexpected message type: {type(latest_message)}")
+
+    def _render_last_user_message_context_prompt(
+        self,
+        context: CopilotContext,
+        relevant_documents: List[Document],
+        tracker_event_attachments: List[EventContent],
+    ) -> str:
+        # Format relevant documentation
+        # TODO: (agent-sdk) remove this after the legacy copilot is removed
+        documents = [doc.model_dump() for doc in relevant_documents]
+        # Format conversation history
+        conversation = self._format_conversation_history(context.tracker_context)
+        # Format current state
+        current_state = self._format_current_state(context.tracker_context)
+        # Format tracker events
+        attachments = self._format_tracker_event_attachments(tracker_event_attachments)
+
+        rendered_prompt = self._last_user_message_context_prompt_template.render(
+            current_conversation=conversation,
+            current_state=current_state,
+            assistant_logs=context.assistant_logs,
+            assistant_files=context.assistant_files,
+            documentation_results=documents,
+            attachments=attachments,
+        )
+        return rendered_prompt
+
+    def _render_training_error_handler_prompt(
+        self,
+        internal_request_message: InternalCopilotRequestChatMessage,
+        relevant_documents: List[Document],
+    ) -> str:
+        """Render the training error handler prompt with documentation and context.
+
+        Args:
+            internal_request_message: Internal request message.
+            context: The copilot context.
+            relevant_documents: List of relevant documents for context.
+
+        Returns:
+            Rendered prompt string for training error analysis.
+        """
+        modified_files_dicts: Dict[str, str] = {
+            file.file_path: file.file_content
+            for file in internal_request_message.get_content_blocks_by_type(FileContent)
+        }
+        rendered_prompt = self._training_error_handler_prompt_template.render(
+            logs=internal_request_message.get_flattened_log_content(),
+            modified_files=modified_files_dicts,
+            documentation_results=self._format_documents(relevant_documents),
+        )
+
+        return rendered_prompt

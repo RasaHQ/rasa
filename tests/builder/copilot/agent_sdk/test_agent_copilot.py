@@ -100,7 +100,7 @@ class TestAgentCopilot:
             copilot_chat_history=[],
         )
 
-        messages = await copilot._build_messages(context, [])
+        messages = await copilot._build_messages(context)
 
         assert messages == []
 
@@ -110,7 +110,7 @@ class TestAgentCopilot:
         from rasa.builder.copilot.agent_sdk.agent_copilot import AgentCopilot
 
         copilot = AgentCopilot()
-        messages = await copilot._build_messages(sample_context, [])
+        messages = await copilot._build_messages(sample_context)
 
         assert len(messages) >= 1
         # Last message should be the user's message

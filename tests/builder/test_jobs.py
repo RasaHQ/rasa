@@ -543,7 +543,7 @@ class TestRunCopilotTrainingErrorAnalysisJob:
         # extract_references is called multiple times
         # (once to extract and once to persist)
         assert mock_handler.extract_references.call_count >= 1
-        mock_handler.extract_references.assert_any_call([mock_document])
+        mock_handler.extract_references.assert_any_call()
 
         # Verify that generate_response was called with a context containing the
         # internal message

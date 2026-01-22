@@ -45,6 +45,7 @@ from rasa.builder.copilot.response_handling.constants import (
     ROLEPLAY_RESPONSE_KEY,
     UNCLEAR_INPUT_RESPONSE_KEY,
 )
+from rasa.builder.document_retrieval.models import Document
 from rasa.shared.constants import PACKAGE_NAME
 
 structlogger = structlog.get_logger()
@@ -317,6 +318,19 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
             UsageStatistics for greeting/goodbye generation, None for templates.
         """
         return self._generation_usage
+
+    @property
+    def retrieved_documents(self) -> List[Document]:
+        """Return the list of retrieved documents.
+
+        MessageClassifierResponseHandler doesn't retrieve documents as it handles
+        simple requests (greetings, goodbyes, out-of-scope) that don't require
+        document retrieval.
+
+        Returns:
+            Empty list since this handler doesn't retrieve documents.
+        """
+        return []
 
     def extract_text_from_generated_responses(self) -> str:
         """Extract the full text from generated responses."""

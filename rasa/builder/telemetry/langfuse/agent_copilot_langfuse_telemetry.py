@@ -117,11 +117,6 @@ class AgentCopilotLangfuseTelemetry:
             )
             result["event_data"] = tool_output_info
 
-        structlogger.debug(
-            "agent_copilot_langfuse_telemetry.parsed_stream_event",
-            result=result,
-        )
-
         return result
 
     @staticmethod

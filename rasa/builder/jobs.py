@@ -590,31 +590,19 @@ async def run_copilot_training_error_analysis_job(
             )
 
         # Send references (if any) as part of copilot_analyzing stream
-        if generation_context.relevant_documents:
-            reference_section = copilot_response_handler.extract_references(
-                generation_context.relevant_documents
-            )
+        reference_section = copilot_response_handler.extract_references()
+        if reference_section.references:
             await push_job_status_event(
                 job, JobStatus.copilot_analyzing, payload=reference_section.sse_data
             )
 
         # Persist the training error analysis to history
-        full_text = copilot_response_handler.extract_text_from_generated_responses()
-
-        # Extract references if available
-        references = None
-        if generation_context.relevant_documents:
-            reference_section = copilot_response_handler.extract_references(
-                generation_context.relevant_documents
-            )
-            references = (
-                reference_section.references if reference_section.references else None
-            )
-
         await persist_training_error_analysis_to_history(
-            text=full_text,
+            text=copilot_response_handler.extract_text_from_generated_responses(),
             logs=[log_content_block] if log_content_block else None,
-            references=references,
+            references=(
+                reference_section.references if reference_section.references else None
+            ),
             response_category=ResponseCategory.TRAINING_ERROR_LOG_ANALYSIS,
             commit=commit_info,
         )
