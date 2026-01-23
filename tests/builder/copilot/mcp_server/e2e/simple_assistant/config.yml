@@ -1,0 +1,11 @@
+recipe: default.v1
+language: en
+assistant_id: savage-magnification
+pipeline:
+- name: SearchReadyLLMCommandGenerator
+  llm:
+    model_group: openai-gpt-4o
+  flow_retrieval:
+    active: false
+policies:
+- name: FlowPolicy

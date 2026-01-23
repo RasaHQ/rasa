@@ -1,0 +1,14 @@
+action_endpoint:
+  actions_module: "actions"
+
+model_groups:
+  - id: openai-gpt-4o
+    models:
+      - provider: openai
+        model: gpt-4o-2024-11-20
+        timeout: 15
+        max_completion_tokens: 256
+  - id: openai-embeddings
+    models:
+      - provider: openai
+        model: text-embedding-3-large

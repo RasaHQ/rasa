@@ -1,0 +1,5 @@
+actions: []
+slots: {}
+responses:
+  utter_greet_user:
+  - text: hello

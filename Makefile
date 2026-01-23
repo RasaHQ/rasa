@@ -219,6 +219,22 @@ endif
 test-anonymization: PYTEST_MARKER=category_anonymization and (not flaky) and (not acceptance) and (not category_large_data_tests) and (not category_dm1_tensorflow)
 test-anonymization: test-marker  ## Run anonymization tests
 
+test-builder-tests: clean ## Run builder tests
+	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
+	TRANSFORMERS_OFFLINE=$(TRANSFORMERS_OFFLINE) \
+	OMP_NUM_THREADS=1 \
+	TF_CPP_MIN_LOG_LEVEL=2 \
+	poetry run pytest tests/builder \
+			-n $(JOBS) \
+			--dist loadscope \
+			--reruns 3 --reruns-delay 1 \
+			--splits $(NUMBER_OF_RUNNERS) --group $(RUNNER_ID) \
+			--cov=rasa \
+			--cov-report=xml \
+			--cov-branch \
+			$(ARGS)
+
 test-with-large-data: ## Run tests on large data set
 	poetry run \
 		pytest tests/acceptance_tests/large_data_tests/test_training_time.py \
@@ -239,7 +255,7 @@ test-nlu-predictors: test-marker  ## Run nlu predictors tests
 test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
 test-full-model-training: test-marker  ## Run full model training tests
 
-test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not category_builder_tests)
 test-other-unit-tests: test-marker  ## Run other unit tests
 
 test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)

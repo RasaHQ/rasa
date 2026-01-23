@@ -329,6 +329,7 @@ jobs:
       enterprise-search-policy-files: ${{ steps.filter.outputs.enterprise-search-policy-files }}
       channel-files: ${{ steps.filter.outputs.channel-files }}
       pii-management: ${{ steps.filter.outputs.pii-management }}
+      builder-files: ${{ steps.filter.outputs.builder-files }}
       # Integration test related outputs
       broker-files: ${{ steps.filter.outputs.broker-files }}
       poetry-dependency-updates: ${{ steps.filter.outputs.poetry-dependency-updates }}
@@ -2211,6 +2212,49 @@ jobs:
           path: |
             ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
+  test-builder:
+    name: Run Builder Tests
+    runs-on: warp-ubuntu-latest-x64-4x
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.builder-files == 'true') }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python-versions) }}
+    needs: [install-and-cache-rasa, check-code-changes]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+
+      - name: Test Code 🔍
+        env:
+          JOBS: logical
+          PYTHONUTF8: 1
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          INKEEP_API_KEY: ${{ secrets.INKEEP_API_KEY }}
+        run: make test-builder-tests
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Prepare test results
+        if: success() || failure()
+        run: |
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-test-builder-python-${{ matrix.python-version }}.xml
+
+      - name: Save Test Results
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: unit-tests-results-test-builder-python-${{ matrix.python-version }}
+          path: |
+            ${{ github.workspace }}/unit-tests-results-test-builder-python-${{ matrix.python-version }}.xml
+
   test-anonymization:
     name: Run Anonymization Unit Tests
     runs-on: warp-ubuntu-latest-x64-4x
@@ -2433,6 +2477,7 @@ jobs:
         unit-test-agents,
         unit-test-policies,
         voice-unit-tests,
+        test-builder,
         checkout-code-for-sonarscan,
       ]
       # We don't want to run the code quality checks on scheduled runs
@@ -2444,7 +2489,8 @@ jobs:
         needs.unit-test-nlu.result != 'skipped' ||
         needs.unit-test-agents.result != 'skipped' ||
         needs.unit-test-policies.result != 'skipped' ||
-        needs.voice-unit-tests.result != 'skipped'
+        needs.voice-unit-tests.result != 'skipped' ||
+        needs.test-builder.result != 'skipped'
       ) }}
     steps:
       - name: Restore checked-out code
@@ -2540,6 +2586,7 @@ jobs:
       - sonarqube
       - publish-test-results
       - clean-docker-image-artifact
+      - test-builder
     steps:
       - name: Block CI merge for Dependabot PRs
         if: ${{ inputs.pr-author == 'dependabot[bot]' }}

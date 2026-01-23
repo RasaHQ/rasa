@@ -1,0 +1,6 @@
+flows:
+  greet_user_flow:
+    description: Greet the user when they express a greeting such as 'hi', 'hello', or similar.
+    steps:
+    - action: utter_greet_user
+      next: END
