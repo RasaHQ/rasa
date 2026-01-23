@@ -230,13 +230,13 @@ class TestAgentCopilotMCPConnection:
 
         copilot = AgentCopilot()
 
-        # Mock MCPServerStreamableHttp
+        # Mock TracedMCPServerWrapper
         mock_server = MagicMock()
         mock_server.__aenter__ = AsyncMock(return_value=mock_server)
         mock_server.__aexit__ = AsyncMock(return_value=None)
 
         with patch(
-            "rasa.builder.copilot.agent_sdk.agent_copilot.MCPServerStreamableHttp",
+            "rasa.builder.copilot.agent_sdk.agent_copilot.TracedMCPServerWrapper",
             return_value=mock_server,
         ):
             async with copilot._create_mcp_server() as server:
@@ -249,12 +249,12 @@ class TestAgentCopilotMCPConnection:
 
         copilot = AgentCopilot()
 
-        # Mock MCPServerStreamableHttp to raise exception
+        # Mock TracedMCPServerWrapper to raise exception
         mock_server = MagicMock()
         mock_server.__aenter__ = AsyncMock(side_effect=Exception("Connection failed"))
 
         with patch(
-            "rasa.builder.copilot.agent_sdk.agent_copilot.MCPServerStreamableHttp",
+            "rasa.builder.copilot.agent_sdk.agent_copilot.TracedMCPServerWrapper",
             return_value=mock_server,
         ):
             with pytest.raises(Exception, match="Connection failed"):

@@ -11,7 +11,6 @@ from typing import Any, AsyncGenerator, Dict, List, Tuple
 
 import structlog
 from agents import Agent, ModelSettings, Runner, StreamEvent
-from agents.mcp import MCPServerStreamableHttp
 from jinja2 import Template
 
 from rasa.builder import config
@@ -41,6 +40,9 @@ from rasa.builder.copilot.response_handling.agent_copilot_response_handler impor
 from rasa.builder.copilot.response_handling.utils import is_response_completed_event
 from rasa.builder.telemetry.langfuse.agent_copilot_langfuse_telemetry import (
     AgentCopilotLangfuseTelemetry,
+)
+from rasa.builder.telemetry.langfuse.traced_mcp_server import (
+    TracedMCPServerWrapper,
 )
 from rasa.shared.constants import PACKAGE_NAME
 
@@ -103,22 +105,22 @@ class AgentCopilot(BaseCopilot):
         return self._usage_statistics
 
     @asynccontextmanager
-    async def _create_mcp_server(self) -> AsyncGenerator[MCPServerStreamableHttp, None]:
+    async def _create_mcp_server(self) -> AsyncGenerator[TracedMCPServerWrapper, None]:
         """Context manager to create and manage MCP server connection.
 
         Yields:
-            Connected MCPServerStreamableHttp instance
+            Connected TracedMCPServerWrapper instance with Langfuse tracing
         """
         mcp_url = f"http://{config.MCP_SERVER_HOST}:{config.MCP_SERVER_PORT}/mcp"
         structlogger.info(
             "agent_sdk.mcp_client.connecting",
-            event_info="Creating MCP client connection",
+            event_info="Creating traced MCP client connection",
             mcp_url=mcp_url,
             timeout=config.MCP_TOOL_CALL_TIMEOUT,
         )
 
         try:
-            async with MCPServerStreamableHttp(
+            async with TracedMCPServerWrapper(
                 name="Rasa MCP Server",
                 params={
                     "url": mcp_url,
@@ -130,12 +132,12 @@ class AgentCopilot(BaseCopilot):
             ) as server:
                 structlogger.info(
                     "agent_sdk.mcp_client.connected",
-                    event_info="MCP client connected successfully",
+                    event_info="Traced MCP client connected successfully",
                 )
                 yield server
                 structlogger.info(
                     "agent_sdk.mcp_client.disconnecting",
-                    event_info="Closing MCP client connection",
+                    event_info="Closing traced MCP client connection",
                 )
         except Exception as e:
             structlogger.error(
@@ -148,7 +150,7 @@ class AgentCopilot(BaseCopilot):
         finally:
             structlogger.info(
                 "agent_sdk.mcp_client.disconnected",
-                event_info="MCP client connection closed or errored",
+                event_info="Traced MCP client connection closed or errored",
             )
 
     @asynccontextmanager
