@@ -259,9 +259,7 @@ class LegacyCopilot(BaseCopilot):
             context.copilot_chat_history[:-1]
         )
 
-        latest_message = self._process_latest_message(
-            context.copilot_chat_history[-1], context, relevant_documents
-        )
+        latest_message = self._process_latest_message(context, relevant_documents)
         system_message = self._create_system_message()
 
         return [system_message, *past_messages, latest_message]
@@ -323,14 +321,12 @@ class LegacyCopilot(BaseCopilot):
 
     def _process_latest_message(
         self,
-        latest_message: Any,
         context: CopilotContext,
         relevant_documents: List[Document],
     ) -> Dict[str, Any]:
         """Process the latest message and convert it to OpenAI format.
 
         Args:
-            latest_message: The most recent message from the chat history.
             context: The copilot context containing conversation state.
             relevant_documents: List of relevant documents for context.
 
@@ -340,6 +336,8 @@ class LegacyCopilot(BaseCopilot):
         Raises:
             ValueError: If the message type is not supported.
         """
+        latest_message = context.get_last_request_message()
+
         if isinstance(latest_message, UserChatMessage):
             tracker_event_attachments = latest_message.get_content_blocks_by_type(
                 EventContent
@@ -355,6 +353,8 @@ class LegacyCopilot(BaseCopilot):
             )
             return latest_message.build_openai_message(prompt=rendered_prompt)
 
+        elif latest_message is None:
+            raise ValueError("No latest message found")
         else:
             raise ValueError(f"Unexpected message type: {type(latest_message)}")
 

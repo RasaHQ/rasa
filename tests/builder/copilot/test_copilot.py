@@ -324,7 +324,7 @@ class TestCopilotCore:
         # Given
         copilot = Copilot()
         context = CopilotContext(
-            copilot_chat_history=[],
+            copilot_chat_history=[message],
             assistant_logs="",
             assistant_files={},
             tracker_context=None,
@@ -333,9 +333,9 @@ class TestCopilotCore:
         # When / Then
         if raises_error:
             with pytest.raises(ValueError):
-                copilot._process_latest_message(message, context, [])
+                copilot._process_latest_message(context, [])
         else:
-            copilot._process_latest_message(message, context, [])
+            copilot._process_latest_message(context, [])
 
     def test_process_latest_message_internal_copilot_request_uses_training_error_prompt(
         self,
@@ -373,9 +373,7 @@ class TestCopilotCore:
         ]
 
         # When
-        result = copilot._process_latest_message(
-            context.copilot_chat_history[0], context, mock_documents
-        )
+        result = copilot._process_latest_message(context, mock_documents)
 
         # Then
         assert result["role"] == "user"

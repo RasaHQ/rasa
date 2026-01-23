@@ -10,10 +10,12 @@ to the full AgentCopilot, which uses AgentCopilotResponseHandler instead.
 
 import copy
 import importlib.resources
-from typing import AsyncIterator, List, Optional, Union
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, AsyncIterator, List, Optional, Union
 
+import openai
 import structlog
-from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionChunk
 
 from rasa.builder import config
 from rasa.builder.copilot.constants import (
@@ -78,7 +80,7 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
             Union[GeneratedContent, ControlledPredictionContent]
         ] = []
 
-        self._client = AsyncOpenAI()
+        self._client: Optional[openai.AsyncOpenAI] = None
 
         # Load prompt templates
         self._greeting_prompt = importlib.resources.read_text(
@@ -89,6 +91,18 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
             f"{PACKAGE_NAME}.{RESPONSE_HANDLER_PROMPTS_DIR}",
             GOODBYE_PROMPT_FILE,
         ).strip()
+
+    @asynccontextmanager
+    async def _get_client(self) -> AsyncGenerator[openai.AsyncOpenAI, None]:
+        """Get or lazy create OpenAI client with proper resource management."""
+        if self._client is None:
+            self._client = openai.AsyncOpenAI()
+
+        try:
+            yield self._client
+        except Exception as e:
+            structlogger.error("response_handler.llm_client_error", error=str(e))
+            raise
 
     async def _stream_llm_response(
         self,
@@ -110,17 +124,7 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
         """
         accumulated_text = ""
         try:
-            stream = await self._client.chat.completions.create(
-                model=config.ORCHESTRATOR_MODEL,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": self._user_message},
-                ],
-                max_tokens=max_tokens,
-                temperature=0.7,
-                stream=True,
-                stream_options={"include_usage": True},
-            )
+            stream = await self._call_llm(system_prompt, self._user_message, max_tokens)
 
             async for chunk in stream:
                 # Extract usage statistics from the final chunk
@@ -181,6 +185,35 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
             )
             self._generated_responses.append(fallback_content)
             yield fallback_content
+
+    async def _call_llm(
+        self,
+        system_prompt: str,
+        user_message: str,
+        max_tokens: int,
+    ) -> AsyncIterator[ChatCompletionChunk]:
+        """Call the LLM with the given messages.
+
+        Args:
+            system_prompt: The system prompt to use.
+            user_message: The user's message.
+            max_tokens: The maximum tokens for the response.
+
+        Returns:
+            The AsyncIterator of ChatCompletionChunk objects from the LLM.
+        """
+        async with self._get_client() as client:
+            return await client.chat.completions.create(
+                model=config.ORCHESTRATOR_MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message},
+                ],
+                max_tokens=max_tokens,
+                temperature=0.7,
+                stream=True,
+                stream_options={"include_usage": True},
+            )
 
     async def _stream_greeting(self) -> AsyncIterator[GeneratedContent]:
         """Stream a greeting response matching user's tone."""

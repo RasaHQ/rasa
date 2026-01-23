@@ -1,12 +1,19 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import openai
 import pytest
 
 from rasa.builder.copilot.message_classifier.message_classifier import (
     MessageClassifier,
 )
 from rasa.builder.copilot.message_classifier.models import MessageClassifierResult
-from rasa.builder.copilot.models import ResponseCategory, UsageStatistics
+from rasa.builder.copilot.models import (
+    CopilotContext,
+    ResponseCategory,
+    TextContent,
+    UsageStatistics,
+    UserChatMessage,
+)
 
 
 def _create_mock_response(content: str, prompt_tokens: int = 10) -> MagicMock:
@@ -20,124 +27,149 @@ def _create_mock_response(content: str, prompt_tokens: int = 10) -> MagicMock:
     return mock_response
 
 
-@pytest.fixture
-def classifier(monkeypatch):
-    mock_client = MagicMock()
-    monkeypatch.setattr(
-        "rasa.builder.copilot.message_classifier.message_classifier.AsyncOpenAI",
-        lambda: mock_client,
+@pytest.fixture(autouse=True)
+@patch.object(MessageClassifier, "_get_client")
+def classifier(mock_get_client):
+    mock_client = AsyncMock(spec=openai.AsyncOpenAI)
+    mock_get_client.return_value = AsyncMock()
+    mock_get_client.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_get_client.return_value.__aexit__ = AsyncMock(return_value=None)
+
+
+def _create_context_with_message(message_text: str) -> CopilotContext:
+    """Helper to create a CopilotContext with a user message."""
+    return CopilotContext(
+        copilot_chat_history=[
+            UserChatMessage(
+                role="user",
+                content=[TextContent(type="text", text=message_text)],
+            )
+        ],
+        assistant_logs="",
+        assistant_files={},
+        tracker_context=None,
     )
-    return MessageClassifier()
 
 
 class TestMessageClassifier:
     @pytest.mark.asyncio
-    async def test_classify_greeting(self, classifier: MessageClassifier):
-        classifier._client.chat.completions.create = AsyncMock(
-            return_value=_create_mock_response("[GREETING_DETECTION]")
-        )
+    @pytest.mark.parametrize(
+        "response_content,message_text,expected_category,prompt_tokens,should_error",
+        [
+            (
+                "[GREETING_DETECTION]",
+                "hi",
+                ResponseCategory.GREETING_DETECTION,
+                10,
+                False,
+            ),
+            (
+                "[GOODBYE_DETECTION]",
+                "bye",
+                ResponseCategory.GOODBYE_DETECTION,
+                10,
+                False,
+            ),
+            (
+                "[COPILOT]",
+                "How do I create a flow?",
+                ResponseCategory.COPILOT,
+                20,
+                False,
+            ),
+            (
+                "[OUT_OF_SCOPE_DETECTION]",
+                "What's the weather?",
+                ResponseCategory.OUT_OF_SCOPE_DETECTION,
+                15,
+                False,
+            ),
+            (
+                "[ROLEPLAY_DETECTION]",
+                "I want to book a flight",
+                ResponseCategory.ROLEPLAY_DETECTION,
+                12,
+                False,
+            ),
+            (
+                "[UNCLEAR_INPUT_DETECTION]",
+                "asdfkjh",
+                ResponseCategory.UNCLEAR_INPUT_DETECTION,
+                12,
+                False,
+            ),
+            (
+                "[KNOWLEDGE_BASE_ACCESS_REQUESTED]",
+                "Show me the knowledge base",
+                ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
+                15,
+                False,
+            ),
+            (
+                "I think this is a greeting",
+                "hi",
+                ResponseCategory.COPILOT,
+                10,
+                False,
+            ),  # Fallback on parse error
+            (
+                None,
+                "hi",
+                ResponseCategory.COPILOT,
+                0,
+                True,
+            ),  # Error handling
+        ],
+    )
+    @patch.object(MessageClassifier, "_call_llm")
+    async def test_classify(
+        self,
+        mock_call_llm: AsyncMock,
+        response_content: str | None,
+        message_text: str,
+        expected_category: ResponseCategory,
+        prompt_tokens: int,
+        should_error: bool,
+    ):
+        if should_error:
+            mock_call_llm.side_effect = Exception("API Error")
+        else:
+            mock_call_llm.return_value = _create_mock_response(
+                response_content, prompt_tokens=prompt_tokens
+            )
 
-        result = await classifier.classify("hi")
+        classifier = MessageClassifier()
+        context = _create_context_with_message(message_text)
+        result = await classifier.classify(context)
 
         assert isinstance(result, MessageClassifierResult)
-        assert result.category == ResponseCategory.GREETING_DETECTION
+        assert result.category == expected_category
         assert isinstance(result.classification_usage, UsageStatistics)
-        assert result.classification_usage.prompt_tokens == 10
-        assert result.classification_usage.completion_tokens == 5
-
-    @pytest.mark.asyncio
-    async def test_classify_goodbye(self, classifier: MessageClassifier):
-        classifier._client.chat.completions.create = AsyncMock(
-            return_value=_create_mock_response("[GOODBYE_DETECTION]")
-        )
-        result = await classifier.classify("bye")
-        assert result.category == ResponseCategory.GOODBYE_DETECTION
-
-    @pytest.mark.asyncio
-    async def test_classify_copilot(self, classifier: MessageClassifier):
-        classifier._client.chat.completions.create = AsyncMock(
-            return_value=_create_mock_response("[COPILOT]", prompt_tokens=20)
-        )
-        result = await classifier.classify("How do I create a flow?")
-        assert result.category == ResponseCategory.COPILOT
-
-    @pytest.mark.asyncio
-    async def test_classify_out_of_scope(self, classifier: MessageClassifier):
-        classifier._client.chat.completions.create = AsyncMock(
-            return_value=_create_mock_response(
-                "[OUT_OF_SCOPE_DETECTION]", prompt_tokens=15
-            )
-        )
-        result = await classifier.classify("What's the weather?")
-        assert result.category == ResponseCategory.OUT_OF_SCOPE_DETECTION
-
-    @pytest.mark.asyncio
-    async def test_classify_roleplay(self, classifier: MessageClassifier):
-        classifier._client.chat.completions.create = AsyncMock(
-            return_value=_create_mock_response("[ROLEPLAY_DETECTION]", prompt_tokens=12)
-        )
-        result = await classifier.classify("I want to book a flight")
-        assert result.category == ResponseCategory.ROLEPLAY_DETECTION
-
-    @pytest.mark.asyncio
-    async def test_classify_unclear_input(self, classifier: MessageClassifier):
-        classifier._client.chat.completions.create = AsyncMock(
-            return_value=_create_mock_response(
-                "[UNCLEAR_INPUT_DETECTION]", prompt_tokens=12
-            )
-        )
-        result = await classifier.classify("asdfkjh")
-        assert result.category == ResponseCategory.UNCLEAR_INPUT_DETECTION
-
-    @pytest.mark.asyncio
-    async def test_classify_knowledge_base_request(self, classifier: MessageClassifier):
-        classifier._client.chat.completions.create = AsyncMock(
-            return_value=_create_mock_response(
-                "[KNOWLEDGE_BASE_ACCESS_REQUESTED]", prompt_tokens=15
-            )
-        )
-        result = await classifier.classify("Show me the knowledge base")
-        assert result.category == ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED
-
-    @pytest.mark.asyncio
-    async def test_classify_fallback_on_parse_error(
-        self, classifier: MessageClassifier
-    ):
-        classifier._client.chat.completions.create = AsyncMock(
-            return_value=_create_mock_response("I think this is a greeting")
+        assert result.classification_usage.prompt_tokens == prompt_tokens
+        assert result.classification_usage.completion_tokens == (
+            0 if should_error else 5
         )
 
-        result = await classifier.classify("hi")
+    @pytest.mark.parametrize(
+        "token,expected_category",
+        [
+            # Valid tokens
+            *[
+                (f"[{category.value.upper()}]", category)
+                for category in MessageClassifier.CLASSIFIER_CATEGORIES
+            ],
+            # Invalid tokens
+            ("invalid response", ResponseCategory.COPILOT),
+            ("", ResponseCategory.COPILOT),
+            ("[UNKNOWN_TOKEN]", ResponseCategory.COPILOT),
+        ],
+    )
+    def test_parse_category(self, token: str, expected_category: ResponseCategory):
+        classifier = MessageClassifier()
+        assert classifier._parse_category(token) == expected_category
 
-        # Should default to COPILOT when can't parse
-        assert result.category == ResponseCategory.COPILOT
-
-    @pytest.mark.asyncio
-    async def test_classify_error_handling(self, classifier: MessageClassifier):
-        classifier._client.chat.completions.create = AsyncMock(
-            side_effect=Exception("API Error")
-        )
-
-        result = await classifier.classify("hi")
-
-        # Should return COPILOT as fallback on error
-        assert result.category == ResponseCategory.COPILOT
-        assert result.classification_usage.prompt_tokens == 0
-        assert result.classification_usage.completion_tokens == 0
-
-    def test_parse_category_valid_tokens(self, classifier: MessageClassifier):
-        for category in MessageClassifier.CLASSIFIER_CATEGORIES:
-            token = f"[{category.value.upper()}]"
-            assert classifier._parse_category(token) == category
-
-    def test_parse_category_invalid_token(self, classifier: MessageClassifier):
-        assert (
-            classifier._parse_category("invalid response") == ResponseCategory.COPILOT
-        )
-        assert classifier._parse_category("") == ResponseCategory.COPILOT
-        assert classifier._parse_category("[UNKNOWN_TOKEN]") == ResponseCategory.COPILOT
-
-    def test_classifier_categories_defined(self, classifier: MessageClassifier):
+    def test_classifier_categories_defined(self):
+        classifier = MessageClassifier()
         expected_categories = {
             ResponseCategory.GREETING_DETECTION,
             ResponseCategory.GOODBYE_DETECTION,
@@ -150,7 +182,8 @@ class TestMessageClassifier:
 
         assert set(classifier.CLASSIFIER_CATEGORIES) == expected_categories
 
-    def test_token_to_category_mapping(self, classifier: MessageClassifier):
+    def test_token_to_category_mapping(self):
+        classifier = MessageClassifier()
         for category in MessageClassifier.CLASSIFIER_CATEGORIES:
             token = f"[{category.value.upper()}]"
             assert classifier.TOKEN_TO_CATEGORY[token] == category

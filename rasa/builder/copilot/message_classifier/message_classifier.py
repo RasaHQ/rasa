@@ -11,11 +11,13 @@ Benefits:
 
 import importlib.resources
 import re
-from typing import ClassVar, Dict, List
+from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator, ClassVar, Dict, List, Optional
 
+import openai
 import structlog
 from jinja2 import Template
-from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletion
 
 from rasa.builder import config
 from rasa.builder.copilot.constants import (
@@ -23,7 +25,14 @@ from rasa.builder.copilot.constants import (
     MESSAGE_CLASSIFIER_PROMPTS_DIR,
 )
 from rasa.builder.copilot.message_classifier.models import MessageClassifierResult
-from rasa.builder.copilot.models import ResponseCategory, UsageStatistics
+from rasa.builder.copilot.models import (
+    ChatMessage,
+    CopilotContext,
+    CopilotSystemMessage,
+    ResponseCategory,
+    UsageStatistics,
+)
+from rasa.builder.copilot.utils import filter_chat_history_messages
 from rasa.shared.constants import PACKAGE_NAME
 
 structlogger = structlog.get_logger()
@@ -59,9 +68,16 @@ class MessageClassifier:
         f"[{category.value.upper()}]": category for category in CLASSIFIER_CATEGORIES
     }
 
-    def __init__(self) -> None:
-        self._client = AsyncOpenAI()
+    def __init__(self, chat_history_size: Optional[int] = None) -> None:
+        """Initialize the MessageClassifier.
+
+        Args:
+            chat_history_size: Maximum number of chat history messages to include.
+                If None, uses all of the chat history.
+        """
+        self._client: Optional[openai.AsyncOpenAI] = None
         self._prompt_template = self._load_prompt_template()
+        self._chat_history_size = chat_history_size
 
     @staticmethod
     def _load_prompt_template() -> Template:
@@ -76,32 +92,38 @@ class MessageClassifier:
         )
         return Template(template_content)
 
-    async def classify(self, user_message: str) -> MessageClassifierResult:
+    @asynccontextmanager
+    async def _get_client(self) -> AsyncGenerator[openai.AsyncOpenAI, None]:
+        """Get or lazy create OpenAI client with proper resource management."""
+        if self._client is None:
+            self._client = openai.AsyncOpenAI()
+
+        try:
+            yield self._client
+        except Exception as e:
+            structlogger.error("classifier.llm_client_error", error=str(e))
+            raise
+
+    async def classify(self, context: CopilotContext) -> MessageClassifierResult:
         """Classify a user message and decide how to handle it.
 
         Args:
-            user_message: The user's message to classify.
+            context: The copilot context containing conversation history.
 
         Returns:
             MessageClassifierResult with the decision category and usage stats.
         """
-        prompt = self._prompt_template.render(user_message=user_message)
-
-        structlogger.debug(
-            "classifier.classify.start",
-            event_info="Starting orchestrator classification",
-            message_preview=user_message[:100],
-        )
+        # Build messages: system, chat_history, latest user message
+        messages = await self._build_messages(context)
 
         try:
-            response = await self._client.chat.completions.create(
-                model=config.ORCHESTRATOR_MODEL,
-                messages=[
-                    {"role": "system", "content": prompt},
-                ],
-                max_tokens=50,  # Classifications are short
-                temperature=0,  # Deterministic classification
-            )
+            # If messages list is empty, raise ValueError to trigger fallback to copilot
+            if not messages:
+                raise ValueError(
+                    "MessageClassifier._build_messages returned empty list"
+                )
+
+            response = await self._call_llm(messages)
 
             raw_response = (response.choices[0].message.content or "").strip()
             category = self._parse_category(raw_response)
@@ -153,6 +175,91 @@ class MessageClassifier:
                 ),
             )
 
+    async def _call_llm(self, messages: List[Dict[str, Any]]) -> ChatCompletion:
+        """Call the LLM with the given messages.
+
+        Args:
+            messages: The messages to call the LLM with.
+
+        Returns:
+            The ChatCompletion response from the LLM.
+        """
+        async with self._get_client() as client:
+            return await client.chat.completions.create(
+                model=config.ORCHESTRATOR_MODEL,
+                messages=messages,
+                max_tokens=50,  # Classifications are short
+                temperature=0,  # Deterministic classification
+            )
+
+    async def _build_messages(
+        self,
+        context: CopilotContext,
+    ) -> List[Dict[str, Any]]:
+        """Build the complete message list for the OpenAI API.
+
+        Args:
+            context: The context of the copilot.
+
+        Returns:
+            A list of messages in OpenAI format.
+        """
+        if not context.copilot_chat_history:
+            return []
+
+        latest_user_message = context.get_last_user_message()
+        if not latest_user_message:
+            return []
+
+        # Render the system prompt and convert it to OpenAI format
+        system_message = self._create_system_message()
+
+        # Get chat history (excluding the latest message)
+        # Filter chat history messages and convert to OpenAI format (excluding the
+        # latest message)
+        chat_history = context.copilot_chat_history[:-1]
+        chat_history_messages = self._create_chat_history_messages(chat_history)
+
+        return [
+            system_message,
+            *chat_history_messages,
+            latest_user_message.build_openai_message(),
+        ]
+
+    def _create_system_message(self) -> Dict[str, Any]:
+        """Render the system prompt for the classification LLM.
+
+        Returns:
+            System prompt in string format.
+        """
+        system_prompt = self._prompt_template.render()
+        return CopilotSystemMessage().build_openai_message(prompt=system_prompt)
+
+    def _create_chat_history_messages(
+        self, chat_history: List[ChatMessage]
+    ) -> List[Dict[str, Any]]:
+        """Filter and convert past messages to OpenAI format.
+
+        Excludes guardrails policy violations and non-user/copilot messages. The chat
+        history is limited to the configured size.
+
+        Args:
+            chat_history: List of chat messages to filter and convert.
+
+        Returns:
+            List of messages in OpenAI format
+        """
+        filtered_messages = filter_chat_history_messages(
+            chat_history,
+            excluded_response_categories=[ResponseCategory.GUARDRAILS_POLICY_VIOLATION],
+        )
+
+        # Limit chat history to configured size (get last N messages)
+        if self._chat_history_size is not None and self._chat_history_size > 0:
+            filtered_messages = filtered_messages[-self._chat_history_size :]
+
+        return [message.build_openai_message() for message in filtered_messages]
+
     def _parse_category(self, raw_response: str) -> ResponseCategory:
         """Parse the LLM response into a ResponseCategory.
 
@@ -175,6 +282,3 @@ class MessageClassifier:
             raw_response=raw_response,
         )
         return ResponseCategory.COPILOT
-
-
-# Singleton orchestrator instance (lazy initialization)

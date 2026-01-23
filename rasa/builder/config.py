@@ -17,6 +17,9 @@ OPENAI_TIMEOUT = int(os.getenv("OPENAI_TIMEOUT", "30"))
 # Orchestrator Configuration
 ORCHESTRATOR_ENABLED = os.getenv("ORCHESTRATOR_ENABLED", "true").lower() == "true"
 ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "gpt-4o-mini")
+MESSAGE_CLASSIFIER_CHAT_HISTORY_SIZE = int(
+    os.getenv("MESSAGE_CLASSIFIER_CHAT_HISTORY_SIZE", "5")
+)
 
 # Copilot Agent Configuration
 COPILOT_MAX_AGENT_STEPS = int(os.getenv("COPILOT_MAX_AGENT_STEPS", "50"))

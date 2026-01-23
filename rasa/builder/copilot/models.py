@@ -485,6 +485,50 @@ class CopilotContext(BaseModel):
 
         arbitrary_types_allowed = True
 
+    def get_last_user_message(self) -> Optional[UserChatMessage]:
+        """Get the last user message from the chat history if available.
+
+        The method will return the last message if it is a UserChatMessage, otherwise
+        it will return None.
+        """
+        if not self.copilot_chat_history:
+            return None
+
+        last_message = self.copilot_chat_history[-1]
+        if isinstance(last_message, UserChatMessage):
+            return last_message
+
+        return None
+
+    def get_last_request_message(
+        self,
+    ) -> Optional[Union[UserChatMessage, InternalCopilotRequestChatMessage]]:
+        """Get the last request message from the chat history if available.
+
+        The method will return the last message if it is either a UserChatMessage or
+        an InternalCopilotRequestChatMessage (both are request messages, not responses).
+        Otherwise it will return None.
+
+        Returns:
+            The last request message (UserChatMessage or
+            InternalCopilotRequestChatMessage), or None if the last message is not a
+            request message.
+        """
+        if not self.copilot_chat_history:
+            return None
+
+        last_message = self.copilot_chat_history[-1]
+        if isinstance(
+            last_message,
+            (
+                UserChatMessage,
+                InternalCopilotRequestChatMessage,
+            ),
+        ):
+            return last_message
+
+        return None
+
 
 class CopilotTurnRequest(BaseModel):
     """Request model for a single copilot turn.

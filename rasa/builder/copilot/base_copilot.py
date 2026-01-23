@@ -2,10 +2,6 @@ import json
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
-from rasa.builder.copilot.constants import (
-    ROLE_COPILOT,
-    ROLE_USER,
-)
 from rasa.builder.copilot.models import (
     ChatMessage,
     CopilotChatMessage,
@@ -17,6 +13,7 @@ from rasa.builder.copilot.models import (
     UsageStatistics,
     UserChatMessage,
 )
+from rasa.builder.copilot.utils import filter_chat_history_messages
 from rasa.builder.document_retrieval.models import Document
 from rasa.builder.shared.tracker_context import TrackerContext
 
@@ -89,16 +86,10 @@ class BaseCopilot(ABC):
         Returns:
             List of messages in OpenAI format
         """
-        filtered_messages = []
-
-        for message in chat_history:
-            if (
-                message.response_category
-                != ResponseCategory.GUARDRAILS_POLICY_VIOLATION
-                and message.role in [ROLE_USER, ROLE_COPILOT]
-            ):
-                filtered_messages.append(message)
-
+        filtered_messages = filter_chat_history_messages(
+            chat_history,
+            excluded_response_categories=[ResponseCategory.GUARDRAILS_POLICY_VIOLATION],
+        )
         return [message.build_openai_message() for message in filtered_messages]
 
     @staticmethod

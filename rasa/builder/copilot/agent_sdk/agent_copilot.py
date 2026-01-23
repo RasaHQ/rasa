@@ -44,7 +44,7 @@ from rasa.builder.telemetry.langfuse.agent_copilot_langfuse_telemetry import (
 from rasa.builder.telemetry.langfuse.traced_mcp_server import (
     TracedMCPServerWrapper,
 )
-from rasa.shared.constants import PACKAGE_NAME
+from rasa.shared.constants import PACKAGE_NAME, ROLE_SYSTEM, ROLE_USER
 
 structlogger = structlog.get_logger()
 
@@ -188,11 +188,8 @@ class AgentCopilot(BaseCopilot):
 
     def _get_last_user_message(self, context: CopilotContext) -> str:
         """Get the last user message from the context."""
-        if not context.copilot_chat_history:
-            return ""
-        last_message = context.copilot_chat_history[-1]
-        if hasattr(last_message, "get_flattened_text_content"):
-            return last_message.get_flattened_text_content()
+        if (last_user_message := context.get_last_user_message()) is not None:
+            return last_user_message.get_flattened_text_content()
         return ""
 
     def _get_tracker_event_attachments(
@@ -225,18 +222,18 @@ class AgentCopilot(BaseCopilot):
         # Render system prompt
         system_prompt = self._system_message_prompt_template.render()
 
-        # Get the user's message
-        user_message = self._get_last_user_message(context)
-        tracker_event_attachments = self._get_tracker_event_attachments(context)
-
+        # Build the messages in the format expected by the OpenAI API.
         messages = await self._build_messages(context)
 
         # Create generation context for telemetry/tracking
         generation_context = CopilotGenerationContext(
-            system_message={"role": "system", "content": system_prompt},
+            system_message={"role": ROLE_SYSTEM, "content": system_prompt},
             chat_history=messages[:-1],
-            last_user_message={"role": "user", "content": user_message},
-            tracker_event_attachments=tracker_event_attachments,
+            last_user_message={
+                "role": ROLE_USER,
+                "content": self._get_last_user_message(context),
+            },
+            tracker_event_attachments=self._get_tracker_event_attachments(context),
         )
 
         copilot_response_handler = AgentCopilotResponseHandler(

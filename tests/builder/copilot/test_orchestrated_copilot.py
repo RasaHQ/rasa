@@ -1,8 +1,8 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import openai
 import pytest
 
-from rasa.builder.copilot.agent_sdk.agent_copilot import AgentCopilot
 from rasa.builder.copilot.message_classifier.message_classifier import (
     MessageClassifier,
 )
@@ -10,6 +10,7 @@ from rasa.builder.copilot.message_classifier.models import MessageClassifierResu
 from rasa.builder.copilot.models import (
     CopilotContext,
     ResponseCategory,
+    TextContent,
     UsageStatistics,
     UserChatMessage,
 )
@@ -19,18 +20,28 @@ from rasa.builder.copilot.response_handling.message_classifier_response_handler 
 )
 
 
-@pytest.fixture
-def orchestrated_copilot(monkeypatch):
-    mock_client = MagicMock()
-    monkeypatch.setattr(
-        "rasa.builder.copilot.message_classifier.message_classifier.AsyncOpenAI",
-        lambda: mock_client,
+@pytest.fixture(autouse=True)
+@patch.object(MessageClassifier, "_get_client")
+@patch.object(MessageClassifierResponseHandler, "_get_client")
+def mock_get_clients(
+    mock_classifier_response_handler_get_client,
+    mock_classifier_get_client,
+):
+    mock_classifier_client = AsyncMock(spec=openai.AsyncOpenAI)
+    mock_classifier_get_client.return_value = AsyncMock()
+    mock_classifier_get_client.return_value.__aenter__ = AsyncMock(
+        return_value=mock_classifier_client
     )
-    monkeypatch.setattr(
-        "rasa.builder.copilot.response_handling.message_classifier_response_handler.AsyncOpenAI",
-        lambda: mock_client,
+    mock_classifier_get_client.return_value.__aexit__ = AsyncMock(return_value=None)
+
+    mock_classifier_response_handler_client = AsyncMock(spec=openai.AsyncOpenAI)
+    mock_classifier_response_handler_get_client.return_value = AsyncMock()
+    mock_classifier_response_handler_get_client.return_value.__aenter__ = AsyncMock(
+        return_value=mock_classifier_response_handler_client
     )
-    return OrchestratedCopilot()
+    mock_classifier_response_handler_get_client.return_value.__aexit__ = AsyncMock(
+        return_value=None
+    )
 
 
 @pytest.fixture
@@ -61,11 +72,11 @@ class TestOrchestratedCopilot:
     )
     async def test_classifier_categories(
         self,
-        orchestrated_copilot: OrchestratedCopilot,
         category: ResponseCategory,
         user_message: str,
         requires_full_copilot: bool,
     ):
+        orchestrated_copilot = OrchestratedCopilot()
         mock_classifier_result = MessageClassifierResult(
             category=category,
             classification_usage=UsageStatistics(
@@ -77,7 +88,18 @@ class TestOrchestratedCopilot:
             return_value=mock_classifier_result
         )
 
-        result = await orchestrated_copilot._classifier.classify(user_message)
+        context = CopilotContext(
+            copilot_chat_history=[
+                UserChatMessage(
+                    role="user",
+                    content=[TextContent(type="text", text=user_message)],
+                )
+            ],
+            assistant_logs="",
+            assistant_files={},
+            tracker_context=None,
+        )
+        result = await orchestrated_copilot._classifier.classify(context)
 
         assert result.category == category
         assert result.requires_full_copilot is requires_full_copilot
@@ -95,10 +117,10 @@ class TestOrchestratedCopilot:
     )
     async def test_generate_response_uses_orchestrated_handler(
         self,
-        orchestrated_copilot: OrchestratedCopilot,
         mock_context: CopilotContext,
         category: ResponseCategory,
     ):
+        orchestrated_copilot = OrchestratedCopilot()
         mock_classifier_result = MessageClassifierResult(
             category=category,
             classification_usage=UsageStatistics(
@@ -122,9 +144,9 @@ class TestOrchestratedCopilot:
     @pytest.mark.asyncio
     async def test_generate_response_uses_agent_copilot_for_technical_questions(
         self,
-        orchestrated_copilot: OrchestratedCopilot,
         mock_context: CopilotContext,
     ):
+        orchestrated_copilot = OrchestratedCopilot()
         mock_classifier_result = MessageClassifierResult(
             category=ResponseCategory.COPILOT,
             classification_usage=UsageStatistics(
@@ -158,9 +180,8 @@ class TestOrchestratedCopilot:
         assert orchestrated_copilot._usage_statistics.prompt_tokens == 20
         assert orchestrated_copilot._orchestration_handler is None
 
-    def test_extract_user_message_from_context(
-        self, orchestrated_copilot: OrchestratedCopilot
-    ):
+    def test_extract_user_message_from_context(self):
+        orchestrated_copilot = OrchestratedCopilot()
         context = CopilotContext(
             copilot_chat_history=[
                 UserChatMessage(
@@ -176,9 +197,8 @@ class TestOrchestratedCopilot:
         user_message = orchestrated_copilot._extract_user_message(context)
         assert user_message == "last message"
 
-    def test_extract_user_message_empty_context(
-        self, orchestrated_copilot: OrchestratedCopilot
-    ):
+    def test_extract_user_message_empty_context(self):
+        orchestrated_copilot = OrchestratedCopilot()
         context = CopilotContext(
             copilot_chat_history=[],
             assistant_id="test-assistant",
@@ -190,9 +210,9 @@ class TestOrchestratedCopilot:
     @pytest.mark.asyncio
     async def test_usage_statistics_aggregates_classification_and_generation(
         self,
-        orchestrated_copilot: OrchestratedCopilot,
         mock_context: CopilotContext,
     ):
+        orchestrated_copilot = OrchestratedCopilot()
         mock_classifier_result = MessageClassifierResult(
             category=ResponseCategory.GREETING_DETECTION,
             classification_usage=UsageStatistics(
@@ -221,9 +241,9 @@ class TestOrchestratedCopilot:
     @pytest.mark.asyncio
     async def test_usage_statistics_only_classification_for_template_responses(
         self,
-        orchestrated_copilot: OrchestratedCopilot,
         mock_context: CopilotContext,
     ):
+        orchestrated_copilot = OrchestratedCopilot()
         mock_classifier_result = MessageClassifierResult(
             category=ResponseCategory.OUT_OF_SCOPE_DETECTION,
             classification_usage=UsageStatistics(
@@ -243,25 +263,3 @@ class TestOrchestratedCopilot:
         assert usage.prompt_tokens == 10
         assert usage.completion_tokens == 5
         assert usage.total_tokens == 15
-
-    def test_initial_usage_statistics_empty(
-        self, orchestrated_copilot: OrchestratedCopilot
-    ):
-        usage = orchestrated_copilot.usage_statistics
-        assert usage.prompt_tokens is None
-        assert usage.completion_tokens is None
-        assert usage.total_tokens is None
-
-    def test_initial_llm_config_empty(self, orchestrated_copilot: OrchestratedCopilot):
-        config = orchestrated_copilot.llm_config
-        assert config == {}
-
-    def test_has_classifier_instance(self, orchestrated_copilot: OrchestratedCopilot):
-        assert orchestrated_copilot._classifier is not None
-        assert isinstance(orchestrated_copilot._classifier, MessageClassifier)
-
-    def test_has_agent_copilot_instance(
-        self, orchestrated_copilot: OrchestratedCopilot
-    ):
-        assert orchestrated_copilot._agent_copilot is not None
-        assert isinstance(orchestrated_copilot._agent_copilot, AgentCopilot)

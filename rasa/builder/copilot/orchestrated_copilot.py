@@ -43,7 +43,9 @@ class OrchestratedCopilot(BaseCopilot):
 
     def __init__(self) -> None:
         super().__init__()
-        self._classifier = MessageClassifier()
+        self._classifier = MessageClassifier(
+            chat_history_size=config.MESSAGE_CLASSIFIER_CHAT_HISTORY_SIZE,
+        )
         self._agent_copilot = AgentCopilot()
         self._usage_statistics: Optional[UsageStatistics] = None
         self._llm_config: Optional[Dict[str, Any]] = None
@@ -130,7 +132,7 @@ class OrchestratedCopilot(BaseCopilot):
             Tuple of (response handler, generation context).
         """
         user_message = self._extract_user_message(context)
-        classifier_result = await self._classifier.classify(user_message)
+        classifier_result = await self._classifier.classify(context)
 
         if classifier_result.requires_full_copilot:
             return await self._handle_full_copilot(context)
