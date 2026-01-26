@@ -28,7 +28,7 @@ services:
 
   # Redis Cluster - minimum 3 nodes for proper cluster
   redis-cluster:
-    image: grokzen/redis-cluster:6.2.0
+    image: grokzen/redis-cluster:6.2.0 # alternatively use neohq/redis-cluster:7.2.5 for ARM architecture support
     container_name: redis-cluster
     ports:
       - 7000-7005:7000-7005

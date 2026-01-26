@@ -25,7 +25,14 @@ from rasa.utils.endpoints import EndpointConfig
 from tests.core.conftest import MockedMongoTrackerStore
 from tests.core.tracker_stores.conftest import (
     _saved_tracker_with_multiple_session_starts,
+    assert_all_trackers_have_user_id,
+    assert_tracker_has_user_id,
+    create_multiple_trackers_with_user_id,
     create_tracker_with_partially_saved_events,
+    create_tracker_with_user_id,
+    create_trackers_with_same_timestamp,
+    old_tracker_gets_timestamp_on_save,
+    old_tracker_gets_timestamp_on_update,
     prepare_token_serialisation,
 )
 from tests.utilities import filter_logs
@@ -93,10 +100,10 @@ def test_current_state_without_events(domain: Domain):
 
 
 def test_mongo_tracker_store_with_token_serialisation(
-    domain: Domain, response_selector_agent: Agent
+    domain: Domain, flow_policy_bot_agent: Agent
 ):
     tracker_store = MockedMongoTrackerStore(domain)
-    prepare_token_serialisation(tracker_store, response_selector_agent, "mongo")
+    prepare_token_serialisation(tracker_store, flow_policy_bot_agent, "mongo")
 
 
 async def test_mongo_tracker_store_retrieve_full_tracker(
@@ -413,3 +420,351 @@ async def test_mongo_tracker_store_save_appends_events_preserves_user_id(
     retrieved = await tracker_store.retrieve(DEFAULT_SENDER_ID)
     assert retrieved is not None
     assert retrieved.user_id == user_id
+
+
+@pytest.mark.asyncio
+async def test_mongo_tracker_store_get_trackers_by_user_id(domain: Domain) -> None:
+    """Test get_trackers_by_user_id filters by user_id correctly."""
+    # Given
+    user_id = DEFAULT_USER_ID
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    # Create trackers with user_id
+    await create_tracker_with_user_id(tracker_store, "sender1", user_id)
+    await create_tracker_with_user_id(
+        tracker_store, "sender2", user_id, [SessionStarted(), UserUttered("hi")]
+    )
+
+    # Create tracker with different user_id
+    await create_tracker_with_user_id(
+        tracker_store, "sender3", "user_456", [SessionStarted(), UserUttered("hey")]
+    )
+
+    # Create tracker without user_id
+    await create_tracker_with_user_id(
+        tracker_store, "sender4", None, [SessionStarted(), UserUttered("ho")]
+    )
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 2
+    sender_ids = {tracker.sender_id for tracker in trackers}
+    assert "sender1" in sender_ids
+    assert "sender2" in sender_ids
+    assert "sender3" not in sender_ids
+    assert "sender4" not in sender_ids
+
+    # Verify all trackers have correct user_id
+    for tracker in trackers:
+        assert tracker.user_id == user_id
+
+
+@pytest.mark.asyncio
+async def test_mongo_tracker_store_get_trackers_by_user_id_no_matches(
+    domain: Domain,
+) -> None:
+    """Test get_trackers_by_user_id returns empty list when no trackers match."""
+    # Given
+    user_id = DEFAULT_USER_ID
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    # Create tracker with different user_id
+    await create_tracker_with_user_id(tracker_store, "sender1", "user_456")
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 0
+
+
+@pytest.mark.asyncio
+async def test_mongo_tracker_store_get_trackers_by_user_id_filters_no_user_id(
+    domain: Domain,
+) -> None:
+    """Test get_trackers_by_user_id filters out trackers without user_id."""
+    # Given
+    user_id = DEFAULT_USER_ID
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    # Create tracker with user_id
+    await create_tracker_with_user_id(tracker_store, "sender1", user_id)
+
+    # Create tracker without user_id
+    await create_tracker_with_user_id(
+        tracker_store, "sender2", None, [SessionStarted(), UserUttered("hi")]
+    )
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 1
+    assert_tracker_has_user_id(trackers[0], "sender1", user_id)
+
+
+@pytest.mark.asyncio
+async def test_mongo_tracker_store_get_trackers_by_user_id_save_sets_user_id(
+    domain: Domain,
+) -> None:
+    """Test that save method stores user_id in MongoDB."""
+    # Given
+    user_id = DEFAULT_USER_ID
+    conversation_id = uuid.uuid4().hex
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    tracker = await create_tracker_with_user_id(tracker_store, conversation_id, user_id)
+    await tracker_store.save(tracker)
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 1
+    assert_tracker_has_user_id(trackers[0], conversation_id, user_id)
+
+
+@pytest.mark.asyncio
+async def test_mongo_tracker_store_get_trackers_by_user_id_update_sets_user_id(
+    domain: Domain,
+) -> None:
+    """Test that update method stores user_id in MongoDB."""
+    # Given
+    user_id = DEFAULT_USER_ID
+    conversation_id = uuid.uuid4().hex
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    # Create tracker with user_id
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [SessionStarted(), UserUttered("hello")],
+        slots=domain.slots,
+        user_id=user_id,
+    )
+    await tracker_store.update(tracker)
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 1
+    assert_tracker_has_user_id(trackers[0], conversation_id, user_id)
+
+
+@pytest.mark.asyncio
+async def test_mongo_tracker_store_get_trackers_by_user_id_multiple_trackers(
+    domain: Domain,
+) -> None:
+    """Test get_trackers_by_user_id handles multiple trackers correctly."""
+    # Given
+    user_id = DEFAULT_USER_ID
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    # Create multiple trackers with the same user_id
+    conversation_ids = []
+    for i in range(50):
+        conversation_id = uuid.uuid4().hex
+        conversation_ids.append(conversation_id)
+        await create_tracker_with_user_id(
+            tracker_store,
+            conversation_id,
+            user_id,
+            [SessionStarted(), UserUttered(f"Message {i}")],
+        )
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 50
+    retrieved_ids = {tracker.sender_id for tracker in trackers}
+    assert retrieved_ids == set(conversation_ids)
+
+    # Verify all trackers have correct user_id
+    for tracker in trackers:
+        assert tracker.user_id == user_id
+
+
+@pytest.mark.asyncio
+async def test_mongo_tracker_store_get_trackers_by_user_id_with_limit(
+    domain: Domain,
+) -> None:
+    """Test get_trackers_by_user_id respects limit parameter."""
+    # Given
+    user_id = DEFAULT_USER_ID
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    # Create multiple trackers with the same user_id
+    for i in range(10):
+        conversation_id = uuid.uuid4().hex
+        tracker = DialogueStateTracker.from_events(
+            conversation_id,
+            [SessionStarted(), UserUttered(f"Message {i}")],
+            slots=domain.slots,
+            user_id=user_id,
+        )
+        await tracker_store.save(tracker)
+
+    # When - request only 5 trackers
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, limit=5)
+
+    # Then
+    assert len(trackers) == 5
+    for tracker in trackers:
+        assert tracker.user_id == user_id
+
+
+@pytest.mark.asyncio
+async def test_mongo_tracker_store_get_trackers_by_user_id_with_skip(
+    domain: Domain,
+) -> None:
+    """Test get_trackers_by_user_id respects skip parameter."""
+    # Given
+    user_id = DEFAULT_USER_ID
+    tracker_store = MockedMongoTrackerStore(domain)
+    saved_trackers = []
+
+    # Create multiple trackers with the same user_id
+    conversation_ids = []
+    for i in range(10):
+        conversation_id = uuid.uuid4().hex
+        conversation_ids.append(conversation_id)
+        tracker = await create_tracker_with_user_id(
+            tracker_store,
+            conversation_id,
+            user_id,
+            [SessionStarted(), UserUttered(f"Message {i}")],
+        )
+        saved_trackers.append(tracker)
+
+    # When - skip first 3 trackers
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=3)
+
+    # Then
+    assert len(trackers) == 7  # 10 total - 3 skipped
+    assert_all_trackers_have_user_id(trackers, user_id)
+    assert trackers == saved_trackers[3:]
+
+
+@pytest.mark.asyncio
+async def test_mongo_tracker_store_get_trackers_by_user_id_with_limit_and_skip(
+    domain: Domain,
+) -> None:
+    """Test get_trackers_by_user_id respects both limit and skip parameters."""
+    # Given
+    user_id = DEFAULT_USER_ID
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    # Create multiple trackers with the same user_id
+    saved_trackers = await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 10, domain=domain
+    )
+
+    # When - skip first 2, then return next 3
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=2, limit=3)
+
+    # Then
+    assert len(trackers) == 3
+    assert trackers == saved_trackers[2:5]
+    assert_all_trackers_have_user_id(trackers, user_id)
+
+
+# Backward compatibility tests for conversation_started_timestamp
+@pytest.mark.asyncio
+async def test_mongo_old_tracker_gets_timestamp_on_save(domain: Domain) -> None:
+    """Test that old tracker without conversation_started_timestamp gets it on save."""
+    tracker_store = MockedMongoTrackerStore(domain)
+    await old_tracker_gets_timestamp_on_save(tracker_store, domain=domain)
+
+
+@pytest.mark.asyncio
+async def test_mongo_old_tracker_gets_timestamp_on_update(domain: Domain) -> None:
+    """Test that old tracker without conversation_started_timestamp gets it
+    on update."""
+    tracker_store = MockedMongoTrackerStore(domain)
+    await old_tracker_gets_timestamp_on_update(tracker_store, domain=domain)
+
+
+# Sorting consistency tests
+@pytest.mark.asyncio
+async def test_mongo_sorting_by_sender_id_when_timestamps_identical(
+    domain: Domain,
+) -> None:
+    """Test that trackers with identical timestamps are sorted by sender_id."""
+    tracker_store = MockedMongoTrackerStore(domain)
+    user_id = DEFAULT_USER_ID
+    timestamp = 1234567890.0
+    sender_ids = ["sender_c", "sender_a", "sender_b"]
+
+    # Create trackers with same timestamp
+    await create_trackers_with_same_timestamp(
+        tracker_store, user_id, timestamp, sender_ids, domain=domain
+    )
+
+    # Retrieve and verify sorting
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Should be sorted by sender_id when timestamps are identical
+    assert len(trackers) == 3
+    assert trackers[0].sender_id == "sender_a"
+    assert trackers[1].sender_id == "sender_b"
+    assert trackers[2].sender_id == "sender_c"
+
+    # All should have same timestamp
+    for tracker in trackers:
+        assert tracker.conversation_started_timestamp == timestamp
+
+
+@pytest.mark.asyncio
+async def test_mongo_pagination_very_large_skip(domain: Domain) -> None:
+    """Test that very large skip values are handled gracefully."""
+    tracker_store = MockedMongoTrackerStore(domain)
+    user_id = DEFAULT_USER_ID
+
+    # Create some trackers
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 5, domain=domain
+    )
+
+    # Very large skip should return empty list
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=1000000)
+
+    assert len(trackers) == 0
+
+
+@pytest.mark.asyncio
+async def test_mongo_pagination_very_large_limit(domain: Domain) -> None:
+    """Test that very large limit values are handled gracefully."""
+    tracker_store = MockedMongoTrackerStore(domain)
+    user_id = DEFAULT_USER_ID
+
+    # Create some trackers
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 5, domain=domain
+    )
+
+    # Very large limit should return all items (up to available)
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, limit=1000000)
+
+    assert len(trackers) == 5
+
+
+@pytest.mark.asyncio
+async def test_mongo_negative_skip_and_limit_ignored(domain: Domain) -> None:
+    """Test that both negative skip and limit values are ignored."""
+    tracker_store = MockedMongoTrackerStore(domain)
+    user_id = DEFAULT_USER_ID
+
+    # Create some trackers
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 5, domain=domain
+    )
+
+    # When: Retrieve with both negative skip and limit
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=-3, limit=-2)
+
+    # Then: Should return all trackers (both negative values ignored)
+    assert len(trackers) == 5
+    assert_all_trackers_have_user_id(trackers, user_id)

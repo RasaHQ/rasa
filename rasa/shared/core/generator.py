@@ -95,6 +95,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         sender_source: Optional[Text] = None,
         domain: Optional[Domain] = None,
         user_id: Optional[Text] = None,
+        conversation_started_timestamp: Optional[float] = None,
         is_rule_tracker: bool = False,
     ) -> "TrackerWithCachedStates":
         """Initializes a tracker with given events."""
@@ -106,6 +107,11 @@ class TrackerWithCachedStates(DialogueStateTracker):
             user_id=user_id,
             is_rule_tracker=is_rule_tracker,
         )
+
+        cls._set_conversation_started_timestamp(
+            tracker, conversation_started_timestamp, evts
+        )
+
         for e in evts:
             tracker.update(e)
         return tracker

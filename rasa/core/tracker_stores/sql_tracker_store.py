@@ -13,6 +13,7 @@ from typing import (
     Generator,
     Iterable,
     Iterator,
+    List,
     Optional,
     Text,
     Union,
@@ -22,7 +23,7 @@ import sqlalchemy as sa
 import structlog
 
 import rasa.shared
-from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
+from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS, USER_ID
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.constants import (
     POSTGRESQL_MAX_OVERFLOW,
@@ -211,6 +212,36 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         action_name = sa.Column(sa.String(255))
         data = sa.Column(sa.Text)
 
+    class SQLUser(Base):
+        """Mapping table between user_id and sender_id for efficient querying.
+
+        This table enables efficient queries to find all trackers (sender_ids)
+        associated with a given user_id using JOIN operations instead of
+        scanning all events.
+
+        Note: user_id can be NULL for anonymous users. Rows with NULL user_id
+        are not stored in this table (only authenticated users are tracked).
+        """
+
+        __tablename__ = "users"
+
+        sender_id = sa.Column(
+            sa.String(255),
+            primary_key=True,
+            nullable=False,
+            index=True,
+        )
+        user_id = sa.Column(
+            sa.String(255),
+            nullable=False,
+            index=True,  # Index for efficient user_id lookups
+        )
+        conversation_started_timestamp = sa.Column(
+            sa.Float,
+            nullable=True,
+            index=True,  # Index for efficient sorting by timestamp
+        )
+
     def __init__(
         self,
         domain: Optional[Domain] = None,
@@ -357,7 +388,9 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             try:
                 # Double-check if tables exist before creating
                 inspector = Inspector.from_engine(self.engine)
-                if not inspector.has_table("events"):
+                if not inspector.has_table("events") or not inspector.has_table(
+                    "users"
+                ):
                     self.Base.metadata.create_all(self.engine, checkfirst=True)
                     structlogger.debug(
                         "sql_tracker_store.tables_created",
@@ -515,10 +548,18 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             return None
 
         with self.session_scope() as session:
+            # Delete events
             statement = sa.delete(self.SQLEvent).where(
                 self.SQLEvent.sender_id == sender_id
             )
             result = session.execute(statement)
+
+            # Clean up users table
+            user_statement = sa.delete(self.SQLUser).where(
+                self.SQLUser.sender_id == sender_id
+            )
+            session.execute(user_statement)
+
             session.commit()
 
         structlogger.info(
@@ -527,12 +568,12 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             num_rows=result.rowcount,
         )
 
-    async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+    async def retrieve(self, sender_id: str) -> Optional[DialogueStateTracker]:
         """Retrieves tracker for the latest conversation session."""
         return await self._retrieve(sender_id, fetch_events_from_all_sessions=False)
 
     async def retrieve_full_tracker(
-        self, conversation_id: Text
+        self, conversation_id: str
     ) -> Optional[DialogueStateTracker]:
         """Fetching all tracker events across conversation sessions."""
         return await self._retrieve(
@@ -570,9 +611,23 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                     "sql_tracker_store.recreating_tracker",
                     event_info=f"Recreating tracker from sender id '{sender_id}'",
                 )
-                return DialogueStateTracker.from_dict(
+                tracker = DialogueStateTracker.from_dict(
                     sender_id, events, self.domain.slots
                 )
+
+                from sqlalchemy.engine import Inspector
+
+                inspector = Inspector.from_engine(self.engine)
+                if inspector.has_table("users"):
+                    user_mapping = (
+                        session.query(self.SQLUser.user_id)
+                        .filter(self.SQLUser.sender_id == sender_id)
+                        .one_or_none()
+                    )
+                    if user_mapping:
+                        tracker.user_id = user_mapping[0]
+
+                return tracker
             else:
                 structlogger.debug(
                     "sql_tracker_store._retrieve.no_tracker_for_sender_id",
@@ -632,6 +687,9 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         """Update database with events from the current conversation."""
         await self.stream_events(tracker)
 
+        # Ensure conversation_started_timestamp is set (for backward compatibility)
+        tracker.ensure_conversation_started_timestamp()
+
         with self.session_scope() as session:
             # only store recent events
             events = self._additional_events(session, tracker)
@@ -655,6 +713,16 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                         data=json.dumps(data),
                     )
                 )
+
+            # Maintain users table if tracker has user_id
+            if tracker.user_id:
+                self._upsert_user_mapping(
+                    session,
+                    tracker.sender_id,
+                    tracker.user_id,
+                    tracker.conversation_started_timestamp,
+                )
+
             session.commit()
 
         structlogger.debug(
@@ -676,8 +744,72 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             tracker.events, number_of_events_since_last_session, len(tracker.events)
         )
 
+    def _upsert_user_mapping(
+        self,
+        session: "Session",
+        sender_id: str,
+        user_id: str,
+        conversation_started_timestamp: Optional[float] = None,
+    ) -> None:
+        """Upsert user mapping in the users table.
+
+        Args:
+            session: Database session.
+            sender_id: Sender ID to map.
+            user_id: User ID to map to sender_id.
+            conversation_started_timestamp: Optional timestamp of the first event.
+        """
+        # Use database-specific upsert syntax
+        dialect_name = self.engine.dialect.name
+
+        if dialect_name == "postgresql":
+            from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+            stmt: Any = pg_insert(self.SQLUser).values(
+                sender_id=sender_id,
+                user_id=user_id,
+                conversation_started_timestamp=conversation_started_timestamp,
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["sender_id"],
+                set_={
+                    USER_ID: stmt.excluded.user_id,
+                    "conversation_started_timestamp": (
+                        stmt.excluded.conversation_started_timestamp
+                    ),
+                },
+            )
+            session.execute(stmt)
+        elif dialect_name == "sqlite":
+            from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
+            stmt = sqlite_insert(self.SQLUser).values(
+                sender_id=sender_id,
+                user_id=user_id,
+                conversation_started_timestamp=conversation_started_timestamp,
+            )
+            stmt = stmt.on_conflict_do_update(
+                set_={
+                    USER_ID: stmt.excluded.user_id,
+                    "conversation_started_timestamp": (
+                        stmt.excluded.conversation_started_timestamp
+                    ),
+                }
+            )
+            session.execute(stmt)
+        else:
+            self._generic_upsert(
+                session,
+                sender_id,
+                user_id,
+                conversation_started_timestamp,
+            )
+
     async def update(self, tracker_to_keep: DialogueStateTracker) -> None:
         """Overwrite the tracker in the SQL tracker store."""
+        # Ensure conversation_started_timestamp is set (for backward compatibility)
+        tracker_to_keep.ensure_conversation_started_timestamp()
+
         with self.session_scope() as session:
             # Delete events whose timestamp are older
             # than the first event of the tracker to keep.
@@ -689,6 +821,16 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             )
 
             result = session.execute(statement)
+
+            # Maintain users table if tracker has user_id
+            if tracker_to_keep.user_id:
+                self._upsert_user_mapping(
+                    session,
+                    tracker_to_keep.sender_id,
+                    tracker_to_keep.user_id,
+                    tracker_to_keep.conversation_started_timestamp,
+                )
+
             session.commit()
 
         first_event_timestamp = str(
@@ -701,3 +843,133 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             first_event_timestamp=first_event_timestamp,
             event_info=f"{result.rowcount} rows removed from tracker.",
         )
+
+    async def get_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[DialogueStateTracker]:
+        """Retrieves all trackers for a given user_id using efficient JOIN query.
+
+        This method uses the users table for efficient querying.
+        If the users table doesn't exist or is empty, it logs a warning and
+        returns an empty list.
+
+        Args:
+            user_id: User ID to fetch trackers for.
+            limit: Optional maximum number of trackers to return. If None, returns all
+                matching trackers.
+            skip: Optional number of trackers to skip before returning results. If None,
+                starts from the beginning.
+
+        Returns:
+            List of trackers associated with the user_id.
+        """
+        from sqlalchemy.engine import Inspector
+
+        # Check if users table exists
+        inspector = Inspector.from_engine(self.engine)
+        has_users_table = inspector.has_table("users")
+
+        if not has_users_table:
+            structlogger.warning(
+                "sql_tracker_store.get_trackers_by_user_id.no_users_table",
+                event_info=(
+                    "Users table does not exist. To enable efficient "
+                    "querying by user_id, please ensure the users "
+                    "table is created by using a recent version of Rasa and that "
+                    "trackers are saved with user_id set."
+                ),
+            )
+            return []
+
+        # Use efficient JOIN query with users table
+        with self.session_scope() as session:
+            # Query sender_ids with conversation_started_timestamp for efficient
+            # sorting. Sort by conversation_started_timestamp (if available) then
+            # sender_id at database level. Use COALESCE to handle NULL values
+            # (treat NULL as 0.0 for sorting)
+            query = (
+                session.query(
+                    self.SQLUser.sender_id,
+                )
+                .filter(self.SQLUser.user_id == user_id)
+                .order_by(
+                    # Sort by conversation_started_timestamp (NULLS treated as
+                    # 0.0), then sender_id
+                    sa.func.coalesce(
+                        self.SQLUser.conversation_started_timestamp, 0.0
+                    ).asc(),
+                    self.SQLUser.sender_id.asc(),
+                )
+            )
+
+            # Apply pagination at database level for efficiency
+            if skip is not None and skip > 0:
+                query = query.offset(skip)
+            if limit is not None and limit > 0:
+                query = query.limit(limit)
+
+            sender_ids = [row[0] for row in query.all()]
+
+        # Retrieve trackers for matching sender_ids
+        trackers = []
+        for sender_id in sender_ids:
+            tracker = await self.retrieve_full_tracker(sender_id)
+            if tracker is not None:
+                trackers.append(tracker)
+
+        # Sort in-memory as a safety measure to ensure consistency
+        # (in case conversation_started_timestamp is missing for some trackers)
+        # trackers.sort(key=self._sort_key)
+
+        return trackers
+
+    def _generic_upsert(
+        self,
+        session: "Session",
+        sender_id: str,
+        user_id: str,
+        conversation_started_timestamp: Optional[float] = None,
+    ) -> None:
+        """Use UPDATE expression followed by INSERT if needed.
+
+        This is required for SQL databases other than PostgreSQL and SQLite.
+        Implement try-except to handle race conditions.
+        Use a savepoint to isolate the upsert operation so rollback doesn't
+        affect other pending changes (e.g., events) in the transaction.
+        """
+        savepoint = session.begin_nested()
+
+        try:
+            # Attempt to update existing row first
+            update_stmt = (
+                sa.update(self.SQLUser)
+                .where(self.SQLUser.sender_id == sender_id)
+                .values(
+                    user_id=user_id,
+                    conversation_started_timestamp=conversation_started_timestamp,
+                )
+            )
+            result = session.execute(update_stmt)
+
+            # If no rows were updated, the row doesn't exist - insert it
+            if result.rowcount == 0:
+                session.add(
+                    self.SQLUser(
+                        sender_id=sender_id,
+                        user_id=user_id,
+                        conversation_started_timestamp=conversation_started_timestamp,
+                    )
+                )
+
+            # Commit the savepoint - this will flush changes within the savepoint
+            # and raise IntegrityError if a constraint violation occurs
+            savepoint.commit()
+        except sa.exc.IntegrityError:
+            # In case of race condition, rollback only the savepoint, not the
+            # entire transaction, so events and other pending changes are preserved.
+            savepoint.rollback()
+            # The row already exists with the correct user_id, so we can
+            # continue with the main transaction

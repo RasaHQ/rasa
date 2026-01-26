@@ -266,6 +266,8 @@ async def test_remote_action_runs(
                 "sender_id": "my-sender",
                 "paused": False,
                 "stack": [],
+                "user_id": None,
+                "conversation_started_timestamp": None,
                 "latest_event_time": None,
                 FOLLOWUP_ACTION: "action_listen",
                 "slots": {
@@ -277,7 +279,6 @@ async def test_remote_action_runs(
                 },
                 "events": [],
                 "latest_input_channel": None,
-                "user_id": None,
             },
         }
 
@@ -335,6 +336,8 @@ async def test_remote_action_logs_events(
                 "latest_action_name": None,
                 "sender_id": "my-sender",
                 "stack": [],
+                "user_id": None,
+                "conversation_started_timestamp": None,
                 "paused": False,
                 FOLLOWUP_ACTION: ACTION_LISTEN_NAME,
                 "latest_event_time": None,
@@ -347,7 +350,6 @@ async def test_remote_action_logs_events(
                 },
                 "events": [],
                 "latest_input_channel": None,
-                "user_id": None,
             },
         }
     assert len(events) == 3  # first two events are bot utterances

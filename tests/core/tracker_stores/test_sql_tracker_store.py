@@ -54,10 +54,39 @@ from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.tracker_stores.conftest import (
     _saved_tracker_with_multiple_session_starts,
+    assert_all_trackers_have_user_id,
+    assert_tracker_has_user_id,
+    create_multiple_trackers_with_user_id,
     create_tracker_with_partially_saved_events,
+    create_tracker_with_user_id,
+    create_trackers_with_same_timestamp,
+    old_tracker_gets_timestamp_on_save,
+    old_tracker_gets_timestamp_on_update,
     prepare_token_serialisation,
 )
 from tests.utilities import filter_logs
+
+
+# SQL-specific helper function
+def get_user_id_from_users_table(
+    tracker_store: SQLTrackerStore, sender_id: str
+) -> Optional[str]:
+    """Query users table for user_id associated with sender_id.
+
+    Args:
+        tracker_store: The tracker store.
+        sender_id: Sender ID to query.
+
+    Returns:
+        User ID if found, None otherwise.
+    """
+    with tracker_store.session_scope() as session:
+        user_mapping = (
+            session.query(tracker_store.SQLUser.user_id)
+            .filter(tracker_store.SQLUser.sender_id == sender_id)
+            .first()
+        )
+        return user_mapping[0] if user_mapping else None
 
 
 @pytest.mark.parametrize(
@@ -409,10 +438,10 @@ def test_login_db_with_no_postgresql(tmp_path: Path):
 
 
 def test_sql_tracker_store_with_token_serialisation(
-    domain: Domain, response_selector_agent: Agent
+    domain: Domain, flow_policy_bot_agent: Agent
 ):
     tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
-    prepare_token_serialisation(tracker_store, response_selector_agent, "sql")
+    prepare_token_serialisation(tracker_store, flow_policy_bot_agent, "sql")
 
 
 def test_sql_tracker_store_creation_with_invalid_port(domain: Domain):
@@ -917,3 +946,451 @@ async def test_sql_tracker_store_advisory_lock_released_on_error(
     assert "lock" in lock_calls
     assert "unlock" in lock_calls
     assert lock_calls.index("unlock") > lock_calls.index("lock")
+
+
+async def test_sql_tracker_store_get_trackers_by_user_id(
+    domain: Domain, tmp_path: Path
+) -> None:
+    """Test SQLTrackerStore.get_trackers_by_user_id returns correct trackers."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+
+    # Create trackers with user_id
+    await create_tracker_with_user_id(tracker_store, "sender1", user_id)
+    await create_tracker_with_user_id(
+        tracker_store, "sender2", user_id, [SessionStarted(), UserUttered("hi")]
+    )
+
+    # Create tracker with different user_id
+    await create_tracker_with_user_id(
+        tracker_store, "sender3", "user_456", [SessionStarted(), UserUttered("hey")]
+    )
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 2
+    assert {t.sender_id for t in trackers} == {"sender1", "sender2"}
+    for tracker in trackers:
+        assert tracker.user_id == user_id
+
+
+async def test_sql_tracker_store_get_trackers_by_user_id_no_matches(
+    domain: Domain,
+) -> None:
+    """Test SQLTrackerStore returns empty list when no matches exist."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+
+    # Create tracker with different user_id
+    await create_tracker_with_user_id(tracker_store, "sender1", "user_456")
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 0
+
+
+async def test_sql_tracker_store_get_trackers_by_user_id_filters_no_user_id(
+    domain: Domain,
+) -> None:
+    """Test SQLTrackerStore filters out trackers without user_id."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+
+    # Create tracker with user_id
+    await create_tracker_with_user_id(tracker_store, "sender1", user_id)
+
+    # Create tracker without user_id (anonymous)
+    await create_tracker_with_user_id(
+        tracker_store, "sender2", None, [SessionStarted(), UserUttered("hi")]
+    )
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 1
+    assert trackers[0].sender_id == "sender1"
+    assert trackers[0].user_id == user_id
+
+
+async def test_sql_tracker_store_get_trackers_by_user_id_save_sets_user_id(
+    domain: Domain,
+) -> None:
+    """Test that save method maintains users table when user_id is set."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+    sender_id = "sender1"
+
+    tracker = await create_tracker_with_user_id(tracker_store, sender_id, user_id)
+    await tracker_store.save(tracker)
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 1
+    assert_tracker_has_user_id(trackers[0], sender_id, user_id)
+
+
+async def test_sql_tracker_store_get_trackers_by_user_id_update_sets_user_id(
+    domain: Domain,
+) -> None:
+    """Test that update method maintains users table when user_id is set."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+    sender_id = "sender1"
+
+    tracker = await create_tracker_with_user_id(tracker_store, sender_id, user_id)
+    await tracker_store.save(tracker)
+
+    tracker.update(UserUttered("hello again"))
+    await tracker_store.update(tracker)
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 1
+    assert_tracker_has_user_id(trackers[0], sender_id, user_id)
+
+
+async def test_sql_tracker_store_get_trackers_by_user_id_with_limit(
+    domain: Domain,
+) -> None:
+    """Test SQLTrackerStore.get_trackers_by_user_id respects limit parameter."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+
+    # Create multiple trackers with user_id
+    saved_trackers = await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 10
+    )
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, limit=5)
+
+    # Then
+    assert len(trackers) == 5
+    assert_all_trackers_have_user_id(trackers, user_id)
+    assert trackers == saved_trackers[:5]
+
+
+async def test_sql_tracker_store_get_trackers_by_user_id_with_skip(
+    domain: Domain,
+) -> None:
+    """Test SQLTrackerStore.get_trackers_by_user_id respects skip parameter."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+
+    # Create multiple trackers with user_id
+    saved_trackers = await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 10
+    )
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=3)
+
+    # Then
+    assert len(trackers) == 7  # 10 total - 3 skipped
+    assert_all_trackers_have_user_id(trackers, user_id)
+    assert trackers == saved_trackers[3:]
+
+
+async def test_sql_tracker_store_get_trackers_by_user_id_with_skip_and_limit(
+    domain: Domain,
+) -> None:
+    """Test SQLTrackerStore.get_trackers_by_user_id respects both skip and limit."""
+    # Given
+    import time
+
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+
+    # Create trackers with small delays to ensure different timestamps
+    saved_trackers = []
+    for i in range(10):
+        time.sleep(0.1)  # Small delay to ensure different timestamps
+        tracker = await create_tracker_with_user_id(
+            tracker_store,
+            f"sender{i}",
+            user_id,
+            [SessionStarted(), UserUttered(f"hello{i}")],
+        )
+        saved_trackers.append(tracker)
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=2, limit=3)
+
+    # Then
+    assert len(trackers) == 3
+    assert_all_trackers_have_user_id(trackers, user_id)
+    assert trackers == saved_trackers[2:5]
+
+
+async def test_sql_tracker_store_get_trackers_by_user_id_no_users_table(
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test SQLTrackerStore.get_trackers_by_user_id handles missing users table."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+
+    # Mock inspector to return False for users table
+    mock_inspector = Mock()
+    mock_inspector.has_table.return_value = False
+    monkeypatch.setattr(
+        "sqlalchemy.engine.Inspector.from_engine",
+        Mock(return_value=mock_inspector),
+    )
+
+    # When
+    with capture_logs() as caplog:
+        trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+        # Then
+        assert len(trackers) == 0
+
+        # Verify warning was logged
+        logs = filter_logs(
+            caplog,
+            event="sql_tracker_store.get_trackers_by_user_id.no_users_table",
+            log_level="warning",
+        )
+        assert len(logs) == 1
+
+
+async def test_sql_tracker_store_delete_cleans_up_users_table(
+    domain: Domain,
+) -> None:
+    """Test that delete method removes entry from users table."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+    sender_id = "sender1"
+
+    # Create tracker with user_id
+    await create_tracker_with_user_id(tracker_store, sender_id, user_id)
+
+    # Verify it's in users table
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+    assert len(trackers) == 1
+
+    # When
+    await tracker_store.delete(sender_id)
+
+    # Then
+    # Verify tracker is deleted
+    retrieved = await tracker_store.retrieve(sender_id)
+    assert retrieved is None
+
+    # Verify entry is removed from users table
+    trackers_after_delete = await tracker_store.get_trackers_by_user_id(user_id)
+    assert len(trackers_after_delete) == 0
+
+
+async def test_sql_tracker_store_anonymous_user_not_in_users_table(
+    domain: Domain,
+) -> None:
+    """Test that anonymous users (user_id=None) are not stored in users table."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    sender_id = "sender1"
+
+    # Create tracker without user_id (anonymous)
+    tracker = await create_tracker_with_user_id(tracker_store, sender_id, None)
+    assert tracker.user_id is None
+
+    # When - query users table directly
+    with tracker_store.session_scope() as session:
+        user_mappings = session.query(tracker_store.SQLUser).all()
+
+    # Then - no entries for anonymous users
+    assert len(user_mappings) == 0
+
+    # Verify tracker still exists in events
+    retrieved = await tracker_store.retrieve(sender_id)
+    assert_tracker_has_user_id(retrieved, sender_id, None)
+
+
+async def test_sql_tracker_store_retrieve_gets_user_id_from_users_table(
+    domain: Domain,
+) -> None:
+    """Test that retrieve method fetches user_id from users table."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+    sender_id = "sender1"
+
+    # Create tracker with user_id and save it
+    await create_tracker_with_user_id(tracker_store, sender_id, user_id)
+
+    # Verify user_id is in users table
+    assert get_user_id_from_users_table(tracker_store, sender_id) == user_id
+
+    # When - retrieve the tracker
+    retrieved_tracker = await tracker_store.retrieve(sender_id)
+
+    # Then - tracker should have user_id set from users table
+    assert_tracker_has_user_id(retrieved_tracker, sender_id, user_id)
+
+
+async def test_sql_tracker_store_retrieve_full_tracker_gets_user_id_from_users_table(
+    domain: Domain,
+) -> None:
+    """Test that retrieve_full_tracker method fetches user_id from users table."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_456"
+    sender_id = "sender2"
+
+    # Create tracker with user_id and save it
+    await create_tracker_with_user_id(
+        tracker_store,
+        sender_id,
+        user_id,
+        [
+            SessionStarted(),
+            UserUttered("hello"),
+            BotUttered("hi"),
+            UserUttered("how are you"),
+        ],
+    )
+
+    # When - retrieve full tracker
+    retrieved_tracker = await tracker_store.retrieve_full_tracker(sender_id)
+
+    # Then - tracker should have user_id set from users table
+    assert_tracker_has_user_id(retrieved_tracker, sender_id, user_id)
+
+
+async def test_sql_tracker_store_retrieve_handles_missing_user_id_in_users_table(
+    domain: Domain,
+) -> None:
+    """Test that retrieve works correctly when user_id is missing (anonymous user)."""
+    # Given
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    sender_id = "sender3"
+
+    # Create tracker without user_id (anonymous) and save it
+    tracker = await create_tracker_with_user_id(tracker_store, sender_id, None)
+    assert tracker.user_id is None
+
+    # Verify no entry in users table
+    assert get_user_id_from_users_table(tracker_store, sender_id) is None
+
+    # When - retrieve the tracker
+    retrieved_tracker = await tracker_store.retrieve(sender_id)
+
+    # Then - tracker should be retrieved successfully but user_id should be None
+    assert_tracker_has_user_id(retrieved_tracker, sender_id, None)
+
+
+# Backward compatibility tests for conversation_started_timestamp
+@pytest.mark.asyncio
+async def test_sql_old_tracker_gets_timestamp_on_save(domain: Domain) -> None:
+    """Test that old tracker without conversation_started_timestamp gets it on save."""
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    await old_tracker_gets_timestamp_on_save(tracker_store, domain=domain)
+
+
+@pytest.mark.asyncio
+async def test_sql_old_tracker_gets_timestamp_on_update(domain: Domain) -> None:
+    """Test that old tracker without conversation_started_timestamp gets it
+    on update."""
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    await old_tracker_gets_timestamp_on_update(tracker_store, domain=domain)
+
+
+# Sorting consistency tests
+@pytest.mark.asyncio
+async def test_sql_sorting_by_sender_id_when_timestamps_identical(
+    domain: Domain,
+) -> None:
+    """Test that trackers with identical timestamps are sorted by sender_id."""
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+    timestamp = 1234567890.0
+    sender_ids = ["sender_c", "sender_a", "sender_b"]
+
+    # Create trackers with same timestamp
+    await create_trackers_with_same_timestamp(
+        tracker_store, user_id, timestamp, sender_ids, domain=domain
+    )
+
+    # Retrieve and verify sorting
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Should be sorted by sender_id when timestamps are identical
+    assert len(trackers) == 3
+    assert trackers[0].sender_id == "sender_a"
+    assert trackers[1].sender_id == "sender_b"
+    assert trackers[2].sender_id == "sender_c"
+
+    # All should have same timestamp
+    for tracker in trackers:
+        assert tracker.conversation_started_timestamp == timestamp
+
+
+@pytest.mark.asyncio
+async def test_sql_pagination_very_large_skip(domain: Domain) -> None:
+    """Test that very large skip values are handled gracefully."""
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+
+    # Create some trackers
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 5, domain=domain
+    )
+
+    # Very large skip should return empty list
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=1000000)
+
+    assert len(trackers) == 0
+
+
+@pytest.mark.asyncio
+async def test_sql_pagination_very_large_limit(domain: Domain) -> None:
+    """Test that very large limit values are handled gracefully."""
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+
+    # Create some trackers
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 5, domain=domain
+    )
+
+    # Very large limit should return all items (up to available)
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, limit=1000000)
+
+    assert len(trackers) == 5
+
+
+@pytest.mark.asyncio
+async def test_sql_negative_skip_and_limit_ignored(domain: Domain) -> None:
+    """Test that both negative skip and limit values are ignored."""
+    tracker_store = SQLTrackerStore(domain, host="sqlite:///")
+    user_id = "user_123"
+
+    # Create some trackers
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 5, domain=domain
+    )
+
+    # When: Retrieve with both negative skip and limit
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=-3, limit=-2)
+
+    # Then: Should return all trackers (both negative values ignored)
+    assert len(trackers) == 5
+    assert_all_trackers_have_user_id(trackers, user_id)

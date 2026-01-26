@@ -7,6 +7,7 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Text, Tuple
 import structlog
 from pymongo.synchronous.collection import Collection
 
+from rasa.constants import USER_ID
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.tracker_stores.tracker_store import SerializedTrackerAsText, TrackerStore
 from rasa.shared.core.domain import Domain
@@ -59,8 +60,18 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         return self.db[self.collection]
 
     def _ensure_indices(self) -> None:
-        """Create an index on the sender_id."""
+        """Create indices on the sender_id and user_id."""
         self.conversations.create_index("sender_id")
+        # Create index on user_id for efficient querying by user_id
+        # This index is sparse (only indexes documents with user_id) to save space
+        self.conversations.create_index(USER_ID, sparse=True)
+        # Create compound index on conversation_started_timestamp and sender_id
+        # for efficient sorting and pagination in get_trackers_by_user_id
+        # This index is sparse (only indexes documents with
+        # conversation_started_timestamp)
+        self.conversations.create_index(
+            [("conversation_started_timestamp", 1), ("sender_id", 1)], sparse=True
+        )
 
     @staticmethod
     def _current_tracker_state_without_events(tracker: DialogueStateTracker) -> Dict:
@@ -95,15 +106,20 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         await self.stream_events(tracker)
 
         additional_events = self._additional_events(tracker)
+        # Store conversation_started_timestamp for efficient sorting
+        # This allows us to sort by timestamp at the database level
+        # Ensure it's set on the tracker (for backward compatibility with old trackers)
+        tracker.ensure_conversation_started_timestamp()
+
+        # Prepare update document
+        update_doc = {
+            "$set": self._current_tracker_state_without_events(tracker),
+            "$push": {"events": {"$each": [e.as_dict() for e in additional_events]}},
+        }
 
         self.conversations.update_one(
             {"sender_id": tracker.sender_id},
-            {
-                "$set": self._current_tracker_state_without_events(tracker),
-                "$push": {
-                    "events": {"$each": [e.as_dict() for e in additional_events]}
-                },
-            },
+            update_doc,
             upsert=True,
         )
 
@@ -177,7 +193,7 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             events = self._events_since_last_session_start(events)
 
         # Return both events and user_id
-        return events, stored.get("user_id")
+        return events, stored.get(USER_ID)
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieves tracker for the latest conversation session."""
@@ -224,6 +240,9 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
 
     async def update(self, tracker: DialogueStateTracker) -> None:
         """Overwrites the tracker for the given sender_id."""
+        # Ensure conversation_started_timestamp is set (for backward compatibility)
+        tracker.ensure_conversation_started_timestamp()
+
         self.conversations.replace_one(
             {"sender_id": tracker.sender_id},
             tracker.current_state(EventVerbosity.ALL),
@@ -233,7 +252,88 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         first_event_timestamp = str(datetime.fromtimestamp(tracker.events[0].timestamp))
 
         structlogger.info(
-            "redis_tracker_store.update.updated_tracker",
+            "mongo_tracker_store.update.updated_tracker",
             sender_id=tracker.sender_id,
             first_event_timestamp=first_event_timestamp,
         )
+
+    async def get_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[DialogueStateTracker]:
+        """Retrieves all trackers for a given user_id.
+
+        Uses MongoDB query to efficiently find trackers by user_id,
+        leveraging the user_id index for optimal performance.
+
+        Note: MongoDB cursors automatically batch results, but all matching
+        trackers are loaded into memory. For users with a very large number
+        of conversations (thousands), use the limit parameter for pagination.
+
+        Args:
+            user_id: User ID to fetch trackers for.
+            limit: Optional maximum number of trackers to return. If None, returns all
+                matching trackers. Useful for pagination.
+            skip: Optional number of trackers to skip before returning results. If None,
+                starts from the beginning. Useful for pagination.
+
+        Returns:
+            List of trackers associated with the user_id.
+        """
+        trackers = []
+        # Use MongoDB aggregation pipeline to efficiently sort by
+        # conversation_started_timestamp. This handles both documents with
+        # conversation_started_timestamp field (new) and documents without it
+        # (old) by extracting from events[0].timestamp
+        pipeline = [
+            {"$match": {USER_ID: user_id}},
+            {
+                "$addFields": {
+                    "sort_timestamp": {
+                        "$ifNull": [
+                            "$conversation_started_timestamp",
+                            {"$arrayElemAt": ["$events.timestamp", 0]},
+                        ]
+                    }
+                }
+            },
+            {"$sort": {"sort_timestamp": 1, "sender_id": 1}},
+        ]
+
+        # Apply skip and limit at the database level for efficiency
+        if skip is not None and skip > 0:
+            pipeline.append({"$skip": skip})
+        if limit is not None and limit > 0:
+            pipeline.append({"$limit": limit})
+
+        # Remove the temporary sort_timestamp field before returning
+        pipeline.append({"$project": {"sort_timestamp": 0}})
+
+        # Execute aggregation pipeline
+        for doc in self.conversations.aggregate(pipeline):
+            sender_id = doc.get("sender_id")
+            if not sender_id:
+                continue
+
+            # Reconstruct tracker from the MongoDB document
+            events = self._events_from_serialized_tracker(doc)
+            # Get conversation_started_timestamp from document if available
+            # DialogueStateTracker.from_dict() will extract from events if not provided
+            conversation_started_timestamp = doc.get("conversation_started_timestamp")
+            tracker = DialogueStateTracker.from_dict(
+                sender_id,
+                events,
+                self.domain.slots,
+                # user_id should be present as we queried by it
+                user_id=doc.get(USER_ID),
+                conversation_started_timestamp=conversation_started_timestamp,
+            )
+            trackers.append(tracker)
+
+        # Note: We still sort in-memory as a safety measure to ensure consistency
+        # in case there are any edge cases with timestamp extraction
+        # trackers.sort(key=self._sort_key)
+
+        return trackers

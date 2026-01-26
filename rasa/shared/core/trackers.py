@@ -27,6 +27,7 @@ from typing import (
 )
 
 import rasa.shared.utils.io
+from rasa.constants import USER_ID
 from rasa.engine.language import Language
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
@@ -151,16 +152,39 @@ class DialogueStateTracker:
         slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
         user_id: Optional[Text] = None,
+        conversation_started_timestamp: Optional[float] = None,
     ) -> "DialogueStateTracker":
         """Create a tracker from dump.
 
         The dump should be an array of dumped events. When restoring
         the tracker, these events will be replayed to recreate the state.
+
+        Args:
+            sender_id: The ID of the conversation.
+            events_as_dict: List of event dictionaries to restore.
+            slots: Slots which can be set.
+            max_event_history: Maximum number of events which should be stored.
+            user_id: The ID of the end user participating in the conversation.
+            conversation_started_timestamp: Optional timestamp of the first event.
+                If not provided, will be extracted from the first event in
+                events_as_dict. This ensures we use the ORIGINAL first event's
+                timestamp, not from filtered or processed events.
         """
+        # Extract conversation_started_timestamp from first event if not provided
+        # This is important for old trackers where we need the original first
+        # event's timestamp
+        if conversation_started_timestamp is None and events_as_dict:
+            conversation_started_timestamp = events_as_dict[0].get("timestamp")
+
         evts = events.deserialise_events(events_as_dict)
 
         return cls.from_events(
-            sender_id, evts, slots, max_event_history, user_id=user_id
+            sender_id,
+            evts,
+            slots,
+            max_event_history,
+            user_id=user_id,
+            conversation_started_timestamp=conversation_started_timestamp,
         )
 
     @classmethod
@@ -173,6 +197,7 @@ class DialogueStateTracker:
         sender_source: Optional[Text] = None,
         domain: Optional[Domain] = None,
         user_id: Optional[Text] = None,
+        conversation_started_timestamp: Optional[float] = None,
     ) -> "DialogueStateTracker":
         """Creates tracker from existing events.
 
@@ -184,6 +209,10 @@ class DialogueStateTracker:
             sender_source: File source of the messages.
             domain: The current model domain.
             user_id: The ID of the end user participating in the conversation.
+            conversation_started_timestamp: Optional timestamp of the first event.
+                If not provided, will be extracted from the first event in evts.
+                This ensures we use the ORIGINAL first event's timestamp, not from
+                filtered or processed events.
 
         Returns:
             Instantiated tracker with its state updated according to the given
@@ -191,6 +220,10 @@ class DialogueStateTracker:
         """
         tracker = cls(
             sender_id, slots, max_event_history, sender_source, user_id=user_id
+        )
+
+        cls._set_conversation_started_timestamp(
+            tracker, conversation_started_timestamp, evts
         )
 
         for e in evts:
@@ -254,6 +287,8 @@ class DialogueStateTracker:
 
         # Optional user_id to add to the tracker.
         self.user_id: Optional[Text] = user_id
+        # Timestamp of the first event in the conversation for efficient sorting
+        self.conversation_started_timestamp: Optional[float] = None
 
     ###
     # Public tracker interface
@@ -283,7 +318,8 @@ class DialogueStateTracker:
             ),
             "latest_action": self.latest_action,
             "latest_action_name": self.latest_action_name,
-            "user_id": self.user_id,
+            USER_ID: self.user_id,
+            "conversation_started_timestamp": self.conversation_started_timestamp,
         }
 
     def _events_for_verbosity(
@@ -749,6 +785,10 @@ class DialogueStateTracker:
         self._reset()
         self.events.extend(dialogue.events)
         self.replay_events()
+        self.user_id = dialogue.user_id
+        # use the original event timestamp instead of the
+        # dialogue serialized timestamp value for higher precision
+        self.ensure_conversation_started_timestamp()
 
     def copy(self) -> "DialogueStateTracker":
         """Creates a duplicate of this tracker."""
@@ -777,7 +817,21 @@ class DialogueStateTracker:
         This can be serialised and later used to recover the state
         of this tracker exactly.
         """
-        return Dialogue(self.sender_id, list(self.events), self.user_id)
+        return Dialogue(
+            self.sender_id,
+            list(self.events),
+            self.user_id,
+            self.conversation_started_timestamp,
+        )
+
+    def ensure_conversation_started_timestamp(self) -> None:
+        """Ensure conversation_started_timestamp is set from events if missing.
+
+        This is useful for backward compatibility when loading old trackers
+        that don't have this property set.
+        """
+        if self.conversation_started_timestamp is None and self.events:
+            self.conversation_started_timestamp = self.events[0].timestamp
 
     def update(self, event: Event, domain: Optional[Domain] = None) -> None:
         """Modify the state of the tracker according to an ``Event``."""
@@ -791,6 +845,10 @@ class DialogueStateTracker:
             event.metadata = {**event.metadata, ASSISTANT_ID_KEY: self.assistant_id}
 
         self.events.append(event)
+
+        # Set conversation_started_timestamp on the first event
+        if self.conversation_started_timestamp is None:
+            self.conversation_started_timestamp = event.timestamp
         event.apply_to(self)
 
     def update_with_events(
@@ -1218,6 +1276,26 @@ class DialogueStateTracker:
         if not self.events:
             return False
         return isinstance(self.events[-1], event_type)
+
+    @classmethod
+    def _set_conversation_started_timestamp(
+        cls,
+        tracker: "DialogueStateTracker",
+        timestamp: Optional[float],
+        evts: List[Event],
+    ) -> None:
+        """Sets the conversation started timestamp on the tracker.
+
+        # Extract from first event if timestamp is not provided.
+
+        Args:
+            tracker: The tracker to set the timestamp on.
+            timestamp: The timestamp to set.
+        """
+        if timestamp is not None:
+            tracker.conversation_started_timestamp = timestamp
+        elif evts:
+            tracker.conversation_started_timestamp = evts[0].timestamp
 
 
 class TrackerEventDiffEngine:

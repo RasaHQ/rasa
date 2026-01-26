@@ -41,7 +41,12 @@ from rasa.shared.core.events import (
 from rasa.shared.core.trackers import DialogueStateTracker, TrackerEventDiffEngine
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.tracker_stores.conftest import (
+    assert_all_trackers_have_user_id,
+    create_multiple_trackers_with_user_id,
+    create_trackers_with_same_timestamp,
     get_or_create_tracker_store,
+    old_tracker_gets_timestamp_on_save,
+    old_tracker_gets_timestamp_on_update,
     prepare_token_serialisation,
 )
 from tests.utilities import filter_logs
@@ -515,6 +520,211 @@ async def test_wrapper_tracker_stores_update(
     mocked_inner_tracker_store.update.assert_called_once_with(tracker)
 
 
+@pytest.mark.asyncio
+async def test_in_memory_tracker_store_get_trackers_by_user_id(
+    test_domain: Domain,
+) -> None:
+    """Test InMemoryTrackerStore.get_trackers_by_user_id filters by user_id."""
+    tracker_store = InMemoryTrackerStore(test_domain)
+    user_id = "user_123"
+
+    # Create trackers with user_id
+    tracker1 = DialogueStateTracker.from_events(
+        "sender1", [UserUttered("hello")], slots=test_domain.slots
+    )
+    tracker1.user_id = user_id
+    await tracker_store.save(tracker1)
+
+    tracker2 = DialogueStateTracker.from_events(
+        "sender2", [UserUttered("hi")], slots=test_domain.slots
+    )
+    tracker2.user_id = user_id
+    await tracker_store.save(tracker2)
+
+    # Create tracker with different user_id
+    tracker3 = DialogueStateTracker.from_events(
+        "sender3", [UserUttered("hey")], slots=test_domain.slots
+    )
+    tracker3.user_id = "user_456"
+    await tracker_store.save(tracker3)
+
+    # Create tracker without user_id
+    tracker4 = DialogueStateTracker.from_events(
+        "sender4", [UserUttered("ho")], slots=test_domain.slots
+    )
+    await tracker_store.save(tracker4)
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 2
+    sender_ids = {tracker.sender_id for tracker in trackers}
+    assert "sender1" in sender_ids
+    assert "sender2" in sender_ids
+    assert "sender3" not in sender_ids
+    assert "sender4" not in sender_ids
+
+    # Verify all trackers have correct user_id
+    for tracker in trackers:
+        assert tracker.user_id == user_id
+
+
+@pytest.mark.asyncio
+async def test_in_memory_tracker_store_get_trackers_by_user_id_no_matches(
+    test_domain: Domain,
+) -> None:
+    """Test InMemoryTrackerStore returns empty list when no matches exist."""
+    tracker_store = InMemoryTrackerStore(test_domain)
+    user_id = "user_123"
+
+    # Create tracker with different user_id
+    tracker = DialogueStateTracker.from_events(
+        "sender1", [UserUttered("hello")], slots=test_domain.slots, user_id="user_456"
+    )
+    await tracker_store.save(tracker)
+
+    # When
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Then
+    assert len(trackers) == 0
+
+
+@pytest.mark.asyncio
+async def test_in_memory_tracker_store_get_trackers_by_user_id_with_pagination(
+    test_domain: Domain,
+) -> None:
+    """Test InMemoryTrackerStore get_trackers_by_user_id with pagination."""
+    tracker_store = InMemoryTrackerStore(test_domain)
+    user_id = "user_123"
+
+    # Create multiple trackers with user_id
+    saved_trackers = await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 10, domain=test_domain
+    )
+
+    # Test limit
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, limit=5)
+    assert len(trackers) == 5
+
+    # Test skip
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=3)
+    assert len(trackers) == 7  # 10 total - 3 skipped
+
+    # Test limit and skip together
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=2, limit=3)
+    assert len(trackers) == 3
+    assert trackers == saved_trackers[2:5]
+
+    # Test backward compatibility (no pagination params)
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+    assert len(trackers) == 10
+
+
+@pytest.mark.asyncio
+async def test_fail_safe_tracker_store_get_trackers_by_user_id(
+    test_domain: Domain,
+) -> None:
+    """Test FailSafeTrackerStore.get_trackers_by_user_id delegates to primary store."""
+    mocked_tracker_store = Mock()
+    expected_trackers = [
+        DialogueStateTracker.from_events("sender1", [UserUttered("hello")]),
+        DialogueStateTracker.from_events("sender2", [UserUttered("hi")]),
+    ]
+    mocked_tracker_store.get_trackers_by_user_id = AsyncMock(
+        return_value=expected_trackers
+    )
+
+    tracker_store = FailSafeTrackerStore(mocked_tracker_store, None)
+    user_id = "user_123"
+
+    result = await tracker_store.get_trackers_by_user_id(user_id)
+
+    assert result == expected_trackers
+    mocked_tracker_store.get_trackers_by_user_id.assert_called_once_with(
+        user_id, limit=None, skip=None
+    )
+
+
+@pytest.mark.asyncio
+async def test_fail_safe_tracker_store_get_trackers_by_user_id_with_error(
+    test_domain: Domain,
+) -> None:
+    """Test FailSafeTrackerStore.get_trackers_by_user_id falls back on error."""
+    mocked_tracker_store = Mock()
+    mocked_tracker_store.get_trackers_by_user_id = Mock(side_effect=Exception())
+
+    fallback_tracker_store = Mock()
+    fallback_trackers = [
+        DialogueStateTracker.from_events("sender1", [UserUttered("hello")]),
+    ]
+    fallback_tracker_store.get_trackers_by_user_id = AsyncMock(
+        return_value=fallback_trackers
+    )
+
+    on_error_callback = Mock()
+
+    tracker_store = FailSafeTrackerStore(
+        mocked_tracker_store, on_error_callback, fallback_tracker_store
+    )
+    user_id = "user_123"
+
+    result = await tracker_store.get_trackers_by_user_id(user_id)
+
+    assert result == fallback_trackers
+    on_error_callback.assert_called_once()
+    fallback_tracker_store.get_trackers_by_user_id.assert_called_once_with(
+        user_id, limit=None, skip=None
+    )
+
+
+@pytest.mark.asyncio
+async def test_awaitable_tracker_store_get_trackers_by_user_id_async(
+    test_domain: Domain,
+) -> None:
+    """Test AwaitableTrackerStore.get_trackers_by_user_id handles async methods."""
+    mocked_tracker_store = Mock()
+    expected_trackers = [
+        DialogueStateTracker.from_events("sender1", [UserUttered("hello")]),
+    ]
+
+    # Simulate async method
+    async def async_get_trackers_by_user_id(
+        user_id: str, limit: Optional[int] = None, skip: Optional[int] = None
+    ) -> List[DialogueStateTracker]:
+        return expected_trackers
+
+    mocked_tracker_store.get_trackers_by_user_id = async_get_trackers_by_user_id
+
+    tracker_store = AwaitableTrackerStore(mocked_tracker_store)
+    user_id = "user_123"
+
+    result = await tracker_store.get_trackers_by_user_id(user_id)
+
+    assert result == expected_trackers
+
+
+@pytest.mark.asyncio
+async def test_awaitable_tracker_store_get_trackers_by_user_id_sync(
+    test_domain: Domain,
+) -> None:
+    """Test AwaitableTrackerStore.get_trackers_by_user_id handles sync methods."""
+    mocked_tracker_store = Mock()
+    expected_trackers = [
+        DialogueStateTracker.from_events("sender1", [UserUttered("hello")]),
+    ]
+    # Simulate sync method (returns value directly, not awaitable)
+    mocked_tracker_store.get_trackers_by_user_id = Mock(return_value=expected_trackers)
+
+    tracker_store = AwaitableTrackerStore(mocked_tracker_store)
+    user_id = "user_123"
+
+    result = await tracker_store.get_trackers_by_user_id(user_id)
+
+    assert result == expected_trackers
+
+
 @pytest.fixture(
     params=[
         "data/test_endpoints/event_brokers/kafka_pii_endpoint.yml",
@@ -778,3 +988,120 @@ async def test_fail_safe_tracker_store_retrieve_full_tracker_with_user_id(
 
     assert full_tracker is not None
     assert full_tracker.user_id == user_id
+
+
+# Backward compatibility tests for conversation_started_timestamp
+@pytest.mark.asyncio
+async def test_in_memory_old_tracker_gets_timestamp_on_save(
+    test_domain: Domain,
+) -> None:
+    """Test that old tracker without conversation_started_timestamp gets it on save."""
+    from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
+
+    tracker_store = InMemoryTrackerStore(test_domain)
+    await old_tracker_gets_timestamp_on_save(tracker_store, domain=test_domain)
+
+
+@pytest.mark.asyncio
+async def test_in_memory_old_tracker_gets_timestamp_on_update(
+    test_domain: Domain,
+) -> None:
+    """Test that old tracker without conversation_started_timestamp gets it
+    on update."""
+    from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
+
+    tracker_store = InMemoryTrackerStore(test_domain)
+    await old_tracker_gets_timestamp_on_update(tracker_store, domain=test_domain)
+
+
+# Sorting consistency tests
+@pytest.mark.asyncio
+async def test_in_memory_sorting_by_sender_id_when_timestamps_identical(
+    test_domain: Domain,
+) -> None:
+    """Test that trackers with identical timestamps are sorted by sender_id."""
+    from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
+
+    tracker_store = InMemoryTrackerStore(test_domain)
+    user_id = "user_123"
+    timestamp = 1234567890.0
+    sender_ids = ["sender_c", "sender_a", "sender_b"]
+
+    # Create trackers with same timestamp
+    await create_trackers_with_same_timestamp(
+        tracker_store, user_id, timestamp, sender_ids, domain=test_domain
+    )
+
+    # Retrieve and verify sorting
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Should be sorted by sender_id when timestamps are identical
+    assert len(trackers) == 3
+    assert trackers[0].sender_id == "sender_a"
+    assert trackers[1].sender_id == "sender_b"
+    assert trackers[2].sender_id == "sender_c"
+
+    # All should have same timestamp
+    for tracker in trackers:
+        assert tracker.conversation_started_timestamp == timestamp
+
+
+@pytest.mark.asyncio
+async def test_in_memory_pagination_very_large_skip(test_domain: Domain) -> None:
+    """Test that very large skip values are handled gracefully."""
+    from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
+
+    tracker_store = InMemoryTrackerStore(test_domain)
+    user_id = "user_123"
+
+    # Create some trackers
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 5, domain=test_domain
+    )
+
+    # Very large skip should return empty list
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=1000000)
+
+    assert len(trackers) == 0
+
+
+@pytest.mark.asyncio
+async def test_in_memory_pagination_very_large_limit(test_domain: Domain) -> None:
+    """Test that very large limit values are handled gracefully."""
+    from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
+
+    tracker_store = InMemoryTrackerStore(test_domain)
+    user_id = "user_123"
+
+    # Create some trackers
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 5, domain=test_domain
+    )
+
+    # Very large limit should return all items (up to available)
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, limit=1000000)
+
+    assert len(trackers) == 5
+
+
+@pytest.mark.asyncio
+async def test_in_memory_negative_skip_and_limit_ignored(
+    test_domain: Domain,
+) -> None:
+    """Test that both negative skip and limit values are ignored."""
+    from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
+
+    tracker_store = InMemoryTrackerStore(test_domain)
+    user_id = "user_123"
+
+    # Create some trackers
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 5, domain=test_domain
+    )
+
+    # When: Retrieve with both negative skip and limit
+    trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=-3, limit=-2)
+
+    # Then: Should return all trackers (both negative values ignored)
+    assert len(trackers) == 5
+    assert_all_trackers_have_user_id(trackers, user_id)

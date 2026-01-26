@@ -2,7 +2,7 @@ import asyncio
 import uuid
 from datetime import datetime
 from typing import Dict, Generator, Text
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from sanic.request import Request
@@ -196,25 +196,28 @@ def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
-@patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
-@patch("rasa.shared.utils.health_check.health_check.try_instantiate_embedder")
 async def trained_flow_policy_bot(
-    mock_try_instantiate_llm_client: Mock,
-    mock_try_instantiate_embedder: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_from_documents: Mock,
     trained_async: TrainedAsync,
 ) -> Text:
-    mock_try_instantiate_llm_client.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()
     mock_from_documents.return_value = Mock()
-    return await trained_async(
-        domain="data/test_flow_policy_bot/domain.yml",
-        config="data/test_flow_policy_bot/config.yml",
-        training_files=[
-            "data/test_flow_policy_bot/data/flows.yml",
-        ],
-    )
+    with patch(
+        "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client",
+        MagicMock(return_value=MagicMock()),
+    ):
+        with patch(
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder",
+            MagicMock(return_value=MagicMock()),
+        ):
+            return await trained_async(
+                domain="data/test_flow_policy_bot/domain.yml",
+                config="data/test_flow_policy_bot/config.yml",
+                training_files=[
+                    "data/test_flow_policy_bot/data/flows.yml",
+                ],
+            )
 
 
 @pytest.fixture(scope="session")
@@ -256,7 +259,17 @@ async def flow_policy_bot_agent(
     mock_flow_search_create_embedder.return_value = Mock()
     mock_load_local.return_value = Mock()
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
-    return Agent.load(model_path=trained_flow_policy_bot, action_endpoint=endpoint)
+    with patch(
+        "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client",
+        MagicMock(return_value=MagicMock()),
+    ):
+        with patch(
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder",
+            MagicMock(return_value=MagicMock()),
+        ):
+            return Agent.load(
+                model_path=trained_flow_policy_bot, action_endpoint=endpoint
+            )
 
 
 @pytest.fixture

@@ -1446,11 +1446,12 @@ def test_policy_prediction_reflected_in_tracker_state():
         "paused": False,
         "events": None,
         "stack": [],
+        "user_id": None,
+        "conversation_started_timestamp": 1514764800.0,
         "latest_input_channel": None,
         "active_loop": {},
         "latest_action": {"action_name": "action_listen"},
         "latest_action_name": "action_listen",
-        "user_id": None,
     }
 
     assert tracker_state == expected_state
@@ -2737,3 +2738,147 @@ def test_tracker_without_user_id():
     # deserialization preserves user_id
     tracker3 = DialogueStateTracker.from_dict(sender_id, [])
     assert tracker3.user_id is None
+
+
+def test_ensure_conversation_started_timestamp_sets_from_first_event(
+    domain: Domain,
+):
+    tracker = DialogueStateTracker.from_events(
+        "test_sender",
+        [SessionStarted(), UserUttered("Hello")],
+        domain=domain,
+    )
+    # Clear the timestamp to simulate old tracker
+    tracker.conversation_started_timestamp = None
+
+    tracker.ensure_conversation_started_timestamp()
+
+    assert tracker.conversation_started_timestamp is not None
+    assert tracker.conversation_started_timestamp == tracker.events[0].timestamp
+
+
+def test_ensure_conversation_started_timestamp_does_not_overwrite_existing(
+    domain: Domain,
+):
+    tracker = DialogueStateTracker.from_events(
+        "test_sender",
+        [SessionStarted(), UserUttered("Hello")],
+        domain=domain,
+    )
+    original_timestamp = tracker.conversation_started_timestamp
+    assert original_timestamp is not None
+
+    # Call again - should not change
+    tracker.ensure_conversation_started_timestamp()
+
+    assert tracker.conversation_started_timestamp == original_timestamp
+
+
+def test_ensure_conversation_started_timestamp_handles_empty_events():
+    tracker = DialogueStateTracker("test_sender", None)
+    tracker.conversation_started_timestamp = None
+
+    # Should not raise an error
+    tracker.ensure_conversation_started_timestamp()
+
+    assert tracker.conversation_started_timestamp is None
+
+
+def test_conversation_started_timestamp_set_on_first_update(domain: Domain):
+    tracker = DialogueStateTracker("test_sender", None)
+    assert tracker.conversation_started_timestamp is None
+
+    event = SessionStarted()
+    tracker.update(event, domain)
+
+    assert tracker.conversation_started_timestamp == event.timestamp
+
+
+def test_conversation_started_timestamp_not_changed_on_subsequent_updates(
+    domain: Domain,
+):
+    """Test that conversation_started_timestamp is not changed after first event."""
+    tracker = DialogueStateTracker("test_sender", None)
+
+    first_event = SessionStarted()
+    tracker.update(first_event, domain)
+    original_timestamp = tracker.conversation_started_timestamp
+
+    second_event = UserUttered("Hello")
+    tracker.update(second_event, domain)
+
+    assert tracker.conversation_started_timestamp == original_timestamp
+    assert tracker.conversation_started_timestamp != second_event.timestamp
+
+
+def test_from_dict_with_conversation_started_timestamp(domain: Domain):
+    events = [SessionStarted(), UserUttered("Hello")]
+    events_as_dict = [e.as_dict() for e in events]
+    timestamp = 1234567890.0
+
+    tracker = DialogueStateTracker.from_dict(
+        "test_sender",
+        events_as_dict,
+        domain.slots,
+        conversation_started_timestamp=timestamp,
+    )
+
+    assert tracker.conversation_started_timestamp == timestamp
+
+
+def test_from_dict_extracts_conversation_started_timestamp_from_events(
+    domain: Domain,
+):
+    events = [SessionStarted(), UserUttered("Hello")]
+    events_as_dict = [e.as_dict() for e in events]
+    first_event_timestamp = events[0].timestamp
+
+    tracker = DialogueStateTracker.from_dict(
+        "test_sender",
+        events_as_dict,
+        domain.slots,
+    )
+
+    assert tracker.conversation_started_timestamp == first_event_timestamp
+
+
+def test_from_events_with_conversation_started_timestamp(domain: Domain):
+    events = [SessionStarted(), UserUttered("Hello")]
+    timestamp = 1234567890.0
+
+    tracker = DialogueStateTracker.from_events(
+        "test_sender",
+        events,
+        domain.slots,
+        domain=domain,
+        conversation_started_timestamp=timestamp,
+    )
+
+    assert tracker.conversation_started_timestamp == timestamp
+
+
+def test_current_state_includes_conversation_started_timestamp(domain: Domain):
+    tracker = DialogueStateTracker.from_events(
+        "test_sender",
+        [SessionStarted(), UserUttered("Hello")],
+        domain=domain,
+    )
+    tracker.ensure_conversation_started_timestamp()
+
+    state = tracker.current_state()
+
+    assert "conversation_started_timestamp" in state
+    assert (
+        state["conversation_started_timestamp"]
+        == tracker.conversation_started_timestamp
+    )
+
+
+def test_current_state_includes_none_conversation_started_timestamp():
+    tracker = DialogueStateTracker("test_sender", None)
+    tracker.conversation_started_timestamp = None
+
+    state = tracker.current_state()
+
+    assert "conversation_started_timestamp" in state
+    assert state["conversation_started_timestamp"] is None

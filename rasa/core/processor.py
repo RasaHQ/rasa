@@ -15,6 +15,7 @@ import rasa.core.tracker_stores.tracker_store
 import rasa.core.utils
 import rasa.shared.core.trackers
 import rasa.shared.utils.io
+from rasa.constants import USER_ID
 from rasa.core import jobs
 from rasa.core.actions.action import Action
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
@@ -416,7 +417,8 @@ class MessageProcessor:
         Returns:
               Tracker for `sender_id`.
         """
-        tracker = await self.get_tracker(sender_id)
+        user_id = metadata.get(USER_ID) if metadata else None
+        tracker = await self.get_tracker(sender_id, user_id)
 
         await self._update_tracker_session(tracker, output_channel, metadata)
 
@@ -438,7 +440,8 @@ class MessageProcessor:
         Returns:
               Tracker for `sender_id`.
         """
-        tracker = await self.get_tracker(sender_id)
+        user_id = metadata.get(USER_ID) if metadata else None
+        tracker = await self.get_tracker(sender_id, user_id)
 
         # run session start only if the tracker is empty
         if not tracker.events:
@@ -446,7 +449,9 @@ class MessageProcessor:
 
         return tracker
 
-    async def get_tracker(self, conversation_id: Text) -> DialogueStateTracker:
+    async def get_tracker(
+        self, conversation_id: str, user_id: Optional[str] = None
+    ) -> DialogueStateTracker:
         """Get the tracker for a conversation.
 
         In contrast to `fetch_tracker_and_update_session` this does not add any
@@ -456,6 +461,7 @@ class MessageProcessor:
         Args:
             conversation_id: The ID of the conversation for which the history should be
                 retrieved.
+            user_id: The ID of the user for which the history should be retrieved.
 
         Returns:
             Tracker for the conversation. Creates an empty tracker in case it's a new
@@ -464,11 +470,13 @@ class MessageProcessor:
         conversation_id = conversation_id or DEFAULT_SENDER_ID
 
         tracker = await self.tracker_store.get_or_create_tracker(
-            conversation_id, append_action_listen=False
+            conversation_id, append_action_listen=False, user_id=user_id
         )
         tracker.model_id = self.model_metadata.model_id
         if tracker.assistant_id is None:
             tracker.assistant_id = self.model_metadata.assistant_id
+        if tracker.user_id is None and user_id is not None:
+            tracker.user_id = user_id
         return tracker
 
     async def fetch_full_tracker_with_initial_session(
@@ -489,6 +497,7 @@ class MessageProcessor:
             Tracker for the conversation. Creates an empty tracker with a new session
             initialized in case it's a new conversation.
         """
+        user_id = metadata.get(USER_ID) if metadata else None
         conversation_id = conversation_id or DEFAULT_SENDER_ID
 
         tracker = await self.tracker_store.get_or_create_full_tracker(
@@ -501,6 +510,9 @@ class MessageProcessor:
 
         if not tracker.events:
             await self._update_tracker_session(tracker, output_channel, metadata)
+
+        if tracker.user_id is None and user_id is not None:
+            tracker.user_id = user_id
 
         return tracker
 

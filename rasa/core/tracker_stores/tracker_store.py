@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from inspect import isawaitable, iscoroutinefunction
+from json import JSONDecodeError
 from typing import (
     Any,
     Callable,
@@ -11,6 +12,7 @@ from typing import (
     List,
     Optional,
     Text,
+    Tuple,
     TypeVar,
     Union,
 )
@@ -21,6 +23,7 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.json_utils
+from rasa.constants import USER_ID
 from rasa.core.brokers.broker import EventBroker
 from rasa.plugin import plugin_manager
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
@@ -91,9 +94,23 @@ class SerializedTrackerAsDict(SerializedTrackerRepresentation[Dict]):
     @staticmethod
     def serialise_tracker(tracker: DialogueStateTracker) -> Dict:
         """Serializes the tracker, returns representation of the tracker."""
-        d = tracker.as_dialogue().as_dict()
-        d.update({"sender_id": tracker.sender_id})
-        return d
+        serialized_tracker = tracker.as_dialogue().as_dict()
+        serialized_tracker.update({"sender_id": tracker.sender_id})
+
+        serialized_user_id = serialized_tracker.get(USER_ID)
+        if serialized_user_id is None:
+            # Remove user_id key if it's None to avoid storing null values
+            serialized_tracker.pop(USER_ID)
+
+        serialized_conversation_started_timestamp = serialized_tracker.get(
+            "conversation_started_timestamp"
+        )
+        if serialized_conversation_started_timestamp is None:
+            # Remove conversation_started_timestamp key if it's None
+            # to avoid storing null values
+            serialized_tracker.pop("conversation_started_timestamp")
+
+        return serialized_tracker
 
 
 class TrackerStore:
@@ -268,6 +285,68 @@ class TrackerStore:
         """
         raise NotImplementedError()
 
+    def _get_conversation_started_timestamp(
+        self, tracker: DialogueStateTracker
+    ) -> Optional[float]:
+        """Extract the timestamp of the first event in the conversation.
+
+        This timestamp represents when the conversation started and can be stored
+        as a separate field in tracker stores for efficient sorting and querying.
+
+        Args:
+            tracker: Tracker to extract timestamp from.
+
+        Returns:
+            Timestamp of the first event, or None if no events exist.
+        """
+        if tracker.conversation_started_timestamp is not None:
+            return tracker.conversation_started_timestamp
+        if tracker.events:
+            return tracker.events[0].timestamp
+        return None
+
+    def _sort_key(self, tracker: DialogueStateTracker) -> Tuple[float, str]:
+        """Sorting key for trackers based on first event timestamp or sender_id.
+
+        Sort by first event timestamp (if available) then sender_id
+        for consistent ordering. This mimics MongoDB's _id sorting
+        which includes timestamp information.
+        If no events exist, fall back to sender_id only.
+
+        Args:
+            tracker: Tracker to generate sort key for.
+
+        Returns:
+            Tuple of (timestamp, sender_id) for sorting.
+        """
+        if tracker.conversation_started_timestamp is not None:
+            return tracker.conversation_started_timestamp, tracker.sender_id
+        if tracker.events:
+            return tracker.events[0].timestamp, tracker.sender_id
+        return 0.0, tracker.sender_id
+
+    def _apply_pagination(
+        self,
+        trackers: List[DialogueStateTracker],
+        skip: Optional[int],
+        limit: Optional[int],
+    ) -> List[DialogueStateTracker]:
+        """Apply skip and limit pagination to trackers list.
+
+        Args:
+            trackers: List of trackers to paginate.
+            skip: Optional number of trackers to skip.
+            limit: Optional maximum number of trackers to return.
+
+        Returns:
+            Paginated list of trackers.
+        """
+        if skip is not None and skip > 0:
+            trackers = trackers[skip:]
+        if limit is not None and limit > 0:
+            trackers = trackers[:limit]
+        return trackers
+
     async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
@@ -350,6 +429,28 @@ class TrackerStore:
         """Returns the set of values for the tracker store's primary key."""
         raise NotImplementedError()
 
+    async def get_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[DialogueStateTracker]:
+        """Retrieves all trackers for a given user_id.
+
+        This method will be overridden by the specific tracker store.
+
+        Args:
+            user_id: User ID to fetch trackers for.
+            limit: Optional maximum number of trackers to return. If None, returns all
+                matching trackers. Useful for pagination.
+            skip: Optional number of trackers to skip before returning results. If None,
+                starts from the beginning. Useful for pagination.
+
+        Returns:
+            List of trackers associated with the user_id.
+        """
+        raise NotImplementedError()
+
     async def count_conversations(self, after_timestamp: float = 0.0) -> int:
         """Returns the number of conversations that have occurred after a timestamp.
 
@@ -378,7 +479,7 @@ class TrackerStore:
         """Deserializes the tracker and returns it."""
         try:
             dialogue = Dialogue.from_parameters(json.loads(serialised_tracker))
-        except UnicodeDecodeError as e:
+        except (UnicodeDecodeError, JSONDecodeError) as e:
             raise TrackerDeserialisationException(
                 "Tracker cannot be deserialised. "
                 "Trackers must be serialised as json. "
@@ -418,6 +519,8 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
     async def save(self, tracker: DialogueStateTracker) -> None:
         """Updates and saves the current conversation state."""
         await self.stream_events(tracker)
+        # Ensure conversation_started_timestamp is set (for backward compatibility)
+        tracker.ensure_conversation_started_timestamp()
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
 
@@ -503,6 +606,34 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
             tracker: The tracker to update.
         """
         await self.save(tracker)
+
+    async def get_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[DialogueStateTracker]:
+        """Retrieves all trackers for a given user_id.
+
+        Args:
+            user_id: User ID to fetch trackers for.
+            limit: Optional maximum number of trackers to return. If None, returns all
+                matching trackers.
+            skip: Optional number of trackers to skip before returning results. If None,
+                starts from the beginning.
+
+        Returns:
+            List of trackers associated with the user_id.
+        """
+        trackers = []
+        for sender_id in self.store.keys():
+            tracker = await self.retrieve_full_tracker(sender_id)
+            if tracker is not None and tracker.user_id == user_id:
+                trackers.append(tracker)
+
+        trackers.sort(key=self._sort_key)
+
+        return self._apply_pagination(trackers, skip, limit)
 
 
 def validate_port(port: Any) -> Optional[int]:
@@ -656,6 +787,23 @@ class FailSafeTrackerStore(TrackerStore):
                     f"the '{InMemoryTrackerStore.__name__}'."
                 ),
                 exec_info=error,
+            )
+
+    async def get_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[DialogueStateTracker]:
+        """Calls `get_trackers_by_user_id` method of primary tracker store."""
+        try:
+            return await self._tracker_store.get_trackers_by_user_id(
+                user_id, limit=limit, skip=skip
+            )
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            return await self.fallback_tracker_store.get_trackers_by_user_id(
+                user_id, limit=limit, skip=skip
             )
 
 
@@ -842,4 +990,16 @@ class AwaitableTrackerStore(TrackerStore):
     ) -> Optional[DialogueStateTracker]:
         """Wrapper to call `retrieve_full_tracker` method of primary tracker store."""
         result = self._tracker_store.retrieve_full_tracker(conversation_id)
+        return await result if isawaitable(result) else result
+
+    async def get_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[DialogueStateTracker]:
+        """Wrapper to call `get_trackers_by_user_id` method of primary tracker store."""
+        result = self._tracker_store.get_trackers_by_user_id(
+            user_id, limit=limit, skip=skip
+        )
         return await result if isawaitable(result) else result

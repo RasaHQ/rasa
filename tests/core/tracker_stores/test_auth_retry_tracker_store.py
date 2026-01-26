@@ -15,6 +15,7 @@ from rasa.core.tracker_stores.auth_retry_tracker_store import (
     AuthRetryTrackerStore,
 )
 from rasa.core.tracker_stores.tracker_store import AwaitableTrackerStore, TrackerStore
+from rasa.shared.constants import DEFAULT_USER_ID
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -881,5 +882,125 @@ async def test_auth_retry_tracker_store_retrieve_full_tracker_unsuccessful_after
 
     log_msg = (
         f"Failed to retrieve full tracker for {sender_id} " f"after {retries} retries."
+    )
+    assert log_msg in caplog.text
+
+
+async def test_auth_retry_tracker_store_get_trackers_by_user_id(
+    moodbot_domain: Domain,
+    mock_tracker_store: AsyncMock,
+    caplog: LogCaptureFixture,
+    mock_auth_retry_tracker_store_recreate_tracker_store: MagicMock,
+) -> None:
+    """Test get_trackers_by_user_id delegates to wrapped tracker store."""
+    user_id = DEFAULT_USER_ID
+    expected_trackers = [
+        DialogueStateTracker.from_events(
+            "sender1", [UserUttered("hello")], user_id=user_id
+        ),
+        DialogueStateTracker.from_events(
+            "sender2", [UserUttered("hi")], user_id=user_id
+        ),
+    ]
+    mock_tracker_store.get_trackers_by_user_id = AsyncMock(
+        return_value=expected_trackers
+    )
+    mock_auth_retry_tracker_store_recreate_tracker_store.return_value = (
+        mock_tracker_store
+    )
+
+    auth_retry_tracker_store = AuthRetryTrackerStore(
+        endpoint_config=EndpointConfig(), domain=moodbot_domain, retries=1
+    )
+
+    with caplog.at_level(logging.WARNING):
+        result = await auth_retry_tracker_store.get_trackers_by_user_id(user_id)
+
+    assert result == expected_trackers
+    mock_tracker_store.get_trackers_by_user_id.assert_called_once_with(
+        user_id, limit=None, skip=None
+    )
+    assert caplog.text == ""
+
+
+async def test_auth_retry_tracker_store_get_trackers_by_user_id_successful_with_exc(
+    moodbot_domain: Domain,
+    mock_tracker_store: AsyncMock,
+    mock_auth_retry_tracker_store_recreate_tracker_store: MagicMock,
+    mock_new_tracker_store: AsyncMock,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Test get_trackers_by_user_id retries on exception."""
+    user_id = DEFAULT_USER_ID
+    expected_trackers = [
+        DialogueStateTracker.from_events(
+            "sender1", [UserUttered("hello")], user_id=user_id
+        ),
+    ]
+    mock_auth_retry_tracker_store_recreate_tracker_store.side_effect = [
+        mock_tracker_store,
+        mock_new_tracker_store,
+    ]
+    mock_tracker_store.get_trackers_by_user_id.side_effect = Exception("DB error")
+    mock_new_tracker_store.get_trackers_by_user_id = AsyncMock(
+        return_value=expected_trackers
+    )
+
+    auth_retry_tracker_store = AuthRetryTrackerStore(
+        endpoint_config=EndpointConfig(),
+        domain=moodbot_domain,
+        retries=1,
+        event_broker=EventBroker(),
+    )
+
+    with caplog.at_level(logging.WARNING):
+        result = await auth_retry_tracker_store.get_trackers_by_user_id(user_id)
+
+    assert result == expected_trackers
+    assert auth_retry_tracker_store._tracker_store == mock_new_tracker_store
+    mock_tracker_store.get_trackers_by_user_id.assert_called_once_with(
+        user_id, limit=None, skip=None
+    )
+    mock_new_tracker_store.get_trackers_by_user_id.assert_called_once_with(
+        user_id, limit=None, skip=None
+    )
+
+    log_msg = f"Failed to retrieve trackers for user_id {user_id}. Retrying..."
+    assert log_msg in caplog.text
+
+
+async def test_auth_retry_tracker_store_get_trackers_by_user_id_raise_after_max_retries(
+    moodbot_domain: Domain,
+    mock_tracker_store: AsyncMock,
+    mock_auth_retry_tracker_store_recreate_tracker_store: MagicMock,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Test get_trackers_by_user_id returns empty list after max retries."""
+    user_id = "user_123"
+    retries = 1
+    mock_auth_retry_tracker_store_recreate_tracker_store.side_effect = [
+        mock_tracker_store,
+        mock_tracker_store,
+        mock_tracker_store,
+    ]
+
+    mock_tracker_store.get_trackers_by_user_id.side_effect = [Exception("DB error")]
+
+    auth_retry_tracker_store = AuthRetryTrackerStore(
+        endpoint_config=EndpointConfig(),
+        domain=moodbot_domain,
+        retries=retries,
+        event_broker=EventBroker(),
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        result = await auth_retry_tracker_store.get_trackers_by_user_id(user_id)
+
+    assert result == []
+    assert mock_tracker_store.get_trackers_by_user_id.call_count == 2
+
+    log_msg = (
+        f"Failed to retrieve trackers for user_id {user_id} "
+        f"after {retries} retries."
     )
     assert log_msg in caplog.text

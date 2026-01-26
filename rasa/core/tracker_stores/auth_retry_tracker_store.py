@@ -1,5 +1,5 @@
 import logging
-from typing import Iterable, Optional, Text
+from typing import Iterable, List, Optional, Text
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.secrets_manager.secret_manager import EndpointResolver
@@ -184,3 +184,32 @@ class AuthRetryTrackerStore(TrackerStore):
                 f"Failed to replace tracker for {tracker.sender_id} "
                 f"after {self.retries} retries."
             )
+
+    async def get_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[DialogueStateTracker]:
+        """Retries retrieving trackers by user_id if it fails."""
+        # add + 1 to retries because the retries are additional to the first attempt
+        for _ in range(self.retries + 1):
+            try:
+                return await self._tracker_store.get_trackers_by_user_id(
+                    user_id, limit=limit, skip=skip
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to retrieve trackers for user_id {user_id}. Retrying...",
+                    exc_info=e,
+                )
+                self._tracker_store = self.recreate_tracker_store(
+                    self.domain, self.event_broker
+                )
+
+        # user_id is a random identifier and should not contain sensitive information
+        logger.error(
+            f"Failed to retrieve trackers for user_id {user_id} "
+            f"after {self.retries} retries."
+        )
+        return []

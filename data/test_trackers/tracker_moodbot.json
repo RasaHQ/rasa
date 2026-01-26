@@ -33,6 +33,7 @@
   "latest_event_time": 1517821726.211042,
   "followup_action": null,
   "stack": [],
+  "conversation_started_timestamp": 1517821726.211031,
   "slots": {
     "language": null,
     "flow_hashes": null,
