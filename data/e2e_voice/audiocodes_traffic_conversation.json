@@ -1,0 +1,27 @@
+[
+  {
+    "direction": "incoming",
+    "event": "connection.validate",
+    "timestamp": "2025-12-18T17:54:04.597102+00:00"
+  },
+  {
+    "direction": "incoming",
+    "event": "connection.validate",
+    "timestamp": "2025-12-18T17:54:41.275825+00:00"
+  },
+  {
+    "direction": "incoming",
+    "event": "connection.validate",
+    "timestamp": "2025-12-18T17:55:20.187043+00:00"
+  },
+  {
+    "direction": "incoming",
+    "event": "connection.validate",
+    "timestamp": "2025-12-18T17:58:22.036307+00:00"
+  },
+  {
+    "direction": "incoming",
+    "event": "connection.validate",
+    "timestamp": "2025-12-18T18:01:14.029755+00:00"
+  }
+]

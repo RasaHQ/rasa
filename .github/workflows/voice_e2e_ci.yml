@@ -1,0 +1,211 @@
+name: Voice E2E CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - '[0-9]+.[0-9]+.x'
+  pull_request:
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: read
+
+
+env:
+  DEFAULT_PYTHON_VERSION: '3.10'
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+  AWS_REGION: eu-west-1
+  VOICE_FILES: data/e2e_voice/user_remove_contact_from_list/1.wav
+  CALM_BENCHMARKING_BOT_READ_TOKEN: ${{ secrets.CALM_BENCH_CLONE }}
+  GH_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-voice-code-changes:
+    name: Check for code changes
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') }}
+    runs-on: warp-ubuntu-latest-x64-2x
+    timeout-minutes: 10
+    outputs:
+      # Unit test related outputs
+      voice-files: ${{ steps.filter.outputs.voice-files }}
+      poetry-dependency-updates: ${{ steps.filter.outputs.poetry-dependency-updates }}
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - id: filter
+        name: Check for changes in related files
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: .github/change_filters.yml
+
+  install-and-cache-rasa:
+    name: Install and cache Rasa for reuse across jobs
+    needs: [ check-voice-code-changes ]
+    if: ${{ (needs.check-voice-code-changes.outputs.voice-files == 'true' || needs.check-voice-code-changes.outputs.poetry-dependency-updates == 'true') }}
+    runs-on: warp-ubuntu-latest-x64-2x
+    strategy:
+      matrix:
+        installation:
+          - default
+          - anonymisation
+          - nlu
+          - full
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Check if cached Rasa exists
+      - name: Check Rasa cache
+        id: cached-rasa
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: ${{ github.workspace }}/.venv
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+          lookup-only: true
+          fail-on-cache-miss: true
+        continue-on-error: true
+
+      - name: Prepare the job
+        if: ${{ steps.cached-rasa.outcome == 'failure' }}
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          LOAD_CACHE: "false"
+
+      # Install if no cache hits
+      - name: Install Rasa with default installation
+        if: ${{ steps.cached-rasa.outcome == 'failure' && matrix.installation == 'default' }}
+        run: |
+          make install
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+
+      # Save new Cache if no existing cache hits
+      - name: Save Rasa
+        if: steps.cached-rasa.outcome == 'failure'
+        uses: WarpBuilds/cache/save@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+          path: ${{ github.workspace }}/.venv
+
+
+  voice-e2e:
+    name: Voice E2E happy path
+    runs-on: warp-ubuntu-latest-x64-2x
+    needs: [ install-and-cache-rasa, check-voice-code-changes ]
+    if: ${{ (needs.check-voice-code-changes.outputs.voice-files == 'true' || needs.check-voice-code-changes.outputs.poetry-dependency-updates == 'true') }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        voice_data_files: [
+          "calm-benchmarking-bot/e2e_audio/happy_path/user_remove_contact_from_list/1.wav",
+        ]
+        python-version:
+          - "3.10"
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Checkout `calm-benchmarking-bot` git repository 🕝
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: RasaHQ/calm-benchmarking-bot
+          path: calm-benchmarking-bot
+          token: ${{ secrets.CALM_BENCH_CLONE }}
+          ref: voice-simulation-ci-test-branch
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        id: prepare-job
+        with:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: ubuntu-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ubuntu-${{ runner.os }}-dependencies-voice-unit-tests
+
+      - name: Install additional dependencies
+        run: poetry add azure-cognitiveservices-speech
+
+      - name: Install rasa from current branch
+        env:
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          PR_TITLE: ${{ github.event.pull_request.title || github.ref_name }}
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+        run: |
+          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
+          echo "Installing Rasa from branch: $BRANCH_NAME"
+          export BRANCH_NAME
+          pip install "git+https://${GH_TOKEN}@github.com/RasaHQ/rasa-private.git@$BRANCH_NAME"
+
+      - name: Train model and run rasa server
+        id: train_and_run_rasa
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
+          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          PR_TITLE: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          set -euo pipefail
+          rm -rf models .rasa
+          cp -r calm-benchmarking-bot/docs .
+          rasa train \
+          --config calm-benchmarking-bot/config/baseline-config.yml \
+          --endpoints calm-benchmarking-bot/endpoints.yml \
+          --data calm-benchmarking-bot/data \
+          -d calm-benchmarking-bot/domain \
+          --fixed-model-name "voice-$PR_TITLE"
+          echo "==== rasa.log start ===="
+          stdbuf -oL -eL rasa run --port 5005 --model models \
+          --enable-api \
+          --endpoints calm-benchmarking-bot/endpoints.yml \
+          --credentials calm-benchmarking-bot/credentials.yml 2>&1 | tee rasa.log &
+          for i in $(seq 1 60); do
+            if curl -sSf http://localhost:5005/ >/dev/null 2>&1; then
+              echo "Rasa is up"
+              break
+            fi
+            echo "Waiting for Rasa... ($i/60)"
+            sleep 2
+          done
+          # Final verification: fail the job if Rasa never became available
+          if ! curl -sSf http://localhost:5005/ >/dev/null 2>&1; then
+          echo "ERROR: Rasa did not start within the timeout (120s)." >&2
+          echo "==== Last lines of rasa.log ===="
+          tail -n 200 rasa.log || true
+          exit 1
+          fi
+        shell: bash
+
+      - name: Run calm-benchmarking-bot happy path scenario for all voice primitives
+        env:
+          SENDER_ID: 'test-voice_user-${{ github.run_number }}'
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
+          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+        run: |
+          echo "Using VOICE_FILES=${{ matrix.voice_data_files }}"
+          poetry run pytest -s -vv -o log_cli=true -o log_cli_level=DEBUG tests/integration_tests/core/channels/test_voice_primitives.py --voice-files=${{ matrix.voice_data_files }}
+        shell: bash
+
+      - name: Run AudioCodes replay test
+        if: steps.train_and_run_rasa.outcome == 'success'
+        env:
+          RASA_URL: http://localhost:5005
+          AUDIOCODES_TRAFFIC_FILE: data/e2e_voice/audiocodes_traffic.json
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+        run: |
+          echo "Running AudioCodes replay test..."
+          poetry run pytest -s -vv -o log_cli=true -o log_cli_level=INFO \
+            tests/integration_tests/core/channels/test_audiocodes_replay.py
+        shell: bash
