@@ -646,6 +646,99 @@ class TestUsageStatistics:
         assert initial_stats.cached_prompt_tokens == expected_stats.cached_prompt_tokens
         assert initial_stats.model == expected_stats.model
 
+    def test_add_operator_aggregates_usage_statistics(self):
+        """Test that the + operator correctly aggregates two UsageStatistics objects."""
+        stats1 = UsageStatistics(
+            model="gpt-4o-mini",
+            prompt_tokens=100,
+            completion_tokens=50,
+            total_tokens=150,
+            cached_prompt_tokens=10,
+            input_token_price=0.01,
+            output_token_price=0.02,
+            cached_token_price=0.005,
+        )
+
+        stats2 = UsageStatistics(
+            model="gpt-4o",
+            prompt_tokens=200,
+            completion_tokens=100,
+            total_tokens=300,
+            cached_prompt_tokens=20,
+            input_token_price=0.01,
+            output_token_price=0.02,
+            cached_token_price=0.005,
+        )
+
+        result = stats1 + stats2
+
+        # Token counts should be summed
+        assert result.prompt_tokens == 300  # 100 + 200
+        assert result.completion_tokens == 150  # 50 + 100
+        assert result.total_tokens == 450  # 150 + 300
+        assert result.cached_prompt_tokens == 30  # 10 + 20
+
+        # Model should prefer the second (other) model
+        assert result.model == "gpt-4o"
+
+        # Prices should be preserved
+        assert result.input_token_price == 0.01
+        assert result.output_token_price == 0.02
+        assert result.cached_token_price == 0.005
+
+    def test_add_operator_handles_none_values(self):
+        """Test that the + operator handles None values correctly."""
+        stats1 = UsageStatistics(
+            model="gpt-4o-mini",
+            prompt_tokens=100,
+            completion_tokens=None,
+            total_tokens=100,
+            cached_prompt_tokens=None,
+        )
+
+        stats2 = UsageStatistics(
+            model=None,
+            prompt_tokens=None,
+            completion_tokens=50,
+            total_tokens=50,
+            cached_prompt_tokens=10,
+        )
+
+        result = stats1 + stats2
+
+        # None should be treated as 0
+        assert result.prompt_tokens == 100  # 100 + 0
+        assert result.completion_tokens == 50  # 0 + 50
+        assert result.total_tokens == 150  # 100 + 50
+        assert result.cached_prompt_tokens == 10  # 0 + 10
+
+        # Model should prefer stats1's model when stats2's is None
+        assert result.model == "gpt-4o-mini"
+
+    def test_add_operator_with_empty_usage_statistics(self):
+        """Test adding a UsageStatistics with an empty one."""
+        stats = UsageStatistics(
+            model="gpt-4o",
+            prompt_tokens=100,
+            completion_tokens=50,
+            total_tokens=150,
+            input_token_price=0.01,
+            output_token_price=0.02,
+        )
+
+        empty = UsageStatistics(
+            input_token_price=0.01,
+            output_token_price=0.02,
+        )
+
+        result = stats + empty
+
+        # Should preserve the original stats
+        assert result.prompt_tokens == 100
+        assert result.completion_tokens == 50
+        assert result.total_tokens == 150
+        assert result.model == "gpt-4o"
+
 
 class TestControlledPredictionContent:
     def test_valid_controlled_prediction_categories(self):

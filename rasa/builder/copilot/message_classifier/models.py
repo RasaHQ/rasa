@@ -16,10 +16,12 @@ class MessageClassifierResult(BaseModel):
     Attributes:
         category: The ResponseCategory determined by the MessageClassifier.
         classification_usage: Usage stats from the classification LLM call.
+        raw_response: The raw text response from the classification LLM.
     """
 
     category: ResponseCategory
     classification_usage: UsageStatistics
+    raw_response: str = ""
 
     class Config:
         use_enum_values = False

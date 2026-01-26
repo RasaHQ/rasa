@@ -47,9 +47,11 @@ class OrchestratedCopilot(BaseCopilot):
             chat_history_size=config.MESSAGE_CLASSIFIER_CHAT_HISTORY_SIZE,
         )
         self._agent_copilot = AgentCopilot()
-        self._usage_statistics: Optional[UsageStatistics] = None
         self._llm_config: Optional[Dict[str, Any]] = None
         self._orchestration_handler: Optional[MessageClassifierResponseHandler] = None
+
+        self._classification_usage: Optional[UsageStatistics] = None
+        self._agent_usage: Optional[UsageStatistics] = None
 
     @staticmethod
     def _extract_user_message(context: CopilotContext) -> str:
@@ -82,43 +84,32 @@ class OrchestratedCopilot(BaseCopilot):
 
     @property
     def usage_statistics(self) -> UsageStatistics:
-        """Get usage statistics from the last response.
-
-        For orchestrated responses, always includes classification usage statistics.
-        For greetings/goodbyes, also aggregates generation usage.
+        """Get aggregated usage statistics from all LLM calls in the last response.
 
         Returns:
-            UsageStatistics aggregated from all LLM calls in the last response.
+            - If routed to full copilot: Agent's usage statistics (classification
+              tokens are negligible ~10-15 vs hundreds/thousands from agent)
+            - If handled by orchestrator: Aggregated classification + generation
+              usage (same model, so aggregation is accurate)
         """
-        if self._usage_statistics is None:
-            return UsageStatistics(
-                input_token_price=config.COPILOT_INPUT_TOKEN_PRICE,
-                output_token_price=config.COPILOT_OUTPUT_TOKEN_PRICE,
-                cached_token_price=config.COPILOT_CACHED_TOKEN_PRICE,
-            )
+        # If routed to full copilot, return agent usage (classification is negligible)
+        if self._agent_usage:
+            return self._agent_usage
 
-        # For orchestrated responses with generation (greetings/goodbyes),
-        # aggregate classification usage statistics + generation usage
+        # Otherwise, aggregate classification + generation (same model/pricing)
+        total = UsageStatistics(
+            input_token_price=config.COPILOT_INPUT_TOKEN_PRICE,
+            output_token_price=config.COPILOT_OUTPUT_TOKEN_PRICE,
+            cached_token_price=config.COPILOT_CACHED_TOKEN_PRICE,
+        )
+
+        if self._classification_usage:
+            total = total + self._classification_usage
+
         if self._orchestration_handler and self._orchestration_handler.generation_usage:
-            classification_usage = self._usage_statistics
-            generation_usage = self._orchestration_handler.generation_usage
+            total = total + self._orchestration_handler.generation_usage
 
-            return UsageStatistics(
-                model=config.ORCHESTRATOR_MODEL,
-                prompt_tokens=(classification_usage.prompt_tokens or 0)
-                + (generation_usage.prompt_tokens or 0),
-                completion_tokens=(classification_usage.completion_tokens or 0)
-                + (generation_usage.completion_tokens or 0),
-                total_tokens=(classification_usage.total_tokens or 0)
-                + (generation_usage.total_tokens or 0),
-                cached_prompt_tokens=0,
-                input_token_price=config.COPILOT_INPUT_TOKEN_PRICE,
-                output_token_price=config.COPILOT_OUTPUT_TOKEN_PRICE,
-                cached_token_price=config.COPILOT_CACHED_TOKEN_PRICE,
-            )
-
-        # For responses without generation return classification usage statistics only
-        return self._usage_statistics
+        return total
 
     async def generate_response(
         self, context: CopilotContext
@@ -134,17 +125,19 @@ class OrchestratedCopilot(BaseCopilot):
         user_message = self._extract_user_message(context)
         classifier_result = await self._classifier.classify(context)
 
+        self._classification_usage = classifier_result.classification_usage
+
         if classifier_result.requires_full_copilot:
             return await self._handle_full_copilot(context)
         else:
             return self._handle_orchestrated_response(
                 classifier_result.category,
                 user_message,
-                classifier_result.classification_usage,
             )
 
     async def _handle_full_copilot(
-        self, context: CopilotContext
+        self,
+        context: CopilotContext,
     ) -> Tuple["CopilotResponseHandler", CopilotGenerationContext]:
         """Delegate to the full agent copilot.
 
@@ -157,23 +150,22 @@ class OrchestratedCopilot(BaseCopilot):
         handler, generation_context = await self._agent_copilot.generate_response(
             context
         )
-        self._usage_statistics = self._agent_copilot.usage_statistics
+
+        # Store agent usage (classification usage already stored in generate_response)
+        self._agent_usage = self._agent_copilot.usage_statistics
         self._llm_config = self._agent_copilot.llm_config
-        self._orchestration_handler = None
         return handler, generation_context
 
     def _handle_orchestrated_response(
         self,
         category: ResponseCategory,
         user_message: str,
-        classification_usage: UsageStatistics,
     ) -> Tuple["CopilotResponseHandler", CopilotGenerationContext]:
         """Handle quick responses through orchestration.
 
         Args:
             category: The ResponseCategory determined by the classifier.
             user_message: The last user message text.
-            classification_usage: Usage stats from the classification LLM call.
 
         Returns:
             Tuple of (response handler, generation context).
@@ -193,8 +185,6 @@ class OrchestratedCopilot(BaseCopilot):
             tracker_event_attachments=[],
         )
 
-        # Store classification usage; generation usage will be added after streaming
-        self._usage_statistics = classification_usage
         self._orchestration_handler = handler
         self._llm_config = {
             "model": config.ORCHESTRATOR_MODEL,

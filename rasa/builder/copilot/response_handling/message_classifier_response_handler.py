@@ -48,6 +48,9 @@ from rasa.builder.copilot.response_handling.constants import (
     UNCLEAR_INPUT_RESPONSE_KEY,
 )
 from rasa.builder.document_retrieval.models import Document
+from rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry import (
+    MessageClassifierResponseHandlerLangfuseTelemetry,
+)
 from rasa.shared.constants import PACKAGE_NAME
 
 structlogger = structlog.get_logger()
@@ -59,6 +62,11 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
     Generates responses for requests that don't require the full copilot.
     For complex requests, AgentCopilotResponseHandler is used instead.
     """
+
+    # LLM parameters for response generation
+    GREETING_MAX_TOKENS = 50
+    GOODBYE_MAX_TOKENS = 30
+    GENERATION_TEMPERATURE = 0.7  # More creative for greetings/goodbyes
 
     def __init__(self, response_category: ResponseCategory, user_message: str) -> None:
         """Initialize the classification response handler.
@@ -210,11 +218,14 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
                     {"role": "user", "content": user_message},
                 ],
                 max_tokens=max_tokens,
-                temperature=0.7,
+                temperature=self.GENERATION_TEMPERATURE,
                 stream=True,
                 stream_options={"include_usage": True},
             )
 
+    @MessageClassifierResponseHandlerLangfuseTelemetry.trace_response_generation(
+        "greeting", max_tokens=GREETING_MAX_TOKENS
+    )
     async def _stream_greeting(self) -> AsyncIterator[GeneratedContent]:
         """Stream a greeting response matching user's tone."""
         responses = copilot_handler_default_responses()
@@ -224,12 +235,15 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
 
         async for token in self._stream_llm_response(
             system_prompt=self._greeting_prompt,
-            max_tokens=50,
+            max_tokens=self.GREETING_MAX_TOKENS,
             fallback_text=fallback_text,
             log_prefix="greeting",
         ):
             yield token
 
+    @MessageClassifierResponseHandlerLangfuseTelemetry.trace_response_generation(
+        "goodbye", max_tokens=GOODBYE_MAX_TOKENS
+    )
     async def _stream_goodbye(self) -> AsyncIterator[GeneratedContent]:
         """Stream a goodbye response matching user's tone."""
         responses = copilot_handler_default_responses()
@@ -239,7 +253,7 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
 
         async for token in self._stream_llm_response(
             system_prompt=self._goodbye_prompt,
-            max_tokens=30,
+            max_tokens=self.GOODBYE_MAX_TOKENS,
             fallback_text=fallback_text,
             log_prefix="goodbye",
         ):

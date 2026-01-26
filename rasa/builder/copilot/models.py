@@ -1428,6 +1428,32 @@ class UsageStatistics(BaseModel):
             event.response.usage.input_tokens_details.cached_tokens
         )
 
+    def __add__(self, other: "UsageStatistics") -> "UsageStatistics":
+        """Add two UsageStatistics objects together.
+
+        Args:
+            other: Another UsageStatistics object to add.
+
+        Returns:
+            A new UsageStatistics object with aggregated values.
+        """
+        # NOTE: Model field preference is arbitrary when aggregating
+        # different models. We prefer 'other' to report the dominant model
+        # in typical usage patterns. Individual model usage is tracked
+        # separately in Langfuse observations.
+        return UsageStatistics(
+            model=other.model or self.model,
+            prompt_tokens=(self.prompt_tokens or 0) + (other.prompt_tokens or 0),
+            completion_tokens=(self.completion_tokens or 0)
+            + (other.completion_tokens or 0),
+            total_tokens=(self.total_tokens or 0) + (other.total_tokens or 0),
+            cached_prompt_tokens=(self.cached_prompt_tokens or 0)
+            + (other.cached_prompt_tokens or 0),
+            input_token_price=other.input_token_price or self.input_token_price,
+            output_token_price=other.output_token_price or self.output_token_price,
+            cached_token_price=other.cached_token_price or self.cached_token_price,
+        )
+
 
 class CopilotGenerationContext(BaseModel):
     """Container for copilot generation context and supporting evidence.

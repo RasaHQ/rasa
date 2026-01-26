@@ -33,6 +33,9 @@ from rasa.builder.copilot.models import (
     UsageStatistics,
 )
 from rasa.builder.copilot.utils import filter_chat_history_messages
+from rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry import (
+    MessageClassifierLangfuseTelemetry,
+)
 from rasa.shared.constants import PACKAGE_NAME
 
 structlogger = structlog.get_logger()
@@ -51,6 +54,10 @@ class MessageClassifier:
     The focused classification model provides more accurate routing decisions
     than embedding classification logic in the main copilot prompt.
     """
+
+    # LLM parameters for classification
+    CLASSIFICATION_MAX_TOKENS: ClassVar[int] = 50
+    CLASSIFICATION_TEMPERATURE: ClassVar[float] = 0.0
 
     # Categories that the MessageClassifier can classify into
     CLASSIFIER_CATEGORIES: ClassVar[List[ResponseCategory]] = [
@@ -104,6 +111,7 @@ class MessageClassifier:
             structlogger.error("classifier.llm_client_error", error=str(e))
             raise
 
+    @MessageClassifierLangfuseTelemetry.trace_classification
     async def classify(self, context: CopilotContext) -> MessageClassifierResult:
         """Classify a user message and decide how to handle it.
 
@@ -152,6 +160,7 @@ class MessageClassifier:
             return MessageClassifierResult(
                 category=category,
                 classification_usage=classification_usage,
+                raw_response=raw_response,
             )
 
         except Exception as e:
@@ -173,6 +182,7 @@ class MessageClassifier:
                     output_token_price=config.COPILOT_OUTPUT_TOKEN_PRICE,
                     cached_token_price=config.COPILOT_CACHED_TOKEN_PRICE,
                 ),
+                raw_response=f"ERROR: {e!s}",
             )
 
     async def _call_llm(self, messages: List[Dict[str, Any]]) -> ChatCompletion:
@@ -188,8 +198,8 @@ class MessageClassifier:
             return await client.chat.completions.create(
                 model=config.ORCHESTRATOR_MODEL,
                 messages=messages,
-                max_tokens=50,  # Classifications are short
-                temperature=0,  # Deterministic classification
+                max_tokens=self.CLASSIFICATION_MAX_TOKENS,
+                temperature=self.CLASSIFICATION_TEMPERATURE,
             )
 
     async def _build_messages(
