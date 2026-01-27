@@ -1223,12 +1223,14 @@ def _instrument_get_tracker(
     def tracing_get_tracker_wrapper(fn: Callable) -> Callable:
         @functools.wraps(fn)
         async def wrapper(
-            self: Type[ProcessorType], conversation_id: Text
+            self: Type[ProcessorType],
+            conversation_id: str,
+            user_id: Optional[str] = None,
         ) -> DialogueStateTracker:
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}"
             ) as span:
-                tracker: DialogueStateTracker = await fn(self, conversation_id)
+                tracker: DialogueStateTracker = await fn(self, conversation_id, user_id)
                 span.set_attributes({"number_of_events": len(tracker.events)})
                 return tracker
 

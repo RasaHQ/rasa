@@ -79,8 +79,11 @@ broker-files:
 
 tracing-and-metrics-files:
   - rasa/tracing/**
-  - rasa/core/policies/**
+  - rasa/core/**
   - rasa/dialogue_understanding/generator/**
+  - rasa/dialogue_understanding/processor/**
+  - rasa/graph_components/**
+  - rasa/agents/**
   - rasa/engine/**
   - rasa/shared/core/domain.py
   - tests_deployment/integration_tests_metrics_setup/**

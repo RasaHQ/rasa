@@ -377,7 +377,9 @@ class MockMessageProcessor(MessageProcessor):
     ) -> None:
         pass
 
-    async def get_tracker(self, conversation_id: Text) -> TrackerMock:
+    async def get_tracker(
+        self, conversation_id: str, user_id: Optional[str] = None
+    ) -> TrackerMock:
         return self.tracker_mock
 
     async def _run_action(
