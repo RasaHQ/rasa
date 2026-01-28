@@ -92,8 +92,12 @@ class CommitFileContents(BaseModel):
     """Original and modified contents of a file in a commit."""
 
     status: str = Field(..., description="Status of the file")
-    content_original: str = Field(..., description="Original file content")
-    content_modified: str = Field(..., description="Modified file content")
+    content_original: str | None = Field(
+        None, description="Original file content. None if file is binary."
+    )
+    content_modified: str | None = Field(
+        None, description="Modified file content. None if file is binary."
+    )
     path_original: str | None = Field(
         None, description="Original file path (Only for renamed files)"
     )

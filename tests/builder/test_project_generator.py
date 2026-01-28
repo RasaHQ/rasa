@@ -8,7 +8,10 @@ from rasa.builder.copilot.constants import PROMPT_TO_BOT_KEY, PROMPT_TO_BOT_TEMP
 from rasa.builder.copilot.copilot_templated_message_provider import (
     copilot_welcome_messages,
 )
-from rasa.builder.exceptions import ProjectGenerationError, ValidationError
+from rasa.builder.exceptions import (
+    ProjectGenerationError,
+    ValidationError,
+)
 from rasa.builder.models import GitCommitInfo
 from rasa.builder.project_generator.project_generator import (
     ProjectGenerator,
@@ -299,13 +302,18 @@ class TestProjectGenerator:
         assert (tmp_path / "config.yml").read_text() == "new config"
         assert (tmp_path / "domain.yml").read_text() == "new domain"
 
-    def test_replace_all_bot_files_dumps_empty_files(self, tmp_path: Path) -> None:
-        """Test replace_all_bot_files dumps empty files."""
+    def test_replace_all_bot_files_ignores_binary_files(self, tmp_path: Path) -> None:
+        """Test replace_all_bot_files ignores binary files."""
         generator = ProjectGenerator(str(tmp_path))
+
+        # Create pre-existing binary file that should be preserved
+        # Using bytes that are not valid UTF-8 to simulate actual binary content
+        original_binary_content = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\xff\xfe"
+        (tmp_path / "domain.yml").write_bytes(original_binary_content)
 
         files = {
             "config.yml": "version: '3.1'",
-            "domain.yml": None,  # Should be dumped as an empty file
+            "domain.yml": None,  # Should be ignored as binary file
             "data/nlu.yml": "nlu data",
         }
 
@@ -321,10 +329,12 @@ class TestProjectGenerator:
             )
             asyncio.run(generator.replace_all_bot_files(files, commit_info))
 
-        # Verify empty files were written
+        # Verify non-binary files were written
         assert (tmp_path / "config.yml").exists()
-        assert (tmp_path / "domain.yml").read_text() == ""
         assert (tmp_path / "data" / "nlu.yml").exists()
+        # Verify binary file was ignored and preserved with original content
+        assert (tmp_path / "domain.yml").exists()
+        assert (tmp_path / "domain.yml").read_bytes() == original_binary_content
 
     def test_replace_all_bot_files_rejects_restricted_files(
         self, tmp_path: Path

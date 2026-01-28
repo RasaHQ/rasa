@@ -363,32 +363,32 @@ class GitService:
 
             original_path = None
             modified_path = None
-            original = ""
-            modified = ""
+            original: str | None = ""
+            modified: str | None = ""
 
             # If no parent (initial commit), treat all files as added
             if not parent_sha:
-                original = ""
-                modified = await self._git_show(commit_sha, path) or ""
+                modified = await self._git_show(commit_sha, path)
+                original = self._derive_empty_diff_counterpart(modified)
             elif status.startswith("R"):  # rename
                 if status == "R100":
-                    original = await self._git_show(parent_sha, old_path) or ""
+                    original = await self._git_show(parent_sha, old_path)
                     modified = original
                 else:
-                    original = await self._git_show(parent_sha, old_path) or ""
-                    modified = await self._git_show(commit_sha, new_path) or ""
+                    original = await self._git_show(parent_sha, old_path)
+                    modified = await self._git_show(commit_sha, new_path)
                 original_path = old_path
                 modified_path = new_path
                 status = "R"
             elif status == "D":  # deleted
-                original = await self._git_show(parent_sha, old_path) or ""
-                modified = ""
+                original = await self._git_show(parent_sha, old_path)
+                modified = self._derive_empty_diff_counterpart(original)
             elif status == "A":  # added
-                original = ""
-                modified = await self._git_show(commit_sha, path) or ""
+                modified = await self._git_show(commit_sha, path)
+                original = self._derive_empty_diff_counterpart(modified)
             elif status == "M":  # modified
-                original = await self._git_show(parent_sha, old_path) or ""
-                modified = await self._git_show(commit_sha, path) or ""
+                original = await self._git_show(parent_sha, old_path)
+                modified = await self._git_show(commit_sha, path)
             else:  # others are not supported
                 structlogger.error(
                     "git_service.get_commit_diff_with_contents_unsupported_status",
@@ -410,6 +410,12 @@ class GitService:
                 path_modified=modified_path,
             )
         return file_diffs
+
+    def _derive_empty_diff_counterpart(self, content: str | None) -> str | None:
+        if content is None:
+            return None
+        else:
+            return ""
 
     async def _commit_exists(self, commit_sha: str) -> bool:
         """Check if a commit exists in the repository."""
@@ -462,10 +468,24 @@ class GitService:
                 files.append((status, parts[1], None))
         return files
 
-    async def _git_show(self, sha: str, path: str) -> Optional[str]:
+    async def _git_show(self, sha: str, path: str) -> str | None:
         if not sha or not path:
             return ""
-        return await self.run_git_command(["show", f"{sha}:{path}"], check_output=True)
+        try:
+            return await self.run_git_command(
+                ["show", f"{sha}:{path}"], check_output=True
+            )
+        except UnicodeDecodeError:
+            # Binary files cannot be decoded
+            return None
+        except subprocess.CalledProcessError as e:
+            structlogger.error(
+                "git_service._git_show_failed",
+                error=str(e),
+                sha=sha,
+                path=path,
+            )
+            raise
 
     async def _get_commit_info(self, commit_sha: str) -> Dict[str, Any]:
         """Get commit information (author, timestamp, message)."""

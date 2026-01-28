@@ -546,6 +546,115 @@ A\ttest.added.ts"""
         ]
 
     @pytest.mark.asyncio
+    async def test_build_file_diffs_with_binary_files(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test building file diffs with binary files."""
+        files = [("A", "file.bin", None), ("D", "file2.bin", None)]
+        mock_parent_sha = "abc123123123"
+        mock_commit_sha = "abc123def456"
+
+        mock_git_command_async.side_effect = [None, None]
+        result = await git_service._build_file_diffs(
+            files, mock_parent_sha, mock_commit_sha
+        )
+
+        assert mock_git_command_async.call_count == 2
+        assert mock_git_command_async.call_args_list[0].args[0] == [
+            "show",
+            f"{mock_commit_sha}:file.bin",
+        ]
+        assert mock_git_command_async.call_args_list[1].args[0] == [
+            "show",
+            f"{mock_parent_sha}:file2.bin",
+        ]
+
+        assert result == {
+            "file.bin": CommitFileContents(
+                status="A",
+                content_original=None,
+                content_modified=None,
+            ),
+            "file2.bin": CommitFileContents(
+                status="D",
+                content_original=None,
+                content_modified=None,
+            ),
+        }
+
+    @pytest.mark.asyncio
+    async def test_build_file_diffs_with_binary_files_when_parent_sha_is_none(
+        self, git_service: GitService, mock_git_command_async: MagicMock
+    ) -> None:
+        """Test building file diffs with binary files."""
+        files = [("A", "file.bin", None)]
+        mock_parent_sha = None
+        mock_commit_sha = "abc123def456"
+
+        mock_git_command_async.side_effect = [None, None]
+        result = await git_service._build_file_diffs(
+            files, mock_parent_sha, mock_commit_sha
+        )
+
+        assert mock_git_command_async.call_count == 1
+        assert mock_git_command_async.call_args[0][0] == [
+            "show",
+            "abc123def456:file.bin",
+        ]
+
+        assert result == {
+            "file.bin": CommitFileContents(
+                status="A",
+                content_original=None,
+                content_modified=None,
+            ),
+        }
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "commit_sha, path, git_command_side_effect, expected_result",
+        [
+            (
+                None,
+                "file.txt",
+                [UnicodeDecodeError("utf-8", b"", 0, 0, "utf-8")],
+                "",
+            ),
+            (
+                "abc123def456",
+                None,
+                [UnicodeDecodeError("utf-8", b"", 0, 0, "utf-8")],
+                "",
+            ),
+            (
+                "abc123def456",
+                "file.txt",
+                [UnicodeDecodeError("utf-8", b"", 0, 0, "utf-8")],
+                None,
+            ),
+            (
+                "abc123def456",
+                "file.txt",
+                ["valid utf-8 string"],
+                "valid utf-8 string",
+            ),
+        ],
+    )
+    async def test_git_show(
+        self,
+        git_service: GitService,
+        mock_git_command_async: MagicMock,
+        commit_sha: str,
+        path: str,
+        git_command_side_effect: object,
+        expected_result: str | None,
+    ) -> None:
+        """Test git show."""
+        mock_git_command_async.side_effect = git_command_side_effect
+        result = await git_service._git_show(commit_sha, path)
+        assert result == expected_result
+
+    @pytest.mark.asyncio
     async def test_get_commit_diff_with_contents_when_commit_does_not_exist(
         self, git_service: GitService, mock_git_command_async: MagicMock
     ) -> None:

@@ -730,7 +730,8 @@ async def handle_backup_to_bot(request: Request) -> HTTPResponse:
 @openapi.description(
     "Retrieves the current bot configuration files including domain.yml, "
     "config.yml, flows.yml, NLU data, and other project files as a "
-    "dictionary mapping file names to their string contents"
+    "dictionary mapping file names to their string contents. "
+    "Binary files are included in the response with `content: null`."
 )
 @openapi.tag("bot-files")
 @openapi.response(
@@ -784,6 +785,13 @@ async def get_bot_files(request: Request) -> HTTPResponse:
     "- All files in the request are written to the project folder\n"
     "- Files not included in the request are deleted from the project\n"
     "- Files/folders starting with `.rasa/` or `models/` are excluded from deletion\n\n"
+    "**Binary Files:**\n"
+    "- Binary files appear in GET response with `content: null`\n"
+    "- To preserve a binary file: include it with `content: null`\n"
+    "- To delete a binary file: omit it from the request\n"
+    "- Binary files cannot be created, renamed, or modified through this endpoint\n"
+    "- Sending `content: null` for text or non-existent files returns an error\n"
+    '- Use empty string (`""`) if you want an empty text file\n\n'
     "**SSE Event Flow:** (available via /job-events/<job_id>)\n"
     "1. `received` - Request received by server\n"
     "2. `validating` - Validating bot configuration files\n"
@@ -2176,7 +2184,9 @@ async def handle_rollback_to_commit(request: Request, commit_sha: str) -> HTTPRe
 @bp.route("/commits/<commit_sha>/diff-with-contents", methods=["GET"])
 @openapi.summary("Get commit diff with contents")
 @openapi.description(
-    "Returns all original and modified file contents for a specific commit."
+    "Returns all original and modified file contents for a specific commit. "
+    "Binary files are included with `content_original` and `content_modified` "
+    "as `null`. Renamed files include `path_original` and `path_modified`."
 )
 @openapi.tag("git")
 @openapi.response(

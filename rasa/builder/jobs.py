@@ -39,6 +39,7 @@ from rasa.builder.copilot.models import (
 )
 from rasa.builder.download import download_backup_from_url
 from rasa.builder.exceptions import (
+    InvalidFileContentError,
     LLMGenerationError,
     ProjectGenerationError,
     TrainingError,
@@ -451,6 +452,16 @@ async def run_replace_all_files_job(
         await push_job_status_event(job, JobStatus.error, message=error_message)
         job_manager.mark_done(job, error=error_message)
 
+    except InvalidFileContentError as exc:
+        error_message = str(exc)
+        structlogger.debug(
+            "replace_all_files_job.invalid_file_content",
+            job_id=job.id,
+            error=error_message,
+        )
+        await push_job_status_event(job, JobStatus.error, message=error_message)
+        job_manager.mark_done(job, error=error_message)
+
     except ValidationError as exc:
         log_levels = ["error"]
         if config.VALIDATION_FAIL_ON_WARNINGS:
@@ -534,7 +545,13 @@ async def run_copilot_training_error_analysis_job(
             type="log", content=training_error_message, context="training_error"
         )
         file_content_blocks = [
-            FileContent(type="file", file_path=file_path, file_content=file_content)
+            FileContent(
+                type="file",
+                file_path=file_path,
+                # we here omit the case where file_content is None (binary file)
+                # to comply with the FileContent model schema
+                file_content=file_content or "",
+            )
             for file_path, file_content in bot_files.items()
         ]
         context = CopilotContext(

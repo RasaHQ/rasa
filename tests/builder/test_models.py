@@ -211,9 +211,9 @@ class TestCommitFileContents:
     def test_optional_path_defaults_to_none(self):
         valid_commit_file_contents = CommitFileContents(
             status="D",
-            content_original="original content",
-            content_modified="modified content",
         )
+        assert valid_commit_file_contents.content_original is None
+        assert valid_commit_file_contents.content_modified is None
         assert valid_commit_file_contents.path_original is None
         assert valid_commit_file_contents.path_modified is None
 

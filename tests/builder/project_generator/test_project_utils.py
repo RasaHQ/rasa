@@ -6,12 +6,14 @@ from unittest.mock import patch
 
 import pytest
 
+from rasa.builder.exceptions import InvalidFileContentError
 from rasa.builder.project_generator.project_utils import (
     bot_file_paths,
     get_bot_files,
     is_restricted_path,
     path_relative_to_project,
     unsafe_write_to_bot_files,
+    validate_file_content_transitions,
 )
 from rasa.utils.io import InvalidPathException
 
@@ -366,3 +368,76 @@ class TestPathRelativeToProject:
         # The subpath function should prevent escaping the project folder
         with pytest.raises(InvalidPathException):
             path_relative_to_project(project_folder, "../outside.yml")
+
+
+class TestValidateFileContentTransitions:
+    """Test validate_file_content_transitions function."""
+
+    @pytest.mark.parametrize(
+        "current_files, new_files, expected_error",
+        [
+            # binary -> text (error)
+            ({"file.png": None}, {"file.png": "text"}, "Cannot modify binary file"),
+            # text -> null (error)
+            ({"file.txt": "content"}, {"file.txt": None}, "Cannot set text file"),
+            # doesn't exist -> null (error)
+            ({}, {"new.bin": None}, "Cannot create binary file"),
+            # binary -> null (valid)
+            ({"file.png": None}, {"file.png": None}, None),
+            # text -> text (valid)
+            ({"file.txt": "old"}, {"file.txt": "new"}, None),
+            # doesn't exist -> text (valid)
+            ({}, {"new.txt": "content"}, None),
+            # binary -> null with unnormalized path (valid)
+            ({"image.png": None}, {"./image.png": None}, None),
+            # binary -> text with unnormalized path (error)
+            ({"image.png": None}, {"./image.png": "text"}, "Cannot modify binary file"),
+            # text -> text with unnormalized path in subdirectory (valid)
+            ({"data/flows/greet.yml": "old"}, {"./data/flows/greet.yml": "new"}, None),
+        ],
+        ids=[
+            "binary_to_text_rejected",
+            "text_to_null_rejected",
+            "create_binary_rejected",
+            "binary_preserved_ok",
+            "text_modified_ok",
+            "text_created_ok",
+            "binary_preserved_with_dot_slash_path",
+            "binary_to_text_with_dot_slash_path_rejected",
+            "text_modified_with_dot_slash_path_ok",
+        ],
+    )
+    def test_validate_file_content_transitions(
+        self,
+        tmp_path: Path,
+        current_files: dict[str, str | None],
+        new_files: dict[str, str | None],
+        expected_error: str | None,
+    ) -> None:
+        """Test validate_file_content_transitions for all state transitions."""
+        if expected_error:
+            with pytest.raises(InvalidFileContentError, match=expected_error):
+                validate_file_content_transitions(new_files, current_files, tmp_path)
+        else:
+            validate_file_content_transitions(new_files, current_files, tmp_path)
+
+    def test_validate_file_content_transitions_with_relative_project_folder(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Test validate_file_content_transitions with relative project folder.
+
+        Ensures the function handles the case where project_folder is a relative
+        path while path_relative_to_project returns absolute paths.
+        """
+        monkeypatch.chdir(tmp_path)
+        relative_project_folder = Path(".")
+
+        current_files = {"file.txt": "old content"}
+        new_files = {"file.txt": "new content"}
+
+        # This should not raise ValueError about relative vs absolute paths
+        validate_file_content_transitions(
+            new_files, current_files, relative_project_folder
+        )

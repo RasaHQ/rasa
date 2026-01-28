@@ -89,3 +89,9 @@ class ProjectGenerationError(PromptToBotError):
     def __init__(self, message: str, attempts: int):
         super().__init__(f"{message} (failed after {attempts} attempts)")
         self.attempts = attempts
+
+
+class InvalidFileContentError(PromptToBotError):
+    """Raised when file content operations violate allowed state transitions."""
+
+    pass

@@ -3,6 +3,7 @@ from typing import Dict, Generator, List, Optional
 
 import structlog
 
+from rasa.builder.exceptions import InvalidFileContentError
 from rasa.builder.models import BotFiles
 from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
@@ -148,3 +149,62 @@ def unsafe_write_to_bot_files(
 def path_relative_to_project(project_folder: Path, filename: str) -> Path:
     """Get the relative path of a file or directory to the project folder."""
     return Path(subpath(str(project_folder), filename))
+
+
+def validate_file_content_transitions(
+    new_files: Dict[str, Optional[str]],
+    current_files: BotFiles,
+    project_folder: Path,
+) -> None:
+    """Validate file content state transitions.
+
+    Rules:
+    - binary (null) -> string: REJECT - cannot modify binary content
+    - binary (null) -> null: OK - preserve file unchanged
+    - text (string) -> null: REJECT - use "" for empty file
+    - text (string) -> string: OK - write new content
+    - doesn't exist -> null: REJECT - cannot create binary via API
+    - doesn't exist -> string: OK - create new file
+
+    Args:
+        new_files: Dictionary mapping file names to their new content
+        current_files: Dictionary of current file contents
+        project_folder: Path to the project folder for path normalization
+
+    Raises:
+        InvalidFileContentError: If a state transition is not allowed
+    """
+    abs_project_folder = project_folder.resolve()
+
+    for filename, new_content in new_files.items():
+        # Normalize the filename to match the format used in current_files
+        # (relative POSIX paths like "image.png" instead of "./image.png")
+        normalized_path = path_relative_to_project(abs_project_folder, filename)
+        normalized_filename = normalized_path.relative_to(abs_project_folder).as_posix()
+
+        current_content: str | None = current_files.get(normalized_filename)
+        file_exists: bool = normalized_filename in current_files
+
+        if new_content is None:
+            # New content is null - only valid for existing binary files
+            if not file_exists:
+                raise InvalidFileContentError(
+                    f"Cannot create binary file '{filename}' through this API. "
+                )
+            if current_content is not None:
+                # Current file is text, new content is null
+                raise InvalidFileContentError(
+                    f"Cannot set text file '{filename}' to null. "
+                    f'Use an empty string ("") if you want an empty file, '
+                    f"or omit the file from the request to delete it."
+                )
+            # current_content is None (binary) and new_content is None -> OK
+        else:
+            # New content is string
+            if file_exists and current_content is None:
+                # Current file is binary, new content is text
+                raise InvalidFileContentError(
+                    f"Cannot modify binary file '{filename}' through this API. "
+                    f"Binary files can only be preserved (send with content: null) "
+                    f"or deleted (omit from request)."
+                )

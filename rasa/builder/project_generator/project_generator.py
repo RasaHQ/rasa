@@ -45,6 +45,7 @@ from rasa.builder.project_generator.project_utils import (
     is_restricted_path,
     path_relative_to_project,
     unsafe_write_to_bot_files,
+    validate_file_content_transitions,
 )
 from rasa.builder.project_info import ProjectInfo, ensure_first_used, load_project_info
 from rasa.builder.telemetry.langfuse.commit_langfuse_telemetry import (
@@ -800,6 +801,10 @@ class ProjectGenerator:
         """
         self.ensure_all_files_are_writable(files)
 
+        # Validate file content state transitions before making any changes
+        current_files = self.get_bot_files()
+        validate_file_content_transitions(files, current_files, self.project_folder)
+
         # Acquire lock for entire operation
         async with self.git_service.git_operation():
             # Ensure git repository exists before committing
@@ -816,6 +821,12 @@ class ProjectGenerator:
             for filename, content in files.items():
                 try:
                     file_path = path_relative_to_project(self.project_folder, filename)
+
+                    # don't edit binary files
+                    if content is None:
+                        existing_files.discard(file_path.as_posix())
+                        continue
+
                     unsafe_write_to_bot_files(
                         self.project_folder,
                         {filename: content},
