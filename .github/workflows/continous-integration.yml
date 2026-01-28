@@ -2595,6 +2595,7 @@ jobs:
           exit 1
 
       - name: Check job results
+        id: check-job-results
         run: |
           set -eo pipefail
           passed_jobs=$(echo '${{ toJSON(needs) }}' | jq -r 'to_entries[] | select(.value.result == "success" or .value.result == "skipped") | .key')
@@ -2610,3 +2611,17 @@ jobs:
             exit 1
           fi
           echo "No failed or cancelled jobs"
+
+      # Code checkout required as GH API call - needed for commenting on PR - needs to be made from git repo
+      - name: Check out code
+        if: ${{ always() && github.event_name == 'pull_request' && steps.check-job-results.conclusion == 'failure' }}
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+  
+      - name: On failures, comment on PR, instructing that Claude can be used to analyse and auto-fix failures
+        if: ${{ always() && github.event_name == 'pull_request' && steps.check-job-results.conclusion == 'failure' }}
+        uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
+        with:
+          mode: "delete-previous"
+          id: "claude-notification"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          body: 'Claude AI bot is available to investigate and fix failures. Invoke it by tagging it in a short comment: `@claude <optional message>` (e.g. `@claude` or `@claude fix CI failures`)'

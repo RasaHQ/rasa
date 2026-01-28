@@ -167,6 +167,9 @@ slack message if any of the version is reaching EOL within 90 days. It only sesn
 a notification if it's the first time a specific version, e.g. 3.9, is detected to
 reach EOL, by using the `ALREADY_ALERTED_PYTHON_VERSIONS` repository variable.
 
+### Analyse and fix CI test failures
+Triggered upon failures in `Continous Integration Tests` in PRs, if asked for assistance via `@claude <message>` comment (for example: "@claude Analyse and fix failures in this PR").
+
 ## Actions
 In order to remove duplications in the CI workflow steps actions were packaged using [composite actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action).
 The current set of actions are as follows :

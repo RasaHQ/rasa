@@ -1,0 +1,324 @@
+name: Analyse and fix CI test failures
+
+on:
+    issue_comment:
+      types: [created]
+    pull_request_review_comment:
+      types: [created]
+
+jobs:
+    analyse-and-fix-ci-test-failures:
+        if: |
+          (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
+          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+        runs-on: warp-ubuntu-latest-x64-2x
+        timeout-minutes: 30
+        permissions:
+            contents: write
+            pull-requests: write
+            issues: write
+            actions: read
+        steps:
+            - name: Get PR and commit information from standalone comment
+              if: ${{ github.event_name == 'issue_comment' }}
+              env:
+                GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                PR_NUMBER=${{ github.event.issue.number }}
+
+                # As GH `context` does not contain exact commit-hash for standalone comments in PRs,
+                # so as fallback fetch latest commit in PR branch
+                SHA=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER \
+                  --jq '.head.sha')
+                echo "SHA=$SHA" >> "${GITHUB_ENV}"
+
+            - name: Check out code
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+              with:
+                ref: ${{ env.SHA || github.event.comment.commit_id }}
+                fetch-depth: 0
+
+            - name: Set git id
+              run: |
+                git config --global user.name claude[bot]
+                git config --global user.email claude[bot]@users.noreply.github.com
+
+            - name: Create fix branch
+              run: |
+                git checkout -b claude-fix-ci-on-PR-${{ github.event.issue.number || github.event.pull_request.number }}-comment-${{ github.event.comment.id }}
+                echo "FIX_BRANCH=claude-fix-ci-on-PR-${{ github.event.issue.number || github.event.pull_request.number }}-comment-${{ github.event.comment.id }}" >> "${GITHUB_ENV}"
+
+            - name: Gather failure context
+              id: failure-context
+              uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd #v8.0.0
+              with:
+                retries: 3
+                retry-exempt-status-codes: 401,403
+                script: |
+                  console.log(context)
+
+                  // Get repository and PR info
+                  const owner = "${{ github.repository_owner }}"
+                  const repo = "${{ github.event.repository.name }}"
+
+                  // Fetch failed CI workflow runs, triggered on the commit corresponding to the time of the PR comment
+                  // List is always expected to be non-empty, as otherwise commentator would not have asked for assistance.
+                  const workflowRuns = (await github.rest.actions.listWorkflowRuns({
+                      owner: owner,
+                      repo: repo,
+                      workflow_id: "ci-on-push.yml",
+                      status: "failure",
+                      head_sha: "${{ env.SHA || github.event.comment.commit_id }}",
+                  })).data.workflow_runs.filter(run => run.pull_requests.length > 0 && run.pull_requests.every(pr => pr.number == ${{ github.event.issue.number || github.event.pull_request.number }} ))
+                  console.log("Workflow runs:")
+                  console.log(JSON.stringify(workflowRuns, null, 4))
+
+                  // Fetch latest run on the PR (GitHub API returns workflow runs in descending order)
+                  const workflowRun = workflowRuns[0]
+                  console.log("Workflow run to be analysed for failures:")
+                  console.log(JSON.stringify(workflowRun, null, 4))
+
+                  // Fetch failure data from failed jobs
+                  const jobs = await github.rest.actions.listJobsForWorkflowRun({owner: owner, repo: repo, run_id: workflowRun.id, per_page: 100 })
+                  console.log("Workflow jobs:")
+                  console.log(JSON.stringify(jobs, null, 4))
+                  const failedJobs = jobs.data.jobs.filter(job => job.conclusion == 'failure')
+                  console.log("Failed jobs")
+                  console.log(JSON.stringify(failedJobs, null, 4))
+
+                  let failuresData = {
+                      failedJobs: []
+                  }
+
+                  for(const job of failedJobs) {
+                      const log = await github.rest.actions.downloadJobLogsForWorkflowRun({owner: owner, repo: repo, job_id: job.id})
+
+                      // To ensure data can fit in context and provide only relevant context, fetch 50 lines before and after errors etc from each log
+                      const { stdout } = await exec.getExecOutput('grep',
+                                                                        [
+                                                                          '-i',
+                                                                          '-B', '50',
+                                                                          '-A', '50',
+                                                                          '-e',
+                                                                          'error\\|exception\\|fail\\|assert\\|timeout\\|ECONNRESET\\|Killed\\|OOM\\|No space', // List of common error terms to look for
+                                                                          '-',
+                                                                        ],
+                                                                        {
+                                                                          input: log.data,
+                                                                          ignoreReturnCode: true
+                                                                        });
+
+                      // To ensure data size is within allowed size of GHA functions' input, `tail` data, to focus on latest errors
+                      const errorLog = (await exec.getExecOutput('tail',
+                                                                        [
+                                                                          '-n',
+                                                                          '200'
+                                                                        ],
+                                                                        {
+                                                                          input: stdout
+                                                                        })).stdout;
+
+                      failuresData.failedJobs.push({
+                          failedJobName: job.name,
+                          failedSteps: job.steps.filter(step => step.conclusion == 'failure').map(step => step.name),
+                          failedJobLogs: errorLog
+                      })
+                  }
+                  
+                  console.log("Failure data:")
+                  console.log(JSON.stringify(failuresData, null, 2))
+                  return failuresData
+
+            - name: Print failure context (to enable troubleshooting and traceability)
+              env:
+                FAILURE_CONTEXT: ${{ toJson(steps.failure-context.outputs.result) }}
+              run: |
+                echo "Failure context:"
+                echo "${FAILURE_CONTEXT}"
+
+            - name: Get failures branch, to be used as target for fix PR
+              env:
+                PR_EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+                GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+                    # You must query the PR to get head.ref
+                    PR=${{ github.event.issue.number }}
+                    TARGET_BRANCH=$(gh api repos/${{ github.repository }}/pulls/$PR --jq '.head.ref')
+                    echo "TARGET_BRANCH=$TARGET_BRANCH" >> "${GITHUB_ENV}"
+                  else
+                    echo "TARGET_BRANCH=${PR_EVENT_HEAD_REF}" >> "${GITHUB_ENV}"
+                  fi
+
+            - name: Gather git context
+              env:
+                TARGET_BRANCH: ${{ env.TARGET_BRANCH }}
+              run: |
+                set -euo pipefail
+                git fetch origin "${TARGET_BRANCH}"
+                MERGE_BASE=$(git merge-base "origin/${TARGET_BRANCH}" HEAD)
+                PR_COMMITS=$(git log --oneline --no-decorate "${MERGE_BASE}..HEAD")
+                TARGET_RECENT_COMMITS=$(git log --oneline --no-decorate -n 20 --first-parent "origin/${TARGET_BRANCH}")
+                PR_DIFFSTAT=$(git diff --stat "${MERGE_BASE}..HEAD")
+                {
+                  echo "MERGE_BASE=${MERGE_BASE}"
+                  echo "PR_COMMITS<<EOF"
+                  echo "${PR_COMMITS}"
+                  echo "EOF"
+                  echo "TARGET_RECENT_COMMITS<<EOF"
+                  echo "${TARGET_RECENT_COMMITS}"
+                  echo "EOF"
+                  echo "PR_DIFFSTAT<<EOF"
+                  echo "${PR_DIFFSTAT}"
+                  echo "EOF"
+                } >> "${GITHUB_ENV}"
+
+            - name: Install git push guardrail (prevent direct pushes to remote branches)
+              run: |
+                cat > .git/hooks/pre-push <<'EOF'
+                #!/usr/bin/env bash
+                set -euo pipefail
+
+                if [[ -z "${FIX_BRANCH:-}" || -z "${TARGET_BRANCH:-}" ]]; then
+                  echo "FIX_BRANCH/TARGET_BRANCH not set; refusing to push."
+                  exit 1
+                fi
+
+                current_branch="$(git rev-parse --abbrev-ref HEAD)"
+                if [[ "$current_branch" != "${FIX_BRANCH}" ]]; then
+                  echo "Wrong branch ${current_branch} checked out. Expected branch: ${FIX_BRANCH}."
+                  exit 1
+                fi
+
+                allowed_ref="refs/heads/${FIX_BRANCH}"
+                blocked_ref="refs/heads/${TARGET_BRANCH}"
+
+                while read -r local_ref local_sha remote_ref remote_sha; do
+                  if [[ -z "${remote_ref:-}" ]]; then
+                    continue
+                  fi
+
+                  if [[ "$remote_ref" == "$blocked_ref" ]]; then
+                    echo "Refusing to push directly to target branch ${TARGET_BRANCH}."
+                    exit 1
+                  fi
+
+                  if [[ "$remote_ref" != "$allowed_ref" ]]; then
+                    echo "Refusing to push to ${remote_ref}; only ${allowed_ref} is allowed."
+                    exit 1
+                  fi
+                done
+                EOF
+                chmod +x .git/hooks/pre-push
+
+            
+            - name: Install dependencies (to enable Claude to run and verify the fixes)
+              uses: ./.github/actions/test-prerequisites
+              with:
+                PYTHON_VERSION: '3.10'
+
+            - name: Setup GitHub MCP Server
+              run: |
+                mkdir -p /tmp/mcp-config
+                cat > /tmp/mcp-config/mcp-servers.json << 'EOF'
+                {
+                  "mcpServers": {
+                    "github": {
+                      "command": "docker",
+                      "args": [
+                        "run",
+                        "-i",
+                        "--rm",
+                        "-e",
+                        "GITHUB_PERSONAL_ACCESS_TOKEN",
+                        "ghcr.io/github/github-mcp-server:sha-23fa0dd"
+                      ],
+                      "env": {
+                        "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GITHUB_TOKEN }}"
+                      }
+                    }
+                  }
+                }
+                EOF
+
+            - name: Analyse and fix failures
+              uses: anthropics/claude-code-base-action@e8132bc5e637a42c27763fc757faa37e1ee43b34 #v0.0.63
+              id: analyse-and-fix-test-failures
+              env:
+                ASKER_GITHUB_LOGIN: ${{ github.event.comment.user.login || github.event.issue.user.login }}
+                GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                ENABLE_EXPERIMENTAL_MCP_CLI: true
+              with:
+                claude_env: |
+                  - ENABLE_EXPERIMENTAL_MCP_CLI: true
+                model: claude-opus-4-5-20251101
+                anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+                allowed_tools: 'Edit,MultiEdit,Write,Read,View,Glob,Grep,GlobTool,GrepTool,BatchTool,LS,Bash,TodoWrite,BashOutput,KillBash,TaskOutput,Task,MCPSearch,mcp__github,mcp__github_ci__get_ci_status,mcp__github_ci__get_workflow_run_details,mcp__github_ci__download_job_log,mcp__github_file_ops__commit_files'
+                disallowed_tools: 'Bash(git push * --delete *),Bash(git push * -d *),Bash(git * --force *),Bash(git * -f *),Bash(gh * delete *),Bash(git push * --no-verify *),mcp__github__delete_*' # Disallow deletions, force and --no-verify operations
+                timeout_minutes: 20
+                mcp_config: /tmp/mcp-config/mcp-servers.json
+                prompt: ${{ github.event.comment.body || github.event.issue.body }}
+                system_prompt: |
+                      # Role
+                      CI maintainer orchestrator.
+
+                      ## Task
+                      Analyse and fix false-positive errors/failures in CI. Follow the orchestration in `.claude/CLAUDE.md` and delegate to sub-agents in `.claude/agents` using skills in `.claude/skills`.
+
+                      ## Instructions and guardrails
+                      - Start by producing a CI evidence pack from the provided failure context.
+                      - Failure logs are already pre-filtered with 100-line context around common error terms; do not re-grep full logs.
+                      - Classify failures: false-positive vs true-positive with explicit evidence.
+                      - For false-positives: implement minimal fix on the existing fix branch and open a PR, against "${{ env.TARGET_BRANCH }}", assigning the asker as reviewer.
+                          - Fixes must not touch `rasa/**`, `pyproject.toml`, `poetry.lock`, `Makefile*`, `makefile_vars`, `docker/`, `scripts/`. If required, treat as true-positive and respond accordingly.
+                          - Changes to `.github/workflows/**` are report-only due to workflow-permission constraints: produce a summary (changed files + rationale) and include a patch diff; do not push or open a PR.
+                      - Never push directly to "${{ env.TARGET_BRANCH }}" or any non-fix branch. Only push "${{ env.FIX_BRANCH }}" and then open a PR.
+                      - If a push is blocked by guardrails, do not bypass or retry with `--no-verify`/`--force`; report the block.
+                      - For true-positives: draft a PR comment explaining the genuine bug, likely introducing commit(s), and how to reproduce.
+
+                      ## PR diff
+                      ${{ github.event.issue.pull_request.diff_url || github.event.pull_request.diff_url }}
+
+                      ## Git context
+                      Merge base: ${{ env.MERGE_BASE }}
+
+                      PR commits:
+                      ${{ env.PR_COMMITS }}
+
+                      Recent target commits:
+                      ${{ env.TARGET_RECENT_COMMITS }}
+
+                      PR diffstat:
+                      ${{ env.PR_DIFFSTAT }}
+
+                      ## CI failures/errors data
+                      ${{ steps.failure-context.outputs.result }}
+
+            - name: Print Claude result (to enable troubleshooting and traceability)
+              run: |
+                echo "Claude results:"
+                cat ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }}
+                jq . ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }}
+
+            - name: Post comment with result of Claude's work
+              env:
+                GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  RESULT=$(jq -sr 'last(.[][] | select(.type == "result") | .result)' ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }})
+                  COST=$(jq -sr 'last(.[][] | select(.type == "result") | .total_cost_usd)' ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }})
+                  TOKENS=$(jq -sr 'last(.[][] | select(.type == "result") | .usage)' ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }})
+
+                  gh pr comment ${{ github.event.issue.number || github.event.pull_request.number }} \
+                    --body "
+                    # Claude result
+                    ${RESULT}
+
+                    ## Tokens usage and costs
+                    Total cost in USD: ${COST}
+
+                    Tokens usage:
+
+                    \`\`\`
+                    ${TOKENS}
+                    \`\`\`" \
+                    --edit-last
