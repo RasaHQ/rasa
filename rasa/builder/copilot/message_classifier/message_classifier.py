@@ -10,6 +10,7 @@ Benefits:
 """
 
 import importlib.resources
+import json
 import re
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, ClassVar, Dict, List, Optional
@@ -21,6 +22,7 @@ from openai.types.chat import ChatCompletion
 
 from rasa.builder import config
 from rasa.builder.copilot.constants import (
+    MESSAGE_CLASSIFIER_ATTACHMENTS_CONTEXT_PROMPT_FILE,
     MESSAGE_CLASSIFIER_PROMPT_FILE,
     MESSAGE_CLASSIFIER_PROMPTS_DIR,
 )
@@ -29,10 +31,12 @@ from rasa.builder.copilot.models import (
     ChatMessage,
     CopilotContext,
     CopilotSystemMessage,
+    EventContent,
     ResponseCategory,
     UsageStatistics,
 )
 from rasa.builder.copilot.utils import filter_chat_history_messages
+from rasa.builder.telemetry.langfuse.langfuse_compat import observe
 from rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry import (
     MessageClassifierLangfuseTelemetry,
 )
@@ -83,11 +87,14 @@ class MessageClassifier:
                 If None, uses all of the chat history.
         """
         self._client: Optional[openai.AsyncOpenAI] = None
-        self._prompt_template = self._load_prompt_template()
+        self._system_prompt_template = self._load_system_prompt_template()
+        self._attachments_context_prompt_template = (
+            self._load_attachments_context_prompt_template()
+        )
         self._chat_history_size = chat_history_size
 
     @staticmethod
-    def _load_prompt_template() -> Template:
+    def _load_system_prompt_template() -> Template:
         """Load the orchestrator prompt template from resources.
 
         Returns:
@@ -96,6 +103,19 @@ class MessageClassifier:
         template_content = importlib.resources.read_text(
             f"{PACKAGE_NAME}.{MESSAGE_CLASSIFIER_PROMPTS_DIR}",
             MESSAGE_CLASSIFIER_PROMPT_FILE,
+        )
+        return Template(template_content)
+
+    @staticmethod
+    def _load_attachments_context_prompt_template() -> Template:
+        """Load the last user message context prompt template from resources.
+
+        Returns:
+            Template object containing the prompt template.
+        """
+        template_content = importlib.resources.read_text(
+            f"{PACKAGE_NAME}.{MESSAGE_CLASSIFIER_PROMPTS_DIR}",
+            MESSAGE_CLASSIFIER_ATTACHMENTS_CONTEXT_PROMPT_FILE,
         )
         return Template(template_content)
 
@@ -185,6 +205,7 @@ class MessageClassifier:
                 raw_response=f"ERROR: {e!s}",
             )
 
+    @observe(as_type="generation")
     async def _call_llm(self, messages: List[Dict[str, Any]]) -> ChatCompletion:
         """Call the LLM with the given messages.
 
@@ -217,7 +238,7 @@ class MessageClassifier:
         if not context.copilot_chat_history:
             return []
 
-        latest_user_message = context.get_last_user_message()
+        latest_user_message = self._process_latest_message(context)
         if not latest_user_message:
             return []
 
@@ -233,7 +254,7 @@ class MessageClassifier:
         return [
             system_message,
             *chat_history_messages,
-            latest_user_message.build_openai_message(),
+            latest_user_message,
         ]
 
     def _create_system_message(self) -> Dict[str, Any]:
@@ -242,7 +263,7 @@ class MessageClassifier:
         Returns:
             System prompt in string format.
         """
-        system_prompt = self._prompt_template.render()
+        system_prompt = self._system_prompt_template.render()
         return CopilotSystemMessage().build_openai_message(prompt=system_prompt)
 
     def _create_chat_history_messages(
@@ -269,6 +290,55 @@ class MessageClassifier:
             filtered_messages = filtered_messages[-self._chat_history_size :]
 
         return [message.build_openai_message() for message in filtered_messages]
+
+    def _process_latest_message(
+        self,
+        context: CopilotContext,
+    ) -> Optional[Dict[str, Any]]:
+        """Process the latest message and convert it to OpenAI format.
+
+        Args:
+            context: The copilot context containing conversation state.
+
+        Returns:
+            Message in OpenAI format.
+
+        Raises:
+            ValueError: If the message type is not supported.
+        """
+        latest_message = context.get_last_user_message()
+        if not latest_message:
+            return None
+        tracker_event_attachments = latest_message.get_content_blocks_by_type(
+            EventContent
+        )
+        rendered_prompt = self._render_attachments_context_prompt(
+            tracker_event_attachments
+        )
+        return latest_message.build_openai_message(prompt=rendered_prompt)
+
+    def _render_attachments_context_prompt(
+        self,
+        attachments: List[EventContent],
+    ) -> Optional[str]:
+        """Render the attachments context prompt.
+
+        Args:
+            attachments: The attachments.
+
+        Returns:
+            The rendered prompt if there are attachments, otherwise None.
+        """
+        if not attachments:
+            return None
+        attachments_json = json.dumps(
+            [attachment.model_dump() for attachment in attachments],
+            ensure_ascii=False,
+            indent=2,
+        )
+        return self._attachments_context_prompt_template.render(
+            attachments=attachments_json,
+        )
 
     def _parse_category(self, raw_response: str) -> ResponseCategory:
         """Parse the LLM response into a ResponseCategory.

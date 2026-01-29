@@ -25,12 +25,8 @@ from rasa.builder.copilot.models import (
 )
 from rasa.builder.document_retrieval.models import Document
 from rasa.builder.shared.tracker_context import (
-    AssistantConversationTurn,
-    AssistantMessage,
     CurrentState,
     TrackerContext,
-    TrackerEvent,
-    UserMessage,
 )
 from rasa.core.agent import Agent
 from rasa.shared.constants import ROLE_USER
@@ -391,95 +387,6 @@ class TestCopilotCore:
 
 
 class TestCopilotFormattingContents:
-    def test_format_conversation_history(self):
-        # Given
-        conversation_turns = [
-            AssistantConversationTurn(
-                user_message=UserMessage(
-                    text="I want to transfer money",
-                    predicted_commands=["start flow", "set slot"],
-                ),
-                assistant_messages=[
-                    AssistantMessage(text="How much would you like to transfer?")
-                ],
-                context_events=[
-                    TrackerEvent(
-                        event="action_executed",
-                        data={"action_name": "action_ask_amount"},
-                    ),
-                    TrackerEvent(
-                        event="slot_set",
-                        data={
-                            "slot_name": "amount_of_money",
-                            "slot_value": 100,
-                        },
-                    ),
-                ],
-            ),
-        ]
-
-        current_state = CurrentState(
-            latest_message="100 USD",
-            active_flow="transfer_money",
-            flow_stack=[],
-            slots={"amount": 100, "recipient": "Anna"},
-            latest_action="action_ask_amount",
-            followup_action=None,
-        )
-
-        tracker_context = TrackerContext(
-            conversation_turns=conversation_turns,
-            current_state=current_state,
-        )
-
-        expected_result: Dict[str, Any] = {
-            "conversation_history": [
-                {
-                    "turn_id": 1,
-                    "USER": {
-                        "text": "I want to transfer money",
-                        "predicted_commands": ["start flow", "set slot"],
-                    },
-                    "BOT": [{"text": "How much would you like to transfer?"}],
-                    "other_tracker_events": [
-                        {
-                            "event": "action_executed",
-                            "data": {"action_name": "action_ask_amount"},
-                        },
-                        {
-                            "event": "slot_set",
-                            "data": {
-                                "slot_name": "amount_of_money",
-                                "slot_value": 100,
-                            },
-                        },
-                    ],
-                },
-            ]
-        }
-
-        # When
-        result = Copilot._format_conversation_history(tracker_context)
-        parsed_result = json.loads(result)
-
-        # Then
-        assert parsed_result == expected_result
-
-    def test_format_conversation_history_empty(self):
-        """Test the _format_conversation_history method with empty/None input."""
-        # Test with None
-        result_none = Copilot._format_conversation_history(None)
-        assert result_none == '{\n  "conversation_history": []\n}'
-
-        # Test with empty TrackerContext
-        empty_context = TrackerContext(
-            conversation_turns=[],
-            current_state=CurrentState(),
-        )
-
-        result_empty = Copilot._format_conversation_history(empty_context)
-        assert result_empty == '{\n  "conversation_history": []\n}'
-
     @pytest.mark.parametrize(
         "chat_history,expected_query",
         [

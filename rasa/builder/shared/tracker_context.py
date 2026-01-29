@@ -62,6 +62,72 @@ class TrackerContext(BaseModel):
                 messages.append({"role": ROLE_ASSISTANT, "content": message.text})
         return messages
 
+    @property
+    def formatted_conversation_turns(self) -> List[Dict[str, Any]]:
+        """Conversation turns in a structured format (USER / ASSISTANT / other events).
+
+        Same data as conversation_turns but as a dict with key
+        "conversation_history" and turns that clearly separate user message,
+        assistant messages, and other tracker events.
+
+        Example:
+            [
+                {
+                    "turn_id": 1,
+                    "USER": {
+                        "text": "I want to transfer money",
+                        "predicted_commands": ["start flow", "set slot", ...]
+                    },
+                    "ASSISTANT": [
+                        {"text": "How much would you like to transfer?"}
+                    ],
+                    "other_tracker_events": [
+                        {
+                            "event": "action_executed",
+                            "data": {"action_name": "action_ask_amount"}
+                        },
+                        {
+                            "event": "slot_set",
+                            "data": {
+                                "slot_name": "amount_of_money",
+                                "slot_value": 100,
+                            },
+                        }
+                    ]
+                }
+            ]
+
+
+        Returns:
+            Dict with "conversation_history" key and list of turn dicts.
+        """
+        turn_id_key = "turn_id"
+        user_turn_key = "USER"
+        assistant_turn_key = "ASSISTANT"
+        other_events_key = "other_tracker_events"
+        formatted_turns: List[Dict[str, Any]] = []
+
+        for turn_idx, turn in enumerate(self.conversation_turns, 1):
+            turn_data: Dict[str, Any] = {turn_id_key: turn_idx}
+
+            if turn.user_message:
+                turn_data[user_turn_key] = turn.user_message.model_dump()
+
+            if turn.assistant_messages:
+                turn_data[assistant_turn_key] = [
+                    assistant_message.model_dump()
+                    for assistant_message in turn.assistant_messages
+                ]
+
+            if turn.context_events:
+                turn_data[other_events_key] = [
+                    event.model_dump() for event in turn.context_events
+                ]
+
+            formatted_turns.append(turn_data)
+
+        return formatted_turns
+
     @classmethod
     def from_tracker(
         cls, tracker: Optional[DialogueStateTracker], max_turns: int = 10

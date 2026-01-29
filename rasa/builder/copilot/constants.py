@@ -20,6 +20,9 @@ COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE_AGENT_SDK = (
 # A dot-path for importlib to the message classifier prompt
 MESSAGE_CLASSIFIER_PROMPTS_DIR = "builder.copilot.message_classifier.prompts"
 MESSAGE_CLASSIFIER_PROMPT_FILE = "message_classifier_prompt.jinja2"
+MESSAGE_CLASSIFIER_ATTACHMENTS_CONTEXT_PROMPT_FILE = (
+    "attachments_context_message_classifier_prompt.jinja2"
+)
 
 # A dot-path for importlib to the response handler prompts
 RESPONSE_HANDLER_PROMPTS_DIR = "builder.copilot.response_handling.prompts"

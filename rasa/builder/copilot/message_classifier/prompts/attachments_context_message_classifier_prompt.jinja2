@@ -1,0 +1,17 @@
+# Intent Classification Context
+When classifying user intents, take into account the provided attachments. Use
+attachments to resolve vague or referential user messages (e.g. "What's this?").
+
+If attachments exist, assume the user's message refers to them. Use attachment content
+to disambiguate the intent.
+
+---
+
+{% if attachments %}
+## Attachments
+The user clicked **Ask Copilot** in the **Inspect Mode** and included additional
+context as attachments:
+```json
+{{ attachments }}
+```
+{% endif %}

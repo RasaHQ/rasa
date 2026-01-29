@@ -60,6 +60,10 @@ path = "rasa/builder/copilot/prompts"
 format = ["sdist", "wheel"]
 
 [[tool.poetry.include]]
+path = "rasa/builder/copilot/message_classifier/prompts"
+format = ["sdist", "wheel"]
+
+[[tool.poetry.include]]
 path = "rasa/builder/document_retrieval/inkeep-rag-response-schema.json"
 format = ["sdist", "wheel"]
 

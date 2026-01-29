@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import pytest
 
@@ -501,3 +501,69 @@ def test_tracker_context_to_openai_format(
 
     # Then
     assert openai_format == expected_openai_format
+
+
+def test_tracker_context_formatted_conversation_turns() -> None:
+    conversation_turns = [
+        AssistantConversationTurn(
+            user_message=UserMessage(
+                text="I want to transfer money",
+                predicted_commands=["start flow", "set slot"],
+            ),
+            assistant_messages=[
+                AssistantMessage(text="How much would you like to transfer?")
+            ],
+            context_events=[
+                TrackerEvent(
+                    event="action_executed",
+                    data={"action_name": "action_ask_amount"},
+                ),
+                TrackerEvent(
+                    event="slot_set",
+                    data={
+                        "slot_name": "amount_of_money",
+                        "slot_value": 100,
+                    },
+                ),
+            ],
+        ),
+    ]
+
+    tracker_context = TrackerContext(
+        conversation_turns=conversation_turns,
+        current_state=CurrentState(),
+    )
+
+    expected_turns: List[Dict[str, Any]] = [
+        {
+            "turn_id": 1,
+            "USER": {
+                "text": "I want to transfer money",
+                "predicted_commands": ["start flow", "set slot"],
+            },
+            "ASSISTANT": [{"text": "How much would you like to transfer?"}],
+            "other_tracker_events": [
+                {
+                    "event": "action_executed",
+                    "data": {"action_name": "action_ask_amount"},
+                },
+                {
+                    "event": "slot_set",
+                    "data": {
+                        "slot_name": "amount_of_money",
+                        "slot_value": 100,
+                    },
+                },
+            ],
+        }
+    ]
+
+    assert tracker_context.formatted_conversation_turns == expected_turns
+
+
+def test_tracker_context_formatted_conversation_turns_empty() -> None:
+    tracker_context = TrackerContext(
+        conversation_turns=[],
+        current_state=CurrentState(),
+    )
+    assert tracker_context.formatted_conversation_turns == []

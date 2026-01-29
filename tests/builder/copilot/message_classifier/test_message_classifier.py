@@ -16,9 +16,9 @@ from rasa.builder.copilot.models import (
 )
 
 
-def _create_mock_response(content: str, prompt_tokens: int = 10) -> MagicMock:
+def _create_mock_response(content: str | None, prompt_tokens: int = 10) -> MagicMock:
     mock_response = MagicMock()
-    mock_response.choices = [MagicMock(message=MagicMock(content=content))]
+    mock_response.choices = [MagicMock(message=MagicMock(content=content or ""))]
     mock_response.usage = MagicMock(
         prompt_tokens=prompt_tokens,
         completion_tokens=5,
@@ -29,7 +29,7 @@ def _create_mock_response(content: str, prompt_tokens: int = 10) -> MagicMock:
 
 @pytest.fixture(autouse=True)
 @patch.object(MessageClassifier, "_get_client")
-def classifier(mock_get_client):
+def classifier(mock_get_client: MagicMock) -> None:
     mock_client = AsyncMock(spec=openai.AsyncOpenAI)
     mock_get_client.return_value = AsyncMock()
     mock_get_client.return_value.__aenter__ = AsyncMock(return_value=mock_client)

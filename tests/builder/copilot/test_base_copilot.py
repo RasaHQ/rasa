@@ -180,7 +180,7 @@ class TestFormatConversationHistory:
 
         turn = parsed["conversation_history"][0]
         assert "USER" not in turn
-        assert "BOT" in turn
+        assert "ASSISTANT" in turn
 
 
 class TestFormatCurrentState:

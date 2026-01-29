@@ -116,46 +116,7 @@ class BaseCopilot(ABC):
 
     @staticmethod
     def _format_conversation_history(tracker_context: Optional[TrackerContext]) -> str:
-        """Format conversation history from TrackerContext using nested turn structure.
-
-        Args:
-            tracker_context: The TrackerContext containing conversation data.
-
-        Returns:
-            A JSON string with turns containing user_input, assistant_response,
-            and context.
-
-        Example:
-            ```json
-            {
-                "conversation_history": [
-                    {
-                        "turn_id": 1,
-                        "USER": {
-                            "text": "I want to transfer money",
-                            "predicted_commands": ["start flow", "set slot", ...]
-                        },
-                        "BOT": [
-                            {"text": "How much would you like to transfer?"}
-                        ],
-                        "other_tracker_events": [
-                            {
-                                "event": "action_executed",
-                                "data": {"action_name": "action_ask_amount"}
-                            },
-                            {
-                                "event": "slot_set",
-                                "data": {
-                                    "slot_name": "amount_of_money",
-                                    "slot_value": 100,
-                                },
-                            }
-                        ]
-                    }
-                ]
-            }
-            ```
-        """
+        """Format conversation history from TrackerContext."""
         conversation_history: Dict[str, Any] = {
             "conversation_history": [],
         }
@@ -163,35 +124,9 @@ class BaseCopilot(ABC):
         if not tracker_context or not tracker_context.conversation_turns:
             return json.dumps(conversation_history, ensure_ascii=False, indent=2)
 
-        conversation_turns: List[Dict[str, Any]] = []
-        user_prefix = "USER"
-        assistant_prefix = "BOT"
-
-        for turn_idx, turn in enumerate(tracker_context.conversation_turns, 1):
-            turn_data: Dict[str, Any] = {"turn_id": turn_idx}
-
-            # Add user if present
-            if turn.user_message:
-                turn_data[user_prefix] = {
-                    "text": turn.user_message.text,
-                    "predicted_commands": turn.user_message.predicted_commands,
-                }
-
-            # Add assistant messages if present
-            if turn.assistant_messages:
-                turn_data[assistant_prefix] = [
-                    {"text": assistant_message.text}
-                    for assistant_message in turn.assistant_messages
-                ]
-
-            # Add other tracker events
-            if turn.context_events:
-                other_events = [event.model_dump() for event in turn.context_events]
-                turn_data["other_tracker_events"] = other_events
-
-            conversation_turns.append(turn_data)
-
-        conversation_history["conversation_history"] = conversation_turns
+        conversation_history["conversation_history"] = (
+            tracker_context.formatted_conversation_turns
+        )
         return json.dumps(conversation_history, ensure_ascii=False, indent=2)
 
     @staticmethod
