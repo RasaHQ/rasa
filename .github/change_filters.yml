@@ -49,6 +49,16 @@ dm1-tensorflow-files:
   - rasa/shared/nlu/**
   - rasa/utils/tensorflow/**
   - rasa/utils/plotting.py
+  - tests/core/featurizers/**
+  - tests/core/policies/**
+  - tests/nlu/**
+  - tests/core/training/**
+  - tests/graph_components/converters/**
+  - tests/graph_components/providers/**
+  - tests/shared/core/training_data/**
+  - tests/shared/nlu/**
+  - tests/utils/tensorflow/**
+  - tests/utils/test_plotting.py
 
 docker:
   - pyproject.toml
@@ -66,6 +76,7 @@ lock_file:
 pii-management:
   - rasa/privacy/**
   - tests_deployment/integration_tests_pii_management_in_calm/**
+  - tests/integration_tests/privacy/**
 
 voice-files:
   - rasa/core/channels/voice_ready/**
@@ -73,11 +84,19 @@ voice-files:
   - rasa/core/channels/channel.py
   - rasa/core/channels/socketio.py
   - rasa/core/channels/studio_chat.py
+  - tests/core/channels/voice_ready/**
+  - tests/core/channels/voice_stream/**
+  - tests/core/test_channels.py
+  - tests/core/channels/test_socketio.py
+  - tests/core/channels/test_studio_chat.py
 
 broker-files:
   - rasa/core/brokers/**
+  - tests/core/test_brokers.py
+  - tests_deployment/docker-compose.broker.yml
+  - tests/integration_tests/core/brokers/test_calm_kafka_restart.py
 
-tracing-and-metrics-files:
+tracing-and-metrics-files: # files imported by tracing and metrics functionality are also added here
   - rasa/tracing/**
   - rasa/core/**
   - rasa/dialogue_understanding/generator/**
@@ -86,7 +105,10 @@ tracing-and-metrics-files:
   - rasa/agents/**
   - rasa/engine/**
   - rasa/shared/core/domain.py
+  - tests/integration_tests/tracing/**
+  - tests/integration_tests/test_telemetry.py
   - tests_deployment/integration_tests_metrics_setup/**
+  - tests_deployment/integration_tests_tracing_deployment/**
 
 sequential-integration-files: # files related to sequential integration feature.Only tests run here are from tests/integration_tests/core/test_tracker_store.py
   - rasa/core/tracker_stores/redis_tracker_store.py
@@ -95,6 +117,13 @@ sequential-integration-files: # files related to sequential integration feature.
   - rasa/shared/core/trackers.py
   - rasa/shared/core/domain.py
   - rasa/shared/core/events.py
+  - tests_deployment/integration_tests_tracker_stores/**
+  - tests/core/tracker_stores/**
+  - tests/core/test_lock_store.py
+  - tests/integration_tests/core/tracker_stores/**
+  - tests/integration_tests/core/test_tracker_store.py
+  - tests/integration_tests/core/test_auth_retry_tracker_store.py
+  - tests/shared/core/test_trackers.py
 
 non-sequential-integration-files:
   - rasa/studio/**
@@ -120,6 +149,29 @@ non-sequential-integration-files:
   - rasa/shared/core/events.py
   - rasa/utils/licensing.py
   - rasa/core/secrets_manager/**
+  - tests/studio/**
+  - tests/e2e_tests/**
+  - tests/core/actions/**
+  - tests/core/test_agent.py
+  - tests/core/tracker_stores/**
+  - tests/core/test_processor.py
+  - tests/core/test_agent.py
+  - tests/cli/test_rasa_e2e_test.py
+  - tests/cli/test_rasa_data.py
+  - tests/test_telemetry.py
+  - tests/test_model_training.py
+  - tests/test_plugin.py
+  - tests/shared/core/test_events.py
+  - tests/utils/test_licensing.py
+  - tests/core/secrets_manager/**
+  - tests/integration_tests/test_licensing.py
+  - tests/integration_tests/test_hooks.py
+  - tests/integration_tests/test_model_training.py
+  - tests/integration_tests/test_telemetry.py
+  - tests/integration_tests/cli/**
+  - tests/integration_tests/e2e_tests/**
+  - tests/integration_tests/shared/**
+  - tests/integration_tests/studio/**
 
 enterprise-search-policy-files:
   - rasa/core/policies/enterprise_search_policy*
@@ -128,17 +180,24 @@ enterprise-search-policy-files:
   - rasa/engine/**
   - rasa/shared/core/policies/**
   - tests_deployment/integration_tests_enterprise_search/**
+  - tests/integration_tests/enterprise_search/**
 
 channel-connector-files:
   - rasa/core/brokers/**
   - rasa/core/channels/**
   - tests_deployment/integration_tests_channel_connectors/**
+  - tests/integration_tests/core/channels/test_rest_channel.py
+  - tests/integration_tests/core/channels/test_websocket_channel.py
+  - tests/integration_tests/core/channels/test_jambonz_channel.py
 
 mongo-db-files:
   - rasa/core/tracker_stores/mongo_tracker_store.py
   - rasa/core/tracker_stores/**
   - rasa/shared/core/trackers.py
   - rasa/shared/core/domain.py
+  - tests/integration_tests/core/tracker_stores/test_mongo_tracker_store.py
+  - tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store/**
+  - tests/core/tracker_stores/test_mongo_tracker_store.py
 
 dynamo-db-files:
   - rasa/core/tracker_stores/dynamo_tracker_store.py
@@ -146,6 +205,9 @@ dynamo-db-files:
   - rasa/shared/core/trackers.py
   - rasa/shared/core/events.py
   - rasa/shared/core/domain.py
+  - tests/integration_tests/core/tracker_stores/test_dynamo_tracker_store.py
+  - tests_deployment/integration_tests_tracker_stores/dynamo_tracker_store/**
+  - tests/core/tracker_stores/test_dynamo_tracker_store.py
 
 poetry-dependency-updates:
   - pyproject.toml
@@ -160,37 +222,51 @@ concurrent-lockstore-files:
   - rasa/core/concurrent_lock_store.py
   - rasa/core/lock_store.py
   - rasa/utils/endpoints.py
+  - tests/integration_tests/core/concurrent_lock_stores/**
 
 cli-files:
   - rasa/cli/**
   - rasa/shared/**
   - rasa/utils/**
+  - tests/cli/**
+  - tests/integration_tests/cli/**
 
 agent-files:
-  - rasa/agents/**
   - rasa/dialogue_understanding/**
   - rasa/engine/**
-  - rasa/core/**/*agent*.py
   - rasa/cli/**/train.py
   - rasa/core/policies/flows/**
-  - rasa/shared/agents/**
   - rasa/shared/core/**
   - rasa/shared/engine/**
+
+sub-agent-files:
+  - rasa/agents/**
+  - rasa/shared/agents/**
   - rasa/shared/utils/mcp/**
+  - tests/agents/**
+  - tests/shared/agents/**
+  - rasa/core/**/*agent*.py
 
 nlu-files:
   - rasa/nlu/**
   - rasa/shared/nlu/**
+  - tests/nlu/**
+  - tests/shared/nlu/**
 
 policy-files:
   - rasa/core/policies/**
   - rasa/shared/core/policies/**
+  - tests/core/policies/**
 
 custom-action-files:
   - rasa/core/actions/**
   - rasa/shared/core/**
   - rasa/shared/utils/**
   - tests_deployment/integration_tests_custom_action_server/**
+  - tests/integration_tests/core/actions/**
+  - tests/core/actions/**
+  - tests/core/test_actions.py
+  - tests/regressions/**
 
 channel-files:
   - rasa/core/channels/**

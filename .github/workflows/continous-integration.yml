@@ -323,11 +323,11 @@ jobs:
       nlu-files: ${{ steps.filter.outputs.nlu-files }}
       cli-files: ${{ steps.filter.outputs.cli-files }}
       agent-files: ${{ steps.filter.outputs.agent-files }}
+      sub-agent-files: ${{ steps.filter.outputs.sub-agent-files }}
       policy-files: ${{ steps.filter.outputs.policy-files }}
       source-code-and-build-changes: ${{ steps.filter.outputs.docker }} # 'Docker' filter encompasses both source code and build related files
       tracing-and-metrics-files: ${{ steps.filter.outputs.tracing-and-metrics-files }}
       enterprise-search-policy-files: ${{ steps.filter.outputs.enterprise-search-policy-files }}
-      channel-files: ${{ steps.filter.outputs.channel-files }}
       pii-management: ${{ steps.filter.outputs.pii-management }}
       builder-files: ${{ steps.filter.outputs.builder-files }}
       # Integration test related outputs
@@ -1889,7 +1889,7 @@ jobs:
   unit-test-agents:
     name: Run Agents Unit Tests
     runs-on: warp-ubuntu-latest-x64-8x
-    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.agent-files == 'true') }}
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.sub-agent-files == 'true') }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
