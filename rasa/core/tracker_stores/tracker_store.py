@@ -411,17 +411,20 @@ class TrackerStore:
         old_tracker = await self.retrieve(tracker.sender_id)
         new_events = TrackerEventDiffEngine.event_difference(old_tracker, tracker)
 
-        await self._stream_new_events(self.event_broker, new_events, tracker.sender_id)
+        await self._stream_new_events(
+            self.event_broker, new_events, tracker.sender_id, tracker.user_id
+        )
 
     async def _stream_new_events(
         self,
         event_broker: EventBroker,
         new_events: List[Event],
-        sender_id: Text,
+        sender_id: str,
+        user_id: Optional[str] = None,
     ) -> None:
         """Publishes new tracker events to a message broker."""
         for event in new_events:
-            body = {"sender_id": sender_id}
+            body = {"sender_id": sender_id, "user_id": user_id}
             body.update(event.as_dict())
             event_broker.publish(body)
 

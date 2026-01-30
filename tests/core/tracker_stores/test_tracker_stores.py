@@ -796,13 +796,55 @@ async def test_tracker_store_stream_events_with_pii(
     mock_stream_new_events = AsyncMock()
     monkeypatch.setattr(tracker_store, "_stream_new_events", mock_stream_new_events)
     tracker = DialogueStateTracker.from_events(
-        "test_with_pii", [ActionExecuted("action_listen")]
+        "test_with_pii", [ActionExecuted("action_listen")], user_id=uuid.uuid4().hex
     )
 
     # When
     await tracker_store.stream_events(tracker)
     # Then
     mock_stream_new_events.assert_called_once()
+    # stream_events passes (event_broker, new_events, sender_id, user_id)
+    call_args = mock_stream_new_events.call_args[0]
+    assert call_args[2] == tracker.sender_id
+    assert call_args[3] is tracker.user_id
+
+
+async def test_stream_new_events_includes_user_id_in_published_body(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Tests that _stream_new_events includes user_id in each published event body."""
+    mock_event_broker = Mock()
+    published_bodies: List[dict] = []
+    mock_event_broker.publish = Mock(
+        side_effect=lambda body: published_bodies.append(body)
+    )
+
+    tracker_store = InMemoryTrackerStore(Domain.empty(), mock_event_broker)
+    new_events = [ActionExecuted("action_listen"), UserUttered("hello")]
+
+    await tracker_store._stream_new_events(
+        mock_event_broker,
+        new_events,
+        sender_id="conv_1",
+        user_id="user_456",
+    )
+
+    assert len(published_bodies) == 2
+    for body in published_bodies:
+        assert body["sender_id"] == "conv_1"
+        assert body["user_id"] == "user_456"
+
+    # With user_id None, body should still contain "user_id" key
+    published_bodies.clear()
+    await tracker_store._stream_new_events(
+        mock_event_broker,
+        new_events[:1],
+        sender_id="conv_2",
+        user_id=None,
+    )
+    assert len(published_bodies) == 1
+    assert published_bodies[0]["sender_id"] == "conv_2"
+    assert published_bodies[0]["user_id"] is None
 
 
 async def test_fail_safe_tracker_store_with_update_error():
