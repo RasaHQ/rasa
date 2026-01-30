@@ -89,12 +89,16 @@ voice-files:
   - tests/core/test_channels.py
   - tests/core/channels/test_socketio.py
   - tests/core/channels/test_studio_chat.py
+  - tests/integration_tests/core/channels/test_voice_primitives.py
+  - tests/integration_tests/core/channels/test_websocket_channel.py
+  - tests/integration_tests/core/channels/websocket_replay.py
 
 broker-files:
   - rasa/core/brokers/**
   - tests/core/test_brokers.py
   - tests_deployment/docker-compose.broker.yml
-  - tests/integration_tests/core/brokers/test_calm_kafka_restart.py
+  - tests/integration_tests/core/brokers/**
+  - tests_deployment/integration_tests_channel_and_broker/**
 
 tracing-and-metrics-files: # files imported by tracing and metrics functionality are also added here
   - rasa/tracing/**
@@ -183,7 +187,6 @@ enterprise-search-policy-files:
   - tests/integration_tests/enterprise_search/**
 
 channel-connector-files:
-  - rasa/core/brokers/**
   - rasa/core/channels/**
   - tests_deployment/integration_tests_channel_connectors/**
   - tests/integration_tests/core/channels/test_rest_channel.py

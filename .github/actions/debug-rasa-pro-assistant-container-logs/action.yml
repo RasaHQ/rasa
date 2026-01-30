@@ -20,7 +20,22 @@ runs:
         docker compose -f "$COMPOSE_FILE" logs rasa-pro-assistant
       shell: bash
 
-    - name: Check postgres container logs  
+## Check if postgres service exists and if it does, check its logs
+## This is necessary because the same action is used for both channel connector and custom broker integration tests.
+    - name: Check if postgres service exists
+      id: check-postgres
+      env:
+        COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
+      run: |
+        if docker compose -f "$COMPOSE_FILE" config --services 2>/dev/null | grep -qx postgres; then
+          echo "available=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "available=false" >> "$GITHUB_OUTPUT"
+        fi
+      shell: bash
+
+    - name: Check postgres container logs
+      if: steps.check-postgres.outputs.available == 'true'
       env:
         COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
       run: |

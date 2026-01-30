@@ -360,6 +360,7 @@ jobs:
              [ "${{ steps.filter.outputs.tracing-and-metrics-files }}" = "true" ] || \
              [ "${{ steps.filter.outputs.enterprise-search-policy-files }}" = "true" ] || \
              [ "${{ steps.filter.outputs.custom-action-files }}" = "true" ] || \
+             [ "${{ steps.filter.outputs.broker-files }}" = "true" ] || \
              [ "${{ steps.filter.outputs.channel-connector-files }}" = "true" ]; then
             echo "create_dev_docker_images=true" >> $GITHUB_OUTPUT
           else
@@ -1365,7 +1366,7 @@ jobs:
   broker-integration-test:
     name: Run Broker Integration Tests
     runs-on: warp-ubuntu-latest-x64-2x
-    needs: [install-and-cache-rasa, check-code-changes]
+    needs: [install-and-cache-rasa, check-code-changes, rasa-private-dev-docker-image, compute-docker-image-hash]
     if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.broker-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     timeout-minutes: 60
 
@@ -1373,12 +1374,23 @@ jobs:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Load cached Rasa Docker image
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: rasa-docker-image.tar.gz
+          key: rasa-docker-image-${{ needs.compute-docker-image-hash.outputs.hash }}.tar.gz
+          fail-on-cache-miss: true
+
       - name: Prepare the job for integration tests
         id: prepare-job
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           RASA_INSTALL_GROUP: "full"
+
+      - name: Load Docker image
+        run: |
+          gunzip -c rasa-docker-image.tar.gz | docker load
 
       - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
         id: ubuntu-dependencies
@@ -1435,26 +1447,59 @@ jobs:
         run: |
           make test-integration
 
-      - name: Show container logs
+      - name: Show container logs for broker integration testing
         if: success() || failure()
         uses: ./.github/actions/debug-broker-tests
         with:
           COMPOSE_FILE_PATH: tests_deployment/docker-compose.broker.yml
 
-      - name: Prepare test results
+      - name: Prepare test results for broker integration testing
         if: success() || failure()
         run: mv report_integration.xml integration-results-broker-integration.xml
 
-      - name: Save Test Results
+      - name: Save Test Results for broker integration testing
         if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Broker Integration Test Results
           path: integration-results-broker-integration.xml
 
-      - name: Stop rabbitmq, kafka and zookeeper containers for integration testing
+      - name: Stop rabbitmq, kafka and zookeeper containers for broker integration testing
         run: |
           docker compose -f tests_deployment/docker-compose.broker.yml down
+
+### run the custom broker integration tests separately and independently of the broker integration tests ###
+      - name: Custom broker Integration Tests - Run docker containers
+        run: |
+          make run-custom-broker-integration-containers
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
+
+      - name: Integration Test for Custom Broker
+        run: make test-custom-broker-integration-with-calm-bot
+
+      - name: Show container logs for custom broker integration testing
+        if: success() || failure()
+        uses: ./.github/actions/debug-rasa-pro-assistant-container-logs
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_channel_and_broker/docker-compose.custom.broker.yml
+
+      - name: Custom broker Integration Tests - Stop docker containers
+        if: always()
+        run: |
+          make stop-custom-broker-integration-containers
+  
+      - name: Save Test Results for custom broker integration testing
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: Custom broker Integration Test Results
+          path: |
+            integration-results-custom-broker-with-calm-bot-results.xml
+  
 
   channel-connector-integration-tests:
     name: Channel Connector Integration Tests With CALM bot
@@ -1492,7 +1537,7 @@ jobs:
 
       - name: Channel connector Integration Tests - Run docker containers
         run: |
-          make run-channel-connectors-integration-containers
+          make run-channel-connector-integration-containers
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
@@ -1513,19 +1558,16 @@ jobs:
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
 
-      - name: Integration Test for Custom Broker
-        run: make test-custom-broker-integration-with-calm-bot
-
       - name: Show container logs
         if: always()
         uses: ./.github/actions/debug-rasa-pro-assistant-container-logs
         with:
-          COMPOSE_FILE_PATH: tests_deployment/integration_tests_channel_connectors/docker-compose.yml
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_channel_and_broker/docker-compose.channel.connector.yml
 
       - name: Channel connector Integration Tests - Stop docker containers
         if: always()
         run: |
-          make stop-channel-connectors-integration-containers
+          make stop-channel-connector-integration-containers
 
       - name: Save Test Results
         if: always()
@@ -1534,7 +1576,6 @@ jobs:
           name: Channel connector Integration Tests Test Results
           path: |
             integration-results-channel-connectors-with-calm-bot-results.xml
-            integration-results-custom-broker-with-calm-bot-results.xml
 
   pii-management-in-calm-integration-tests:
     name: PII Management in CALM Bot Integration Tests

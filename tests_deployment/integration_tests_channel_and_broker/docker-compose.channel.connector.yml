@@ -2,14 +2,22 @@ x-environment: &environment
   RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
   OPENAI_API_KEY: ${OPENAI_API_KEY}
 
+configs:
+  endpoints.yml:
+    content: |
+      action_endpoint:
+        actions_module: "actions"
 services:
   rasa-pro-assistant:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
       - "./calm-demo-bot:/app"
+    configs:
+      - source: endpoints.yml
+        target: /endpoints.yml
     networks: [ 'rasa-pro-network' ]
     entrypoint: ""
-    command: rasa run --debug
+    command: rasa run --debug --endpoints /endpoints.yml
     ports:
       - "5005:5005"
     environment:
@@ -22,24 +30,5 @@ services:
       start_period: 15s
       timeout: 10s
 
-  postgres:
-    image: postgres:14
-    networks: [ 'rasa-pro-network' ]
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: rasa
-      POSTGRES_PASSWORD: rasa
-      POSTGRES_DB: rasa
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rasa"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres-data:
 
 networks: { rasa-pro-network: { } }

@@ -587,20 +587,35 @@ TEST_CHANNEL_CONNECTOR_INTEGRATION_COMMAND = poetry run \
 
 RUN_CHANNEL_CONNECTOR_CONTAINER_COMMAND = USER_ID=$(USER_ID) \
         docker compose \
-        -f $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_connectors/docker-compose.yml \
+        -f $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_and_broker/docker-compose.channel.connector.yml \
         up --wait
 STOP_CHANNEL_CONNECTOR_CONTAINER_COMMAND = docker compose \
-        -f $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_connectors/docker-compose.yml \
+        -f $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_and_broker/docker-compose.channel.connector.yml \
         down
 
-train-channel-connectors-calm-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} -e OPENAI_API_KEY=${OPENAI_API_KEY}
-train-channel-connectors-calm-bot: CONTAINER_NAME = rasa-channel-connectors-calm-bot-$(RASA_IMAGE_TAG)
-train-channel-connectors-calm-bot: BOT_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_connectors/calm-demo-bot
-train-channel-connectors-calm-bot: ## Train the CALM bot for channel connectors integration tests.
+RUN_CUSTOM_BROKER_CONTAINER_COMMAND = USER_ID=$(USER_ID) \
+        docker compose \
+        -f $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_and_broker/docker-compose.custom.broker.yml \
+        up --wait
+
+STOP_CUSTOM_BROKER_CONTAINER_COMMAND = docker compose \
+        -f $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_and_broker/docker-compose.custom.broker.yml \
+        down
+
+train-channel-connector-calm-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} -e OPENAI_API_KEY=${OPENAI_API_KEY}
+train-channel-connector-calm-bot: CONTAINER_NAME = rasa-channel-connectors-calm-bot-$(RASA_IMAGE_TAG)
+train-channel-connector-calm-bot: BOT_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_and_broker/calm-demo-bot
+train-channel-connector-calm-bot: ## Train the CALM bot for channel connectors integration tests.
+	$(TRAIN_BOT_COMMAND)
+
+train-custom-broker-calm-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} -e OPENAI_API_KEY=${OPENAI_API_KEY}
+train-custom-broker-calm-bot: CONTAINER_NAME = rasa-custom-broker-calm-bot-$(RASA_IMAGE_TAG)
+train-custom-broker-calm-bot: BOT_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_and_broker/calm-demo-bot
+train-custom-broker-calm-bot: ## Train the CALM bot for custom broker integration tests.
 	$(TRAIN_BOT_COMMAND)
 
 
-run-channel-connectors-integration-containers: train-channel-connectors-calm-bot
+run-channel-connector-integration-containers: train-channel-connector-calm-bot
 	$(RUN_CHANNEL_CONNECTOR_CONTAINER_COMMAND)
 
 # Run the channel connectors integration tests with CALM bot
@@ -608,6 +623,9 @@ test-channel-connectors-integration-with-calm-bot: CHANNEL_CONNECTOR_TEST_PATH =
 test-channel-connectors-integration-with-calm-bot: RESULTS_FILE = integration-results-channel-connectors-with-calm-bot-results.xml
 test-channel-connectors-integration-with-calm-bot: ## Run the channel connectors integration tests with CALM bot.
 	$(TEST_CHANNEL_CONNECTOR_INTEGRATION_COMMAND)
+
+run-custom-broker-integration-containers: train-custom-broker-calm-bot
+	$(RUN_CUSTOM_BROKER_CONTAINER_COMMAND)
 
 # Run the Custom Broker integration tests with CALM bot
 test-custom-broker-integration-with-calm-bot:
@@ -617,8 +635,11 @@ test-custom-broker-integration-with-calm-bot:
 		--reruns 3 --reruns-delay 1 \
 		--junitxml=integration-results-custom-broker-with-calm-bot-results.xml
 
-stop-channel-connectors-integration-containers: ## Stop the channel connectors integration test containers.
+stop-channel-connector-integration-containers: ## Stop the channel connector integration test containers.
 	$(STOP_CHANNEL_CONNECTOR_CONTAINER_COMMAND)
+
+stop-custom-broker-integration-containers: ## Stop the custom broker integration test containers.
+	$(STOP_CUSTOM_BROKER_CONTAINER_COMMAND)
 
 MONGODB_DOCKER_COMPOSE_FILE_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_tracker_stores/mongo_db_tracker_store/docker-compose.mongodb.yml
 
