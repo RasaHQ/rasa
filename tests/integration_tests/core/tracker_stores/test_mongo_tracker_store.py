@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Tuple
@@ -537,3 +538,57 @@ async def test_mongo_get_trackers_by_user_id_filters_by_user_id(
     trackers2 = await mongo_tracker_store.get_trackers_by_user_id(user_id_2)
     assert len(trackers2) == 1
     assert_tracker_properties(trackers2[0], user_id_2, sender_id_2, timestamp2)
+
+
+@pytest.mark.parametrize(
+    "host_uri", ["mongodb://localhost:27000", get_mongodb_tls_host_uri()]
+)
+@pytest.mark.parametrize("num_conversations", [100, 500, 1000, 2000])
+async def test_mongo_get_trackers_by_user_id_performance(
+    num_conversations: int,
+    domain: Domain,
+    mongodb_credentials: Tuple[str, str, str],
+    host_uri: str,
+) -> None:
+    """Performance test for querying trackers by user_id with large datasets."""
+    user_id = uuid.uuid4().hex
+    db_name, username, password = mongodb_credentials
+    mongo_tracker_store = MongoTrackerStore(
+        domain,
+        host=host_uri,
+        db=db_name,
+        username=username,
+        password=password,
+        auth_source=db_name,
+    )
+    # Create many trackers for the same user
+    await create_multiple_trackers_with_user_id(
+        mongo_tracker_store, user_id, num_conversations, delay=0.0
+    )
+
+    # Test retrieval without pagination
+    retrieval_start = time.time()
+    trackers = await mongo_tracker_store.get_trackers_by_user_id(user_id)
+    retrieval_time = time.time() - retrieval_start
+
+    assert len(trackers) == num_conversations
+    # Performance assertion: should retrieve within reasonable time
+    # For 1000 conversations, should be < 10 seconds for in-memory and SQL
+    max_time = 10.0 if num_conversations <= 1000 else 20.0
+    assert (
+        retrieval_time < max_time
+    ), f"Retrieval took {retrieval_time:.2f}s, expected < {max_time}s"
+
+    # Test retrieval with pagination
+    page_size = 100
+    paginated_start = time.time()
+    page_trackers = await mongo_tracker_store.get_trackers_by_user_id(
+        user_id, limit=page_size
+    )
+    paginated_time = time.time() - paginated_start
+    assert len(page_trackers) == page_size
+
+    # Paginated queries should be faster
+    assert (
+        paginated_time < 5.0
+    ), f"Paginated retrieval took {paginated_time:.2f}s, expected < 5.0s"

@@ -444,3 +444,42 @@ async def test_dynamo_get_trackers_by_user_id_filters_by_user_id(
             log_level="debug",
         )
         assert len(logs) == 0
+
+
+@pytest.mark.parametrize("num_conversations", [100, 500, 1000, 2000])
+async def test_dynamo_get_trackers_by_user_id_performance(
+    num_conversations: int,
+    dynamo_tracker_store_with_gsi: DynamoTrackerStore,
+) -> None:
+    # Create many trackers for the same user
+    user_id = uuid.uuid4().hex
+    await create_multiple_trackers_with_user_id(
+        dynamo_tracker_store_with_gsi, user_id, num_conversations, delay=0.0
+    )
+
+    # Test retrieval without pagination
+    retrieval_start = time.time()
+    trackers = await dynamo_tracker_store_with_gsi.get_trackers_by_user_id(user_id)
+    retrieval_time = time.time() - retrieval_start
+
+    assert len(trackers) == num_conversations
+    # Performance assertion: should retrieve within reasonable time
+    # For 1000 conversations, should be < 10 seconds for in-memory and SQL
+    max_time = 10.0 if num_conversations <= 1000 else 20.0
+    assert (
+        retrieval_time < max_time
+    ), f"Retrieval took {retrieval_time:.2f}s, expected < {max_time}s"
+
+    # Test retrieval with pagination
+    page_size = 100
+    paginated_start = time.time()
+    page_trackers = await dynamo_tracker_store_with_gsi.get_trackers_by_user_id(
+        user_id, limit=page_size
+    )
+    paginated_time = time.time() - paginated_start
+    assert len(page_trackers) == page_size
+
+    # Paginated queries should be faster
+    assert (
+        paginated_time < 5.0
+    ), f"Paginated retrieval took {paginated_time:.2f}s, expected < 5.0s"

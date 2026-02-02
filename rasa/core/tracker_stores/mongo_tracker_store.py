@@ -332,8 +332,4 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             )
             trackers.append(tracker)
 
-        # Note: We still sort in-memory as a safety measure to ensure consistency
-        # in case there are any edge cases with timestamp extraction
-        # trackers.sort(key=self._sort_key)
-
         return trackers

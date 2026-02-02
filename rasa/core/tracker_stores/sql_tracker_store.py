@@ -920,10 +920,6 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             if tracker is not None:
                 trackers.append(tracker)
 
-        # Sort in-memory as a safety measure to ensure consistency
-        # (in case conversation_started_timestamp is missing for some trackers)
-        # trackers.sort(key=self._sort_key)
-
         return trackers
 
     def _generic_upsert(

@@ -177,8 +177,8 @@ async def create_tracker_with_user_id(
         events,
         slots=tracker_store.domain.slots,
         domain=tracker_store.domain,
+        user_id=user_id,
     )
-    tracker.user_id = user_id
     await tracker_store.save(tracker)
     return tracker
 
@@ -198,8 +198,8 @@ async def create_multiple_trackers_with_user_id(
             [SessionStarted(), UserUttered(f"Message {i}")],
             slots=tracker_store.domain.slots,
             domain=tracker_store.domain,
+            user_id=user_id,
         )
-        tracker.user_id = user_id
         await tracker_store.save(tracker)
         trackers.append(tracker)
         if delay > 0:

@@ -4,6 +4,7 @@ import logging
 import multiprocessing
 import os
 import traceback
+import urllib
 import warnings
 from collections import defaultdict
 from functools import reduce, wraps
@@ -21,6 +22,7 @@ from typing import (
     NoReturn,
     Optional,
     Text,
+    Tuple,
     Union,
 )
 
@@ -220,6 +222,35 @@ def requires_auth(
             except ValueError:
                 return None
 
+        def user_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
+            argnames = rasa.shared.utils.common.arguments_of(f)
+
+            try:
+                user_id_arg_idx = argnames.index("user_id")
+                if "user_id" in kwargs:  # try to fetch from kwargs first
+                    return kwargs["user_id"]
+                if user_id_arg_idx < len(args):
+                    return args[user_id_arg_idx]
+                return None
+            except ValueError:
+                return None
+
+        def endpoint_is_user_trackers(request: Request) -> bool:
+            argnames = rasa.shared.utils.common.arguments_of(f)
+            return (
+                "user_id" in argnames
+                and request.path.startswith("/users/")
+                and request.path.endswith("/trackers")
+            )
+
+        def get_identifier(
+            request: Request, *args: Any, **kwargs: Any
+        ) -> Optional[Text]:
+            if endpoint_is_user_trackers(request):
+                return user_id_from_args(args, kwargs)
+            else:
+                return conversation_id_from_args(args, kwargs)
+
         async def sufficient_scope(
             request: Request, *args: Any, **kwargs: Any
         ) -> Optional[bool]:
@@ -236,8 +267,8 @@ def requires_auth(
             if role == "admin":
                 return True
             elif role == "user":
-                conversation_id = conversation_id_from_args(args, kwargs)
-                return conversation_id is not None and username == conversation_id
+                identifier = get_identifier(request, *args, **kwargs)
+                return identifier is not None and username == identifier
             else:
                 return False
 
@@ -821,6 +852,82 @@ def create_app(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
                 "ConversationError",
                 f"An unexpected error occurred. Error: {e}",
+            )
+
+    @app.get("/users/<user_id:path>/trackers")
+    @requires_auth(app, auth_token)
+    @run_in_thread
+    @ensure_loaded_agent(app)
+    async def get_trackers_by_user_id(request: Request, user_id: str) -> HTTPResponse:
+        """Get all conversations (trackers) for a given user ID.
+
+        This endpoint should be used as a proxy or in a backend
+        service to manage what data is exposed to the client.
+        Admin users can access trackers for any user.
+        Regular users can access trackers only for the
+        user_id that matches their authenticated username (as enforced by
+        `requires_auth`).
+
+        Query Parameters:
+            limit: Maximum number of trackers to return (for pagination).
+            offset: Number of trackers to skip (for pagination).
+            include_events: Event verbosity (NONE, APPLIED, AFTER_RESTART, ALL).
+
+        Returns:
+            JSON response with:
+            - conversations: List of serialized trackers
+            - limit: The limit used (if provided)
+            - offset: The offset used (if provided)
+
+        Status Codes:
+            200: Successfully retrieved trackers
+            400: Invalid user_id or query parameters
+            500: Internal server error
+        """
+        valid_user_id = _validate_user_id(user_id)
+        limit, offset = _parse_pagination_query_params(request)
+
+        # we use ALL as default event verbosity to allow
+        # the full conversation history retrieval to be
+        # displayed to end users wanting to resume a past conversation
+        verbosity = event_verbosity_parameter(request, EventVerbosity.ALL)
+
+        try:
+            # Retrieve trackers from tracker store
+            trackers = await app.ctx.agent.tracker_store.get_trackers_by_user_id(
+                valid_user_id, limit=limit, skip=offset
+            )
+
+            # Serialize trackers
+            serialized_trackers = [
+                tracker.current_state(verbosity) for tracker in trackers
+            ]
+
+            # Build response
+            response_data = _build_user_query_response(
+                serialized_trackers, limit, offset
+            )
+
+            logger.debug(
+                f"Retrieved {len(trackers)} trackers for user {valid_user_id}."
+            )
+
+            return response.json(response_data)
+
+        except NotImplementedError:
+            raise ErrorResponse(
+                HTTPStatus.NOT_IMPLEMENTED,
+                "NotImplemented",
+                "The configured tracker store does not support querying by user_id. "
+                "Please upgrade your tracker store or use a different implementation.",
+                help_url=_docs("/user-guide/tracker-stores/"),
+            )
+        except Exception as exc:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "TrackerRetrievalError",
+                f"An unexpected error occurred while retrieving trackers. Error: {exc}",
             )
 
     @app.post("/conversations/<conversation_id:path>/tracker/events")
@@ -1662,3 +1769,66 @@ def _extract_core_additional_arguments(request: Request) -> Dict[Text, Any]:
 
 def _extract_nlu_additional_arguments(request: Request) -> Dict[Text, Any]:
     return {"num_threads": rasa.utils.endpoints.int_arg(request, "num_threads", 1)}
+
+
+def _validate_user_id(user_id: Optional[str]) -> str:
+    """Validate the user_id parameter."""
+    # null is an invalid user_id which should be treated as None
+    user_id = None if user_id == "null" else user_id
+
+    if user_id is not None:
+        user_id = urllib.parse.unquote(user_id)
+
+    if user_id is None or not user_id.strip():
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            "Invalid user_id parameter. user_id cannot be empty.",
+            {"parameter": "user_id", "in": "path"},
+        )
+
+    return user_id
+
+
+def _parse_pagination_query_params(
+    request: Request,
+) -> Tuple[Optional[int], Optional[int]]:
+    """Parse and validate pagination query parameters from the request."""
+    limit = rasa.utils.endpoints.int_arg(request, "limit", None)
+    offset = rasa.utils.endpoints.int_arg(request, "offset", None)
+
+    # Validate pagination parameters
+    if limit is not None and limit <= 0:
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            "Invalid limit parameter. Limit must be positive.",
+            {"parameter": "limit", "in": "query"},
+        )
+
+    if offset is not None and offset <= 0:
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            "Invalid offset parameter. Offset must be positive.",
+            {"parameter": "offset", "in": "query"},
+        )
+
+    return limit, offset
+
+
+def _build_user_query_response(
+    serialized_trackers: List[Dict[str, Any]],
+    limit: Optional[int],
+    offset: Optional[int],
+) -> Dict[str, Any]:
+    """Build the response data for user query with pagination info."""
+    response_data: Dict[str, Any] = {
+        "conversations": serialized_trackers,
+    }
+    if limit is not None:
+        response_data["limit"] = limit
+    if offset is not None:
+        response_data["offset"] = offset
+
+    return response_data

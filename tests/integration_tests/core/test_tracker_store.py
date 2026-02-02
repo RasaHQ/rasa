@@ -1,3 +1,4 @@
+import time
 import uuid
 from typing import Generator, List
 from unittest.mock import Mock
@@ -654,6 +655,46 @@ async def test_redis_get_trackers_by_user_id_filters_by_user_id(
     assert_tracker_properties(trackers2[0], user_id_2, sender_id_2, timestamp2)
 
 
+@pytest.mark.parametrize("num_conversations", [100, 500, 1000, 2000])
+async def test_redis_get_trackers_by_user_id_performance(
+    num_conversations: int,
+    domain: Domain,
+    redis_tracker_store: RedisTrackerStore,
+) -> None:
+    # Create many trackers for the same user
+    user_id = uuid.uuid4().hex
+    await create_multiple_trackers_with_user_id(
+        redis_tracker_store, user_id, num_conversations, delay=0.0
+    )
+
+    # Test retrieval without pagination
+    retrieval_start = time.time()
+    trackers = await redis_tracker_store.get_trackers_by_user_id(user_id)
+    retrieval_time = time.time() - retrieval_start
+
+    assert len(trackers) == num_conversations
+    # Performance assertion: should retrieve within reasonable time
+    # For 1000 conversations, should be < 10 seconds for in-memory and SQL
+    max_time = 10.0 if num_conversations <= 1000 else 20.0
+    assert (
+        retrieval_time < max_time
+    ), f"Retrieval took {retrieval_time:.2f}s, expected < {max_time}s"
+
+    # Test retrieval with pagination
+    page_size = 100
+    paginated_start = time.time()
+    page_trackers = await redis_tracker_store.get_trackers_by_user_id(
+        user_id, limit=page_size
+    )
+    paginated_time = time.time() - paginated_start
+    assert len(page_trackers) == page_size
+
+    # Paginated queries should be faster
+    assert (
+        paginated_time < 5.0
+    ), f"Paginated retrieval took {paginated_time:.2f}s, expected < 5.0s"
+
+
 @pytest.fixture
 def sql_tracker_store(
     postgres_login_db_connection: sa.engine.Connection,
@@ -895,3 +936,45 @@ async def test_sql_get_trackers_by_user_id_filters_by_user_id(
     trackers2 = await sql_tracker_store.get_trackers_by_user_id(user_id_2)
     assert len(trackers2) == 1
     assert_tracker_properties(trackers2[0], user_id_2, sender_id_2, timestamp2)
+
+
+@pytest.mark.sequential
+@pytest.mark.timeout(10, func_only=True)
+@pytest.mark.parametrize("num_conversations", [100, 500, 1000, 2000])
+async def test_sql_get_trackers_by_user_id_performance(
+    num_conversations: int,
+    domain: Domain,
+    sql_tracker_store: SQLTrackerStore,
+) -> None:
+    # Create many trackers for the same user
+    user_id = uuid.uuid4().hex
+    await create_multiple_trackers_with_user_id(
+        sql_tracker_store, user_id, num_conversations, delay=0.0
+    )
+
+    # Test retrieval without pagination
+    retrieval_start = time.time()
+    trackers = await sql_tracker_store.get_trackers_by_user_id(user_id)
+    retrieval_time = time.time() - retrieval_start
+
+    assert len(trackers) == num_conversations
+    # Performance assertion: should retrieve within reasonable time
+    # For 1000 conversations, should be < 10 seconds for in-memory and SQL
+    max_time = 10.0 if num_conversations <= 1000 else 20.0
+    assert (
+        retrieval_time < max_time
+    ), f"Retrieval took {retrieval_time:.2f}s, expected < {max_time}s"
+
+    # Test retrieval with pagination
+    page_size = 100
+    paginated_start = time.time()
+    page_trackers = await sql_tracker_store.get_trackers_by_user_id(
+        user_id, limit=page_size
+    )
+    paginated_time = time.time() - paginated_start
+    assert len(page_trackers) == page_size
+
+    # Paginated queries should be faster
+    assert (
+        paginated_time < 5.0
+    ), f"Paginated retrieval took {paginated_time:.2f}s, expected < 5.0s"

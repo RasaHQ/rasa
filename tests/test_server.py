@@ -48,7 +48,8 @@ from rasa.core.channels import (
     channel,
 )
 from rasa.core.channels.slack import SlackBot
-from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.model_training import TrainingResult
 from rasa.nlu.test import CVEvaluationResult
@@ -71,7 +72,7 @@ from rasa.shared.core.events import (
     SlotSet,
     UserUttered,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -82,11 +83,15 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import (
+    USERNAME,
     with_assistant_id,
     with_assistant_ids,
     with_model_id,
     with_model_ids,
 )
+from tests.core.conftest import MockedMongoTrackerStore
+from tests.core.tracker_stores.conftest import create_multiple_trackers_with_user_id
+from tests.core.tracker_stores.test_redis_tracker_store import MockedRedisTrackerStore
 from tests.nlu.utilities import ResponseTest
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -1765,6 +1770,7 @@ def test_list_routes(empty_agent: Agent):
         "get_domain",
         "get_flows",
         "get_sub_agents",
+        "get_trackers_by_user_id",
     }
 
 
@@ -2012,7 +2018,10 @@ def test_get_output_channel(
     [
         ([], CollectingOutputChannel),
         ([RestInput()], CollectingOutputChannel),
-        ([RestInput(), SlackInput("test", slack_signing_secret="foobar")], SlackBot),
+        (
+            [RestInput(), SlackInput("test", slack_signing_secret="foobar")],
+            SlackBot,
+        ),
     ],
 )
 def test_get_latest_output_channel(input_channels: List[Text], expected_channel: Type):
@@ -2850,3 +2859,713 @@ def test_retrieve_flows_with_invalid_authentication(
     # assert jsonResponse["message"] == "User is not authenticated to access resource."
     assert "User is not authenticated. " in jsonResponse["message"]
     assert jsonResponse["code"] == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.parametrize(
+    "tracker_store_type",
+    [
+        InMemoryTrackerStore,
+        SQLTrackerStore,
+        MockedMongoTrackerStore,
+        MockedRedisTrackerStore,
+    ],
+)
+async def test_get_trackers_by_user_id_success(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    tracker_store_type: Type[TrackerStore],
+    domain: Domain,
+    tmp_path: Path,
+) -> None:
+    """Test successful retrieval of trackers by user_id."""
+    user_id = "test_user_123"
+    if tracker_store_type == SQLTrackerStore:
+        tracker_store = SQLTrackerStore(domain, db=str(tmp_path / "rasa.db"))
+    else:
+        tracker_store = tracker_store_type(domain)
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
+    )
+    num_conversations = 2
+    saved_trackers = await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, num_conversations
+    )
+
+    _, response = await rasa_app.get(
+        f"/users/{user_id}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.OK
+    assert "conversations" in response.json
+    conversations = response.json["conversations"]
+    assert len(conversations) == 2
+    conversation1 = conversations[0]
+    tracker1 = saved_trackers[0]
+    tracker2 = saved_trackers[1]
+    assert conversation1["sender_id"] == tracker1.sender_id
+    assert conversation1[rasa.constants.USER_ID] == user_id
+    assert (
+        conversation1["events"] == tracker1.current_state(EventVerbosity.ALL)["events"]
+    )
+    conversation2 = conversations[1]
+    assert (
+        conversation2["events"] == tracker2.current_state(EventVerbosity.ALL)["events"]
+    )
+    assert conversation2["sender_id"] == tracker2.sender_id
+    assert conversation2[rasa.constants.USER_ID] == user_id
+
+
+@pytest.mark.parametrize(
+    "tracker_store_type",
+    [
+        InMemoryTrackerStore,
+        SQLTrackerStore,
+        MockedMongoTrackerStore,
+        MockedRedisTrackerStore,
+    ],
+)
+async def test_get_trackers_by_user_id_with_pagination(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    tracker_store_type: Type[TrackerStore],
+    domain: Domain,
+    tmp_path: Path,
+) -> None:
+    """Test pagination support for trackers by user_id."""
+    user_id = "test_user_pagination"
+    if tracker_store_type == SQLTrackerStore:
+        tracker_store = SQLTrackerStore(domain, db=str(tmp_path / "rasa.db"))
+    else:
+        tracker_store = tracker_store_type(domain)
+
+    num_conversations = 5
+    saved_trackers = await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, num_conversations
+    )
+
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
+    )
+
+    # Test limit parameter
+    _, response = await rasa_app.get(
+        f"/users/{user_id}/trackers?limit=2",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.OK
+    retrieved_conversations = response.json["conversations"]
+    assert len(retrieved_conversations) == 2
+    assert retrieved_conversations[0]["sender_id"] == saved_trackers[0].sender_id
+    assert retrieved_conversations[1]["sender_id"] == saved_trackers[1].sender_id
+    assert response.json["limit"] == 2
+
+    # Test offset parameter
+    _, response = await rasa_app.get(
+        f"/users/{user_id}/trackers?limit=2&offset=2",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    retrieved_conversations2 = response.json["conversations"]
+    assert response.status == HTTPStatus.OK
+    assert len(retrieved_conversations2) == 2
+    assert retrieved_conversations2[0]["sender_id"] == saved_trackers[2].sender_id
+    assert retrieved_conversations2[1]["sender_id"] == saved_trackers[3].sender_id
+    assert response.json["limit"] == 2
+    assert response.json["offset"] == 2
+
+
+@pytest.mark.parametrize(
+    "tracker_store_type",
+    [
+        InMemoryTrackerStore,
+        SQLTrackerStore,
+        MockedMongoTrackerStore,
+        MockedRedisTrackerStore,
+    ],
+)
+async def test_get_trackers_by_user_id_empty_result(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    tracker_store_type: Type[TrackerStore],
+    domain: Domain,
+    tmp_path: Path,
+) -> None:
+    """Test retrieval when user has no trackers."""
+    user_id = "user_with_no_trackers"
+    if tracker_store_type == SQLTrackerStore:
+        tracker_store = SQLTrackerStore(domain, db=str(tmp_path / "rasa.db"))
+    else:
+        tracker_store = tracker_store_type(domain)
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
+    )
+
+    _, response = await rasa_app.get(
+        f"/users/{user_id}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.OK
+    assert "conversations" in response.json
+    assert len(response.json["conversations"]) == 0
+
+
+@pytest.mark.parametrize("user_id", ["", " ", "%20", "null"])
+async def test_get_trackers_by_user_id_invalid_user_id(
+    rasa_app: SanicASGITestClient,
+    user_id: str,
+) -> None:
+    """Test error handling for invalid user_id parameter."""
+    _, response = await rasa_app.get(
+        f"/users/{user_id}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.BAD_REQUEST
+    assert response.json["reason"] == "BadRequest"
+    assert "user_id cannot be empty" in response.json["message"]
+
+
+@pytest.mark.parametrize(
+    "tracker_store_type",
+    [
+        InMemoryTrackerStore,
+        SQLTrackerStore,
+        MockedMongoTrackerStore,
+        MockedRedisTrackerStore,
+    ],
+)
+async def test_get_trackers_by_user_id_invalid_limit(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    tracker_store_type: Type[TrackerStore],
+    domain: Domain,
+) -> None:
+    """Test error handling for invalid limit parameter."""
+    user_id = "test_user"
+    if tracker_store_type == SQLTrackerStore:
+        tracker_store = SQLTrackerStore(domain, host="sqlite:///:memory:")
+    else:
+        tracker_store = tracker_store_type(domain)
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+
+    _, response = await rasa_app.get(
+        f"/users/{user_id}/trackers?limit=-1",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.BAD_REQUEST
+    assert response.json["reason"] == "BadRequest"
+    assert (
+        "Invalid limit parameter. Limit must be positive." == response.json["message"]
+    )
+
+
+@pytest.mark.parametrize(
+    "tracker_store_type",
+    [
+        InMemoryTrackerStore,
+        SQLTrackerStore,
+        MockedMongoTrackerStore,
+        MockedRedisTrackerStore,
+    ],
+)
+async def test_get_trackers_by_user_id_invalid_offset(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    tracker_store_type: Type[TrackerStore],
+    domain: Domain,
+) -> None:
+    """Test error handling for invalid offset parameter."""
+    user_id = "test_user"
+    tracker_store = tracker_store_type(domain)
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+
+    _, response = await rasa_app.get(
+        f"/users/{user_id}/trackers?offset=-1",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.BAD_REQUEST
+    assert response.json["reason"] == "BadRequest"
+    assert (
+        "Invalid offset parameter. Offset must be positive." in response.json["message"]
+    )
+
+
+@pytest.mark.parametrize(
+    "tracker_store_type",
+    [
+        InMemoryTrackerStore,
+        SQLTrackerStore,
+        MockedMongoTrackerStore,
+        MockedRedisTrackerStore,
+    ],
+)
+async def test_get_trackers_by_user_id_event_verbosity(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    tracker_store_type: Type[TrackerStore],
+    domain: Domain,
+    tmp_path: Path,
+) -> None:
+    """Test that event verbosity parameter works correctly."""
+    user_id = "test_user_verbosity"
+    if tracker_store_type == SQLTrackerStore:
+        tracker_store = SQLTrackerStore(domain, db=str(tmp_path / "rasa.db"))
+    else:
+        tracker_store = tracker_store_type(domain)
+    tracker = DialogueStateTracker.from_events(
+        "conversation_1",
+        [
+            SessionStarted(),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("hello", {"name": "greet"}),
+        ],
+        user_id=user_id,
+    )
+    await tracker_store.save(tracker)
+
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
+    )
+
+    # Test with NONE verbosity
+    _, response = await rasa_app.get(
+        f"/users/{user_id}/trackers?include_events=NONE",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.OK
+    conversations = response.json["conversations"]
+    assert len(conversations) == 1
+    # With NONE verbosity, events should not be included
+    assert (
+        conversations[0].get("events") is None
+        or len(conversations[0].get("events", [])) == 0
+    )
+
+
+async def test_get_trackers_by_user_id_not_implemented(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    domain: Domain,
+) -> None:
+    """Test error handling when tracker store doesn't implement method."""
+    user_id = "test_user"
+    tracker_store = InMemoryTrackerStore(domain)
+
+    # Mock the method to raise NotImplementedError
+    async def mock_get_trackers_by_user_id(*args, **kwargs):
+        raise NotImplementedError()
+
+    monkeypatch.setattr(
+        tracker_store, "get_trackers_by_user_id", mock_get_trackers_by_user_id
+    )
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+
+    _, response = await rasa_app.get(
+        f"/users/{user_id}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.NOT_IMPLEMENTED
+    assert response.json["reason"] == "NotImplemented"
+    assert "does not support querying by user_id" in response.json["message"]
+
+
+async def test_get_trackers_by_user_id_server_error(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Test error handling when an unexpected error occurs."""
+    user_id = "test_user"
+    tracker_store = InMemoryTrackerStore(Domain.empty())
+
+    # Mock the method to raise an unexpected error
+    error_message = "Database connection failed"
+
+    async def mock_get_trackers_by_user_id(*args, **kwargs):
+        raise RuntimeError(error_message)
+
+    monkeypatch.setattr(
+        tracker_store, "get_trackers_by_user_id", mock_get_trackers_by_user_id
+    )
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+
+    with caplog.at_level(logging.DEBUG):
+        _, response = await rasa_app.get(
+            f"/users/{user_id}/trackers",
+            headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+        )
+
+    assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert response.json["reason"] == "TrackerRetrievalError"
+    assert "unexpected error occurred" in response.json["message"]
+    assert error_message in response.json["message"]
+
+
+@pytest.mark.parametrize(
+    "tracker_store_type",
+    [
+        InMemoryTrackerStore,
+        SQLTrackerStore,
+        MockedMongoTrackerStore,
+        MockedRedisTrackerStore,
+    ],
+)
+async def test_get_trackers_by_user_id_with_different_users(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    tracker_store_type: Type[TrackerStore],
+    domain: Domain,
+    tmp_path: Path,
+) -> None:
+    """Test that endpoint returns only trackers for the specified user."""
+    user_id_1 = "user_1"
+    user_id_2 = "user_2"
+    if tracker_store_type == SQLTrackerStore:
+        tracker_store = SQLTrackerStore(domain, db=str(tmp_path / "rasa.db"))
+    else:
+        tracker_store = tracker_store_type(domain)
+    # Create trackers for user_1
+    tracker1 = DialogueStateTracker.from_events(
+        "conv_1_user_1",
+        [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)],
+        user_id=user_id_1,
+    )
+    tracker2 = DialogueStateTracker.from_events(
+        "conv_2_user_1",
+        [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)],
+        user_id=user_id_1,
+    )
+
+    # Create trackers for user_2
+    tracker3 = DialogueStateTracker.from_events(
+        "conv_1_user_2",
+        [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)],
+        user_id=user_id_2,
+    )
+
+    await tracker_store.save(tracker1)
+    await tracker_store.save(tracker2)
+    await tracker_store.save(tracker3)
+
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
+    )
+
+    # Get trackers for user_1
+    _, response = await rasa_app.get(
+        f"/users/{user_id_1}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.OK
+    conversations = response.json["conversations"]
+    assert len(conversations) == 2
+    assert conversations[0]["sender_id"] == tracker1.sender_id
+    assert (
+        conversations[0]["events"]
+        == tracker1.current_state(EventVerbosity.ALL)["events"]
+    )
+    assert conversations[1]["sender_id"] == tracker2.sender_id
+    assert (
+        conversations[1]["events"]
+        == tracker2.current_state(EventVerbosity.ALL)["events"]
+    )
+
+    # Get trackers for user_2
+    _, response = await rasa_app.get(
+        f"/users/{user_id_2}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.OK
+    conversations = response.json["conversations"]
+    assert len(conversations) == 1
+    assert conversations[0]["sender_id"] == tracker3.sender_id
+    assert (
+        conversations[0]["events"]
+        == tracker3.current_state(EventVerbosity.ALL)["events"]
+    )
+
+
+async def test_get_trackers_by_user_id_authentication_required(
+    monkeypatch: MonkeyPatch, empty_agent: Agent
+) -> None:
+    """Integration test to verify authentication is required."""
+    app = rasa.server.create_app(agent=empty_agent, auth_token="rasa")
+    rasa_app = SanicASGITestClient(app)
+
+    user_id = f"test_user_{uuid.uuid4().hex}"
+
+    # Test without token
+    _, response = await rasa_app.get(
+        f"/users/{user_id}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.UNAUTHORIZED
+
+    # Test with invalid token
+    _, response = await rasa_app.get(
+        f"/users/{user_id}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+        params={"token": "invalid_token"},
+    )
+
+    assert response.status == HTTPStatus.UNAUTHORIZED
+
+
+async def test_get_trackers_by_user_id_jwt_token_required(
+    monkeypatch: MonkeyPatch,
+    rasa_secured_app_asymmetric: SanicASGITestClient,
+) -> None:
+    """Integration test to verify authentication is required."""
+    user_id = f"test_user_{uuid.uuid4().hex}"
+
+    # Test without token
+    _, response = await rasa_secured_app_asymmetric.get(
+        f"/users/{user_id}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.UNAUTHORIZED
+
+    # Test with invalid token
+    invalid_jwt = {"Authorization": "Bearer invalid_token"}
+    _, response = await rasa_secured_app_asymmetric.get(
+        f"/users/{user_id}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE, **invalid_jwt},
+    )
+
+    assert response.status == HTTPStatus.UNAUTHORIZED
+
+
+async def test_get_trackers_by_user_id_with_valid_jwt(
+    rasa_secured_app_asymmetric: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    encoded_jwt_user: str,
+) -> None:
+    """Test user trackers endpoint succeeds with valid JWT token."""
+    tracker_store = InMemoryTrackerStore(Domain.empty())
+    monkeypatch.setattr(
+        rasa_secured_app_asymmetric.sanic_app.ctx.agent, "tracker_store", tracker_store
+    )
+    monkeypatch.setattr(
+        rasa_secured_app_asymmetric.sanic_app.ctx.agent.processor,
+        "tracker_store",
+        tracker_store,
+    )
+
+    # Save trackers for the user
+    tracker1 = DialogueStateTracker.from_events(
+        "conversation_1",
+        [
+            SessionStarted(),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("hello"),
+        ],
+        user_id=USERNAME,
+    )
+    tracker2 = DialogueStateTracker.from_events(
+        "conversation_2",
+        [
+            SessionStarted(),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("goodbye"),
+        ],
+        user_id=USERNAME,
+    )
+    await tracker_store.save(tracker1)
+    await tracker_store.save(tracker2)
+
+    jwt_header = {"Authorization": f"Bearer {encoded_jwt_user}"}
+    _, response = await rasa_secured_app_asymmetric.get(
+        f"/users/{USERNAME}/trackers", headers=jwt_header
+    )
+
+    assert response.status == HTTPStatus.OK
+    assert "conversations" in response.json
+    conversations = response.json["conversations"]
+    assert len(conversations) == 2
+    assert conversations[0]["sender_id"] == tracker1.sender_id
+    assert conversations[0][rasa.constants.USER_ID] == USERNAME
+    assert conversations[1]["sender_id"] == tracker2.sender_id
+    assert conversations[1][rasa.constants.USER_ID] == USERNAME
+
+
+async def test_get_trackers_by_user_id_auth_invalid_jwt_payload(
+    rasa_secured_app_asymmetric: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    encoded_jwt_user: str,
+) -> None:
+    tracker_store = InMemoryTrackerStore(Domain.empty())
+    monkeypatch.setattr(
+        rasa_secured_app_asymmetric.sanic_app.ctx.agent, "tracker_store", tracker_store
+    )
+    monkeypatch.setattr(
+        rasa_secured_app_asymmetric.sanic_app.ctx.agent.processor,
+        "tracker_store",
+        tracker_store,
+    )
+
+    # Save trackers for the user
+    tracker1 = DialogueStateTracker.from_events(
+        "conversation_1",
+        [
+            SessionStarted(),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("hello"),
+        ],
+        user_id=USERNAME,
+    )
+    tracker2 = DialogueStateTracker.from_events(
+        "conversation_2",
+        [
+            SessionStarted(),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("goodbye"),
+        ],
+        user_id=USERNAME,
+    )
+    await tracker_store.save(tracker1)
+    await tracker_store.save(tracker2)
+
+    jwt_header = {"Authorization": f"Bearer {encoded_jwt_user}"}
+    _, response = await rasa_secured_app_asymmetric.get(
+        "/users/forbidden_user/trackers", headers=jwt_header
+    )
+
+    assert response.status == HTTPStatus.FORBIDDEN
+    assert response.json["message"] == "User has insufficient permissions."
+
+
+@pytest.mark.parametrize(
+    "tracker_store_type",
+    [
+        InMemoryTrackerStore,
+        SQLTrackerStore,
+        MockedMongoTrackerStore,
+        MockedRedisTrackerStore,
+    ],
+)
+async def test_endpoint_performance_with_large_dataset(
+    tracker_store_type: Type[TrackerStore],
+    rasa_server_with_flows: Sanic,
+    domain: Domain,
+    tmp_path: Path,
+) -> None:
+    """Performance test for /users/{user_id}/trackers endpoint with 1000+ conversations."""  # noqa: E501
+    user_id = f"perf_endpoint_test_{uuid.uuid4().hex}"
+    if tracker_store_type == SQLTrackerStore:
+        tracker_store = SQLTrackerStore(domain, db=str(tmp_path / "rasa.db"))
+    else:
+        tracker_store = tracker_store_type(domain)
+
+    num_conversations = 1000
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, num_conversations
+    )
+
+    rasa_server_with_flows.ctx.agent.tracker_store = tracker_store
+    client = SanicASGITestClient(rasa_server_with_flows)
+
+    # Test endpoint performance
+    endpoint_start = time.time()
+    _, response = await client.get(
+        f"/users/{user_id}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+        params={"token": "rasa"},
+    )
+    endpoint_time = time.time() - endpoint_start
+
+    assert response.status == HTTPStatus.OK
+    conversations = response.json["conversations"]
+    assert len(conversations) == num_conversations
+
+    # Performance assertion
+    max_time = 15.0
+    assert (
+        endpoint_time < max_time
+    ), f"Endpoint took {endpoint_time:.2f}s, expected < {max_time}s"
+
+    # Test endpoint performance with pagination
+    paginated_endpoint_start = time.time()
+    _, response = await client.get(
+        f"/users/{user_id}/trackers",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+        params={"token": "rasa", "limit": "50"},
+    )
+    paginated_endpoint_time = time.time() - paginated_endpoint_start
+
+    assert response.status == HTTPStatus.OK
+    conversations = response.json["conversations"]
+    assert len(conversations) == 50
+
+    # Paginated endpoint should be much faster
+    assert (
+        paginated_endpoint_time < 5.0
+    ), f"Paginated endpoint took {paginated_endpoint_time:.2f}s, expected < 5.0s"
+
+
+@pytest.mark.parametrize(
+    "tracker_store_type",
+    [
+        InMemoryTrackerStore,
+        SQLTrackerStore,
+        MockedMongoTrackerStore,
+        MockedRedisTrackerStore,
+    ],
+)
+async def test_pagination_offset_performance(
+    tracker_store_type: Type[TrackerStore],
+    rasa_server_with_flows: Sanic,
+    domain: Domain,
+    tmp_path: Path,
+) -> None:
+    """Test that pagination with different offsets performs consistently."""
+    if tracker_store_type == SQLTrackerStore:
+        tracker_store = SQLTrackerStore(domain, db=str(tmp_path / "rasa.db"))
+    else:
+        tracker_store = tracker_store_type(domain)
+    user_id = f"pagination_perf_test_{uuid.uuid4().hex}"
+
+    num_conversations = 1000
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, num_conversations
+    )
+
+    rasa_server_with_flows.ctx.agent.tracker_store = tracker_store
+    client = SanicASGITestClient(rasa_server_with_flows)
+
+    # Test pagination at different offsets
+    offsets = [10, 250, 500, 750]
+    limit = 50
+
+    for offset in offsets:
+        start = time.time()
+        _, response = await client.get(
+            f"/users/{user_id}/trackers",
+            headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+            params={"token": "rasa", "limit": "50", "offset": str(offset)},
+        )
+        duration = time.time() - start
+
+        expected_count = min(limit, num_conversations - offset)
+        retrieved_conversations = response.json["conversations"]
+        assert len(retrieved_conversations) == expected_count
+
+        # Performance should be consistent regardless of offset
+        assert (
+            duration < 2.0
+        ), f"Pagination at offset {offset} too slow: {duration:.2f}s"

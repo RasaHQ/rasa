@@ -272,6 +272,9 @@ PATH_PYTEST_MARKER_MAPPINGS = {
 }
 
 
+USERNAME = "myuser"
+
+
 @pytest.fixture(scope="session")
 def nlu_as_json_path() -> Text:
     return "data/examples/rasa/demo-rasa.json"
@@ -852,7 +855,18 @@ def rasa_server_secured_asymmetric(
 
 @pytest.fixture
 def encoded_jwt(test_private_key: Text, asymmetric_jwt_method: Text) -> Text:
-    payload = {"user": {"username": "myuser", "role": "admin"}}
+    payload = {"user": {"username": USERNAME, "role": "admin"}}
+    encoded_jwt = jwt.encode(
+        payload=payload,
+        key=test_private_key,
+        algorithm=asymmetric_jwt_method,
+    )
+    return encoded_jwt
+
+
+@pytest.fixture
+def encoded_jwt_user(test_private_key: Text, asymmetric_jwt_method: Text) -> Text:
+    payload = {"user": {"username": USERNAME, "role": "user"}}
     encoded_jwt = jwt.encode(
         payload=payload,
         key=test_private_key,
