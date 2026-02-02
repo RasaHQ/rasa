@@ -28,6 +28,7 @@ config:
 packages:
   rasa-aws: github.com/RasaHQ/pulumi-components/rasa-aws@1.0.1-rasa-aws
   rasa-apps: github.com/RasaHQ/pulumi-components/rasa-apps@1.0.0-rasa-apps
+  rasa-cloudflare: github.com/RasaHQ/pulumi-components/rasa-cloudflare@v1.1.0-rasa-cloudflare
 resources:
   cluster:
     type: rasa-aws:EksCluster
@@ -74,21 +75,20 @@ resources:
       dependsOn:
         - ${albController}
   headlampDns:
-    type: rasa-aws:Route53IngressDnsRecord
+    type: rasa-cloudflare:IngressDnsRecord
     properties:
-      route53ZoneName: rasapro.rasa-dev.io
-      dnsHostname: headlamp-${clusterName}.rasapro.rasa-dev.io
-      albTags:
-        elbv2.k8s.aws/cluster: ${cluster.clusterName}
-        ingress.k8s.aws/stack: ${pulumi.project}-${pulumi.stack}-alb-group
+      kubernetesNamespace: headlamp
+      kubernetesIngress: headlamp
+      cloudflareZoneId: ${cloudflareZoneId}
+      cloudflareHostname: pro-ci-headlamp.rasa-dev.io
     options:
-      provider: ${k8sProvider}
+      providers:
+        - ${k8sProvider}
       dependsOn:
         - ${headlamp}
 outputs:
   clusterName: ${cluster.clusterName}
   kubeConfig: ${cluster.kubeConfig}
-  headlampUrl: https://${headlampDns.dnsRecordName}
 variables:
   headlampHelmValues:
     fullnameOverride: headlamp
@@ -106,17 +106,17 @@ variables:
         alb.ingress.kubernetes.io/target-type: ip
         alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
         alb.ingress.kubernetes.io/backend-protocol: 'HTTP'
-        alb.ingress.kubernetes.io/certificate-arn:  arn:aws:acm:eu-west-1:329710836760:certificate/fa9c2053-b0d6-48ff-b6a2-5e521544416b 
+        alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-1:329710836760:certificate/460a7ffe-b9cd-4d6a-8e4d-a09f6a9f66fd
         alb.ingress.kubernetes.io/group.name: ${pulumi.project}-${pulumi.stack}-alb-group
       hosts:
-        - host: headlamp-${clusterName}.rasapro.rasa-dev.io
+        - host: pro-ci-headlamp.rasa-dev.io
           paths:
             - path: /
               type: Prefix
       tls:
         - secretName: headlamp-tls
           hosts:
-            - headlamp-${clusterName}.rasapro.rasa-dev.io
+            - pro-ci-headlamp.rasa-dev.io
     serviceAccount:
       create: true
       name: headlamp-admin
