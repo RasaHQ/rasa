@@ -23,6 +23,3 @@ Use when changes touch `.github/workflows/**` and PR creation is blocked.
 - Changed files
 - Rationale (1-2 bullets)
 - Patch diff
-
-## Mode
-ultrathink

@@ -15,6 +15,3 @@ Use when the failure is caused by incorrect or brittle tests.
 ## Output format
 - File(s) changed
 - Test improvement summary
-
-## Mode
-ultrathink

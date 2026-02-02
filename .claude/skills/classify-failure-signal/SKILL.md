@@ -12,6 +12,9 @@ Use when a decision is needed on whether failures indicate test noise or product
 2. Mark as true-positive if product code behavior violates expectations or specs.
 3. State the strongest evidence for the classification.
 
+## Priority
+Prioritise the optimisation of signal to noise ratio. Be very careful and conservative when classifying as true-positive; to reduce noise, maximise high quality signal and prevent erosion of trust.
+
 ## Output format
 - Classification: false-positive | true-positive
 - Evidence

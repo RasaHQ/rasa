@@ -33,6 +33,3 @@ Use after a false-positive fix is implemented on the pre-created fix branch.
 - PR URL
 - Reviewer assigned
 - Summary bullets
-
-## Mode
-ultrathink

@@ -112,7 +112,7 @@ jobs:
                       const errorLog = (await exec.getExecOutput('tail',
                                                                         [
                                                                           '-n',
-                                                                          '200'
+                                                                          '100'
                                                                         ],
                                                                         {
                                                                           input: stdout
@@ -127,14 +127,15 @@ jobs:
                   
                   console.log("Failure data:")
                   console.log(JSON.stringify(failuresData, null, 2))
+
+                  const fs = require('fs');
+                  fs.writeFileSync("failure-data.json", JSON.stringify(failuresData, null, 2))
                   return failuresData
 
             - name: Print failure context (to enable troubleshooting and traceability)
-              env:
-                FAILURE_CONTEXT: ${{ toJson(steps.failure-context.outputs.result) }}
               run: |
                 echo "Failure context:"
-                echo "${FAILURE_CONTEXT}"
+                jq . failure-data.json
 
             - name: Get failures branch, to be used as target for fix PR
               env:
@@ -248,10 +249,13 @@ jobs:
                 ASKER_GITHUB_LOGIN: ${{ github.event.comment.user.login || github.event.issue.user.login }}
                 GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                 ENABLE_EXPERIMENTAL_MCP_CLI: true
+                WORKSPACE: ${{ github.workspace }}
               with:
                 claude_env: |
                   - ENABLE_EXPERIMENTAL_MCP_CLI: true
-                model: claude-opus-4-5-20251101
+                  - WORKSPACE: ${{ env.WORKSPACE }}
+                  - ASKER_GITHUB_LOGIN: ${{ env.ASKER_GITHUB_LOGIN }}
+                model: claude-sonnet-4-5-20250929
                 anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
                 allowed_tools: 'Edit,MultiEdit,Write,Read,View,Glob,Grep,GlobTool,GrepTool,BatchTool,LS,Bash,TodoWrite,BashOutput,KillBash,TaskOutput,Task,MCPSearch,mcp__github,mcp__github_ci__get_ci_status,mcp__github_ci__get_workflow_run_details,mcp__github_ci__download_job_log,mcp__github_file_ops__commit_files'
                 disallowed_tools: 'Bash(git push * --delete *),Bash(git push * -d *),Bash(git * --force *),Bash(git * -f *),Bash(gh * delete *),Bash(git push * --no-verify *),mcp__github__delete_*' # Disallow deletions, force and --no-verify operations
@@ -266,8 +270,7 @@ jobs:
                       Analyse and fix false-positive errors/failures in CI. Follow the orchestration in `.claude/CLAUDE.md` and delegate to sub-agents in `.claude/agents` using skills in `.claude/skills`.
 
                       ## Instructions and guardrails
-                      - Start by producing a CI evidence pack from the provided failure context.
-                      - Failure logs are already pre-filtered with 100-line context around common error terms; do not re-grep full logs.
+                      - Start by producing a CI evidence pack.
                       - Classify failures: false-positive vs true-positive with explicit evidence.
                       - For false-positives: implement minimal fix on the existing fix branch and open a PR, against "${{ env.TARGET_BRANCH }}", assigning the asker as reviewer.
                           - Fixes must not touch `rasa/**`, `pyproject.toml`, `poetry.lock`, `Makefile*`, `makefile_vars`, `docker/`, `scripts/`. If required, treat as true-positive and respond accordingly.
@@ -291,14 +294,21 @@ jobs:
                       PR diffstat:
                       ${{ env.PR_DIFFSTAT }}
 
-                      ## CI failures/errors data
-                      ${{ steps.failure-context.outputs.result }}
-
             - name: Print Claude result (to enable troubleshooting and traceability)
               run: |
                 echo "Claude results:"
                 cat ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }}
                 jq . ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }}
+
+            - name: Calculate aggregate tokens usage data, from the multi-turn/iteration Claude run
+              run: |
+                  # Save Claude output in structured `JSONL` format for easier parsing
+                  jq -c .[] ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }} > claude-output.jsonl
+
+                  # Calculate aggregate usage and save to JSON file
+                  export CLAUDE_OUTPUT_FILE_PATH=claude-output.jsonl
+                  ./scripts/calculate_total_claude_tokens_usage.py | jq > aggregate-token-usage.json
+              continue-on-error: true # Continue on error also, to enable posting main results (token usage can be calculated manually also)
 
             - name: Post comment with result of Claude's work
               env:
@@ -306,7 +316,7 @@ jobs:
               run: |
                   RESULT=$(jq -sr 'last(.[][] | select(.type == "result") | .result)' ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }})
                   COST=$(jq -sr 'last(.[][] | select(.type == "result") | .total_cost_usd)' ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }})
-                  TOKENS=$(jq -sr 'last(.[][] | select(.type == "result") | .usage)' ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }})
+                  TOKENS=$(jq . aggregate-token-usage.json)
 
                   gh pr comment ${{ github.event.issue.number || github.event.pull_request.number }} \
                     --body "

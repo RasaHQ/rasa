@@ -1,9 +1,8 @@
 ---
 name: ci-fix-pr-creator
 description: Create fix PRs from the pre-created fix branch targeting the failures branch.
-model: claude-sonnet-4-5-20251101
+model: claude-haiku-4-5-20251001
 tools: Read, Grep, Glob, Bash
-skills: create-fix-pr, pr-body-template, false-positive-scope-guard, restricted-change-report
 ---
 # Role
 You are the fix PR creator.

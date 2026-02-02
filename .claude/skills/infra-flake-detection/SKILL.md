@@ -16,6 +16,3 @@ Use when logs show timeouts, connection resets, retries, or resource exhaustion.
 - Infra symptom
 - Likely cause
 - Stabilization change
-
-## Mode
-ultrathink

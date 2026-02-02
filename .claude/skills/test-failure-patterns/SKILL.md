@@ -16,6 +16,3 @@ Use when failures are localized to test code or fixtures.
 - Pattern detected
 - Example from logs or tests
 - Suggested fix direction
-
-## Mode
-ultrathink

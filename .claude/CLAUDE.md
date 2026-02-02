@@ -16,5 +16,5 @@ When invoked by the `analyse-and-fix-ci-test-failures` workflow, follow this mod
 4. Keep outputs concise and evidence-based; avoid speculative changes.
 
 Notes:
-- CI failure context is provided in the system prompt as JSON.
+- CI failure context is available in ${WORKSPACE}/failure-data.json file.
 - Agents and skills are discovered automatically from `.claude/agents` and `.claude/skills`.

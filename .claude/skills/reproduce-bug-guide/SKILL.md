@@ -16,6 +16,3 @@ Use when a product bug is suspected and reproduction steps are needed.
 - Preconditions
 - Steps
 - Expected vs actual
-
-## Mode
-ultrathink

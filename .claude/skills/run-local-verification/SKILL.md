@@ -24,6 +24,3 @@ Use after applying a false-positive fix and before PR creation.
 - Result: pass|fail|inconclusive
 - Evidence snippet
 - Follow-up recommendation
-
-## Mode
-ultrathink

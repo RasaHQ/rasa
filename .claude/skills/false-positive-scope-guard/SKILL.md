@@ -24,6 +24,3 @@ Use before applying or PRing changes for a suspected false-positive.
 - Forbidden-path check: pass|fail
 - Report-only: yes|no (workflow-path hits)
 - If fail: reclassification note
-
-## Mode
-ultrathink

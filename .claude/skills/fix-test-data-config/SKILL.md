@@ -15,6 +15,3 @@ Use when failures are due to outdated fixtures, mismatched configs, or setup dri
 ## Output format
 - File(s) changed
 - Reason for change
-
-## Mode
-ultrathink

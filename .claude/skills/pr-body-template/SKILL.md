@@ -16,6 +16,3 @@ Structure the body as:
 ## Output format
 - Title suggestion
 - Body text with the above sections
-
-## Mode
-ultrathink

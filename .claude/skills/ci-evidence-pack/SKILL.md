@@ -8,7 +8,7 @@ description: Produces a compact, job-by-job failure digest from CI failure JSON 
 Use first, to turn the provided failure context JSON into actionable evidence for other agents.
 
 ## Instructions
-1. Treat `failedJobLogs` as already pre-filtered (100-line context around common error terms); do not re-search full logs.
+1. Treat logs in !`jq . ${WORKSPACE}/failure-data.json | tail -n 100` as already pre-filtered (50-line context around common error terms); do not re-search full logs.
 2. List each failed job with failed steps.
 3. Extract the 3-10 most diagnostic log lines per job (errors, stack traces, assertions).
 4. Note any timing/infra hints separately from assertion or product errors.
@@ -18,6 +18,3 @@ Use first, to turn the provided failure context JSON into actionable evidence fo
 - Failed steps: <comma-separated>
 - Key log lines: <bullet list>
 - Infra hints (if any)
-
-## Mode
-ultrathink

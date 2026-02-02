@@ -14,6 +14,3 @@ Use this structure:
 3. Reproduction steps (bullet list).
 4. Expected vs actual behavior (one line each).
 5. Suggested next debugging focus (one line).
-
-## Mode
-ultrathink

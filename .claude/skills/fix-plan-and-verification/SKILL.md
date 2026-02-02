@@ -32,6 +32,3 @@ Use before making changes for a suspected false-positive.
 - Rollback/guardrails (if any)
 - Forbidden-path check: pass|fail
 - Report-only: yes|no (workflow changes)
-
-## Mode
-ultrathink

@@ -1,9 +1,8 @@
 ---
 name: ci-false-positive-fixer
 description: Fix false-positive CI failures by updating tests, data, config, or infra-related setup.
-model: claude-opus-4-5-20251101
+model: claude-sonnet-4-5-20250929
 tools: Read, Grep, Glob, Edit, Write, Bash
-skills: infra-flake-detection, test-failure-patterns, fix-test-code, fix-test-data-config, fix-plan-and-verification, run-local-verification, false-positive-scope-guard
 hooks:
   PostToolUse:
     - matcher: "Edit|Write|MultiEdit"

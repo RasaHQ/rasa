@@ -33,6 +33,3 @@ Use for true-positive failures to identify likely introducing commits from the P
 - Likely introducing commit(s):
   - <sha> <summary> — evidence (file/line or log snippet)
 - Confidence (low/medium/high)
-
-## Mode
-ultrathink
