@@ -95,7 +95,11 @@ from rasa.builder.telemetry.langfuse.copilot_endpoint_langfuse_telemetry import 
     CopilotEndpointLangfuseTelemetry,
 )
 from rasa.builder.telemetry.langfuse.langfuse_compat import observe
-from rasa.builder.training_service import try_load_existing_agent, update_agent
+from rasa.builder.training_service import (
+    train_and_load_agent,
+    try_load_existing_agent,
+    update_agent,
+)
 from rasa.core.agent import Agent
 from rasa.core.channels.studio_chat import StudioChatInput
 from rasa.core.exceptions import AgentNotReady
@@ -1459,14 +1463,24 @@ async def copilot(request: Request) -> None:
             else:
                 newly_created_commit_sha = None
 
-        # 7b. Send commit info via SSE if a new commit was created
+        # 7b. Ensure training happens after file changes
+        training_success = False
+        if newly_created_commit_sha:
+            training_success = await _ensure_training_after_copilot_commit(
+                copilot_response_handler,
+                project_generator,
+                request.app,
+                newly_created_commit_sha,
+            )
+
+        # 7c. Send commit info via SSE if a new commit was created
         commit_info_dict = None
         if newly_created_commit_sha:
             try:
                 commit_event = await copilot_response_handler.respond_to_commit(
                     git_service=project_generator.git_service,
                     commit_sha=newly_created_commit_sha,
-                    training_success=True,
+                    training_success=training_success,
                 )
                 commit_info_dict = commit_event.commit
                 await sse.send(commit_event.to_sse_event().format())
@@ -1830,6 +1844,65 @@ async def current_tracker_from_input_channel(
         return await app.ctx.agent.tracker_store.retrieve(session_id)
     else:
         return None
+
+
+async def _ensure_training_after_copilot_commit(
+    copilot_response_handler: Any,
+    project_generator: ProjectGenerator,
+    app: Any,
+    commit_sha: str,
+) -> bool:
+    """Ensure the model reflects all file changes made by copilot.
+
+    If training already completed after the last file write, returns True.
+    Otherwise, triggers auto-training to ensure changes are reflected in the model.
+
+    Args:
+        copilot_response_handler: The response handler from the copilot session.
+        project_generator: The project generator instance.
+        app: The Sanic application instance.
+        commit_sha: SHA of the commit that was just created.
+
+    Returns:
+        True if the model is up-to-date, False otherwise.
+    """
+    # Check if training completed after the last file write
+    is_model_up_to_date = (
+        hasattr(copilot_response_handler, "is_model_up_to_date")
+        and copilot_response_handler.is_model_up_to_date
+    )
+
+    if is_model_up_to_date:
+        structlogger.debug(
+            "builder.copilot.training_status.model_up_to_date",
+            commit_sha=commit_sha,
+        )
+        return True
+
+    # Either training wasn't called, failed, or file writes happened after training
+    structlogger.info(
+        "builder.copilot.auto_training.starting",
+        event_info="Auto-training after copilot commit",
+        commit_sha=commit_sha,
+    )
+    try:
+        training_input = project_generator.get_training_input()
+        agent = await train_and_load_agent(
+            training_input, role="copilot", action="auto_train"
+        )
+        update_agent(agent, app)
+        structlogger.info(
+            "builder.copilot.auto_training.success",
+            commit_sha=commit_sha,
+        )
+        return True
+    except Exception as exc:
+        structlogger.error(
+            "builder.copilot.auto_training.failed",
+            error=str(exc),
+            commit_sha=commit_sha,
+        )
+        return False
 
 
 async def _get_copilot_block_scope(user_id: str) -> Optional[BlockScope]:

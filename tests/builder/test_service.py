@@ -34,7 +34,11 @@ from rasa.builder.guardrails.models import (
 )
 from rasa.builder.job_manager import job_manager
 from rasa.builder.models import JobStatus, JobStatusEvent
-from rasa.builder.service import bp, setup_project_generator
+from rasa.builder.service import (
+    _ensure_training_after_copilot_commit,
+    bp,
+    setup_project_generator,
+)
 from rasa.cli.scaffold import ProjectTemplateName
 from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
 from rasa.shared.core.domain import Domain
@@ -1264,3 +1268,80 @@ class TestCopilotModeEndpoints:
         payload = json.loads(response.body)
         assert payload["error"] == "Invalid request"
         assert payload["details"]["message"] == "Mode parameter is required"
+
+
+class TestEnsureTrainingAfterCopilotCommit:
+    """Tests for _ensure_training_after_copilot_commit helper function."""
+
+    @pytest.mark.asyncio
+    async def test_skips_auto_training_when_model_is_up_to_date(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test that auto-training is skipped when model is already up-to-date."""
+        mock_handler = MagicMock()
+        mock_handler.is_model_up_to_date = True
+
+        mock_project_generator = MagicMock()
+
+        result = await _ensure_training_after_copilot_commit(
+            copilot_response_handler=mock_handler,
+            project_generator=mock_project_generator,
+            app=MagicMock(),
+            commit_sha="abc123",
+        )
+
+        assert result is True
+        mock_project_generator.get_training_input.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_auto_trains_when_model_is_not_up_to_date(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test that auto-training triggers when model is not up-to-date."""
+        mock_handler = MagicMock()
+        mock_handler.is_model_up_to_date = False
+
+        mock_agent = MagicMock()
+        mock_train = AsyncMock(return_value=mock_agent)
+        mock_update = MagicMock()
+        monkeypatch.setattr("rasa.builder.service.train_and_load_agent", mock_train)
+        monkeypatch.setattr("rasa.builder.service.update_agent", mock_update)
+
+        mock_project_generator = MagicMock()
+        mock_project_generator.get_training_input.return_value = MagicMock()
+
+        result = await _ensure_training_after_copilot_commit(
+            copilot_response_handler=mock_handler,
+            project_generator=mock_project_generator,
+            app=MagicMock(),
+            commit_sha="abc123",
+        )
+
+        assert result is True
+        mock_train.assert_called_once()
+        mock_update.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_returns_false_when_auto_training_fails(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test returns False when auto-training fails."""
+        mock_handler = MagicMock()
+        mock_handler.is_model_up_to_date = False
+
+        monkeypatch.setattr(
+            "rasa.builder.service.train_and_load_agent",
+            AsyncMock(side_effect=Exception("Training failed!")),
+        )
+
+        mock_project_generator = MagicMock()
+        mock_project_generator.get_training_input.return_value = MagicMock()
+
+        result = await _ensure_training_after_copilot_commit(
+            copilot_response_handler=mock_handler,
+            project_generator=mock_project_generator,
+            app=MagicMock(),
+            commit_sha="abc123",
+        )
+
+        assert result is False

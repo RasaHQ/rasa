@@ -21,6 +21,11 @@ from rasa.builder.copilot.exceptions import (
     CopilotFinalBufferReached,
     CopilotStreamEndedEarly,
 )
+from rasa.builder.copilot.mcp_server.constants import (
+    MCP_TOOL_TRAIN_MODEL,
+    MCP_TOOL_UPDATE_MULTIPLE_FILES,
+    MCP_TOOL_WRITE_PROJECT_FILE,
+)
 from rasa.builder.copilot.mcp_server.models import DocumentSearchResponse
 from rasa.builder.copilot.models import (
     CopilotOutput,
@@ -130,6 +135,10 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         # This is needed because the planning context is reset after streaming ends
         self._final_plan: Optional[List[TodoItem]] = None
 
+        # Tool call tracking - tracks all tool calls for observability and to
+        # determine if the model is up-to-date (training completed after last write)
+        self._tracked_tool_calls: List[MCPToolCall] = []
+
     @property
     def generated_responses(self) -> List[GeneratedContent]:
         return copy.deepcopy(self._generated_responses)
@@ -168,6 +177,35 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
     def retrieved_documents(self) -> List[Document]:
         return copy.deepcopy(self._retrieved_documents)
 
+    @property
+    def is_model_up_to_date(self) -> bool:
+        """Check if the model reflects all file changes made during this session.
+
+        Returns:
+            True if training completed after the last file write, False otherwise.
+        """
+        last_completed_train_index = -1
+        last_write_index = -1
+
+        for i, call in enumerate(self._tracked_tool_calls):
+            if call.tool_name == MCP_TOOL_TRAIN_MODEL and call.status == "completed":
+                last_completed_train_index = i
+            elif (
+                call.tool_name
+                in (
+                    MCP_TOOL_WRITE_PROJECT_FILE,
+                    MCP_TOOL_UPDATE_MULTIPLE_FILES,
+                )
+                and call.status == "completed"
+            ):
+                last_write_index = i
+
+        # Model is up-to-date only if training completed after the last successful write
+        return (
+            last_completed_train_index >= 0
+            and last_completed_train_index > last_write_index
+        )
+
     def reset(self) -> None:
         """Clear all buffers and reset the handler.
 
@@ -194,6 +232,9 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         # Clear the retrieved documents list
         self._retrieved_documents.clear()
 
+        # Clear the tracked tool calls list
+        self._tracked_tool_calls.clear()
+
     def _drain_queues_without_yielding(self, capture_final_plan: bool = False) -> None:
         """Drain MCP tool and plan queues without yielding events.
 
@@ -215,7 +256,9 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
             drained_mcp_count = 0
             try:
                 while True:
-                    self._mcp_tool_queue.get_nowait()
+                    mcp_event = self._mcp_tool_queue.get_nowait()
+                    # Track drained tool calls for is_model_up_to_date accuracy
+                    self._tracked_tool_calls.append(mcp_event)
                     drained_mcp_count += 1
             except asyncio.QueueEmpty:
                 pass
@@ -304,6 +347,9 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
             # document retrieval MCP tool call created by the hook.
             if is_document_retrieval_mcp_tool_output_event(queued_event):
                 self._update_retrieved_documents(queued_event)
+
+            # Track tool calls for is_model_up_to_date check
+            self._tracked_tool_calls.append(queued_event)
 
             # Yield the MCP tool call event.
             yield queued_event

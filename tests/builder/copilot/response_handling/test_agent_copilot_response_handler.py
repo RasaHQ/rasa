@@ -15,7 +15,11 @@ from openai.types.responses import (
     ResponseTextDoneEvent,
 )
 
-from rasa.builder.copilot.mcp_server.constants import MCP_TOOL_SEARCH_DOCS
+from rasa.builder.copilot.mcp_server.constants import (
+    MCP_TOOL_SEARCH_DOCS,
+    MCP_TOOL_TRAIN_MODEL,
+    MCP_TOOL_WRITE_PROJECT_FILE,
+)
 from rasa.builder.copilot.mcp_server.models import (
     DocumentSearchResponse,
     DocumentSearchResult,
@@ -2450,3 +2454,64 @@ class TestAgentCopilotResponseHandler:
             if expected_documents_count > 0:
                 added_documents = handler._retrieved_documents[initial_documents_count:]
                 assert len(added_documents) == expected_documents_count
+
+    def test_is_model_up_to_date_initial_state(self):
+        """Test is_model_up_to_date is False initially."""
+        handler = AgentCopilotResponseHandler(
+            response_stream=mock_response_stream("test"),
+            rolling_buffer_size=20,
+        )
+        assert handler.is_model_up_to_date is False
+
+    def test_is_model_up_to_date_after_write_then_train(self):
+        """Test is_model_up_to_date is True when train happens after write."""
+        handler = AgentCopilotResponseHandler(
+            response_stream=mock_response_stream("test"),
+            rolling_buffer_size=20,
+        )
+
+        # Write file, then train
+        handler._tracked_tool_calls.append(
+            MCPToolCall(tool_name=MCP_TOOL_WRITE_PROJECT_FILE, status="completed")
+        )
+        handler._tracked_tool_calls.append(
+            MCPToolCall(tool_name=MCP_TOOL_TRAIN_MODEL, status="completed")
+        )
+
+        assert handler.is_model_up_to_date is True
+
+    def test_is_model_up_to_date_false_when_write_after_train(self):
+        """Test is_model_up_to_date is False when write happens after train."""
+        handler = AgentCopilotResponseHandler(
+            response_stream=mock_response_stream("test"),
+            rolling_buffer_size=20,
+        )
+
+        # Train, then write file (changes not reflected in model)
+        handler._tracked_tool_calls.append(
+            MCPToolCall(tool_name=MCP_TOOL_TRAIN_MODEL, status="completed")
+        )
+        handler._tracked_tool_calls.append(
+            MCPToolCall(tool_name=MCP_TOOL_WRITE_PROJECT_FILE, status="completed")
+        )
+
+        assert handler.is_model_up_to_date is False
+
+    def test_is_model_up_to_date_reset(self):
+        """Test that reset() clears is_model_up_to_date state."""
+        handler = AgentCopilotResponseHandler(
+            response_stream=mock_response_stream("test"),
+            rolling_buffer_size=20,
+        )
+
+        handler._tracked_tool_calls.append(
+            MCPToolCall(tool_name=MCP_TOOL_WRITE_PROJECT_FILE, status="completed")
+        )
+        handler._tracked_tool_calls.append(
+            MCPToolCall(tool_name=MCP_TOOL_TRAIN_MODEL, status="completed")
+        )
+        assert handler.is_model_up_to_date is True
+
+        handler.reset()
+
+        assert handler.is_model_up_to_date is False
