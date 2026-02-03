@@ -106,6 +106,21 @@ class CopilotEndpointLangfuseTelemetry:
             session_id = CopilotEndpointLangfuseTelemetry._create_session_id(
                 hello_rasa_project_id, user_id, chat_id
             )
+            # Extract the final response (output) for the trace.
+            output: Dict[str, Any]
+            if (exception_response := handler.extract_exception_response()) is not None:
+                output = {
+                    "answer": exception_response.content,
+                    "response_category": exception_response.response_category.value,
+                    "references": [],
+                    "original_exception": exception_response.stringified_original_exception,  # noqa: E501
+                }
+            else:
+                output = {
+                    "answer": handler.extract_text_from_generated_responses(),
+                    "response_category": response_category,
+                    "references": reference_section_entries,
+                }
             # Use `update_current_trace` to update the top level trace.
             langfuse_client.update_current_trace(
                 user_id=user_id,
@@ -114,11 +129,7 @@ class CopilotEndpointLangfuseTelemetry:
                     "message": user_message,
                     "tracker_event_attachments": tracker_event_attachments,
                 },
-                output={
-                    "answer": handler.extract_text_from_generated_responses(),
-                    "response_category": response_category,
-                    "references": reference_section_entries,
-                },
+                output=output,
                 metadata={
                     "ids": {
                         "user_id": user_id,

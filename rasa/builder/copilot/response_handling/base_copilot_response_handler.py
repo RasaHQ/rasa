@@ -7,6 +7,7 @@ import structlog
 from rasa.builder.copilot.models import (
     CommitInformationContent,
     ControlledPredictionContent,
+    ExceptionContent,
     GeneratedContent,
     GuardrailBlockedContent,
     GuardrailPolicyViolationContent,
@@ -380,4 +381,15 @@ class BaseCopilotResponseHandler(ABC):
             The default implementation returns None. Subclasses that support
             task planning should override this method.
         """
+        return None
+
+    def extract_exception_response(self) -> Optional[ExceptionContent]:
+        """Extract the exception response from the generated responses.
+
+        Returns:
+            ExceptionContent with the exception response.
+        """
+        for response in self.generated_responses or []:
+            if isinstance(response, ExceptionContent):
+                return response
         return None

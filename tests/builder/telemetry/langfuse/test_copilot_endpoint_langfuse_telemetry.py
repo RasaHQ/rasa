@@ -3,6 +3,8 @@ from unittest.mock import Mock, patch
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
     CopilotTurnRequest,
+    ExceptionContent,
+    ResponseCategory,
     TextContent,
     UserChatMessage,
 )
@@ -135,6 +137,8 @@ class TestCopilotEndpointLangfuseTelemetry:
         mock_response.content = "Response text"
         handler.generated_responses = [mock_response]
         handler.extract_references.return_value = Mock(references=[])
+        handler.extract_exception_response.return_value = None
+        handler.extract_response_category.return_value = ResponseCategory.COPILOT
         relevant_documents = [Mock()]
 
         # Mock copilot_context
@@ -200,3 +204,66 @@ class TestCopilotEndpointLangfuseTelemetry:
         assert "assistant_logs" in copilot_context_section
         assert "copilot_chat_history" in copilot_context_section
         assert len(copilot_context_section["copilot_chat_history"]) == 3
+
+    @patch("rasa.builder.telemetry.langfuse.langfuse_compat.langfuse.get_client")
+    def test_setup_copilot_endpoint_call_trace_attributes_with_exception_response(
+        self, mock_get_client: Mock
+    ) -> None:
+        # Given
+        mock_client = Mock()
+        mock_get_client.return_value = mock_client
+
+        hello_rasa_project_id = "proj-123"
+        chat_id = "chat-456"
+        user_id = "user-789"
+
+        user_message = UserChatMessage(
+            role="user",
+            content=[TextContent(type="text", text="Hello")],
+        )
+        request = CopilotTurnRequest(
+            session_id="test-session",
+            message=user_message,
+            chat_id=chat_id,
+            project_id=hello_rasa_project_id,
+        )
+
+        original_exception = Exception("boom")
+        exception_response = ExceptionContent(
+            content="Sorry, something went wrong.",
+            original_exception=original_exception,
+        )
+
+        handler = Mock()
+        handler.generated_responses = [exception_response]
+        handler.extract_exception_response.return_value = exception_response
+        handler.extract_response_category.return_value = ResponseCategory.EXCEPTION
+        handler.extract_references.return_value = Mock(references=[Mock()])
+
+        relevant_documents = [Mock()]
+        copilot_context = Mock()
+        copilot_context.assistant_files = {}
+        copilot_context.assistant_logs = []
+        copilot_context.tracker_context = None
+        copilot_context.copilot_chat_history = [user_message]
+
+        # When
+        CopilotEndpointLangfuseTelemetry.setup_copilot_endpoint_call_trace_attributes(
+            hello_rasa_project_id,
+            chat_id,
+            user_id,
+            request,
+            handler,
+            relevant_documents,
+            copilot_context,
+        )
+
+        # Then
+        mock_client.update_current_trace.assert_called_once()
+        call_args = mock_client.update_current_trace.call_args
+        output = call_args[1]["output"]
+
+        assert output["answer"] == exception_response.content
+        assert output["response_category"] == ResponseCategory.EXCEPTION.value
+        assert output["references"] == []
+        assert output["original_exception"] == str(original_exception)

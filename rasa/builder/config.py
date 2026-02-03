@@ -64,6 +64,12 @@ VALIDATION_MAX_HISTORY = None  # Could be configured if needed
 # Copilot Response Handler Configuration
 COPILOT_CONTROLLED_RESPONSE_MAX_TOKENS = 20
 COPILOT_HANDLER_ROLLING_BUFFER_SIZE = 20
+# Maximum time (seconds) we will wait for the next streaming event from the LLM
+# before failing the request. This prevents "hung" responses when a streaming
+# connection stalls without closing.
+COPILOT_MAX_NEXT_STREAM_EVENT_WAIT_TIME_SECONDS = float(
+    os.getenv("COPILOT_MAX_NEXT_STREAM_EVENT_WAIT_TIME_SECONDS", "180")
+)
 COPILOT_ASSISTANT_TRACKER_MAX_TURNS = 10
 COPILOT_DOCUMENTATION_SEARCH_QUERY_HISTORY_MESSAGES = 5
 

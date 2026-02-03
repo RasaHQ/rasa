@@ -1,9 +1,13 @@
 """Tests for AgentCopilot class."""
 
+import asyncio
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from rasa.builder.copilot.agent_sdk.agent_copilot import AgentCopilot
+from rasa.builder.copilot.exceptions import CopilotNextStreamEventTimeoutException
 from rasa.builder.copilot.models import (
     CopilotContext,
     CopilotGenerationContext,
@@ -204,6 +208,45 @@ class TestAgentCopilot:
             # Usage should be reset to None (default state)
             assert copilot.usage_statistics.prompt_tokens is None
             assert copilot.usage_statistics.completion_tokens is None
+
+    @pytest.mark.asyncio
+    @patch("rasa.builder.copilot.agent_sdk.agent_copilot.Runner.run_streamed")
+    @patch.object(AgentCopilot, "_create_agent")
+    async def test_stream_response_times_out_when_agent_stream_stalls(
+        self, mock_create_agent, mock_run_streamed
+    ):
+        """Test that AgentCopilot fails fast when no new stream events arrive."""
+
+        # Given
+        @asynccontextmanager
+        async def fake_create_agent(system_instructions):
+            yield MagicMock()
+
+        async def stalled_events():
+            yield MagicMock()
+            await asyncio.Event().wait()
+
+        fake_result = MagicMock()
+        fake_result.stream_events.return_value = stalled_events()
+
+        mock_run_streamed.return_value = fake_result
+        mock_create_agent.side_effect = fake_create_agent
+
+        copilot = AgentCopilot()
+        copilot._timeout_for_next_stream_event = 0.1
+        stream = copilot._stream_response(
+            system_prompt="sys",
+            messages=[{"role": "user", "content": "hi"}],
+        )
+
+        # When
+        # First event is yielded
+        await anext(stream)
+
+        # Then
+        # Second event stalls and should time out
+        with pytest.raises(CopilotNextStreamEventTimeoutException):
+            await anext(stream)
 
 
 class TestAgentCopilotMCPConnection:

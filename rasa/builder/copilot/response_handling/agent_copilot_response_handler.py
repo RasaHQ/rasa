@@ -477,6 +477,11 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
                 yield queued_event
 
         except Exception as e:
+            structlogger.error(
+                "copilot_response_handler.stream.error",
+                event_info="Stream ended with an error.",
+                error=e,
+            )
             exception_content = ExceptionContent(
                 content=EXCEPTION_RESPONSE,
                 original_exception=e,
@@ -485,7 +490,6 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
             yield exception_content
         finally:
             self._drain_queues_without_yielding(capture_final_plan=True)
-
             # Capture the final plan from planning context before it's reset
             self._capture_final_plan_from_context(self._planning_token)
 

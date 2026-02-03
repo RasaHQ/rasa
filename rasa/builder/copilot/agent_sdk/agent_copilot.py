@@ -7,7 +7,7 @@ while maintaining full compatibility with the existing copilot interface.
 import asyncio
 import importlib.resources
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List, Tuple
+from typing import Any, AsyncGenerator, AsyncIterator, Dict, List, Tuple
 
 import structlog
 from agents import Agent, ModelSettings, Runner, StreamEvent
@@ -23,6 +23,7 @@ from rasa.builder.copilot.constants import (
     COPILOT_PROMPTS_FILE_AGENT_SDK,
     COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE_AGENT_SDK,
 )
+from rasa.builder.copilot.exceptions import CopilotNextStreamEventTimeoutException
 from rasa.builder.copilot.models import (
     CopilotContext,
     CopilotGenerationContext,
@@ -81,6 +82,11 @@ class AgentCopilot(BaseCopilot):
             input_token_price=config.COPILOT_INPUT_TOKEN_PRICE,
             output_token_price=config.COPILOT_OUTPUT_TOKEN_PRICE,
             cached_token_price=config.COPILOT_CACHED_TOKEN_PRICE,
+        )
+
+        # Timeout for waiting for the next stream event
+        self._timeout_for_next_stream_event = (
+            config.COPILOT_MAX_NEXT_STREAM_EVENT_WAIT_TIME_SECONDS
         )
 
         # Queue for MCP tool call events from hooks
@@ -335,8 +341,11 @@ class AgentCopilot(BaseCopilot):
                     max_turns=config.COPILOT_MAX_AGENT_STEPS,
                 )
 
-                # Simple passthrough of StreamEvents to the response handler
-                async for event in result.stream_events():
+                # Get the stream events from the result
+                result_stream = result.stream_events()
+
+                # Stream the events with a timeout
+                async for event in self._stream_events_with_timeout(result_stream):
                     # Extract usage statistics from ResponseCompletedEvent
                     if is_response_completed_event(event):
                         # event.data is ResponseCompletedEvent
@@ -352,6 +361,38 @@ class AgentCopilot(BaseCopilot):
                 error=str(e),
             )
             raise
+
+    async def _stream_events_with_timeout(
+        self, result_stream: AsyncIterator[StreamEvent]
+    ) -> AsyncGenerator[StreamEvent, None]:
+        """Stream Agent SDK events, enforcing a per-event timeout.
+
+        This prevents hanging Copilot responses when the upstream stream stops yielding
+        events but never terminates.
+        """
+        while True:
+            try:
+                event = await asyncio.wait_for(
+                    anext(result_stream),
+                    timeout=self._timeout_for_next_stream_event,
+                )
+            except StopAsyncIteration:
+                structlogger.debug(
+                    "agent_sdk.agent_copilot.stream_response.stop_iteration",
+                    event_info="Stop iteration received.",
+                )
+                break
+            except asyncio.TimeoutError as exc:
+                structlogger.error(
+                    "agent_sdk.agent_copilot.stream_response.timeout",
+                    event_info="Timeout waiting for next stream event.",
+                    timeout=self._timeout_for_next_stream_event,
+                )
+                raise CopilotNextStreamEventTimeoutException(
+                    f"Timed out waiting for next stream event after "
+                    f"{self._timeout_for_next_stream_event}s."
+                ) from exc
+            yield event
 
     # HELPERS
 

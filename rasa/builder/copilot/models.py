@@ -646,6 +646,13 @@ class ExceptionContent(GeneratedContent):
 
         arbitrary_types_allowed = True
 
+    @property
+    def stringified_original_exception(self) -> Optional[str]:
+        """Get the stringified original exception."""
+        if self.original_exception is None:
+            return None
+        return self.serialize_exception(self.original_exception)
+
     @field_serializer("original_exception")
     def serialize_exception(self, value: Optional[Exception]) -> Optional[str]:
         """Serialize exception to string representation."""
