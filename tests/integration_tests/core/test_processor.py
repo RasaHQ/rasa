@@ -2,10 +2,12 @@ import uuid
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+import structlog
 from pytest import CaptureFixture, MonkeyPatch
 
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
+from rasa.core.processor import MessageProcessor
 from rasa.dialogue_understanding.commands import (
     CorrectedSlot,
     CorrectSlotsCommand,
@@ -13,13 +15,23 @@ from rasa.dialogue_understanding.commands import (
     StartFlowCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
-from rasa.shared.core.events import SlotSet
+from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.core.domain import SessionConfig
+from rasa.shared.core.events import (
+    ConversationInactive,
+    ConversationResumed,
+    Event,
+    SessionEnded,
+    SessionStarted,
+    SlotSet,
+    UserUttered,
+)
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import read_file
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import TrainedAsync
-from tests.utilities import flows_from_str
+from tests.utilities import filter_logs, flows_from_str
 
 
 @pytest.fixture(scope="session")
@@ -89,6 +101,32 @@ def mock_llm_based_router_generate_answer_NLU() -> AsyncMock:
 @pytest.fixture
 def mock_filter_flows(*args, **kwargs) -> AsyncMock:
     return AsyncMock(return_value=FlowsList([]))
+
+
+async def _resume_with_event(processor) -> None:
+    """Helper to resume with ConversationResumed event."""
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    tracker.update(ConversationResumed())
+    await processor.save_tracker(tracker)
+
+
+async def _resume_with_user_message(processor) -> None:
+    """Helper to resume with UserUttered message."""
+    await processor.handle_message(
+        UserMessage("resume conversation", sender_id=DEFAULT_SENDER_ID)
+    )
+
+
+def _set_session_config(
+    processor: MessageProcessor,
+    start_session_after_expiry: bool,
+    session_expiration_time: float = 60,
+) -> None:
+    processor.domain.session_config = SessionConfig(
+        session_expiration_time=session_expiration_time,
+        carry_over_slots=True,
+        start_session_after_expiry=start_session_after_expiry,
+    )
 
 
 async def test_processor_handle_message_calm_slots_with_nlu_pipeline(
@@ -574,3 +612,321 @@ async def test_processor_force_slot_filling_non_from_text(
             name="order_confirmation", value=False, extractor=SetSlotExtractor.NLU.value
         ).as_dict(),
     ]
+
+
+@pytest.mark.parametrize(
+    "start_session_after_expiry,expected_session_started_count",
+    [(True, 2), (False, 1)],
+)
+async def test_processor_handles_expired_session_does_not_start_new_session(
+    default_agent: Agent,
+    monkeypatch: MonkeyPatch,
+    start_session_after_expiry: bool,
+    expected_session_started_count: int,
+):
+    """Test expired session: with start_session_after_expiry True a new session
+    is started; with False the same session continues."""
+    processor = default_agent.processor
+
+    # Configure session expiration (1 minute) and whether to start new session on expiry
+    _set_session_config(processor, start_session_after_expiry, 1)
+
+    await processor.handle_message(UserMessage("hello", sender_id=DEFAULT_SENDER_ID))
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    initial_events_count = len(tracker.events)
+    assert SessionStarted() in tracker.events
+
+    # Simulate session expiration
+    monkeypatch.setattr(processor, "_has_session_expired", lambda _: True)
+
+    await _resume_with_user_message(processor)
+
+    tracker = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker is not None
+    assert len(tracker.events) > initial_events_count
+
+    session_started_count = sum(
+        1 for event in tracker.events if isinstance(event, SessionStarted)
+    )
+    assert session_started_count == expected_session_started_count
+
+
+@pytest.mark.parametrize("start_session_after_expiry", [True, False])
+async def test_processor_non_expired_session_continues_same_session(
+    default_agent: Agent,
+    start_session_after_expiry: bool,
+):
+    """When session has not expired, no new SessionStarted is added (same session
+    continues) regardless of start_session_after_expiry."""
+    processor = default_agent.processor
+
+    _set_session_config(processor, start_session_after_expiry)
+
+    await processor.handle_message(UserMessage("hello", sender_id=DEFAULT_SENDER_ID))
+    await _resume_with_user_message(processor)
+
+    tracker = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker is not None
+
+    session_started_count = sum(
+        1 for event in tracker.events if isinstance(event, SessionStarted)
+    )
+    assert session_started_count == 1
+
+
+@pytest.mark.parametrize(
+    "setup_resume", [_resume_with_user_message, _resume_with_event]
+)
+async def test_processor_handles_inactive_session_resumes(
+    default_agent: Agent,
+    setup_resume,
+):
+    """Test that inactive sessions can be resumed with certain events."""
+    processor = default_agent.processor
+
+    await processor.handle_message(UserMessage("hello", sender_id=DEFAULT_SENDER_ID))
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    tracker.update(ConversationInactive())
+    await processor.save_tracker(tracker)
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    assert tracker.inactive
+    assert not tracker.terminated
+
+    await setup_resume(processor)
+
+    tracker = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker is not None
+    assert not tracker.inactive
+    assert not tracker.terminated
+
+    # Verify conversation can continue
+    await _resume_with_user_message(processor)
+    tracker = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker is not None
+
+    user_messages = [e for e in tracker.events if isinstance(e, UserUttered)]
+    assert len(user_messages) > 0
+
+
+async def test_processor_handles_terminated_session_no_restart(
+    default_agent: Agent,
+):
+    """Test that terminated sessions cannot accept new messages."""
+    processor = default_agent.processor
+    await processor.handle_message(UserMessage("hello", sender_id=DEFAULT_SENDER_ID))
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    tracker.update(SessionEnded())
+    await processor.save_tracker(tracker)
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    assert tracker.terminated
+    assert not tracker.inactive
+
+    initial_event_count = len(tracker.events)
+    initial_session_started_count = sum(
+        1 for event in tracker.events if isinstance(event, SessionStarted)
+    )
+
+    with structlog.testing.capture_logs() as caplog:
+        await _resume_with_user_message(processor)
+
+        logs = filter_logs(
+            caplog,
+            event="rasa.core.processor.handle_message_with_tracker.terminated_conversation",
+            log_level="debug",
+        )
+        assert len(logs) == 1
+        assert "Ignoring message from user as conversation" in logs[0]["event_info"]
+        assert "was terminated with a SessionEnded event" in logs[0]["event_info"]
+
+    # Verify no new session was started and state unchanged
+    tracker = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker is not None
+    assert tracker.terminated
+    assert len(tracker.events) == initial_event_count
+
+    final_session_started_count = sum(
+        1 for event in tracker.events if isinstance(event, SessionStarted)
+    )
+    assert final_session_started_count == initial_session_started_count
+
+
+async def test_processor_new_conversation_after_termination(
+    default_agent: Agent,
+):
+    """Test creating a completely new conversation after termination."""
+    processor = default_agent.processor
+
+    await processor.handle_message(UserMessage("hello", sender_id=DEFAULT_SENDER_ID))
+    tracker_1 = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker_1 is not None
+    tracker_1.update(SessionEnded())
+    await processor.save_tracker(tracker_1)
+
+    tracker_1 = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker_1 is not None
+    assert tracker_1.terminated
+
+    # Create new conversation with different sender_id
+    sender_id = uuid.uuid4().hex
+    await processor.handle_message(UserMessage("new conversation", sender_id=sender_id))
+
+    tracker_2 = await processor.tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker_2 is not None
+    assert not tracker_2.terminated
+    assert not tracker_2.inactive
+    assert SessionStarted() in tracker_2.events
+
+    user_messages = [e for e in tracker_2.events if isinstance(e, UserUttered)]
+    assert len(user_messages) > 0
+    assert user_messages[-1].text == "new conversation"
+
+    # Verify first conversation is still terminated
+    tracker_1 = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker_1 is not None
+    assert tracker_1.terminated
+
+
+@pytest.mark.parametrize(
+    "start_session_after_expiry,expected_session_started_count",
+    [(True, 2), (False, 1)],
+)
+async def test_processor_session_expiration_with_inactive_state(
+    default_agent: Agent,
+    monkeypatch: MonkeyPatch,
+    start_session_after_expiry: bool,
+    expected_session_started_count: int,
+):
+    """Test edge case: session 'expires' while in inactive state; with auto_start True
+    a new session is started on resume, with False the same session continues."""
+    processor = default_agent.processor
+
+    _set_session_config(processor, start_session_after_expiry, 1)
+
+    await processor.handle_message(UserMessage("hello", sender_id=DEFAULT_SENDER_ID))
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    tracker.update(ConversationInactive())
+    await processor.save_tracker(tracker)
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    assert tracker.inactive
+
+    monkeypatch.setattr(processor, "_has_session_expired", lambda _: True)
+
+    await _resume_with_user_message(processor)
+
+    tracker = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker is not None
+    assert not tracker.inactive
+    assert not tracker.terminated
+
+    session_started_events = [
+        event for event in tracker.events if isinstance(event, SessionStarted)
+    ]
+    assert len(session_started_events) == expected_session_started_count
+
+
+async def test_processor_preserves_inactive_state_across_operations(
+    default_agent: Agent,
+):
+    """Test that inactive state persists through processor operations."""
+    processor = default_agent.processor
+
+    await processor.handle_message(UserMessage("hello", sender_id=DEFAULT_SENDER_ID))
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    tracker.update(ConversationInactive())
+    await processor.save_tracker(tracker)
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    assert tracker.inactive
+    assert not tracker.terminated
+
+    # Save and retrieve again
+    await processor.save_tracker(tracker)
+    tracker = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker is not None
+    assert tracker.inactive
+    assert not tracker.terminated
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        SlotSet("slot", "value"),
+        ConversationInactive(),
+        ConversationResumed(),
+        UserUttered("test"),
+    ],
+)
+async def test_processor_terminated_prevents_tracker_modifications(
+    default_agent: Agent,
+    event: Event,
+):
+    """Test that terminated state prevents all tracker modifications."""
+    processor = default_agent.processor
+
+    await processor.handle_message(UserMessage("hello", sender_id=DEFAULT_SENDER_ID))
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    tracker.update(SessionEnded())
+    await processor.save_tracker(tracker)
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    assert tracker.terminated
+    initial_event_count = len(tracker.events)
+
+    with structlog.testing.capture_logs() as caplog:
+        tracker.update(event)
+
+        logs = filter_logs(
+            caplog,
+            event="rasa.shared.core.trackers.dialogue_state_tracker.update_terminated_conversation",
+            log_level="warning",
+        )
+        assert len(logs) == 1
+        assert (
+            "Ignoring event on a terminated conversation "
+            "The conversation was terminated with a "
+            "SessionEnded event and cannot be modified." in logs[0]["event_info"]
+        )
+
+    assert len(tracker.events) == initial_event_count
+    assert tracker.terminated
+
+
+@pytest.mark.parametrize(
+    "setup_resume", [_resume_with_user_message, _resume_with_event]
+)
+async def test_processor_inactive_state_with_other_events(
+    default_agent: Agent, setup_resume
+):
+    """Test that inactive state persists when non-user events are added."""
+    processor = default_agent.processor
+
+    await processor.handle_message(UserMessage("hello", sender_id=DEFAULT_SENDER_ID))
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    tracker.update(ConversationInactive())
+    await processor.save_tracker(tracker)
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    assert tracker.inactive
+
+    # Add non-user events, inactive should persist
+    tracker.update(SlotSet("some_slot", "value"))
+    await processor.save_tracker(tracker)
+
+    tracker = await processor.get_tracker(DEFAULT_SENDER_ID)
+    assert tracker.inactive
+
+    # Only UserUttered or ConversationResumed should clear inactive
+    await setup_resume(processor)
+    tracker = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker is not None
+    assert not tracker.inactive

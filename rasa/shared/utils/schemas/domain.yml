@@ -168,3 +168,5 @@ mapping:
           min: 0
       carry_over_slots_to_new_session:
         type: "bool"
+      start_session_after_expiry:
+        type: "bool"

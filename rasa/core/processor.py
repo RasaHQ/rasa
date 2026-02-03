@@ -92,7 +92,6 @@ from rasa.shared.core.events import (
     Event,
     ReminderCancelled,
     ReminderScheduled,
-    SessionEnded,
     SlotSet,
     UserUttered,
 )
@@ -359,11 +358,11 @@ class MessageProcessor:
         output_channel: OutputChannel,
         metadata: Optional[Dict] = None,
     ) -> None:
-        """Check the current session in `tracker` and update it if expired.
+        """Check the current session in `tracker` and update it if needed.
 
-        An 'action_session_start' is run if the latest tracker session has expired,
-        or if the tracker does not yet contain any events (only those after the last
-        restart are considered).
+        An 'action_session_start' is run if the tracker has no events (brand new
+        conversation), or if the latest session has expired and
+        `session_config.start_session_after_expiry` is True.
 
         Args:
             metadata: Data sent from client associated with the incoming user message.
@@ -371,11 +370,26 @@ class MessageProcessor:
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
         """
-        if (
-            not tracker.applied_events()
-            or self._has_session_expired(tracker)
-            or tracker.is_ending_with_event(SessionEnded)
-        ):
+        # Don't start a new session if the tracker is terminated
+        # Terminated conversations cannot be resumed
+        if tracker.terminated:
+            structlogger.warning(
+                "rasa.core.processor._update_tracker_session",
+                event_info=(
+                    "Not starting a new session as the conversation "
+                    "is already terminated."
+                ),
+                sender_id=tracker.sender_id,
+            )
+            return
+
+        # Start a new session if tracker has no events (brand new conversation)
+        # or if session expired and config says to auto-start a new session
+        should_start_new_session = not tracker.applied_events() or (
+            self.domain.session_config.start_session_after_expiry
+            and self._has_session_expired(tracker)
+        )
+        if should_start_new_session:
             structlogger.debug(
                 "rasa.core.processor._update_tracker_session",
                 event_info="Starting a new session.",
@@ -708,6 +722,19 @@ class MessageProcessor:
             tracker: The tracker to which the event should be added.
             output_channel: The output channel.
         """
+        # Gracefully handle external messages sent to terminated conversations
+        if tracker.terminated:
+            structlogger.warning(
+                "rasa.core.processor.trigger_external_user_uttered.terminated_conversation",
+                event_info=(
+                    "Ignoring external user message with intent as "
+                    "conversation was terminated with a SessionEnded event."
+                ),
+                sender_id=tracker.sender_id,
+                intent_name=intent_name,
+            )
+            return
+
         if isinstance(entities, list):
             entity_list = entities
         elif isinstance(entities, dict):
@@ -1055,6 +1082,19 @@ class MessageProcessor:
     async def _handle_message_with_tracker(
         self, message: UserMessage, tracker: DialogueStateTracker
     ) -> None:
+        # Gracefully handle messages sent to terminated conversations
+        if tracker.terminated:
+            structlogger.debug(
+                "rasa.core.processor.handle_message_with_tracker.terminated_conversation",
+                event_info=(
+                    f"Ignoring message from user as conversation {tracker.sender_id} "
+                    "was terminated with a SessionEnded event."
+                ),
+                sender_id=tracker.sender_id,
+                user_message=message.text,
+            )
+            return
+
         if message.parse_data:
             parse_data = message.parse_data
         else:
@@ -1089,7 +1129,7 @@ class MessageProcessor:
 
     @staticmethod
     def _should_handle_message(tracker: DialogueStateTracker) -> bool:
-        return not tracker.is_paused() or MessageProcessor._last_user_intent_is_restart(
+        return not tracker.paused or MessageProcessor._last_user_intent_is_restart(
             tracker
         )
 
@@ -1354,6 +1394,19 @@ class MessageProcessor:
         nlg: NaturalLanguageGenerator,
         prediction: PolicyPrediction,
     ) -> bool:
+        # Gracefully handle actions on terminated conversations
+        if tracker.terminated:
+            structlogger.warning(
+                "rasa.core.processor._run_action.terminated_conversation",
+                event_info=(
+                    "Skipping action as conversation was "
+                    "terminated with a SessionEnded event."
+                ),
+                sender_id=tracker.sender_id,
+                action_name=action.name(),
+            )
+            return False
+
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:

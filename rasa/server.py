@@ -408,8 +408,15 @@ async def update_conversation_with_events(
     else:
         tracker = await processor.fetch_tracker_with_initial_session(conversation_id)
 
-    for event in events:
-        tracker.update(event, domain)
+    # Gracefully handle events sent to terminated conversations
+    if tracker.terminated:
+        logger.warning(
+            f"Attempting to add {len(events)} event(s) to terminated conversation "
+            f"'{conversation_id}'. Events will be ignored."
+        )
+    else:
+        for event in events:
+            tracker.update(event, domain)
 
     return tracker
 

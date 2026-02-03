@@ -68,6 +68,7 @@ from rasa.shared.core.events import (
     BotUttered,
     Event,
     Restarted,
+    SessionEnded,
     SessionStarted,
     SlotSet,
     UserUttered,
@@ -2388,6 +2389,50 @@ async def test_update_conversation_with_events(
     )
     assert list(fetched_tracker.events) == with_assistant_ids(
         with_model_ids(expected_events, model_id), assistant_id
+    )
+
+
+async def test_update_conversation_with_events_ignores_terminated_tracker(
+    rasa_app: SanicASGITestClient,
+    caplog: LogCaptureFixture,
+):
+    """Test that events are ignored when trying to update a terminated conversation."""
+    conversation_id = uuid.uuid4().hex
+    agent = rasa_app.sanic_app.ctx.agent
+    tracker_store = agent.tracker_store
+    domain = agent.domain
+    model_id = agent.model_id
+    assistant_id = agent.processor.model_metadata.assistant_id
+
+    # Create a terminated tracker
+    initial_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("/greet", {"name": "greet", "confidence": 1.0}),
+        SessionEnded(),
+    ]
+    tracker = await agent.processor.get_tracker(conversation_id)
+    tracker.update_with_events(initial_events)
+    await tracker_store.save(tracker)
+
+    events_to_append = [
+        ActionExecuted("utter_greet"),
+        UserUttered("/goodbye", {"name": "goodbye", "confidence": 1.0}),
+    ]
+
+    with caplog.at_level(logging.WARNING):
+        fetched_tracker = await rasa.server.update_conversation_with_events(
+            conversation_id, agent.processor, domain, events_to_append
+        )
+
+    message = (
+        f"Attempting to add {len(events_to_append)} event(s) to terminated "
+        f"conversation '{conversation_id}'. Events will be ignored."
+    )
+    assert message in caplog.text
+
+    # Events should NOT be added after SessionEnded
+    assert list(fetched_tracker.events) == with_assistant_ids(
+        with_model_ids(initial_events, model_id), assistant_id
     )
 
 

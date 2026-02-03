@@ -753,6 +753,10 @@ class UserUttered(Event):
         tracker.latest_message = self
         tracker.clear_followup_action()
 
+        # Clear inactive state when user sends a message
+        if tracker.inactive:
+            tracker.inactive = False
+
     @staticmethod
     def create_external(
         intent_name: Text,
@@ -1738,14 +1742,14 @@ class ConversationPaused(AlwaysEqualEventMixin):
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
-        tracker._paused = True
+        tracker.paused = True
 
 
 class ConversationResumed(AlwaysEqualEventMixin):
     """Bot takes over conversation.
 
     Inverse of `PauseConversation`. As a side effect the `Tracker`'s
-    `paused` attribute will be set to `False`.
+    `paused` and `inactive` attributes will be set to `False`.
     """
 
     type_name = "resume"
@@ -1760,7 +1764,40 @@ class ConversationResumed(AlwaysEqualEventMixin):
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
-        tracker._paused = False
+        tracker.paused = False
+        tracker.inactive = False
+
+
+class ConversationInactive(AlwaysEqualEventMixin):
+    """Mark the conversation as inactive but resumable.
+
+    The conversation is paused due to inactivity but can be resumed later.
+    As a side effect the `Tracker`'s `inactive` attribute will be set to `True`.
+    """
+
+    type_name = "inactive"
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(32143124317)
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"ConversationInactive(type_name: {self.type_name})"
+
+    def __str__(self) -> Text:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.type_name})"
+
+    def as_story_string(self) -> None:
+        """Skips representing event in stories."""
+        logger.warning(
+            f"'{self.type_name}' events cannot be serialised as story strings."
+        )
+
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
+        tracker.inactive = True
 
 
 class ActionExecuted(Event):
@@ -2976,7 +3013,12 @@ class AgentResumed(SkipEventInMDStoryMixin):
 
 
 class SessionEnded(AlwaysEqualEventMixin):
-    """Mark the end of a conversation session."""
+    """Mark the end of a conversation session.
+
+    This event marks the conversation as terminated and non-resumable.
+    As a side effect, the `Tracker`'s `terminated` attribute will be set to `True`.
+    No further events can be appended to the tracker after this event.
+    """
 
     type_name = "session_ended"
 
@@ -2997,6 +3039,10 @@ class SessionEnded(AlwaysEqualEventMixin):
         logger.warning(
             f"'{self.type_name}' events cannot be serialised as story strings."
         )
+
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
+        tracker.terminated = True
 
 
 class ErrorHandled(Event):

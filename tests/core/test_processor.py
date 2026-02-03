@@ -81,6 +81,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.privacy.privacy_manager import BackgroundPrivacyManager
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
+    DEFAULT_SENDER_ID,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     OPENAI_API_KEY_ENV_VAR,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
@@ -150,6 +151,23 @@ logger = logging.getLogger(__name__)
 
 # Configure freezegun to ignore transformers to avoid deprecated module import issues
 freezegun.config.configure(extend_ignore_list=["transformers"])
+
+
+def patch_session_config_auto_start_expiry(
+    processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+    start_session_after_expiry: bool,
+) -> None:
+    cfg = processor.domain.session_config
+    monkeypatch.setattr(
+        processor.domain,
+        "session_config",
+        SessionConfig(
+            cfg.session_expiration_time,
+            cfg.carry_over_slots,
+            start_session_after_expiry=start_session_after_expiry,
+        ),
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -359,6 +377,93 @@ async def test_trigger_external_latest_input_channel(
     tracker = await default_processor.tracker_store.retrieve(sender_id)
 
     assert tracker.get_latest_input_channel() == input_channel
+
+
+async def test_trigger_external_user_uttered_ignored_on_terminated_tracker(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    """Test that trigger_external_user_uttered ignores events on terminated trackers."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    tracker.update(SessionEnded())
+    await default_processor.save_tracker(tracker)
+
+    tracker = await default_processor.get_tracker(DEFAULT_SENDER_ID)
+    assert tracker.terminated
+    initial_event_count = len(tracker.events)
+
+    with capture_logs() as caplog:
+        await default_processor.trigger_external_user_uttered(
+            "test_intent",
+            {"name": "test_intent", "confidence": 1.0},
+            tracker,
+            "test_channel",
+        )
+
+        logs = filter_logs(
+            caplog,
+            "rasa.core.processor.trigger_external_user_uttered.terminated_conversation",
+            "warning",
+            [
+                "Ignoring external user message with intent as "
+                "conversation was terminated with a SessionEnded event"
+            ],
+        )
+        assert len(logs) == 1
+
+    tracker = await default_processor.tracker_store.retrieve(DEFAULT_SENDER_ID)
+    # Verify no new events were added
+    assert len(tracker.events) == initial_event_count
+    assert tracker.terminated
+
+
+async def test_run_action_ignored_on_terminated_tracker(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    """Test that _run_action gracefully handles actions on terminated trackers."""
+    sender_id = uuid.uuid4().hex
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    tracker.update(SessionEnded())
+    await default_processor.save_tracker(tracker)
+
+    tracker = await default_processor.get_tracker(sender_id)
+    assert tracker.terminated
+    initial_event_count = len(tracker.events)
+
+    # Get an action to run
+    action = default_processor._get_action("utter_greet")
+    prediction = PolicyPrediction.for_action_name(
+        default_processor.domain, "utter_greet"
+    )
+
+    with capture_logs() as caplog:
+        result = await default_processor._run_action(
+            action=action,
+            tracker=tracker,
+            output_channel=default_channel,
+            nlg=default_processor.nlg,
+            prediction=prediction,
+        )
+        assert result is False
+
+        logs = filter_logs(
+            caplog,
+            "rasa.core.processor._run_action.terminated_conversation",
+            "warning",
+            [
+                "Skipping action as conversation was "
+                "terminated with a SessionEnded event"
+            ],
+        )
+        assert len(logs) == 1
+
+    # Verify no new events were added
+    tracker = await default_processor.tracker_store.retrieve(sender_id)
+    assert len(tracker.events) == initial_event_count
+    assert tracker.terminated
 
 
 async def test_reminder_aborted(
@@ -635,16 +740,41 @@ async def test_has_session_expired(
 # noinspection PyProtectedMember
 
 
+@pytest.mark.parametrize(
+    "start_session_after_expiry,expected_events",
+    [
+        (
+            True,
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+        ),
+        (
+            False,
+            [ActionExecuted(ACTION_LISTEN_NAME)],
+        ),
+    ],
+)
 async def test_update_tracker_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
+    start_session_after_expiry: bool,
+    expected_events: list,
 ):
-    sender_id = uuid.uuid4().hex
-    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
 
-    # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
-    # does something
+    # patch processor so expiry would be detected
+    # with start_session_after_expiry=True, new session is started
+    # otherwise, no new session is started and the conversation continues
+    patch_session_config_auto_start_expiry(
+        default_processor, monkeypatch, start_session_after_expiry
+    )
     monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
 
     await default_processor._update_tracker_session(tracker, default_channel)
@@ -653,14 +783,11 @@ async def test_update_tracker_session(
     await default_processor.save_tracker(tracker)
 
     # inspect tracker and make sure all events are present
-    tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
+    tracker = await default_processor.tracker_store.retrieve_full_tracker(
+        DEFAULT_SENDER_ID
+    )
 
-    assert list(tracker.events) == [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        ActionExecuted(ACTION_SESSION_START_NAME),
-        SessionStarted(),
-        ActionExecuted(ACTION_LISTEN_NAME),
-    ]
+    assert list(tracker.events) == expected_events
 
 
 async def test_update_tracker_session_after_session_ended(
@@ -668,10 +795,10 @@ async def test_update_tracker_session_after_session_ended(
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
 ):
-    """Test that a session start is added even after a session end event."""
+    """Test that a session start is NOT added after a session end event."""
     sender_id = uuid.uuid4().hex
     tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
-    tracker.events.append(SessionEnded())
+    tracker.update(SessionEnded())
 
     # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
     # does something
@@ -682,16 +809,56 @@ async def test_update_tracker_session_after_session_ended(
     # the save is not called in _update_tracker_session()
     await default_processor.save_tracker(tracker)
 
-    # inspect tracker and make sure all events are present
+    # inspect tracker and make sure no new session was started
     tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
 
+    # Should only have the initial action_listen and SessionEnded
+    # No new session start events should be added
+    assert SessionStarted() not in tracker.events
     assert list(tracker.events) == [
         ActionExecuted(ACTION_LISTEN_NAME),
         SessionEnded(),
-        ActionExecuted(ACTION_SESSION_START_NAME),
-        SessionStarted(),
-        ActionExecuted(ACTION_LISTEN_NAME),
     ]
+
+
+async def test_update_tracker_session_terminated_tracker_early_return(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+):
+    """Test that _update_tracker_session returns early for terminated trackers."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+    tracker.update(SessionEnded())
+    await default_processor.save_tracker(tracker)
+
+    # Reload tracker to ensure it's terminated
+    tracker = await default_processor.get_tracker(DEFAULT_SENDER_ID)
+    assert tracker.terminated
+    initial_event_count = len(tracker.events)
+
+    # Call _update_tracker_session on terminated tracker
+    with structlog.testing.capture_logs() as caplog:
+        await default_processor._update_tracker_session(tracker, default_channel)
+
+        logs = filter_logs(
+            caplog,
+            event="rasa.core.processor._update_tracker_session",
+            log_level="warning",
+        )
+        assert len(logs) == 1
+        assert (
+            "Not starting a new session as the conversation "
+            "is already terminated" in logs[0]["event_info"]
+        )
+
+    # Verify no new events were added
+    tracker = await default_processor.tracker_store.retrieve_full_tracker(
+        DEFAULT_SENDER_ID
+    )
+    assert len(tracker.events) == initial_event_count
+    assert tracker.terminated
+    assert SessionStarted() not in tracker.events
 
 
 async def test_update_tracker_session_with_metadata(
@@ -778,7 +945,7 @@ async def test_custom_action_session_start_with_metadata(
 # noinspection PyProtectedMember
 
 
-async def test_update_tracker_session_with_slots(
+async def test_update_tracker_session_with_slots_expiry_starts_new_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
@@ -820,6 +987,55 @@ async def test_update_tracker_session_with_slots(
 
     # finally an action listen, this should also be the last event
     assert events[14] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
+
+
+async def test_update_tracker_session_with_slots_expiry_continues_same_session(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+):
+    sender_id = uuid.uuid4().hex
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    # apply a user uttered and five slots
+    user_event = UserUttered("some utterance")
+    tracker.update(user_event)
+
+    slot_set_events = [SlotSet(f"slot key {i}", f"test value {i}") for i in range(5)]
+
+    for event in slot_set_events:
+        tracker.update(event)
+
+    # patch processor so expiry would be detected
+    # with start_session_after_expiry=False
+    # no new session is started and the conversation continues
+    patch_session_config_auto_start_expiry(
+        default_processor, monkeypatch, start_session_after_expiry=False
+    )
+    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
+
+    await default_processor._update_tracker_session(tracker, default_channel)
+
+    # the save is not called in _update_tracker_session()
+    await default_processor.save_tracker(tracker)
+
+    # inspect tracker and make sure all events are present
+    tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
+    events = list(tracker.events)
+
+    # the first three events should be up to the user utterance
+    assert events[:2] == [ActionExecuted(ACTION_LISTEN_NAME), user_event]
+
+    # next come the five slots
+    assert events[2:7] == slot_set_events
+
+    # Session expiration does NOT start a new session
+    # So we should only have: ActionExecuted(listen), UserUttered, and 5 SlotSets
+    assert events == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        user_event,
+        *slot_set_events,
+    ]
 
 
 async def test_fetch_tracker_and_update_session(
@@ -934,7 +1150,7 @@ async def test_fetch_tracker_with_initial_session_does_not_update_session(
     ]
 
 
-async def test_handle_message_with_session_start(
+async def test_handle_message_with_session_start_expiry_starts_new_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
@@ -954,7 +1170,7 @@ async def test_handle_message_with_session_start(
         "text": "hey there Core!",
     }
 
-    # patch processor so a session start is triggered
+    # patch processor so expiry would be detected
     monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
 
     slot_2 = {entity: "post-session start hello"}
@@ -1004,6 +1220,110 @@ async def test_handle_message_with_session_start(
             # the initial SlotSet is reapplied after the SessionStarted sequence
             SlotSet(entity, slot_1[entity]),
             ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                f"/greet{json.dumps(slot_2)}",
+                {INTENT_NAME_KEY: "greet", "confidence": 1.0},
+                [
+                    {
+                        "entity": entity,
+                        "start": 6,
+                        "end": 42,
+                        "value": "post-session start hello",
+                    }
+                ],
+            ),
+            SlotSet(entity, slot_2[entity]),
+            DefinePrevUserUtteredFeaturization(False),
+            ActionExecuted(
+                "utter_greet", policy="AugmentedMemoizationPolicy", confidence=1.0
+            ),
+            BotUttered(
+                "hey there post-session start hello!",
+                data={},
+                metadata={
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        model_id,
+    )
+    expected = with_assistant_ids(with_model_ids_expected, assistant_id=assistant_id)
+    assert list(tracker.events) == expected
+
+
+async def test_handle_message_with_session_start_expiry_continues_same_session(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+):
+    sender_id = uuid.uuid4().hex
+    model_id = default_processor.model_metadata.model_id
+    assistant_id = default_processor.model_metadata.assistant_id
+
+    entity = "name"
+    slot_1 = {entity: "Core"}
+    await default_processor.handle_message(
+        UserMessage(f"/greet{json.dumps(slot_1)}", default_channel, sender_id)
+    )
+
+    assert default_channel.latest_output() == {
+        "recipient_id": sender_id,
+        "text": "hey there Core!",
+    }
+
+    # patch processor so expiry would be detected
+    # with start_session_after_expiry=False
+    # no new session is started and the conversation continues
+    patch_session_config_auto_start_expiry(
+        default_processor, monkeypatch, start_session_after_expiry=False
+    )
+    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
+
+    slot_2 = {entity: "post-session start hello"}
+    # handle a new message
+    await default_processor.handle_message(
+        UserMessage(f"/greet{json.dumps(slot_2)}", default_channel, sender_id)
+    )
+
+    tracker = await default_processor.tracker_store.get_or_create_full_tracker(
+        sender_id
+    )
+
+    # make sure the sequence of events is as expected
+    with_model_ids_expected = with_model_ids(
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME, confidence=1.0),
+            SessionStarted(),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                f"/greet{json.dumps(slot_1)}",
+                {INTENT_NAME_KEY: "greet", "confidence": 1.0},
+                [
+                    {
+                        "entity": entity,
+                        "start": 6,
+                        "end": 22,
+                        "value": "Core",
+                    }
+                ],
+            ),
+            SlotSet(entity, slot_1[entity]),
+            DefinePrevUserUtteredFeaturization(False),
+            ActionExecuted(
+                "utter_greet", policy="AugmentedMemoizationPolicy", confidence=1.0
+            ),
+            BotUttered(
+                "hey there Core!",
+                data={},
+                metadata={
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME, confidence=1.0),
+            # NO SessionStarted here - session expired but continues in same session
             UserUttered(
                 f"/greet{json.dumps(slot_2)}",
                 {INTENT_NAME_KEY: "greet", "confidence": 1.0},

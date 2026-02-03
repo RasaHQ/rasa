@@ -26,6 +26,8 @@ from typing import (
     cast,
 )
 
+import structlog
+
 import rasa.shared.utils.io
 from rasa.constants import USER_ID
 from rasa.engine.language import Language
@@ -85,6 +87,8 @@ if TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import Story
 
     EventTypeAlias = TypeVar("EventTypeAlias", bound=Event)
+
+structlogger = structlog.get_logger()
 
 
 @dataclasses.dataclass
@@ -272,6 +276,11 @@ class DialogueStateTracker:
         ###
         # if tracker is paused, no actions should be taken
         self._paused = False
+        # if tracker is inactive, the conversation is paused but resumable
+        self._inactive = False
+        # if tracker is terminated, conversation cannot be resumed
+        # i.e no further events can be appended
+        self._terminated = False
         # A deterministically scheduled action to be executed next
         self.followup_action: Optional[Text] = ACTION_LISTEN_NAME
         self.latest_action: Optional[Dict[Text, Text]] = None
@@ -309,7 +318,9 @@ class DialogueStateTracker:
             "latest_message": self._latest_message_data(),
             "latest_event_time": latest_event_time,
             FOLLOWUP_ACTION: self.followup_action,
-            "paused": self.is_paused(),
+            "paused": self.paused,
+            "inactive": self.inactive,
+            "terminated": self.terminated,
             "stack": self.stack.as_dict(),
             "events": events_as_dict,
             "latest_input_channel": self.get_latest_input_channel(),
@@ -585,9 +596,35 @@ class DialogueStateTracker:
                 return e.input_channel
         return None
 
-    def is_paused(self) -> bool:
-        """State whether the tracker is currently paused."""
+    @property
+    def inactive(self) -> bool:
+        """Check if the tracker is marked as inactive."""
+        return self._inactive
+
+    @inactive.setter
+    def inactive(self, value: bool) -> None:
+        """Set the inactive state of the tracker."""
+        self._inactive = value
+
+    @property
+    def terminated(self) -> bool:
+        """Check if the tracker is marked as terminated."""
+        return self._terminated
+
+    @terminated.setter
+    def terminated(self, value: bool) -> None:
+        """Set the terminated state of the tracker."""
+        self._terminated = value
+
+    @property
+    def paused(self) -> bool:
+        """Check if the tracker is marked as paused."""
         return self._paused
+
+    @paused.setter
+    def paused(self, value: bool) -> None:
+        """Set the paused state of the tracker."""
+        self._paused = value
 
     def idx_after_latest_restart(self) -> int:
         """Return the idx of the most recent restart in the list of events.
@@ -838,6 +875,20 @@ class DialogueStateTracker:
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")
 
+        # Ignore events on terminated conversations with a warning log
+        if self.terminated:
+            structlogger.warning(
+                "rasa.shared.core.trackers.dialogue_state_tracker.update_terminated_conversation",
+                event_info=(
+                    "Ignoring event on a terminated conversation "
+                    "The conversation was terminated with a "
+                    "SessionEnded event and cannot be modified."
+                ),
+                event_type=event.type_name,
+                sender_id=self.sender_id,
+            )
+            return
+
         if self.model_id and METADATA_MODEL_ID not in event.metadata:
             event.metadata = {**event.metadata, METADATA_MODEL_ID: self.model_id}
 
@@ -982,7 +1033,9 @@ class DialogueStateTracker:
         from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 
         self._reset_slots(is_coexistence_reset)
-        self._paused = False
+        self.paused = False
+        self.inactive = False
+        self.terminated = False
         self.latest_action = {}
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()

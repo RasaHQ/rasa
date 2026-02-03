@@ -1280,6 +1280,29 @@ def test_session_config(
     assert domain.session_config.carry_over_slots == expected_carry_over_slots
 
 
+def test_session_config_start_session_after_expiry_omitted_defaults_to_true():
+    """When start_session_after_expiry is omitted from session_config, it defaults to True."""
+    yaml_without_key = """
+session_config:
+    session_expiration_time: 30
+    carry_over_slots: true
+"""
+    domain = Domain.from_yaml(yaml_without_key)
+    assert domain.session_config.start_session_after_expiry is True
+
+
+def test_session_config_start_session_after_expiry_explicit_false():
+    """When start_session_after_expiry is set to false, it is False."""
+    yaml_explicit_false = """
+session_config:
+    session_expiration_time: 30
+    carry_over_slots: true
+    start_session_after_expiry: false
+"""
+    domain = Domain.from_yaml(yaml_explicit_false)
+    assert domain.session_config.start_session_after_expiry is False
+
+
 def test_domain_as_dict_with_session_config():
     session_config = SessionConfig(123, False)
     domain = Domain([], [], [], {}, [], {}, {}, None, True, session_config)
@@ -1735,6 +1758,7 @@ slots:{slot_2}{slot_1}
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true
+  start_session_after_expiry: true
 """
 
     domain_1 = Domain.from_yaml(test_yaml_1)

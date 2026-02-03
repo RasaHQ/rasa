@@ -120,6 +120,7 @@ ACTIVE_LOOP = {"properties": {"event": {"const": "active_loop"}}}
 ALL_SLOTS_RESET = {"properties": {"event": {"const": "reset_slots"}}}
 CONVERSATION_RESUMED = {"properties": {"event": {"const": "resume"}}}
 CONVERSATION_PAUSED = {"properties": {"event": {"const": "pause"}}}
+CONVERSATION_INACTIVE = {"properties": {"event": {"const": "inactive"}}}
 FOLLOWUP_ACTION = {"properties": {"event": {"const": "followup"}}}
 STORY_EXPORTED = {"properties": {"event": {"const": "export"}}}
 RESTARTED = {"properties": {"event": {"const": "restart"}}}
@@ -240,6 +241,7 @@ EVENT_SCHEMA = {
         ALL_SLOTS_RESET,
         CONVERSATION_RESUMED,
         CONVERSATION_PAUSED,
+        CONVERSATION_INACTIVE,
         FOLLOWUP_ACTION,
         STORY_EXPORTED,
         RESTARTED,

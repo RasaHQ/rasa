@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Text, Type
 
 import pytest
 import pytz
+import structlog
 from dateutil import parser
 from pytest import CaptureFixture
 
@@ -42,6 +43,7 @@ from rasa.shared.core.events import (
     AgentUttered,
     AllSlotsReset,
     BotUttered,
+    ConversationInactive,
     ConversationPaused,
     ConversationResumed,
     DefinePrevUserUtteredFeaturization,
@@ -74,6 +76,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
+from tests.utilities import filter_logs
 
 
 @pytest.mark.parametrize(
@@ -88,6 +91,7 @@ from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_
         (AllSlotsReset(), None),
         (ConversationPaused(), None),
         (ConversationResumed(), None),
+        (ConversationInactive(), None),
         (StoryExported(), None),
         (ActionReverted(), None),
         (UserUtteranceReverted(), None),
@@ -184,6 +188,7 @@ def test_event_has_proper_implementation(one_event, another_event):
         AllSlotsReset(),
         ConversationPaused(),
         ConversationResumed(),
+        ConversationInactive(),
         StoryExported(),
         ActionReverted(),
         UserUtteranceReverted(),
@@ -338,6 +343,11 @@ def test_json_parse_resume():
     assert Event.from_parameters(evt) == ConversationResumed()
 
 
+def test_json_parse_inactive():
+    evt = {"event": "inactive"}
+    assert Event.from_parameters(evt) == ConversationInactive()
+
+
 def test_json_parse_action():
     evt = {"event": "action", "name": "my_action"}
     assert Event.from_parameters(evt) == ActionExecuted("my_action")
@@ -407,6 +417,7 @@ def test_json_parse_agent_events(event_type: str, event_class: Any) -> None:
         AllSlotsReset,
         ConversationResumed,
         ConversationPaused,
+        ConversationInactive,
         StoryExported,
         UserUtteranceReverted,
         AgentUttered,
@@ -859,6 +870,7 @@ tested_events = [
     SlotSet(key="test", value="text"),
     ConversationResumed(),
     ConversationPaused(),
+    ConversationInactive(),
     FollowupAction(name="test"),
     StoryExported(),
     Restarted(),
@@ -1000,6 +1012,166 @@ def test_session_ended_does_not_reset_tracker():
 
     # Verify the slot is still set (tracker was not reset)
     assert tracker.get_slot("test_slot") == "test_value"
+
+
+def test_conversation_inactive_event_is_not_serialised():
+    """Test that ConversationInactive is not serialized as story string."""
+    assert ConversationInactive().as_story_string() is None
+
+
+def test_conversation_inactive_marks_tracker_as_inactive():
+    """Test that ConversationInactive event marks the tracker as inactive."""
+    # Given
+    tracker = DialogueStateTracker.from_events("sender", [])
+    assert not tracker.inactive
+
+    # When
+    inactive_event = ConversationInactive()
+    tracker.update(inactive_event)
+
+    # Then
+    assert tracker.inactive
+
+
+@pytest.mark.parametrize(
+    "resume_event",
+    [
+        ConversationResumed(),
+        UserUttered("hello"),
+    ],
+)
+def test_conversation_inactive_can_be_resumed(resume_event):
+    """Test that inactive state can be cleared by ConversationResumed or UserUttered."""
+    # Given
+    tracker = DialogueStateTracker.from_events("sender", [ConversationInactive()])
+    assert tracker.inactive
+
+    # When
+    tracker.update(resume_event)
+
+    # Then
+    assert not tracker.inactive
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        ActionExecuted("utter_default"),
+        BotUttered("Hello"),
+        SlotSet("some_slot", "value"),
+    ],
+)
+def test_conversation_inactive_persists_with_other_events(event):
+    """Test that inactive state persists for non-user events."""
+    # Given
+    tracker = DialogueStateTracker.from_events("sender", [ConversationInactive()])
+    assert tracker.inactive
+
+    # When
+    tracker.update(event)
+
+    # Then
+    assert tracker.inactive
+
+
+def test_session_ended_marks_tracker_as_terminated():
+    """Test that SessionEnded event marks the tracker as terminated."""
+    # Given
+    tracker = DialogueStateTracker.from_events("sender", [])
+    assert not tracker.terminated
+
+    # When
+    session_ended = SessionEnded()
+    tracker.update(session_ended)
+
+    # Then
+    assert tracker.terminated
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        ActionExecuted("utter_default"),
+        BotUttered("Hello"),
+        SlotSet("some_slot", "value"),
+        ConversationInactive(),
+    ],
+)
+def test_cannot_append_events_after_session_ended(event: Event):
+    """Test that appending events after SessionEnded is ignored."""
+    # Given
+    tracker = DialogueStateTracker.from_events("sender", [SessionEnded()])
+    assert tracker.terminated
+    initial_event_count = len(tracker.events)
+
+    with structlog.testing.capture_logs() as caplog:
+        tracker.update(event)
+
+        logs = filter_logs(
+            caplog,
+            event="rasa.shared.core.trackers.dialogue_state_tracker.update_terminated_conversation",
+            log_level="warning",
+        )
+        assert len(logs) == 1
+        assert (
+            "Ignoring event on a terminated conversation "
+            "The conversation was terminated with a "
+            "SessionEnded event and cannot be modified." in logs[0]["event_info"]
+        )
+
+    # Verify no new events were added
+    assert len(tracker.events) == initial_event_count
+    assert tracker.terminated
+
+
+def test_tracker_state_includes_inactive_and_terminated():
+    """Test that the tracker state includes inactive and terminated flags."""
+    tracker = DialogueStateTracker.from_events("sender", [])
+
+    state = tracker.current_state()
+
+    # Check that inactive and terminated are in the state
+    assert "inactive" in state
+    assert "terminated" in state
+    assert not state["inactive"]
+    assert not state["terminated"]
+
+    # Mark as inactive
+    tracker.update(ConversationInactive())
+    state = tracker.current_state()
+    assert state["inactive"]
+    assert not state["terminated"]
+
+    # Mark as resumed
+    tracker.update(ConversationResumed())
+    state = tracker.current_state()
+    assert not state["inactive"]
+    assert not state["terminated"]
+
+
+def test_reset_clears_inactive_and_terminated_flags():
+    tracker = DialogueStateTracker.from_events("sender", [ConversationInactive()])
+    assert tracker.inactive
+
+    tracker.update(Restarted())
+    assert not tracker.inactive
+    assert not tracker.terminated
+
+
+def test_is_ending_with_conversation_inactive():
+    tracker = DialogueStateTracker.from_events("sender", [SessionStarted()])
+    assert not tracker.is_ending_with_event(ConversationInactive)
+
+    tracker.update(ConversationInactive())
+    assert tracker.is_ending_with_event(ConversationInactive)
+
+
+def test_is_ending_with_session_ended():
+    tracker = DialogueStateTracker.from_events("sender", [SessionStarted()])
+    assert not tracker.is_ending_with_event(SessionEnded)
+
+    tracker.update(SessionEnded())
+    assert tracker.is_ending_with_event(SessionEnded)
 
 
 @pytest.mark.parametrize(

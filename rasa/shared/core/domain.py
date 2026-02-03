@@ -35,6 +35,7 @@ import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
+    DEFAULT_START_SESSION_AFTER_EXPIRY,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
     DOCS_URL_RESPONSES,
@@ -86,6 +87,7 @@ from rasa.shared.utils.yaml import (
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
 
+START_SESSION_AFTER_EXPIRY_KEY = "start_session_after_expiry"
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
 SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
 SESSION_CONFIG_KEY = "session_config"
@@ -177,6 +179,7 @@ class SessionConfig(NamedTuple):
 
     session_expiration_time: float  # in minutes
     carry_over_slots: bool
+    start_session_after_expiry: bool = True
 
     @staticmethod
     def default() -> SessionConfig:
@@ -184,6 +187,7 @@ class SessionConfig(NamedTuple):
         return SessionConfig(
             DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
             DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+            DEFAULT_START_SESSION_AFTER_EXPIRY,
         )
 
     def are_sessions_enabled(self) -> bool:
@@ -195,6 +199,7 @@ class SessionConfig(NamedTuple):
         return {
             "session_expiration_time": self.session_expiration_time,
             "carry_over_slots_to_new_session": self.carry_over_slots,
+            START_SESSION_AFTER_EXPIRY_KEY: self.start_session_after_expiry,
         }
 
 
@@ -349,8 +354,16 @@ class Domain:
         carry_over_slots = session_config.get(
             CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
         )
+        start_session_after_expiry = session_config.get(
+            START_SESSION_AFTER_EXPIRY_KEY,
+            DEFAULT_START_SESSION_AFTER_EXPIRY,
+        )
 
-        return SessionConfig(session_expiration_time_min, carry_over_slots)
+        return SessionConfig(
+            session_expiration_time_min,
+            carry_over_slots,
+            start_session_after_expiry,
+        )
 
     @classmethod
     def from_directory(cls, path: Text) -> Domain:
@@ -623,6 +636,9 @@ class Domain:
                             session_config.session_expiration_time
                         ),
                         CARRY_OVER_SLOTS_KEY: session_config.carry_over_slots,
+                        START_SESSION_AFTER_EXPIRY_KEY: (
+                            session_config.start_session_after_expiry
+                        ),
                     }
                 }
             )
