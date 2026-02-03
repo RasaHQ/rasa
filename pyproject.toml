@@ -251,7 +251,7 @@ pymongo = "~4.10.1"
 types-cachetools = "~6.2.0.20250827"
 pep440-version-utils = "~1.2.0"
 werkzeug = "^3.1.5"
-keras = "~3.12.0"
+keras = "~3.12.1"
 openai-agents = "~0.4.2"
 
 # --------------------------------------------------------------------------------------
@@ -388,12 +388,12 @@ optional = true
 # --------------------------------------------------------------------------------------
 
 [tool.poetry.dependencies.tensorflow]
-version = "^2.19.0" # compatible with protobuf <6.0.0dev
+version = "~2.19.0" # compatible with protobuf <6.0.0dev
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64' and python_version < '3.12'"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
-version = "^2.19.0"  # latest version available, requiring tensorflow ^2.19.0
+version = "~2.19.0"  # latest version available, requiring tensorflow ^2.19.0
 markers = "(sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64') and python_version < '3.12'"
 optional = true
 

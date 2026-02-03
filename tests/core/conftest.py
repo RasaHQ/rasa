@@ -10,6 +10,7 @@ from scipy import sparse
 
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
+from rasa.core.config.configuration import Configuration
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_stores.mongo_tracker_store import MongoTrackerStore
@@ -150,6 +151,7 @@ async def trained_formbot(trained_async: TrainedAsync) -> Text:
 @pytest.fixture(scope="module")
 async def form_bot_agent(trained_formbot: Text) -> Agent:
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    Configuration.initialise_empty()
 
     return Agent.load(trained_formbot, action_endpoint=endpoint)
 

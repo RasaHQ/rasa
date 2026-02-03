@@ -144,7 +144,7 @@ jobs:
           echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
           echo "Installing Rasa from branch: $BRANCH_NAME"
           export BRANCH_NAME
-          pip install "git+https://${GH_TOKEN}@github.com/RasaHQ/rasa-private.git@$BRANCH_NAME"
+          pip install "rasa-pro[channels] @ git+https://${GH_TOKEN}@github.com/RasaHQ/rasa-private.git@$BRANCH_NAME"
 
       - name: Train model and run rasa server
         id: train_and_run_rasa
