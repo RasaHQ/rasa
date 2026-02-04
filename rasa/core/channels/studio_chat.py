@@ -83,10 +83,15 @@ class StudioTrackerUpdatePlugin:
         self.socket_channel = socket_channel
         self.tasks: List[asyncio.Task] = []
 
-    def _cancel_tasks(self) -> None:
+    async def _cancel_tasks(self) -> None:
         """Cancel all remaining tasks."""
         for task in self.tasks:
-            task.cancel()
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
         self.tasks = []
 
     def _cleanup_tasks(self) -> None:
@@ -102,6 +107,19 @@ class StudioTrackerUpdatePlugin:
     def after_action_executed(self, tracker: "DialogueStateTracker") -> None:
         """Triggers a tracker update notification after an action is executed."""
         self.handle_tracker_update(tracker)
+
+    @hookimpl
+    def after_response_chunk(
+        self, tracker: "DialogueStateTracker", accumulated_text: str
+    ) -> None:
+        """Broadcasts tracker updates with streaming response text."""
+        task = asyncio.create_task(
+            self.socket_channel.publish_streaming_response(
+                tracker.sender_id, tracker, accumulated_text
+            )
+        )
+        self.tasks.append(task)
+        self._cleanup_tasks()
 
     def handle_tracker_update(self, tracker: "DialogueStateTracker") -> None:
         """Handles a tracker update when triggered by a hook."""
@@ -119,9 +137,9 @@ class StudioTrackerUpdatePlugin:
         self._cleanup_tasks()
 
     @hookimpl
-    def after_server_stop(self) -> None:
+    async def after_server_stop(self) -> None:
         """Cancels all remaining tasks when the server stops."""
-        self._cancel_tasks()
+        await self._cancel_tasks()
 
 
 class StudioChatInput(SocketIOInput, VoiceInputChannel):
@@ -227,6 +245,24 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
     ) -> None:
         """Publishes a tracker update notification to the websocket."""
         await self.emit("tracker", tracker_dump, room=sender_id)
+
+    async def publish_streaming_response(
+        self, sender_id: str, tracker: "DialogueStateTracker", accumulated_text: str
+    ) -> None:
+        """Publishes a streaming response update to the websocket.
+
+        Creates a synthetic tracker state that includes the accumulated
+        streaming text as a temporary bot event.
+        """
+        state = tracker_as_dump(tracker)
+        from rasa.shared.core.events import BotUttered
+
+        streaming_event = BotUttered(
+            text=accumulated_text,
+            metadata={"streaming": True},
+        ).as_dict()
+        state["events"] = state.get("events", []) + [streaming_event]
+        await self.emit("tracker", state, room=sender_id)
 
     async def on_message_proxy(
         self,
@@ -442,12 +478,18 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             del self.active_connections[sid]
 
     @hookimpl
-    def after_server_stop(self) -> None:
+    async def after_server_stop(self) -> None:
         """Cleanup background tasks and active connections when the server stops."""
         structlogger.info("studio_chat.after_server_stop.cleanup")
         self.active_connections.clear()
         for task in self.background_tasks.values():
-            task.cancel()
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+        self.background_tasks.clear()
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]

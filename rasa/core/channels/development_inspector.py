@@ -84,6 +84,17 @@ class DevelopmentInspectorPlugin:
         self._create_broadcast_task(tracker)
 
     @hookimpl
+    def after_response_chunk(
+        self, tracker: DialogueStateTracker, accumulated_text: str
+    ) -> None:
+        """Broadcasts tracker updates with streaming response text."""
+        task = asyncio.create_task(
+            self.inspector.on_streaming_response(tracker, accumulated_text)
+        )
+        self.tasks.append(task)
+        self._cleanup_completed_tasks()
+
+    @hookimpl
     async def after_server_stop(self) -> None:
         """Cancels all remaining tasks when the server stops."""
         await self._cancel_tasks()
@@ -150,16 +161,35 @@ class DevelopmentInspectProxy(InputChannel):
 
     async def on_tracker_updated(self, tracker: DialogueStateTracker) -> None:
         """Notifies all clients about tracker updates in real-time."""
-        try:
-            if self.tracker_stream and tracker.sender_id:
-                state = tracker.current_state(EventVerbosity.AFTER_RESTART)
-                tracker_dump = orjson.dumps(
-                    state, option=orjson.OPT_SERIALIZE_NUMPY
-                ).decode("utf-8")
-                await self.tracker_stream.broadcast(tracker_dump)
-        except asyncio.CancelledError:
-            structlogger.debug("development_inspector.on_tracker_updated.cancelled")
-            pass
+        if self.tracker_stream and tracker.sender_id:
+            state = tracker.current_state(EventVerbosity.AFTER_RESTART)
+            tracker_dump = orjson.dumps(
+                state, option=orjson.OPT_SERIALIZE_NUMPY
+            ).decode("utf-8")
+            await self.tracker_stream.broadcast(tracker_dump)
+
+    async def on_streaming_response(
+        self, tracker: DialogueStateTracker, accumulated_text: str
+    ) -> None:
+        """Notifies clients about streaming response text in real-time.
+
+        Creates a synthetic tracker state that includes the accumulated
+        streaming text as a temporary bot event.
+        """
+        if self.tracker_stream and tracker.sender_id:
+            state = tracker.current_state(EventVerbosity.AFTER_RESTART)
+            # Add a synthetic streaming bot event
+            from rasa.shared.core.events import BotUttered
+
+            streaming_event = BotUttered(
+                text=accumulated_text,
+                metadata={"streaming": True},
+            ).as_dict()
+            state["events"] = state.get("events", []) + [streaming_event]
+            tracker_dump = orjson.dumps(
+                state, option=orjson.OPT_SERIALIZE_NUMPY
+            ).decode("utf-8")
+            await self.tracker_stream.broadcast(tracker_dump)
 
     def _record_turn_start_time(self, sender_id: Text) -> None:
         """Records the start time of a new turn."""

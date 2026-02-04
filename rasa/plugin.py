@@ -86,3 +86,18 @@ def after_new_user_message(tracker: "DialogueStateTracker") -> None:
 @hookspec
 def after_action_executed(tracker: "DialogueStateTracker") -> None:
     """Hook specification for after an action is executed."""
+
+
+@hookspec
+def after_response_chunk(
+    tracker: "DialogueStateTracker", accumulated_text: str
+) -> None:
+    """Hook specification for after a streaming response chunk is sent.
+
+    This allows plugins to broadcast partial/streaming responses to clients
+    before the full response is complete and added to the tracker.
+
+    Args:
+        tracker: The current dialogue state tracker.
+        accumulated_text: The accumulated response text so far.
+    """

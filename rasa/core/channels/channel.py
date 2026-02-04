@@ -236,6 +236,8 @@ class OutputChannel:
 
     def __init__(self) -> None:
         self.tracker_state: Optional[Dict[str, Any]] = None
+        self._tracker: Optional[DialogueStateTracker] = None
+        self._accumulated_streaming_text: str = ""
 
     @classmethod
     def name(cls) -> Text:
@@ -245,6 +247,7 @@ class OutputChannel:
     def attach_tracker_state(self, tracker: DialogueStateTracker) -> None:
         """Attaches the current tracker state to the output channel."""
         self.tracker_state = tracker.current_state(EventVerbosity.AFTER_RESTART)
+        self._tracker = tracker
 
     async def send_response_chunk_start(
         self,
@@ -259,7 +262,7 @@ class OutputChannel:
             recipient_id: The recipient ID.
             **kwargs: Additional arguments.
         """
-        pass
+        self._accumulated_streaming_text = ""
 
     async def send_response_chunk(
         self,
@@ -280,7 +283,18 @@ class OutputChannel:
         Returns:
             None
         """
-        pass
+        self._accumulated_streaming_text += chunk
+        self._notify_streaming_response()
+
+    def _notify_streaming_response(self) -> None:
+        """Notify plugins about the streaming response progress."""
+        if self._tracker:
+            from rasa.plugin import plugin_manager
+
+            plugin_manager().hook.after_response_chunk(
+                tracker=self._tracker,
+                accumulated_text=self._accumulated_streaming_text,
+            )
 
     async def send_response_chunk_end(
         self,
@@ -295,7 +309,7 @@ class OutputChannel:
             recipient_id: The recipient ID.
             **kwargs: Additional arguments.
         """
-        pass
+        self._accumulated_streaming_text = ""
 
     async def send_response(
         self,

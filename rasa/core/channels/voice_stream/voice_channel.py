@@ -377,6 +377,8 @@ class VoiceOutputChannel(OutputChannel):
 
         Starts background task (listens to TTS audio, sends to websocket).
         """
+        await super().send_response_chunk_start(recipient_id, **kwargs)
+
         if not self.tts_engine.streaming_input:
             # Engine does not support streaming input
             # fallback to non-streaming synthesis
@@ -394,6 +396,8 @@ class VoiceOutputChannel(OutputChannel):
         The TTS engine will process this and the background consumer task
         will receive the audio and send it to the websocket.
         """
+        await super().send_response_chunk(recipient_id, chunk, **kwargs)
+
         if not self.tts_engine.streaming_input:
             # Engine does not support streaming input
             # fallback to non-streaming synthesis
@@ -409,6 +413,8 @@ class VoiceOutputChannel(OutputChannel):
         2. Wait for background task to finish sending all audio
         3. Mark that streaming was used, to skip non-streaming responses
         """
+        await super().send_response_chunk_end(recipient_id, **kwargs)
+
         if not self.tts_engine.streaming_input:
             self.streaming_response_sent = False
             # fallback to non-streaming synthesis

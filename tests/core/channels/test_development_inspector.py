@@ -137,3 +137,56 @@ async def test_on_tracker_updated_with_events(mock_tracker_stream):
 
     await inspector.on_tracker_updated(test_tracker)
     assert mock_tracker_stream.called
+
+
+async def test_on_streaming_response(mock_tracker_stream):
+    """Test that streaming response broadcasts include accumulated text."""
+    events = [
+        SessionStarted(),
+        UserUttered("Hello"),
+    ]
+    test_tracker = DialogueStateTracker.from_events("test", events)
+    inspector = DevelopmentInspectProxy(RestInput.from_credentials({}))
+    inspector.tracker_stream = mock_tracker_stream
+
+    await inspector.on_streaming_response(test_tracker, "Hello, how")
+    assert mock_tracker_stream.called
+
+
+@pytest.fixture
+def mock_tracker_stream_with_capture():
+    """Fixture that provides a mock tracker stream that captures messages."""
+    import json
+
+    class MockTrackerStreamWithCapture:
+        def __init__(self):
+            self.messages = []
+
+        async def broadcast(self, message: str):
+            self.messages.append(json.loads(message))
+
+    return MockTrackerStreamWithCapture()
+
+
+async def test_on_streaming_response_includes_synthetic_bot_event(
+    mock_tracker_stream_with_capture,
+):
+    """Test that streaming response adds a synthetic bot event with streaming flag."""
+    events = [
+        SessionStarted(),
+        UserUttered("Hello"),
+    ]
+    test_tracker = DialogueStateTracker.from_events("test", events)
+    inspector = DevelopmentInspectProxy(RestInput.from_credentials({}))
+    inspector.tracker_stream = mock_tracker_stream_with_capture
+
+    await inspector.on_streaming_response(test_tracker, "Hello, how are you")
+
+    assert len(mock_tracker_stream_with_capture.messages) == 1
+    message = mock_tracker_stream_with_capture.messages[0]
+
+    # Check that the last event is the synthetic streaming bot event
+    last_event = message["events"][-1]
+    assert last_event["event"] == "bot"
+    assert last_event["text"] == "Hello, how are you"
+    assert last_event["metadata"]["streaming"] is True
