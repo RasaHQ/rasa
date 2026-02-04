@@ -3,10 +3,11 @@ import os
 from dataclasses import dataclass
 from typing import AsyncIterator, Dict, Optional
 from urllib.parse import urlencode
+from uuid import uuid4
 
 import aiohttp
 import structlog
-from aiohttp import ClientTimeout, WSMsgType
+from aiohttp import ClientTimeout
 
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 from rasa.core.channels.voice_stream.tts.tts_engine import (
@@ -22,18 +23,47 @@ structlogger = structlog.get_logger()
 
 @dataclass
 class RimeTTSConfig(TTSEngineConfig):
+    """Rime TTS variable parameters:
+
+    Docs: https://docs.rime.ai/api-reference/endpoint/websockets-json#variable-parameters
+
+    See get_default_config() for default values.
+    """
+
+    # Rime TTS calls "voice" as "speaker"
+    # the voice used for synthesis
     speaker: Optional[str] = None
+
+    # Model ID to be used for synthesis
     model_id: Optional[str] = None
+
+    # The Rime TTS API endpoint URL
     endpoint: Optional[str] = None
+
+    # Adjusts the speed of speech.
     speed_alpha: Optional[float] = None
+
+    # Controls how text is segmented for synthesis.
     segment: Optional[str] = None
+
+    # Skips text normalization of the input text prior to synthesizing
+    # audio. This will reduce latency at the cost of some possible
+    # mispronunciation of digits and abbreviations.
+    no_text_normalization: Optional[bool] = None
 
 
 class RimeTTS(TTSEngine[RimeTTSConfig]):
     session: Optional[aiohttp.ClientSession] = None
     required_env_vars = (RIME_API_KEY_ENV_VAR,)
     ws: Optional[aiohttp.ClientWebSocketResponse] = None
-    streaming_input: bool = True
+    # Indicates if TTS is being used in streaming input mode
+    # TODO: Set it to True once Rime TTS streaming input bug
+    # is fixed. No timelines yet.
+    streaming_input: bool = False
+
+    # Each synthesis context has a unique ID
+    # gets reset in signal_text_done()
+    context_id = uuid4().hex
 
     def __init__(self, config: Optional[RimeTTSConfig] = None):
         super().__init__(config)
@@ -45,10 +75,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
 
     def get_websocket_url(self) -> str:
         """Build WebSocket URL with query parameters for Rime TTS."""
-        if self.config.endpoint:
-            base_url = self.config.endpoint
-        else:
-            base_url = "wss://users.rime.ai/ws2"
+        base_url = self.config.endpoint
 
         # Build query parameters with required audio format for RasaAudioBytes
         # Audio format and sample rate are fixed to match RasaAudioBytes spec:
@@ -56,6 +83,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         query_params = {
             "speaker": self.config.speaker,
             "modelId": self.config.model_id,
+            "lang": self.config.language,
             "audioFormat": "mulaw",  # Fixed: required for RasaAudioBytes
             "samplingRate": str(HERTZ),  # Fixed: 8000 Hz required for RasaAudioBytes
         }
@@ -118,7 +146,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         if not self.ws or self.ws.closed:
             raise TTSError("WebSocket connection not established")
 
-        await self.ws.send_json({"text": text})
+        await self.ws.send_json({"text": text, "contextId": self.context_id})
 
     async def signal_text_done(self) -> None:
         """Signal TTS engine to process any remaining buffered text.
@@ -129,8 +157,8 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         if not self.ws or self.ws.closed:
             raise TTSError("WebSocket connection not established")
 
-        # Send EOS operation to flush and signal completion
-        await self.ws.send_json({"operation": "eos"})
+        await self.ws.send_json({"operation": "flush"})
+        self.context_id = uuid4().hex  # Reset context ID for next synthesis
 
     async def stream_audio(self) -> AsyncIterator[RasaAudioBytes]:
         """Stream audio output from the TTS engine.
@@ -145,33 +173,35 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
 
         try:
             async for msg in self.ws:
-                if msg.type == WSMsgType.TEXT:
-                    # All Rime messages are JSON
-                    data = msg.json()
-                    msg_type = data.get("type")
+                data = msg.json()
+                msg_type = data.get("type")
 
-                    if msg_type == "chunk":
-                        # Audio data chunk - decode base64 and yield
-                        base64_audio = data.get("data")
-                        if base64_audio:
-                            audio_bytes = base64.b64decode(base64_audio)
-                            yield self.engine_bytes_to_rasa_audio_bytes(audio_bytes)
+                if msg_type == "chunk":
+                    # Audio data chunk - decode base64 and yield
+                    base64_audio = data.get("data")
+                    if base64_audio:
+                        audio_bytes = base64.b64decode(base64_audio)
+                        yield self.engine_bytes_to_rasa_audio_bytes(audio_bytes)
 
-                    elif msg_type == "error":
-                        # Error occurred
-                        error_msg = data.get("message", "Unknown error")
-                        structlogger.error("rime.stream_audio.error", error=error_msg)
-                        raise TTSError(f"Rime TTS error: {error_msg}")
-
-                elif msg.type == WSMsgType.CLOSED:
-                    # Connection closed (expected after EOS)
-                    structlogger.debug("rime.stream_audio.connection_closed")
+                elif msg_type == "done":
+                    # All audio has been sent, stop streaming
                     break
 
-                elif msg.type == WSMsgType.ERROR:
-                    structlogger.error("rime.stream_audio.ws_error")
-                    raise TTSError("WebSocket error during audio streaming")
+                elif msg_type == "error":
+                    # Error occurred
+                    error_msg = data.get("message", "Unknown error")
+                    structlogger.error("rime.stream_audio.error", error=error_msg)
+                    raise TTSError(f"Rime TTS error: {error_msg}")
 
+                elif msg_type == "timestamps":
+                    # Word-level timing information
+                    # Rasa doesn't use this yet
+                    pass
+
+                else:
+                    structlogger.warning(
+                        "rime.stream_audio.unknown_message", message=data
+                    )
         except Exception as e:
             structlogger.error("rime.stream_audio.error", error=str(e))
             raise TTSError(f"Error during audio streaming: {e}")
@@ -198,10 +228,12 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         return RimeTTSConfig(
             speaker="cove",
             model_id="mistv2",
+            language="eng",
             timeout=30,
-            endpoint=None,
+            endpoint="wss://users.rime.ai/ws2",
             speed_alpha=1.0,
             segment="immediate",  # Synthesize immediately for low latency
+            no_text_normalization=False,
         )
 
     @classmethod
