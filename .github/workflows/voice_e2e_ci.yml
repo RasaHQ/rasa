@@ -135,16 +135,16 @@ jobs:
       - name: Install additional dependencies
         run: poetry add azure-cognitiveservices-speech
 
-      - name: Install rasa from current branch
-        env:
-          BRANCH_NAME: ${{ github.event.pull_request.head.ref || github.ref_name }}
-          PR_TITLE: ${{ github.event.pull_request.title || github.ref_name }}
-          GH_TOKEN: ${{ env.GH_TOKEN }}
+      - name: Get Rasa version
+        id: rasa-version
         run: |
-          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
-          echo "Installing Rasa from branch: $BRANCH_NAME"
-          export BRANCH_NAME
-          pip install "rasa-pro[channels] @ git+https://${GH_TOKEN}@github.com/RasaHQ/rasa-private.git@$BRANCH_NAME"
+          RASA_VERSION=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' rasa/version.py)
+          echo "version=$RASA_VERSION" >> "$GITHUB_OUTPUT"
+          echo "RASA_VERSION=$RASA_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install rasa-pro with channels
+        run: |
+          pip install "rasa-pro[channels]==$RASA_VERSION"
 
       - name: Train model and run rasa server
         id: train_and_run_rasa
@@ -208,4 +208,25 @@ jobs:
           echo "Running AudioCodes replay test..."
           poetry run pytest -s -vv -o log_cli=true -o log_cli_level=INFO \
             tests/integration_tests/core/channels/test_audiocodes_replay.py
+        shell: bash
+
+      - name: Generate Twilio Media Stream traffic file
+        if: steps.train_and_run_rasa.outcome == 'success'
+        run: |
+          poetry run python tests/integration_tests/core/channels/twilio_media_stream_replay.py \
+            --mode generate \
+            --wav data/e2e_voice/user_remove_contact_from_list/1.wav \
+            --output data/e2e_voice/twilio_traffic.json
+        shell: bash
+
+      - name: Run Twilio Media Stream replay test
+        if: steps.train_and_run_rasa.outcome == 'success'
+        env:
+          RASA_URL: http://localhost:5005
+          TWILIO_TRAFFIC_FILE: data/e2e_voice/twilio_traffic.json
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+        run: |
+          echo "Running Twilio Media Stream replay test..."
+          poetry run pytest -s -vv -o log_cli=true -o log_cli_level=INFO \
+            tests/integration_tests/core/channels/test_twilio_media_stream_replay.py
         shell: bash

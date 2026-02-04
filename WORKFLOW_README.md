@@ -49,6 +49,29 @@ This workflow can be triggered manually/on-demand, and test results' notificatio
 `#dev-tribe-alerts` Slack channel, and traces and metrics from Rasa components are sent to [`Honeycomb`](https://ui.honeycomb.io/rasa/environments/engine). In case of failure, test results are saved, and can be
 found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
 
+### Run Voice Integration Tests
+**File:** `.github/workflows/run_voice_channel_tests.yml`
+
+Runs voice-related integration tests (ASR and TTS) when voice code or config changes are detected. Triggered on push to `main` or `[0-9]+.[0-9]+.x`, on pull requests, or manually via workflow dispatch.
+
+- **Path filter:** Runs only when `.github/change_filters.yml` reports voice-related file changes (`voice-files == 'true'`).
+- **Matrix:** Python 3.10, 3.11, 3.12, 3.13.
+- **Steps:** Checkout → prepare test env (test-prerequisites) → install deps (incl. `azure-cognitiveservices-speech`) → run `make test-voice-integration` with `CARTESIA_API_KEY`, `DEEPGRAM_API_KEY`, `AZURE_SPEECH_API_KEY`, and Azure region env set from secrets.
+- **Artifacts:** JUnit-style test results are uploaded per Python version.
+- **Notifications:** On failure, a Slack message is sent to `#release-assistant-atom-alerts`.
+
+### Voice E2E CI
+**File:** `.github/workflows/voice_e2e_ci.yml`
+
+End-to-end voice tests: train a Rasa model, run the server with voice channels, then run voice primitives, AudioCodes replay, and Twilio Media Stream replay tests. Triggered on push to `main` or `[0-9]+.[0-9]+.x`, on pull requests (excluding Dependabot), or manually via workflow dispatch.
+
+- **Path filter:** Runs when voice-related files or poetry dependency updates are detected.
+- **Jobs:**
+  1. **check-voice-code-changes** – Uses path filter; outputs `voice-files` and `poetry-dependency-updates`.
+  2. **install-and-cache-rasa** – Installs Rasa (matrix: default, anonymisation, nlu, full), caches `.venv` by install type and `poetry.lock` hash.
+  3. **voice-e2e** – Checkout + checkout `calm-benchmarking-bot` → install deps (incl. `azure-cognitiveservices-speech`, `rasa-pro[channels]`) → train model → run Rasa server with credentials (websockets, audiocodes_stream) → run **voice primitives** test (`test_voice_primitives.py`) → run **AudioCodes replay** test (`test_audiocodes_replay.py`) → generate Twilio traffic file → run **Twilio Media Stream replay** test. Uses secrets for `OPENAI_API_KEY`, `CARTESIA_API_KEY`, `DEEPGRAM_API_KEY`, `RASA_PRO_LICENSE`, and calm-benchmarking-bot clone token.
+- **Matrix:** Single voice file and Python 3.10. AudioCodes and Twilio replay steps run only if the “Train model and run rasa server” step succeeded.
+
 ### DM1/Tensorflow tests
 This workflow runs DM1 tests (that use Tensorflow), on:
 1. Pull-requests and push to `main` and non-dev `release` branches and tags, when files containing DM1/Tensorflow code are changed.

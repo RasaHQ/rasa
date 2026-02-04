@@ -583,7 +583,8 @@ TEST_CHANNEL_CONNECTOR_INTEGRATION_COMMAND = poetry run \
         --junitxml=$(RESULTS_FILE) \
         --ignore $(VOICE_READY_CONNECTOR_INTEGRATION_TEST_PATH) \
         --ignore $(VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH) \
-        --ignore $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH)/test_audiocodes_replay.py
+        --ignore $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH)/test_audiocodes_replay.py \
+        --ignore $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH)/test_twilio_media_stream_replay.py
 
 RUN_CHANNEL_CONNECTOR_CONTAINER_COMMAND = USER_ID=$(USER_ID) \
         docker compose \
