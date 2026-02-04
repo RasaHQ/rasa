@@ -9,7 +9,11 @@ from rasa.builder.copilot.agent_sdk.planning_tools import (
     reset_plan_queue,
     set_plan_queue,
 )
-from rasa.builder.copilot.models import TodoItem, TodoPlanUpdate
+from rasa.builder.copilot.models import (
+    TaskStatusUpdate,
+    TodoItem,
+    TodoPlanUpdate,
+)
 
 
 class TestPlanQueueContextIsolation:
@@ -164,3 +168,106 @@ class TestPlanQueueContextIsolation:
 
         assert len(inner_updates) == 1
         assert inner_updates[0].tasks[0].id == "2"
+
+
+class TestTaskStatusUpdates:
+    """Tests for task status updates including the failed status."""
+
+    @pytest.mark.asyncio
+    async def test_todo_item_supports_failed_status(self):
+        """Test that TodoItem can be created with failed status."""
+        task = TodoItem(id="1", content="Test task", status="failed")
+
+        assert task.status == "failed"
+        assert task.id == "1"
+        assert task.content == "Test task"
+
+    @pytest.mark.asyncio
+    async def test_task_status_update_supports_failed_status(self):
+        """Test that TaskStatusUpdate can be created with failed status."""
+        update = TaskStatusUpdate(task_id="1", status="failed")
+
+        assert update.status == "failed"
+        assert update.task_id == "1"
+
+    @pytest.mark.asyncio
+    async def test_task_status_transition_to_failed(self):
+        """Test that a task can transition from in_progress to failed.
+
+        This test verifies the model correctly handles the failed status
+        when simulating a task that encounters an error.
+        """
+        queue: asyncio.Queue[TodoPlanUpdate] = asyncio.Queue()
+
+        token = set_plan_queue(queue)
+        try:
+            # Simulate a plan where task 1 was in_progress and then failed
+            todos = [
+                TodoItem(id="1", content="Validate project", status="in_progress"),
+                TodoItem(id="2", content="Fix errors", status="pending"),
+                TodoItem(id="3", content="Train model", status="pending"),
+            ]
+
+            # Send initial state
+            _send_plan_update_to_frontend(todos)
+
+            # Simulate task failure
+            todos[0].status = "failed"
+            _send_plan_update_to_frontend(todos)
+
+            # Verify both updates were received
+            updates = []
+            while not queue.empty():
+                updates.append(queue.get_nowait())
+
+            assert len(updates) == 2
+
+            # First update: in_progress
+            assert updates[0].tasks[0].status == "in_progress"
+
+            # Second update: failed
+            assert updates[1].tasks[0].status == "failed"
+            assert updates[1].tasks[1].status == "pending"
+            assert updates[1].tasks[2].status == "pending"
+
+        finally:
+            reset_plan_queue(token)
+
+    @pytest.mark.asyncio
+    async def test_failed_status_in_plan_update_event(self):
+        """Test that failed status is correctly sent to frontend via queue."""
+        queue: asyncio.Queue[TodoPlanUpdate] = asyncio.Queue()
+
+        token = set_plan_queue(queue)
+        try:
+            # Create a task with failed status
+            todos = [
+                TodoItem(id="1", content="Validate project", status="failed"),
+                TodoItem(id="2", content="Fix errors", status="pending"),
+            ]
+
+            _send_plan_update_to_frontend(todos)
+
+            # Verify the update was sent
+            assert not queue.empty()
+            update = queue.get_nowait()
+
+            assert len(update.tasks) == 2
+            assert update.tasks[0].status == "failed"
+            assert update.tasks[1].status == "pending"
+
+        finally:
+            reset_plan_queue(token)
+
+    @pytest.mark.asyncio
+    async def test_all_task_statuses_are_valid(self):
+        """Test that all defined task statuses can be used."""
+        valid_statuses = ["pending", "in_progress", "completed", "cancelled", "failed"]
+
+        for status in valid_statuses:
+            # Should not raise validation error
+            task = TodoItem(id="1", content="Test", status=status)
+            assert task.status == status
+
+            update = TaskStatusUpdate(task_id="1", status=status)
+            assert update.status == status

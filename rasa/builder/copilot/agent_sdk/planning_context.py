@@ -158,6 +158,7 @@ def format_plan_for_agent(todos: List[TodoItem]) -> str:
         "in_progress": "🔄",
         "completed": "✅",
         "cancelled": "❌",
+        "failed": "❌",
     }
 
     lines = ["Current plan:"]

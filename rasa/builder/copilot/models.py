@@ -91,6 +91,33 @@ class ResponseCategory(Enum):
     GOODBYE_DETECTION = "goodbye_detection"
 
 
+class MCPToolCallStatus(str, Enum):
+    """Status of an MCP tool call."""
+
+    CALLED = "called"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class TaskStatus(str, Enum):
+    """Status of a plan task."""
+
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+    FAILED = "failed"
+
+
+class TaskType(str, Enum):
+    """Type of event source in the merged stream."""
+
+    STREAM = "stream"
+    MCP = "mcp"
+    PLAN = "plan"
+
+
 class BaseContent(BaseModel):
     type: str
 
@@ -1059,7 +1086,7 @@ class MCPToolCall(CopilotOutput):
     """Represents MCP tool execution status."""
 
     tool_name: str
-    status: Literal["called", "running", "completed", "failed"]
+    status: MCPToolCallStatus
     response_category: ResponseCategory = Field(
         default=ResponseCategory.MCP_TOOL_CALL,
         frozen=True,
@@ -1089,7 +1116,7 @@ class MCPToolCall(CopilotOutput):
         """Extract the SSE data payload."""
         return {
             "tool_name": self.tool_name,
-            "status": self.status,
+            "status": self.status.value,
             "response_category": self.response_category.value,
             "completeness": self.response_completeness.value,
         }
@@ -1100,8 +1127,8 @@ class TodoItem(BaseModel):
 
     id: str = Field(description="Unique identifier for the task")
     content: str = Field(description="Description of the task")
-    status: Literal["pending", "in_progress", "completed", "cancelled"] = Field(
-        default="pending",
+    status: TaskStatus = Field(
+        default=TaskStatus.PENDING,
         description="Current status of the task",
     )
 
@@ -1123,9 +1150,7 @@ class TaskStatusUpdate(BaseModel):
     task_id: str = Field(
         description="The ID of the task to update (e.g., '1', '2', '3')."
     )
-    status: Literal["pending", "in_progress", "completed", "cancelled"] = Field(
-        description="The new status of the task."
-    )
+    status: TaskStatus = Field(description="The new status of the task.")
 
 
 class TodoPlanUpdate(CopilotOutput):

@@ -7,7 +7,7 @@ import structlog
 from agents import Agent, AgentHooks, Tool
 from agents.run_context import RunContextWrapper
 
-from rasa.builder.copilot.models import MCPToolCall
+from rasa.builder.copilot.models import MCPToolCall, MCPToolCallStatus
 
 structlogger = structlog.get_logger()
 
@@ -39,7 +39,7 @@ class RasaCopilotHooks(AgentHooks):
         await self._mcp_queue.put(
             MCPToolCall(
                 tool_name=tool.name,
-                status="called",
+                status=MCPToolCallStatus.CALLED,
             )
         )
 
@@ -55,7 +55,7 @@ class RasaCopilotHooks(AgentHooks):
         await self._mcp_queue.put(
             MCPToolCall(
                 tool_name=tool.name,
-                status="completed",
+                status=MCPToolCallStatus.COMPLETED,
                 output=result,
             )
         )

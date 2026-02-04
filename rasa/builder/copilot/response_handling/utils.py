@@ -16,7 +16,12 @@ from openai.types.responses import (
 from openai.types.responses.response_output_item import McpCall
 
 from rasa.builder.copilot.mcp_server.constants import MCP_TOOL_SEARCH_DOCS
-from rasa.builder.copilot.models import GeneratedContent, MCPToolCall, ResponseCategory
+from rasa.builder.copilot.models import (
+    GeneratedContent,
+    MCPToolCall,
+    MCPToolCallStatus,
+    ResponseCategory,
+)
 from rasa.builder.copilot.response_handling.constants import (
     LLM_PREFIXES_TO_SUFFIX_REMOVE,
 )
@@ -357,5 +362,5 @@ def is_document_retrieval_mcp_tool_output_event(mcp_tool_call: MCPToolCall) -> b
     """
     return (
         mcp_tool_call.tool_name == MCP_TOOL_SEARCH_DOCS
-        and mcp_tool_call.status == "completed"
+        and mcp_tool_call.status == MCPToolCallStatus.COMPLETED
     )

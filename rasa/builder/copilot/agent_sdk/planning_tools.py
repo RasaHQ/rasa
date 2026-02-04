@@ -25,6 +25,7 @@ from rasa.builder.copilot.agent_sdk.planning_context import (
 )
 from rasa.builder.copilot.models import (
     TaskPlan,
+    TaskStatus,
     TaskStatusUpdate,
     TodoItem,
     TodoPlanUpdate,
@@ -137,7 +138,7 @@ async def create_plan(plan: TaskPlan) -> str:
     """
     # Create TodoItems from the task descriptions
     todos = [
-        TodoItem(id=str(i + 1), content=task, status="pending")
+        TodoItem(id=str(i + 1), content=task, status=TaskStatus.PENDING)
         for i, task in enumerate(plan.tasks)
     ]
 
@@ -163,7 +164,9 @@ async def update_task(update: TaskStatusUpdate) -> str:
 
     Call this tool to:
     - Mark a task as 'in_progress' when you start working on it
-    - Mark a task as 'completed' when you finish it
+    - Mark a task as 'completed' when you finish it successfully
+    - Mark a task as 'failed' when a task encounters an error that prevents
+      completion (e.g., validation errors, missing dependencies, tool failures)
     - Mark a task as 'cancelled' if it's no longer needed
 
     After updating, this returns the full current plan state so you can

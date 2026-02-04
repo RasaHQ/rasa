@@ -2515,3 +2515,273 @@ class TestAgentCopilotResponseHandler:
         handler.reset()
 
         assert handler.is_model_up_to_date is False
+
+    @pytest.mark.asyncio
+    async def test_concurrent_queue_monitoring_yields_events_immediately(self):
+        """Test that queue events are yielded immediately, not batched.
+
+        This test verifies that the concurrent monitoring approach yields
+        queue events as soon as they're available during streaming.
+        """
+        from rasa.builder.copilot.models import MCPToolCall, TodoItem, TodoPlanUpdate
+
+        # Track the order of events received
+        received_events: List[Any] = []
+
+        # Create queues
+        mcp_queue: asyncio.Queue[MCPToolCall] = asyncio.Queue()
+        plan_queue: asyncio.Queue[TodoPlanUpdate] = asyncio.Queue()
+
+        # Use a flag to add queue events during streaming
+        events_added = asyncio.Event()
+
+        # Create a stream that waits for queue events to be added
+        async def stream_with_queue_events() -> AsyncGenerator[StreamEvent, None]:
+            yield create_text_content_part_start_event_mock()
+            # Wait for queue events to be added during streaming
+            await events_added.wait()
+            yield create_text_delta_event_mock("Hello")
+            yield create_text_output_done_event_mock()
+            yield create_text_content_part_end_event_mock()
+
+        handler = AgentCopilotResponseHandler(
+            stream_with_queue_events(),
+            mcp_tool_queue=mcp_queue,
+            plan_queue=plan_queue,
+            rolling_buffer_size=5,
+        )
+
+        # Start streaming in background and add events during it
+        async def stream_and_collect():
+            async for event in handler.stream():
+                received_events.append(event)
+
+        # Run streaming and queue population concurrently
+        async def add_queue_events():
+            # Small delay to ensure stream is active
+            await asyncio.sleep(0.01)
+            await mcp_queue.put(MCPToolCall(tool_name="search_docs", status="called"))
+            await plan_queue.put(
+                TodoPlanUpdate(
+                    tasks=[TodoItem(id="1", content="Task 1", status="in_progress")]
+                )
+            )
+            # Signal that events have been added
+            events_added.set()
+
+        await asyncio.gather(stream_and_collect(), add_queue_events())
+
+        # Verify that we received events from both queues
+        mcp_events = [e for e in received_events if isinstance(e, MCPToolCall)]
+        plan_events = [e for e in received_events if isinstance(e, TodoPlanUpdate)]
+
+        assert len(mcp_events) >= 1, "Should have received MCP tool call event"
+        assert len(plan_events) >= 1, "Should have received plan update event"
+
+        # Verify MCP tool call was yielded
+        assert any(
+            e.tool_name == "search_docs" and e.status == "called" for e in mcp_events
+        ), "Should have received the 'called' MCP event"
+
+    @pytest.mark.asyncio
+    async def test_tool_call_events_preserve_order(self):
+        """Test that 'called' events come before 'completed' events.
+
+        This test verifies that when a tool call is queued with 'called'
+        status followed by 'completed' status, both events are yielded
+        in the correct order.
+        """
+        from rasa.builder.copilot.models import MCPToolCall
+
+        received_events: List[MCPToolCall] = []
+
+        mcp_queue: asyncio.Queue[MCPToolCall] = asyncio.Queue()
+        events_ready = asyncio.Event()
+
+        async def stream_waiting_for_events() -> AsyncGenerator[StreamEvent, None]:
+            yield create_text_content_part_start_event_mock()
+            # Wait for events to be added to queue
+            await events_ready.wait()
+            yield create_text_delta_event_mock("Content")
+            yield create_text_output_done_event_mock()
+            yield create_text_content_part_end_event_mock()
+
+        handler = AgentCopilotResponseHandler(
+            stream_waiting_for_events(),
+            mcp_tool_queue=mcp_queue,
+            rolling_buffer_size=5,
+        )
+
+        async def stream_and_collect():
+            async for event in handler.stream():
+                if isinstance(event, MCPToolCall):
+                    received_events.append(event)
+
+        async def add_events():
+            await asyncio.sleep(0.01)
+            # Add called event first, then completed event
+            await mcp_queue.put(
+                MCPToolCall(tool_name="write_project_file", status="called")
+            )
+            await mcp_queue.put(
+                MCPToolCall(tool_name="write_project_file", status="completed")
+            )
+            events_ready.set()
+
+        await asyncio.gather(stream_and_collect(), add_events())
+
+        # Verify both events were received
+        assert len(received_events) == 2, "Should have received both MCP events"
+
+        # Verify order is preserved (called before completed)
+        assert received_events[0].status == "called", "First event should be 'called'"
+        assert (
+            received_events[1].status == "completed"
+        ), "Second event should be 'completed'"
+        assert (
+            received_events[0].tool_name == received_events[1].tool_name
+        ), "Both events should be for the same tool"
+
+    @pytest.mark.asyncio
+    async def test_merged_stream_handles_multiple_tool_calls(self):
+        """Test that multiple tool calls are handled correctly in sequence.
+
+        This simulates a scenario where events are added during streaming
+        and all are properly yielded.
+        """
+        from rasa.builder.copilot.models import MCPToolCall, TodoItem, TodoPlanUpdate
+
+        received_events: List[Any] = []
+
+        mcp_queue: asyncio.Queue[MCPToolCall] = asyncio.Queue()
+        plan_queue: asyncio.Queue[TodoPlanUpdate] = asyncio.Queue()
+        events_ready = asyncio.Event()
+
+        async def stream_with_tool_calls() -> AsyncGenerator[StreamEvent, None]:
+            yield create_text_content_part_start_event_mock()
+            # Wait for events to be added
+            await events_ready.wait()
+            yield create_text_delta_event_mock("Working on it...")
+            yield create_text_output_done_event_mock()
+            yield create_text_content_part_end_event_mock()
+
+        handler = AgentCopilotResponseHandler(
+            stream_with_tool_calls(),
+            mcp_tool_queue=mcp_queue,
+            plan_queue=plan_queue,
+            rolling_buffer_size=5,
+        )
+
+        async def stream_and_collect():
+            async for event in handler.stream():
+                if isinstance(event, (MCPToolCall, TodoPlanUpdate)):
+                    received_events.append(event)
+
+        async def add_events():
+            await asyncio.sleep(0.01)
+            # Simulate the sequence of events
+            await mcp_queue.put(MCPToolCall(tool_name="create_plan", status="called"))
+            await plan_queue.put(
+                TodoPlanUpdate(
+                    tasks=[
+                        TodoItem(id="1", content="Task 1", status="pending"),
+                        TodoItem(id="2", content="Task 2", status="pending"),
+                    ]
+                )
+            )
+            await mcp_queue.put(
+                MCPToolCall(tool_name="create_plan", status="completed")
+            )
+            await mcp_queue.put(MCPToolCall(tool_name="search_docs", status="called"))
+            await mcp_queue.put(
+                MCPToolCall(tool_name="search_docs", status="completed")
+            )
+            events_ready.set()
+
+        await asyncio.gather(stream_and_collect(), add_events())
+
+        # Verify we got all the queue events
+        mcp_events = [e for e in received_events if isinstance(e, MCPToolCall)]
+        plan_events = [e for e in received_events if isinstance(e, TodoPlanUpdate)]
+
+        assert len(mcp_events) == 4, f"Expected 4 MCP events, got {len(mcp_events)}"
+        assert len(plan_events) == 1, f"Expected 1 plan event, got {len(plan_events)}"
+
+        # Verify the tool call sequence
+        tool_sequence = [(e.tool_name, e.status) for e in mcp_events]
+        assert ("create_plan", "called") in tool_sequence
+        assert ("create_plan", "completed") in tool_sequence
+        assert ("search_docs", "called") in tool_sequence
+        assert ("search_docs", "completed") in tool_sequence
+
+    @pytest.mark.asyncio
+    async def test_stream_without_queues_still_works(self):
+        """Test that streaming works correctly when no queues are provided.
+
+        This ensures backward compatibility with the non-queue case.
+        """
+
+        async def simple_stream() -> AsyncGenerator[StreamEvent, None]:
+            yield create_text_content_part_start_event_mock()
+            yield create_text_delta_event_mock("Hello world")
+            yield create_text_output_done_event_mock()
+            yield create_text_content_part_end_event_mock()
+
+        handler = AgentCopilotResponseHandler(
+            simple_stream(),
+            rolling_buffer_size=5,
+        )
+
+        received_text = []
+        async for event in handler.stream():
+            if isinstance(event, CopilotTextContent):
+                received_text.append(event.content)
+
+        assert "".join(received_text) == "Hello world"
+
+    @pytest.mark.asyncio
+    async def test_queue_events_tracked_for_model_up_to_date(self):
+        """Test that queue events are tracked for is_model_up_to_date check.
+
+        Verifies that tool calls yielded through the concurrent monitoring
+        are properly tracked in _tracked_tool_calls.
+        """
+        from rasa.builder.copilot.models import MCPToolCall
+
+        mcp_queue: asyncio.Queue[MCPToolCall] = asyncio.Queue()
+        events_ready = asyncio.Event()
+
+        async def stream_waiting_for_events() -> AsyncGenerator[StreamEvent, None]:
+            yield create_text_content_part_start_event_mock()
+            # Wait for events to be added
+            await events_ready.wait()
+            yield create_text_delta_event_mock("Done")
+            yield create_text_output_done_event_mock()
+            yield create_text_content_part_end_event_mock()
+
+        handler = AgentCopilotResponseHandler(
+            stream_waiting_for_events(),
+            mcp_tool_queue=mcp_queue,
+            rolling_buffer_size=5,
+        )
+
+        async def stream_and_collect():
+            async for _ in handler.stream():
+                pass
+
+        async def add_events():
+            await asyncio.sleep(0.01)
+            # Add write and train events in correct order (write first, then train)
+            await mcp_queue.put(
+                MCPToolCall(tool_name=MCP_TOOL_WRITE_PROJECT_FILE, status="completed")
+            )
+            await mcp_queue.put(
+                MCPToolCall(tool_name=MCP_TOOL_TRAIN_MODEL, status="completed")
+            )
+            events_ready.set()
+
+        await asyncio.gather(stream_and_collect(), add_events())
+
+        # Verify tool calls were tracked
+        assert len(handler._tracked_tool_calls) >= 2
+        assert handler.is_model_up_to_date is True

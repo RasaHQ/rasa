@@ -35,6 +35,7 @@ from rasa.builder.copilot.models import (
     ExceptionContent,
     GeneratedContent,
     MCPToolCall,
+    MCPToolCallStatus,
     ResponseCategory,
     ResponseCompleteness,
     TodoItem,
@@ -49,6 +50,7 @@ from rasa.builder.copilot.response_handling.constants import (
     EXCEPTION_RESPONSE,
     PREDICTION_RESPONSES,
 )
+from rasa.builder.copilot.response_handling.event_stream_utils import TaskManager
 from rasa.builder.copilot.response_handling.utils import (
     extract_text_by_categories,
     extract_text_content_from_events,
@@ -188,7 +190,10 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         last_write_index = -1
 
         for i, call in enumerate(self._tracked_tool_calls):
-            if call.tool_name == MCP_TOOL_TRAIN_MODEL and call.status == "completed":
+            if (
+                call.tool_name == MCP_TOOL_TRAIN_MODEL
+                and call.status == MCPToolCallStatus.COMPLETED
+            ):
                 last_completed_train_index = i
             elif (
                 call.tool_name
@@ -196,7 +201,7 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
                     MCP_TOOL_WRITE_PROJECT_FILE,
                     MCP_TOOL_UPDATE_MULTIPLE_FILES,
                 )
-                and call.status == "completed"
+                and call.status == MCPToolCallStatus.COMPLETED
             ):
                 last_write_index = i
 
@@ -252,39 +257,50 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         appropriate for cleanup after exceptions where we don't want to
         send potentially incomplete/stale events to the client.
         """
-        if self._mcp_tool_queue is not None:
-            drained_mcp_count = 0
-            try:
-                while True:
-                    mcp_event = self._mcp_tool_queue.get_nowait()
-                    # Track drained tool calls for is_model_up_to_date accuracy
-                    self._tracked_tool_calls.append(mcp_event)
-                    drained_mcp_count += 1
-            except asyncio.QueueEmpty:
-                pass
-            if drained_mcp_count > 0:
-                structlogger.debug(
-                    "copilot_response_handler.drain_queues.mcp_drained",
-                    drained_count=drained_mcp_count,
-                )
+        self._drain_mcp_queue()
+        self._drain_plan_queue(capture_final_plan)
 
-        if self._plan_queue is not None:
-            drained_plan_count = 0
-            try:
-                while True:
-                    plan_event = self._plan_queue.get_nowait()
-                    drained_plan_count += 1
-                    # Capture the final plan if requested (for persistence)
-                    if capture_final_plan:
-                        self._final_plan = plan_event.tasks
-            except asyncio.QueueEmpty:
-                pass
-            if drained_plan_count > 0:
-                structlogger.debug(
-                    "copilot_response_handler.drain_queues.plan_drained",
-                    drained_count=drained_plan_count,
-                    captured_final_plan=capture_final_plan,
-                )
+    def _drain_mcp_queue(self) -> None:
+        """Drain the MCP tool queue, tracking events for model status."""
+        if self._mcp_tool_queue is None:
+            return
+
+        drained_count = 0
+        try:
+            while True:
+                mcp_event = self._mcp_tool_queue.get_nowait()
+                self._tracked_tool_calls.append(mcp_event)
+                drained_count += 1
+        except asyncio.QueueEmpty:
+            pass
+
+        if drained_count > 0:
+            structlogger.debug(
+                "copilot_response_handler.drain_queues.mcp_drained",
+                drained_count=drained_count,
+            )
+
+    def _drain_plan_queue(self, capture_final_plan: bool) -> None:
+        """Drain the plan queue, optionally capturing the final plan."""
+        if self._plan_queue is None:
+            return
+
+        drained_count = 0
+        try:
+            while True:
+                plan_event = self._plan_queue.get_nowait()
+                drained_count += 1
+                if capture_final_plan:
+                    self._final_plan = plan_event.tasks
+        except asyncio.QueueEmpty:
+            pass
+
+        if drained_count > 0:
+            structlogger.debug(
+                "copilot_response_handler.drain_queues.plan_drained",
+                drained_count=drained_count,
+                captured_final_plan=capture_final_plan,
+            )
 
     def _reset_for_content_part(self) -> None:
         """Reset the handler for processing a new content part.
@@ -410,6 +426,134 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
                     event_info="No plan update events to yield",
                 )
 
+    def _process_plan_task_queue_event(self, event: TodoPlanUpdate) -> None:
+        """Process a plan update event to capture the current plan state.
+
+        Args:
+            event: The plan update event containing the current task list.
+        """
+        self._final_plan = event.tasks
+        structlogger.debug(
+            "copilot_response_handler._process_plan_task_queue_event.plan_captured",
+            task_count=len(self._final_plan),
+            task_statuses=[t.status for t in self._final_plan],
+        )
+
+    def _process_tool_call_queue_event(self, event: MCPToolCall) -> None:
+        """Process an MCP tool call event for tracking and document retrieval.
+
+        Args:
+            event: The MCP tool call event to process.
+        """
+        # Track tool calls for is_model_up_to_date check
+        self._tracked_tool_calls.append(event)
+        # Update retrieved documents if this is a document search result
+        if is_document_retrieval_mcp_tool_output_event(event):
+            self._update_retrieved_documents(event)
+
+    async def _merged_event_stream(
+        self,
+    ) -> AsyncGenerator[Union[StreamEvent, MCPToolCall, TodoPlanUpdate], None]:
+        """Yield events from both the LLM stream and queues concurrently.
+
+        This method uses asyncio.wait() to monitor both the LLM response stream
+        and the MCP/plan queues simultaneously. Events are yielded immediately
+        as they become available from either source, ensuring that queue events
+        (like MCP tool "called" status) are sent to the frontend in real-time
+        rather than being batched when stream events arrive.
+
+        Yields:
+            Union[StreamEvent, MCPToolCall, TodoPlanUpdate]: Events from either
+                the LLM stream or the queues, in the order they become available.
+        """
+        task_manager = TaskManager(
+            stream_iterator=self._response_stream,
+            mcp_queue=self._mcp_tool_queue,
+            plan_queue=self._plan_queue,
+            process_mcp_event=self._process_tool_call_queue_event,
+            process_plan_event=self._process_plan_task_queue_event,
+        )
+
+        try:
+            async for event in self._run_merged_event_loop(task_manager):
+                yield event
+        except Exception as e:
+            structlogger.exception(
+                "copilot_response_handler._merged_event_stream.error",
+                event_info="Error in merged event stream",
+                error=str(e),
+            )
+            raise
+        finally:
+            await task_manager.cleanup()
+
+    async def _run_merged_event_loop(
+        self, task_manager: TaskManager
+    ) -> AsyncGenerator[Union[StreamEvent, MCPToolCall, TodoPlanUpdate], None]:
+        """Run the main event loop for merged stream processing.
+
+        Real-time processing is achieved by creating asyncio tasks for each source
+        (stream, MCP queue, plan queue) in create_tasks_if_needed(), then using
+        asyncio.wait(..., return_when=FIRST_COMPLETED) so we yield as soon as any
+        source has an event, rather than blocking on one source at a time.
+
+        Args:
+            task_manager: The task manager handling task lifecycle.
+
+        Yields:
+            Events from the stream or queues as they become available.
+        """
+        while True:
+            # Queue tasks (MCP, plan) are created regardless of stream state; the
+            # stream task is only added when the stream is not yet exhausted.
+            tasks, task_types = task_manager.create_tasks_if_needed()
+
+            if not tasks:
+                break
+
+            # Stream exhaustion is set in process_completed_task() when the stream
+            # task raises StopAsyncIteration. We only notice it on the *next*
+            # iteration: no new stream task is created, but queue tasks are still
+            # present, so we didn't break above. Drain remaining queue events and exit.
+            if task_manager.stream_exhausted:
+                async for event in self._handle_stream_exhausted(task_manager):
+                    yield event
+                break
+
+            # yield as soon as any task completes (real-time delivery).
+            done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+
+            # Process all completed tasks and yield their events
+            for completed_task in done:
+                task_type = task_types[completed_task]
+                result = task_manager.process_completed_task(completed_task, task_type)
+                if result is not None:
+                    yield result
+
+    async def _handle_stream_exhausted(
+        self, task_manager: TaskManager
+    ) -> AsyncGenerator[Union[MCPToolCall, TodoPlanUpdate], None]:
+        """Yield remaining queue events after the LLM stream ends.
+
+        Queue events (MCP tool calls, plan updates) may arrive asynchronously
+        during LLM processing. When the stream ends, we must drain any pending
+        events so the frontend shows accurate final state (e.g., tool completion
+        status, final plan) rather than stale "in progress" indicators.
+
+        Args:
+            task_manager: The task manager to drain remaining events from.
+
+        Yields:
+            Any remaining queue events that were ready.
+        """
+        # Drain any ready queue events
+        for event in await task_manager.drain_remaining_queue_events():
+            yield event
+
+        # Final non-blocking drain of queues
+        async for queued_event in self._yield_queued_events():
+            yield queued_event
+
     async def stream(self) -> AsyncGenerator[CopilotOutput, None]:
         """Stream and process Copilot responses from the response stream.
 
@@ -419,17 +563,12 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
 
         It also manages:
         - Planning context lifecycle (ContextVar initialization/cleanup)
-        - Queue draining for MCP tool calls and planning updates
-        - Interleaving of StreamEvents with MCP/planning events
+        - Concurrent monitoring of MCP tool calls and planning updates
+        - Real-time interleaving of StreamEvents with MCP/planning events
 
-        Queue events (MCP tool calls, plan updates) are yielded:
-        - After each stream event from the LLM
-        - After text content streaming completes
-        - At the end of the stream
-
-        Note: Queue events may be delayed during long-running tool calls where
-        the LLM stream is blocked waiting for tool results. This is a limitation
-        of the current architecture where queue polling is tied to stream events.
+        Queue events (MCP tool calls, plan updates) are yielded immediately as
+        they become available through concurrent monitoring, ensuring real-time
+        updates to the frontend
 
         Yields:
             CopilotOutput: Processed output objects including text content, controlled
@@ -448,21 +587,21 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
             self._plan_queue_token = set_plan_queue(self._plan_queue)
 
         try:
-            async for stream_event in self._response_stream:
-                # Yield and process any queued events (MCP tool calls, plan updates)
-                # that have accumulated since the last stream event
-                async for queued_event in self._yield_queued_events():
-                    yield queued_event
+            # Use merged event stream for concurrent monitoring of LLM stream
+            # and queues. This ensures queue events are yielded immediately
+            # rather than being batched when stream events arrive.
+            async for event in self._merged_event_stream():
+                # Handle queue events (MCP tool calls, plan updates) - yield directly
+                if isinstance(event, (MCPToolCall, TodoPlanUpdate)):
+                    yield event
+                    continue
 
-                # Check if the stream event signals the start of the text content part
-                # streaming.
-                if is_text_content_part_start_event(stream_event):
+                # Handle stream events - check if it signals the start of
+                # text content part streaming
+                if is_text_content_part_start_event(event):
                     self._reset_for_content_part()
                     async for generated_content in self._stream_text_content_part():
                         yield generated_content
-                    # After text streaming, yield any queued events that accumulated
-                    async for queued_event in self._yield_queued_events():
-                        yield queued_event
 
                 # TODO: Add handling for other types of the content parts
                 #      (reasoning, tool calls, audio, refusals, etc.)
@@ -470,11 +609,6 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
                 # For now, continue processing until the stream ends naturally
                 # (don't break on non-text events as the Agent SDK sends many
                 # event types before text content parts)
-
-            # Final drain of queues to catch any remaining events
-            # (tools may have added events after the last stream event)
-            async for queued_event in self._yield_queued_events():
-                yield queued_event
 
         except Exception as e:
             structlogger.error(
