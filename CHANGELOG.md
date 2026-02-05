@@ -10,6 +10,30 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.9] - 2026-02-05
+                        
+Rasa Pro 3.15.9 (2026-02-05)                             
+### Bugfixes
+- [#4489](https://github.com/rasahq/rasa-private/issues/4489): Upgrade Keras to 3.12.1 to address CVE-2026-0897.
+- [#4125](https://github.com/rasahq/rasa-private/issues/4125): Fixed `language` parameter in RimeTTS configuration to be passed correctly to the Rime API.
+  Temporarily changed RimeTTS to non-streaming input mode as a workaround for a Rime API bug that impacts conversation experience; audio is now generated from the complete response at once.
+
+
+## [3.15.8] - 2026-01-26
+                        
+Rasa Pro 3.15.8 (2026-01-26)                             
+### Bugfixes
+- [#4438](https://github.com/rasahq/rasa-private/issues/4438): Update azure-core to 1.38.0 to address CVE-2026-21226.
+
+
+## [3.15.7] - 2026-01-21
+                        
+Rasa Pro 3.15.7 (2026-01-21)                             
+### Bugfixes
+- [#4268](https://github.com/rasahq/rasa-private/issues/4268): Fixed e2e test coverage report to correctly track coverage per flow. Each flow now appears as a separate entry with accurate coverage percentages. Additionally, `call`/`link` steps and `collect` steps with prefilled slots are now properly marked as visited.
+- [#4421](https://github.com/rasahq/rasa-private/issues/4421): Fix OAuth2AuthStrategy to use URL-encoded parameters with Basic Authentication to fetch access token
+
+
 ## [3.15.6] - 2026-01-15
 
 Rasa Pro 3.15.6 (2026-01-15)                             
@@ -217,6 +241,31 @@ Rasa Pro 3.15.0 (2025-11-26)
 
 ### Miscellaneous internal changes
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
+
+## [3.14.13] - 2026-02-05
+                         
+Rasa Pro 3.14.13 (2026-02-05)
+### Bugfixes
+- [#4489](https://github.com/rasahq/rasa-private/issues/4489): Upgrade Keras to 3.12.1 to address CVE-2026-0897.
+### Miscellaneous internal changes
+- [#4507](https://github.com/rasahq/rasa-private/issues/4507)
+
+
+## [3.14.12] - 2026-01-26
+                         
+Rasa Pro 3.14.12 (2026-01-26)                              
+### Bugfixes
+- [#4455](https://github.com/rasahq/rasa-private/issues/4455): Update azure-core to 1.38.0 to address CVE-2026-21226.
+
+
+## [3.14.11] - 2026-01-21
+                         
+Rasa Pro 3.14.11 (2026-01-21)                              
+### Bugfixes
+- [#4268](https://github.com/rasahq/rasa-private/issues/4268): Fixed e2e test coverage report to correctly track coverage per flow. Each flow now appears as a separate entry with accurate coverage percentages. Additionally, `call`/`link` steps and `collect` steps with prefilled slots are now properly marked as visited.
+- [#4326](https://github.com/rasahq/rasa-private/issues/4326): Throw error when duplicate fixtures are found in the same file or across files.
+- [#4421](https://github.com/rasahq/rasa-private/issues/4421): Fix OAuth2AuthStrategy to use URL-encoded parameters with Basic Authentication to fetch access token
+
 
 ## [3.14.10] - 2026-01-15
                          
