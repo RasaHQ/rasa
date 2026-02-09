@@ -26,6 +26,9 @@ from rasa.core.policies.flows.flow_step_result import (
     ContinueFlowWithNextStep,
     PauseFlowReturnPrediction,
 )
+from rasa.dialogue_understanding.patterns.cannot_handle import (
+    CannotHandlePatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -51,6 +54,9 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
 from rasa.engine.language import Language
+from rasa.shared.constants import (
+    RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
+)
 from rasa.shared.core.constants import (
     GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE,
     SILENCE_TIMEOUT_CHANNEL_KEY,
@@ -2797,3 +2803,65 @@ class TestGetParentUserFlowFrame:
         # Should return parent_frame (immediate parent of child_frame)
         assert result == parent_frame
         assert result.flow_id == "parent_flow"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "reason, expected_action",
+    [
+        (
+            RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
+            "utter_no_relevant_answer_found",
+        ),
+        (
+            "cannot_handle_default",
+            "utter_ask_rephrase",
+        ),
+    ],
+    ids=["no_relevant_answer", "default_reason"],
+)
+async def test_pattern_cannot_handle_routes_by_reason(
+    reason: str,
+    expected_action: str,
+) -> None:
+    """Test that pattern_cannot_handle routes to the correct utterance.
+
+    When context.reason is 'cannot_handle_no_relevant_answer'
+    (e.g. enterprise search returns no documents), the flow should select
+    'utter_no_relevant_answer_found'. For the default reason it should
+    fall back to 'utter_ask_rephrase'.
+    """
+    # Load the real default pattern flows so pattern_cannot_handle is available
+    all_flows = flows_from_str_including_defaults(
+        """
+        flows:
+          dummy_flow:
+            description: placeholder
+            steps:
+            - id: "1"
+              action: utter_hello
+        """
+    )
+
+    stack = DialogueStack(
+        frames=[
+            CannotHandlePatternFlowStackFrame(reason=reason),
+        ]
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[ActionExecuted(action_name="action_listen")],
+    )
+    tracker.update_stack(stack)
+
+    available_actions = [
+        "utter_ask_rephrase",
+        "utter_no_relevant_answer_found",
+        "utter_cannot_handle",
+    ]
+
+    prediction = await flow_executor.advance_flows(
+        tracker, available_actions, all_flows, slots=[]
+    )
+
+    assert prediction.action_name == expected_action

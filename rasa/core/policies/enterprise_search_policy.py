@@ -574,7 +574,9 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
         if not documents.results:
             structlogger.info(f"{logger_key}.no_documents")
-            return self._create_prediction_cannot_handle(domain, tracker)
+            return self._create_prediction_cannot_handle(
+                domain, tracker, RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER
+            )
 
         # Prepare the prompt for LLM
         prompt = self._render_prompt(tracker, documents.results)

@@ -987,13 +987,18 @@ async def test_enterprise_search_policy_no_retrieval(
             "search",
             return_value=search_results,
         ):
+            domain = Domain.empty()
             await mocked_enterprise_search_policy.predict_action_probabilities(
                 tracker=tracker,
-                domain=Domain.empty(),
+                domain=domain,
                 endpoints=None,
             )
 
-            mock_create_prediction_cannot_handle.assert_called_once()
+            mock_create_prediction_cannot_handle.assert_called_once_with(
+                domain,
+                tracker,
+                RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
+            )
 
 
 @pytest.mark.parametrize(

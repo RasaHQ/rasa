@@ -108,7 +108,4 @@ def test_response_pattern_cannot_handle(server_url: str) -> None:
 
     # pattern cannot handle is triggered
     assert response_messages is not None, "Failed to retrieve response messages"
-    assert (
-        response_messages[0]["text"]
-        == "I didn't quite understand that. Can you rephrase?"
-    )
+    assert response_messages[0]["text"] == "I’m sorry, I can’t help with that."
