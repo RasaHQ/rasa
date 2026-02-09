@@ -3,13 +3,18 @@
 
 import pytest
 
-from rasa.core.channels.voice_stream.tts.azure import AzureTTS
+from rasa.core.channels.voice_stream.tts.azure import AzureTTS, AzureTTSConfig
 
 
 @pytest.mark.asyncio
 async def test_azure_tts(tmp_path):
     output_path = tmp_path / "output.wav"
-    tts_engine = AzureTTS()
+    tts_engine = AzureTTS(
+        AzureTTSConfig(
+            speech_region="germanywestcentral",
+            language="en-US",
+        )
+    )
     text = "hello my name is Edgar"
     audio_bytes = b""
     async for chunk in tts_engine.synthesize(text):

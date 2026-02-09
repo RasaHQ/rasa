@@ -12,8 +12,12 @@ async def test_deepgram_tts(tmp_path):
     tts_engine = DeepgramTTS()
     text = "hello my name is Edgar"
     audio_bytes = b""
-    async for chunk in tts_engine.synthesize(text):
-        audio_bytes += chunk
+    try:
+        await tts_engine.connect()
+        async for chunk in tts_engine.synthesize(text):
+            audio_bytes += chunk
+    finally:
+        await tts_engine.close_connection()
     output_path.write_bytes(audio_bytes)
     assert output_path.exists()
     assert output_path.stat().st_size > 0
