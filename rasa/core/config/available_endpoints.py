@@ -113,6 +113,7 @@ class AvailableEndpoints:
         lock_store = read_endpoint_config(endpoint_file, endpoint_type="lock_store")
         event_broker = read_endpoint_config(endpoint_file, endpoint_type="event_broker")
         vector_store = read_endpoint_config(endpoint_file, endpoint_type="vector_store")
+        timer_store = read_endpoint_config(endpoint_file, endpoint_type="timer_store")
         raw_mcp_servers = read_property_config_from_endpoints_file(
             endpoint_file, property_name=MCP_SERVERS_KEY
         )
@@ -148,6 +149,7 @@ class AvailableEndpoints:
             model_groups,
             privacy,
             interaction_handling,
+            timer_store,
         )
 
     def __init__(
@@ -167,6 +169,7 @@ class AvailableEndpoints:
         interaction_handling: InteractionHandlingConfig = InteractionHandlingConfig(
             global_silence_timeout=GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE
         ),
+        timer_store: Optional[EndpointConfig] = None,
     ) -> None:
         """Create an `AvailableEndpoints` object."""
         self.config_file_path = config_file_path
@@ -182,3 +185,4 @@ class AvailableEndpoints:
         self.model_groups = model_groups
         self.privacy = privacy
         self.interaction_handling = interaction_handling
+        self.timer_store = timer_store

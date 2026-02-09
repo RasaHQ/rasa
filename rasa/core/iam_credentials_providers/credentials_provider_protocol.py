@@ -42,6 +42,7 @@ class SupportedServiceType(Enum):
     TRACKER_STORE = "tracker_store"
     EVENT_BROKER = "event_broker"
     LOCK_STORE = "lock_store"
+    TIMER_STORE = "timer_store"
 
 
 class IAMCredentialsProviderInput(BaseModel):

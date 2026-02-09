@@ -26,6 +26,7 @@ def deserialized_endpoint_config() -> Dict[str, Any]:
         "lock_store": EndpointConfig(url="some/lock/url"),
         "event_broker": EndpointConfig(url="some/event/broker/url"),
         "vector_store": EndpointConfig(url="some/vector/store/url"),
+        "timer_store": EndpointConfig(url="some/timer/store/url"),
         "mcp_servers": [
             {"name": "server_1", "url": "some/mcp/server_1/url", "type": "http"},
             {"name": "server_2", "url": "some/mcp/server_2/url", "type": "http"},
@@ -136,6 +137,9 @@ def test_available_endpoints_read_endpoints(
     )
     assert (
         available_endpoints.vector_store == deserialized_endpoint_config["vector_store"]
+    )
+    assert (
+        available_endpoints.timer_store == deserialized_endpoint_config["timer_store"]
     )
     expected_mcp_servers = [
         MCPServerConfig(name="server_1", url="some/mcp/server_1/url", type="http"),

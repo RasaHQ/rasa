@@ -49,6 +49,10 @@ SERVICE_CONFIG: Dict[Tuple[SupportedServiceType, str], str] = {
         SupportedServiceType.LOCK_STORE,
         REDIS_SERVICE_NAME,
     ): ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    (
+        SupportedServiceType.TIMER_STORE,
+        REDIS_SERVICE_NAME,
+    ): ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME,
 }
 
 
@@ -283,6 +287,11 @@ def create_aws_iam_credentials_provider(
         return AWSMSKafkaIAMCredentialsProvider()
 
     if provider_input.service_type == SupportedServiceType.LOCK_STORE:
+        return AWSElasticacheRedisIAMCredentialsProvider(
+            username=provider_input.username,
+            cluster_name=provider_input.cluster_name,
+        )
+    if provider_input.service_type == SupportedServiceType.TIMER_STORE:
         return AWSElasticacheRedisIAMCredentialsProvider(
             username=provider_input.username,
             cluster_name=provider_input.cluster_name,

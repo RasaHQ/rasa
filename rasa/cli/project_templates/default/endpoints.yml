@@ -32,6 +32,22 @@ action_endpoint:
 #    username: <username used for authentication>
 #    password: <password used for authentication>
 
+# Timer store which is used to manage background session timers.
+# By default timers are stored in memory.
+
+#timer_store:
+#    type: redis
+#    host: <host of the redis instance, e.g. localhost>
+#    port: <port of your redis instance, usually 6379>
+#    db: <number of your database within redis, e.g. 2>
+#    password: <password used for authentication>
+#    key_prefix: <optional alphanumeric value to prepend to timer keys, default: timer>
+#    use_ssl: <whether or not the communication is encrypted, default false>
+#    # High availability parameters
+#    deployment_mode: <standard, cluster, or sentinel>
+#    endpoints: <list of redis cluster/sentinel node addresses in the format host:port>
+#    sentinel_service: <name of the redis sentinel service, only used in sentinel mode>
+
 # Event broker which all conversation events should be streamed to.
 # https://rasa.com/docs/rasa-pro/production/event-brokers
 

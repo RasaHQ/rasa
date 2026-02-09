@@ -41,6 +41,23 @@ lock_store:
   #db: rasa
   #user: username
   #password: password
+# example of redis external timer store config
+timer_store:
+  type: redis
+  host: localhost
+  port: 6379
+  db: 2
+  username: username
+  password: password
+  key_prefix: timer
+  use_ssl: True
+  ssl_keyfile: "keyfile.key"
+  ssl_certfile: "certfile.crt"
+  ssl_ca_certs: "my-bundle.ca-bundle"
+  # high availability parameters
+  # deployment_mode: sentinel  # options: standard, cluster, or sentinel
+  # endpoints: ["sentinel1:26379", "sentinel1:26380", "sentinel1:26381"]  # list of redis cluster/sentinel node addresses in the format host:port
+  # sentinel_service: "my_service"  # name of the redis sentinel service, only used in sentinel mode
 action_endpoint:
   url: http://localhost:5055/webhook
   cafile: ./some_test_file

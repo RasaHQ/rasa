@@ -117,6 +117,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from rasa.core.config.available_endpoints import AvailableEndpoints
+    from rasa.core.timer_store import SessionTimerStore
     from rasa.privacy.privacy_manager import BackgroundPrivacyManager
 
 structlogger = structlog.get_logger()
@@ -143,11 +144,13 @@ class MessageProcessor:
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional["AvailableEndpoints"] = None,
         privacy_manager: Optional["BackgroundPrivacyManager"] = None,
+        timer_store: Optional["SessionTimerStore"] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
         self.nlg = generator
         self.tracker_store = tracker_store
         self.lock_store = lock_store
+        self.timer_store = timer_store
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
         self.model_filename, self.model_metadata, self.graph_runner = self._load_model(
