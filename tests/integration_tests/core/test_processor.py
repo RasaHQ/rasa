@@ -6,7 +6,7 @@ import structlog
 from pytest import CaptureFixture, MonkeyPatch
 
 from rasa.core.agent import Agent
-from rasa.core.channels import UserMessage
+from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.processor import MessageProcessor
 from rasa.dialogue_understanding.commands import (
     CorrectedSlot,
@@ -16,8 +16,13 @@ from rasa.dialogue_understanding.commands import (
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+)
 from rasa.shared.core.domain import SessionConfig
 from rasa.shared.core.events import (
+    ActionExecuted,
     ConversationInactive,
     ConversationResumed,
     Event,
@@ -27,6 +32,8 @@ from rasa.shared.core.events import (
     UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import METADATA_SESSION_ID
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import read_file
 from rasa.utils.endpoints import EndpointConfig
@@ -930,3 +937,110 @@ async def test_processor_inactive_state_with_other_events(
     tracker = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
     assert tracker is not None
     assert not tracker.inactive
+
+
+async def test_session_id_preserved_across_tracker_store_roundtrip(
+    default_agent: Agent,
+    monkeypatch: MonkeyPatch,
+):
+    """Session IDs are preserved when saving and retrieving tracker."""
+    channel = CollectingOutputChannel()
+    processor = default_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    await processor.handle_message(UserMessage("/greet", channel, sender_id))
+    tracker = await processor.tracker_store.retrieve(sender_id)
+    first_session_id = tracker.current_session_id
+    assert first_session_id is not None
+    for event in tracker.events:
+        assert event.metadata.get(METADATA_SESSION_ID) == first_session_id
+
+    monkeypatch.setattr(processor, "_has_session_expired", lambda _: True)
+    await processor.handle_message(UserMessage("/greet", channel, sender_id))
+
+    tracker = await processor.tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker is not None
+    second_session_id = tracker.current_session_id
+    assert second_session_id is not None
+    assert second_session_id != first_session_id
+
+    session_started_events = [
+        e for e in tracker.events if isinstance(e, SessionStarted)
+    ]
+    assert len(session_started_events) >= 2
+    assert (
+        session_started_events[0].metadata.get(METADATA_SESSION_ID) == first_session_id
+    )
+    assert (
+        session_started_events[1].metadata.get(METADATA_SESSION_ID) == second_session_id
+    )
+
+
+async def test_session_id_replay_preserves_original_metadata(
+    default_agent: Agent,
+    monkeypatch: MonkeyPatch,
+):
+    """Store roundtrip preserves session_id on events."""
+    channel = CollectingOutputChannel()
+    processor = default_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    await processor.handle_message(UserMessage("/greet", channel, sender_id))
+    monkeypatch.setattr(processor, "_has_session_expired", lambda _: True)
+    await processor.handle_message(UserMessage("/greet", channel, sender_id))
+
+    tracker = await processor.tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker is not None
+    events = list(tracker.events)
+    session_ids_in_events = {
+        e.metadata.get(METADATA_SESSION_ID)
+        for e in events
+        if e.metadata.get(METADATA_SESSION_ID)
+    }
+    assert len(session_ids_in_events) >= 2, "expected at least two distinct sessions"
+    assert tracker.current_session_id is not None
+    assert tracker.current_session_id in session_ids_in_events
+    events_with_current = [
+        e
+        for e in events
+        if e.metadata.get(METADATA_SESSION_ID) == tracker.current_session_id
+    ]
+    assert len(events_with_current) >= 1
+
+
+async def test_session_id_replay_does_not_inject_into_old_events(
+    default_agent: Agent,
+):
+    """Store roundtrip does not inject session_id into events that did not have it."""
+    processor = default_agent.processor
+    sender_id = uuid.uuid4().hex
+    new_session_id = "new-session-id-789"
+    stored_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("old message"),
+        ActionExecuted(
+            ACTION_SESSION_START_NAME, metadata={METADATA_SESSION_ID: new_session_id}
+        ),
+        SessionStarted(metadata={METADATA_SESSION_ID: new_session_id}),
+        ActionExecuted(
+            ACTION_LISTEN_NAME, metadata={METADATA_SESSION_ID: new_session_id}
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        stored_events,
+        domain=processor.domain,
+    )
+    await processor.tracker_store.save(tracker)
+
+    retrieved = await processor.tracker_store.retrieve_full_tracker(sender_id)
+    assert retrieved is not None
+    events = list(retrieved.events)
+    assert len(events) >= 7
+    for i in range(4):
+        assert METADATA_SESSION_ID not in events[i].metadata
+    for i in range(4, 7):
+        assert events[i].metadata[METADATA_SESSION_ID] == new_session_id
+    assert retrieved.current_session_id == new_session_id

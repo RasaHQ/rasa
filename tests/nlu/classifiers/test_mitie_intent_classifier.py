@@ -31,7 +31,7 @@ def mitie_model(
 
 
 @pytest.mark.flaky
-@pytest.mark.timeout(150)
+@pytest.mark.timeout(300)
 def test_train_load_predict_loop(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,

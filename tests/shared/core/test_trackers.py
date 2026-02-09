@@ -6,6 +6,7 @@ import os
 import tempfile
 import textwrap
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Text, Type
 
@@ -102,7 +103,12 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     METADATA_MODEL_ID,
+    METADATA_SESSION_ID,
     PREDICTED_CONFIDENCE_KEY,
+)
+from tests.conftest import (
+    with_session_id,
+    with_session_ids,
 )
 from tests.core.conftest import MockedMongoTrackerStore
 from tests.core.utilities import get_tracker, tracker_from_dialogue, user_uttered
@@ -158,13 +164,17 @@ def test_tracker_duplicate(moodbot_domain: Domain):
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
-async def test_tracker_store_storage_and_retrieval(store: TrackerStore):
+async def test_tracker_store_storage_and_retrieval(
+    store: TrackerStore, mock_session_id
+):
     tracker = await store.get_or_create_tracker("some-id")
     # the retrieved tracker should be empty
     assert tracker.sender_id == "some-id"
 
-    # Action listen should be in there
-    assert list(tracker.events) == [ActionExecuted(ACTION_LISTEN_NAME)]
+    # Action listen should be in there with session_id
+    expected = [with_session_id(ActionExecuted(ACTION_LISTEN_NAME), mock_session_id)]
+
+    assert list(tracker.events) == expected
 
     # lets log a test message
     intent = {"name": "greet", "confidence": 1.0}
@@ -1266,7 +1276,7 @@ def test_applied_events_with_loop_unhappy_path(
     assert applied == expected_applied_events
 
 
-def test_reading_of_trackers_with_legacy_form_events():
+def test_reading_of_trackers_with_legacy_form_events(mock_session_id: str):
     loop_name1 = "my loop"
     loop_name2 = "my form"
     tracker = DialogueStateTracker.from_dict(
@@ -1278,7 +1288,11 @@ def test_reading_of_trackers_with_legacy_form_events():
         ],
     )
 
-    expected_events = [ActiveLoop(loop_name1), LegacyForm(None), LegacyForm(loop_name2)]
+    expected_events = with_session_ids(
+        [ActiveLoop(loop_name1), LegacyForm(None), LegacyForm(loop_name2)],
+        mock_session_id,
+    )
+
     assert list(tracker.events) == expected_events
     assert tracker.active_loop.name == loop_name2
 
@@ -1295,7 +1309,9 @@ def test_writing_trackers_with_legacy_form_events():
         assert event["event"] == ActiveLoop.type_name
 
 
-def test_reading_of_trackers_with_legacy_form_validation_events():
+def test_reading_of_trackers_with_legacy_form_validation_events(
+    mock_session_id: str,
+):
     loop_name = "form"
     tracker = DialogueStateTracker.from_dict(
         "sender",
@@ -1306,12 +1322,16 @@ def test_reading_of_trackers_with_legacy_form_validation_events():
         ],
     )
 
-    expected_events = [
-        ActiveLoop(loop_name),
-        LegacyFormValidation(True),
-        LegacyFormValidation(False),
-    ]
+    expected_events = with_session_ids(
+        [
+            ActiveLoop(loop_name),
+            LegacyFormValidation(True),
+            LegacyFormValidation(False),
+        ],
+        mock_session_id,
+    )
     actual_events = list(tracker.events)
+
     assert list(tracker.events) == expected_events
     assert not actual_events[1].is_interrupted
     assert actual_events[2].is_interrupted
@@ -1457,6 +1477,7 @@ def test_policy_prediction_reflected_in_tracker_state():
         "active_loop": {},
         "latest_action": {"action_name": "action_listen"},
         "latest_action_name": "action_listen",
+        "current_session_id": None,
     }
 
     assert tracker_state == expected_state
@@ -1547,8 +1568,7 @@ async def test_fill_slots_for_policy_entities():
     assert tracker.slots[nlu_entity].value == nlu_entity_value
     assert tracker.slots[policy_entity].value == policy_entity_value
 
-    for actual, expected in zip(tracker.events, expected_events):
-        assert actual == expected
+    assert list(tracker.events) == expected_events
 
 
 def test_tracker_fingerprinting_consistency():
@@ -1691,6 +1711,365 @@ def test_assistant_id_is_not_added_to_events_with_assistant_id():
         ActionExecuted(action_name="test", metadata={ASSISTANT_ID_KEY: "old_name"})
     )
     assert tracker.events[-1].metadata[ASSISTANT_ID_KEY] == "old_name"
+
+
+@pytest.mark.parametrize(
+    "setup_events,trigger_event,expected_log_count",
+    [
+        ([], SessionStarted(), 1),
+        ([], ActionExecuted(action_name=ACTION_LISTEN_NAME), 1),
+        # SessionStarted after multiple non-session events is a new session
+        (
+            [ActionExecuted(action_name=ACTION_LISTEN_NAME), UserUttered(text="hi")],
+            SessionStarted(),
+            2,
+        ),
+        (
+            [SessionStarted(), ActionExecuted(action_name="test")],
+            SessionStarted(),
+            2,
+        ),
+        (
+            [SessionStarted(), ConversationInactive()],
+            ConversationResumed(),
+            2,
+        ),
+        (
+            [SessionStarted(), ConversationInactive()],
+            UserUttered(text="hello"),
+            2,
+        ),
+        # Restarted triggers action_session_start which generates new session_id
+        (
+            [SessionStarted(), UserUttered(text="hi"), Restarted()],
+            ActionExecuted(action_name=ACTION_SESSION_START_NAME),
+            2,
+        ),
+    ],
+)
+def test_session_id_regenerated_on_certain_events(
+    setup_events, trigger_event, expected_log_count
+):
+    """Certain events should generate a new unique session_id."""
+    tracker = DialogueStateTracker("test", [])
+
+    with structlog.testing.capture_logs() as caplog:
+        for event in setup_events:
+            tracker.update(event)
+
+        initial_session_id = tracker.current_session_id
+        tracker.update(trigger_event)
+
+        logs = filter_logs(
+            caplog,
+            event="rasa.shared.core.trackers.dialogue_state_tracker.generate_session_id",
+            log_level="debug",
+        )
+        assert len(logs) == expected_log_count
+        assert (
+            "Generated new session ID for the conversation." in caplog[0]["event_info"]
+        )
+
+    assert tracker.current_session_id is not None
+    parsed_uuid = uuid.UUID(tracker.current_session_id)
+    assert parsed_uuid.version == 4
+    assert tracker.current_session_id != initial_session_id
+    assert (
+        tracker.events[-1].metadata[METADATA_SESSION_ID] == tracker.current_session_id
+    )
+
+
+def test_session_id_preserved_during_initial_setup():
+    """SessionStarted after non-session first event is initial setup, not restart."""
+    tracker = DialogueStateTracker("test", [])
+
+    with structlog.testing.capture_logs() as caplog:
+        # First event generates session_id
+        tracker.update(ActionExecuted(action_name=ACTION_LISTEN_NAME))
+        initial_session_id = tracker.current_session_id
+
+        # SessionStarted as second event is initial setup - should NOT regenerate
+        tracker.update(SessionStarted())
+
+        logs = filter_logs(
+            caplog,
+            event="rasa.shared.core.trackers.dialogue_state_tracker.generate_session_id",
+            log_level="debug",
+        )
+        # Only one log - from the first event
+        assert len(logs) == 1
+
+    assert tracker.current_session_id is not None
+    assert tracker.current_session_id == initial_session_id
+    assert (
+        tracker.events[-1].metadata[METADATA_SESSION_ID] == tracker.current_session_id
+    )
+
+
+def test_session_id_preserved_on_replay():
+    """Session_ids from serialized events are preserved during replay."""
+    first_session_id = "first-session-uuid"
+    second_session_id = "second-session-uuid"
+    events_dict = [
+        # First session
+        {
+            "event": "session_started",
+            "metadata": {METADATA_SESSION_ID: first_session_id},
+        },
+        {
+            "event": "action",
+            "name": "action_listen",
+            "metadata": {METADATA_SESSION_ID: first_session_id},
+        },
+        # Second session (after expiry)
+        {
+            "event": "action",
+            "name": ACTION_SESSION_START_NAME,
+            "metadata": {METADATA_SESSION_ID: second_session_id},
+        },
+        {
+            "event": "session_started",
+            "metadata": {METADATA_SESSION_ID: second_session_id},
+        },
+        {
+            "event": "action",
+            "name": "action_listen",
+            "metadata": {METADATA_SESSION_ID: second_session_id},
+        },
+    ]
+
+    with structlog.testing.capture_logs() as caplog:
+        tracker = DialogueStateTracker.from_dict("test", events_dict)
+
+        logs = filter_logs(
+            caplog,
+            event="rasa.shared.core.trackers.dialogue_state_tracker.generate_session_id",
+            log_level="debug",
+        )
+        assert len(logs) == 0
+
+    # current_session_id should be the last session
+    assert tracker.current_session_id == second_session_id
+
+    # Each event should keep its original session_id
+    assert tracker.events[0].metadata[METADATA_SESSION_ID] == first_session_id
+    assert tracker.events[1].metadata[METADATA_SESSION_ID] == first_session_id
+    assert tracker.events[2].metadata[METADATA_SESSION_ID] == second_session_id
+    assert tracker.events[3].metadata[METADATA_SESSION_ID] == second_session_id
+    assert tracker.events[4].metadata[METADATA_SESSION_ID] == second_session_id
+
+
+def test_backward_compatibility_events_without_session_id():
+    """Old events without session_id still deserialize correctly."""
+    events_dict = [
+        {"event": "session_started", "timestamp": 1234567890},
+        {"event": "action", "name": "action_listen", "timestamp": 1234567891},
+    ]
+
+    with structlog.testing.capture_logs() as caplog:
+        tracker = DialogueStateTracker.from_dict("test", events_dict)
+
+        logs = filter_logs(
+            caplog,
+            event="rasa.shared.core.trackers.dialogue_state_tracker.generate_session_id",
+            log_level="debug",
+        )
+        assert len(logs) == 0
+
+    assert len(tracker.events) == 2
+    # Old events without session_id remain without session_id
+    assert tracker.current_session_id is None
+    for event in tracker.events:
+        assert METADATA_SESSION_ID not in event.metadata
+
+
+def test_replay_migration_old_events_then_new_events_with_session_id():
+    """Migration scenario: old events without and new events with session_id.
+
+    This tests the case where a conversation started before the session_id feature
+    was added, then continued after the feature was deployed. During replay:
+    - Old events should NOT get session_id injected
+    - New events should keep their original session_id
+    - Tracker's current_session_id should be set from the new events
+    """
+    new_session_id = "new-session-uuid-456"
+    events_dict = [
+        # Old session (before session_id feature)
+        {"event": "session_started", "timestamp": 1000},
+        {"event": "action", "name": "action_listen", "timestamp": 1001},
+        {
+            "event": "user",
+            "text": "hello",
+            "timestamp": 1002,
+            "parse_data": {"intent": {}, "entities": [], "text": "hello"},
+        },
+        # New session (after session_id feature was added)
+        {
+            "event": "action",
+            "name": ACTION_SESSION_START_NAME,
+            "timestamp": 2000,
+            "metadata": {METADATA_SESSION_ID: new_session_id},
+        },
+        {
+            "event": "session_started",
+            "timestamp": 2001,
+            "metadata": {METADATA_SESSION_ID: new_session_id},
+        },
+        {
+            "event": "action",
+            "name": "action_listen",
+            "timestamp": 2002,
+            "metadata": {METADATA_SESSION_ID: new_session_id},
+        },
+    ]
+
+    tracker = DialogueStateTracker.from_dict("test", events_dict)
+
+    # Old events should NOT have session_id injected
+    assert METADATA_SESSION_ID not in tracker.events[0].metadata
+    assert METADATA_SESSION_ID not in tracker.events[1].metadata
+    assert METADATA_SESSION_ID not in tracker.events[2].metadata
+
+    # New events should keep their original session_id
+    assert tracker.events[3].metadata[METADATA_SESSION_ID] == new_session_id
+    assert tracker.events[4].metadata[METADATA_SESSION_ID] == new_session_id
+    assert tracker.events[5].metadata[METADATA_SESSION_ID] == new_session_id
+
+    # Tracker's current_session_id should be the new session
+    assert tracker.current_session_id == new_session_id
+
+
+def test_session_id_end_to_end_with_resume():
+    """End-to-end test: first session → inactive → resume with new session."""
+    tracker = DialogueStateTracker("test", [])
+
+    with structlog.testing.capture_logs() as caplog:
+        # First session
+        tracker.update(SessionStarted())
+        tracker.update(ActionExecuted(action_name="action_listen"))
+        tracker.update(UserUttered(text="hello"))
+        first_session_id = tracker.current_session_id
+
+        # Validate UUID4 format
+        parsed_uuid = uuid.UUID(first_session_id)
+        assert parsed_uuid.version == 4
+
+        # All events in first session have same session_id
+        events_list = list(tracker.events)
+        assert all(
+            e.metadata.get(METADATA_SESSION_ID) == first_session_id
+            for e in events_list[:3]
+        )
+
+        # current_state() includes session_id
+        state = tracker.current_state()
+        assert "current_session_id" in state
+        assert state["current_session_id"] == first_session_id
+
+        # Conversation becomes inactive
+        tracker.update(ConversationInactive())
+        assert tracker.inactive is True
+
+        # Resume with ConversationResumed - should start new session
+        tracker.update(ConversationResumed())
+        second_session_id = tracker.current_session_id
+
+        assert second_session_id != first_session_id
+        assert tracker.events[-1].metadata[METADATA_SESSION_ID] == second_session_id
+
+        # Add more events in resumed session
+        tracker.update(ActionExecuted(action_name="action_listen"))
+        tracker.update(UserUttered(text="world"))
+
+        # New events should have second session_id
+        assert tracker.events[-1].metadata[METADATA_SESSION_ID] == second_session_id
+        assert tracker.events[-2].metadata[METADATA_SESSION_ID] == second_session_id
+
+    # Verify debug logs: 2 session_ids generated (SessionStarted + ConversationResumed)
+    logs = filter_logs(
+        caplog,
+        event="rasa.shared.core.trackers.dialogue_state_tracker.generate_session_id",
+        log_level="debug",
+    )
+    assert len(logs) == 2
+    assert "Generated new session ID for the conversation." in caplog[0]["event_info"]
+
+
+def test_session_id_multiple_rapid_session_starts():
+    """Each SessionStarted event should generate a unique session_id."""
+    tracker = DialogueStateTracker("test", [])
+    session_ids = set()
+
+    with structlog.testing.capture_logs() as logs:
+        for _ in range(5):
+            tracker.update(SessionStarted())
+            session_ids.add(tracker.current_session_id)
+
+    assert len(session_ids) == 5
+
+    # Each SessionStarted event should have its own session_id
+    session_started_events = [
+        e for e in tracker.events if isinstance(e, SessionStarted)
+    ]
+    event_session_ids = [
+        e.metadata[METADATA_SESSION_ID] for e in session_started_events
+    ]
+    assert len(set(event_session_ids)) == 5
+    assert tracker.current_session_id == event_session_ids[-1]
+
+    # Verify 5 debug logs were emitted
+    session_id_logs = filter_logs(
+        logs,
+        event="rasa.shared.core.trackers.dialogue_state_tracker.generate_session_id",
+        log_level="debug",
+    )
+    assert len(session_id_logs) == 5
+    logged_session_ids = {log["session_id"] for log in session_id_logs}
+    assert logged_session_ids == session_ids
+
+
+def test_session_id_concurrent_session_operations():
+    """Concurrent session operations should each get unique session_ids."""
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    results = []
+    errors = []
+
+    def create_session_and_events():
+        """Create a tracker, start session, add events, return session_id."""
+        try:
+            tracker = DialogueStateTracker(
+                f"test_{threading.current_thread().name}", []
+            )
+            tracker.update(SessionStarted())
+            session_id = tracker.current_session_id
+            tracker.update(ActionExecuted(action_name="action_listen"))
+            tracker.update(UserUttered(text="hello"))
+
+            # Verify all events have same session_id
+            for event in tracker.events:
+                assert event.metadata.get(METADATA_SESSION_ID) == session_id
+
+            return session_id
+        except Exception as e:
+            errors.append(str(e))
+            return None
+
+    # Run 10 concurrent session creations
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(create_session_and_events) for _ in range(10)]
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                results.append(result)
+
+    # No errors should have occurred
+    assert not errors, f"Errors during concurrent operations: {errors}"
+
+    # All 10 session_ids should be unique
+    assert len(results) == 10
+    assert len(set(results)) == 10
 
 
 def test_update_stack_event_applies():

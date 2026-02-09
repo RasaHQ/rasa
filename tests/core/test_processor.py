@@ -134,16 +134,17 @@ from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_NAME_KEY,
     METADATA_MODEL_ID,
+    METADATA_SESSION_ID,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import (
     TrainedAsync,
-    with_assistant_id,
     with_assistant_ids,
-    with_model_id,
     with_model_ids,
+    with_session_id,
+    with_session_ids,
 )
 from tests.utilities import filter_logs
 
@@ -324,13 +325,19 @@ async def test_reminder_scheduled(
 
     # retrieve the updated tracker
     t = await default_processor.tracker_store.retrieve(sender_id)
+    session_id = t.current_session_id
 
-    assert t.events[1] == UserUttered("test")
-    assert t.events[2] == ActionExecuted("action_schedule_reminder")
+    assert t.events[1] == with_session_id(UserUttered("test"), session_id)
+    assert t.events[2] == with_session_id(
+        ActionExecuted("action_schedule_reminder"), session_id
+    )
     assert isinstance(t.events[3], ReminderScheduled)
-    assert t.events[4] == UserUttered(
-        f"{EXTERNAL_MESSAGE_PREFIX}remind",
-        intent={INTENT_NAME_KEY: "remind", IS_EXTERNAL: True},
+    assert t.events[4] == with_session_id(
+        UserUttered(
+            f"{EXTERNAL_MESSAGE_PREFIX}remind",
+            intent={INTENT_NAME_KEY: "remind", IS_EXTERNAL: True},
+        ),
+        session_id,
     )
 
 
@@ -747,7 +754,7 @@ async def test_has_session_expired(
             True,
             [
                 ActionExecuted(ACTION_LISTEN_NAME),
-                ActionExecuted(ACTION_SESSION_START_NAME),
+                ActionExecuted(ACTION_SESSION_START_NAME, confidence=1.0),
                 SessionStarted(),
                 ActionExecuted(ACTION_LISTEN_NAME),
             ],
@@ -764,6 +771,7 @@ async def test_update_tracker_session(
     monkeypatch: MonkeyPatch,
     start_session_after_expiry: bool,
     expected_events: list,
+    mock_session_id: str,
 ):
     tracker = await default_processor.tracker_store.get_or_create_tracker(
         DEFAULT_SENDER_ID
@@ -787,7 +795,9 @@ async def test_update_tracker_session(
         DEFAULT_SENDER_ID
     )
 
-    assert list(tracker.events) == expected_events
+    expected_with_session = with_session_ids(expected_events, mock_session_id)
+
+    assert list(tracker.events) == expected_with_session
 
 
 async def test_update_tracker_session_after_session_ended(
@@ -811,14 +821,18 @@ async def test_update_tracker_session_after_session_ended(
 
     # inspect tracker and make sure no new session was started
     tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
+    session_id = tracker.current_session_id
 
     # Should only have the initial action_listen and SessionEnded
     # No new session start events should be added
     assert SessionStarted() not in tracker.events
-    assert list(tracker.events) == [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        SessionEnded(),
-    ]
+    assert list(tracker.events) == with_session_ids(
+        [
+            ActionExecuted(ACTION_LISTEN_NAME),
+            SessionEnded(),
+        ],
+        session_id,
+    )
 
 
 async def test_update_tracker_session_terminated_tracker_early_return(
@@ -878,24 +892,28 @@ async def test_update_tracker_session_with_metadata(
 
     tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
     events = list(tracker.events)
+    session_id = tracker.current_session_id
+    assert session_id is not None
 
     with_model_ids_expected = with_model_ids(
         [
             SlotSet(SESSION_START_METADATA_SLOT, message_metadata),
-            ActionExecuted(ACTION_SESSION_START_NAME),
+            ActionExecuted(ACTION_SESSION_START_NAME, confidence=1.0),
             SessionStarted(),
             SlotSet(SESSION_START_METADATA_SLOT, message_metadata),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
         model_id,
     )
-    final_expected = with_assistant_ids(with_model_ids_expected, assistant_id)
+    with_assistant_expected = with_assistant_ids(with_model_ids_expected, assistant_id)
+    final_expected = with_session_ids(with_assistant_expected, session_id)
 
     assert events[0:5] == final_expected[0:5]
     assert tracker.slots[SESSION_START_METADATA_SLOT].value == message_metadata
     assert events[2].metadata == {
         ASSISTANT_ID_KEY: assistant_id,
         METADATA_MODEL_ID: model_id,
+        METADATA_SESSION_ID: session_id,
     }
 
     assert isinstance(events[5], UserUttered)
@@ -928,6 +946,7 @@ async def test_custom_action_session_start_with_metadata(
     tracker_for_custom_action = tests.utilities.json_of_latest_request(last_request)[
         "tracker"
     ]
+    session_id = tracker_for_custom_action["current_session_id"]
 
     assert tracker_for_custom_action["events"] == [
         {
@@ -935,7 +954,11 @@ async def test_custom_action_session_start_with_metadata(
             "timestamp": 1580515200.0,
             "name": SESSION_START_METADATA_SLOT,
             "value": metadata,
-            "metadata": {"assistant_id": "placeholder_default", "model_id": model_id},
+            "metadata": {
+                "assistant_id": "placeholder_default",
+                "model_id": model_id,
+                "session_id": session_id,
+            },
             "filled_by": None,
             "anonymized_at": None,
         }
@@ -949,6 +972,7 @@ async def test_update_tracker_session_with_slots_expiry_starts_new_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
+    mock_session_id: str,
 ):
     sender_id = uuid.uuid4().hex
     tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
@@ -975,24 +999,31 @@ async def test_update_tracker_session_with_slots_expiry_starts_new_session(
     tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
     events = list(tracker.events)
 
-    # the first three events should be up to the user utterance
-    assert events[:2] == [ActionExecuted(ACTION_LISTEN_NAME), user_event]
+    expected_all = with_session_ids(
+        [
+            # the first two events should be up to the user utterance
+            ActionExecuted(ACTION_LISTEN_NAME),
+            user_event,
+            # next come the five slots
+            *slot_set_events,
+            # the next two events are the session start sequence
+            ActionExecuted(ACTION_SESSION_START_NAME, confidence=1.0),
+            SessionStarted(),
+            *slot_set_events,
+            # finally an action listen, this should also be the last event
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        mock_session_id,
+    )
 
-    # next come the five slots
-    assert events[2:7] == slot_set_events
-
-    # the next two events are the session start sequence
-    assert events[7:9] == [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()]
-    assert events[9:14] == slot_set_events
-
-    # finally an action listen, this should also be the last event
-    assert events[14] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
+    assert events == expected_all
 
 
 async def test_update_tracker_session_with_slots_expiry_continues_same_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
+    mock_session_id: str,
 ):
     sender_id = uuid.uuid4().hex
     tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
@@ -1005,6 +1036,9 @@ async def test_update_tracker_session_with_slots_expiry_continues_same_session(
 
     for event in slot_set_events:
         tracker.update(event)
+
+    # Capture session_id before expiry check
+    initial_session_id = tracker.current_session_id
 
     # patch processor so expiry would be detected
     # with start_session_after_expiry=False
@@ -1023,19 +1057,37 @@ async def test_update_tracker_session_with_slots_expiry_continues_same_session(
     tracker = await default_processor.tracker_store.retrieve_full_tracker(sender_id)
     events = list(tracker.events)
 
-    # the first three events should be up to the user utterance
-    assert events[:2] == [ActionExecuted(ACTION_LISTEN_NAME), user_event]
+    # the first two events should be action_listen and user utterance
+    expected_first_two = with_session_ids(
+        [ActionExecuted(ACTION_LISTEN_NAME), user_event], mock_session_id
+    )
+
+    assert events[:2] == expected_first_two
 
     # next come the five slots
-    assert events[2:7] == slot_set_events
+    slot_set_with_session = with_session_ids(slot_set_events, mock_session_id)
+
+    assert events[2:7] == slot_set_with_session
 
     # Session expiration does NOT start a new session
     # So we should only have: ActionExecuted(listen), UserUttered, and 5 SlotSets
-    assert events == [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        user_event,
-        *slot_set_events,
-    ]
+    expected_all = with_session_ids(
+        [
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("some utterance"),
+            *slot_set_events,
+        ],
+        mock_session_id,
+    )
+
+    assert events == expected_all
+
+    # Session_id should remain unchanged (no new session started)
+    assert tracker.current_session_id == initial_session_id
+
+    # All events should have the same session_id in metadata
+    for event in events:
+        assert event.metadata.get(METADATA_SESSION_ID) == initial_session_id
 
 
 async def test_fetch_tracker_and_update_session(
@@ -1047,18 +1099,22 @@ async def test_fetch_tracker_and_update_session(
     tracker = await default_processor.fetch_tracker_and_update_session(
         sender_id, default_channel
     )
+    session_id = tracker.current_session_id
 
     # ensure session start sequence is present
-    assert list(tracker.events) == with_assistant_ids(
-        with_model_ids(
-            [
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                SessionStarted(),
-                ActionExecuted(ACTION_LISTEN_NAME),
-            ],
-            model_id,
+    assert list(tracker.events) == with_session_ids(
+        with_assistant_ids(
+            with_model_ids(
+                [
+                    ActionExecuted(ACTION_SESSION_START_NAME),
+                    SessionStarted(),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+                model_id,
+            ),
+            assistant_id,
         ),
-        assistant_id,
+        session_id,
     )
 
 
@@ -1249,8 +1305,27 @@ async def test_handle_message_with_session_start_expiry_starts_new_session(
         ],
         model_id,
     )
-    expected = with_assistant_ids(with_model_ids_expected, assistant_id=assistant_id)
-    assert list(tracker.events) == expected
+
+    # Extract session_ids from actual events - there are two different sessions
+    actual_events = list(tracker.events)
+    session_id_1 = actual_events[1].metadata.get(
+        METADATA_SESSION_ID
+    )  # First SessionStarted
+    session_id_2 = actual_events[10].metadata.get(
+        METADATA_SESSION_ID
+    )  # Second SessionStarted
+
+    assert session_id_1 != session_id_2
+
+    # Apply assistant_ids to all events
+    with_assistant = with_assistant_ids(with_model_ids_expected, assistant_id)
+
+    # Apply session_ids separately for each session
+    # First session: events 0-8, Second session: events 9 onwards
+    expected = with_session_ids(with_assistant[:9], session_id_1) + with_session_ids(
+        with_assistant[9:], session_id_2
+    )
+    assert actual_events == expected
 
 
 async def test_handle_message_with_session_start_expiry_continues_same_session(
@@ -1353,7 +1428,11 @@ async def test_handle_message_with_session_start_expiry_continues_same_session(
         ],
         model_id,
     )
-    expected = with_assistant_ids(with_model_ids_expected, assistant_id=assistant_id)
+    session_id = tracker.current_session_id
+    expected = with_session_ids(
+        with_assistant_ids(with_model_ids_expected, assistant_id=assistant_id),
+        session_id,
+    )
     assert list(tracker.events) == expected
 
 
@@ -1514,7 +1593,10 @@ async def test_restart_triggers_session_start(
         ],
         model_id,
     )
-    expected = with_assistant_ids(with_model_ids_expected, assistant_id)
+    session_id = tracker.current_session_id
+    expected = with_session_ids(
+        with_assistant_ids(with_model_ids_expected, assistant_id), session_id
+    )
     for actual, expected in zip(tracker.events, expected):
         assert actual == expected
 
@@ -1596,7 +1678,15 @@ async def test_policy_events_are_applied_to_tracker(
     ) -> List[Event]:
         # The action already has access to the policy events
         nonlocal action_received_events
-        action_received_events = list(tracker.events) == expected_events
+        event_types = [type(e).__name__ for e in tracker.events]
+        expected_types = [
+            "ActionExecuted",  # action_session_start
+            "SessionStarted",
+            "ActionExecuted",  # action_listen
+            "UserUttered",
+            "LoopInterrupted",
+        ]
+        action_received_events = event_types == expected_types
         return []
 
     monkeypatch.setattr(ActionListen, ActionListen.run.__name__, mocked_run)
@@ -1608,11 +1698,11 @@ async def test_policy_events_are_applied_to_tracker(
     assert action_received_events
 
     tracker = await default_processor.get_tracker(conversation_id)
+    session_id = tracker.current_session_id
+
     # The action was logged on the tracker as well
-    expected_events.append(
-        with_assistant_id(
-            with_model_id(ActionExecuted(ACTION_LISTEN_NAME), model_id), assistant_id
-        )
+    expected_events = with_session_ids(
+        with_assistant_ids(with_model_ids_expected_events, assistant_id), session_id
     )
 
     for event, expected in zip(tracker.events, expected_events):
@@ -1667,6 +1757,7 @@ async def test_policy_events_not_applied_if_rejected(
     )
 
     tracker = await default_processor.get_tracker(conversation_id)
+    session_id = tracker.current_session_id
     events = with_model_ids(
         [
             ActionExecuted(ACTION_SESSION_START_NAME),
@@ -1677,7 +1768,9 @@ async def test_policy_events_not_applied_if_rejected(
         ],
         model_id,
     )
-    expected_events = with_assistant_ids(events, assistant_id)
+    expected_events = with_session_ids(
+        with_assistant_ids(events, assistant_id), session_id
+    )
     for event, expected in zip(tracker.events, expected_events):
         assert event == expected
 
@@ -1733,6 +1826,7 @@ async def test_logging_of_end_to_end_action(
     )
 
     tracker = await default_processor.tracker_store.retrieve(conversation_id)
+    session_id = tracker.current_session_id
     events = with_model_ids(
         [
             ActionExecuted(ACTION_SESSION_START_NAME),
@@ -1745,9 +1839,10 @@ async def test_logging_of_end_to_end_action(
         ],
         model_id=model_id,
     )
-    expected_events = with_assistant_ids(events, assistant_id)
-    for event, expected in zip(tracker.events, expected_events):
-        assert event == expected
+    expected_events = with_session_ids(
+        with_assistant_ids(events, assistant_id), session_id
+    )
+    assert list(tracker.events) == expected_events
 
 
 async def test_predict_next_action_with_hidden_rules(

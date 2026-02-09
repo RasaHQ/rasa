@@ -1,7 +1,17 @@
 import json
 import logging
 from collections import defaultdict
-from typing import DefaultDict, Dict, Generator, List, NamedTuple, Optional, Text, Tuple
+from typing import (
+    DefaultDict,
+    Dict,
+    Generator,
+    List,
+    NamedTuple,
+    Optional,
+    Text,
+    Tuple,
+    cast,
+)
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
@@ -197,17 +207,22 @@ def _find_conflicting_states(
 
     for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
         hashed_state = element.sliced_states_hash
-        current_hash = hash(element.event)
+        # Iterator only yields ActionExecuted. Use story_structure_members() so
+        # session_id/model_id/assistant_id in metadata do not cause false conflicts.
+        event = cast(ActionExecuted, element.event)
+        current_hash = hash(event.story_structure_members())
 
         if current_hash not in state_action_mapping[
             hashed_state
-        ] or _unlearnable_action(element.event):
+        ] or _unlearnable_action(event):
             state_action_mapping[hashed_state] += [current_hash]
 
     # Keep only conflicting `state_action_mapping`s
     # or those mappings that contain `action_unlikely_intent`
     action_unlikely_intent_hash = hash(
-        ActionExecuted(action_name=ACTION_UNLIKELY_INTENT_NAME)
+        ActionExecuted(
+            action_name=ACTION_UNLIKELY_INTENT_NAME
+        ).story_structure_members()
     )
     return {
         state_hash: actions

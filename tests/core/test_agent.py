@@ -37,7 +37,11 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
-from tests.conftest import with_assistant_ids, with_model_ids
+from tests.conftest import (
+    with_assistant_ids,
+    with_model_ids,
+    with_session_ids,
+)
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
@@ -251,6 +255,7 @@ async def test_agent_handle_message_full_model(default_agent: Agent):
     message = UserMessage("hello", sender_id=sender_id)
     await default_agent.handle_message(message)
     tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
+    session_id = tracker.current_session_id
     events = with_model_ids(
         [
             ActionExecuted(action_name="action_session_start"),
@@ -278,7 +283,9 @@ async def test_agent_handle_message_full_model(default_agent: Agent):
         ],
         model_id,
     )
-    expected_events = with_assistant_ids(events, assistant_id)
+    expected_events = with_session_ids(
+        with_assistant_ids(events, assistant_id), session_id
+    )
     assert len(tracker.events) == len(expected_events)
     for e1, e2 in zip(tracker.events, expected_events):
         assert e1 == e2
@@ -292,6 +299,7 @@ async def test_agent_handle_message_only_nlu(trained_nlu_model: Text):
     message = UserMessage("hello", sender_id=sender_id)
     await agent.handle_message(message)
     tracker = await agent.tracker_store.get_or_create_tracker(sender_id)
+    session_id = tracker.current_session_id
     events = with_model_ids(
         [
             ActionExecuted(action_name="action_session_start"),
@@ -301,7 +309,9 @@ async def test_agent_handle_message_only_nlu(trained_nlu_model: Text):
         ],
         model_id,
     )
-    expected_events = with_assistant_ids(events, assistant_id)
+    expected_events = with_session_ids(
+        with_assistant_ids(events, assistant_id), session_id
+    )
     assert len(tracker.events) == len(expected_events)
     for e1, e2 in zip(tracker.events, expected_events):
         assert e1 == e2
@@ -315,6 +325,7 @@ async def test_agent_handle_message_only_core(trained_core_model: Text):
     message = UserMessage("/greet", sender_id=sender_id)
     await agent.handle_message(message)
     tracker = await agent.tracker_store.get_or_create_tracker(sender_id)
+    session_id = tracker.current_session_id
     events = with_model_ids(
         [
             ActionExecuted(action_name="action_session_start"),
@@ -342,7 +353,9 @@ async def test_agent_handle_message_only_core(trained_core_model: Text):
         ],
         model_id,
     )
-    expected_events = with_assistant_ids(events, assistant_id)
+    expected_events = with_session_ids(
+        with_assistant_ids(events, assistant_id), session_id
+    )
     assert len(tracker.events) == len(expected_events)
     for e1, e2 in zip(tracker.events, expected_events):
         assert e1 == e2

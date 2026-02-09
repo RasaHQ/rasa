@@ -30,7 +30,7 @@ from dateutil import parser
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-from rasa.shared.constants import DOCS_URL_TRAINING_DATA
+from rasa.shared.constants import ASSISTANT_ID_KEY, DOCS_URL_TRAINING_DATA
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_METADATA_EXECUTION_ERROR_MESSAGE,
@@ -64,6 +64,8 @@ from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_NAME_KEY,
     INTENT_RANKING_KEY,
+    METADATA_MODEL_ID,
+    METADATA_SESSION_ID,
     PREDICTED_CONFIDENCE_KEY,
     PROMPTS,
     TEXT,
@@ -1854,6 +1856,23 @@ class ActionExecuted(Event):
             ACTION_METADATA_EXECUTION_SUCCESS,
             ACTION_METADATA_EXECUTION_ERROR_MESSAGE,
             ACTION_METADATA_EXECUTION_TIME,
+        ]
+        meta_no_nones = {
+            k: v
+            for k, v in self.metadata.items()
+            if v is not None and k not in items_to_ignore
+        }
+        return (self.action_name, self.action_text, jsonpickle.encode(meta_no_nones))
+
+    def story_structure_members(self) -> Tuple[Optional[Text], Optional[Text], Text]:
+        """Members for story-structure conflict detection, excluding metadata."""
+        items_to_ignore = [
+            ACTION_METADATA_EXECUTION_SUCCESS,
+            ACTION_METADATA_EXECUTION_ERROR_MESSAGE,
+            ACTION_METADATA_EXECUTION_TIME,
+            METADATA_SESSION_ID,
+            METADATA_MODEL_ID,
+            ASSISTANT_ID_KEY,
         ]
         meta_no_nones = {
             k: v

@@ -2229,7 +2229,7 @@ async def test_run_assertions_with_user_message_not_found(
         "User message 'send money' was not found in the actual events. "
         "The user message properties which were searched: "
         "{'text': 'send money', 'metadata': {'foo': 'bar', "
-        "'model_id': None, 'assistant_id': None}}"
+        "'model_id': None, 'assistant_id': None, 'session_id': None}}"
     )
     assert error_message in captured.out
 
@@ -2288,6 +2288,7 @@ def test_get_additional_splitting_conditions(
             "baz": "qux",
             "model_id": assertions_tracker_with_duplicate_user_msg.model_id,
             "assistant_id": assertions_tracker_with_duplicate_user_msg.assistant_id,
+            "session_id": assertions_tracker_with_duplicate_user_msg.current_session_id,
         },
     }
 

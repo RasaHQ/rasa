@@ -4,6 +4,7 @@ import itertools
 import logging
 import os
 import time
+import uuid
 from collections import deque
 from enum import Enum
 from functools import cached_property
@@ -45,6 +46,7 @@ from rasa.shared.core.constants import (
     LANGUAGE_SLOT,
     LOOP_NAME,
     PREVIOUS_ACTION,
+    SESSION_START_METADATA_SLOT,
     SHOULD_NOT_BE_SET,
 )
 from rasa.shared.core.conversation import Dialogue
@@ -55,6 +57,7 @@ from rasa.shared.core.events import (
     ActionReverted,
     ActiveLoop,
     BotUttered,
+    ConversationResumed,
     DefinePrevUserUtteredFeaturization,
     DialogueStackUpdated,
     Event,
@@ -78,6 +81,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
     METADATA_MODEL_ID,
+    METADATA_SESSION_ID,
 )
 
 if TYPE_CHECKING:
@@ -231,7 +235,7 @@ class DialogueStateTracker:
         )
 
         for e in evts:
-            tracker.update(e, domain)
+            tracker.update(e, domain, is_replay=True)
 
         return tracker
 
@@ -298,6 +302,9 @@ class DialogueStateTracker:
         self.user_id: Optional[Text] = user_id
         # Timestamp of the first event in the conversation for efficient sorting
         self.conversation_started_timestamp: Optional[float] = None
+        # Current session ID for tracking events within a session
+        # Regenerated on session start
+        self.current_session_id: Optional[Text] = None
 
     ###
     # Public tracker interface
@@ -331,6 +338,7 @@ class DialogueStateTracker:
             "latest_action_name": self.latest_action_name,
             USER_ID: self.user_id,
             "conversation_started_timestamp": self.conversation_started_timestamp,
+            "current_session_id": self.current_session_id,
         }
 
     def _events_for_verbosity(
@@ -491,7 +499,7 @@ class DialogueStateTracker:
         previous_stack = DialogueStack.empty()
         yield previous_stack
         for event in self.applied_events():
-            tracker.update(event)
+            tracker.update(event, is_replay=True)
             stack = tracker.stack
             if stack != previous_stack:
                 previous_stack = stack
@@ -667,7 +675,7 @@ class DialogueStateTracker:
             if isinstance(event, ActionExecuted):
                 yield tracker, event.hide_rule_turn
 
-            tracker.update(event)
+            tracker.update(event, is_replay=True)
 
         yield tracker, False
 
@@ -826,6 +834,7 @@ class DialogueStateTracker:
         # use the original event timestamp instead of the
         # dialogue serialized timestamp value for higher precision
         self.ensure_conversation_started_timestamp()
+        self.current_session_id = dialogue.current_session_id
 
     def copy(self) -> "DialogueStateTracker":
         """Creates a duplicate of this tracker."""
@@ -842,7 +851,7 @@ class DialogueStateTracker:
 
         for event in self.events:
             if event.timestamp <= target_time:
-                tracker.update(event)
+                tracker.update(event, is_replay=True)
             else:
                 break
 
@@ -859,6 +868,7 @@ class DialogueStateTracker:
             list(self.events),
             self.user_id,
             self.conversation_started_timestamp,
+            self.current_session_id,
         )
 
     def ensure_conversation_started_timestamp(self) -> None:
@@ -870,8 +880,138 @@ class DialogueStateTracker:
         if self.conversation_started_timestamp is None and self.events:
             self.conversation_started_timestamp = self.events[0].timestamp
 
-    def update(self, event: Event, domain: Optional[Domain] = None) -> None:
-        """Modify the state of the tracker according to an ``Event``."""
+    @staticmethod
+    def _is_session_metadata_slot(event: Event) -> bool:
+        """True if event is SlotSet for SESSION_START_METADATA_SLOT."""
+        return isinstance(event, SlotSet) and event.key == SESSION_START_METADATA_SLOT
+
+    @staticmethod
+    def _is_action_session_start(event: Event) -> bool:
+        """True if event is ActionExecuted for action_session_start."""
+        return (
+            isinstance(event, ActionExecuted)
+            and event.action_name == ACTION_SESSION_START_NAME
+        )
+
+    def _should_generate_session_id(self, event: Event) -> bool:
+        """Return True if this event should trigger session_id generation.
+
+        Session IDs are generated in these scenarios:
+        1. Brand new tracker - first event triggers generation
+        2. Session metadata slot - triggers early generation before action_session_start
+        3. action_session_start - unless metadata slot already triggered generation
+        4. SessionStarted - unless following action_session_start or initial setup
+        5. ConversationResumed - explicit session resumption
+        6. User message on inactive conversation - reactivation
+        """
+        events = self.events
+        last_event = events[-1] if events else None
+        # 1. Brand new tracker - first event triggers generation
+        if not events:
+            return True
+
+        # 2. Session metadata slot triggers early generation
+        if self._is_session_metadata_slot(event):
+            return True
+
+        # 3. action_session_start - unless metadata slot already triggered generation
+        if self._is_action_session_start(event):
+            return not self._is_session_metadata_slot(last_event)
+
+        # 4. SessionStarted - unless following action_session_start or initial setup
+        if isinstance(event, SessionStarted):
+            if self._is_action_session_start(last_event):
+                return False
+            if len(events) == 1:
+                first_event = events[0]
+                if not (
+                    isinstance(first_event, SessionStarted)
+                    or self._is_session_metadata_slot(first_event)
+                    or self._is_action_session_start(first_event)
+                ):
+                    return False
+            return True
+
+        # 5. ConversationResumed - explicit session resumption
+        if isinstance(event, ConversationResumed):
+            return True
+
+        # 6. User message on inactive conversation - reactivation
+        if isinstance(event, UserUttered) and self.inactive:
+            return True
+
+        return False
+
+    def _prepare_event_metadata(self, event: Event, is_replay: bool) -> None:
+        """Prepare and inject tracker metadata into the event.
+
+        During replay, session_id metadata is not injected
+        to preserve the original event state.
+        """
+        self._generate_session_id(event, is_replay)
+        if self.model_id and METADATA_MODEL_ID not in event.metadata:
+            event.metadata = {**event.metadata, METADATA_MODEL_ID: self.model_id}
+
+        if self.assistant_id and ASSISTANT_ID_KEY not in event.metadata:
+            event.metadata = {**event.metadata, ASSISTANT_ID_KEY: self.assistant_id}
+
+        # Inject session_id into event metadata
+        if (
+            not is_replay
+            and self.current_session_id
+            and METADATA_SESSION_ID not in event.metadata
+        ):
+            event.metadata = {
+                **event.metadata,
+                METADATA_SESSION_ID: self.current_session_id,
+            }
+
+    @staticmethod
+    def _is_valid_session_id(session_id: Any) -> bool:
+        """Check if session_id is a valid non-empty string."""
+        return isinstance(session_id, str) and bool(session_id.strip())
+
+    def _generate_session_id(self, event: Event, is_replay: bool) -> None:
+        """Generate or extract session_id if this event triggers it.
+
+        During replay: extract session_id from event metadata (never generate).
+        During live: use session_id from metadata if present, otherwise generate new.
+        """
+        if not self._should_generate_session_id(event):
+            return
+
+        existing_session_id = event.metadata.get(METADATA_SESSION_ID)
+        if self._is_valid_session_id(existing_session_id):
+            self.current_session_id = existing_session_id
+            return
+
+        if is_replay:
+            return
+
+        self.current_session_id = str(uuid.uuid4())
+        structlogger.debug(
+            "rasa.shared.core.trackers.dialogue_state_tracker.generate_session_id",
+            event_info=("Generated new session ID for the conversation."),
+            session_id=self.current_session_id,
+            sender_id=self.sender_id,
+            trigger_event=type(event).__name__,
+        )
+
+    def update(
+        self,
+        event: Event,
+        domain: Optional[Domain] = None,
+        is_replay: bool = False,
+    ) -> None:
+        """Modify the state of the tracker according to an ``Event``.
+
+        Args:
+            event: The event to apply to the tracker.
+            domain: The current model domain.
+            is_replay: If True, this event is being replayed from storage.
+                During replay, session_id is extracted from event metadata
+                but not generated for old events without session_id.
+        """
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")
 
@@ -889,12 +1029,7 @@ class DialogueStateTracker:
             )
             return
 
-        if self.model_id and METADATA_MODEL_ID not in event.metadata:
-            event.metadata = {**event.metadata, METADATA_MODEL_ID: self.model_id}
-
-        if self.assistant_id and ASSISTANT_ID_KEY not in event.metadata:
-            event.metadata = {**event.metadata, ASSISTANT_ID_KEY: self.assistant_id}
-
+        self._prepare_event_metadata(event, is_replay)
         self.events.append(event)
 
         # Set conversation_started_timestamp on the first event

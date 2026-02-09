@@ -228,7 +228,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         with tracker._skip_states_manager():
             for event in self.events:
-                tracker.update(event)
+                tracker.update(event, is_replay=True)
 
         tracker._states_for_hashing = copy.copy(self._states_for_hashing)
 
@@ -246,8 +246,17 @@ class TrackerWithCachedStates(DialogueStateTracker):
         self,
         event: Event,
         domain: Optional[Domain] = None,
+        is_replay: bool = False,
     ) -> None:
-        """Modify the state of the tracker according to an ``Event``."""
+        """Modify the state of the tracker according to an ``Event``.
+
+        Args:
+            event: The event to apply to the tracker.
+            domain: The current model domain.
+            is_replay: If True, this event is being replayed from storage.
+                During replay, session_id is extracted from event metadata
+                but not generated for old events without session_id.
+        """
         # if `skip_states` is `True`, this function behaves exactly like the
         # normal update of the `DialogueStateTracker`
         if not self._states_for_hashing and not self.__skip_states:
@@ -255,7 +264,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             # cached. let's make sure it is there.
             self._states_for_hashing = self.past_states_for_hashing(self.domain)
 
-        super().update(event)
+        super().update(event, is_replay=is_replay)
 
         if not self.__skip_states:
             if isinstance(event, ActionExecuted):

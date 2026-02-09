@@ -432,6 +432,7 @@ class E2ETestRunner:
         )
         metadata["model_id"] = tracker.model_id
         metadata["assistant_id"] = tracker.assistant_id
+        metadata["session_id"] = tracker.current_session_id
 
         additional_splitting_conditions["metadata"] = metadata
 

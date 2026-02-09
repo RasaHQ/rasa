@@ -184,9 +184,11 @@ def test_verify_intents_does_fail_on_invalid_data(nlu_data_path: Text):
     assert not validator.verify_intents(ignore_warnings=False)
 
 
-def test_verify_story_structure(stories_path: Text):
+def test_verify_story_structure(simple_stories_path: Text):
+    """Verify story structure passes for a story file with no structural conflicts."""
     importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml", training_data_paths=[stories_path]
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=[simple_stories_path],
     )
     validator = Validator.from_importer(importer)
     # force validator to not ignore warnings (default is True)

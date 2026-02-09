@@ -52,6 +52,7 @@ from rasa.shared.core.events import (
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+from tests.conftest import with_session_ids
 from tests.core.tracker_stores.conftest import (
     _saved_tracker_with_multiple_session_starts,
     assert_all_trackers_have_user_id,
@@ -463,14 +464,20 @@ async def test_sql_get_or_create_full_tracker_without_action_listen() -> None:
     assert tracker.events == deque()
 
 
-async def test_sql_get_or_create_full_tracker_with_action_listen() -> None:
+async def test_sql_get_or_create_full_tracker_with_action_listen(
+    mock_session_id: str,
+) -> None:
     tracker_store = SQLTrackerStore(Domain.empty())
     sender_id = uuid.uuid4().hex
     tracker = await tracker_store.get_or_create_full_tracker(
         sender_id=sender_id, append_action_listen=True
     )
     assert tracker.sender_id == sender_id
-    assert tracker.events == deque([ActionExecuted(ACTION_LISTEN_NAME)])
+    expected_event = with_session_ids(
+        [ActionExecuted(ACTION_LISTEN_NAME)], mock_session_id
+    )
+
+    assert list(tracker.events) == expected_event
 
 
 async def test_sql_get_or_create_full_tracker_with_existing_tracker(

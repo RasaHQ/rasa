@@ -89,6 +89,8 @@ from tests.conftest import (
     with_assistant_ids,
     with_model_id,
     with_model_ids,
+    with_session_id,
+    with_session_ids,
 )
 from tests.core.conftest import MockedMongoTrackerStore
 from tests.core.tracker_stores.conftest import create_multiple_trackers_with_user_id
@@ -1501,15 +1503,19 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
     assert len(tracker.get("events")) == 4
 
     deserialized_events = [Event.from_parameters(event) for event in tracker["events"]]
+    session_id = tracker.get("current_session_id")
 
     # there is an initial session start sequence at the beginning of the tracker
 
-    assert deserialized_events[:3] == with_assistant_ids(
-        with_model_ids(session_start_sequence, model_id), assistant_id
+    assert deserialized_events[:3] == with_session_ids(
+        with_assistant_ids(
+            with_model_ids(session_start_sequence, model_id), assistant_id
+        ),
+        session_id,
     )
 
-    assert deserialized_events[3] == with_assistant_id(
-        with_model_id(event, model_id), assistant_id
+    assert deserialized_events[3] == with_session_id(
+        with_assistant_id(with_model_id(event, model_id), assistant_id), session_id
     )
     assert deserialized_events[3].timestamp > time_before_adding_events
 
@@ -1536,13 +1542,15 @@ async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClien
     )
     _, tracker_response = await rasa_app.get(f"/conversations/{sender_id}/tracker")
     tracker = tracker_response.json
+    session_id = tracker["current_session_id"]
 
     deserialized_events = [Event.from_parameters(event) for event in tracker["events"]]
 
     # there is an initial session start sequence at the beginning of the tracker
     received_event = deserialized_events[3]
-    assert received_event == with_assistant_id(
-        with_model_id(event, existing_model_id), assistant_id
+    assert received_event == with_session_id(
+        with_assistant_id(with_model_id(event, existing_model_id), assistant_id),
+        session_id,
     )
 
 
@@ -1566,12 +1574,16 @@ async def test_push_multiple_events(rasa_app: SanicASGITestClient):
     )
     tracker = tracker_response.json
     assert tracker is not None
+    session_id = tracker.get("current_session_id")
 
     # there is an initial session start sequence at the beginning
     assert [
         Event.from_parameters(event) for event in tracker.get("events")
-    ] == with_assistant_ids(
-        with_model_ids(session_start_sequence + test_events, model_id), assistant_id
+    ] == with_session_ids(
+        with_assistant_ids(
+            with_model_ids(session_start_sequence + test_events, model_id), assistant_id
+        ),
+        session_id,
     )
 
 
@@ -1635,10 +1647,14 @@ async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
     assert tracker is not None
 
     # there is a session start sequence at the start
+    session_id = tracker.get("current_session_id")
     assert [
         Event.from_parameters(event) for event in tracker.get("events")
-    ] == with_assistant_ids(
-        with_model_ids(session_start_sequence + test_events, model_id), assistant_id
+    ] == with_session_ids(
+        with_assistant_ids(
+            with_model_ids(session_start_sequence + test_events, model_id), assistant_id
+        ),
+        session_id,
     )
 
 
@@ -2387,8 +2403,10 @@ async def test_update_conversation_with_events(
     fetched_tracker = await rasa.server.update_conversation_with_events(
         conversation_id, agent.processor, domain, events_to_append
     )
-    assert list(fetched_tracker.events) == with_assistant_ids(
-        with_model_ids(expected_events, model_id), assistant_id
+    session_id = fetched_tracker.current_session_id
+    assert list(fetched_tracker.events) == with_session_ids(
+        with_assistant_ids(with_model_ids(expected_events, model_id), assistant_id),
+        session_id,
     )
 
 
@@ -2438,6 +2456,7 @@ async def test_update_conversation_with_events_ignores_terminated_tracker(
 
 async def test_append_events_does_not_repeat_session_start(
     rasa_app: SanicASGITestClient,
+    mock_session_id: str,
 ):
     session_start_events = [
         {
@@ -2479,7 +2498,11 @@ async def test_append_events_does_not_repeat_session_start(
         "/conversations/testid/tracker/events", json=session_start_events
     )
 
-    assert response.json["events"] == session_start_events
+    resp_events = response.json["events"]
+    for e in session_start_events:
+        e.setdefault("metadata", {})["session_id"] = mock_session_id
+
+    assert resp_events == session_start_events
 
 
 async def _create_tracker_for_query_params(
@@ -2534,6 +2557,7 @@ async def _create_tracker_for_query_params(
 
 async def test_get_tracker_with_query_param_include_events_all(
     rasa_app: SanicASGITestClient,
+    mock_session_id: str,
 ) -> None:
     model_id = rasa_app.sanic_app.ctx.agent.model_id
     assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
@@ -2551,9 +2575,11 @@ async def test_get_tracker_with_query_param_include_events_all(
 
     serialized_actual_events = tracker["events"]
 
-    expected_events = with_assistant_ids(
-        with_model_ids(events_to_store, model_id), assistant_id
+    expected_events = with_session_ids(
+        with_assistant_ids(with_model_ids(events_to_store, model_id), assistant_id),
+        mock_session_id,
     )
+
     serialized_expected_events = [event.as_dict() for event in expected_events]
 
     assert serialized_actual_events == serialized_expected_events
@@ -2561,6 +2587,7 @@ async def test_get_tracker_with_query_param_include_events_all(
 
 async def test_get_tracker_with_query_param_include_events_after_restart(
     rasa_app: SanicASGITestClient,
+    mock_session_id: str,
 ) -> None:
     model_id = rasa_app.sanic_app.ctx.agent.model_id
     assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
@@ -2582,8 +2609,9 @@ async def test_get_tracker_with_query_param_include_events_after_restart(
         event for event in events_to_store if isinstance(event, Restarted)
     ][0]
     truncated_events = events_to_store[events_to_store.index(restarted_event) + 1 :]
-    expected_events = with_assistant_ids(
-        with_model_ids(truncated_events, model_id), assistant_id
+    expected_events = with_session_ids(
+        with_assistant_ids(with_model_ids(truncated_events, model_id), assistant_id),
+        mock_session_id,
     )
     serialized_expected_events = [e.as_dict() for e in expected_events]
 
@@ -2592,6 +2620,7 @@ async def test_get_tracker_with_query_param_include_events_after_restart(
 
 async def test_get_tracker_with_query_param_include_events_applied(
     rasa_app: SanicASGITestClient,
+    mock_session_id: str,
 ) -> None:
     model_id = rasa_app.sanic_app.ctx.agent.model_id
     assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
@@ -2618,8 +2647,9 @@ async def test_get_tracker_with_query_param_include_events_applied(
     ][0]
     truncated_events = truncated_events[truncated_events.index(session_started) + 1 :]
 
-    expected_events = with_assistant_ids(
-        with_model_ids(truncated_events, model_id), assistant_id
+    expected_events = with_session_ids(
+        with_assistant_ids(with_model_ids(truncated_events, model_id), assistant_id),
+        mock_session_id,
     )
     serialized_expected_events = [e.as_dict() for e in expected_events]
 

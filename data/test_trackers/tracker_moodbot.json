@@ -158,5 +158,6 @@
       "hide_rule_turn": false
     }
   ],
-  "user_id": null
+  "user_id": null,
+  "current_session_id": null
 }

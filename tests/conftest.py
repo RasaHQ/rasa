@@ -109,7 +109,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
-from rasa.shared.nlu.constants import METADATA_MODEL_ID
+from rasa.shared.nlu.constants import METADATA_MODEL_ID, METADATA_SESSION_ID
 from rasa.shared.providers.embedding._base_litellm_embedding_client import (
     _BaseLiteLLMEmbeddingClient,
 )
@@ -273,6 +273,21 @@ PATH_PYTEST_MARKER_MAPPINGS = {
 
 
 USERNAME = "myuser"
+
+
+@pytest.fixture
+def mock_session_id(monkeypatch: MonkeyPatch) -> str:
+    """Patch uuid.uuid4 to return a deterministic value for testing.
+
+    Use this fixture when testing code that generates session IDs.
+    The returned value is the session ID that will be generated.
+    """
+    session_id = "test-session-id-00000000-0000-0000-0000-000000000001"
+    mock_uuid = Mock()
+    mock_uuid.__str__ = Mock(return_value=session_id)
+    mock_uuid.hex = "0" * 32
+    monkeypatch.setattr("rasa.shared.core.trackers.uuid.uuid4", lambda: mock_uuid)
+    return session_id
 
 
 @pytest.fixture(scope="session")
@@ -1219,6 +1234,16 @@ def with_assistant_id(event: Event, assistant_id: Text) -> Event:
 
 def with_assistant_ids(events: List[Event], assistant_id: Text) -> List[Event]:
     return [with_assistant_id(event, assistant_id) for event in events]
+
+
+def with_session_id(event: Event, session_id: Text) -> Event:
+    new_event = copy.deepcopy(event)
+    new_event.metadata[METADATA_SESSION_ID] = session_id
+    return new_event
+
+
+def with_session_ids(events: List[Event], session_id: Text) -> List[Event]:
+    return [with_session_id(event, session_id) for event in events]
 
 
 @pytest.fixture(autouse=True)

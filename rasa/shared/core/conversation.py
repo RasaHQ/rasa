@@ -16,6 +16,7 @@ class Dialogue:
         events: List["Event"],
         user_id: Optional[str] = None,
         conversation_started_timestamp: Optional[float] = None,
+        current_session_id: Optional[Text] = None,
     ) -> None:
         """This function initialises the dialogue with the dialogue name and the event
         list.
@@ -24,6 +25,7 @@ class Dialogue:
         self.events = events
         self.user_id = user_id
         self.conversation_started_timestamp = conversation_started_timestamp
+        self.current_session_id = current_session_id
 
     def __str__(self) -> Text:
         """This function returns the dialogue and turns."""
@@ -40,6 +42,7 @@ class Dialogue:
             "name": self.name,
             USER_ID: self.user_id,
             "conversation_started_timestamp": self.conversation_started_timestamp,
+            "current_session_id": self.current_session_id,
         }
 
         return result
@@ -60,4 +63,5 @@ class Dialogue:
             rasa.shared.core.events.deserialise_events(parameters.get("events", [])),
             parameters.get(USER_ID),
             parameters.get("conversation_started_timestamp"),
+            parameters.get("current_session_id"),
         )

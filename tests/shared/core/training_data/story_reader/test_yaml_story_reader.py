@@ -58,7 +58,7 @@ from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.yaml import read_yaml, read_yaml_file, write_yaml
 from rasa.utils.tensorflow.model_data_utils import _surface_attributes
-from tests.conftest import filter_expected_warnings
+from tests.conftest import filter_expected_warnings, with_session_ids
 
 
 @pytest.fixture()
@@ -68,7 +68,7 @@ def rule_steps_without_stories(domain: Domain) -> List[StoryStep]:
     return loading.load_data_from_files([yaml_file], domain)
 
 
-def test_can_read_test_story_with_slots(domain: Domain):
+def test_can_read_test_story_with_slots(domain: Domain, mock_session_id: str):
     trackers = training.load_data(
         "data/test_yaml_stories/simple_story_with_only_end.yml",
         domain,
@@ -78,8 +78,13 @@ def test_can_read_test_story_with_slots(domain: Domain):
     )
     assert len(trackers) == 1
 
-    assert trackers[0].events[-2] == SlotSet(key="name", value="peter")
-    assert trackers[0].events[-1] == ActionExecuted("action_listen")
+    events = list(trackers[0].events)
+    expected = with_session_ids(
+        [SlotSet(key="name", value="peter"), ActionExecuted("action_listen")],
+        mock_session_id,
+    )
+
+    assert events[-2:] == expected
 
 
 @pytest.mark.parametrize(
@@ -187,7 +192,7 @@ async def test_default_slot_value_if_unfeaturized_slot():
     assert events[-1].value is None
 
 
-def test_can_read_test_story_with_entities(domain: Domain):
+def test_can_read_test_story_with_entities(domain: Domain, mock_session_id: str):
     trackers = training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities.yml",
         domain,
@@ -197,34 +202,53 @@ def test_can_read_test_story_with_entities(domain: Domain):
     )
     assert len(trackers) == 2
 
-    assert trackers[0].events[-3] == UserUttered(
-        intent={"name": "greet", "confidence": 1.0},
-        parse_data={
-            "text": "/greet",
-            "intent_ranking": [{"confidence": 1.0, "name": "greet"}],
-            "intent": {"confidence": 1.0, "name": "greet"},
-            "entities": [],
-        },
+    tracker1_events = list(trackers[0].events)
+    tracker2_events = list(trackers[1].events)
+
+    expected1 = with_session_ids(
+        [
+            UserUttered(
+                intent={"name": "greet", "confidence": 1.0},
+                parse_data={
+                    "text": "/greet",
+                    "intent_ranking": [{"confidence": 1.0, "name": "greet"}],
+                    "intent": {"confidence": 1.0, "name": "greet"},
+                    "entities": [],
+                },
+            ),
+            ActionExecuted("utter_greet"),
+            ActionExecuted("action_listen"),
+        ],
+        mock_session_id,
     )
-    assert trackers[0].events[-2] == ActionExecuted("utter_greet")
-    assert trackers[0].events[-1] == ActionExecuted("action_listen")
 
-    assert trackers[1].events[-4] == UserUttered(
-        intent={"name": "greet", "confidence": 1.0},
-        entities=[{"entity": "name", "value": "peter"}],
-        parse_data={
-            "text": "/greet",
-            "intent_ranking": [{"confidence": 1.0, "name": "greet"}],
-            "intent": {"confidence": 1.0, "name": "greet"},
-            "entities": [{"entity": "name", "value": "peter"}],
-        },
+    assert tracker1_events[-3:] == expected1
+
+    expected2 = with_session_ids(
+        [
+            UserUttered(
+                intent={"name": "greet", "confidence": 1.0},
+                entities=[{"entity": "name", "value": "peter"}],
+                parse_data={
+                    "text": "/greet",
+                    "intent_ranking": [{"confidence": 1.0, "name": "greet"}],
+                    "intent": {"confidence": 1.0, "name": "greet"},
+                    "entities": [{"entity": "name", "value": "peter"}],
+                },
+            ),
+            SlotSet(key="name", value="peter"),
+            ActionExecuted("utter_greet"),
+            ActionExecuted("action_listen"),
+        ],
+        mock_session_id,
     )
-    assert trackers[1].events[-3] == SlotSet(key="name", value="peter")
-    assert trackers[1].events[-2] == ActionExecuted("utter_greet")
-    assert trackers[1].events[-1] == ActionExecuted("action_listen")
+
+    assert tracker2_events[-4:] == expected2
 
 
-def test_can_read_test_story_with_entities_without_value(domain: Domain):
+def test_can_read_test_story_with_entities_without_value(
+    domain: Domain, mock_session_id: str
+):
     trackers = training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities_with_no_value.yml",
         domain,
@@ -234,18 +258,28 @@ def test_can_read_test_story_with_entities_without_value(domain: Domain):
     )
     assert len(trackers) == 1
 
-    assert trackers[0].events[-4] == UserUttered(
-        intent={"name": "greet", "confidence": 1.0},
-        entities=[{"entity": "name", "value": ""}],
-        parse_data={
-            "text": "/greet",
-            "intent_ranking": [{"confidence": 1.0, "name": "greet"}],
-            "intent": {"confidence": 1.0, "name": "greet"},
-            "entities": [{"entity": "name", "value": ""}],
-        },
+    events = list(trackers[0].events)
+    expected = with_session_ids(
+        [
+            UserUttered(
+                intent={"name": "greet", "confidence": 1.0},
+                entities=[{"entity": "name", "value": ""}],
+                parse_data={
+                    "text": "/greet",
+                    "intent_ranking": [{"confidence": 1.0, "name": "greet"}],
+                    "intent": {"confidence": 1.0, "name": "greet"},
+                    "entities": [{"entity": "name", "value": ""}],
+                },
+            ),
+            ActionExecuted("utter_greet"),
+            ActionExecuted("action_listen"),
+        ],
+        mock_session_id,
     )
-    assert trackers[0].events[-2] == ActionExecuted("utter_greet")
-    assert trackers[0].events[-1] == ActionExecuted("action_listen")
+
+    assert events[-4] == expected[0]
+    assert events[-2] == expected[1]
+    assert events[-1] == expected[2]
 
 
 @pytest.mark.parametrize(
@@ -431,7 +465,7 @@ async def test_no_warning_if_intent_in_domain(domain: Domain):
     assert not len(record)
 
 
-def test_parsing_of_e2e_stories(domain: Domain):
+def test_parsing_of_e2e_stories(domain: Domain, mock_session_id: str):
     yaml_file = "data/test_yaml_stories/stories_hybrid_e2e.yml"
     tracker = training.load_data(
         yaml_file,
@@ -445,25 +479,30 @@ def test_parsing_of_e2e_stories(domain: Domain):
 
     actual = list(tracker[0].events)
 
-    expected = [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered(intent={"name": "simple"}),
-        ActionExecuted("utter_greet"),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered(
-            "I am looking for a Kenyan restaurant",
-            {"name": None},
-            entities=[{"start": 19, "end": 25, "value": "Kenyan", "entity": "cuisine"}],
-        ),
-        ActionExecuted("", action_text="good for you"),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered(intent={"name": "goodbye"}),
-        ActionExecuted("utter_goodbye"),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("One more thing", {"name": None}),
-        ActionExecuted("", action_text="What?"),
-        ActionExecuted(ACTION_LISTEN_NAME),
-    ]
+    expected = with_session_ids(
+        [
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": "simple"}),
+            ActionExecuted("utter_greet"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                "I am looking for a Kenyan restaurant",
+                {"name": None},
+                entities=[
+                    {"start": 19, "end": 25, "value": "Kenyan", "entity": "cuisine"}
+                ],
+            ),
+            ActionExecuted("", action_text="good for you"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": "goodbye"}),
+            ActionExecuted("utter_goodbye"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("One more thing", {"name": None}),
+            ActionExecuted("", action_text="What?"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        mock_session_id,
+    )
 
     assert actual == expected
 
@@ -645,8 +684,15 @@ def test_or_statement_story_with_or_slot_was_set(domain: Domain):
         remove_duplicates=False,
     )
     assert len(training_trackers) == 2
-    assert training_trackers[0].events[3] == SlotSet(key="name", value="peter")
-    assert training_trackers[1].events[3] == SlotSet(key="name", value="bob")
+    slot_values = {
+        list(training_trackers[0].events)[3].value,
+        list(training_trackers[1].events)[3].value,
+    }
+    assert slot_values == {"peter", "bob"}
+    assert list(training_trackers[0].events)[3].key == "name"
+    assert list(training_trackers[1].events)[3].key == "name"
+    assert isinstance(list(training_trackers[0].events)[3], SlotSet)
+    assert isinstance(list(training_trackers[1].events)[3], SlotSet)
 
 
 @pytest.mark.parametrize("is_conversation_test", [True, False])
@@ -707,7 +753,7 @@ def test_raises_exception_missing_intent_in_rules(file: Text, domain: Domain):
     assert "Missing intent value" in warning[0].message.args[0]
 
 
-def test_can_read_test_story(domain: Domain):
+def test_can_read_test_story(domain: Domain, mock_session_id: str):
     trackers = training.load_data(
         "data/test_yaml_stories/stories.yml",
         domain,
@@ -720,19 +766,27 @@ def test_can_read_test_story(domain: Domain):
     # the generated stories are in a non stable order - therefore we need to
     # do some trickery to find the one we want to test
     tracker = [t for t in trackers if len(t.events) == 5][0]  # noqa: RUF015
-    assert tracker.events[0] == ActionExecuted("action_listen")
-    assert tracker.events[1] == UserUttered(
-        intent={INTENT_NAME_KEY: "simple", "confidence": 1.0},
-        parse_data={
-            "text": "/simple",
-            "intent_ranking": [{"confidence": 1.0, INTENT_NAME_KEY: "simple"}],
-            "intent": {"confidence": 1.0, INTENT_NAME_KEY: "simple"},
-            "entities": [],
-        },
+    events = list(tracker.events)
+    expected = with_session_ids(
+        [
+            ActionExecuted("action_listen"),
+            UserUttered(
+                intent={INTENT_NAME_KEY: "simple", "confidence": 1.0},
+                parse_data={
+                    "text": "/simple",
+                    "intent_ranking": [{"confidence": 1.0, INTENT_NAME_KEY: "simple"}],
+                    "intent": {"confidence": 1.0, INTENT_NAME_KEY: "simple"},
+                    "entities": [],
+                },
+            ),
+            ActionExecuted("utter_default"),
+            ActionExecuted("utter_greet"),
+            ActionExecuted("action_listen"),
+        ],
+        mock_session_id,
     )
-    assert tracker.events[2] == ActionExecuted("utter_default")
-    assert tracker.events[3] == ActionExecuted("utter_greet")
-    assert tracker.events[4] == ActionExecuted("action_listen")
+
+    assert events == expected
 
 
 def test_can_read_test_story_with_checkpoint_after_or(domain: Domain):

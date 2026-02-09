@@ -119,3 +119,56 @@ def test_dialogue_round_trip_serialization_with_conversation_started_timestamp(
     restored_dialogue = Dialogue.from_parameters(dialogue_dict)
 
     assert restored_dialogue.conversation_started_timestamp == original_timestamp
+
+
+def test_dialogue_as_dict_includes_current_session_id(domain: Domain):
+    """Verify that as_dict() includes current_session_id."""
+    tracker = DialogueStateTracker("test_sender", [])
+    tracker.update(SessionStarted())
+
+    dialogue = tracker.as_dialogue()
+    dialogue_dict = dialogue.as_dict()
+
+    assert "current_session_id" in dialogue_dict
+    assert dialogue_dict["current_session_id"] == tracker.current_session_id
+
+
+def test_dialogue_from_parameters_with_current_session_id(domain: Domain):
+    """Verify that from_parameters() restores current_session_id."""
+    tracker = DialogueStateTracker("test_sender", [])
+    tracker.update(SessionStarted())
+
+    serialised_dialogue = InMemoryTrackerStore.serialise_tracker(tracker)
+    deserialised_dialogue = Dialogue.from_parameters(json.loads(serialised_dialogue))
+
+    assert deserialised_dialogue.current_session_id == tracker.current_session_id
+    assert tracker.as_dialogue().as_dict() == deserialised_dialogue.as_dict()
+
+
+def test_dialogue_from_parameters_without_current_session_id(domain: Domain):
+    """Old dialogues without current_session_id still deserialize correctly."""
+    dialogue_dict = {
+        "name": "test_sender",
+        "events": [{"event": "session_started", "timestamp": 1234567890.0}],
+        "user_id": None,
+    }
+
+    dialogue = Dialogue.from_parameters(dialogue_dict)
+
+    assert dialogue.current_session_id is None
+
+
+def test_dialogue_round_trip_serialization_with_current_session_id(domain: Domain):
+    """Full round-trip serialization preserves current_session_id."""
+    tracker = DialogueStateTracker("test_sender", [])
+    tracker.update(SessionStarted())
+    original_session_id = tracker.current_session_id
+
+    # Serialize
+    dialogue = tracker.as_dialogue()
+    dialogue_dict = dialogue.as_dict()
+
+    # Deserialize
+    restored_dialogue = Dialogue.from_parameters(dialogue_dict)
+
+    assert restored_dialogue.current_session_id == original_session_id

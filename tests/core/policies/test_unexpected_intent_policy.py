@@ -64,6 +64,7 @@ from rasa.utils.tensorflow.constants import (
     SENTENCE,
 )
 from rasa.utils.tensorflow.models import RasaModel
+from tests.conftest import with_session_ids
 from tests.core.policies.test_ted_policy import TestTEDPolicy
 from tests.core.test_policies import train_trackers
 
@@ -1105,6 +1106,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tracker_events_for_training: List[List[Event]],
         expected_trackers_with_events: List[List[Event]],
         domain: Domain,
+        mock_session_id: str,
     ):
         trackers_for_training = [
             TrackerWithCachedStates.from_events(
@@ -1121,7 +1123,11 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             filtered_trackers, expected_trackers_with_events
         ):
             collected_tracker_events = list(collected_tracker.events)
-            assert collected_tracker_events == expected_tracker_events
+            expected_with_session = with_session_ids(
+                expected_tracker_events, mock_session_id
+            )
+
+            assert collected_tracker_events == expected_with_session
 
     async def test_predict_action_probabilities_abstains_in_coexistence(
         self,

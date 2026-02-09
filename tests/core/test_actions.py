@@ -112,6 +112,7 @@ from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
+from tests.conftest import with_session_ids
 from tests.utilities import json_of_latest_request, latest_request
 
 
@@ -270,6 +271,7 @@ async def test_remote_action_runs(
                 "stack": [],
                 "user_id": None,
                 "conversation_started_timestamp": None,
+                "current_session_id": None,
                 "latest_event_time": None,
                 FOLLOWUP_ACTION: "action_listen",
                 "slots": {
@@ -340,6 +342,7 @@ async def test_remote_action_logs_events(
                 "stack": [],
                 "user_id": None,
                 "conversation_started_timestamp": None,
+                "current_session_id": None,
                 "paused": False,
                 "inactive": False,
                 "terminated": False,
@@ -1124,6 +1127,7 @@ async def test_action_session_start_with_slots(
 async def test_applied_events_after_action_session_start(
     default_channel: CollectingOutputChannel,
     template_nlg: TemplatedNaturalLanguageGenerator,
+    mock_session_id: str,
 ):
     slot_set = SlotSet("my_slot", "value")
     events = [
@@ -1144,7 +1148,12 @@ async def test_applied_events_after_action_session_start(
     for event in events:
         tracker.update(event)
 
-    assert tracker.applied_events() == [slot_set, ActionExecuted(ACTION_LISTEN_NAME)]
+    applied = tracker.applied_events()
+    expected_applied = with_session_ids(
+        [slot_set, ActionExecuted(ACTION_LISTEN_NAME)], mock_session_id
+    )
+
+    assert applied == expected_applied
 
 
 async def test_action_default_fallback(
