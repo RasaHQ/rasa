@@ -46,6 +46,7 @@ from rasa.builder.exceptions import (
     ValidationError,
 )
 from rasa.builder.git_service import GitOperationInProgressError
+from rasa.builder.github_clone import GitCloneError, clone_public_repo
 from rasa.builder.job_helpers import (
     handle_rollback_error,
     handle_rollback_validation_error,
@@ -61,6 +62,7 @@ from rasa.builder.models import (
     JobStatus,
 )
 from rasa.builder.project_generator.project_generator import ProjectGenerator
+from rasa.builder.project_info import ensure_first_used
 from rasa.builder.telemetry.langfuse.langfuse_compat import observe
 from rasa.builder.telemetry.langfuse.prompt_to_bot_langfuse_telemetry import (
     PromptToBotLangfuseTelemetry,
@@ -385,6 +387,155 @@ async def run_template_to_bot_job(
         )
         await push_job_status_event(job, JobStatus.error, message=str(exc))
         job_manager.mark_done(job, error=str(exc))
+
+
+async def run_github_to_bot_job(
+    app: "Sanic",
+    job: JobInfo,
+    repo_url: str,
+    branch: Optional[str] = None,
+) -> None:
+    """Run the github-to-bot job: clone a public GitHub repository and train.
+
+    This job clones a public GitHub repository and trains the agent from the
+    cloned project files.
+
+    Args:
+        app: The Sanic application instance.
+        job: The job information instance.
+        repo_url: HTTPS URL of the public GitHub repository.
+        branch: Branch to checkout (defaults to default branch).
+    """
+    project_generator: ProjectGenerator = app.ctx.project_generator
+    heartbeat_task = asyncio.create_task(send_heartbeat(job))
+
+    try:
+        await push_job_status_event(job, JobStatus.received)
+
+        structlogger.info(
+            "github_to_bot_job.starting",
+            job_id=job.id,
+            repo_url=repo_url,
+            branch=branch,
+        )
+
+        # 1. Cleanup the project folder (like template-to-bot)
+        project_generator.cleanup()
+
+        # 2. Cloning
+        await push_job_status_event(job, JobStatus.cloning)
+
+        target_path = project_generator.project_folder
+
+        # Clone the repository
+        await clone_public_repo(
+            repo_url=repo_url,
+            target_path=target_path,
+            branch=branch,
+        )
+
+        # Ensure project info is set up (similar to template-to-bot)
+        ensure_first_used(project_generator.project_folder)
+
+        await push_job_status_event(job, JobStatus.clone_success)
+
+        # 3. Initialize git service for the cloned repo
+        # For cloned repos, init_repo() returns early since .git exists,
+        # but we still need to ensure builder directories are in .gitignore
+        project_generator.git_service.init_repo()
+        project_generator.git_service.ensure_builder_gitignore_entries()
+        commit_sha = await project_generator.git_service.get_current_commit_sha()
+
+        # 4. Validating
+        await push_job_status_event(job, JobStatus.validating)
+        training_input = project_generator.get_training_input()
+        validation_error = await validate_project(training_input.importer)
+        if validation_error:
+            raise ValidationError(validation_error)
+        await push_job_status_event(job, JobStatus.validation_success)
+
+        # 5. Training
+        await push_job_status_event(job, JobStatus.training)
+        agent = await train_and_load_and_link_agent(
+            project_generator, commit_sha, role="copilot", action="github_clone"
+        )
+        update_agent(agent, app)
+        await push_job_status_event(job, JobStatus.train_success)
+
+        # 6. Create copilot welcome message job
+        copilot_welcome_job = job_manager.create_job(commit_sha)
+        app.add_task(run_copilot_welcome_message_job(app, copilot_welcome_job))
+
+        bot_files = project_generator.get_bot_files()
+        structlogger.info(
+            "github_to_bot_job.success",
+            job_id=job.id,
+            files_loaded=list(bot_files.keys()),
+            commit_sha=commit_sha,
+            copilot_welcome_job_id=copilot_welcome_job.id,
+        )
+
+        await push_job_status_event(
+            job=job,
+            status=JobStatus.done,
+            payload={"copilot_welcome_job_id": copilot_welcome_job.id},
+        )
+        job_manager.mark_done(job)
+
+    except GitCloneError as exc:
+        error_message = str(exc)
+        structlogger.error(
+            "github_to_bot_job.clone_error",
+            job_id=job.id,
+            error=error_message,
+        )
+        await push_job_status_event(job, JobStatus.clone_error, message=error_message)
+        job_manager.mark_done(job, error=error_message)
+
+    except TrainingError as exc:
+        error_message = str(exc)
+        structlogger.debug(
+            "github_to_bot_job.training_error",
+            job_id=job.id,
+            error=error_message,
+        )
+        await push_job_status_event(job, JobStatus.train_error, message=error_message)
+        job_manager.mark_done(job, error=error_message)
+
+    except ValidationError as exc:
+        log_levels = ["error"]
+        if config.VALIDATION_FAIL_ON_WARNINGS:
+            log_levels.append("warning")
+
+        structlogger.debug(
+            "github_to_bot_job.validation_error",
+            job_id=job.id,
+            error=str(exc),
+            all_validation_logs=exc.validation_logs,
+            included_log_levels=log_levels,
+        )
+        error_message = exc.get_error_message_with_logs(log_levels=log_levels)
+        await push_job_status_event(
+            job, JobStatus.validation_error, message=error_message
+        )
+        job_manager.mark_done(job, error=error_message)
+
+    except Exception as exc:
+        error_message = str(exc)
+        structlogger.exception(
+            "github_to_bot_job.unexpected_error",
+            job_id=job.id,
+            error=error_message,
+        )
+        await push_job_status_event(job, JobStatus.error, message=error_message)
+        job_manager.mark_done(job, error=error_message)
+
+    finally:
+        # Cancel the heartbeat task - no need to await, the event loop
+        # will clean it up. Awaiting could inadvertently suppress an outer
+        # cancellation, which SonarQube warns against.
+        if not heartbeat_task.done():
+            heartbeat_task.cancel()
 
 
 async def run_replace_all_files_job(

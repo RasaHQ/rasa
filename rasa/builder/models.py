@@ -88,6 +88,96 @@ class GitCommitInfo(BaseModel):
     message: Optional[str] = Field(None, description="Message of the commit")
 
 
+class GitHubToBotRequest(BaseModel):
+    """Request model for github-to-bot endpoint.
+
+    This endpoint is used to initialize the bot from a public GitHub repository.
+    """
+
+    repo_url: str = Field(
+        ...,
+        min_length=1,
+        description="HTTPS URL of the public GitHub repository to clone.",
+    )
+    branch: Optional[str] = Field(
+        None,
+        description="Branch to checkout. Defaults to the repository's default branch.",
+    )
+
+    @field_validator("repo_url")
+    @classmethod
+    def validate_repo_url(cls, v: str) -> str:
+        """Validate that the repository URL is a valid HTTPS GitHub URL.
+
+        This prevents command injection and SSRF attacks by ensuring only
+        valid GitHub.com URLs are accepted. URLs must match the exact pattern
+        https://github.com/owner/repo[.git] - no other domains are allowed.
+        """
+        import re
+
+        v = v.strip()
+        # Remove trailing slash if present
+        # (for convenience when copying URLs from browser)
+        v = v.rstrip("/")
+
+        # Must be HTTPS
+        if not v.startswith("https://"):
+            raise ValueError("Repository URL must be an HTTPS URL")
+
+        # SECURITY: Only accept github.com URLs to prevent SSRF attacks
+        # The pattern explicitly requires "github.com" (not subdomains or other domains)
+        # Matches: https://github.com/owner/repo or https://github.com/owner/repo.git
+        # Rejects: https://evil.com/*, https://internal-git/*, etc.
+        github_pattern = r"^https://github\.com/[\w\-\.]+/[\w\-\.]+(?:\.git)?$"
+        if not re.match(github_pattern, v):
+            raise ValueError(
+                "Repository URL must be a valid GitHub URL in the format: "
+                "https://github.com/owner/repo or https://github.com/owner/repo.git"
+            )
+
+        return v
+
+    @field_validator("branch")
+    @classmethod
+    def validate_branch(cls, v: Optional[str]) -> Optional[str]:
+        """Validate branch name to prevent command injection.
+
+        Git branch names have specific rules. This validator ensures the branch
+        name doesn't contain shell metacharacters or other dangerous content.
+        """
+        import re
+
+        if v is None:
+            return v
+
+        v = v.strip()
+
+        # Empty branch name is not allowed
+        if not v:
+            return None
+
+        # Branch names cannot contain: space, ~, ^, :, ?, *, [, \, .., @{
+        # They cannot start with . or end with .lock or /
+        # This pattern allows alphanumeric, dash, underscore, dot, and forward slash
+        branch_pattern = r"^[a-zA-Z0-9][\w\-\./]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$"
+        if not re.match(branch_pattern, v):
+            raise ValueError(
+                "Branch name can only contain alphanumeric characters, "
+                "hyphens, underscores, dots, and forward slashes"
+            )
+
+        # Additional checks for dangerous patterns
+        dangerous_patterns = ["..", "@{", " ", "~", "^", ":", "?", "*", "[", "\\"]
+        for pattern in dangerous_patterns:
+            if pattern in v:
+                raise ValueError(f"Branch name cannot contain '{pattern}'")
+
+        if v.startswith(".") or v.endswith(".lock") or v.endswith("/"):
+            raise ValueError("Invalid branch name format")
+
+        return v
+
+
 class CommitFileContents(BaseModel):
     """Original and modified contents of a file in a commit."""
 

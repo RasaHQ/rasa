@@ -60,6 +60,7 @@ from rasa.builder.job_manager import job_manager
 from rasa.builder.jobs import (
     run_backup_to_bot_job,
     run_change_branch_job,
+    run_github_to_bot_job,
     run_prompt_to_bot_job,
     run_replace_all_files_job,
     run_rollback_job,
@@ -79,6 +80,7 @@ from rasa.builder.models import (
     ChangeBranchRequest,
     CommitDiffWithContentsResponse,
     GitCommitInfo,
+    GitHubToBotRequest,
     GitStatusResponse,
     JobCreateResponse,
     JobStatus,
@@ -634,6 +636,101 @@ async def handle_template_to_bot(request: Request) -> HTTPResponse:
         return response.json(
             ApiErrorResponse(
                 error="Failed to create template-to-bot job",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/github-to-bot", methods=["POST"])
+@openapi.summary("Initialize bot from public GitHub repository")
+@openapi.description(
+    "Clones a public GitHub repository and initializes the bot from its contents. "
+    "Returns immediately with a job ID. Connect to `/job-events/<job_id>` to "
+    "receive server-sent events (SSE) for real-time progress tracking.\n\n"
+    "**SSE Event Flow** (via `/job-events/<job_id>`):\n"
+    "1. `received` - Request received by server\n"
+    "2. `cloning` - Cloning the GitHub repository\n"
+    "3. `clone_success` - Repository cloned successfully\n"
+    "4. `validating` - Validating bot configuration\n"
+    "5. `validation_success` - Validation passed\n"
+    "6. `training` - Training the bot model\n"
+    "7. `train_success` - Model training completed\n"
+    "8. `done` - Bot initialization completed\n\n"
+    "**Error Events:**\n"
+    "- `clone_error` - Failed to clone repository\n"
+    "- `train_error` - Repository cloned but training failed\n"
+    "- `validation_error` - Repository cloned but configuration is invalid\n"
+    "- `error` - Unexpected error occurred\n\n"
+    "**Note:** This endpoint only supports public GitHub repositories. "
+    "Private repositories are not supported."
+)
+@openapi.tag("bot-generation")
+@openapi.body(
+    {"application/json": model_to_schema(GitHubToBotRequest)},
+    description="GitHub repository details.",
+    required=True,
+    example={
+        "repo_url": "https://github.com/myorg/my-bot.git",
+        "branch": "main",
+    },
+)
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(JobCreateResponse)},
+    description="Job created. Poll or subscribe to /job-events/<job_id> for progress.",
+)
+@openapi.response(
+    400,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Validation error in request payload",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def handle_github_to_bot(request: Request) -> HTTPResponse:
+    """Initialize bot from a public GitHub repository."""
+    try:
+        payload = GitHubToBotRequest(**request.json)
+    except Exception as exc:
+        return response.json(
+            ApiErrorResponse(
+                error="Invalid request", details={"error": str(exc)}
+            ).model_dump(),
+            status=400,
+        )
+
+    try:
+        job = job_manager.create_job()
+        request.app.add_task(
+            run_github_to_bot_job(
+                app=request.app,
+                job=job,
+                repo_url=payload.repo_url,
+                branch=payload.branch,
+            )
+        )
+        return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.github_to_bot.unexpected_error",
+            tags={"endpoint": "/api/github-to-bot"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to create github-to-bot job",
                 details={"error": str(exc)},
             ).model_dump(),
             status=HTTPStatus.INTERNAL_SERVER_ERROR,

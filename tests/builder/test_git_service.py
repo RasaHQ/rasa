@@ -112,6 +112,10 @@ class TestGitService:
                 "--author",
                 "user <user@example.com>",
             ],
+            env={
+                "GIT_COMMITTER_NAME": "user",
+                "GIT_COMMITTER_EMAIL": "user@example.com",
+            },
         )
 
     @pytest.mark.asyncio
@@ -848,7 +852,11 @@ A\ttest.added.ts"""
                     "Author: user\n"
                     "Timestamp: 1640995200"
                 ),
-            ]
+            ],
+            env={
+                "GIT_COMMITTER_NAME": "Rasa Bot Builder",
+                "GIT_COMMITTER_EMAIL": "noreply@rasa.com",
+            },
         )
 
     @pytest.mark.asyncio
@@ -883,7 +891,11 @@ A\ttest.added.ts"""
                     "Author: user\n"
                     "Timestamp: 1640995200"
                 ),
-            ]
+            ],
+            env={
+                "GIT_COMMITTER_NAME": "Rasa Bot Builder",
+                "GIT_COMMITTER_EMAIL": "noreply@rasa.com",
+            },
         )
 
     @pytest.mark.asyncio

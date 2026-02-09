@@ -138,6 +138,45 @@ class GitService:
                     """)
             )
 
+    def ensure_builder_gitignore_entries(self) -> None:
+        """Ensure .rasa/ and models/ are in .gitignore.
+
+        This is important for cloned repositories where init_repo() returns
+        early because .git already exists. We need to ensure internal builder
+        directories don't get committed even if the cloned repo's .gitignore
+        doesn't have them.
+        """
+        gitignore_path = self.project_folder / ".gitignore"
+
+        # Required entries for builder operation
+        required_entries = {".rasa/", "models/"}
+
+        # Read existing gitignore if it exists
+        content = ""
+        existing_entries = set()
+        if gitignore_path.exists():
+            content = gitignore_path.read_text()
+            existing_entries = {
+                line.strip() for line in content.splitlines() if line.strip()
+            }
+
+        # Check what's missing
+        missing_entries = required_entries - existing_entries
+
+        if missing_entries:
+            # Append missing entries
+            with gitignore_path.open("a") as f:
+                if existing_entries and not content.endswith("\n"):
+                    f.write("\n")
+                f.write("\n# Added by Rasa Bot Builder\n")
+                for entry in sorted(missing_entries):
+                    f.write(f"{entry}\n")
+
+            structlogger.info(
+                "git_service.gitignore_entries_added",
+                entries=sorted(missing_entries),
+            )
+
     async def commit_changes(self, commit_info: GitCommitInfo) -> str:
         """Create Git commit and return commit SHA.
 
@@ -197,6 +236,13 @@ class GitService:
     async def _create_commit(self, commit_info: GitCommitInfo) -> None:
         """Create a commit with author attribution."""
         message = commit_info.message or ""
+        # Set committer identity via env vars to avoid "Committer identity unknown"
+        # errors in environments without global git config (e.g., containers).
+        # The --author flag only sets the author, not the committer.
+        committer_env = {
+            "GIT_COMMITTER_NAME": commit_info.author,
+            "GIT_COMMITTER_EMAIL": commit_info.email,
+        }
         await self.run_git_command(
             [
                 "commit",
@@ -205,7 +251,8 @@ class GitService:
                 "--allow-empty",
                 "--author",
                 f"{commit_info.author} <{commit_info.email}>",
-            ]
+            ],
+            env=committer_env,
         )
 
     async def get_current_commit_sha(self) -> str:
@@ -696,6 +743,7 @@ class GitService:
         args: List[str],
         check_output: bool = False,
         skip_error_logging: bool = False,
+        env: Optional[Dict[str, str]] = None,
     ) -> Optional[str]:
         """Run a Git command in the project folder.
 
@@ -703,6 +751,7 @@ class GitService:
             args: Git command arguments (without 'git')
             check_output: Whether to return the command output
             skip_error_logging: Whether to ignore errors
+            env: Optional environment variables to add to the command
 
         Returns:
             Command output if check_output is True, None otherwise
@@ -711,6 +760,8 @@ class GitService:
             subprocess.CalledProcessError: If the Git command fails
             GitOperationInProgressError: If a non-readonly command is run without lock
         """
+        import os
+
         # Ensure lock is held for all commands except known read-only ones
         if not self._is_readonly_command(args) and not self._operation_lock.locked():
             raise GitOperationInProgressError(
@@ -721,6 +772,12 @@ class GitService:
 
         cmd = ["git"] + args
 
+        # Merge custom env with current environment
+        process_env = None
+        if env is not None:
+            process_env = os.environ.copy()
+            process_env.update(env)
+
         try:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,  # Unpack the command list
@@ -728,6 +785,7 @@ class GitService:
                 # create_subprocess_exec returns bytes it does NOT have a text parameter
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                env=process_env,
             )
             stdout, stderr = await proc.communicate()
 
@@ -831,11 +889,19 @@ class GitService:
             f"Timestamp: {timestamp}"
         )
 
+        # Set tagger identity via env vars to avoid "Committer identity unknown"
+        # errors in environments without global git config (e.g., containers).
+        tagger_env = {
+            "GIT_COMMITTER_NAME": DEFAULT_COMMIT_INFO.author,
+            "GIT_COMMITTER_EMAIL": DEFAULT_COMMIT_INFO.email,
+        }
+
         # Acquire lock for tag creation (modifies repository)
         async with self.git_operation():
             # Use -f flag to force update if tag already exists (e.g., from retraining)
             await self.run_git_command(
-                ["tag", "-f", "-a", tag_name, commit_sha, "-m", tag_message]
+                ["tag", "-f", "-a", tag_name, commit_sha, "-m", tag_message],
+                env=tagger_env,
             )
 
         structlogger.info(
