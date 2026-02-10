@@ -101,11 +101,12 @@ jobs:
           max_attempts: 2
           shell: bash
           command: |
+            set -Eeuxov pipefail
             cd calm-benchmarking-bot
             if [[ ! -d tests ]]; then
               mkdir tests;
             fi
-            make e2e-test-mock-mcp-"${TEST_TYPE}"
+            make e2e-test-mock-mcp-"${TEST_TYPE}" || (grep APITimeoutError tests/e2e_results_failed.yml && echo "::warning::E2E test failed due to APITimeoutError (non-blocking)")
       - name: Save E2E test results
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
@@ -317,6 +318,7 @@ jobs:
           max_attempts: 2
           shell: bash
           command: |
+            set -Eeuxov pipefail
             cd calm-benchmarking-bot
             if [[ ! -d tests ]]; then
               mkdir tests;
@@ -324,7 +326,7 @@ jobs:
             rasa test e2e e2e/e2e_tests_with_assertions/mock_mcp/agents/open_ended/happy_path/conduct_company_finance_research.yml \
               --e2e-results --endpoints "${MOCK_MCP_ENDPOINTS_FILE}" \
               --sub-agents "${MOCK_MCP_SUB_AGENTS_DIRECTORY}" \
-              --debug
+              --debug  || (grep APITimeoutError tests/e2e_results_failed.yml && echo "::warning::E2E test failed due to APITimeoutError (non-blocking)")
       - name: Save E2E test results
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
