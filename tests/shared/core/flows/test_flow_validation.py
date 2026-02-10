@@ -6,7 +6,11 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.config.configuration import Configuration
-from rasa.shared.constants import RASA_PATTERN_CHITCHAT, RASA_PATTERN_HUMAN_HANDOFF
+from rasa.shared.constants import (
+    RASA_PATTERN_CHITCHAT,
+    RASA_PATTERN_HUMAN_HANDOFF,
+    RASA_PATTERN_SEARCH,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.steps import LinkFlowStep
@@ -485,6 +489,20 @@ def test_validation_pass_for_a_link_to_pattern_human_handoff():
     assert len(flows.underlying_flows) == 1
 
 
+def test_validation_pass_for_a_link_to_pattern_search():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - link: pattern_search
+        """
+
+    flows = flows_from_str(flow_config)
+    assert len(flows.underlying_flows) == 1
+    assert flows.underlying_flows[0].steps[0].link == RASA_PATTERN_SEARCH
+
+
 def test_validation_fails_for_a_link_to_pattern_chitchat():
     flow_config = """
         flows:
@@ -768,6 +786,26 @@ def test_validation_pattern_linking_to_a_pattern_chitchat(
     # Then
     assert isinstance(flows.underlying_flows[0].steps[1], LinkFlowStep)
     assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_CHITCHAT
+
+
+@pytest.mark.parametrize(
+    "flow_from_str_fn", [flows_from_str_including_defaults, flows_from_str]
+)
+def test_validation_pattern_linking_to_pattern_search(
+    flow_from_str_fn: Callable,
+):
+    """User flows and patterns can link to pattern_search."""
+    flow_config = f"""
+        flows:
+          pattern_test_pattern:
+            description: test pattern
+            steps:
+              - action: welcome
+              - link: {RASA_PATTERN_SEARCH}
+        """
+    flows = flow_from_str_fn(flow_config)
+    assert isinstance(flows.underlying_flows[0].steps[1], LinkFlowStep)
+    assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_SEARCH
 
 
 def test_validate_slot_persistence_configuration_duplicate():

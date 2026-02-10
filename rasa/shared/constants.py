@@ -314,6 +314,7 @@ CONTEXT = "context"
 RASA_PATTERN_INTERNAL_ERROR = "pattern_internal_error"
 RASA_PATTERN_HUMAN_HANDOFF = "pattern_human_handoff"
 RASA_PATTERN_CHITCHAT = "pattern_chitchat"
+RASA_PATTERN_SEARCH = "pattern_search"
 
 RASA_INTERNAL_ERROR_PREFIX = "rasa_internal_error_"
 RASA_PATTERN_INTERNAL_ERROR_DEFAULT = RASA_INTERNAL_ERROR_PREFIX + "default"
