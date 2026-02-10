@@ -636,7 +636,7 @@ class VoiceInputChannel(InputChannel):
 
         # Did the user speak more than 3 words?
         min_words = self.interruption_config.min_words
-        if isinstance(e, UserIsSpeaking):
+        if isinstance(e, (NewTranscript, UserIsSpeaking)):
             translator = str.maketrans("", "", string.punctuation)
             words = e.text.translate(translator).split()
             return len(words) >= min_words
@@ -651,6 +651,43 @@ class VoiceInputChannel(InputChannel):
         As not all channels support flushing bot audio buffer,
         if a channel does not implement it. It has no effect."""
         pass
+
+    async def receive_asr_events(
+        self,
+        asr_engine: ASREngine,
+        asr_event_queue: asyncio.Queue,
+        ws: Websocket,
+        call_parameters: CallParameters,
+    ) -> None:
+        async for event in asr_engine.stream_asr_events():
+            await asr_event_queue.put(event)
+            if self.should_interrupt(event):
+                logger.debug("voice_channel.asr_event_should_interrupt", ev=event)
+                await self.interrupt_playback(ws, call_parameters)
+
+    async def handle_asr_events(
+        self,
+        asr_event_queue: asyncio.Queue,
+        ws: Websocket,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        tts_engine: TTSEngine,
+        call_parameters: CallParameters,
+    ) -> None:
+        while True:
+            event = await asr_event_queue.get()
+            await self.handle_asr_event(
+                event,
+                ws,
+                on_new_message,
+                tts_engine,
+                call_parameters,
+            )
+
+    async def asr_keep_alive_task(self, asr_engine: ASREngine) -> None:
+        interval = getattr(asr_engine.config, "keep_alive_interval", 5)
+        while True:
+            await asyncio.sleep(interval)
+            await asr_engine.send_keep_alive()
 
     async def run_audio_streaming(
         self,
@@ -712,32 +749,23 @@ class VoiceInputChannel(InputChannel):
                     )
                     break
 
-        async def receive_asr_events() -> None:
-            async for event in asr_engine.stream_asr_events():
-                await asr_event_queue.put(event)
-
-        async def handle_asr_events() -> None:
-            while True:
-                event = await asr_event_queue.get()
-                await self.handle_asr_event(
-                    event,
+        tasks = [
+            asyncio.create_task(consume_audio_bytes()),
+            asyncio.create_task(
+                self.receive_asr_events(
+                    asr_engine, asr_event_queue, channel_websocket, call_parameters
+                )
+            ),
+            asyncio.create_task(
+                self.handle_asr_events(
+                    asr_event_queue,
                     channel_websocket,
                     on_new_message,
                     tts_engine,
                     call_parameters,
                 )
-
-        async def asr_keep_alive_task() -> None:
-            interval = getattr(asr_engine.config, "keep_alive_interval", 5)
-            while True:
-                await asyncio.sleep(interval)
-                await asr_engine.send_keep_alive()
-
-        tasks = [
-            asyncio.create_task(consume_audio_bytes()),
-            asyncio.create_task(receive_asr_events()),
-            asyncio.create_task(handle_asr_events()),
-            asyncio.create_task(asr_keep_alive_task()),
+            ),
+            asyncio.create_task(self.asr_keep_alive_task(asr_engine)),
         ]
         try:
             await asyncio.wait(
@@ -821,8 +849,6 @@ class VoiceInputChannel(InputChannel):
                 call_state.user_speech_start_time = time.time()
             self._cancel_silence_timeout_watcher()
             call_state.is_user_speaking = True
-            if self.should_interrupt(e):
-                await self.interrupt_playback(voice_websocket, call_parameters)
         elif isinstance(e, UserSilence):
             call_state.dtmf_buffer = ""
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
