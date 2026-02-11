@@ -169,5 +169,13 @@ def get_default_credentials() -> Dict[str, Any]:
       user_message_evt: "user_message"
       bot_message_evt: "bot_message"
       session_persistence: true
+      server_url: "localhost"
+      interruptions:
+        enabled: true
+        min_words: 3
+      asr:
+        name: "deepgram"
+      tts:
+        name: "deepgram"
     """
     return read_yaml(default_credentials_yaml)

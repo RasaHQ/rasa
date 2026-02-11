@@ -165,6 +165,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         jwt_method: Optional[Text] = "HS256",
         metadata_key: Optional[Text] = "metadata",
         enable_silence_timeout: bool = False,
+        interruptions: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Creates a `StudioChatInput` object."""
         from rasa.core.agent import Agent
@@ -191,6 +192,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             server_url=server_url,
             asr_config=asr_config,
             tts_config=tts_config,
+            interruptions=interruptions,
         )
 
         # Dictionaries to manage active connections and background tasks
@@ -214,6 +216,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             server_url=credentials.get("server_url", ""),
             asr_config=credentials.get("asr", {}),
             tts_config=credentials.get("tts", {}),
+            interruptions=credentials.get("interruptions"),
             # SocketIO parameters
             user_message_evt=credentials.get("user_message_evt", "user_uttered"),
             bot_message_evt=credentials.get("bot_message_evt", "bot_uttered"),
