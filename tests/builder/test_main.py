@@ -5,6 +5,7 @@ import pytest
 from sanic import Sanic
 
 from rasa.builder import config
+from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from rasa.builder.main import create_app, setup_langfuse
 from rasa.builder.project_generator.project_generator import ProjectGenerator
 
@@ -200,20 +201,20 @@ class TestStartMcpServer:
     def test_start_mcp_server_sets_environment(
         self, monkeypatch, tmp_path: Path
     ) -> None:
-        """Test that start_mcp_server sets RASA_PROJECT_FOLDER env var."""
+        """Test that start_mcp_server sets RASA_PROJECT_FOLDER_ENV_VAR."""
         import os
 
         from rasa.builder.main import start_mcp_server
 
         # Clear the env var first
-        monkeypatch.delenv("RASA_PROJECT_FOLDER", raising=False)
+        monkeypatch.delenv(RASA_PROJECT_FOLDER_ENV_VAR, raising=False)
 
         # Mock the run_server to prevent actual server startup
         with patch("rasa.builder.copilot.mcp_server.server.run_server") as mock_run:
             start_mcp_server(str(tmp_path))
 
             # Verify env var was set
-            assert os.environ.get("RASA_PROJECT_FOLDER") == str(tmp_path)
+            assert os.environ.get(RASA_PROJECT_FOLDER_ENV_VAR) == str(tmp_path)
 
             # Verify run_server was called
             mock_run.assert_called_once()

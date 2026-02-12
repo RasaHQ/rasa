@@ -1,7 +1,8 @@
 """Main MCP server implementation for Rasa Copilot.
 
-This server exposes tools, resources, and prompts for the Agents SDK to use
-via SSE/HTTP.
+This server exposes Rasa-specific tools, resources, and prompts for external
+MCP clients to use via SSE/HTTP.
+
 It follows the FastMCP pattern from the official MCP documentation:
 https://modelcontextprotocol.io/docs/develop/build-server
 https://gofastmcp.com/servers/tools
@@ -13,35 +14,49 @@ folder passed via RASA_PROJECT_FOLDER environment variable.
 import asyncio
 import os
 from contextlib import asynccontextmanager, suppress
-from typing import Annotated, AsyncIterator, Dict
+from typing import Annotated, AsyncIterator, Optional
 
 import structlog
 from mcp.server.fastmcp import Context, FastMCP
 from pydantic import Field
 
+from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from rasa.builder.copilot.mcp_server.constants import (
+    INSTRUCTIONS_FILE_PATH,
     MCP_TOOL_GET_ASSISTANT_LOGS,
-    MCP_TOOL_GET_PROJECT_FILE,
-    MCP_TOOL_LIST_PROJECT_FILES,
-    MCP_TOOL_READ_PROJECT_FILES,
-    MCP_TOOL_SEARCH_DOCS,
+    MCP_TOOL_GET_DOMAIN_SCHEMA,
+    MCP_TOOL_GET_E2E_SCHEMA,
+    MCP_TOOL_GET_FLOW,
+    MCP_TOOL_GET_FLOW_SCHEMA,
+    MCP_TOOL_GET_RESPONSE,
+    MCP_TOOL_GET_SLOT,
+    MCP_TOOL_LIST_CUSTOM_ACTION_IMPLEMENTATIONS,
+    MCP_TOOL_LIST_DEFAULT_ACTIONS,
+    MCP_TOOL_LIST_DOMAIN_ACTIONS,
+    MCP_TOOL_LIST_FLOWS,
+    MCP_TOOL_LIST_RESPONSES,
+    MCP_TOOL_LIST_SLOTS,
+    MCP_TOOL_SEARCH_RASA_DOCS,
     MCP_TOOL_TALK_TO_ASSISTANT,
-    MCP_TOOL_TRAIN_MODEL,
-    MCP_TOOL_UPDATE_MULTIPLE_FILES,
+    MCP_TOOL_TRAIN_RASA_ASSISTANT,
     MCP_TOOL_VALIDATE_PROJECT,
-    MCP_TOOL_WRITE_PROJECT_FILE,
 )
 from rasa.builder.copilot.mcp_server.models import (
+    CustomActionsResponse,
     DocumentSearchResponse,
-    FileContentResponse,
-    FileListResponse,
-    MultiFileUpdate,
-    ReadFilesResponse,
+    GetFlowResponse,
+    GetResponseResponse,
+    GetSlotResponse,
+    ListCustomActionsResponse,
+    ListDefaultActionsResponse,
+    ListFlowsResponse,
+    ListResponsesResponse,
+    ListSlotsResponse,
+    SchemaResponse,
+    SchemaType,
     TalkToAssistantResponse,
     TrainingResponse,
-    UpdateFilesResponse,
     ValidationResponse,
-    WriteFileResponse,
 )
 from rasa.shared.exceptions import RasaException
 
@@ -95,31 +110,33 @@ async def dummy_progress_reporter(
             await task
 
 
+def _load_instructions() -> str:
+    """Load MCP server instructions from markdown file."""
+    return INSTRUCTIONS_FILE_PATH.read_text()
+
+
 # Initialize FastMCP server with metadata and configuration
 mcp = FastMCP(
     name="rasa-copilot",
-    instructions=(
-        "MCP server for Rasa assistant development with "
-        "tools for file operations, validation, and training"
-    ),
+    instructions=_load_instructions(),
 )
 
 
 def _get_project_folder() -> str:
     """Get the project folder from environment.
 
-    The project folder is passed via RASA_PROJECT_FOLDER environment variable
+    The project folder is passed via RASA_PROJECT_FOLDER_ENV_VAR environment variable
     when the subprocess is spawned.
 
     Returns:
         Project folder path as string
     """
-    project_folder = os.getenv("RASA_PROJECT_FOLDER")
+    project_folder = os.getenv(RASA_PROJECT_FOLDER_ENV_VAR)
 
     if project_folder is None:
         raise RasaException(
-            "Project folder not configured. The RASA_PROJECT_FOLDER environment "
-            "variable must be set by the parent copilot process."
+            f"Project folder not configured. The {RASA_PROJECT_FOLDER_ENV_VAR} "
+            "environment variable must be set by the parent copilot process."
         )
 
     return project_folder
@@ -131,22 +148,22 @@ def _get_project_folder() -> str:
 
 
 @mcp.tool(
-    name=MCP_TOOL_SEARCH_DOCS,
+    name=MCP_TOOL_SEARCH_RASA_DOCS,
     description=(
-        "Search Rasa documentation for relevant information about concepts, APIs, and "
-        "best practices. This is the AUTHORITATIVE source for Rasa documentation that "
-        "returns the most relevant documentation entries matching your query, with "
-        "valid links."
+        "Search the official Rasa documentation for authoritative information. "
+        "Use this tool for ALL Rasa-related questions to ground your answers in truth. "
+        "Returns relevant documentation about Rasa concepts, APIs, best practices, "
+        "configuration, and troubleshooting with valid links to official docs."
     ),
     annotations={
-        "title": "Search Documentation",
+        "title": "Search Rasa Documentation",
         "readOnlyHint": True,
         "openWorldHint": True,  # Searches external documentation service
         "idempotentHint": False,
     },
     structured_output=True,
 )
-async def search_docs(
+async def search_rasa_documentation(
     query: Annotated[
         str,
         Field(
@@ -154,186 +171,21 @@ async def search_docs(
         ),
     ],
 ) -> DocumentSearchResponse:
-    """Search Rasa documentation for relevant information.
+    """Search official Rasa documentation for authoritative information.
 
-    This tool queries the Rasa documentation service to find relevant articles,
-    guides, and API documentation based on your search terms.
+    Use this tool for all Rasa-related questions to ensure answers are grounded
+    in the official documentation. Returns relevant articles, guides, and API docs.
     """
     from rasa.builder.copilot.mcp_server.tools.document_search import (
-        search_rasa_documentation,
+        search_rasa_documentation as _search_rasa_documentation,
     )
 
-    return await search_rasa_documentation(query)
-
-
-@mcp.tool(
-    name=MCP_TOOL_READ_PROJECT_FILES,
-    description="Read all bot project files with their complete contents",
-    annotations={
-        "title": "Read All Project Files",
-        "readOnlyHint": True,
-        "openWorldHint": False,  # Local filesystem only
-        "idempotentHint": True,
-    },
-    structured_output=True,
-)
-async def read_project_files(
-    exclude_docs: Annotated[
-        bool, Field(description="Whether to exclude the docs directory from results")
-    ] = True,
-    allowed_extensions: Annotated[
-        str,
-        Field(
-            description=(
-                "Comma-separated list of file extensions to "
-                "include (e.g., 'yaml,yml,py')"
-            )
-        ),
-    ] = "yaml,yml,py,jinja,jinja2",
-) -> ReadFilesResponse:
-    """Read all bot project files with their complete contents.
-
-    Returns all files in the project that match the allowed extensions,
-    organized as a mapping of file paths to their contents.
-    """
-    from rasa.builder.copilot.mcp_server.tools.file_operations import (
-        read_assistant_files,
-    )
-
-    project_folder = _get_project_folder()
-    return await read_assistant_files(project_folder, exclude_docs, allowed_extensions)
-
-
-@mcp.tool(
-    name=MCP_TOOL_GET_PROJECT_FILE,
-    description="Get the content of a specific file in the bot project",
-    annotations={
-        "title": "Read Single File",
-        "readOnlyHint": True,
-        "openWorldHint": False,
-        "idempotentHint": True,
-    },
-    structured_output=True,
-)
-async def get_project_file(
-    file_path: Annotated[
-        str,
-        Field(
-            description=(
-                "Relative path to the file "
-                "(e.g., 'domain.yml', 'flows/greeting.yml')"
-            )
-        ),
-    ],
-) -> FileContentResponse:
-    """Get the content of a specific file in the bot project.
-
-    Use this to read individual files when you know the exact path.
-    More efficient than reading all files when you only need one.
-    """
-    from rasa.builder.copilot.mcp_server.tools.file_operations import get_file_content
-
-    project_folder = _get_project_folder()
-    return await get_file_content(project_folder, file_path)
-
-
-@mcp.tool(
-    name=MCP_TOOL_LIST_PROJECT_FILES,
-    description="List all files in the bot project as a directory tree",
-    annotations={
-        "title": "List Project Files",
-        "readOnlyHint": True,
-        "openWorldHint": False,
-        "idempotentHint": True,
-    },
-    structured_output=True,
-)
-async def list_project_files() -> FileListResponse:
-    """List all files in the bot project as a directory tree.
-
-    Shows the complete directory structure with all files organized by folder.
-    Use this first to understand the project layout before reading specific files.
-    """
-    from rasa.builder.copilot.mcp_server.tools.file_operations import list_files
-
-    project_folder = _get_project_folder()
-    return await list_files(project_folder)
-
-
-@mcp.tool(
-    name=MCP_TOOL_WRITE_PROJECT_FILE,
-    description="Write or overwrite a file in the bot project",
-    annotations={
-        "title": "Write Project File",
-        "readOnlyHint": False,
-        "destructiveHint": True,  # Overwrites existing files
-        "idempotentHint": True,  # Same content = same result
-        "openWorldHint": False,
-    },
-    structured_output=True,
-)
-async def write_project_file(
-    file_path: Annotated[
-        str,
-        Field(
-            description=(
-                "Relative path to the file "
-                "(e.g., 'domain/slots.yml', 'flows/greeting.yml')"
-            )
-        ),
-    ],
-    content: Annotated[str, Field(description="Complete content to write to the file")],
-) -> WriteFileResponse:
-    """Write or overwrite a file in the bot project.
-
-    Creates new files or completely replaces existing file contents.
-    Always validate the project after making changes.
-    """
-    from rasa.builder.copilot.mcp_server.tools.file_operations import write_file
-
-    project_folder = _get_project_folder()
-    return await write_file(project_folder, file_path, content)
-
-
-@mcp.tool(
-    name=MCP_TOOL_UPDATE_MULTIPLE_FILES,
-    description="Write multiple files in a single coordinated operation",
-    annotations={
-        "title": "Update Multiple Files",
-        "readOnlyHint": False,
-        "destructiveHint": True,
-        "idempotentHint": True,
-        "openWorldHint": False,
-    },
-    structured_output=True,
-)
-async def update_multiple_files(
-    files: Annotated[
-        Dict[str, str],
-        Field(
-            description="Dictionary mapping file paths to their new contents",
-            examples=[{"domain/slots.yml": "slots:\n  user_name:\n    type: text"}],
-        ),
-    ],
-) -> UpdateFilesResponse:
-    """Write multiple files in a single coordinated operation.
-
-    Use this for making related changes across multiple files atomically.
-    More efficient than multiple individual write operations.
-    Automatically validates all file paths for security.
-    """
-    from rasa.builder.copilot.mcp_server.tools.file_operations import update_files
-
-    # Validate input using Pydantic model
-    validated = MultiFileUpdate(files=files)
-
-    project_folder = _get_project_folder()
-    return await update_files(project_folder, validated.files)
+    return await _search_rasa_documentation(query)
 
 
 @mcp.tool(
     name=MCP_TOOL_VALIDATE_PROJECT,
-    description="Validate the bot project configuration and training data",
+    description="Validate the assistant project configuration and training data",
     annotations={
         "title": "Validate Project",
         "readOnlyHint": True,  # Only validates, doesn't modify
@@ -343,7 +195,7 @@ async def update_multiple_files(
     structured_output=True,
 )
 async def validate_project(ctx: Context) -> ValidationResponse:
-    """Validate the bot project configuration and training data.
+    """Validate the assistant project configuration and training data.
 
     Runs comprehensive validation checks on domain, flows, config, and training data.
     This operation can take 60+ seconds for large projects.
@@ -363,10 +215,10 @@ async def validate_project(ctx: Context) -> ValidationResponse:
 
 
 @mcp.tool(
-    name=MCP_TOOL_TRAIN_MODEL,
-    description="Train a new bot model with the current project configuration",
+    name=MCP_TOOL_TRAIN_RASA_ASSISTANT,
+    description="Train the Rasa assistant with the current project configuration",
     annotations={
-        "title": "Train Model",
+        "title": "Train Rasa Assistant",
         "readOnlyHint": False,  # Creates model files
         "destructiveHint": False,  # Doesn't overwrite existing models
         "idempotentHint": False,  # Each training may produce different results
@@ -374,8 +226,8 @@ async def validate_project(ctx: Context) -> ValidationResponse:
     },
     structured_output=True,
 )
-async def train_model(ctx: Context) -> TrainingResponse:
-    """Train a new bot model with the current project configuration.
+async def train_rasa_assistant(ctx: Context) -> TrainingResponse:
+    """Train the Rasa assistant with the current project configuration.
 
     This trains a new model using the current domain, flows, and training data.
     Training can take several minutes for large projects.
@@ -411,11 +263,11 @@ async def get_assistant_logs() -> str:
     Provides access to the most recent log entries from the Rasa assistant,
     useful for troubleshooting errors and understanding system behavior.
     """
-    from rasa.builder.copilot.mcp_server.resources.project_context import (
-        get_assistant_logs,
+    from rasa.builder.copilot.mcp_server.tools.project_context import (
+        get_assistant_logs as _get_assistant_logs,
     )
 
-    return await get_assistant_logs()
+    return await _get_assistant_logs()
 
 
 @mcp.tool(
@@ -440,7 +292,7 @@ async def talk_to_assistant(
             description=(
                 "List of user messages to send to the assistant in sequence. "
                 "Each message will be sent one after another, waiting for the "
-                "bot's response before sending the next."
+                "assistant's response before sending the next."
             ),
             examples=[
                 ["Hello", "I want to book a flight", "To New York"],
@@ -452,7 +304,7 @@ async def talk_to_assistant(
     """Test the assistant by sending messages and getting the conversation results.
 
     Sends each message to the trained assistant in order and returns:
-    - The bot's responses to each message
+    - The assistant's responses to each message
     - The complete tracker context showing conversation state, slots, and flow status
 
     Use this after training to verify that:
@@ -486,144 +338,438 @@ async def talk_to_assistant(
     return result
 
 
+@mcp.tool(
+    name=MCP_TOOL_LIST_CUSTOM_ACTION_IMPLEMENTATIONS,
+    description=(
+        "List all custom actions in the project. Returns action name, class name, "
+        "and file path (relative to project root) for each action. "
+        "Use file_path to read the implementation.\n\n"
+        "The tool automatically detects the actions folder from endpoints.yml or uses "
+        "'actions' as default.\n\nResponse interpretation:\n"
+        "- If error is set: Actions folder not found. "
+        "Read endpoints.yml or ask user for location.\n"
+        "- If count=0 and no error: Actions folder exists, "
+        "but contains no actions (valid state).\n"
+        "- If count>0: Successfully found actions."
+    ),
+    annotations={
+        "title": "List Custom Actions",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def list_custom_actions(
+    actions_folder: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Path to the actions folder/package to scan, relative to "
+                "project root. Can be a simple folder name (e.g., 'actions') "
+                "or a nested path (e.g., 'my_package/actions'). If not "
+                "provided, auto-detects from endpoints.yml or defaults to "
+                "'actions'. Absolute paths and path traversal (..) are not "
+                "allowed."
+            )
+        ),
+    ] = None,
+) -> CustomActionsResponse:
+    """List all custom action implementations in the project.
+
+    Scans Python files in the actions folder and returns information about
+    each custom action class found, including:
+    - Action name (from the name() method)
+    - Class name
+    - File path
+
+    If actions_folder is not specified, attempts to detect it from
+    endpoints.yml. Falls back to "actions" if not found.
+
+    If the actions folder cannot be found, the error field will be set with guidance.
+    In this case, read endpoints.yml or ask the user for the correct location.
+    """
+    from rasa.builder.copilot.mcp_server.tools.custom_actions import (
+        list_custom_action_implementations,
+    )
+
+    project_folder = _get_project_folder()
+    return await list_custom_action_implementations(project_folder, actions_folder)
+
+
+@mcp.tool(
+    name=MCP_TOOL_LIST_FLOWS,
+    description=(
+        "List all Rasa Flows definitions in the project. "
+        "Returns flow ID, name, and file path for each flow. "
+        "By default, searches in the 'data/' folder. "
+        "Use data_folder to specify a different directory containing flow YAML files."
+    ),
+    annotations={
+        "title": "List Project Flow Definitions",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def list_project_flow_definitions(
+    data_folder: Optional[str] = "data",
+) -> ListFlowsResponse:
+    """List all flow definitions in the project.
+
+    Args:
+        data_folder: Folder containing flow files. Defaults to 'data/'.
+
+    Scans for flow definition YAML files and returns basic metadata.
+    Use get_project_file to read full flow definitions.
+    """
+    from rasa.builder.copilot.mcp_server.tools.project_context import (
+        list_project_flows,
+    )
+
+    project_folder = _get_project_folder()
+    return await list_project_flows(project_folder, data_folder)
+
+
+@mcp.tool(
+    name=MCP_TOOL_LIST_SLOTS,
+    description=(
+        "List all Rasa Slot definitions from the project domain file(s). "
+        "Returns slot name, type, and file path for each slot. "
+        "By default, searches in the 'domain/' folder or 'domain.yml'. "
+        "Use domain_folder to specify a directory with domain YAML files."
+    ),
+    annotations={
+        "title": "List Project Slot Definitions",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def list_project_slot_definitions(
+    domain_folder: Optional[str] = "domain",
+) -> ListSlotsResponse:
+    """List all slot definitions in the project's domain.
+
+    Args:
+        domain_folder: Folder containing domain files. Defaults to 'domain/'.
+
+    Scans domain YAML files and returns basic slot metadata.
+    Use get_project_file to read full slot configurations.
+    """
+    from rasa.builder.copilot.mcp_server.tools.project_context import (
+        list_project_slots,
+    )
+
+    project_folder = _get_project_folder()
+    return await list_project_slots(project_folder, domain_folder)
+
+
+@mcp.tool(
+    name=MCP_TOOL_LIST_RESPONSES,
+    description=(
+        "List all response (utterances) definitions from the project domain file(s). "
+        "Returns response name and file path for each response. "
+        "By default, searches in the 'domain/' folder or 'domain.yml'. "
+        "Use domain_folder to specify a directory with domain YAML files."
+    ),
+    annotations={
+        "title": "List Project Response Definitions",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def list_project_response_definitions(
+    domain_folder: Optional[str] = "domain",
+) -> ListResponsesResponse:
+    """List all response definitions in the project's domain.
+
+    Args:
+        domain_folder: Folder containing domain files. Defaults to 'domain/'.
+
+    Scans domain YAML files and returns basic response metadata.
+    Use get_project_file to read full response templates.
+    """
+    from rasa.builder.copilot.mcp_server.tools.project_context import (
+        list_project_responses,
+    )
+
+    project_folder = _get_project_folder()
+    return await list_project_responses(project_folder, domain_folder)
+
+
+@mcp.tool(
+    name=MCP_TOOL_GET_FLOW,
+    description=(
+        "Get a single flow by flow ID (YAML key) or flow name. "
+        "Returns flow metadata and full definition (steps, triggers, etc.)."
+    ),
+    annotations={
+        "title": "Get Flow",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def get_flow(
+    flow_id: Annotated[
+        str,
+        Field(description="Flow ID (YAML key) or human-readable flow name"),
+    ],
+    data_folder: Optional[str] = "data",
+) -> GetFlowResponse:
+    """Get a single flow by ID or name."""
+    from rasa.builder.copilot.mcp_server.tools.project_context import (
+        get_project_flow,
+    )
+
+    project_folder = _get_project_folder()
+    return await get_project_flow(project_folder, flow_id, data_folder)
+
+
+@mcp.tool(
+    name=MCP_TOOL_GET_SLOT,
+    description=(
+        "Get a single slot by name. "
+        "Returns slot metadata and full definition from the domain."
+    ),
+    annotations={
+        "title": "Get Slot",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def get_slot(
+    slot_name: Annotated[str, Field(description="Slot name")],
+    domain_folder: Optional[str] = "domain",
+) -> GetSlotResponse:
+    """Get a single slot by name."""
+    from rasa.builder.copilot.mcp_server.tools.project_context import (
+        get_project_slot,
+    )
+
+    project_folder = _get_project_folder()
+    return await get_project_slot(project_folder, slot_name, domain_folder)
+
+
+@mcp.tool(
+    name=MCP_TOOL_GET_RESPONSE,
+    description=(
+        "Get a single response (utterance) by name. "
+        "Returns response metadata and full definition (text, image, buttons, etc.)."
+    ),
+    annotations={
+        "title": "Get Response",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def get_response(
+    response_name: Annotated[
+        str, Field(description="Response name (e.g. utter_greet)")
+    ],
+    domain_folder: Optional[str] = "domain",
+) -> GetResponseResponse:
+    """Get a single response by name."""
+    from rasa.builder.copilot.mcp_server.tools.project_context import (
+        get_project_response,
+    )
+
+    project_folder = _get_project_folder()
+    return await get_project_response(project_folder, response_name, domain_folder)
+
+
+@mcp.tool(
+    name=MCP_TOOL_LIST_DOMAIN_ACTIONS,
+    description=(
+        "List all Rasa's Custom Actions that are declared in the domain file(s). "
+        "Returns action name and file path where the action is registered. "
+        "By default, searches in the 'domain/' folder or 'domain.yml'. "
+        "Use domain_folder to specify a directory with domain YAML files. "
+        "Note: This lists domain declarations, not Python implementations."
+    ),
+    annotations={
+        "title": "List Project Custom Actions in Domain",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def list_project_custom_actions_in_domain(
+    domain_folder: Optional[str] = "domain",
+) -> ListCustomActionsResponse:
+    """List all custom action declarations in the project's domain.
+
+    Args:
+        domain_folder: Folder containing domain files. Defaults to 'domain/'.
+
+    Scans domain YAML files for action declarations.
+    This returns domain config, not Python implementations.
+    """
+    from rasa.builder.copilot.mcp_server.tools.project_context import (
+        list_project_custom_actions,
+    )
+
+    project_folder = _get_project_folder()
+    return await list_project_custom_actions(project_folder, domain_folder)
+
+
+@mcp.tool(
+    name=MCP_TOOL_LIST_DEFAULT_ACTIONS,
+    description=(
+        "List all default/built-in action names provided by Rasa. "
+        "These actions are available without any configuration. "
+        "Users can override these to customize behavior. "
+        "See Rasa documentation for details on what each action does."
+    ),
+    annotations={
+        "title": "List Default Action Names",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def list_default_action_names() -> ListDefaultActionsResponse:
+    """List all default/built-in action names provided by Rasa.
+
+    Returns the list of action names that Rasa provides out of the box.
+    Users can override these in their project to customize behavior.
+    See Rasa documentation for details on each action's purpose.
+    """
+    from rasa.shared.core.constants import DEFAULT_ACTION_NAMES
+
+    return ListDefaultActionsResponse(
+        success=True,
+        actions=list(DEFAULT_ACTION_NAMES),
+    )
+
+
+@mcp.tool(
+    name=MCP_TOOL_GET_FLOW_SCHEMA,
+    description=(
+        "Get the official Rasa flow schema. Returns a JSON Schema (the schema "
+        "document itself is in JSON format). Use to validate assistant flows in "
+        "project YAML files or to generate new flows. The schema describes: flow "
+        "name and description, step types, branching logic (if/then/else), "
+        "calling another flow, collect steps and slots, flow guards, and more. "
+        "By default returns the CALM-only flow schema without NLU-related "
+        "properties."
+    ),
+    annotations={
+        "title": "Get Flow Schema",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def get_flow_schema(calm_only: bool = True) -> SchemaResponse:
+    """Return the Rasa flow schema (JSON Schema format)."""
+    from rasa.builder.copilot.mcp_server.tools.rasa_schemas import (
+        get_flow_schema as _get_flow_schema,
+    )
+
+    try:
+        return _get_flow_schema(calm_only=calm_only)
+    except Exception as e:
+        return SchemaResponse(
+            success=False,
+            schema_type=SchemaType.FLOW,
+            schema_content="",
+            error=str(e),
+        )
+
+
+@mcp.tool(
+    name=MCP_TOOL_GET_DOMAIN_SCHEMA,
+    description=(
+        "Get the official Rasa domain schema. Returns a YAML schema (the schema "
+        "document is in YAML schema format). Use to validate domain YAML or generate "
+        "domain files. The schema describes: slots, custom actions, responses "
+        "(utterance templates), and more. By default returns the CALM-only domain "
+        "schema without NLU-related properties."
+    ),
+    annotations={
+        "title": "Get Domain Schema",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def get_domain_schema(calm_only: bool = True) -> SchemaResponse:
+    """Return the Rasa domain schema in YAML schema format (includes responses).
+
+    Args:
+        calm_only: Whether to return only the CALM-related properties of the domain
+            schema.
+    """
+    from rasa.builder.copilot.mcp_server.tools.rasa_schemas import (
+        get_full_domain_schema as _get_full_domain_schema,
+    )
+
+    try:
+        return _get_full_domain_schema(calm_only=calm_only)
+
+    except Exception as e:
+        return SchemaResponse(
+            success=False,
+            schema_type=SchemaType.DOMAIN,
+            schema_content="",
+            error=str(e),
+        )
+
+
+@mcp.tool(
+    name=MCP_TOOL_GET_E2E_SCHEMA,
+    description=(
+        "Get the official Rasa Assistant E2E test schema. Returns a YAML schema (the "
+        "schema document is in YAML schema format). Use to validate e2e test YAML or "
+        "generate e2e tests. The schema describes: test cases, steps (user and bot "
+        "messages), fixtures, metadata, stub custom actions, and assertions."
+    ),
+    annotations={
+        "title": "Get E2E Schema",
+        "readOnlyHint": True,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    },
+    structured_output=True,
+)
+async def get_e2e_schema() -> SchemaResponse:
+    """Return the Rasa e2e test schema in YAML schema format."""
+    from rasa.builder.copilot.mcp_server.tools.rasa_schemas import (
+        get_e2e_schema as _get_e2e_schema,
+    )
+
+    try:
+        return _get_e2e_schema()
+    except Exception as e:
+        return SchemaResponse(
+            success=False,
+            schema_type=SchemaType.E2E,
+            schema_content="",
+            error=str(e),
+        )
+
+
 # ============================================================================
-# RESOURCES - File-like data that can be read by clients
+# RESOURCES - File-like static data that can be read by clients
 # ============================================================================
-
-
-@mcp.resource(
-    uri="project://files",
-    name="project_files",
-    title="Complete Project Files",
-    description=(
-        "All project files with their complete contents (domain, flows, "
-        "config, actions, training data). Use this FIRST to avoid "
-        "multiple tool calls."
-    ),
-    mime_type="application/json",
-)
-async def project_files_resource() -> str:
-    """Get all project files with complete contents in one resource.
-
-    This resource provides the entire project structure and file contents upfront,
-    eliminating the need for multiple get_project_file() tool calls. This is the
-    most efficient way to explore the project and saves agent turns.
-
-    Includes: domain files, flows, config, actions, prompts, and training data.
-    Excludes: docs folder, hidden files, models, __pycache__.
-    """
-    from rasa.builder.copilot.mcp_server.tools.file_operations import (
-        read_assistant_files,
-    )
-
-    project_folder = _get_project_folder()
-    result = await read_assistant_files(
-        project_folder,
-        exclude_docs=True,
-        allowed_extensions="yaml,yml,py,jinja,jinja2,md",
-    )
-    return result.model_dump_json()
-
-
-@mcp.resource(
-    uri="project://tree",
-    name="project_tree",
-    title="Project File Tree",
-    description=(
-        "Lightweight file tree structure showing all project files and directories "
-        "without content"
-    ),
-    mime_type="application/json",
-)
-async def project_tree_resource() -> str:
-    """Get project file tree structure without file contents.
-
-    This lightweight resource shows the complete directory structure and file list,
-    useful for understanding project organization without loading all file contents.
-    Use this when you only need to see what files exist.
-    """
-    from rasa.builder.copilot.mcp_server.tools.file_operations import list_files
-
-    project_folder = _get_project_folder()
-    result = await list_files(project_folder)
-    return result.model_dump_json()
-
-
-@mcp.resource(
-    uri="project://flows",
-    name="project_flows",
-    title="All Flow Definitions",
-    description=(
-        "All conversation flow files (data/*.yml) showing assistant skills and "
-        "conversation patterns"
-    ),
-    mime_type="application/json",
-)
-async def project_flows_resource() -> str:
-    """Get all flow definition files.
-
-    Returns all YAML files from the data/ directory containing conversation flows.
-    Each flow defines a conversational skill or pattern the assistant can handle.
-    """
-    from rasa.builder.copilot.mcp_server.resources.project_context import (
-        get_flows_definitions,
-    )
-
-    project_folder = _get_project_folder()
-    return await get_flows_definitions(project_folder)
-
-
-@mcp.resource(
-    uri="project://domain",
-    name="project_domain",
-    title="All Domain Definitions",
-    description=(
-        "All domain files (slots, responses, actions) defining the assistant's "
-        "memory and capabilities"
-    ),
-    mime_type="application/json",
-)
-async def project_domain_resource() -> str:
-    """Get all domain definition files.
-
-    Returns all YAML files from the domain/ directory containing:
-    - Slots (assistant memory)
-    - Responses (what the assistant can say)
-    - Actions (custom logic the assistant can run)
-    """
-    from rasa.builder.copilot.mcp_server.resources.project_context import (
-        get_domain_definitions,
-    )
-
-    project_folder = _get_project_folder()
-    return await get_domain_definitions(project_folder)
-
-
-@mcp.resource(
-    uri="project://actions",
-    name="project_actions",
-    title="Custom Action Code",
-    description="All Python custom action implementations from actions/ directory",
-    mime_type="application/json",
-)
-async def project_actions_resource() -> str:
-    """Get all custom action Python files.
-
-    Returns all Python files from the actions/ directory containing
-    custom action implementations for complex logic.
-    """
-    from rasa.builder.copilot.mcp_server.resources.project_context import (
-        get_custom_actions_code,
-    )
-
-    project_folder = _get_project_folder()
-    return await get_custom_actions_code(project_folder)
-
 
 # Note: Dynamic resource templates (uri_template) are not
 # supported in mcp.server.fastmcp
-# The get_project_file tool provides the same functionality for
-# accessing individual files
 
 
 # ============================================================================
@@ -703,7 +849,7 @@ def run_server(host: str = "127.0.0.1", port: int = 5051) -> None:
     """Run the MCP server with SSE transport.
 
     This is the entry point for the MCP webserver. It's started alongside the
-    Sanic server with RASA_PROJECT_FOLDER set in the environment.
+    Sanic server with RASA_PROJECT_FOLDER_ENV_VAR set in the environment.
 
     The server uses SSE (Server-Sent Events) over HTTP for communication.
 
@@ -712,7 +858,7 @@ def run_server(host: str = "127.0.0.1", port: int = 5051) -> None:
         port: Port to bind the server to (default: 5051)
     """
     try:
-        project_folder = os.getenv("RASA_PROJECT_FOLDER")
+        project_folder = os.getenv(RASA_PROJECT_FOLDER_ENV_VAR)
 
         structlogger.info(
             "mcp_server.server.starting",

@@ -18,7 +18,11 @@ from typing import List, Optional
 import structlog
 from agents import function_tool
 
-from rasa.builder.copilot.agent_sdk.planning_context import (
+from rasa.builder.copilot.agent_sdk.tools.constants import (
+    TOOL_CREATE_PLAN,
+    TOOL_UPDATE_TASK,
+)
+from rasa.builder.copilot.agent_sdk.tools.planning_context import (
     format_plan_for_agent,
     get_current_plan,
     set_current_plan,
@@ -30,6 +34,7 @@ from rasa.builder.copilot.models import (
     TodoItem,
     TodoPlanUpdate,
 )
+from rasa.builder.telemetry.langfuse.langfuse_compat import observe
 
 structlogger = structlog.get_logger()
 
@@ -112,7 +117,8 @@ def _send_plan_update_to_frontend(todos: List[TodoItem]) -> None:
         )
 
 
-@function_tool
+@function_tool(name_override=TOOL_CREATE_PLAN)
+@observe(name=f"planning_tool.{TOOL_CREATE_PLAN}", as_type="generation")
 async def create_plan(plan: TaskPlan) -> str:
     """Create a task plan for a complex multi-step task.
 
@@ -158,7 +164,8 @@ async def create_plan(plan: TaskPlan) -> str:
     return format_plan_for_agent(todos)
 
 
-@function_tool
+@function_tool(name_override=TOOL_UPDATE_TASK)
+@observe(name=f"planning_tool.{TOOL_UPDATE_TASK}", as_type="generation")
 async def update_task(update: TaskStatusUpdate) -> str:
     """Update the status of a task in the current plan.
 

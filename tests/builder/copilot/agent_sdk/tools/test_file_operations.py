@@ -1,22 +1,27 @@
-"""Tests for MCP file operation tools."""
+"""Tests for file operation supplementary tools."""
 
 from pathlib import Path
 
 import pytest
 
+from rasa.builder.copilot.agent_sdk.tools.file_operations import (
+    get_file_content,
+    get_project_file,
+    list_files,
+    list_project_files,
+    read_assistant_files,
+    read_project_files,
+    update_files,
+    update_multiple_files,
+    write_file,
+    write_project_file,
+)
 from rasa.builder.copilot.mcp_server.models import (
     FileContentResponse,
     FileListResponse,
     ReadFilesResponse,
     UpdateFilesResponse,
     WriteFileResponse,
-)
-from rasa.builder.copilot.mcp_server.tools.file_operations import (
-    get_file_content,
-    list_files,
-    read_assistant_files,
-    update_files,
-    write_file,
 )
 
 
@@ -311,3 +316,108 @@ class TestUpdateFiles:
         assert result.success is True
         assert len(result.updated) == 0
         assert len(result.failed) == 0
+
+
+class TestFunctionToolWrappers:
+    @pytest.fixture
+    def project_folder(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+        """Create a project folder and set RASA_PROJECT_FOLDER env var."""
+        # Create some test files
+        (tmp_path / "domain.yml").write_text("version: '3.1'")
+        (tmp_path / "config.yml").write_text("pipeline: []")
+
+        data_dir = tmp_path / "data"
+        data_dir.mkdir()
+        (data_dir / "nlu.yml").write_text("nlu: []")
+
+        # Set the environment variable
+        monkeypatch.setenv("RASA_PROJECT_FOLDER", str(tmp_path))
+
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_list_project_files(self, project_folder: Path):
+        """Test list_project_files wrapper gets project folder from env."""
+        # FunctionTool.on_invoke_tool takes (ctx, input) where input is JSON string
+        result = await list_project_files.on_invoke_tool(None, "{}")
+
+        assert result.success is True
+        assert "domain.yml" in result.files
+
+    @pytest.mark.asyncio
+    async def test_read_project_files(self, project_folder: Path):
+        """Test read_project_files wrapper."""
+        result = await read_project_files.on_invoke_tool(
+            None, '{"exclude_docs": true, "allowed_extensions": "yml"}'
+        )
+
+        assert result.count >= 1
+        assert "domain.yml" in result.files
+
+    @pytest.mark.asyncio
+    async def test_get_project_file(self, project_folder: Path):
+        """Test get_project_file wrapper."""
+        result = await get_project_file.on_invoke_tool(
+            None, '{"file_path": "domain.yml"}'
+        )
+
+        assert result.exists is True
+        assert result.content == "version: '3.1'"
+
+    @pytest.mark.asyncio
+    async def test_write_project_file(self, project_folder: Path):
+        """Test write_project_file wrapper."""
+        result = await write_project_file.on_invoke_tool(
+            None, '{"file_path": "new_file.yml", "content": "test content"}'
+        )
+
+        assert result.success is True
+        assert (project_folder / "new_file.yml").read_text() == "test content"
+
+    @pytest.mark.asyncio
+    async def test_update_multiple_files_success(self, project_folder: Path):
+        """Test update_multiple_files wrapper with valid JSON."""
+        # The files_json parameter itself is a JSON string
+        input_json = (
+            '{"files_json": "{\\"file1.yml\\": \\"content1\\", '
+            '\\"file2.yml\\": \\"content2\\"}"}'
+        )
+        result = await update_multiple_files.on_invoke_tool(None, input_json)
+
+        assert result.success is True
+        assert "file1.yml" in result.updated
+        assert "file2.yml" in result.updated
+
+    @pytest.mark.asyncio
+    async def test_update_multiple_files_invalid_json(self, project_folder: Path):
+        """Test update_multiple_files wrapper with invalid JSON."""
+        result = await update_multiple_files.on_invoke_tool(
+            None, '{"files_json": "not valid json"}'
+        )
+
+        assert result.success is False
+        assert "Invalid JSON" in result.failed[0].error
+
+    @pytest.mark.asyncio
+    async def test_update_multiple_files_invalid_format(self, project_folder: Path):
+        """Test update_multiple_files wrapper with wrong data structure."""
+        # Valid JSON but wrong format (array instead of dict)
+        result = await update_multiple_files.on_invoke_tool(
+            None, '{"files_json": "[\\"file1.yml\\", \\"file2.yml\\"]"}'
+        )
+
+        assert result.success is False
+        assert "Invalid input format" in result.failed[0].error
+
+    @pytest.mark.asyncio
+    async def test_wrapper_without_env_var(self, monkeypatch: pytest.MonkeyPatch):
+        """Test that wrappers return error when RASA_PROJECT_FOLDER is not set."""
+        # Unset the environment variable
+        monkeypatch.delenv("RASA_PROJECT_FOLDER", raising=False)
+
+        # on_invoke_tool catches exceptions and returns error as string
+        result = await list_project_files.on_invoke_tool(None, "{}")
+
+        assert isinstance(result, str)
+        assert "RASA_PROJECT_FOLDER" in result
+        assert "error" in result.lower()

@@ -2,7 +2,7 @@
 
 import asyncio
 
-from rasa.builder.copilot.agent_sdk.planning_context import (
+from rasa.builder.copilot.agent_sdk.tools.planning_context import (
     format_plan_for_agent,
     get_current_plan,
     get_final_plan,

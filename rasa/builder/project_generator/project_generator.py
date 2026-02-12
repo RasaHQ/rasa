@@ -7,7 +7,6 @@ import re
 import shutil
 import subprocess
 from contextlib import asynccontextmanager
-from copy import deepcopy
 from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Tuple, cast
 
@@ -48,6 +47,7 @@ from rasa.builder.project_generator.project_utils import (
     validate_file_content_transitions,
 )
 from rasa.builder.project_info import ProjectInfo, ensure_first_used, load_project_info
+from rasa.builder.shared.rasa_schema_utils import get_domain_schema, get_flows_schema
 from rasa.builder.telemetry.langfuse.commit_langfuse_telemetry import (
     CommitMessageGenerationLangfuseTelemetry,
 )
@@ -63,18 +63,13 @@ from rasa.builder.training_service import TrainingInput
 from rasa.builder.validation_service import validate_project
 from rasa.cli.scaffold import ProjectTemplateName, create_initial_project
 from rasa.shared.constants import (
-    DOMAIN_SCHEMA_FILE,
-    PACKAGE_NAME,
-    RESPONSES_SCHEMA_FILE,
     ROLE_ASSISTANT,
     ROLE_SYSTEM,
     ROLE_USER,
 )
 from rasa.shared.core.flows import yaml_flows_io
-from rasa.shared.core.flows.yaml_flows_io import FLOWS_SCHEMA_FILE
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.utils.io import read_json_file
-from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_schema_file
+from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
 from rasa.utils.io import InvalidPathException
 
 structlogger = structlog.get_logger()
@@ -134,8 +129,11 @@ class ProjectGenerator:
 
         # Get the domain and flows schemas for structuring the LLM response with
         # the structured output.
-        self._domain_schema = self._get_domain_schema()
-        self._flows_schema = self._get_flows_schema()
+        self._domain_schema = get_domain_schema(
+            include_responses=True,
+            calm_only=True,
+        )
+        self._flows_schema = get_flows_schema(calm_only=True)
 
         # Retrieved documentation from InKeep AI. We make it static to make the most
         # use of the input tokens caching.
@@ -157,69 +155,6 @@ class ProjectGenerator:
         except Exception as e:
             structlogger.error("project_generator.llm_client_error", error=str(e))
             raise
-
-    def _get_domain_schema(self) -> Dict[str, Any]:
-        """Return a modified domain schema dictionary for project generation."""
-        domain_schema = deepcopy(
-            read_schema_file(DOMAIN_SCHEMA_FILE, PACKAGE_NAME, False)
-        )
-
-        if not isinstance(domain_schema, dict):
-            raise ValueError("Domain schema is not a dictionary")
-
-        # Remove parts not needed for CALM bots
-        unnecessary_keys = ["intents", "entities", "forms", "config", "session_config"]
-        mapping_obj = domain_schema.get("mapping")
-        if not isinstance(mapping_obj, dict):
-            raise ValueError("Domain schema mapping is not a dictionary")
-        mapping = cast(Dict[str, Any], mapping_obj)
-        for key in unnecessary_keys:
-            mapping.pop(key, None)
-
-        # Remove problematic slot mappings
-        slots_obj = mapping.get("slots")
-        if isinstance(slots_obj, dict):
-            slots_dict = cast(Dict[str, Any], slots_obj)
-            slots_mapping_obj = cast(
-                Optional[Dict[str, Any]], slots_dict.get("mapping")
-            )
-            if slots_mapping_obj:
-                regex_slot_obj = cast(
-                    Optional[Dict[str, Any]],
-                    slots_mapping_obj.get("regex;([A-Za-z]+)"),
-                )
-                if regex_slot_obj:
-                    slot_mapping_obj = cast(
-                        Optional[Dict[str, Any]], regex_slot_obj.get("mapping")
-                    )
-                    if slot_mapping_obj:
-                        slot_mapping_obj.pop("mappings", None)
-                        slot_mapping_obj.pop("validation", None)
-
-        # Add responses schema
-        responses_schema_data = read_schema_file(
-            RESPONSES_SCHEMA_FILE, PACKAGE_NAME, False
-        )
-        if not isinstance(responses_schema_data, dict):
-            raise ValueError("Responses schema file is not a dictionary")
-        responses_schema_raw = cast(
-            Optional[Dict[str, Any]],
-            responses_schema_data.get("schema;responses"),
-        )
-        if responses_schema_raw is None:
-            raise ValueError("Responses schema is not a dictionary")
-        mapping["responses"] = responses_schema_raw
-
-        return domain_schema
-
-    def _get_flows_schema(self) -> Dict[str, Any]:
-        """Return a modified flows schema dictionary for project generation."""
-        schema_file = str(
-            importlib_resources.files(PACKAGE_NAME).joinpath(FLOWS_SCHEMA_FILE)
-        )
-        flows_schema = deepcopy(read_json_file(schema_file))
-        flows_schema["$defs"]["flow"]["properties"].pop("nlu_trigger", None)
-        return flows_schema
 
     def _get_flow_documentation(self) -> str:
         """Get the flow documentation."""

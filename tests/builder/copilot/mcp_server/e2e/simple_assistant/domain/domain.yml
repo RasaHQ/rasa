@@ -1,5 +1,14 @@
-actions: []
-slots: {}
+actions:
+- action_check_user
+
+slots:
+  user_name:
+    type: text
+    mappings:
+    - type: custom
+
 responses:
   utter_greet_user:
   - text: hello
+  utter_ask_user_name:
+  - text: What is your name?

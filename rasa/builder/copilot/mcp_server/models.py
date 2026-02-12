@@ -1,8 +1,9 @@
 """Pydantic models for MCP server input/output validation."""
 
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, computed_field, validator
 
 # Common field description constant
 ERROR_FIELD_DESCRIPTION = "Error message if failed"
@@ -270,5 +271,236 @@ class TalkToAssistantResponse(BaseModel):
     )
     tracker_context: Optional[TrackerContextOutput] = Field(
         default=None, description="Full tracker context after conversation"
+    )
+    error: Optional[str] = Field(default=None, description=ERROR_FIELD_DESCRIPTION)
+
+
+class CustomActionInfo(BaseModel):
+    """Information about a custom action defined in the domain."""
+
+    name: str = Field(description="The action name")
+    file_path: Optional[str] = Field(
+        default=None, description="Path to the file containing the action definition"
+    )
+
+
+class CustomActionImplementationInfo(BaseModel):
+    """Information about a custom action implementation (Python class)."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="The action name (from the name() method)",
+    )
+    class_name: str = Field(
+        description="The Python class name of the action",
+    )
+    file_path: str = Field(
+        description=(
+            "Path to the Python file containing the action, relative to project root"
+        ),
+    )
+
+
+class CustomActionsResponse(BaseModel):
+    """Response from listing custom action implementations."""
+
+    actions: List[CustomActionImplementationInfo] = Field(
+        default_factory=list, description="List of custom action implementations found"
+    )
+    actions_folder: str = Field(description="The actions folder that was scanned")
+    error: Optional[str] = Field(default=None, description=ERROR_FIELD_DESCRIPTION)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def count(self) -> int:
+        """Number of actions found."""
+        return len(self.actions)
+
+
+# =============================================================================
+# PROJECT CONTEXT MODELS - Structured outputs for project context tools
+# =============================================================================
+
+
+class FlowInfo(BaseModel):
+    """Information about a single flow in the project."""
+
+    id: str = Field(description="The unique identifier of the flow")
+    name: Optional[str] = Field(default=None, description="Human-readable name of flow")
+    file_path: Optional[str] = Field(
+        default=None, description="Path to the file containing the flow"
+    )
+    definition: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description=(
+            "Full flow definition (name, description, steps, etc.) "
+            "when returned by get_flow"
+        ),
+    )
+
+
+class ListFlowsResponse(BaseModel):
+    """Response from listing project flows."""
+
+    success: bool = Field(description="Whether the operation succeeded")
+    flows: List[FlowInfo] = Field(
+        default_factory=list, description="List of flows in the project"
+    )
+    error: Optional[str] = Field(default=None, description=ERROR_FIELD_DESCRIPTION)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def count(self) -> int:
+        """Number of flows."""
+        return len(self.flows)
+
+
+class SlotInfo(BaseModel):
+    """Information about a single slot in the domain."""
+
+    name: str = Field(description="The name of the slot")
+    type: str = Field(description="The slot type (text, bool, categorical, etc.)")
+    file_path: Optional[str] = Field(
+        default=None, description="Path to the file containing the slot definition"
+    )
+    definition: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description=(
+            "Full slot definition (type, mappings, etc.) " "when returned by get_slot"
+        ),
+    )
+
+
+class ListSlotsResponse(BaseModel):
+    """Response from listing project slots."""
+
+    success: bool = Field(description="Whether the operation succeeded")
+    slots: List[SlotInfo] = Field(
+        default_factory=list, description="List of slots in the domain"
+    )
+    error: Optional[str] = Field(default=None, description=ERROR_FIELD_DESCRIPTION)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def count(self) -> int:
+        """Number of slots."""
+        return len(self.slots)
+
+
+class ResponseInfo(BaseModel):
+    """Information about a single response in the domain."""
+
+    name: str = Field(description="The response identifier (e.g., utter_greet)")
+    file_path: Optional[str] = Field(
+        default=None, description="Path to the file containing the response definition"
+    )
+    definition: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description=(
+            "Full response definition (list of variants) "
+            "when returned by get_response"
+        ),
+    )
+
+
+class ListResponsesResponse(BaseModel):
+    """Response from listing project responses."""
+
+    success: bool = Field(description="Whether the operation succeeded")
+    responses: List[ResponseInfo] = Field(
+        default_factory=list, description="List of responses in the domain"
+    )
+    error: Optional[str] = Field(default=None, description=ERROR_FIELD_DESCRIPTION)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def count(self) -> int:
+        """Number of responses."""
+        return len(self.responses)
+
+
+class GetFlowResponse(BaseModel):
+    """Response from get_flow tool."""
+
+    success: bool = Field(description="Whether the flow was found")
+    flow: Optional[FlowInfo] = Field(
+        default=None, description="Flow metadata and definition when found"
+    )
+    error: Optional[str] = Field(default=None, description=ERROR_FIELD_DESCRIPTION)
+
+
+class GetSlotResponse(BaseModel):
+    """Response from get_slot tool."""
+
+    success: bool = Field(description="Whether the slot was found")
+    slot: Optional[SlotInfo] = Field(
+        default=None, description="Slot metadata and definition when found"
+    )
+    error: Optional[str] = Field(default=None, description=ERROR_FIELD_DESCRIPTION)
+
+
+class GetResponseResponse(BaseModel):
+    """Response from get_response tool."""
+
+    success: bool = Field(description="Whether the response was found")
+    response: Optional[ResponseInfo] = Field(
+        default=None, description="Response metadata and definition when found"
+    )
+    error: Optional[str] = Field(default=None, description=ERROR_FIELD_DESCRIPTION)
+
+
+class ListCustomActionsResponse(BaseModel):
+    """Response from listing custom actions in the domain."""
+
+    success: bool = Field(description="Whether the operation succeeded")
+    actions: List[CustomActionInfo] = Field(
+        default_factory=list, description="List of custom actions in the domain"
+    )
+    error: Optional[str] = Field(default=None, description=ERROR_FIELD_DESCRIPTION)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def count(self) -> int:
+        """Number of custom actions."""
+        return len(self.actions)
+
+
+class ListDefaultActionsResponse(BaseModel):
+    """Response from listing default/built-in action names."""
+
+    success: bool = Field(description="Whether the operation succeeded")
+    actions: List[str] = Field(
+        default_factory=list,
+        description="List of default action names provided by Rasa",
+    )
+    error: Optional[str] = Field(default=None, description=ERROR_FIELD_DESCRIPTION)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def count(self) -> int:
+        """Number of default actions."""
+        return len(self.actions)
+
+
+# =============================================================================
+# SCHEMA TOOLS - Responses for get_flow_schema, get_domain_schema, get_e2e_schema
+# =============================================================================
+
+
+class SchemaType(str, Enum):
+    """Schema type returned by schema tools."""
+
+    FLOW = "flow"
+    DOMAIN = "domain"
+    E2E = "e2e"
+
+
+class SchemaResponse(BaseModel):
+    """Response from get_flow_schema, get_domain_schema, or get_e2e_schema."""
+
+    success: bool = Field(description="Whether the schema was loaded successfully")
+    schema_type: SchemaType = Field(description="Type of schema: flow, domain, or e2e")
+    schema_content: str = Field(
+        description="Schema as JSON string for validation or code generation"
     )
     error: Optional[str] = Field(default=None, description=ERROR_FIELD_DESCRIPTION)

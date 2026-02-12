@@ -6,105 +6,30 @@ These tests verify complete workflows by:
 3. Executing tool calls and verifying results
 """
 
-import json
 from pathlib import Path
-from typing import Callable
+from typing import Callable, ClassVar, List
 
 import pytest
 from mcp import ClientSession
 
 from rasa.builder.copilot.mcp_server.constants import (
     MCP_TOOL_GET_ASSISTANT_LOGS,
-    MCP_TOOL_GET_PROJECT_FILE,
-    MCP_TOOL_LIST_PROJECT_FILES,
-    MCP_TOOL_SEARCH_DOCS,
+    MCP_TOOL_LIST_DEFAULT_ACTIONS,
+    MCP_TOOL_LIST_DOMAIN_ACTIONS,
+    MCP_TOOL_LIST_FLOWS,
+    MCP_TOOL_LIST_RESPONSES,
+    MCP_TOOL_LIST_SLOTS,
+    MCP_TOOL_SEARCH_RASA_DOCS,
     MCP_TOOL_TALK_TO_ASSISTANT,
-    MCP_TOOL_TRAIN_MODEL,
-    MCP_TOOL_UPDATE_MULTIPLE_FILES,
+    MCP_TOOL_TRAIN_RASA_ASSISTANT,
     MCP_TOOL_VALIDATE_PROJECT,
-    MCP_TOOL_WRITE_PROJECT_FILE,
 )
 from tests.builder.copilot.mcp_server.e2e.e2e_helper import (
-    assert_file_exists,
     assert_operation_success,
     assert_training_success,
     call_tool_safely,
-    get_resource_by_uri,
     parse_tool_result,
 )
-
-
-class TestE2EFileOperations:
-    """End-to-end tests for file operation tools."""
-
-    @pytest.mark.asyncio
-    async def test_complete_file_workflow(
-        self, mcp_client: ClientSession, test_project_folder: Path
-    ):
-        """Test complete workflow: list -> read -> write -> read."""
-        # 1. List files
-        result = await call_tool_safely(mcp_client, MCP_TOOL_LIST_PROJECT_FILES, {})
-        parsed = parse_tool_result(result)
-        assert "files" in parsed or "tree" in parsed
-        assert "domain/domain.yml" in str(parsed)
-
-        # 2. Read a file
-        result = await call_tool_safely(
-            mcp_client, MCP_TOOL_GET_PROJECT_FILE, {"file_path": "domain/domain.yml"}
-        )
-        parsed = parse_tool_result(result)
-        assert_file_exists(parsed, "domain/domain.yml")
-        # Check for domain content (actions, slots, responses, etc.)
-        content = str(parsed.get("content", ""))
-        assert "actions" in content or "responses" in content or "slots" in content
-
-        # 3. Write a new file
-        new_content = (
-            "version: '3.1'\nintents: []\nresponses:\n  "
-            "utter_greet:\n    - text: Hello!"
-        )
-        result = await call_tool_safely(
-            mcp_client,
-            MCP_TOOL_WRITE_PROJECT_FILE,
-            {"file_path": "domain/responses.yml", "content": new_content},
-        )
-        parsed = parse_tool_result(result)
-        assert_operation_success(parsed)
-
-        # 4. Verify file was written
-        result = await call_tool_safely(
-            mcp_client, MCP_TOOL_GET_PROJECT_FILE, {"file_path": "domain/responses.yml"}
-        )
-        parsed = parse_tool_result(result)
-        assert_file_exists(parsed, "domain/responses.yml")
-        assert "utter_greet" in str(parsed.get("content", ""))
-        assert (test_project_folder / "domain" / "responses.yml").exists()
-
-    @pytest.mark.asyncio
-    async def test_multi_file_update(
-        self, mcp_client: ClientSession, test_project_folder: Path
-    ):
-        """Test multi-file update tool."""
-        result = await call_tool_safely(
-            mcp_client,
-            MCP_TOOL_UPDATE_MULTIPLE_FILES,
-            {
-                "files": {
-                    "domain/domain1.yml": "version: '3.1'\nintents: []",
-                    "domain/domain2.yml": "version: '3.1'\nintents: []",
-                }
-            },
-        )
-        parsed = parse_tool_result(result)
-        assert_operation_success(parsed)
-        assert (test_project_folder / "domain" / "domain1.yml").exists()
-        assert (test_project_folder / "domain" / "domain2.yml").exists()
-        assert (
-            test_project_folder / "domain" / "domain1.yml"
-        ).read_text() == "version: '3.1'\nintents: []"
-        assert (
-            test_project_folder / "domain" / "domain2.yml"
-        ).read_text() == "version: '3.1'\nintents: []"
 
 
 class TestE2EValidationWorkflow:
@@ -114,54 +39,11 @@ class TestE2EValidationWorkflow:
     async def test_validate_workflow(
         self, mcp_client: ClientSession, test_project_folder: Path
     ):
-        """Test workflow: validate -> modify -> validate."""
-        # 1. Initial validation
-        result = await call_tool_safely(mcp_client, MCP_TOOL_VALIDATE_PROJECT, {})
-        parsed = parse_tool_result(result)
-        assert_operation_success(parsed)
-
-        # 2. Make a change
-        updated_domain = (
-            "actions: []\nslots: {}\nintents:\n  - greet\nresponses:\n  "
-            "utter_greet_user:\n    - text: Hello there!"
-        )
-        result = await call_tool_safely(
-            mcp_client,
-            MCP_TOOL_WRITE_PROJECT_FILE,
-            {"file_path": "domain/domain.yml", "content": updated_domain},
-        )
-        parsed = parse_tool_result(result)
-        assert_operation_success(parsed)
-
-        # 3. Validate again
-        result = await call_tool_safely(mcp_client, MCP_TOOL_VALIDATE_PROJECT, {})
-        parsed = parse_tool_result(result)
-        assert_operation_success(parsed)
-
-    @pytest.mark.asyncio
-    async def test_validation_failure(
-        self, mcp_client: ClientSession, test_project_folder: Path
-    ):
-        """Test validation failure."""
-        # Write a file with validation errors
-        updated_domain = "invalid_domain: invalid_domain"
-        result = await call_tool_safely(
-            mcp_client,
-            MCP_TOOL_WRITE_PROJECT_FILE,
-            {"file_path": "domain/domain.yml", "content": updated_domain},
-        )
-        parsed = parse_tool_result(result)
-        assert_operation_success(parsed)
-
+        """Test validation tool."""
         # Validate the project
         result = await call_tool_safely(mcp_client, MCP_TOOL_VALIDATE_PROJECT, {})
         parsed = parse_tool_result(result)
-        # Assert validation failed
-        assert (
-            parsed.get("success") is False
-        ), f"Validation should fail with invalid domain: {parsed}"
-        assert "errors" in parsed, "Validation result should include errors"
-        assert len(parsed.get("errors", [])) > 0, "Should have at least one error"
+        assert_operation_success(parsed)
 
 
 class TestE2EAssistantConversation:
@@ -176,7 +58,7 @@ class TestE2EAssistantConversation:
     ):
         """Test talk_to_assistant tool after training."""
         # Train the assistant
-        result = await call_tool_safely(mcp_client, MCP_TOOL_TRAIN_MODEL, {})
+        result = await call_tool_safely(mcp_client, MCP_TOOL_TRAIN_RASA_ASSISTANT, {})
         parsed = parse_tool_result(result)
         assert_training_success(parsed)
 
@@ -212,11 +94,11 @@ class TestE2EDocumentationSearch:
     """End-to-end tests for documentation search tool."""
 
     @pytest.mark.asyncio
-    async def test_search_docs(self, mcp_client: ClientSession):
-        """Test search_docs tool returns properly formatted results."""
-        # Call the search_docs tool with a test query
+    async def test_search_rasa_documentation(self, mcp_client: ClientSession):
+        """Test search_rasa_documentation tool returns properly formatted results."""
+        # Call the search_rasa_documentation tool with a test query
         result = await call_tool_safely(
-            mcp_client, MCP_TOOL_SEARCH_DOCS, {"query": "What is Rasa?"}
+            mcp_client, MCP_TOOL_SEARCH_RASA_DOCS, {"query": "What is Rasa?"}
         )
         parsed = parse_tool_result(result)
 
@@ -232,37 +114,6 @@ class TestE2EDocumentationSearch:
         assert "content" in doc, "Document should have 'content' field"
         assert len(doc["url"]) > 0, "URL should not be empty"
         assert len(doc["content"]) > 0, "Content should not be empty"
-
-
-class TestE2EResources:
-    """End-to-end tests for MCP resources."""
-
-    @pytest.mark.asyncio
-    async def test_project_files_resource(
-        self, mcp_client: ClientSession, test_project_folder: Path
-    ):
-        """Test accessing project files resource."""
-        # Debug: list all available resources
-        resources = await mcp_client.list_resources()
-        available_uris = [r.uri for r in resources.resources]
-
-        resource = await get_resource_by_uri(mcp_client, "project://files")
-        if resource is None:
-            msg = (
-                f"Resource 'project://files' not found. "
-                f"Available resources: {available_uris}"
-            )
-            pytest.fail(msg)
-
-        result = await mcp_client.read_resource(resource.uri)
-        assert result.contents is not None
-        assert len(result.contents) > 0
-
-        # Parse JSON content
-        content_text = result.contents[0].text
-        data = json.loads(content_text)
-        assert "files" in data
-        assert "domain/domain.yml" in data["files"]
 
 
 class TestE2EPrompts:
@@ -283,47 +134,153 @@ class TestE2EPrompts:
         assert result.messages[0].role == "user"
 
 
+class TestE2EProjectContext:
+    """End-to-end tests for project context list tools."""
+
+    @pytest.mark.asyncio
+    async def test_list_flows(
+        self, mcp_client: ClientSession, test_project_folder: Path
+    ):
+        """Test list_flows returns flows from the test project."""
+        result = await call_tool_safely(mcp_client, MCP_TOOL_LIST_FLOWS, {})
+        parsed = parse_tool_result(result)
+        assert_operation_success(parsed)
+
+        flows = parsed.get("flows", [])
+        assert len(flows) > 0, "Should find at least one flow"
+
+        flow_ids = [f["id"] for f in flows]
+        assert (
+            "greet_user_flow" in flow_ids
+        ), f"Should find 'greet_user_flow', got: {flow_ids}"
+
+    @pytest.mark.asyncio
+    async def test_list_slots(
+        self, mcp_client: ClientSession, test_project_folder: Path
+    ):
+        """Test list_slots returns slots from the test project."""
+        result = await call_tool_safely(mcp_client, MCP_TOOL_LIST_SLOTS, {})
+        parsed = parse_tool_result(result)
+        assert_operation_success(parsed)
+
+        slots = parsed.get("slots", [])
+        assert len(slots) > 0, "Should find at least one slot"
+
+        slot_names = [s["name"] for s in slots]
+        assert (
+            "user_name" in slot_names
+        ), f"Should find 'user_name' slot, got: {slot_names}"
+
+    @pytest.mark.asyncio
+    async def test_list_responses(
+        self, mcp_client: ClientSession, test_project_folder: Path
+    ):
+        """Test list_responses returns responses from the test project."""
+        result = await call_tool_safely(mcp_client, MCP_TOOL_LIST_RESPONSES, {})
+        parsed = parse_tool_result(result)
+        assert_operation_success(parsed)
+
+        responses = parsed.get("responses", [])
+        assert len(responses) > 0, "Should find at least one response"
+
+        response_names = [r["name"] for r in responses]
+        assert (
+            "utter_greet_user" in response_names
+        ), f"Should find 'utter_greet_user', got: {response_names}"
+        assert (
+            "utter_ask_user_name" in response_names
+        ), f"Should find 'utter_ask_user_name', got: {response_names}"
+
+    @pytest.mark.asyncio
+    async def test_list_domain_actions(
+        self, mcp_client: ClientSession, test_project_folder: Path
+    ):
+        """Test list_domain_actions returns actions from the test project."""
+        result = await call_tool_safely(mcp_client, MCP_TOOL_LIST_DOMAIN_ACTIONS, {})
+        parsed = parse_tool_result(result)
+        assert_operation_success(parsed)
+
+        actions = parsed.get("actions", [])
+        assert len(actions) > 0, "Should find at least one custom action"
+
+        action_names = [a["name"] for a in actions]
+        assert (
+            "action_check_user" in action_names
+        ), f"Should find 'action_check_user', got: {action_names}"
+
+    @pytest.mark.asyncio
+    async def test_list_default_actions(self, mcp_client: ClientSession):
+        """Test list_default_actions returns built-in Rasa action names."""
+        result = await call_tool_safely(mcp_client, MCP_TOOL_LIST_DEFAULT_ACTIONS, {})
+        parsed = parse_tool_result(result)
+        assert_operation_success(parsed)
+
+        actions = parsed.get("actions", [])
+        assert len(actions) > 0, "Should return built-in action names"
+        # Verify some well-known default actions are present
+        assert "action_listen" in actions, "Should include 'action_listen'"
+        assert "action_restart" in actions, "Should include 'action_restart'"
+
+
 class TestE2EErrorHandling:
-    """End-to-end tests for error handling."""
+    """End-to-end tests for error handling with project context list tools."""
+
+    # Mapping of list tools to their folder parameter name
+    _LIST_TOOLS_WITH_FOLDER_PARAM: ClassVar[List[pytest.param]] = [
+        pytest.param(MCP_TOOL_LIST_FLOWS, "data_folder", id="list_flows"),
+        pytest.param(MCP_TOOL_LIST_SLOTS, "domain_folder", id="list_slots"),
+        pytest.param(MCP_TOOL_LIST_RESPONSES, "domain_folder", id="list_responses"),
+        pytest.param(
+            MCP_TOOL_LIST_DOMAIN_ACTIONS, "domain_folder", id="list_domain_actions"
+        ),
+    ]
+
+    # Paths that attempt to escape the project directory (path traversal)
+    _TRAVERSAL_PATHS: ClassVar[List[pytest.param]] = [
+        pytest.param("../../etc", id="parent_traversal"),
+        pytest.param("/etc/passwd", id="absolute_path"),
+        pytest.param("../outside", id="relative_escape"),
+    ]
+
+    # Paths that don't exist but are valid (within project bounds)
+    _NONEXISTENT_PATHS: ClassVar[List[pytest.param]] = [
+        pytest.param("nonexistent_folder", id="nonexistent_folder"),
+        pytest.param("does/not/exist", id="nested_nonexistent"),
+    ]
 
     @pytest.mark.asyncio
-    async def test_invalid_file_path(self, mcp_client: ClientSession):
-        """Test error handling for invalid file paths."""
-        # Try to access restricted path
-        result = await call_tool_safely(
-            mcp_client, MCP_TOOL_GET_PROJECT_FILE, {"file_path": "../outside.yml"}
-        )
+    @pytest.mark.parametrize("tool_name, folder_param", _LIST_TOOLS_WITH_FOLDER_PARAM)
+    @pytest.mark.parametrize("path", _TRAVERSAL_PATHS)
+    async def test_path_traversal_rejected(
+        self,
+        mcp_client: ClientSession,
+        tool_name: str,
+        folder_param: str,
+        path: str,
+    ):
+        """Test that path traversal attempts are rejected by list tools."""
+        result = await call_tool_safely(mcp_client, tool_name, {folder_param: path})
         parsed = parse_tool_result(result)
-        # Should return exists=False and error message
-        assert (
-            parsed.get("exists") is False
-        ), f"Restricted path should not exist: {parsed}"
-        assert "error" in parsed, "Should include error message"
-
-    @pytest.mark.asyncio
-    async def test_nonexistent_file(self, mcp_client: ClientSession):
-        """Test handling of nonexistent files."""
-        result = await call_tool_safely(
-            mcp_client, MCP_TOOL_GET_PROJECT_FILE, {"file_path": "nonexistent.yml"}
-        )
-        parsed = parse_tool_result(result)
-        # Should indicate file doesn't exist with error message
-        assert (
-            parsed.get("exists") is False
-        ), f"Nonexistent file should not exist: {parsed}"
-        assert "error" in parsed, "Should include error message"
-
-    @pytest.mark.asyncio
-    async def test_write_to_restricted_path(self, mcp_client: ClientSession):
-        """Test that writing to restricted paths fails."""
-        result = await call_tool_safely(
-            mcp_client,
-            MCP_TOOL_WRITE_PROJECT_FILE,
-            {"file_path": ".hidden/file.txt", "content": "secret"},
-        )
-        parsed = parse_tool_result(result)
-        # Should return success=False (not an error, but operation failed)
         assert (
             parsed.get("success") is False
-        ), f"Write should fail for restricted path: {parsed}"
-        assert "message" in parsed, "Should include error message"
+        ), f"{tool_name} should reject traversal path '{path}': {parsed}"
+        assert parsed.get(
+            "error"
+        ), f"{tool_name} should include an error message for path '{path}'"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("tool_name, folder_param", _LIST_TOOLS_WITH_FOLDER_PARAM)
+    @pytest.mark.parametrize("path", _NONEXISTENT_PATHS)
+    async def test_nonexistent_path_handled_gracefully(
+        self,
+        mcp_client: ClientSession,
+        tool_name: str,
+        folder_param: str,
+        path: str,
+    ):
+        """Test that nonexistent paths within the project are handled gracefully."""
+        result = await call_tool_safely(mcp_client, tool_name, {folder_param: path})
+        parsed = parse_tool_result(result)
+        assert (
+            parsed.get("success") is True
+        ), f"{tool_name} should handle nonexistent path '{path}' gracefully: {parsed}"

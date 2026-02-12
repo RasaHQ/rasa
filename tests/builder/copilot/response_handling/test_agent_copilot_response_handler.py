@@ -15,10 +15,12 @@ from openai.types.responses import (
     ResponseTextDoneEvent,
 )
 
+from rasa.builder.copilot.agent_sdk.tools.constants import (
+    TOOL_WRITE_PROJECT_FILE,
+)
 from rasa.builder.copilot.mcp_server.constants import (
-    MCP_TOOL_SEARCH_DOCS,
-    MCP_TOOL_TRAIN_MODEL,
-    MCP_TOOL_WRITE_PROJECT_FILE,
+    MCP_TOOL_SEARCH_RASA_DOCS,
+    MCP_TOOL_TRAIN_RASA_ASSISTANT,
 )
 from rasa.builder.copilot.mcp_server.models import (
     DocumentSearchResponse,
@@ -873,7 +875,7 @@ class TestAgentCopilotResponseHandler:
             # Test case 1: Document search tool call - should update documents
             (
                 MCPToolCall(
-                    tool_name=MCP_TOOL_SEARCH_DOCS,
+                    tool_name=MCP_TOOL_SEARCH_RASA_DOCS,
                     status="completed",
                     output=json.dumps(
                         {
@@ -899,7 +901,7 @@ class TestAgentCopilotResponseHandler:
                     ),
                 ),
                 2,
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
             ),
             # Test case 2: No MCP tool call - should not update documents
             (None, 0, None),
@@ -2216,7 +2218,7 @@ class TestAgentCopilotResponseHandler:
         [
             # Test case 1: Success - Valid document retrieval with single document
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 json.dumps(
                     {
@@ -2239,7 +2241,7 @@ class TestAgentCopilotResponseHandler:
             ),
             # Test case 2: Success - Multiple documents
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 json.dumps(
                     {
@@ -2268,7 +2270,7 @@ class TestAgentCopilotResponseHandler:
             ),
             # Test case 3: Success - Empty documents list
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 json.dumps(
                     {
@@ -2298,7 +2300,7 @@ class TestAgentCopilotResponseHandler:
             ),
             # Test case 5: Early return - Not document retrieval (wrong status)
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "called",
                 json.dumps(
                     {
@@ -2313,7 +2315,7 @@ class TestAgentCopilotResponseHandler:
             ),
             # Test case 6: No output - output is None
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 None,
                 0,
@@ -2321,7 +2323,7 @@ class TestAgentCopilotResponseHandler:
             ),
             # Test case 7: No output - output is empty string
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 "",
                 0,
@@ -2329,7 +2331,7 @@ class TestAgentCopilotResponseHandler:
             ),
             # Test case 8: Invalid output type - output is not a string (dict)
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 {"type": "text", "text": "{}"},
                 0,
@@ -2337,7 +2339,7 @@ class TestAgentCopilotResponseHandler:
             ),
             # Test case 9: Invalid output type - output is not a string (int)
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 123,
                 0,
@@ -2345,7 +2347,7 @@ class TestAgentCopilotResponseHandler:
             ),
             # Test case 10: Invalid JSON - output is not valid JSON
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 "not valid json{",
                 0,
@@ -2353,7 +2355,7 @@ class TestAgentCopilotResponseHandler:
             ),
             # Test case 11: Invalid format
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 DocumentSearchResponse(documents=[], error=None).model_dump_json(),
                 0,
@@ -2361,7 +2363,7 @@ class TestAgentCopilotResponseHandler:
             ),
             # Test case 12: Invalid inner JSON - text field is not valid JSON
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 json.dumps({"type": "text", "text": "not valid json{"}),
                 0,
@@ -2370,7 +2372,7 @@ class TestAgentCopilotResponseHandler:
             # Test case 15: Validation error - invalid DocumentSearchResponse structure
             # (documents should be a list, not a string)
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 json.dumps(
                     {
@@ -2383,7 +2385,7 @@ class TestAgentCopilotResponseHandler:
             ),
             # Test case 16: Search error - DocumentSearchResponse has error field set
             (
-                MCP_TOOL_SEARCH_DOCS,
+                MCP_TOOL_SEARCH_RASA_DOCS,
                 "completed",
                 json.dumps(
                     {
@@ -2472,10 +2474,10 @@ class TestAgentCopilotResponseHandler:
 
         # Write file, then train
         handler._tracked_tool_calls.append(
-            MCPToolCall(tool_name=MCP_TOOL_WRITE_PROJECT_FILE, status="completed")
+            MCPToolCall(tool_name=TOOL_WRITE_PROJECT_FILE, status="completed")
         )
         handler._tracked_tool_calls.append(
-            MCPToolCall(tool_name=MCP_TOOL_TRAIN_MODEL, status="completed")
+            MCPToolCall(tool_name=MCP_TOOL_TRAIN_RASA_ASSISTANT, status="completed")
         )
 
         assert handler.is_model_up_to_date is True
@@ -2489,10 +2491,10 @@ class TestAgentCopilotResponseHandler:
 
         # Train, then write file (changes not reflected in model)
         handler._tracked_tool_calls.append(
-            MCPToolCall(tool_name=MCP_TOOL_TRAIN_MODEL, status="completed")
+            MCPToolCall(tool_name=MCP_TOOL_TRAIN_RASA_ASSISTANT, status="completed")
         )
         handler._tracked_tool_calls.append(
-            MCPToolCall(tool_name=MCP_TOOL_WRITE_PROJECT_FILE, status="completed")
+            MCPToolCall(tool_name=TOOL_WRITE_PROJECT_FILE, status="completed")
         )
 
         assert handler.is_model_up_to_date is False
@@ -2505,10 +2507,10 @@ class TestAgentCopilotResponseHandler:
         )
 
         handler._tracked_tool_calls.append(
-            MCPToolCall(tool_name=MCP_TOOL_WRITE_PROJECT_FILE, status="completed")
+            MCPToolCall(tool_name=TOOL_WRITE_PROJECT_FILE, status="completed")
         )
         handler._tracked_tool_calls.append(
-            MCPToolCall(tool_name=MCP_TOOL_TRAIN_MODEL, status="completed")
+            MCPToolCall(tool_name=MCP_TOOL_TRAIN_RASA_ASSISTANT, status="completed")
         )
         assert handler.is_model_up_to_date is True
 
@@ -2773,10 +2775,10 @@ class TestAgentCopilotResponseHandler:
             await asyncio.sleep(0.01)
             # Add write and train events in correct order (write first, then train)
             await mcp_queue.put(
-                MCPToolCall(tool_name=MCP_TOOL_WRITE_PROJECT_FILE, status="completed")
+                MCPToolCall(tool_name=TOOL_WRITE_PROJECT_FILE, status="completed")
             )
             await mcp_queue.put(
-                MCPToolCall(tool_name=MCP_TOOL_TRAIN_MODEL, status="completed")
+                MCPToolCall(tool_name=MCP_TOOL_TRAIN_RASA_ASSISTANT, status="completed")
             )
             events_ready.set()
 

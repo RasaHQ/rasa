@@ -8,12 +8,12 @@ from typing import AsyncGenerator, Deque, Dict, List, Optional, Tuple, Union
 import structlog
 from agents import StreamEvent
 
-from rasa.builder.copilot.agent_sdk.planning_context import (
+from rasa.builder.copilot.agent_sdk.tools.planning_context import (
     get_final_plan,
     init_planning_context,
     reset_planning_context,
 )
-from rasa.builder.copilot.agent_sdk.planning_tools import (
+from rasa.builder.copilot.agent_sdk.tools.planning_tools import (
     reset_plan_queue,
     set_plan_queue,
 )
@@ -21,11 +21,7 @@ from rasa.builder.copilot.exceptions import (
     CopilotFinalBufferReached,
     CopilotStreamEndedEarly,
 )
-from rasa.builder.copilot.mcp_server.constants import (
-    MCP_TOOL_TRAIN_MODEL,
-    MCP_TOOL_UPDATE_MULTIPLE_FILES,
-    MCP_TOOL_WRITE_PROJECT_FILE,
-)
+from rasa.builder.copilot.mcp_server.constants import MCP_TOOL_TRAIN_RASA_ASSISTANT
 from rasa.builder.copilot.mcp_server.models import DocumentSearchResponse
 from rasa.builder.copilot.models import (
     CopilotOutput,
@@ -186,20 +182,26 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
         Returns:
             True if training completed after the last file write, False otherwise.
         """
+        # Import here to avoid circular import with file_operations.py
+        from rasa.builder.copilot.agent_sdk.tools.constants import (
+            TOOL_UPDATE_MULTIPLE_FILES,
+            TOOL_WRITE_PROJECT_FILE,
+        )
+
         last_completed_train_index = -1
         last_write_index = -1
 
         for i, call in enumerate(self._tracked_tool_calls):
             if (
-                call.tool_name == MCP_TOOL_TRAIN_MODEL
+                call.tool_name == MCP_TOOL_TRAIN_RASA_ASSISTANT
                 and call.status == MCPToolCallStatus.COMPLETED
             ):
                 last_completed_train_index = i
             elif (
                 call.tool_name
                 in (
-                    MCP_TOOL_WRITE_PROJECT_FILE,
-                    MCP_TOOL_UPDATE_MULTIPLE_FILES,
+                    TOOL_WRITE_PROJECT_FILE,
+                    TOOL_UPDATE_MULTIPLE_FILES,
                 )
                 and call.status == MCPToolCallStatus.COMPLETED
             ):

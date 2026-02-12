@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
+from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from tests.builder.copilot.mcp_server.e2e.constants import (
     RUN_MCP_SERVER_SCRIPT_PATH,
 )
@@ -34,7 +35,7 @@ class MCPServerManager:
     def start(self) -> None:
         """Start the MCP server in a subprocess."""
         # Prepare environment variables
-        additional_env = {"RASA_PROJECT_FOLDER": str(self.project_folder)}
+        additional_env = {RASA_PROJECT_FOLDER_ENV_VAR: str(self.project_folder)}
         # Pass Rasa server host/port if available (for talk_to_assistant tool)
         if self._rasa_server_host is not None and self._rasa_server_port is not None:
             additional_env["SERVER_HOST"] = self._rasa_server_host

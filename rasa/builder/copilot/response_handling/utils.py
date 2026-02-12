@@ -15,7 +15,9 @@ from openai.types.responses import (
 )
 from openai.types.responses.response_output_item import McpCall
 
-from rasa.builder.copilot.mcp_server.constants import MCP_TOOL_SEARCH_DOCS
+from rasa.builder.copilot.mcp_server.constants import (
+    MCP_TOOL_SEARCH_RASA_DOCS,
+)
 from rasa.builder.copilot.models import (
     GeneratedContent,
     MCPToolCall,
@@ -361,6 +363,6 @@ def is_document_retrieval_mcp_tool_output_event(mcp_tool_call: MCPToolCall) -> b
         True if the MCP tool call is a document retrieval tool call, False otherwise.
     """
     return (
-        mcp_tool_call.tool_name == MCP_TOOL_SEARCH_DOCS
+        mcp_tool_call.tool_name == MCP_TOOL_SEARCH_RASA_DOCS
         and mcp_tool_call.status == MCPToolCallStatus.COMPLETED
     )

@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from rasa.shared.exceptions import RasaException
 
 
@@ -12,10 +13,10 @@ class TestGetProjectFolder:
     """Test _get_project_folder function."""
 
     def test_get_project_folder_returns_env_value(self, monkeypatch):
-        """Test that _get_project_folder returns RASA_PROJECT_FOLDER env var."""
+        """Test that _get_project_folder returns RASA_PROJECT_FOLDER_ENV_VAR."""
         from rasa.builder.copilot.mcp_server.server import _get_project_folder
 
-        monkeypatch.setenv("RASA_PROJECT_FOLDER", "/test/project/path")
+        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, "/test/project/path")
         result = _get_project_folder()
         assert result == "/test/project/path"
 
@@ -23,7 +24,7 @@ class TestGetProjectFolder:
         """Test that _get_project_folder raises when env var not set."""
         from rasa.builder.copilot.mcp_server.server import _get_project_folder
 
-        monkeypatch.delenv("RASA_PROJECT_FOLDER", raising=False)
+        monkeypatch.delenv(RASA_PROJECT_FOLDER_ENV_VAR, raising=False)
         with pytest.raises(RasaException, match="Project folder not configured"):
             _get_project_folder()
 
@@ -67,118 +68,19 @@ class TestDummyProgressReporter:
         assert mock_ctx.report_progress.call_count == call_count_after_exit
 
 
-class TestMCPServerTools:
-    """Test MCP server tool functions."""
-
-    @pytest.fixture
-    def mock_project_folder(self, monkeypatch, tmp_path):
-        """Set up mock project folder."""
-        monkeypatch.setenv("RASA_PROJECT_FOLDER", str(tmp_path))
-        return tmp_path
-
-    @pytest.mark.asyncio
-    async def test_list_project_files_tool(self, mock_project_folder):
-        """Test list_project_files tool."""
-        from rasa.builder.copilot.mcp_server.server import list_project_files
-
-        # Create some test files
-        (mock_project_folder / "domain.yml").write_text("version: '3.1'")
-        (mock_project_folder / "config.yml").write_text("pipeline: []")
-
-        result = await list_project_files()
-
-        assert result.success is True
-        assert "domain.yml" in result.tree or "config.yml" in result.tree
-
-    @pytest.mark.asyncio
-    async def test_get_project_file_tool(self, mock_project_folder):
-        """Test get_project_file tool."""
-        from rasa.builder.copilot.mcp_server.server import get_project_file
-
-        # Create a test file
-        (mock_project_folder / "domain.yml").write_text("version: '3.1'\nintents: []")
-
-        result = await get_project_file("domain.yml")
-
-        assert result.error is None
-        assert result.content == "version: '3.1'\nintents: []"
-
-    @pytest.mark.asyncio
-    async def test_get_project_file_tool_not_found(self, mock_project_folder):
-        """Test get_project_file tool with non-existent file."""
-        from rasa.builder.copilot.mcp_server.server import get_project_file
-
-        result = await get_project_file("nonexistent.yml")
-
-        assert result.exists is False
-        assert "not found" in result.error.lower() or result.content is None
-
-    @pytest.mark.asyncio
-    async def test_write_project_file_tool(self, mock_project_folder):
-        """Test write_project_file tool."""
-        from rasa.builder.copilot.mcp_server.server import write_project_file
-
-        content = "version: '3.1'\nslots:\n  name:\n    type: text"
-        result = await write_project_file("domain/slots.yml", content)
-
-        assert result.success is True
-        assert (mock_project_folder / "domain" / "slots.yml").exists()
-        assert (mock_project_folder / "domain" / "slots.yml").read_text() == content
-
-    @pytest.mark.asyncio
-    async def test_update_multiple_files_tool(self, mock_project_folder):
-        """Test update_multiple_files tool."""
-        from rasa.builder.copilot.mcp_server.server import update_multiple_files
-
-        files = {
-            "domain.yml": "version: '3.1'\nintents: []",
-            "config.yml": "pipeline: []",
-        }
-
-        result = await update_multiple_files(files)
-
-        assert result.success is True
-        assert (
-            mock_project_folder / "domain.yml"
-        ).read_text() == "version: '3.1'\nintents: []"
-        assert (mock_project_folder / "config.yml").read_text() == "pipeline: []"
-
-    @pytest.mark.asyncio
-    async def test_read_project_files_tool(self, mock_project_folder):
-        """Test read_project_files tool."""
-        from rasa.builder.copilot.mcp_server.server import read_project_files
-
-        # Create some test files
-        (mock_project_folder / "domain.yml").write_text("version: '3.1'")
-        (mock_project_folder / "config.yml").write_text("pipeline: []")
-        # Create a non-yaml file that should be filtered
-        (mock_project_folder / "readme.txt").write_text("This is readme")
-
-        result = await read_project_files(
-            exclude_docs=True,
-            allowed_extensions="yaml,yml",
-        )
-
-        assert result.error is None
-        assert "domain.yml" in result.files
-        assert "config.yml" in result.files
-        # txt file should be filtered out
-        assert "readme.txt" not in result.files
-
-
 class TestMCPServerDocumentSearch:
     """Test MCP server document search tool."""
 
     @pytest.fixture
     def mock_project_folder(self, monkeypatch, tmp_path):
         """Set up mock project folder."""
-        monkeypatch.setenv("RASA_PROJECT_FOLDER", str(tmp_path))
+        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(tmp_path))
         return tmp_path
 
     @pytest.mark.asyncio
-    async def test_search_docs_tool(self, mock_project_folder):
-        """Test search_docs tool."""
-        from rasa.builder.copilot.mcp_server.server import search_docs
+    async def test_search_rasa_documentation_tool(self, mock_project_folder):
+        """Test search_rasa_documentation tool."""
+        from rasa.builder.copilot.mcp_server.server import search_rasa_documentation
 
         with patch(
             "rasa.builder.copilot.mcp_server.tools.document_search.search_rasa_documentation"
@@ -194,7 +96,7 @@ class TestMCPServerDocumentSearch:
                 ],
             )
 
-            result = await search_docs("How do I create a flow?")
+            result = await search_rasa_documentation("How do I create a flow?")
 
             # Result depends on the mock implementation
             assert result is not None
@@ -206,7 +108,7 @@ class TestMCPServerValidation:
     @pytest.fixture
     def mock_project_folder(self, monkeypatch, tmp_path):
         """Set up mock project folder."""
-        monkeypatch.setenv("RASA_PROJECT_FOLDER", str(tmp_path))
+        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(tmp_path))
         return tmp_path
 
     @pytest.mark.asyncio
@@ -240,7 +142,7 @@ class TestMCPServerBotInteraction:
     @pytest.fixture
     def mock_project_folder(self, monkeypatch, tmp_path):
         """Set up mock project folder."""
-        monkeypatch.setenv("RASA_PROJECT_FOLDER", str(tmp_path))
+        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(tmp_path))
         return tmp_path
 
     @pytest.mark.asyncio
@@ -280,58 +182,6 @@ class TestMCPServerBotInteraction:
             await talk_to_assistant(mock_ctx, ["Hello"])
 
             mock_talk.assert_called_once_with(["Hello"])
-
-
-class TestMCPServerResources:
-    """Test MCP server resources."""
-
-    @pytest.fixture
-    def mock_project_folder(self, monkeypatch, tmp_path):
-        """Set up mock project folder."""
-        monkeypatch.setenv("RASA_PROJECT_FOLDER", str(tmp_path))
-        return tmp_path
-
-    @pytest.mark.asyncio
-    async def test_project_files_resource(self, mock_project_folder):
-        """Test project_files_resource."""
-        from rasa.builder.copilot.mcp_server.server import project_files_resource
-
-        # Create some test files
-        (mock_project_folder / "domain.yml").write_text("version: '3.1'")
-
-        with patch(
-            "rasa.builder.copilot.mcp_server.tools.file_operations.read_assistant_files"
-        ) as mock_read:
-            mock_read.return_value = MagicMock(
-                error=None,
-                files={"domain.yml": "version: '3.1'"},
-                model_dump_json=lambda: '{"files": {"domain.yml": "version: \'3.1\'"}}',
-            )
-
-            result = await project_files_resource()
-
-            assert isinstance(result, str)
-
-    @pytest.mark.asyncio
-    async def test_project_tree_resource(self, mock_project_folder):
-        """Test project_tree_resource."""
-        from rasa.builder.copilot.mcp_server.server import project_tree_resource
-
-        # Create some test files
-        (mock_project_folder / "domain.yml").write_text("version: '3.1'")
-
-        with patch(
-            "rasa.builder.copilot.mcp_server.tools.file_operations.list_files"
-        ) as mock_list:
-            mock_list.return_value = MagicMock(
-                success=True,
-                tree="domain.yml",
-                model_dump_json=lambda: '{"success": true, "tree": "domain.yml"}',
-            )
-
-            result = await project_tree_resource()
-
-            assert isinstance(result, str)
 
 
 class TestMCPServerPrompts:
@@ -379,7 +229,7 @@ class TestRunServer:
         """Test that run_server logs startup information."""
         from rasa.builder.copilot.mcp_server.server import run_server
 
-        monkeypatch.setenv("RASA_PROJECT_FOLDER", str(tmp_path))
+        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(tmp_path))
 
         # Mock the mcp.run to prevent actually starting the server
         with patch("rasa.builder.copilot.mcp_server.server.mcp") as mock_mcp:

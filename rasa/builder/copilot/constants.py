@@ -60,3 +60,6 @@ PROMPT_TO_BOT_TEMPLATE_KEY = "prompt_to_bot_template"
 
 # Default commit message when updating files
 DEFAULT_COMMIT_MESSAGE = "Update files"
+
+# Environment variable name for the project folder path
+RASA_PROJECT_FOLDER_ENV_VAR = "RASA_PROJECT_FOLDER"

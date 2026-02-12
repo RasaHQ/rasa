@@ -17,6 +17,7 @@ from sanic_openapi import openapi3_blueprint
 
 import rasa.telemetry
 from rasa.builder import config
+from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from rasa.builder.logging_utils import (
     attach_request_id_processor,
     collecting_logs_processor,
@@ -250,7 +251,7 @@ def start_mcp_server(project_folder: str) -> None:
     """
     try:
         # Set the project folder in environment for MCP server
-        os.environ["RASA_PROJECT_FOLDER"] = project_folder
+        os.environ[RASA_PROJECT_FOLDER_ENV_VAR] = project_folder
 
         structlogger.info(
             "builder.main.starting_mcp_server",

@@ -1,14 +1,37 @@
-"""MCP tools for bot project file operations - lightweight implementation."""
+"""File operation tools for bot project - Hello Rasa supplementary tools.
 
+These tools provide Rasa project-aware file operations with security checks.
+They are used by Hello Rasa / Agent Copilot only and are NOT exposed via
+the local MCP server, as external IDEs (like Cursor) have their own
+built-in file operation capabilities.
+
+This module contains:
+1. Implementation functions that take project_folder as a parameter
+2. @function_tool decorated wrappers that get project_folder from environment
+3. FILE_OPERATION_TOOLS list for injection into the Agent
+"""
+
+import json
+import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Annotated, Dict, List, Optional
 
 import structlog
+from agents import function_tool
+from pydantic import Field, ValidationError
 
+from rasa.builder.copilot.agent_sdk.tools.constants import (
+    TOOL_GET_PROJECT_FILE,
+    TOOL_LIST_PROJECT_FILES,
+    TOOL_READ_PROJECT_FILES,
+    TOOL_UPDATE_MULTIPLE_FILES,
+    TOOL_WRITE_PROJECT_FILE,
+)
 from rasa.builder.copilot.mcp_server.models import (
     FileContentResponse,
     FileListResponse,
     FileUpdateFailure,
+    MultiFileUpdate,
     ReadFilesResponse,
     UpdateFilesResponse,
     WriteFileResponse,
@@ -19,9 +42,36 @@ from rasa.builder.project_generator import (
     is_restricted_path,
     unsafe_write_to_bot_files,
 )
+from rasa.builder.telemetry.langfuse.langfuse_compat import observe
+from rasa.shared.exceptions import RasaException
 from rasa.utils.io import InvalidPathException
 
 structlogger = structlog.get_logger()
+
+
+def _get_project_folder() -> str:
+    """Get the project folder from environment.
+
+    Returns:
+        Project folder path as string
+
+    Raises:
+        RasaException: If RASA_PROJECT_FOLDER is not set
+    """
+    project_folder = os.getenv("RASA_PROJECT_FOLDER")
+    if project_folder is None:
+        raise RasaException(
+            "Project folder not configured. The RASA_PROJECT_FOLDER environment "
+            "variable must be set."
+        )
+    return project_folder
+
+
+# ============================================================================
+# IMPLEMENTATION FUNCTIONS
+# These are the core implementations that take project_folder as a parameter.
+# Used by MCP server resources and can be tested independently.
+# ============================================================================
 
 
 async def list_files(project_folder: str) -> FileListResponse:
@@ -97,8 +147,8 @@ async def list_files(project_folder: str) -> FileListResponse:
 
     except Exception as e:
         structlogger.error(
-            "mcp_server.tools.file_operations.list_files.error",
-            event_info="MCP tool failed to list files",
+            "agent_sdk.tools.file_operations.list_files.error",
+            event_info="Failed to list files",
             error=str(e),
         )
         return FileListResponse(
@@ -142,8 +192,8 @@ async def read_assistant_files(
 
     except Exception as e:
         structlogger.error(
-            "mcp_server.tools.file_operations.read_assistant_files.error",
-            event_info="MCP tool failed to read bot files",
+            "agent_sdk.tools.file_operations.read_assistant_files.error",
+            event_info="Failed to read bot files",
             error=str(e),
         )
         return ReadFilesResponse(
@@ -194,8 +244,8 @@ async def get_file_content(project_folder: str, file_path: str) -> FileContentRe
 
     except Exception as e:
         structlogger.error(
-            "mcp_server.tools.file_operations.get_file_content.error",
-            event_info="MCP tool failed to get file content",
+            "agent_sdk.tools.file_operations.get_file_content.error",
+            event_info="Failed to get file content",
             file_path=file_path,
             error=str(e),
         )
@@ -236,7 +286,7 @@ async def write_file(
 
     except Exception as e:
         structlogger.error(
-            "mcp_server.tools.file_operations.write_file.error",
+            "agent_sdk.tools.file_operations.write_file.error",
             event_info="Failed to write file",
             file_path=file_path,
             error=str(e),
@@ -293,7 +343,7 @@ async def update_files(
 
     except Exception as e:
         structlogger.error(
-            "mcp_server.tools.file_operations.update_files.error",
+            "agent_sdk.tools.file_operations.update_files.error",
             event_info="Failed to update files",
             error=str(e),
         )
@@ -303,3 +353,165 @@ async def update_files(
             failed=[FileUpdateFailure(error=str(e))],
             message=f"Failed to update files: {e!s}",
         )
+
+
+# ============================================================================
+# FUNCTION TOOL WRAPPERS
+# These are @function_tool decorated wrappers that the Agent SDK can call.
+# They get the project folder from environment and delegate to implementations.
+# ============================================================================
+
+
+@function_tool(
+    name_override=TOOL_LIST_PROJECT_FILES,
+    description_override="List all files in the bot project as a directory tree",
+)
+@observe(name=f"file_operation_tool.{TOOL_LIST_PROJECT_FILES}", as_type="generation")
+async def list_project_files() -> FileListResponse:
+    """List all files in the bot project as a directory tree.
+
+    Shows the complete directory structure with all files organized by folder.
+    Use this first to understand the project layout before reading specific files.
+    """
+    project_folder = _get_project_folder()
+    return await list_files(project_folder)
+
+
+@function_tool(
+    name_override=TOOL_READ_PROJECT_FILES,
+    description_override="Read all bot project files with their complete contents",
+)
+@observe(name=f"file_operation_tool.{TOOL_READ_PROJECT_FILES}", as_type="generation")
+async def read_project_files(
+    exclude_docs: Annotated[
+        bool, Field(description="Whether to exclude the docs directory from results")
+    ] = True,
+    allowed_extensions: Annotated[
+        str,
+        Field(
+            description=(
+                "Comma-separated list of file extensions to "
+                "include (e.g., 'yaml,yml,py')"
+            )
+        ),
+    ] = "yaml,yml,py,jinja,jinja2",
+) -> ReadFilesResponse:
+    """Read all bot project files with their complete contents.
+
+    Returns all files in the project that match the allowed extensions,
+    organized as a mapping of file paths to their contents.
+    """
+    project_folder = _get_project_folder()
+    return await read_assistant_files(project_folder, exclude_docs, allowed_extensions)
+
+
+@function_tool(
+    name_override=TOOL_GET_PROJECT_FILE,
+    description_override="Get the content of a specific file in the bot project",
+)
+@observe(name=f"file_operation_tool.{TOOL_GET_PROJECT_FILE}", as_type="generation")
+async def get_project_file(
+    file_path: Annotated[
+        str,
+        Field(
+            description=(
+                "Relative path to the file "
+                "(e.g., 'domain.yml', 'flows/greeting.yml')"
+            )
+        ),
+    ],
+) -> FileContentResponse:
+    """Get the content of a specific file in the bot project.
+
+    Use this to read individual files when you know the exact path.
+    More efficient than reading all files when you only need one.
+    """
+    project_folder = _get_project_folder()
+    return await get_file_content(project_folder, file_path)
+
+
+@function_tool(
+    name_override=TOOL_WRITE_PROJECT_FILE,
+    description_override="Write or overwrite a file in the bot project",
+)
+@observe(name=f"file_operation_tool.{TOOL_WRITE_PROJECT_FILE}", as_type="generation")
+async def write_project_file(
+    file_path: Annotated[
+        str,
+        Field(
+            description=(
+                "Relative path to the file "
+                "(e.g., 'domain.yml', 'domain/booking.yml', 'flows/greeting.yml')"
+            )
+        ),
+    ],
+    content: Annotated[str, Field(description="Complete content to write to the file")],
+) -> WriteFileResponse:
+    """Write or overwrite a file in the bot project.
+
+    Creates new files or completely replaces existing file contents.
+    Always validate the project after making changes.
+    """
+    project_folder = _get_project_folder()
+    return await write_file(project_folder, file_path, content)
+
+
+@function_tool(
+    name_override=TOOL_UPDATE_MULTIPLE_FILES,
+    description_override="Write multiple files in a single coordinated operation",
+)
+@observe(name=f"file_operation_tool.{TOOL_UPDATE_MULTIPLE_FILES}", as_type="generation")
+async def update_multiple_files(
+    files_json: Annotated[
+        str,
+        Field(
+            description=(
+                "JSON string mapping file paths to their new contents. "
+                'Example: {"domain/booking.yml": "slots:\\n  name:\\n    '
+                'type: text\\nresponses:\\n  utter_ok:\\n    - text: OK"}'
+            ),
+        ),
+    ],
+) -> UpdateFilesResponse:
+    """Write multiple files in a single coordinated operation.
+
+    Use this for making related changes across multiple files atomically.
+    More efficient than multiple individual write operations.
+    Automatically validates all file paths for security.
+    """
+    try:
+        files = json.loads(files_json)
+    except json.JSONDecodeError as e:
+        return UpdateFilesResponse(
+            success=False,
+            updated=[],
+            failed=[FileUpdateFailure(error=f"Invalid JSON: {e}")],
+            message=f"Failed to parse files JSON: {e}",
+        )
+
+    # Validate input using Pydantic model
+    try:
+        validated = MultiFileUpdate(files=files)
+    except ValidationError as e:
+        return UpdateFilesResponse(
+            success=False,
+            updated=[],
+            failed=[FileUpdateFailure(error=f"Invalid input format: {e}")],
+            message=(
+                "Expected a dictionary mapping file paths (strings) to contents "
+                "(strings)"
+            ),
+        )
+
+    project_folder = _get_project_folder()
+    return await update_files(project_folder, validated.files)
+
+
+# Export the function tools for use in the Agent
+FILE_OPERATION_TOOLS = [
+    list_project_files,
+    read_project_files,
+    get_project_file,
+    write_project_file,
+    update_multiple_files,
+]

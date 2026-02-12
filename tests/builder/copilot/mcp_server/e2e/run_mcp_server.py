@@ -9,6 +9,8 @@ import os
 import sys
 from pathlib import Path
 
+from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
+
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("Usage: python run_test_server.py <project_folder> <host> <port>")
@@ -19,7 +21,7 @@ if __name__ == "__main__":
     port = int(sys.argv[3])
 
     # Set environment variable
-    os.environ["RASA_PROJECT_FOLDER"] = str(project_folder)
+    os.environ[RASA_PROJECT_FOLDER_ENV_VAR] = str(project_folder)
 
     # Import and configure server
     from rasa.builder.copilot.mcp_server.server import mcp

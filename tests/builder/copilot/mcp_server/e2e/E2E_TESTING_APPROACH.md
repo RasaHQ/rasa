@@ -131,7 +131,7 @@ Example output:
 
 ```
 ================================================================================
-[DEBUG] Raw MCP Response for tool: train_model
+[DEBUG] Raw MCP Response for tool: train_rasa_assistant
 ================================================================================
 isError: False
 structuredContent: {'success': True, 'model_path': '/path/to/model.tar.gz', ...}

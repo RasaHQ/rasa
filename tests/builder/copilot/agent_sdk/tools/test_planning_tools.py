@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from rasa.builder.copilot.agent_sdk.planning_tools import (
+from rasa.builder.copilot.agent_sdk.tools.planning_tools import (
     _send_plan_update_to_frontend,
     reset_plan_queue,
     set_plan_queue,

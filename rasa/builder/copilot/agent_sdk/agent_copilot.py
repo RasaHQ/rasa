@@ -15,7 +15,7 @@ from jinja2 import Template
 
 from rasa.builder import config
 from rasa.builder.copilot.agent_sdk.hooks import RasaCopilotHooks
-from rasa.builder.copilot.agent_sdk.planning_tools import PLANNING_TOOLS
+from rasa.builder.copilot.agent_sdk.tools import get_supplementary_tools
 from rasa.builder.copilot.base_copilot import BaseCopilot
 from rasa.builder.copilot.constants import (
     COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE_AGENT_SDK,
@@ -180,7 +180,8 @@ class AgentCopilot(BaseCopilot):
         )
 
         # Create agent with hooks to track MCP tool calls
-        # Include both MCP server tools and local planning tools
+        # Include both MCP server tools and local supplementary tools
+        # Supplementary tools include: planning tools + file operations
         async with self._create_mcp_server() as server:
             yield Agent(
                 name="Rasa Copilot",
@@ -188,7 +189,7 @@ class AgentCopilot(BaseCopilot):
                 model=config.OPENAI_MODEL,
                 model_settings=model_settings,
                 mcp_servers=[server],
-                tools=PLANNING_TOOLS,  # Local function tools for task planning
+                tools=get_supplementary_tools(),  # Planning + file operation tools
                 hooks=RasaCopilotHooks(self._mcp_tool_queue),
             )
 
