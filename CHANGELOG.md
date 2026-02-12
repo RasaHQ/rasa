@@ -781,6 +781,19 @@ Rasa Pro 3.14.0 (2025-10-09)
 ### Miscellaneous internal changes
 - [#1892](https://github.com/rasahq/rasa-private/issues/1892), [#2184](https://github.com/rasahq/rasa-private/issues/2184), [#2767](https://github.com/rasahq/rasa-private/issues/2767), [#2814](https://github.com/rasahq/rasa-private/issues/2814), [#2863](https://github.com/rasahq/rasa-private/issues/2863), [#2911](https://github.com/rasahq/rasa-private/issues/2911), [#2913](https://github.com/rasahq/rasa-private/issues/2913), [#2916](https://github.com/rasahq/rasa-private/issues/2916), [#2957](https://github.com/rasahq/rasa-private/issues/2957), [#2990](https://github.com/rasahq/rasa-private/issues/2990), [#3018](https://github.com/rasahq/rasa-private/issues/3018), [#3019](https://github.com/rasahq/rasa-private/issues/3019), [#3052](https://github.com/rasahq/rasa-private/issues/3052), [#3078](https://github.com/rasahq/rasa-private/issues/3078), [#3094](https://github.com/rasahq/rasa-private/issues/3094), [#3121](https://github.com/rasahq/rasa-private/issues/3121), [#3125](https://github.com/rasahq/rasa-private/issues/3125), [#3207](https://github.com/rasahq/rasa-private/issues/3207), [#3208](https://github.com/rasahq/rasa-private/issues/3208), [#3260](https://github.com/rasahq/rasa-private/issues/3260), [#3289](https://github.com/rasahq/rasa-private/issues/3289), [#3319](https://github.com/rasahq/rasa-private/issues/3319), [#3374](https://github.com/rasahq/rasa-private/issues/3374), [#3375](https://github.com/rasahq/rasa-private/issues/3375), [#3411](https://github.com/rasahq/rasa-private/issues/3411)
 
+
+## [3.13.23] - 2026-02-12
+                         
+Rasa Pro 3.13.23 (2026-02-12)                              
+### Improvements
+- [#4554](https://github.com/rasahq/rasa-private/issues/4554): Flows can now link to `pattern_search` (e.g. to trigger RAG or branch on knowledge-based search).
+
+### Bugfixes
+- [#4268](https://github.com/rasahq/rasa-private/issues/4268): Fixed e2e test coverage report to correctly track coverage per flow. Each flow now appears as a separate entry with accurate coverage percentages. Additionally, `call`/`link` steps and `collect` steps with prefilled slots are now properly marked as visited.
+- [#4519](https://github.com/rasahq/rasa-private/issues/4519): Upgrade `litellm` to 1.80.0.
+- [#4531](https://github.com/rasahq/rasa-private/issues/4531): Fix Enterprise Search Policy triggering `utter_ask_rephrase` instead of `utter_no_relevant_answer_found` when the vector store search returns no matching documents. The `pattern_cannot_handle` now correctly receives the `cannot_handle_no_relevant_answer` as a `context.reason` in all cases where no relevant answer is found, not only when the optional relevancy check rejects the answer.
+
+
 ## [3.13.22] - 2026-01-15
                          
 Rasa Pro 3.13.22 (2026-01-15)                              
