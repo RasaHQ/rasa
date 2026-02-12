@@ -1,0 +1,4 @@
+config:
+  jumphost:stackRefName: rasa/integration-tests/ci
+  jumphost:projectName: rasa-pro
+  aws:region: eu-west-1

@@ -1,0 +1,9 @@
+# Shared PostgreSQL tracker store (RDS created once, reused by all deployments).
+# This file is the single source of truth for the CI tracker store connection details.
+# The helm-deploy workflow reads these values and sets them on the dynamic eks-helm stack.
+# Fill host, db name, and user with your RDS details (e.g. from the stack that created the RDS).
+config:
+  eks-helm:trackerStoreDbHost: "rasa-pro-integration-tests-db.cvgblmmqghrx.eu-west-1.rds.amazonaws.com"   # RDS endpoint hostname
+  eks-helm:trackerStoreDbPort: "5432"
+  eks-helm:trackerStoreDbName: "integrationtestsdb"   # database name
+  eks-helm:trackerStoreDbUser: "integration_tests_user_no_password"   # RDS IAM auth username

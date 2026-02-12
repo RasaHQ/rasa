@@ -15,13 +15,14 @@
 # This workflow is intended to serve as the foundation for future automated
 # integration tests running against a real Rasa Pro deployment.
 
-name: Helm Deploy on CI cluster
+name: Helm Deploy on CI cluster and run integration tests
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - INFRA-1712
+    inputs:
+      UNIQUE_IDENTIFIER:
+        description: "Unique identifier for the deployment"
+        required: false
 
 permissions:
   id-token: write
@@ -31,6 +32,8 @@ jobs:
   build-train-deploy:
     name: Build train and deploy to CI EKS
     runs-on: warp-ubuntu-latest-x64-2x
+    outputs:
+      unique_identifier: ${{ steps.set-branch-timestamp.outputs.unique_identifier }}
 
     env:
       RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-private-dev
@@ -47,8 +50,17 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set branch-timestamp
+        id: set-branch-timestamp
+        env:
+          INPUT_UNIQUE_IDENTIFIER: ${{ inputs.UNIQUE_IDENTIFIER }}
         run: |
-          echo "UNIQUE_IDENTIFIER=$(echo "${GITHUB_REF##*/}-$(date +%Y%m%d%H%M%S)" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          if [ -z "$INPUT_UNIQUE_IDENTIFIER" ]; then
+            UNIQUE_IDENTIFIER=$(echo "${GITHUB_REF##*/}-$(date +%Y%m%d%H%M%S)" | tr '[:upper:]' '[:lower:]')
+          else
+            UNIQUE_IDENTIFIER="$INPUT_UNIQUE_IDENTIFIER"
+          fi
+          echo "UNIQUE_IDENTIFIER=$UNIQUE_IDENTIFIER" >> $GITHUB_ENV
+          echo "unique_identifier=$UNIQUE_IDENTIFIER" >> $GITHUB_OUTPUT
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
@@ -59,6 +71,18 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
+
+      - name: Check if image exists in ECR
+        id: check-image
+        run: |
+          ECR_REPO="${RASA_PRO_DEV_REPOSITORY#*amazonaws.com/}"
+          if aws ecr describe-images --repository-name "$ECR_REPO" --image-ids imageTag="${{ env.UNIQUE_IDENTIFIER }}" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "image_exists=true" >> $GITHUB_OUTPUT
+            echo "Image ${{ env.UNIQUE_IDENTIFIER }} already exists in ECR, skipping build and push."
+          else
+            echo "image_exists=false" >> $GITHUB_OUTPUT
+            echo "Image not found, will build and push."
+          fi
 
       - name: Train templates
         uses: ./.github/actions/train-templates
@@ -75,6 +99,7 @@ jobs:
           templates: ${{ env.TEMPLATES }}
      
       - name: Build, Tag and Push Docker Image
+        if: steps.check-image.outputs.image_exists != 'true'
         uses: ./.github/actions/build-tag-push-docker-image
         with:
           platform: linux/amd64
@@ -102,7 +127,7 @@ jobs:
     
       - name: Pulumi
         uses: pulumi/actions@8582a9e8cc630786854029b4e09281acd6794b58 #v6.6.1
-        
+
       - name: Prepare pulumi configuration
         working-directory: ./infrastructure/eks-helm
         run: |
@@ -118,13 +143,23 @@ jobs:
             pulumi config set eks-helm:rasaProHelmVersion ${{ env.RASA_PRO_HELM_VERSION }}
             pulumi config set eks-helm:rasaProModelBucketName rasa-pro-ci-trained-models
             pulumi config set eks-helm:rasaProModelFileName model-${{ env.UNIQUE_IDENTIFIER }}.tar.gz
-            
-            # 3. Link the ESC environment
+
+            # 3. Set PostgreSQL tracker store config (shared RDS, created once; source: Pulumi.ci.yaml)
+            pulumi config set eks-helm:trackerStoreDbHost "$(yq eval '.config["eks-helm:trackerStoreDbHost"]' Pulumi.ci.yaml)"
+            pulumi config set eks-helm:trackerStoreDbPort "$(yq eval '.config["eks-helm:trackerStoreDbPort"]' Pulumi.ci.yaml)"
+            pulumi config set eks-helm:trackerStoreDbName "$(yq eval '.config["eks-helm:trackerStoreDbName"]' Pulumi.ci.yaml)"
+            pulumi config set eks-helm:trackerStoreDbUser "$(yq eval '.config["eks-helm:trackerStoreDbUser"]' Pulumi.ci.yaml)"
+
+            # 4. Set IRSA role ARN (baked into Helm values; no post-deploy patch)
+            pulumi config set eks-helm:irsaRoleArn "${{ secrets.RASA_IRSA_ROLE_ARN }}"
+
+            # 5. Link the ESC environment
             yq eval '.environment += ["atom/atom-ci"]' -i Pulumi.${{ env.UNIQUE_IDENTIFIER }}.yaml
             
       - name: Run pulumi up
         working-directory: ./infrastructure/eks-helm
         run: |
+            pulumi stack select rasa/eks-helm/${{ env.UNIQUE_IDENTIFIER }}
             pulumi install
             pulumi up --yes
 
@@ -132,14 +167,70 @@ jobs:
         run: |
             sleep 120 # wait for 2 minutes to allow services to stabilize
 
+  cleanup:
+    name: Clean up deployment resources
+    runs-on: warp-ubuntu-latest-x64-2x
+    needs: build-train-deploy
+    if: always() && needs.build-train-deploy.outputs.unique_identifier != ''
+
+    env:
+      UNIQUE_IDENTIFIER: ${{ needs.build-train-deploy.outputs.unique_identifier }}
+      AWS_REGION: eu-west-1
+      CI_CLUSTER_NAME: rasa-pro-ci-cluster
+      PULUMI_ACCESS_TOKEN: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.PULUMI_COMPONENTS_GITHUB_TOKEN }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
+
+      - name: Set up kubeconfig
+        run: |
+          aws eks update-kubeconfig --name $CI_CLUSTER_NAME --region $AWS_REGION
+
+      - name: Pulumi
+        uses: pulumi/actions@8582a9e8cc630786854029b4e09281acd6794b58 #v6.6.1
+
       - name: Clean everything up
-        if: always()
         working-directory: ./infrastructure/eks-helm
         run: |
-            # Clean up the deployed stack
-            pulumi destroy -s rasa/eks-helm/${{ env.UNIQUE_IDENTIFIER }} --yes
-            yes "rasa/eks-helm/${{ env.UNIQUE_IDENTIFIER }}" | pulumi stack rm rasa/eks-helm/${{ env.UNIQUE_IDENTIFIER }} --force --yes
-            # Delete docker image from ECR
-            aws ecr batch-delete-image --repository-name rasa/rasa-private-dev --region ${{ env.AWS_REGION }} --image-ids imageTag=${{ env.UNIQUE_IDENTIFIER }}
-            # Delete model from S3
-            aws s3 rm s3://rasa-pro-ci-trained-models/model-${{ env.UNIQUE_IDENTIFIER }}.tar.gz --region ${{ env.AWS_REGION }} --endpoint-url https://s3.${{ env.AWS_REGION }}.amazonaws.com
+          # Select stack and set dummy config (required for validation; not used during destroy)
+          pulumi stack select rasa/eks-helm/${{ env.UNIQUE_IDENTIFIER }}
+          pulumi config set eks-helm:clusterName "rasa/eks-cluster/ci"
+          pulumi config set eks-helm:projectName "dummy"
+          pulumi config set eks-helm:rasaPro "dummy"
+          pulumi config set eks-helm:rasaProRepository "dummy"
+          pulumi config set eks-helm:rasaProHelmRepo "dummy"
+          pulumi config set eks-helm:rasaProHelmVersion "dummy"
+          pulumi config set eks-helm:rasaProModelBucketName "dummy"
+          pulumi config set eks-helm:rasaProModelFileName "dummy"
+          pulumi config set eks-helm:trackerStoreDbHost "dummy"
+          pulumi config set eks-helm:trackerStoreDbPort "5432"
+          pulumi config set eks-helm:trackerStoreDbName "dummy"
+          pulumi config set eks-helm:trackerStoreDbUser "dummy"
+          pulumi config set eks-helm:irsaRoleArn "arn:aws:iam::000000000000:role/dummy"
+
+          # Link the ESC environment
+          yq eval '.environment += ["atom/atom-ci"]' -i Pulumi.${{ env.UNIQUE_IDENTIFIER }}.yaml
+
+          # Install Pulumi packages
+          pulumi install
+
+          # Clean up the deployed stack
+          pulumi destroy -s rasa/eks-helm/${{ env.UNIQUE_IDENTIFIER }} --yes
+          yes "rasa/eks-helm/${{ env.UNIQUE_IDENTIFIER }}" | pulumi stack rm rasa/eks-helm/${{ env.UNIQUE_IDENTIFIER }} --force --yes
+
+          # Delete docker image from ECR
+          aws ecr batch-delete-image --repository-name rasa/rasa-private-dev --region ${{ env.AWS_REGION }} --image-ids imageTag=${{ env.UNIQUE_IDENTIFIER }}
+
+          # Delete model from S3
+          aws s3 rm s3://rasa-pro-ci-trained-models/model-${{ env.UNIQUE_IDENTIFIER }}.tar.gz --region ${{ env.AWS_REGION }} --endpoint-url https://s3.${{ env.AWS_REGION }}.amazonaws.com

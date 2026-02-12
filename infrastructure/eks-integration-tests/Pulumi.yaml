@@ -1,5 +1,5 @@
-name: eks-integration-tests
-description: RDS database for integration tests in EKS cluster
+name: integration-tests
+description: RDS database for integration tests
 runtime:
   name: python
   options:

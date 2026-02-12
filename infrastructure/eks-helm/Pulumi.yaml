@@ -1,5 +1,5 @@
 name: eks-helm
-description: Deploy a Rasa Pro instance on EKS using Helm via Pulumi
+description: Deploy a Rasa Pro instance on EKS using Helm via Pulumi. IRSA (volume, env) is in Helm values; set irsaRoleArn and ensure the rasa SA has eks.amazonaws.com/role-arn.
 runtime: yaml
 config:
   clusterName:
@@ -18,6 +18,29 @@ config:
     type: string
   rasaProModelFileName:
     type: string
+  # PostgreSQL tracker store (RDS) with IAM auth, no password
+  trackerStoreDbHost:
+    type: string
+  trackerStoreDbPort:
+    type: string
+    default: "5432"
+  trackerStoreDbName:
+    type: string
+  trackerStoreDbUser:
+    type: string
+  # Region of the RDS instance; boto3 uses AWS_DEFAULT_REGION when generating the IAM auth token
+  trackerStoreDbRegion:
+    type: string
+    default: "eu-west-1"
+  # IRSA: IAM role ARN for the Rasa service account (must have eks.amazonaws.com/role-arn on SA)
+  irsaRoleArn:
+    type: string
+  authToken:
+    type: string
+    default: "c29tZXNlY3JldA==" #base64 encoded 'somesecret'
+  jwtSecret:
+    type: string
+    default: "c29tZXNlY3JldA==" #base64 encoded 'somesecret'
 packages:
   rasa-aws: github.com/RasaHQ/pulumi-components/rasa-aws@1.0.0-rasa-aws
   rasa-apps: github.com/RasaHQ/pulumi-components/rasa-apps@0.6.0-rasa-apps
@@ -34,6 +57,13 @@ resources:
     type: pulumi:providers:kubernetes
     properties:
       kubeconfig: ${clusterRef.outputs["kubeConfig"]}
+  namespace:
+    type: kubernetes:core/v1:Namespace
+    properties:
+      metadata:
+        name: ${projectName}
+    options:
+      provider: ${k8sProvider}
   rasa-pro:
     type: rasa-apps:RasaPro
     properties:
@@ -45,6 +75,8 @@ resources:
       helmValues: ${rasaProHelmValues}
     options:
       provider: ${k8sProvider}
+      dependsOn:
+        - ${namespace}
   rasaProDns:
     type: rasa-aws:Route53IngressDnsRecord
     properties:
@@ -59,23 +91,74 @@ resources:
         - ${rasa-pro}
 outputs:
   rasaProServerUrl: https://${rasaProDns.dnsRecordName}/version
+  oidcProviderArn: ${clusterRef.outputs["oidcProviderArn"]}
+  oidcProviderUrl: ${clusterRef.outputs["oidcProviderUrl"]}
 variables:
   rasaProHelmValues:
     fullnameOverride: rasa
+    # Service account with IRSA annotation
+    serviceAccount:
+      create: true
+      name: rasa
+      annotations:
+        eks.amazonaws.com/role-arn: ${irsaRoleArn}
     rasa:
       enabled: true
       image:
         tag: ${rasaPro}
         repository: ${rasaProRepository}
+      # Volumes and volumeMounts for endpoints.yml
+      volumes:
+        - name: aws-iam-token
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  audience: sts.amazonaws.com  # CRITICAL - must match STS expectations
+                  expirationSeconds: 86400
+                  path: token
+      volumeMounts:
+        - name: aws-iam-token
+          mountPath: /var/run/secrets/eks.amazonaws.com/serviceaccount
+          readOnly: true
       settings:
+        authToken:
+          secretName: rasa-secrets
+          secretKey: authToken
+        jwtSecret:
+          secretName: rasa-secrets
+          secretKey: jwtSecret
         debugMode: true
         credentials:
           enabled: true
           additionalChannelCredentials:
-            rest: null
+            rest: {}
         endpoints:
+          action_endpoint:
+            actions_module: "actions"
+          tracker_store:
+            enabled: true
+            type: sql
+            dialect: postgresql
+            url: ${trackerStoreDbHost}
+            db: ${trackerStoreDbName}
+            username: ${trackerStoreDbUser}
+            port: "5432"
+            password: ""
+            # no password - RDS IAM auth (RDS_SQL_DB_AWS_IAM_ENABLED=true)
+          # Rasa endpoints.yml uses snake_case; some charts expect camelCase in values
           actionEndpoint:
             actions_module: "actions"
+          trackerStore:
+            enabled: true
+            type: sql
+            dialect: postgresql
+            url: ${trackerStoreDbHost}
+            db: ${trackerStoreDbName}
+            username: ${trackerStoreDbUser}
+            port: "5432"
+            password: ""
+            # no password - RDS IAM auth (RDS_SQL_DB_AWS_IAM_ENABLED=true)
       ingress:
         enabled: true
         className: alb
@@ -99,6 +182,26 @@ variables:
               - ${projectName}.${awsRoute53ZoneName}
       additionalArgs: ["--model", "${rasaProModelFileName}", "--remote-storage", "aws"]
       additionalEnv:
+        # IRSA configuration - using projected token with correct audience (must match STS expectations)
+        - name: AWS_ROLE_ARN
+          value: ${irsaRoleArn}
+        - name: AWS_WEB_IDENTITY_TOKEN_FILE
+          value: /var/run/secrets/eks.amazonaws.com/serviceaccount/token  # Custom path
+        # RDS IAM authentication
+        - name: IAM_CLOUD_PROVIDER
+          value: "aws"
+        - name: RDS_SQL_DB_AWS_IAM_ENABLED
+          value: "true"
+        - name: DB_HOST
+          value: ${trackerStoreDbHost}
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_USER
+          value: ${trackerStoreDbUser}
+        - name: DB_DATABASE
+          value: ${trackerStoreDbName}
+        - name: SQL_TRACKER_STORE_SSL_MODE
+          value: "require"
         - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
@@ -109,16 +212,26 @@ variables:
             secretKeyRef:
               name: rasa-secrets
               key: rasaProLicense
+        # AWS region configuration (boto3 uses AWS_DEFAULT_REGION when generating the IAM auth token)
         - name: AWS_DEFAULT_REGION
-          value: ${rasaProModelBucketRegion}
+          value: ${trackerStoreDbRegion}
+        - name: AWS_REGION
+          value: ${trackerStoreDbRegion}
         - name: BUCKET_NAME
           value: ${rasaProModelBucketName}
-        - name: AWS_ENDPOINT_URL
-          value: ${rasaProModelS3EndpointUrl}
-        - name: AWS_SECRET_ACCESS_KEY
-          value: ${rasaProModelAWSSecretAccessKey}
-        - name: AWS_ACCESS_KEY_ID
-          value: ${rasaProModelAWSAccessKeyId}
+        - name: AUTH_TOKEN
+          value: ${authToken}
+        - name: JWT_SECRET
+          value: ${jwtSecret}
+        # SQL connection pooling for IAM token refresh
+        - name: SQL_POOL_SIZE
+          value: "5"
+        - name: SQL_MAX_OVERFLOW
+          value: "10"
+        - name: SQL_POOL_RECYCLE
+          value: "899"
+        - name: SQL_POOL_PRE_PING
+          value: "True"
       resources:
         requests:
           cpu: 1000m

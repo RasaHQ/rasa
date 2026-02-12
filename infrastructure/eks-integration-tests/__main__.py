@@ -1,6 +1,5 @@
 import pulumi
 import pulumi_aws as aws
-import pulumi_random as random
 
 # Variables
 project_name = "rasa-pro"
@@ -9,25 +8,33 @@ db_instance_class = "db.t4g.small"
 db_allocated_storage = 50
 db_storage_type = "gp3"
 db_engine = "postgres"
-db_engine_version = "17.4"
+# RDS PostgreSQL 17.x has a known pg_hba bug: IAM auth can fail with "PAM authentication failed".
+# Use a 16.x version available in your region (eu-west-1: 16.6, 16.8, 16.9, 16.10, 16.11).
+db_engine_version = "16.6"
+
+# Fixed master password from Pulumi config (stored as secret). Set with:
+#   pulumi config set --secret db_password "your-secure-password"
+# RDS accepts printable ASCII except /, @, " and space.
+config = pulumi.Config()
+db_password = config.get_secret("db_password")
+# use pulumi stack output db_password --show-secrets to get the password
+if not db_password:
+    raise ValueError(
+        "config 'integration-tests:db_password' is required. "
+        "Set it with: pulumi config set --secret db_password \"your-secure-password\""
+    )
 
 # Retrieve the exported values from the base infrastructure
-stack_ref = pulumi.StackReference("rasa/rasa-pro-eks-base/ci")
-vpc_id = stack_ref.get_output("vpc_id")
-private_subnets = stack_ref.get_output("private_subnets")
-
-# Generate random password for the database using Pulumi Random provider
-# RDS accepts printable ASCII except /, @, " and space
-db_password = random.RandomPassword(
-    f"{project_name}-integration-tests-db-password",
-    length=16,
-    special=True,
-    override_special="!#$%&*+-=<>?^_`|~",  # Excludes /, @, " and space
-    min_upper=1,
-    min_lower=1,
-    min_numeric=1,
-    min_special=1
-)
+stack_ref = pulumi.StackReference("rasa/eks-cluster/ci")
+# vpc_id = stack_ref.get_output("vpc_id")
+# Hardcoded VPC ID (from eks-cluster/ci stack)
+vpc_id = "vpc-05c25d975207885ea"
+# Hardcoded private subnet IDs (from eks-cluster/ci stack)
+# private_subnets = stack_ref.get_output("private_subnets")
+private_subnets = [
+    "subnet-0a47071e225de6910",
+    "subnet-0a5f6f4c061428b59",
+]
 
 # 📌 Step 1: Create DB Subnet Group
 db_subnet_group = aws.rds.SubnetGroup(
@@ -83,16 +90,17 @@ db_instance = aws.rds.Instance(
     engine=db_engine,
     engine_version=db_engine_version,
     username="integration_tests_user",
-    password=db_password.result,
+    password=db_password,
     vpc_security_group_ids=[db_security_group.id],
     db_subnet_group_name=db_subnet_group.name,
     backup_retention_period=7,
     backup_window="03:00-04:00",
     maintenance_window="sun:04:00-sun:05:00",
-    multi_az=False,  # Single-AZ as requested
+    multi_az=False, 
     publicly_accessible=False,  # Only accessible within VPC
-    skip_final_snapshot=True,  # For integration tests, we don't need final snapshot
-    deletion_protection=False,  # Allow deletion for integration tests
+    iam_database_authentication_enabled=True,  # Required for rds_iam role and IAM-auth users (e.g. integration_tests_user_no_password)
+    skip_final_snapshot=True,  
+    deletion_protection=False,
     tags={
         "Name": f"{project_name}-integration-tests-db",
         "Project": project_name,
@@ -105,10 +113,11 @@ pulumi.export("db_host", db_instance.endpoint)
 pulumi.export("db_port", db_instance.port)
 pulumi.export("db_name", db_instance.db_name)
 pulumi.export("db_username", db_instance.username)
-pulumi.export("db_password", db_password.result)
+pulumi.export("db_password", db_password)
 pulumi.export("db_connection_string", pulumi.Output.all(
     db_instance.endpoint,
     db_instance.port,
     db_instance.db_name,
-    db_instance.username
-).apply(lambda args: f"postgresql://{args[3]}:{db_password.result}@{args[0]}:{args[1]}/{args[2]}"))
+    db_instance.username,
+).apply(lambda args: f"postgresql://{args[3]}:{db_password}@{args[0]}:{args[1]}/{args[2]}"))
+

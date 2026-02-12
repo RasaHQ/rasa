@@ -89,6 +89,11 @@ resources:
 outputs:
   clusterName: ${cluster.clusterName}
   kubeConfig: ${cluster.kubeConfig}
+  headlampUrl: https://pro-ci-headlamp.rasa-dev.io
+  vpc_id: ${cluster.vpcId}
+  private_subnets: ${cluster.vpcPrivateSubnetIds}
+  oidcProviderArn: ${cluster.oidcProviderArn}
+  oidcProviderUrl: ${cluster.oidcProviderUrl}
 variables:
   headlampHelmValues:
     fullnameOverride: headlamp
