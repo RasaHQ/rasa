@@ -253,6 +253,14 @@ Rasa Pro 3.15.0 (2025-11-26)
 ### Miscellaneous internal changes
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
 
+## [3.14.14] - 2026-02-12
+                         
+Rasa Pro 3.14.14 (2026-02-12)              
+
+- [#4519](https://github.com/rasahq/rasa-private/issues/4519): Upgrade `litellm` to 1.80.0.
+- [#4531](https://github.com/rasahq/rasa-private/issues/4531): Fix Enterprise Search Policy triggering `utter_ask_rephrase` instead of `utter_no_relevant_answer_found` when the vector store search returns no matching documents. The `pattern_cannot_handle` now correctly receives the `cannot_handle_no_relevant_answer` as a `context.reason` in all cases where no relevant answer is found, not only when the optional relevancy check rejects the answer.
+
+
 ## [3.14.13] - 2026-02-05
                          
 Rasa Pro 3.14.13 (2026-02-05)

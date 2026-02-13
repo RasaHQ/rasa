@@ -23,7 +23,7 @@ jobs:
       - name: Assign reviewers
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHANGELOG_REVIEWERS: dakshvar22,ClemRasa
+          CHANGELOG_REVIEWERS: dakshvar22
         # FIXME: have to use the API and bypass the CLI commands
         # because of this: https://github.com/cli/cli/issues/4844
         run: |
@@ -32,5 +32,4 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/requested_reviewers \
-            -F "reviewers[]=dakshvar22" \
-            -F "reviewers[]=ClemRasa"
+            -F "reviewers[]=dakshvar22"

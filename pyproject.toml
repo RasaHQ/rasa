@@ -552,12 +552,6 @@ convention = "google"
 "langfuse".msg = "Only import langfuse from rasa.builder.telemetry.langfuse_compat."
 
 
-
-
-
-
-
-
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.3.5,<0.4.0"
 docker = "~7.1.0"
