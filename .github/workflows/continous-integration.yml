@@ -49,7 +49,6 @@ env:
   CUDA_VISIBLE_DEVICES: "-1"
   AWS_REGION: eu-west-1
   RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-private-dev
-  RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-sdk-dev
   RASA_PRO_HELM_REPO: oci://europe-west3-docker.pkg.dev/rasa-releases/helm-charts/rasa
   RASA_PRO_HELM_VERSION: 1.2.0
   DEFAULT_PYTHON_VERSION: "3.10"
@@ -543,26 +542,39 @@ jobs:
         run: |
           gunzip -c rasa-docker-image.tar.gz | docker load
 
-      - name: Pull rasa-sdk dev image
-        uses: ./.github/actions/pull-from-ecr
-        with:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          IMAGE_TAG: latest
-          REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+        with:
+          mask-password: "true"
+
+      - name: Set latest Rasa SDK release image tag and repo
+        if: ${{ github.event_name == 'pull_request' && (contains(github.event.pull_request.base.ref, '.x') || contains(github.event.pull_request.head.ref, 'prepare-release')) }}
+        run: |
+          pip install tomlkit
+          LATEST_RASA_SDK_VERSION=$(python scripts/get_rasa_sdk_version.py)
+          echo "LATEST_RASA_SDK_VERSION=${LATEST_RASA_SDK_VERSION}" >> "${GITHUB_ENV}"
+          echo "RASA_SDK_REPOSITORY=rasa/rasa-sdk" >> "${GITHUB_ENV}"
+
+      - name: Set latest Rasa SDK dev image tag and repo
+        if: ${{ !(github.event_name == 'pull_request' && (contains(github.event.pull_request.base.ref, '.x') || contains(github.event.pull_request.head.ref, 'prepare-release'))) }}
+        run: |
+          echo "LATEST_RASA_SDK_VERSION=latest" >> "${GITHUB_ENV}"
+          echo "RASA_SDK_REPOSITORY=329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-sdk-dev" >> "${GITHUB_ENV}"
+
       - name: Tracing integration testing - Run docker containers
         env:
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.LATEST_RASA_SDK_VERSION }}
         run: |
           make run-tracing-integration-containers
 
@@ -629,14 +641,41 @@ jobs:
         run: |
           gunzip -c rasa-docker-image.tar.gz | docker load
 
+      - name: Set latest Rasa SDK release image tag and repo
+        if: ${{ github.event_name == 'pull_request' && (contains(github.event.pull_request.base.ref, '.x') || contains(github.event.pull_request.head.ref, 'prepare-release')) }}
+        run: |
+          pip install tomlkit
+          LATEST_RASA_SDK_VERSION=$(python scripts/get_rasa_sdk_version.py)
+          echo "LATEST_RASA_SDK_VERSION=${LATEST_RASA_SDK_VERSION}" >> "${GITHUB_ENV}"
+          echo "RASA_SDK_REPOSITORY=rasa/rasa-sdk" >> "${GITHUB_ENV}"
+
+      - name: Set latest Rasa SDK dev image tag and repo
+        if: ${{ !(github.event_name == 'pull_request' && (contains(github.event.pull_request.base.ref, '.x') || contains(github.event.pull_request.head.ref, 'prepare-release'))) }}
+        run: |
+          echo "LATEST_RASA_SDK_VERSION=latest" >> "${GITHUB_ENV}"
+          echo "RASA_SDK_REPOSITORY=329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-sdk-dev" >> "${GITHUB_ENV}"
+
+      - name: Configure AWS credentials
+        if: ${{ !(github.event_name == 'pull_request' && (contains(github.event.pull_request.base.ref, '.x') || contains(github.event.pull_request.head.ref, 'prepare-release'))) }}
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: ${{ !(github.event_name == 'pull_request' && (contains(github.event.pull_request.base.ref, '.x') || contains(github.event.pull_request.head.ref, 'prepare-release'))) }}
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+        with:
+          mask-password: "true"
+
       - name: Metric Integration Testing - Run docker containers
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-          RASA_SDK_REPOSITORY: rasa/rasa-sdk
-          RASA_SDK_IMAGE_TAG: "3.15.0"
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: "${{ env.LATEST_RASA_SDK_VERSION }}"
         run: |
           make run-metrics-integration-containers
 
@@ -682,8 +721,6 @@ jobs:
         compute-docker-image-hash,
       ]
     runs-on: warp-ubuntu-latest-x64-4x
-    env:
-      RASA_SDK_IMAGE_TAG: latest
 
     steps:
       - name: Check out code
@@ -723,6 +760,20 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
 
+      - name: Set latest Rasa SDK release image tag and repo
+        if: ${{ github.event_name == 'pull_request' && (contains(github.event.pull_request.base.ref, '.x') || contains(github.event.pull_request.head.ref, 'prepare-release')) }}
+        run: |
+          pip install tomlkit
+          LATEST_RASA_SDK_VERSION=$(python scripts/get_rasa_sdk_version.py)
+          echo "LATEST_RASA_SDK_VERSION=${LATEST_RASA_SDK_VERSION}" >> "${GITHUB_ENV}"
+          echo "RASA_SDK_REPOSITORY=rasa/rasa-sdk" >> "${GITHUB_ENV}"
+
+      - name: Set latest Rasa SDK dev image tag and repo
+        if: ${{ !(github.event_name == 'pull_request' && (contains(github.event.pull_request.base.ref, '.x') || contains(github.event.pull_request.head.ref, 'prepare-release'))) }}
+        run: |
+          echo "LATEST_RASA_SDK_VERSION=latest" >> "${GITHUB_ENV}"
+          echo "RASA_SDK_REPOSITORY=329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-sdk-dev" >> "${GITHUB_ENV}"
+
       - name: Custom Actions Integration Testing NLU - Train docker containers
         run: |
           make train-action-server-nlu-bot
@@ -730,8 +781,9 @@ jobs:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
-          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
-          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.LATEST_RASA_SDK_VERSION }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Custom Actions Integration Testing NLU - Run docker containers
         run: |
@@ -740,8 +792,9 @@ jobs:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
-          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
-          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.LATEST_RASA_SDK_VERSION }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Configure Datadog Test Optimization
         uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
@@ -765,8 +818,8 @@ jobs:
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
-          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
-          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.LATEST_RASA_SDK_VERSION }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_nlu_bot"
 
       - name: Custom Action Integration Testing NLU - Stop docker containers
@@ -789,8 +842,8 @@ jobs:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
-          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
-          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.LATEST_RASA_SDK_VERSION }}
 
       - name: Custom Actions Integration Testing CALM - Run docker containers
         run: |
@@ -800,8 +853,8 @@ jobs:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
-          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
-          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.LATEST_RASA_SDK_VERSION }}
 
       - name: Configure Datadog Test Optimization
         uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
@@ -825,8 +878,8 @@ jobs:
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
-          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
-          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.LATEST_RASA_SDK_VERSION }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_calm_bot"
 
       - name: Custom Action Integration Testing CALM - Stop docker containers
@@ -852,8 +905,6 @@ jobs:
         compute-docker-image-hash,
       ]
     runs-on: warp-ubuntu-latest-x64-4x
-    env:
-      RASA_SDK_IMAGE_TAG: "3.15.0"
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -1587,8 +1638,6 @@ jobs:
       ]
     if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.pii-management == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
     runs-on: warp-ubuntu-latest-x64-4x
-    env:
-      RASA_SDK_IMAGE_TAG: "3.15.0"
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -1639,8 +1688,6 @@ jobs:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}-pii
-          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
-          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
       - name: Configure Datadog Test Optimization
         uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
@@ -1687,8 +1734,6 @@ jobs:
       ]
     if: ${{ inputs.full_ci_mode == 'true' || needs.check-code-changes.outputs.broker-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true' }}
     runs-on: warp-ubuntu-latest-x64-4x
-    env:
-      RASA_SDK_IMAGE_TAG: "3.15.0"
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -1739,8 +1784,6 @@ jobs:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}-broker
-          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
-          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
       - name: Configure Datadog Test Optimization
         uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0

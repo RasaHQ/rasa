@@ -211,7 +211,7 @@ services:
         condition: service_healthy
 
   action-server-jaeger:
-    image: ${RASA_SDK_REPOSITORY}:latest
+    image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
     container_name: action-server-jaeger
     volumes:
       - "./simple_bot/actions:/app/actions"
@@ -271,7 +271,7 @@ services:
         condition: service_healthy
 
   action-server-otlp:
-    image: ${RASA_SDK_REPOSITORY}:latest
+    image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
     container_name: action-server-otlp
     volumes:
       - "./certs/ca.pem:/certs/ca.pem"
@@ -331,7 +331,7 @@ services:
         condition: service_healthy
 
   rasa-grpc-action-server-jaeger:
-    image: ${RASA_SDK_REPOSITORY}:latest
+    image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
     container_name: rasa-grpc-action-server-jaeger
     volumes:
       - "./simple_bot/actions:/app/actions"
@@ -394,7 +394,7 @@ services:
         condition: service_healthy
 
   rasa-grpc-tls-action-server:
-    image: ${RASA_SDK_REPOSITORY}:latest
+    image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
     container_name: rasa-grpc-tls-action-server
     volumes:
       - "./certs/tls/server.pem:/certs/server.pem"
