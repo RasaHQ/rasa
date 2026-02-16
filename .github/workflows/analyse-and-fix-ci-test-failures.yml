@@ -8,9 +8,9 @@ on:
 
 jobs:
     analyse-and-fix-ci-test-failures:
-        if: |
-          (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
-          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+        if: | # Trigger on PR review and standalone comments (from human authors only, not from bots), if comment body invokes `@claude`.
+          (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.user.login, 'bot')) ||
+          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.user.login, 'bot'))
         runs-on: warp-ubuntu-latest-x64-2x
         timeout-minutes: 30
         permissions:
@@ -93,12 +93,12 @@ jobs:
                   for(const job of failedJobs) {
                       const log = await github.rest.actions.downloadJobLogsForWorkflowRun({owner: owner, repo: repo, job_id: job.id})
 
-                      // To ensure data can fit in context and provide only relevant context, fetch 50 lines before and after errors etc from each log
+                      // To ensure data can fit in context and provide only relevant context, fetch 5 lines before and after errors etc from each log
                       const { stdout } = await exec.getExecOutput('grep',
                                                                         [
                                                                           '-i',
-                                                                          '-B', '50',
-                                                                          '-A', '50',
+                                                                          '-B', '5',
+                                                                          '-A', '5',
                                                                           '-e',
                                                                           'error\\|exception\\|fail\\|assert\\|timeout\\|ECONNRESET\\|Killed\\|OOM\\|No space', // List of common error terms to look for
                                                                           '-',
@@ -112,7 +112,7 @@ jobs:
                       const errorLog = (await exec.getExecOutput('tail',
                                                                         [
                                                                           '-n',
-                                                                          '100'
+                                                                          '50'
                                                                         ],
                                                                         {
                                                                           input: stdout
@@ -128,14 +128,7 @@ jobs:
                   console.log("Failure data:")
                   console.log(JSON.stringify(failuresData, null, 2))
 
-                  const fs = require('fs');
-                  fs.writeFileSync("failure-data.json", JSON.stringify(failuresData, null, 2))
                   return failuresData
-
-            - name: Print failure context (to enable troubleshooting and traceability)
-              run: |
-                echo "Failure context:"
-                jq . failure-data.json
 
             - name: Get failures branch, to be used as target for fix PR
               env:
@@ -159,8 +152,8 @@ jobs:
                 git fetch origin "${TARGET_BRANCH}"
                 MERGE_BASE=$(git merge-base "origin/${TARGET_BRANCH}" HEAD)
                 PR_COMMITS=$(git log --oneline --no-decorate "${MERGE_BASE}..HEAD")
-                TARGET_RECENT_COMMITS=$(git log --oneline --no-decorate -n 20 --first-parent "origin/${TARGET_BRANCH}")
-                PR_DIFFSTAT=$(git diff --stat "${MERGE_BASE}..HEAD")
+                TARGET_RECENT_COMMITS=$(git log --oneline --no-decorate -n 10 --first-parent "origin/${TARGET_BRANCH}")
+                PR_DIFFSTAT=$(git diff -U3 --stat "${MERGE_BASE}..HEAD")
                 {
                   echo "MERGE_BASE=${MERGE_BASE}"
                   echo "PR_COMMITS<<EOF"
@@ -218,81 +211,44 @@ jobs:
               with:
                 PYTHON_VERSION: '3.10'
 
-            - name: Setup GitHub MCP Server
-              run: |
-                mkdir -p /tmp/mcp-config
-                cat > /tmp/mcp-config/mcp-servers.json << 'EOF'
-                {
-                  "mcpServers": {
-                    "github": {
-                      "command": "docker",
-                      "args": [
-                        "run",
-                        "-i",
-                        "--rm",
-                        "-e",
-                        "GITHUB_PERSONAL_ACCESS_TOKEN",
-                        "ghcr.io/github/github-mcp-server:sha-23fa0dd"
-                      ],
-                      "env": {
-                        "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GITHUB_TOKEN }}"
-                      }
-                    }
-                  }
-                }
-                EOF
+            - name: Install Claude-Code
+              run: curl -fsSL https://claude.ai/install.sh | bash -s 2.1.38
 
             - name: Analyse and fix failures
-              uses: anthropics/claude-code-base-action@e8132bc5e637a42c27763fc757faa37e1ee43b34 #v0.0.63
+              uses: anthropics/claude-code-base-action@2abbe0d2cadfb4618acfbe0dfa7d16530ed7fe2a #v1.0.0
               id: analyse-and-fix-test-failures
               env:
                 ASKER_GITHUB_LOGIN: ${{ github.event.comment.user.login || github.event.issue.user.login }}
                 GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                ENABLE_EXPERIMENTAL_MCP_CLI: true
-                WORKSPACE: ${{ github.workspace }}
+                DISABLE_TELEMETRY: 1
               with:
+                settings: ${{ github.workspace }}/.claude/settings.json
+                path_to_claude_code_executable: /home/runner/.local/bin/claude
                 claude_env: |
-                  - ENABLE_EXPERIMENTAL_MCP_CLI: true
-                  - WORKSPACE: ${{ env.WORKSPACE }}
-                  - ASKER_GITHUB_LOGIN: ${{ env.ASKER_GITHUB_LOGIN }}
-                model: claude-sonnet-4-5-20250929
+                  - ASKER_GITHUB_LOGIN=${{ env.ASKER_GITHUB_LOGIN }}
+                  - DISABLE_TELEMETRY=1
+                model: claude-haiku-4-5-20251001
                 anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-                allowed_tools: 'Edit,MultiEdit,Write,Read,View,Glob,Grep,GlobTool,GrepTool,BatchTool,LS,Bash,TodoWrite,BashOutput,KillBash,TaskOutput,Task,MCPSearch,mcp__github,mcp__github_ci__get_ci_status,mcp__github_ci__get_workflow_run_details,mcp__github_ci__download_job_log,mcp__github_file_ops__commit_files'
-                disallowed_tools: 'Bash(git push * --delete *),Bash(git push * -d *),Bash(git * --force *),Bash(git * -f *),Bash(gh * delete *),Bash(git push * --no-verify *),mcp__github__delete_*' # Disallow deletions, force and --no-verify operations
+                allowed_tools: 'Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash,TodoWrite,BashOutput,KillBash,TaskOutput,TaskCreate,TaskGet,TaskList,TaskUpdate'
+                disallowed_tools: 'Bash(git push * --delete *),Bash(git push * -d *),Bash(git * --force *),Bash(git * -f *),Bash(gh * delete *),Bash(git push * --no-verify *),mcp__*,MCPSearch,NotebookEdit,WebFetch,WebSearch,ExitPlanMode,AskUserQuestion,LSP,Task,Skill,EnterPlanMode,ToolSearch'
                 timeout_minutes: 20
-                mcp_config: /tmp/mcp-config/mcp-servers.json
-                prompt: ${{ github.event.comment.body || github.event.issue.body }}
+                prompt: |
+                  ${{ github.event.comment.body || github.event.issue.body }}
+
+                  ## Failures and errors context
+                  ${{ steps.failure-context.outputs.result }}
+
+                  ## Git context
+                  ${{ env.MERGE_BASE }}
+                  ${{ env.PR_COMMITS }}
+                  ${{ env.TARGET_RECENT_COMMITS }}
+                  ${{ env.PR_DIFFSTAT }}
+
+                  ## Task details
+                  Analyse and fix false-positive errors/failures in CI. Follow the phased flow in `${{ github.workspace }}/.claude/CLAUDE.md`.
                 system_prompt: |
-                      # Role
-                      CI maintainer orchestrator.
-
-                      ## Task
-                      Analyse and fix false-positive errors/failures in CI. Follow the orchestration in `.claude/CLAUDE.md` and delegate to sub-agents in `.claude/agents` using skills in `.claude/skills`.
-
-                      ## Instructions and guardrails
-                      - Start by producing a CI evidence pack.
-                      - Classify failures: false-positive vs true-positive with explicit evidence.
-                      - For false-positives: implement minimal fix on the existing fix branch and open a PR, against "${{ env.TARGET_BRANCH }}", assigning the asker as reviewer.
-                          - Fixes must not touch `rasa/**`, `pyproject.toml`, `poetry.lock`, `Makefile*`, `makefile_vars`, `docker/`, `scripts/`. If required, treat as true-positive and respond accordingly.
-                          - Changes to `.github/workflows/**` are report-only due to workflow-permission constraints: produce a summary (changed files + rationale) and include a patch diff; do not push or open a PR.
-                      - Never push directly to "${{ env.TARGET_BRANCH }}" or any non-fix branch. Only push "${{ env.FIX_BRANCH }}" and then open a PR.
-                      - If a push is blocked by guardrails, do not bypass or retry with `--no-verify`/`--force`; report the block.
-                      - For true-positives: draft a PR comment explaining the genuine bug, likely introducing commit(s), and how to reproduce.
-
-                      ## PR diff
-                      ${{ github.event.issue.pull_request.diff_url || github.event.pull_request.diff_url }}
-
-                      ## Git context
-                      Merge base: ${{ env.MERGE_BASE }}
-
-                      PR commits:
-                      ${{ env.PR_COMMITS }}
-
-                      Recent target commits:
-                      ${{ env.TARGET_RECENT_COMMITS }}
-
-                      PR diffstat:
-                      ${{ env.PR_DIFFSTAT }}
+                  # Role
+                  Expert CI maintainer.
 
             - name: Print Claude result (to enable troubleshooting and traceability)
               run: |
@@ -300,23 +256,12 @@ jobs:
                 cat ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }}
                 jq . ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }}
 
-            - name: Calculate aggregate tokens usage data, from the multi-turn/iteration Claude run
-              run: |
-                  # Save Claude output in structured `JSONL` format for easier parsing
-                  jq -c .[] ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }} > claude-output.jsonl
-
-                  # Calculate aggregate usage and save to JSON file
-                  export CLAUDE_OUTPUT_FILE_PATH=claude-output.jsonl
-                  ./scripts/calculate_total_claude_tokens_usage.py | jq > aggregate-token-usage.json
-              continue-on-error: true # Continue on error also, to enable posting main results (token usage can be calculated manually also)
-
             - name: Post comment with result of Claude's work
               env:
                 GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
                   RESULT=$(jq -sr 'last(.[][] | select(.type == "result") | .result)' ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }})
-                  COST=$(jq -sr 'last(.[][] | select(.type == "result") | .total_cost_usd)' ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }})
-                  TOKENS=$(jq . aggregate-token-usage.json)
+                  TOKENS_AND_COST=$(jq -sr 'last(.[][] | select(.type == "result") | .modelUsage)' ${{ steps.analyse-and-fix-test-failures.outputs.execution_file }})
 
                   gh pr comment ${{ github.event.issue.number || github.event.pull_request.number }} \
                     --body "
@@ -324,11 +269,7 @@ jobs:
                     ${RESULT}
 
                     ## Tokens usage and costs
-                    Total cost in USD: ${COST}
-
-                    Tokens usage:
-
                     \`\`\`
-                    ${TOKENS}
+                    ${TOKENS_AND_COST}
                     \`\`\`" \
                     --edit-last
