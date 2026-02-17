@@ -5,8 +5,8 @@ nlg:
   type: rephrase
   llm:
     provider: anthropic
-    model: claude-sonnet-4-5
-    timeout: 7
+    model: claude-sonnet-4-5-20250929
+    timeout: 20
 
 tracing:
   type: otlp

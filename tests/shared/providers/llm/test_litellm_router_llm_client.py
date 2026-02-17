@@ -59,7 +59,7 @@ class TestLiteLLMRouterLLMClient:
                     "api_version": "test-api-version",
                 },
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         }
         return LiteLLMRouterLLMClient.from_config(config)
 
@@ -106,7 +106,7 @@ class TestLiteLLMRouterLLMClient:
                     },
                 },
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
             "use_chat_completions_endpoint": True,
         }
 
@@ -153,7 +153,7 @@ class TestLiteLLMRouterLLMClient:
         ]
 
     def test_router_settings(self, client: LiteLLMRouterLLMClient) -> None:
-        assert client.router_settings == {"routing_strategy": "test"}
+        assert client.router_settings == {"routing_strategy": "simple-shuffle"}
 
     def test_router_client(self, client: LiteLLMRouterLLMClient) -> None:
         assert isinstance(client.router_client, Router)
@@ -265,7 +265,8 @@ class TestLiteLLMRouterLLMClient:
         self, client: LiteLLMRouterLLMClient, monkeypatch: MonkeyPatch
     ):
         """Test that timeout error message correctly shows
-        'time taken' is equivalent to 'timeout value' defined in 'endpoints.yml'."""
+        'time taken' is equivalent to 'timeout value' defined in 'endpoints.yml'.
+        """
         import asyncio
         from unittest.mock import AsyncMock, PropertyMock
 
@@ -315,7 +316,7 @@ class TestLiteLLMRouterLLMClient:
                     "api_base": "https://example.azure.com",
                 }
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         },
         # Missing "api_base"
         {
@@ -328,7 +329,7 @@ class TestLiteLLMRouterLLMClient:
                     # "api_base" missing
                 }
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         },
     ],
 )
@@ -352,7 +353,7 @@ def test_missing_keys_in_config_raises_validation_error(config: Dict[str, Any]) 
                     "api_base": "https://example.azure.com",
                 }
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         },
         # Missing "model" for openai model
         {
@@ -366,7 +367,7 @@ def test_missing_keys_in_config_raises_validation_error(config: Dict[str, Any]) 
                     "api_base": "https://example.azure.com",
                 }
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         },
         # Missing "router" entirely
         {
@@ -424,7 +425,7 @@ def test_passing_unsupported_config_parameter_does_not_raise_error() -> None:
                 "api_key": "test",
             },
         ],
-        "router": {"routing_strategy": "test"},
+        "router": {"routing_strategy": "simple-shuffle"},
         "unsupported_key": "value",
     }
     LiteLLMRouterLLMClient.from_config(config)
@@ -442,7 +443,7 @@ def test_passing_unsupported_model_config_parameter_does_not_raise_error() -> No
                 "unsupported_key": "value",
             },
         ],
-        "router": {"routing_strategy": "test"},
+        "router": {"routing_strategy": "simple-shuffle"},
     }
     LiteLLMRouterLLMClient.from_config(config)
 
@@ -460,7 +461,7 @@ def test_passing_use_chat_completions_endpoint_in_router_config() -> None:
             },
         ],
         "router": {
-            "routing_strategy": "test",
+            "routing_strategy": "simple-shuffle",
             "use_chat_completions_endpoint": False,
         },
     }
@@ -470,7 +471,7 @@ def test_passing_use_chat_completions_endpoint_in_router_config() -> None:
 
     # Then
     assert router_client.use_chat_completions_endpoint is False
-    assert router_client.router_settings == {"routing_strategy": "test"}
+    assert router_client.router_settings == {"routing_strategy": "simple-shuffle"}
     assert router_client.model_configurations == [
         {
             "model_name": "test-model-group-id",
@@ -493,7 +494,7 @@ def test_passing_use_chat_completions_endpoint_in_router_config() -> None:
                 },
             },
         ],
-        "router": {"routing_strategy": "test"},
+        "router": {"routing_strategy": "simple-shuffle"},
         "use_chat_completions_endpoint": False,
     }
 
@@ -512,7 +513,7 @@ def test_api_key_automatically_set_in_env_if_missing_for_self_hosted_models(
                 "api_base": "https://example.com",
             }
         ],
-        "router": {"routing_strategy": "test"},
+        "router": {"routing_strategy": "simple-shuffle"},
     }
 
     # When
@@ -540,7 +541,7 @@ def test_api_key_not_set_in_env_when_api_key_set_in_config_for_self_hosted(
                 "api_key": "test",
             }
         ],
-        "router": {"routing_strategy": "test"},
+        "router": {"routing_strategy": "simple-shuffle"},
     }
 
     # When
@@ -567,7 +568,7 @@ def test_api_key_not_set_in_env_when_api_key_set_in_env_for_self_hosted(
                 "api_base": "https://example2.com",
             }
         ],
-        "router": {"routing_strategy": "test"},
+        "router": {"routing_strategy": "simple-shuffle"},
     }
 
     # When

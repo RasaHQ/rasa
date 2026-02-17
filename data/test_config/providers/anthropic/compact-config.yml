@@ -5,8 +5,8 @@ pipeline:
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: anthropic
-      model: claude-sonnet-4-5
-      timeout: 7
+      model: claude-sonnet-4-5-20250929
+      timeout: 20
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
     nlu_entry:
@@ -34,7 +34,7 @@ pipeline:
   - name: CompactLLMCommandGenerator
     llm:
       provider: anthropic
-      model: claude-sonnet-4-5
+      model: claude-sonnet-4-5-20250929
       timeout: 20
       temperature: 0.0
       cache:
@@ -54,7 +54,7 @@ policies:
       source: data-repo/docs/
     llm:
       provider: anthropic
-      model: claude-sonnet-4-5
-      timeout: 7
+      model: claude-sonnet-4-5-20250929
+      timeout: 20
 
 assistant_id: 20240418-073244-narrow-archive

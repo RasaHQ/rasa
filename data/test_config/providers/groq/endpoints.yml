@@ -2,22 +2,22 @@ action_endpoint:
   url: "http://localhost:5055/webhook"
 
 nlg:
- type: rephrase
- llm:
-   provider: groq
-   model: openai/gpt-oss-120b
-   timeout: 7
+  type: rephrase
+  llm:
+    provider: groq
+    model: llama-3.1-8b-instant
+    timeout: 7
 
 tracing:
- type: otlp
- endpoint: localhost:4317
- insecure: true
- host: localhost
- service_name: e2e-tests-groq
+  type: otlp
+  endpoint: localhost:4317
+  insecure: true
+  host: localhost
+  service_name: e2e-tests-groq
 
 metrics:
- type: otlp
- endpoint: localhost:4317
- insecure: true
- host: localhost
- service_name: e2e-tests-groq
+  type: otlp
+  endpoint: localhost:4317
+  insecure: true
+  host: localhost
+  service_name: e2e-tests-groq

@@ -22,7 +22,7 @@ pipeline:
   - name: CRFEntityExtractor
   - name: DucklingEntityExtractor
     url: "http://localhost:8000"
-    dimensions: ["time", "number"]
+    dimensions: [ "time", "number" ]
     timezone: "Europe/Berlin"
     timeout: 3
   - name: NLUCommandAdapter

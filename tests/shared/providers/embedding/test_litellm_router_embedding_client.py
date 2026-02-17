@@ -59,7 +59,7 @@ class TestLiteLLMRouterEmbeddingClient:
                     "api_version": "test-api-version",
                 },
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         }
         return LiteLLMRouterEmbeddingClient.from_config(config)
 
@@ -119,7 +119,7 @@ class TestLiteLLMRouterEmbeddingClient:
                     },
                 },
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
             "use_chat_completions_endpoint": True,
         }
 
@@ -166,7 +166,7 @@ class TestLiteLLMRouterEmbeddingClient:
         ]
 
     def test_router_settings(self, client: LiteLLMRouterEmbeddingClient) -> None:
-        assert client.router_settings == {"routing_strategy": "test"}
+        assert client.router_settings == {"routing_strategy": "simple-shuffle"}
 
     def test_router_client(self, client: LiteLLMRouterEmbeddingClient) -> None:
         assert isinstance(client.router_client, Router)
@@ -330,7 +330,7 @@ class TestLiteLLMRouterEmbeddingClient:
                     "api_base": "https://example.azure.com",
                 }
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         },
         # Missing "api_base"
         {
@@ -343,7 +343,7 @@ class TestLiteLLMRouterEmbeddingClient:
                     # "api_base" missing
                 }
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         },
     ],
 )
@@ -367,7 +367,7 @@ def test_missing_keys_in_config_raises_validation_error(config: Dict[str, Any]) 
                     "api_base": "https://example.azure.com",
                 }
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         },
         # Missing "model" for openai model
         {
@@ -381,7 +381,7 @@ def test_missing_keys_in_config_raises_validation_error(config: Dict[str, Any]) 
                     "api_base": "https://example.azure.com",
                 }
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         },
         # Missing "router" entirely
         {
@@ -439,7 +439,7 @@ def test_passing_unsupported_config_parameter_does_not_raise_error() -> None:
                 "api_key": "test",
             },
         ],
-        "router": {"routing_strategy": "test"},
+        "router": {"routing_strategy": "simple-shuffle"},
         "unsupported_key": "value",
     }
     LiteLLMRouterEmbeddingClient.from_config(config)
@@ -457,6 +457,6 @@ def test_passing_unsupported_model_config_parameter_does_not_raise_error() -> No
                 "unsupported_key": "value",
             },
         ],
-        "router": {"routing_strategy": "test"},
+        "router": {"routing_strategy": "simple-shuffle"},
     }
     LiteLLMRouterEmbeddingClient.from_config(config)

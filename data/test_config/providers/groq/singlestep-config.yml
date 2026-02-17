@@ -5,7 +5,7 @@ pipeline:
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: groq
-      model: openai/gpt-oss-120b
+      model: llama-3.1-8b-instant
       timeout: 7
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
@@ -27,7 +27,7 @@ pipeline:
   - name: CRFEntityExtractor
   - name: DucklingEntityExtractor
     url: "http://localhost:8000"
-    dimensions: ["time", "number"]
+    dimensions: [ "time", "number" ]
     timezone: "Europe/Berlin"
     timeout: 3
   - name: NLUCommandAdapter
@@ -35,7 +35,7 @@ pipeline:
     prompt_template: rasa-private/data/test_config/providers/command_prompt.jinja2
     llm:
       provider: groq
-      model: openai/gpt-oss-120b
+      model: llama-3.1-8b-instant
       timeout: 7
 
 policies:
@@ -52,12 +52,12 @@ policies:
       source: data-repo/docs/
     llm:
       provider: groq
-      model: openai/gpt-oss-120b
+      model: llama-3.1-8b-instant
       timeout: 7
   - name: IntentlessPolicy
     llm:
       provider: groq
-      model: openai/gpt-oss-120b
+      model: llama-3.1-8b-instant
       timeout: 7
 
 assistant_id: 20240418-073244-narrow-archive

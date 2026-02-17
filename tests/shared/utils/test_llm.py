@@ -566,7 +566,7 @@ class TestLLMFactory:
                 },
             ],
             "router": {
-                "routing_strategy": "test",
+                "routing_strategy": "simple-shuffle",
                 "use_chat_completions_endpoint": True,
             },
         }
@@ -988,7 +988,7 @@ class TestLLMRouterFactory:
                     "api_version": "test-api-version",
                 },
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         }
 
         router = llm_router_factory(router_config, default_model_configuration)
@@ -1020,7 +1020,7 @@ class TestLLMRouterFactory:
                     "timeout": 100,
                 },
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         }
         expected_litellm_model_configurations = [
             # For providers other than specified in default configuration,
@@ -1107,7 +1107,7 @@ class TestLLMRouterFactory:
                         "api_base": "https://example.azure.com",
                     }
                 ],
-                "router": {"routing_strategy": "test"},
+                "router": {"routing_strategy": "simple-shuffle"},
             },
             # Missing "api_base"
             {
@@ -1120,7 +1120,7 @@ class TestLLMRouterFactory:
                         # "api_base" missing
                     }
                 ],
-                "router": {"routing_strategy": "test"},
+                "router": {"routing_strategy": "simple-shuffle"},
             },
             # Missing "router"
             {
@@ -1133,7 +1133,7 @@ class TestLLMRouterFactory:
                         "api_base": "test-api-base",
                     }
                 ],
-                # "router": {"routing_strategy": "test"}, missing
+                # "router": {"routing_strategy": "simple-shuffle"}, missing
             },
         ],
     )
@@ -1226,7 +1226,7 @@ class TestEmbedderFactory:
                     "api_base": "test-api-base",
                 },
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         }
         client = embedder_factory(router_config, default_model_configuration)
         assert isinstance(client, EmbeddingClient)
@@ -1688,7 +1688,7 @@ class TestEmbedderRouterFactory:
                     "api_base": "test-api-base",
                 },
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         }
 
         router = embedder_router_factory(router_config, default_model_configuration)
@@ -1723,7 +1723,7 @@ class TestEmbedderRouterFactory:
                     "timeout": 100,
                 },
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {"routing_strategy": "simple-shuffle"},
         }
         expected_litellm_model_configurations = [
             # For providers other than specified in default configuration,
@@ -1780,7 +1780,7 @@ class TestEmbedderRouterFactory:
                         "api_base": "https://example.azure.com",
                     }
                 ],
-                "router": {"routing_strategy": "test"},
+                "router": {"routing_strategy": "simple-shuffle"},
             },
             # Missing "api_base"
             {
@@ -1793,7 +1793,7 @@ class TestEmbedderRouterFactory:
                         # "api_base" missing
                     }
                 ],
-                "router": {"routing_strategy": "test"},
+                "router": {"routing_strategy": "simple-shuffle"},
             },
             # Missing "router"
             {
@@ -1806,7 +1806,7 @@ class TestEmbedderRouterFactory:
                         "api_base": "test-api-base",
                     }
                 ],
-                # "router": {"routing_strategy": "test"}, missing
+                # "router": {"routing_strategy": "simple-shuffle"}, missing
             },
         ],
     )
