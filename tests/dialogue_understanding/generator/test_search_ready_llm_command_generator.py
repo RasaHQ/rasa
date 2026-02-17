@@ -105,11 +105,17 @@ TEST_PROMPT_TEMPLATE_DIR = "./tests/dialogue_understanding/generator/prompt_temp
 command_prompt_v3_claude_3_5_sonnet_20240620_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
 )
+command_prompt_v3_claude_sonnet_4_5_20250929_template = rasa.shared.utils.io.read_file(
+    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2"
+)
 command_prompt_v3_fallback_other_models_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
 )
 command_prompt_v3_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+)
+command_prompt_v3_gpt_5_2_2025_12_11_template = rasa.shared.utils.io.read_file(
+    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_gpt_5_2_2025_12_11_template.jinja2"
 )
 # Agent versions of the prompt templates
 agent_command_prompt_v3_fallback_other_models_template = rasa.shared.utils.io.read_file(
@@ -118,8 +124,14 @@ agent_command_prompt_v3_fallback_other_models_template = rasa.shared.utils.io.re
 agent_command_prompt_v3_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
 )
+agent_command_prompt_v3_gpt_5_2_2025_12_11_template = rasa.shared.utils.io.read_file(
+    f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v3_gpt_5_2_2025_12_11_template.jinja2"
+)
 agent_command_prompt_v3_claude_3_5_sonnet_20240620_template = rasa.shared.utils.io.read_file(  # noqa: E501
     f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
+)
+agent_command_prompt_v3_claude_sonnet_4_5_20250929_template = rasa.shared.utils.io.read_file(  # noqa: E501
+    f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2"
 )
 
 
@@ -1655,10 +1667,28 @@ class TestSearchReadyLLMCommandGenerator:
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
     @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
     @pytest.mark.parametrize(
-        "agents_present,expected_prompt_template",
+        "model_name,agents_present,expected_prompt_template",
         [
-            (False, command_prompt_v3_claude_3_5_sonnet_20240620_template),
-            (True, agent_command_prompt_v3_claude_3_5_sonnet_20240620_template),
+            (
+                "claude-3-5-sonnet-20240620",
+                False,
+                command_prompt_v3_claude_3_5_sonnet_20240620_template,
+            ),
+            (
+                "claude-3-5-sonnet-20240620",
+                True,
+                agent_command_prompt_v3_claude_3_5_sonnet_20240620_template,
+            ),
+            (
+                "claude-sonnet-4-5-20250929",
+                False,
+                command_prompt_v3_claude_sonnet_4_5_20250929_template,
+            ),
+            (
+                "claude-sonnet-4-5-20250929",
+                True,
+                agent_command_prompt_v3_claude_sonnet_4_5_20250929_template,
+            ),
         ],
     )
     def test_load_default_prompt_based_on_model_name_claude(
@@ -1668,6 +1698,7 @@ class TestSearchReadyLLMCommandGenerator:
         mock_perform_health_check: Mock,
         model_storage: ModelStorage,
         set_agents_presence: Callable[[bool], None],
+        model_name: str,
         agents_present: bool,
         expected_prompt_template: Any,
     ):
@@ -1677,7 +1708,7 @@ class TestSearchReadyLLMCommandGenerator:
         config = {
             "llm": {
                 "provider": "anthropic",
-                "model": "claude-3-5-sonnet-20240620",
+                "model": model_name,
             },
         }
         generator = SearchReadyLLMCommandGenerator(config, model_storage, resource)
@@ -1706,10 +1737,28 @@ class TestSearchReadyLLMCommandGenerator:
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
     @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
     @pytest.mark.parametrize(
-        "agents_present,expected_prompt_template",
+        "model_name,agents_present,expected_prompt_template",
         [
-            (False, command_prompt_v3_claude_3_5_sonnet_20240620_template),
-            (True, agent_command_prompt_v3_claude_3_5_sonnet_20240620_template),
+            (
+                "claude-3-5-sonnet-20240620",
+                False,
+                command_prompt_v3_claude_3_5_sonnet_20240620_template,
+            ),
+            (
+                "claude-3-5-sonnet-20240620",
+                True,
+                agent_command_prompt_v3_claude_3_5_sonnet_20240620_template,
+            ),
+            (
+                "claude-sonnet-4-5-20250929",
+                False,
+                command_prompt_v3_claude_sonnet_4_5_20250929_template,
+            ),
+            (
+                "claude-sonnet-4-5-20250929",
+                True,
+                agent_command_prompt_v3_claude_sonnet_4_5_20250929_template,
+            ),
         ],
     )
     def test_load_default_prompt_based_on_model_name_from_model_group_claude(
@@ -1722,6 +1771,7 @@ class TestSearchReadyLLMCommandGenerator:
         mock_configuration: MagicMock,
         monkeypatch: pytest.MonkeyPatch,
         set_agents_presence: Callable[[bool], None],
+        model_name: str,
         agents_present: bool,
         expected_prompt_template: Any,
     ):
@@ -1730,11 +1780,11 @@ class TestSearchReadyLLMCommandGenerator:
 
         mock_available_endpoints.model_groups = [
             {
-                "id": "anthropic-claude-3-5",
+                "id": "anthropic_claude",
                 "models": [
                     {
                         "provider": "anthropic",
-                        "model": "claude-3-5-sonnet-20240620",
+                        "model": model_name,
                     }
                 ],
             }
@@ -1743,7 +1793,7 @@ class TestSearchReadyLLMCommandGenerator:
         monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
         resource = Resource("llmcmdgen")
 
-        config = {"llm": {"model_group": "anthropic-claude-3-5"}}
+        config = {"llm": {"model_group": "anthropic_claude"}}
         generator = SearchReadyLLMCommandGenerator(config, model_storage, resource)
         resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
 
@@ -1805,6 +1855,48 @@ class TestSearchReadyLLMCommandGenerator:
             > 0
         )
         assert loaded.prompt_template.find("| search and reply   |") > 0
+        assert loaded.prompt_template == expected_prompt_template
+
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    @pytest.mark.parametrize(
+        "agents_present,expected_prompt_template",
+        [
+            (False, command_prompt_v3_gpt_5_2_2025_12_11_template),
+            (True, agent_command_prompt_v3_gpt_5_2_2025_12_11_template),
+        ],
+    )
+    def test_load_default_prompt_based_on_model_name_gpt_5_2(
+        self,
+        mock_flow_retrieval_load: Mock,
+        mock_flow_retrieval_populate: Mock,
+        model_storage: ModelStorage,
+        set_agents_presence: Callable[[bool], None],
+        agents_present: bool,
+        expected_prompt_template: Any,
+    ):
+        # Given
+        set_agents_presence(agents_present)
+        resource = Resource("llmcmdgen")
+        config = {"llm": {"provider": "openai", "model": "gpt-5.2-2025-12-11"}}
+        generator = SearchReadyLLMCommandGenerator(config, model_storage, resource)
+        resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+
+        # When
+        loaded = SearchReadyLLMCommandGenerator.load(
+            {}, model_storage, resource, Mock()
+        )
+
+        # Then
+        assert loaded.prompt_template.startswith("## Task Description")
+        assert (
+            loaded.prompt_template.find(
+                "\nUse the following structured data:\n```json\n"
+            )
+            > 0
+        )
         assert loaded.prompt_template == expected_prompt_template
 
     @patch(
@@ -2333,9 +2425,19 @@ class TestSearchReadyLLMCommandGenerator:
                 "agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2",
             ),
             (
+                "openai/gpt-5.2-2025-12-11",
+                "command_prompt_v3_gpt_5_2_2025_12_11_template.jinja2",
+                "agent_command_prompt_v3_gpt_5_2_2025_12_11_template.jinja2",
+            ),
+            (
                 "azure/gpt-4o-2024-11-20",
                 "command_prompt_v3_gpt_4o_2024_11_20_template.jinja2",
                 "agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2",
+            ),
+            (
+                "azure/gpt-5.2-2025-12-11",
+                "command_prompt_v3_gpt_5_2_2025_12_11_template.jinja2",
+                "agent_command_prompt_v3_gpt_5_2_2025_12_11_template.jinja2",
             ),
             (
                 "anthropic/claude-3-5-sonnet-20240620",
@@ -2343,9 +2445,19 @@ class TestSearchReadyLLMCommandGenerator:
                 "agent_command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2",
             ),
             (
+                "anthropic/claude-sonnet-4-5-20250929",
+                "command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2",
+                "agent_command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2",
+            ),
+            (
                 "bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0",
                 "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2",
                 "agent_command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2",
+            ),
+            (
+                "bedrock/anthropic.claude-sonnet-4-5-20250929-v1:0",
+                "command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2",
+                "agent_command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2",
             ),
         ],
     )
@@ -2938,7 +3050,6 @@ class TestSearchReadyLLMCommandGenerator:
         expected_tzname: str,
     ) -> None:
         """render_template uses mocked_datetime when present in tracker."""
-
         domain = Domain.from_dict(
             {
                 "slots": {

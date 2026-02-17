@@ -11,7 +11,9 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_NAME_CLAUDE_3_5_SONNET_20240620,
+    MODEL_NAME_CLAUDE_SONNET_4_5_20250929,
     MODEL_NAME_GPT_4O_2024_11_20,
+    MODEL_NAME_GPT_5_2_2025_12_11,
     OPENAI_PROVIDER,
     PROVIDER_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
@@ -48,33 +50,65 @@ DEFAULT_LLM_CONFIG = {
 
 # Non-agent default prompt mapping (used by default)
 MODEL_PROMPT_MAPPER = {
+    # GPT-4o
     f"{OPENAI_PROVIDER}/{MODEL_NAME_GPT_4O_2024_11_20}": (
         "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
     ),
     f"{AZURE_OPENAI_PROVIDER}/{MODEL_NAME_GPT_4O_2024_11_20}": (
         "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
     ),
+    # GPT-5.2
+    f"{OPENAI_PROVIDER}/{MODEL_NAME_GPT_5_2_2025_12_11}": (
+        "command_prompt_v2_gpt_5_2_2025_12_11_template.jinja2"
+    ),
+    f"{AZURE_OPENAI_PROVIDER}/{MODEL_NAME_GPT_5_2_2025_12_11}": (
+        "command_prompt_v2_gpt_5_2_2025_12_11_template.jinja2"
+    ),
+    # Claude 3.5 Sonnet
     f"{AWS_BEDROCK_PROVIDER}/anthropic.{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}-v1:0": (
         "command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
     ),
     f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}": (
         "command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
+    ),
+    # Claude Sonnet 4.5
+    f"{AWS_BEDROCK_PROVIDER}/anthropic.{MODEL_NAME_CLAUDE_SONNET_4_5_20250929}-v1:0": (
+        "command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
+    ),
+    f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_SONNET_4_5_20250929}": (
+        "command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
     ),
 }
 
 # Agentic prompt mapping (used only when agents are configured)
 AGENT_MODEL_PROMPT_MAPPER = {
+    # GPT-4o
     f"{OPENAI_PROVIDER}/{MODEL_NAME_GPT_4O_2024_11_20}": (
         "agent_command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
     ),
     f"{AZURE_OPENAI_PROVIDER}/{MODEL_NAME_GPT_4O_2024_11_20}": (
         "agent_command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
     ),
+    # GPT-5.2
+    f"{OPENAI_PROVIDER}/{MODEL_NAME_GPT_5_2_2025_12_11}": (
+        "agent_command_prompt_v2_gpt_5_2_2025_12_11_template.jinja2"
+    ),
+    f"{AZURE_OPENAI_PROVIDER}/{MODEL_NAME_GPT_5_2_2025_12_11}": (
+        "agent_command_prompt_v2_gpt_5_2_2025_12_11_template.jinja2"
+    ),
+    # Claude 3.5 Sonnet
     f"{AWS_BEDROCK_PROVIDER}/anthropic.{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}-v1:0": (
         "agent_command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
     ),
     f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}": (
         "agent_command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
+    ),
+    # Claude Sonnet 4.5
+    f"{AWS_BEDROCK_PROVIDER}/anthropic.{MODEL_NAME_CLAUDE_SONNET_4_5_20250929}-v1:0": (
+        "agent_command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
+    ),
+    f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_SONNET_4_5_20250929}": (
+        "agent_command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
     ),
 }
 
