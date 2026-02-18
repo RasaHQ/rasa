@@ -9,6 +9,9 @@ from rasa.dialogue_understanding.patterns.completed import (
 from rasa.dialogue_understanding.patterns.correction import (
     CorrectionPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.patterns.customer_satisfaction import (
+    CustomerSatisfactionPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
     DialogueStackFrame,
     InvalidStackFrameType,
@@ -113,6 +116,17 @@ def test_create_typed_frame_with_unknown_type():
                 corrected_slots={},
                 reset_flow_id="test",
                 reset_step_id="bye",
+            ),
+        ),
+        (
+            {
+                "frame_id": "test",
+                "type": "pattern_customer_satisfaction",
+                "step_id": "collect_csat",
+            },
+            CustomerSatisfactionPatternFlowStackFrame(
+                frame_id="test",
+                step_id="collect_csat",
             ),
         ),
     ],

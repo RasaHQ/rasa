@@ -39,6 +39,9 @@ from rasa.dialogue_understanding.patterns.completed import (
 from rasa.dialogue_understanding.patterns.continue_interrupted import (
     ContinueInterruptedPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.patterns.customer_satisfaction import (
+    CustomerSatisfactionPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.patterns.human_handoff import (
     HumanHandoffPatternFlowStackFrame,
 )
@@ -87,6 +90,7 @@ from rasa.shared.core.flows.steps.collect import (
 from rasa.shared.core.flows.steps.constants import START_STEP
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 from rasa.shared.core.slots import (
+    BooleanSlot,
     FloatSlot,
     SlotRejection,
     StrictCategoricalSlot,
@@ -2865,3 +2869,204 @@ async def test_pattern_cannot_handle_routes_by_reason(
     )
 
     assert prediction.action_name == expected_action
+
+
+@pytest.mark.asyncio
+async def test_run_step_link_customer_satisfaction():
+    """Test that a user flow can link to pattern_customer_satisfaction."""
+    flows = flows_from_str_including_defaults(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: link
+              link: pattern_customer_satisfaction
+        """
+    )
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+
+    assert flow is not None
+
+    step = flow.step_by_id("link")
+    available_actions = []
+    result = await flow_executor.run_step(
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
+        slots=[],
+    )
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+
+    top = stack.top()
+    assert isinstance(top, UserFlowStackFrame)
+    assert top.flow_id == "my_flow"
+
+    linked_flow = stack.frames[0]
+    assert isinstance(linked_flow, UserFlowStackFrame)
+    assert linked_flow.flow_id == "pattern_customer_satisfaction"
+    assert linked_flow.frame_type == FlowStackFrameType.LINK
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "csat_score_value,expected_response",
+    [
+        ("satisfied", "utter_csat_thank_you_satisfied"),
+        ("unsatisfied", "utter_csat_thank_you_unsatisfied"),
+    ],
+)
+async def test_pattern_customer_satisfaction_full_flow(
+    csat_score_value: str, expected_response: str
+):
+    """Test the full CSAT flow: asks for score, then thanks user after collection."""
+    flows = flows_from_str_including_defaults(
+        """
+        flows:
+          dummy_flow:
+            description: placeholder
+            steps:
+            - id: "1"
+              action: utter_hello
+        """
+    )
+
+    csat_slot = StrictCategoricalSlot(
+        name="csat_score",
+        mappings=[],
+        values=["satisfied", "unsatisfied"],
+    )
+
+    available_actions = [
+        "utter_ask_csat_score",
+        "utter_csat_thank_you_satisfied",
+        "utter_csat_thank_you_unsatisfied",
+    ]
+
+    # Step 1: Start CSAT flow - should ask for score
+    csat_frame = CustomerSatisfactionPatternFlowStackFrame(
+        frame_id="csat-frame-id",
+        step_id=START_STEP,
+    )
+    stack = DialogueStack(frames=[csat_frame])
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[ActionExecuted(action_name="action_listen")],
+        slots=[csat_slot],
+    )
+    tracker.update_stack(stack)
+
+    prediction = await flow_executor.advance_flows(
+        tracker, available_actions, flows, slots=[csat_slot]
+    )
+    assert prediction.action_name == "utter_ask_csat_score"
+
+    # Apply events so tracker gets the updated stack (collect frame was pushed)
+    tracker.update_with_events(prediction.events or [])
+
+    # Step 2: User provides score  and assistant should respond appropriately
+    tracker.update(SlotSet("csat_score", csat_score_value))
+    tracker.update(ActionExecuted(action_name="utter_ask_csat_score"))
+    tracker.update(ActionExecuted(action_name="action_listen"))
+
+    prediction = await flow_executor.advance_flows(
+        tracker, available_actions, flows, slots=[csat_slot]
+    )
+    assert prediction.action_name == expected_response
+
+
+@pytest.mark.asyncio
+async def test_pattern_completed_links_to_customer_satisfaction():
+    """Test that pattern_completed links to pattern_customer_satisfaction."""
+    flows = flows_from_str_including_defaults(
+        """
+        flows:
+          my_flow:
+            description: test flow
+            steps:
+            - id: "1"
+              action: utter_hello
+        """
+    )
+
+    continue_conversation_slot = BooleanSlot(
+        name="continue_conversation",
+        mappings=[],
+        initial_value=None,
+    )
+
+    csat_slot = StrictCategoricalSlot(
+        name="csat_score",
+        mappings=[],
+        values=["satisfied", "unsatisfied"],
+    )
+
+    available_actions = [
+        "utter_ask_continue_conversation",
+        "utter_closing_words",
+        "utter_can_do_something_else",
+        "utter_ask_csat_score",
+    ]
+
+    # Start with pattern_completed frame (user declined to continue)
+    completed_frame = CompletedPatternFlowStackFrame(
+        frame_id="completed-frame-id",
+        step_id=START_STEP,
+        previous_flow_name="my_flow",
+    )
+    stack = DialogueStack(frames=[completed_frame])
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[ActionExecuted(action_name="action_listen")],
+        slots=[continue_conversation_slot, csat_slot],
+    )
+    tracker.update_stack(stack)
+
+    # First advance should ask about continuing conversation
+    prediction = await flow_executor.advance_flows(
+        tracker,
+        available_actions,
+        flows,
+        slots=[continue_conversation_slot, csat_slot],
+    )
+    assert prediction.action_name == "utter_ask_continue_conversation"
+
+    # Apply events and set user's response to NOT continue
+    tracker.update_with_events(prediction.events or [])
+    tracker.update(SlotSet("continue_conversation", False))
+    tracker.update(ActionExecuted(action_name="utter_ask_continue_conversation"))
+    tracker.update(ActionExecuted(action_name="action_listen"))
+
+    # Next advance should say closing words
+    prediction = await flow_executor.advance_flows(
+        tracker,
+        available_actions,
+        flows,
+        slots=[continue_conversation_slot, csat_slot],
+    )
+    assert prediction.action_name == "utter_closing_words"
+
+    # Apply events and advance again - should now link to CSAT and ask for score
+    tracker.update_with_events(prediction.events or [])
+    tracker.update(ActionExecuted(action_name="utter_closing_words"))
+    tracker.update(ActionExecuted(action_name="action_listen"))
+
+    prediction = await flow_executor.advance_flows(
+        tracker,
+        available_actions,
+        flows,
+        slots=[continue_conversation_slot, csat_slot],
+    )
+    assert prediction.action_name == "utter_ask_csat_score"

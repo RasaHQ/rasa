@@ -29,6 +29,7 @@ from rasa.shared.constants import (
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
     DOCS_URL_RESPONSES,
+    RASA_PATTERN_CUSTOMER_SATISFACTION,
     REQUIRED_SLOTS_KEY,
     RESPONSE_CONDITION,
     UTTER_PREFIX,
@@ -39,6 +40,7 @@ from rasa.shared.core.command_payload_reader import (
     CommandPayloadReader,
 )
 from rasa.shared.core.constants import (
+    DEFAULT_CATEGORICAL_SLOT_VALUE,
     KEY_ALLOW_NLU_CORRECTION,
     SLOTS,
     SlotMappingType,
@@ -1267,6 +1269,62 @@ class Validator:
 
         return all(results)
 
+    def verify_csat_score_slot_values(self) -> bool:
+        """Checks that csat_score slot includes values required for analytics.
+
+        Only runs when at least one flow links to pattern_customer_satisfaction.
+        When that is the case and the domain defines a slot named 'csat_score',
+        that slot must be categorical and its allowed values must include both
+        'satisfied' and 'unsatisfied'.
+
+        Returns:
+            False if csat_score is defined but does not include both required values.
+        """
+        links_to_csat = any(
+            isinstance(step, LinkFlowStep)
+            and step.link == RASA_PATTERN_CUSTOMER_SATISFACTION
+            for flow in self.flows.underlying_flows
+            for step in flow.steps
+        )
+        if not links_to_csat:
+            return True
+
+        csat_slot = next((s for s in self.domain.slots if s.name == "csat_score"), None)
+        if csat_slot is None:
+            return True
+
+        required = {"satisfied", "unsatisfied"}
+        values = getattr(csat_slot, "values", None) or []
+        actual = {str(v).casefold() for v in values}
+        user_provided = actual - {DEFAULT_CATEGORICAL_SLOT_VALUE.casefold()}
+        missing = required - actual
+
+        if missing:
+            intro = (
+                "The 'csat_score' slot is used by pattern_customer_satisfaction "
+                "and by analytics services that expect the values 'satisfied' and "
+                "'unsatisfied'. When overriding this slot,"
+            )
+            if not user_provided:
+                structlogger.error(
+                    "validator.verify_csat_score_slot_values.missing_values",
+                    event_info=(
+                        f"{intro} it must be categorical with a 'values' list "
+                        f"including both 'satisfied' and 'unsatisfied'."
+                    ),
+                )
+            else:
+                structlogger.error(
+                    "validator.verify_csat_score_slot_values.invalid_values",
+                    event_info=(
+                        f"{intro} its allowed values must include both "
+                        "'satisfied' and 'unsatisfied'."
+                    ),
+                    current_values=list(values),
+                )
+            return False
+        return True
+
     def verify_flows(self) -> bool:
         """Checks for inconsistencies across flows."""
         structlogger.info("validation.flows.started")
@@ -1283,6 +1341,7 @@ class Validator:
 
         # add all flow validation conditions here
         flow_validation_conditions = [
+            self.verify_csat_score_slot_values(),
             self.verify_flows_steps_against_domain(),
             self.verify_unique_flows(),
             self.verify_predicates(),

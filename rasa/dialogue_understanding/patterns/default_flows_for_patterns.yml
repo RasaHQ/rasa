@@ -12,6 +12,16 @@ responses:
         rephrase: True
         template: jinja
 
+  utter_ask_csat_score:
+    - text: "How would you rate your experience today?"
+      metadata:
+        rephrase: True
+      buttons:
+        - title: "👍 Satisfied"
+          payload: "/SetSlots(csat_score=satisfied)"
+        - title: "👎 Not Satisfied"
+          payload: "/SetSlots(csat_score=unsatisfied)"
+
   utter_ask_interrupted_flow_to_continue:
     - text: "Would you like to resume {{context.interrupted_flow_options}}?"
       metadata:
@@ -68,6 +78,16 @@ responses:
       metadata:
         rephrase: True
         template: jinja
+
+  utter_csat_thank_you_satisfied:
+    - text: "Thank you for your feedback! I'm glad I could help."
+      metadata:
+        rephrase: True
+
+  utter_csat_thank_you_unsatisfied:
+    - text: "Thank you for your feedback. I'm sorry I couldn't fully meet your expectations."
+      metadata:
+        rephrase: True
 
   utter_float_slot_rejection:
     - text: "Sorry, it seems the value you provided `{{value}}` is not a valid number. Please provide a valid number in your response."
@@ -159,6 +179,13 @@ slots:
     initial_value: 3.0
   continue_conversation:
     type: bool
+    mappings:
+      - type: from_llm
+  csat_score:
+    type: categorical
+    values:
+      - satisfied
+      - unsatisfied
     mappings:
       - type: from_llm
 
@@ -259,7 +286,9 @@ flows:
               next: END
           - else:
             - action: utter_closing_words
-              next: END
+              next: link_csat
+            - id: link_csat
+              link: pattern_customer_satisfaction
 
   pattern_continue_interrupted:
     description: Conversation repair flow for managing when users switch between different flows
@@ -302,6 +331,27 @@ flows:
           - if: not context.is_reset_only
             then:
               - action: utter_corrected_previous_input
+                next: END
+          - else: END
+
+  pattern_customer_satisfaction:
+    description: Flow that collects customer satisfaction feedback after conversation completion
+    name: pattern customer satisfaction
+    run_pattern_completed: false
+    steps:
+      - collect: csat_score
+        description: Set this slot based on the user's satisfaction with the conversation. Set to 'satisfied' if the user is happy, 'unsatisfied' if the user is not happy.
+        ask_before_filling: true
+      - id: csat_response
+        noop: true
+        next:
+          - if: slots.csat_score == "satisfied"
+            then:
+              - action: utter_csat_thank_you_satisfied
+                next: END
+          - if: slots.csat_score == "unsatisfied"
+            then:
+              - action: utter_csat_thank_you_unsatisfied
                 next: END
           - else: END
 

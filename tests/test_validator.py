@@ -1282,6 +1282,175 @@ def test_verify_unique_flows_duplicate_descriptions(
     assert expected_log_level in result.out
 
 
+@pytest.mark.parametrize(
+    "values_yaml",
+    [
+        "[satisfied]",
+        "[unsatisfied]",
+        "[positive, neutral, negative]",
+    ],
+)
+def test_verify_flows_returns_false_when_csat_score_invalid(
+    tmp_path: Path,
+    nlu_data_path: Path,
+    capsys: CaptureFixture,
+    values_yaml: str,
+) -> None:
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          my_flow:
+                            description: minimal flow
+                            steps:
+                            - action: utter_hello
+                            - link: pattern_customer_satisfaction
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        intents:
+                          - greet
+                        slots:
+                          csat_score:
+                            type: categorical
+                            values: {values_yaml}
+                            mappings: []
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+    validator = Validator.from_importer(importer)
+    assert not validator.verify_flows()
+
+    output = capsys.readouterr()
+    assert "validator.verify_csat_score_slot_values.invalid_values" in output.out
+    assert "error" in output.out
+    assert "its allowed values must include both 'satisfied' and 'unsatisfied'."
+
+
+@pytest.mark.parametrize(
+    "slot_definition",
+    [
+        # Categorical slot with empty values
+        """
+                          csat_score:
+                            type: categorical
+                            values: []
+                            mappings: []""",
+        # Non-categorical slot (text)
+        """
+                          csat_score:
+                            type: text
+                            mappings: []""",
+    ],
+)
+def test_verify_flows_returns_false_when_csat_score_missing_required_values(
+    tmp_path: Path,
+    nlu_data_path: Path,
+    capsys: CaptureFixture,
+    slot_definition: str,
+) -> None:
+    """Validation fails when csat_score slot lacks required values."""
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          my_flow:
+                            description: minimal flow
+                            steps:
+                            - action: utter_hello
+                            - link: pattern_customer_satisfaction
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        intents:
+                          - greet
+                        slots:{slot_definition}
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+    validator = Validator.from_importer(importer)
+    assert not validator.verify_flows()
+
+    output = capsys.readouterr()
+    assert "validator.verify_csat_score_slot_values.missing_values" in output.out
+    assert "error" in output.out
+    assert (
+        "it must be categorical with a 'values' list "
+        "including both 'satisfied' and 'unsatisfied'." in output.out
+    )
+
+
+@pytest.mark.parametrize(
+    "slot_definition",
+    [
+        # csat_score slot not redefined (uses default from pattern)
+        "",
+        # Valid csat_score slot with both required values
+        """
+                        slots:
+                          csat_score:
+                            type: categorical
+                            values: [skip, satisfied, unsatisfied]
+                            mappings: []""",
+    ],
+)
+def test_verify_csat_score_slot_values_passes(
+    tmp_path: Path,
+    nlu_data_path: Path,
+    slot_definition: str,
+) -> None:
+    """Validation passes when csat_score is valid."""
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          my_flow:
+                            description: minimal flow
+                            steps:
+                            - action: utter_hello
+                            - link: pattern_customer_satisfaction
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        intents:
+                          - greet{slot_definition}
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.verify_csat_score_slot_values()
+
+
 def test_verify_predicates_invalid_rejection_if(
     tmp_path: Path,
     nlu_data_path: Path,

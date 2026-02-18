@@ -11,6 +11,7 @@ from jinja2 import Template
 from rasa.shared.constants import (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX,
     RASA_PATTERN_CHITCHAT,
+    RASA_PATTERN_CUSTOMER_SATISFACTION,
     RASA_PATTERN_HUMAN_HANDOFF,
     RASA_PATTERN_INTERNAL_ERROR,
     RASA_PATTERN_SEARCH,
@@ -896,8 +897,8 @@ def validate_linked_flows_exists(flows: "FlowsList") -> None:
 
             # It might be that the flows do not contain the default rasa patterns, but
             # only the user flows. Manually check for `pattern_human_handoff`,
-            # 'pattern_chitchat' and 'pattern_search' as these patterns can be linked
-            # to and are part of the default patterns of rasa.
+            # 'pattern_chitchat', 'pattern_search' and 'pattern_customer_satisfaction'
+            # as these patterns can be linked to and are part of the default patterns.
             if (
                 flows.flow_by_id(step.link) is None
                 # Allow linking to human-handoff from both patterns
@@ -910,6 +911,9 @@ def validate_linked_flows_exists(flows: "FlowsList") -> None:
                 # Allow linking to pattern_search from both patterns and
                 # user-defined flows
                 and step.link != RASA_PATTERN_SEARCH
+                # Allow linking to pattern_customer_satisfaction from both patterns
+                # and user-defined flows
+                and step.link != RASA_PATTERN_CUSTOMER_SATISFACTION
             ):
                 raise UnresolvedLinkFlowException(step.link, flow.id, step.id)
 
@@ -917,7 +921,8 @@ def validate_linked_flows_exists(flows: "FlowsList") -> None:
 def validate_patterns_are_not_called_or_linked(flows: "FlowsList") -> None:
     """Validates that patterns are never called or linked.
 
-    Exception: pattern_human_handoff and pattern_search can be linked.
+    Exception: pattern_human_handoff, pattern_search and
+    pattern_customer_satisfaction can be linked.
     """
     for flow in flows.underlying_flows:
         for step in flow.steps:
@@ -934,6 +939,9 @@ def validate_patterns_are_not_called_or_linked(flows: "FlowsList") -> None:
                 # Allow linking to pattern_search from both patterns and
                 # user-defined flows
                 and step.link != RASA_PATTERN_SEARCH
+                # Allow linking to pattern_customer_satisfaction from both
+                # patterns and user-defined flows
+                and step.link != RASA_PATTERN_CUSTOMER_SATISFACTION
             ):
                 raise ReferenceToPatternException(
                     step.link, flow.id, step.id, call_step=False
@@ -954,7 +962,8 @@ def validate_patterns_are_not_calling_or_linking_other_flows(
 
     Link steps to user flows are allowed for all patterns but 'pattern_internal_error'.
     Link steps to other patterns, except for 'pattern_human_handoff',
-    'pattern_chitchat' and 'pattern_search' are forbidden.
+    'pattern_chitchat', 'pattern_search' and 'pattern_customer_satisfaction'
+    are forbidden.
     """
     for flow in flows.underlying_flows:
         if not flow.is_rasa_default_flow:
@@ -965,9 +974,10 @@ def validate_patterns_are_not_calling_or_linking_other_flows(
                     RASA_PATTERN_HUMAN_HANDOFF,
                     RASA_PATTERN_CHITCHAT,
                     RASA_PATTERN_SEARCH,
+                    RASA_PATTERN_CUSTOMER_SATISFACTION,
                 ]:
-                    # links to 'pattern_human_handoff', 'pattern_chitchat' and
-                    # 'pattern_search' are allowed
+                    # links to 'pattern_human_handoff', 'pattern_chitchat',
+                    # 'pattern_search' and 'pattern_customer_satisfaction' are allowed
                     continue
                 if step.link.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX):
                     # all other patterns are allowed to link to user flows, but not

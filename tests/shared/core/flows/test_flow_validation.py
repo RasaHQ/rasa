@@ -8,6 +8,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import (
     RASA_PATTERN_CHITCHAT,
+    RASA_PATTERN_CUSTOMER_SATISFACTION,
     RASA_PATTERN_HUMAN_HANDOFF,
     RASA_PATTERN_SEARCH,
 )
@@ -806,6 +807,27 @@ def test_validation_pattern_linking_to_pattern_search(
     flows = flow_from_str_fn(flow_config)
     assert isinstance(flows.underlying_flows[0].steps[1], LinkFlowStep)
     assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_SEARCH
+
+
+@pytest.mark.parametrize(
+    "flow_name",
+    ["pattern_chitchat", "user_flow"],
+)
+def test_validation_flow_linking_to_pattern_customer_satisfaction(flow_name: str):
+    """Both patterns and user flows can link to pattern_customer_satisfaction."""
+    flow_config = f"""
+        flows:
+          {flow_name}:
+            description: flow linking to csat
+            steps:
+              - action: welcome
+              - link: {RASA_PATTERN_CUSTOMER_SATISFACTION}
+        """
+    flows = flows_from_str_including_defaults(flow_config)
+    flow = flows.flow_by_id(flow_name)
+    assert flow is not None
+    assert isinstance(flow.steps[1], LinkFlowStep)
+    assert flow.steps[1].link == RASA_PATTERN_CUSTOMER_SATISFACTION
 
 
 def test_validate_slot_persistence_configuration_duplicate():
