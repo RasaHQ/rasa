@@ -36,7 +36,6 @@ def read_endpoint_config(
             filename=os.path.abspath(filename),
             endpoint_type=endpoint_type,
             event_info="Successfully read endpoint configuration file.",
-            content=content,
         )
 
         if content.get(endpoint_type) is None:
@@ -79,7 +78,6 @@ def read_backend_tracing_configuration(
         filename=os.path.abspath(filename),
         endpoint_type=endpoint_type,
         event_info="Successfully read endpoint configuration file.",
-        content=content,
     )
 
     if content.get(endpoint_type) is None:
