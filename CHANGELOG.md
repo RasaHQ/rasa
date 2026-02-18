@@ -10,6 +10,16 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.11] - 2026-02-18
+                         
+Rasa Pro 3.15.11 (2026-02-18)                              
+### Bugfixes
+- [#4519](https://github.com/rasahq/rasa-private/issues/4519): Upgrade `litellm` to 1.80.0.
+- [#4622](https://github.com/rasahq/rasa-private/issues/4622): Remove config file content from endpoint read success logs to prevent sensitive data exposure.
+- [#4624](https://github.com/rasahq/rasa-private/issues/4624): Update `protobuf` to v5.29.6 to address CVE-2026-0994.
+  Update `wheel` to v0.46.3 to address CVE-2026-24049.
+
+
 ## [3.15.10] - 2026-02-10
                          
 Rasa Pro 3.15.10 (2026-02-10)                              
