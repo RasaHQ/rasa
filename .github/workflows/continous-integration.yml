@@ -1542,7 +1542,7 @@ jobs:
         if: always()
         run: |
           make stop-custom-broker-integration-containers
-  
+
       - name: Save Test Results for custom broker integration testing
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
@@ -1550,7 +1550,7 @@ jobs:
           name: Custom broker Integration Test Results
           path: |
             integration-results-custom-broker-with-calm-bot-results.xml
-  
+
 
   channel-connector-integration-tests:
     name: Channel Connector Integration Tests With CALM bot
@@ -2532,6 +2532,8 @@ jobs:
         with:
           files: "artifacts/**/integration-results-*.xml"
           check_name: "Integration Test Results"
+          compare_to_earlier_commit: false
+          comment_mode: "failures"
 
   checkout-code-for-sonarscan:
     runs-on: warp-ubuntu-latest-x64-4x
@@ -2700,7 +2702,7 @@ jobs:
       - name: Check out code
         if: ${{ always() && github.event_name == 'pull_request' && steps.check-job-results.conclusion == 'failure' }}
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-  
+
       - name: On failures, comment on PR, instructing that Claude can be used to analyse and auto-fix failures
         if: ${{ always() && github.event_name == 'pull_request' && steps.check-job-results.conclusion == 'failure' }}
         uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
