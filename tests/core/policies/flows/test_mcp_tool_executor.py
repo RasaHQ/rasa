@@ -6,12 +6,18 @@ import pytest
 from mcp import ListToolsResult, Tool
 from mcp.types import Content, TextContent
 
-from rasa.core.config.available_endpoints import MCPServerConfig
+from rasa.core.config.available_endpoints import (
+    MCPFromSlotsEntry,
+    MCPMetaMapConfig,
+    MCPServerConfig,
+)
 from rasa.core.config.configuration import Configuration
 from rasa.core.policies.flows.flow_step_result import ContinueFlowWithNextStep
 from rasa.core.policies.flows.mcp_tool_executor import (
+    _build_meta_for_flow_tool_call,
     _connect_to_mcp_server,
     _execute_mcp_tool_call,
+    _get_meta_map_for_server,
     _get_slot_value_from_jinja2_expression,
     _handle_mcp_tool_error,
     _is_tool_available,
@@ -384,6 +390,7 @@ async def test_connect_to_mcp_server_success(
                     "url": "http://test:8080",
                     "type": "http",
                     "additional_params": {},
+                    "meta_map": None,
                 }
             )
 
@@ -422,6 +429,7 @@ async def test_connect_to_mcp_server_success_with_auth(
                     "url": "http://test:8080",
                     "type": "http",
                     "additional_params": {"api_key": "${TEST_TOKEN}"},
+                    "meta_map": None,
                 }
             )
 
@@ -595,7 +603,10 @@ async def test_call_mcp_tool_success(
 
             assert isinstance(result, ContinueFlowWithNextStep)
             mock_execute.assert_called_once_with(
-                initial_events, mock_stack, mcp_call_step, mock_tracker
+                initial_events,
+                mock_stack,
+                mcp_call_step,
+                mock_tracker,
             )
             mock_logger.debug.assert_called_once()
 
@@ -907,3 +918,47 @@ def test_get_slot_value_empty_context() -> None:
     # Test with empty context
     with pytest.raises(Exception):
         _get_slot_value_from_jinja2_expression("result.content", context)
+
+
+def test_build_meta_for_flow_tool_call_with_meta_map(
+    mock_tracker: MagicMock,
+) -> None:
+    """Test that _build_meta_for_flow_tool_call returns slot values keyed by param."""
+    mock_tracker.slots = {"user_id": MagicMock(), "role": MagicMock()}
+    mock_tracker.current_slot_values.return_value = {
+        "user_id": "user_123",
+        "role": "admin",
+    }
+    mock_endpoints = MagicMock()
+    mock_endpoints.mcp_servers = [
+        MCPServerConfig(
+            name="test_server",
+            url="http://test:8080",
+            type="http",
+            meta_map=MCPMetaMapConfig(
+                from_slots=[
+                    MCPFromSlotsEntry(slot="user_id", param="user_id"),
+                    MCPFromSlotsEntry(slot="role", param="user_role"),
+                ],
+            ),
+        )
+    ]
+    with patch.object(
+        Configuration, "get_instance", return_value=MagicMock(endpoints=mock_endpoints)
+    ):
+        meta = _build_meta_for_flow_tool_call("test_server", mock_tracker)
+    assert meta == {
+        "user_id": "user_123",
+        "user_role": "admin",
+    }
+
+
+@pytest.mark.asyncio
+async def test_get_meta_map_for_server_returns_none_when_no_servers() -> None:
+    """Test _get_meta_map_for_server returns None when no MCP servers configured."""
+    mock_endpoints = MagicMock()
+    mock_endpoints.mcp_servers = None
+    with patch.object(
+        Configuration, "get_instance", return_value=MagicMock(endpoints=mock_endpoints)
+    ):
+        assert _get_meta_map_for_server("any_server") is None

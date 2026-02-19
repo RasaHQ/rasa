@@ -191,6 +191,7 @@ def validate_files(
             validator, max_history, fail_on_warnings
         )
         valid_flows = validator.verify_flows()
+        valid_mcp_meta_map_slots = validator.verify_mcp_meta_map_slots_against_domain()
         valid_prompt_templates = validator.verify_prompt_templates()
         if validator.config:
             valid_translations = validator.verify_translations(summary_mode=True)
@@ -210,6 +211,7 @@ def validate_files(
             and valid_nlu
             and valid_stories
             and valid_flows
+            and valid_mcp_meta_map_slots
             and valid_prompt_templates
             and valid_translations
             and valid_CALM_slot_mappings

@@ -45,6 +45,7 @@ def resolve_agent_config(
                 mcp_server.url = mcp_server_endpoint.url
                 mcp_server.type = mcp_server_endpoint.type
                 mcp_server.additional_params = mcp_server_endpoint.additional_params
+                mcp_server.meta_map = mcp_server_endpoint.meta_map
 
     return agent_config
 

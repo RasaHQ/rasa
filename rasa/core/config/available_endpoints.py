@@ -20,6 +20,59 @@ from rasa.utils.endpoints import (
 )
 
 
+class MCPFromSlotsEntry(BaseModel):
+    """One mapping from a slot to an _meta key (sent during MCP tool calls)."""
+
+    slot: str = Field(
+        ..., description="Slot name to read from (tracker or agent input)."
+    )
+    param: str = Field(..., description="Key in _meta sent to the MCP server.")
+
+    @model_validator(mode="after")
+    def validate_non_empty_strings(self) -> "MCPFromSlotsEntry":
+        if not (self.slot and self.slot.strip()):
+            raise ValueError("slot must be a non-empty string")
+        if not (self.param and self.param.strip()):
+            raise ValueError("param must be a non-empty string")
+        return self
+
+
+class MCPMetaMapConfig(BaseModel):
+    """Configuration for injecting metadata into MCP tool call _meta parameter.
+
+    Values are sent to the MCP server in the _meta field of tools/call requests
+    and are not visible to the LLM. Use for user context, auth, or API versioning.
+
+    - from_slots: runtime values from tracker/agent slots (keyed by param).
+    - static: fixed key-value pairs always sent in _meta (e.g. api_version, source).
+    """
+
+    from_slots: Optional[List[MCPFromSlotsEntry]] = Field(
+        default=None,
+        description=(
+            "List of {slot, param} mappings. Slot value is read from"
+            "tracker/agent input and sent as _meta[param]."
+        ),
+    )
+    static: Optional[Dict[str, str]] = Field(
+        default=None,
+        description=(
+            "Fixed key-value pairs always sent in _meta (e.g. api_version, source)."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_static_non_empty_strings(self) -> "MCPMetaMapConfig":
+        if not self.static:
+            return self
+        for key, value in self.static.items():
+            if not isinstance(key, str) or not key.strip():
+                raise ValueError("meta_map.static: keys must be non-empty strings")
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError("meta_map.static: values must be non-empty strings")
+        return self
+
+
 @dataclasses.dataclass
 class InteractionHandlingConfig:
     """Configuration for interaction handling."""
@@ -69,6 +122,10 @@ class MCPServerConfig(BaseModel):
     additional_params: Optional[Dict[str, Any]] = Field(
         default_factory=dict, description="Additional parameters for the MCP server."
     )
+    meta_map: Optional[MCPMetaMapConfig] = Field(
+        default=None,
+        description="Optional mapping of slots to _meta sent with MCP tool calls.",
+    )
 
     @model_validator(mode="after")
     def validate_type(self) -> MCPServerConfig:
@@ -87,7 +144,7 @@ class MCPServerConfig(BaseModel):
 
     @model_validator(mode="before")
     def collect_additional_params(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        base_fields = {"name", "url", "type"}
+        base_fields = {"name", "url", "type", "meta_map"}
         extras = {k: v for k, v in values.items() if k not in base_fields}
         if extras:
             values["additional_params"] = extras

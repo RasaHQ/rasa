@@ -386,7 +386,9 @@ class TestMCPOpenAgent:
             await mcp_open_agent.send_message(mock_agent_input)
 
             if expected_behavior == "continue_processing":
-                mock_execute_tool.assert_called_once_with(tool_name, tool_args)
+                mock_execute_tool.assert_called_once_with(
+                    tool_name, tool_args, agent_input=mock_agent_input
+                )
             elif expected_behavior == "error_output":
                 mock_error_output.assert_called_once_with(
                     mock_tool_output, mock_agent_input, mock_tool_call

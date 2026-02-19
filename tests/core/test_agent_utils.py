@@ -157,7 +157,11 @@ async def test_initialize_agents_validates_flow_conflicts(
 
 
 def test_resolve_agent_config():
-    from rasa.core.config.available_endpoints import MCPServerConfig
+    from rasa.core.config.available_endpoints import (
+        MCPFromSlotsEntry,
+        MCPMetaMapConfig,
+        MCPServerConfig,
+    )
 
     server = MagicMock()
     server.name = "server1"
@@ -170,8 +174,14 @@ def test_resolve_agent_config():
     agent_config = MagicMock()
     agent_config.connections = connections
 
+    meta_map = MCPMetaMapConfig(
+        from_slots=[MCPFromSlotsEntry(slot="user_id", param="user_id")],
+    )
     mcp_server_obj = MCPServerConfig(
-        name="server1", url="http://localhost", type="http"
+        name="server1",
+        url="http://localhost",
+        type="http",
+        meta_map=meta_map,
     )
     available_endpoints = MagicMock()
     available_endpoints.mcp_servers = [mcp_server_obj]
@@ -182,6 +192,7 @@ def test_resolve_agent_config():
     assert server_configs[0].name == "server1"
     assert server_configs[0].url == "http://localhost"
     assert server_configs[0].type == "http"
+    assert server_configs[0].meta_map is meta_map
 
 
 @pytest.fixture

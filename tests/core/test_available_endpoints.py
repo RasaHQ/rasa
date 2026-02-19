@@ -6,12 +6,15 @@ import pytest
 
 from rasa.core.config.available_endpoints import (
     InteractionHandlingConfig,
+    MCPFromSlotsEntry,
+    MCPMetaMapConfig,
     MCPServerConfig,
 )
 from rasa.core.config.configuration import Configuration, EndpointsConfigPath
 from rasa.exceptions import ValidationError
 from rasa.shared.core.constants import GLOBAL_SILENCE_TIMEOUT_KEY
 from rasa.shared.exceptions import RasaException
+from rasa.shared.utils.mcp.utils import build_mcp_meta
 from rasa.utils.endpoints import EndpointConfig
 
 
@@ -191,116 +194,257 @@ def test_interaction_handling_config_from_dict_wrong_data_type(bad_value: Any):
         InteractionHandlingConfig.from_dict(interaction_handling)
 
 
-def test_validate_mcp_server_with_invalid_api_key():
-    """Test validation fails for MCP server configuration with invalid api_key."""
-    with pytest.raises(ValidationError) as exc_info:
-        MCPServerConfig(
-            name="server_3",
-            url="https://example.com/mcp",
-            type="https",
-            api_key="some_key",
-        )
-
-    # Verify the specific error message
-    error_message = str(exc_info.value)
-    assert (
-        "You defined the 'api_key' in MCP server - 'server_3' as a string"
-        in error_message
-    )
-    assert "The 'api_key' must be set as an environment variable" in error_message
-
-
-def test_validate_mcp_server_with_invalid_token():
-    """Test validation fails for MCP server configuration with invalid token."""
-    with pytest.raises(ValidationError) as exc_info:
-        MCPServerConfig(
-            name="server_4",
-            url="https://example.com/mcp",
-            type="https",
-            token="some_token",
-        )
-
-    # Verify the specific error message
-    error_message = str(exc_info.value)
-    assert (
-        "You defined the 'token' in MCP server - 'server_4' as a string"
-        in error_message
-    )
-    assert "The 'token' must be set as an environment variable" in error_message
-
-
-def test_validate_mcp_server_with_invalid_oauth_client_secret():
-    """Test validation fails for MCP server configuration with invalid oauth."""
-    with pytest.raises(ValidationError) as exc_info:
-        MCPServerConfig(
-            name="server_5",
-            url="https://example.com/mcp",
-            type="https",
-            oauth={
-                "token_url": "https://example.com/oauth/token",
-                "client_id": "test_client_id",
-                "client_secret": "test_client_secret",
-                "scope": "test_scope",
-                "audience": "test_audience",
+@pytest.mark.parametrize(
+    "server_kwargs,expected_substrings",
+    [
+        (
+            {
+                "name": "server_3",
+                "url": "https://example.com/mcp",
+                "type": "https",
+                "api_key": "some_key",
             },
-        )
-
-    # Verify the specific error message
+            ["'api_key'", "server_3", "environment variable"],
+        ),
+        (
+            {
+                "name": "server_4",
+                "url": "https://example.com/mcp",
+                "type": "https",
+                "token": "some_token",
+            },
+            ["'token'", "server_4", "environment variable"],
+        ),
+        (
+            {
+                "name": "server_5",
+                "url": "https://example.com/mcp",
+                "type": "https",
+                "oauth": {
+                    "token_url": "https://example.com/oauth/token",
+                    "client_id": "test_client_id",
+                    "client_secret": "test_client_secret",
+                    "scope": "test_scope",
+                    "audience": "test_audience",
+                },
+            },
+            ["'client_secret'", "server_5", "environment variable"],
+        ),
+    ],
+    ids=["invalid_api_key", "invalid_token", "invalid_oauth_client_secret"],
+)
+def test_validate_mcp_server_invalid_secrets(
+    server_kwargs: Dict[str, Any], expected_substrings: list
+) -> None:
+    """Test validation fails for MCP server config with invalid secret."""
+    with pytest.raises(ValidationError) as exc_info:
+        MCPServerConfig(**server_kwargs)
     error_message = str(exc_info.value)
+    for substring in expected_substrings:
+        assert substring in error_message
+
+
+@pytest.mark.parametrize(
+    "server_kwargs,expected_name,expected_param_path,expected_value",
+    [
+        (
+            {
+                "name": "server_6",
+                "url": "https://example.com/mcp",
+                "type": "https",
+                "api_key": "${SECRET_API_KEY}",
+            },
+            "server_6",
+            ["api_key"],
+            "${SECRET_API_KEY}",
+        ),
+        (
+            {
+                "name": "server_7",
+                "url": "https://example.com/mcp",
+                "type": "https",
+                "token": "${SECRET_TOKEN}",
+            },
+            "server_7",
+            ["token"],
+            "${SECRET_TOKEN}",
+        ),
+        (
+            {
+                "name": "server_8",
+                "url": "https://example.com/mcp",
+                "type": "https",
+                "oauth": {
+                    "token_url": "https://example.com/oauth/token",
+                    "client_id": "test_client_id",
+                    "client_secret": "${SECRET_CLIENT_SECRET}",
+                    "scope": "test_scope",
+                    "audience": "test_audience",
+                },
+            },
+            "server_8",
+            ["oauth", "client_secret"],
+            "${SECRET_CLIENT_SECRET}",
+        ),
+    ],
+    ids=["valid_api_key", "valid_token", "valid_oauth_client_secret"],
+)
+def test_validate_mcp_server_valid_secrets(
+    server_kwargs: Dict[str, Any],
+    expected_name: str,
+    expected_param_path: list,
+    expected_value: str,
+) -> None:
+    """Test validation succeeds for MCP server config with env-var style secret."""
+    server_config = MCPServerConfig(**server_kwargs)
+    assert server_config.name == expected_name
+    params = server_config.additional_params or {}
+    for key in expected_param_path:
+        params = params[key]
+    assert params == expected_value
+
+
+def test_mcp_meta_map_config_from_slots():
+    """Test MCPMetaMapConfig with from_slots (list of slot/param)."""
+    meta_map = MCPMetaMapConfig(
+        from_slots=[
+            MCPFromSlotsEntry(slot="user_id", param="user_id"),
+            MCPFromSlotsEntry(slot="role", param="role"),
+        ],
+    )
+    assert len(meta_map.from_slots) == 2
     assert (
-        "You defined the 'client_secret' in MCP server - 'server_5' as a string"
-        in error_message
+        meta_map.from_slots[0].slot == "user_id"
+        and meta_map.from_slots[0].param == "user_id"
     )
-    assert "The 'client_secret' must be set as an environment variable" in error_message
-
-
-def test_validate_mcp_server_with_valid_api_key():
-    """Test validation succeeds for MCP server configuration with valid api_key."""
-    server_config = MCPServerConfig(
-        name="server_6",
-        url="https://example.com/mcp",
-        type="https",
-        api_key="${SECRET_API_KEY}",
-    )
-
-    # Verify the configuration was created successfully
-    assert server_config.name == "server_6"
-    assert server_config.additional_params["api_key"] == "${SECRET_API_KEY}"
-
-
-def test_validate_mcp_server_with_valid_token():
-    """Test validation succeeds for MCP server configuration with valid token."""
-    server_config = MCPServerConfig(
-        name="server_7",
-        url="https://example.com/mcp",
-        type="https",
-        token="${SECRET_TOKEN}",
-    )
-
-    # Verify the configuration was created successfully
-    assert server_config.name == "server_7"
-    assert server_config.additional_params["token"] == "${SECRET_TOKEN}"
-
-
-def test_validate_mcp_server_with_valid_oauth_client_secret():
-    """Test validation succeeds for MCP server configuration with valid oauth."""
-    # This should not raise any validation errors when using environment variable format
-    server_config = MCPServerConfig(
-        name="server_8",
-        url="https://example.com/mcp",
-        type="https",
-        oauth={
-            "token_url": "https://example.com/oauth/token",
-            "client_id": "test_client_id",
-            "client_secret": "${SECRET_CLIENT_SECRET}",
-            "scope": "test_scope",
-            "audience": "test_audience",
-        },
-    )
-
-    # Verify the configuration was created successfully
-    assert server_config.name == "server_8"
     assert (
-        server_config.additional_params["oauth"]["client_secret"]
-        == "${SECRET_CLIENT_SECRET}"
+        meta_map.from_slots[1].slot == "role" and meta_map.from_slots[1].param == "role"
     )
+
+
+def test_mcp_server_config_with_meta_map():
+    """Test MCPServerConfig with meta_map is parsed and not in additional_params."""
+    server_config = MCPServerConfig(
+        name="internal_api",
+        url="http://internal:8000/mcp/",
+        type="http",
+        meta_map=MCPMetaMapConfig(
+            from_slots=[
+                MCPFromSlotsEntry(slot="user_id", param="user_id"),
+                MCPFromSlotsEntry(slot="role", param="user_role"),
+            ],
+            static={"api_version": "v2", "source": "rasa_agent"},
+        ),
+    )
+    assert server_config.meta_map is not None
+    assert len(server_config.meta_map.from_slots) == 2
+    assert server_config.meta_map.from_slots[0].slot == "user_id"
+    assert server_config.meta_map.from_slots[0].param == "user_id"
+    assert server_config.meta_map.from_slots[1].slot == "role"
+    assert server_config.meta_map.from_slots[1].param == "user_role"
+    assert server_config.meta_map.static == {
+        "api_version": "v2",
+        "source": "rasa_agent",
+    }
+    assert "meta_map" not in (server_config.additional_params or {})
+    dumped = server_config.model_dump()
+    assert "meta_map" in dumped
+    assert dumped["meta_map"]["from_slots"] == [
+        {"slot": "user_id", "param": "user_id"},
+        {"slot": "role", "param": "user_role"},
+    ]
+    assert dumped["meta_map"]["static"] == {"api_version": "v2", "source": "rasa_agent"}
+
+
+@pytest.mark.parametrize(
+    "config,slots,expected_meta",
+    [
+        (
+            MCPMetaMapConfig(
+                from_slots=[
+                    MCPFromSlotsEntry(slot="user_id", param="user_id"),
+                    MCPFromSlotsEntry(slot="role", param="user_role"),
+                ],
+            ),
+            {"user_id": "u-123", "role": "admin"},
+            {"user_id": "u-123", "user_role": "admin"},
+        ),
+        (
+            MCPMetaMapConfig(
+                from_slots=[
+                    MCPFromSlotsEntry(slot="user_id", param="user_id"),
+                    MCPFromSlotsEntry(slot="role", param="user_role"),
+                ],
+            ),
+            {"user_id": "u-123"},
+            {"user_id": "u-123", "user_role": None},
+        ),
+        (None, {"user_id": "x"}, {}),
+        (MCPMetaMapConfig(from_slots=None), {"user_id": "x"}, {}),
+        (MCPMetaMapConfig(from_slots=[]), {"user_id": "x"}, {}),
+        (
+            MCPMetaMapConfig(
+                from_slots=None,
+                static={"api_version": "v2", "source": "rasa_agent"},
+            ),
+            {},
+            {"api_version": "v2", "source": "rasa_agent"},
+        ),
+        (
+            MCPMetaMapConfig(
+                from_slots=[
+                    MCPFromSlotsEntry(slot="user_id", param="user_id"),
+                ],
+                static={"api_version": "v2", "source": "rasa_agent"},
+            ),
+            {"user_id": "u-456"},
+            {
+                "api_version": "v2",
+                "source": "rasa_agent",
+                "user_id": "u-456",
+            },
+        ),
+    ],
+    ids=[
+        "from_slots_only",
+        "omits_none_or_missing_slots",
+        "config_none",
+        "from_slots_none",
+        "from_slots_empty",
+        "static_only",
+        "static_and_from_slots",
+    ],
+)
+def test_build_mcp_meta(
+    config: Any, slots: Dict[str, Any], expected_meta: Dict[str, Any]
+) -> None:
+    """Test build_mcp_meta returns expected _meta dict for config and slots."""
+    assert build_mcp_meta(config, slots) == expected_meta
+
+
+@pytest.mark.parametrize(
+    "config_factory,match_re",
+    [
+        (
+            lambda: MCPMetaMapConfig(
+                from_slots=[MCPFromSlotsEntry(slot="", param="user_id")],
+            ),
+            "slot must be a non-empty string",
+        ),
+        (
+            lambda: MCPMetaMapConfig(
+                from_slots=[MCPFromSlotsEntry(slot="user_id", param="")],
+            ),
+            "param must be a non-empty string",
+        ),
+        (lambda: MCPMetaMapConfig(static={"": "v"}), "meta_map.static.*keys"),
+        (lambda: MCPMetaMapConfig(static={"k": ""}), "meta_map.static.*values"),
+    ],
+    ids=["empty_slot", "empty_param", "empty_static_key", "empty_static_value"],
+)
+def test_mcp_meta_map_config_rejects_empty_strings(
+    config_factory: Any, match_re: str
+) -> None:
+    """Test MCPMetaMapConfig validates non-empty slot, param, and static."""
+    with pytest.raises(ValueError, match=match_re):
+        config_factory()

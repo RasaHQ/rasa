@@ -9,6 +9,11 @@ import pytest
 import structlog
 from pytest import CaptureFixture, MonkeyPatch
 
+from rasa.core.config.available_endpoints import (
+    MCPFromSlotsEntry,
+    MCPMetaMapConfig,
+    MCPServerConfig,
+)
 from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import (
     CONFIG_ADDITIONAL_LANGUAGES_KEY,
@@ -755,6 +760,125 @@ def test_verify_slot_mappings_valid(tmp_path: Path):
     importer = RasaFileImporter(domain_path=domain)
     validator = Validator.from_importer(importer)
     assert validator.verify_slot_mappings()
+
+
+@pytest.mark.parametrize(
+    "domain_slot_names, mcp_servers, expected_valid, error_log_contains",
+    [
+        # No MCP servers configured -> validation passes
+        (["user_id"], None, True, None),
+        # Empty MCP servers list -> validation passes
+        (["user_id"], [], True, None),
+        # meta_map.from_slots slot names all exist in domain -> passes
+        (
+            ["user_id", "role"],
+            [
+                MCPServerConfig(
+                    name="test_server",
+                    url="http://localhost:8000",
+                    type="http",
+                    meta_map=MCPMetaMapConfig(
+                        from_slots=[
+                            MCPFromSlotsEntry(slot="user_id", param="user_id"),
+                            MCPFromSlotsEntry(slot="role", param="user_role"),
+                        ],
+                    ),
+                ),
+            ],
+            True,
+            None,
+        ),
+        # meta_map.from_slots references slot not in domain -> fails
+        (
+            ["user_id"],
+            [
+                MCPServerConfig(
+                    name="my_mcp_server",
+                    url="http://localhost:8000",
+                    type="http",
+                    meta_map=MCPMetaMapConfig(
+                        from_slots=[
+                            MCPFromSlotsEntry(slot="user_id", param="user_id"),
+                            MCPFromSlotsEntry(slot="nonexistent_slot", param="other"),
+                        ],
+                    ),
+                ),
+            ],
+            False,
+            (
+                "validator.verify_mcp_meta_map_slots_against_domain",
+                "my_mcp_server",
+                "nonexistent_slot",
+            ),
+        ),
+        # MCP servers with no meta_map or empty from_slots -> passes
+        (
+            ["user_id"],
+            [
+                MCPServerConfig(
+                    name="server_no_meta",
+                    url="http://localhost:8000",
+                    type="http",
+                    meta_map=None,
+                ),
+                MCPServerConfig(
+                    name="server_empty_from_slots",
+                    url="http://localhost:8001",
+                    type="http",
+                    meta_map=MCPMetaMapConfig(from_slots=None),
+                ),
+            ],
+            True,
+            None,
+        ),
+    ],
+    ids=[
+        "no_mcp_servers",
+        "empty_mcp_servers",
+        "slots_in_domain",
+        "slots_not_in_domain",
+        "no_meta_map_or_empty_from_slots",
+    ],
+)
+def test_verify_mcp_meta_map_slots_against_domain(
+    tmp_path: Path,
+    capsys: CaptureFixture,
+    domain_slot_names: List[str],
+    mcp_servers: Any,
+    expected_valid: bool,
+    error_log_contains: Any,
+) -> None:
+    """Verify meta_map.from_slots slot names are defined in the domain."""
+    # Slot keys at 10 spaces (under "slots:" at 8); type/mappings at 12
+    slots_yaml = "\n".join(
+        f"          {name}:\n            type: text\n            mappings: []"
+        for name in domain_slot_names
+    )
+    domain = tmp_path / "domain.yml"
+    domain.write_text(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+{slots_yaml}
+        """
+    )
+    importer = RasaFileImporter(domain_path=domain)
+    validator = Validator.from_importer(importer)
+
+    mock_config = MagicMock()
+    mock_config.endpoints.mcp_servers = mcp_servers
+
+    with patch.object(Configuration, "get_instance", return_value=mock_config):
+        result = validator.verify_mcp_meta_map_slots_against_domain()
+
+    assert result is expected_valid
+
+    if not expected_valid and error_log_contains is not None:
+        event_substr, server_substr, slot_substr = error_log_contains
+        out = capsys.readouterr().out
+        assert event_substr in out
+        assert server_substr in out
+        assert slot_substr in out
 
 
 @pytest.mark.parametrize(

@@ -411,6 +411,7 @@ class MCPTaskAgent(MCPBaseAgent):
                             tool_output = await self._execute_tool_call(
                                 tool_call.tool_name,
                                 tool_call.tool_args,
+                                agent_input=agent_input,
                             )
 
                             structlogger.debug(

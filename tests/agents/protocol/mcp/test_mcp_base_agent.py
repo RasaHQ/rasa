@@ -970,7 +970,11 @@ class TestMCPBaseAgent:
                 "mcp_tool", {"arg": "value"}
             )
 
-            mock_execute_mcp.assert_called_once_with("mcp_tool", {"arg": "value"})
+            mock_execute_mcp.assert_called_once_with(
+                "mcp_tool",
+                {"arg": "value"},
+                None,  # agent_input
+            )
             assert result.tool_name == "mcp_tool"
 
     @pytest.mark.parametrize(

@@ -1354,6 +1354,43 @@ class Validator:
 
         return all_good
 
+    def verify_mcp_meta_map_slots_against_domain(self) -> bool:
+        """Verify meta_map.from_slots slot names are defined in the domain."""
+        endpoints = Configuration.get_instance().endpoints
+
+        # If no MCP servers are defined, skip the validation
+        if not endpoints.mcp_servers:
+            return True
+
+        domain_slot_names = [slot.name for slot in self.domain.slots]
+        invalid_slot_names_in_mcp_servers: Dict[str, List[str]] = {}
+        for server in endpoints.mcp_servers:
+            if not server.meta_map or not server.meta_map.from_slots:
+                continue
+            for meta_map_entry in server.meta_map.from_slots:
+                if meta_map_entry.slot not in domain_slot_names:
+                    invalid_slot_names_in_mcp_servers.setdefault(
+                        server.name, []
+                    ).append(meta_map_entry.slot)
+
+        # If there are invalid slots, raise an exception
+        if invalid_slot_names_in_mcp_servers:
+            error_message = [
+                f"- MCP server '{server_name}' references slot(s) not in the "
+                f"domain: {', '.join(invalid_slot_names)}"
+                for server_name, invalid_slot_names in invalid_slot_names_in_mcp_servers.items()  # noqa: E501
+            ]
+
+            structlogger.error(
+                "validator.verify_mcp_meta_map_slots_against_domain",
+                event_info="Invalid MCP meta map slots against domain: "
+                + "\n".join(error_message),
+            )
+            return False
+
+        # If no invalid slots, return True
+        return True
+
     def validate_agent_flow_conflicts(self, sub_agents_path: str) -> bool:
         """Validates that agent names don't conflict with flow names.
 

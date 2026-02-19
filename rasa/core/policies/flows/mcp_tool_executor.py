@@ -19,6 +19,7 @@ from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.steps import CallFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.utils.mcp.server_connection import MCPServerConnection
+from rasa.shared.utils.mcp.utils import build_mcp_meta, call_tool_with_meta
 from rasa.utils.common import ensure_jsonified_iterable
 
 structlogger = structlog.get_logger()
@@ -34,7 +35,14 @@ async def call_mcp_tool(
     step: CallFlowStep,
     tracker: DialogueStateTracker,
 ) -> FlowStepResult:
-    """Run an MCP tool call step."""
+    """Run an MCP tool call step.
+
+    Args:
+        initial_events: Events collected so far.
+        stack: Dialogue stack.
+        step: The call flow step.
+        tracker: Dialogue state tracker.
+    """
     structlogger.debug(
         "flow.step.call_mcp_tool",
         tool_id=step.call,
@@ -102,12 +110,17 @@ async def _execute_mcp_tool_call(
         # Prepare arguments for the tool call
         arguments = _prepare_tool_arguments(step.mapping["input"], tracker)
 
+        # Build _meta from meta_map config (not visible to the LLM)
+        meta = _build_meta_for_flow_tool_call(step.mcp_server, tracker)
+
         # Call the tool with parameters
         mcp_server = await mcp_server_connection.ensure_active_session()
-        result = await mcp_server.call_tool(
+        result: CallToolResult = await call_tool_with_meta(
+            mcp_server,
             step.call,
             arguments,
-            read_timeout_seconds=timedelta(seconds=TOOL_CALL_DEFATULT_TIMEOUT),
+            timedelta(seconds=TOOL_CALL_DEFATULT_TIMEOUT),
+            meta,
         )
 
         # Handle tool execution result
@@ -210,6 +223,34 @@ async def _connect_to_mcp_server(
     # Ensure the connection is established and return the connection object
     await mcp_server_connection.ensure_active_session()
     return mcp_server_connection
+
+
+def _get_meta_map_for_server(mcp_server_name: Optional[str]) -> Optional[Any]:
+    """Get meta_map config for an MCP server from endpoints."""
+    if not mcp_server_name:
+        return None
+    endpoints = Configuration.get_instance().endpoints
+    if not endpoints.mcp_servers:
+        return None
+    for server in endpoints.mcp_servers:
+        if server.name == mcp_server_name:
+            return server.meta_map
+    return None
+
+
+def _build_meta_for_flow_tool_call(
+    mcp_server_name: Optional[str],
+    tracker: DialogueStateTracker,
+) -> Dict[str, Any]:
+    """Build _meta dict for a flow-based MCP tool call from meta_map and tracker slots.
+
+    Slot presence in the domain is validated at training time; no runtime check needed.
+    """
+    meta_map = _get_meta_map_for_server(mcp_server_name)
+    if not meta_map:
+        return {}
+    slots = tracker.current_slot_values()
+    return build_mcp_meta(meta_map, slots)
 
 
 def _prepare_tool_arguments(

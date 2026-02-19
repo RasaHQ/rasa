@@ -8,6 +8,7 @@ import structlog
 from pydantic import BaseModel, Field, model_validator
 from ruamel import yaml as yaml
 
+from rasa.core.config.available_endpoints import MCPMetaMapConfig
 from rasa.exceptions import ValidationError
 from rasa.shared.utils.yaml import read_config_file
 
@@ -83,6 +84,8 @@ class AgentMCPServerConfig(BaseModel):
     exclude_tools: Optional[List[str]] = None
     # Additional parameters for the MCP server
     additional_params: Optional[Dict[str, Any]] = None
+    # Meta map for MCP _meta (resolved from endpoints)
+    meta_map: Optional[MCPMetaMapConfig] = None
 
 
 class AgentConfig(BaseModel):

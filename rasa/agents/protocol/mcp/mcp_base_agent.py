@@ -2,7 +2,7 @@ import json
 from abc import abstractmethod
 from datetime import datetime, timedelta
 from inspect import isawaitable
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import anyio
 import structlog
@@ -78,6 +78,7 @@ from rasa.shared.utils.llm import (
     serialize_bot_response_for_prompt,
 )
 from rasa.shared.utils.mcp.server_connection import MCPServerConnection
+from rasa.shared.utils.mcp.utils import build_mcp_meta, call_tool_with_meta
 
 DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
 MODEL_NAME_GPT_4O_2024_11_20 = "gpt-4o-2024-11-20"
@@ -89,6 +90,8 @@ DEFAULT_LLM_CONFIG = {
     TIMEOUT_CONFIG_KEY: 7,
 }
 
+if TYPE_CHECKING:
+    from rasa.core.config.available_endpoints import MCPMetaMapConfig
 
 structlogger = structlog.get_logger()
 
@@ -148,6 +151,13 @@ class MCPBaseAgent(AgentProtocol):
         self._timezone = timezone or DEFAULT_TIMEZONE
 
         self._server_configs = server_configs or []
+
+        # Server name -> meta_map config from endpoints.yml.
+        self._server_to_meta_map: Dict[str, "MCPMetaMapConfig"] = {
+            server_config.name: server_config.meta_map
+            for server_config in self._server_configs
+            if server_config.meta_map is not None
+        }
 
         # Stores the MCP tools for the agent.
         self._mcp_tools: List[AgentToolSchema] = []
@@ -699,8 +709,33 @@ class MCPBaseAgent(AgentProtocol):
     # Tool Execution
     # ============================================================================
 
+    def _get_meta_for_mcp_server(
+        self, server_id: str, agent_input: Optional[AgentInput]
+    ) -> Dict[str, Any]:
+        """Get _meta dict for an MCP tool call from meta_map config and agent input."""
+        meta_map = self._server_to_meta_map.get(server_id)
+        if not meta_map:
+            return {}
+
+        if not agent_input or not meta_map.from_slots:
+            return build_mcp_meta(meta_map, {})
+
+        # Build the slots dictionary from the agent input.
+        slots = {
+            meta_map_entry.slot: get_slot_value_from_agent_input(
+                agent_input, meta_map_entry.slot
+            )
+            for meta_map_entry in meta_map.from_slots
+        }
+
+        # Build the _meta dict from the meta_map config and the slots dict.
+        return build_mcp_meta(meta_map, slots)
+
     async def _execute_mcp_tool(
-        self, tool_name: str, arguments: Dict[str, Any]
+        self,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        agent_input: Optional[AgentInput] = None,
     ) -> AgentToolResult:
         """Execute a tool call via MCP servers."""
         if tool_name not in self._tool_to_server_mapper:
@@ -715,10 +750,13 @@ class MCPBaseAgent(AgentProtocol):
         connection = self._server_connections[server_id]
         try:
             session = await connection.ensure_active_session()
-            result = await session.call_tool(
+            meta = self._get_meta_for_mcp_server(server_id, agent_input)
+            result = await call_tool_with_meta(
+                session,
                 tool_name,
                 arguments,
-                read_timeout_seconds=timedelta(seconds=self.TOOL_CALL_DEFAULT_TIMEOUT),
+                timedelta(seconds=self.TOOL_CALL_DEFAULT_TIMEOUT),
+                meta,
             )
             return AgentToolResult.from_mcp_tool_result(tool_name, result)
         except Exception as e:
@@ -748,7 +786,10 @@ class MCPBaseAgent(AgentProtocol):
         return await result if isawaitable(result) else result
 
     async def _execute_tool_call(
-        self, tool_name: str, arguments: Dict[str, Any]
+        self,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        agent_input: Optional[AgentInput] = None,
     ) -> AgentToolResult:
         """Execute a tool call.
 
@@ -758,6 +799,7 @@ class MCPBaseAgent(AgentProtocol):
         Args:
             tool_name: The name of the tool to execute.
             arguments: The arguments to pass to the tool.
+            agent_input: Optional agent input for building MCP _meta from slots.
 
         Returns:
             The result of the tool execution as an AgentToolResult object.
@@ -786,7 +828,7 @@ class MCPBaseAgent(AgentProtocol):
                 is_error=True,
                 error_message=f"Failed to execute built-in tool `{tool_name}`: {e!s}",
             )
-        return await self._execute_mcp_tool(tool_name, arguments)
+        return await self._execute_mcp_tool(tool_name, arguments, agent_input)
 
     def _generate_agent_error_output(
         self,
