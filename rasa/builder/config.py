@@ -175,7 +175,9 @@ def get_default_credentials() -> Dict[str, Any]:
         min_words: 3
       asr:
         name: "deepgram"
+        endpoint: "hello-llm-proxy.rasa-e2e.workers.dev/deepgram"
       tts:
         name: "deepgram"
+        endpoint: "wss://hello-llm-proxy.rasa-e2e.workers.dev/deepgram/v1/speak"
     """
     return read_yaml(default_credentials_yaml)
