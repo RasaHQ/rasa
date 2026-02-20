@@ -24,7 +24,6 @@ Use the following structured data:
 * `set slot slot_name slot_value`: Slot setting. For example, `set slot transfer_money_recipient Freddy`. Can be used to correct and change previously set values. Pay attention to the slot type when extracting values from user messages.
 * `provide info`: Trigger a knowledge base search. Use this ONLY when the user asks a specific domain question (FAQs, policies, services) that requires external documentation to answer accurately.
 * `offtopic reply`: Responding to casual or social user messages that are unrelated to any flows, engaging in friendly conversation and addressing off-topic remarks.
-* `hand over`: Handing over to a human, in case the user seems frustrated or explicitly asks to speak to one.
 * `repeat message`: Repeating the last bot message.
 * `disambiguate flows flow_name1 flow_name2 ... flow_name_n`: Disambiguate which flow should be started when user input is ambiguous by listing the potential flows as options. For example, `disambiguate flows list_contacts add_contact remove_contact ...` if the user just wrote "contacts".
 

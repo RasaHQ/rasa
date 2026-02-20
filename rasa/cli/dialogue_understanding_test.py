@@ -175,7 +175,7 @@ def add_du_test_arguments(parser: argparse.ArgumentParser) -> None:
             f"List of default commands to remove, separated by spaces. "
             f"Default commands include: "
             f"{', '.join([command.__name__ for command in DEFAULT_COMMANDS])}. "
-            f"For example: --remove-default-commands ClarifyCommand HumanHandoffCommand"
+            f"For example: --remove-default-commands ClarifyCommand SkipQuestionCommand"
         ),
     )
 

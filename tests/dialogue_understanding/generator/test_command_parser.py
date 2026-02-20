@@ -10,7 +10,6 @@ from rasa.dialogue_understanding.commands import (
     ChitChatAnswerCommand,
     ClarifyCommand,
     Command,
-    HumanHandoffCommand,
     KnowledgeAnswerCommand,
     RepeatBotMessagesCommand,
     SetSlotCommand,
@@ -235,14 +234,6 @@ def test_parse_commands_knowledge_answer_command():
 
     # Then
     assert commands == [KnowledgeAnswerCommand()]
-
-
-def test_parse_commands_human_handoff_command():
-    # When
-    commands = parse_commands("HumanHandoff()", FlowsList(underlying_flows=[]))
-
-    # Then
-    assert commands == [HumanHandoffCommand()]
 
 
 def test_parse_commands_repeat_bot_messages_command():

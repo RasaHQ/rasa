@@ -20,7 +20,6 @@ from rasa.dialogue_understanding.commands import (
     CorrectedSlot,
     CorrectSlotsCommand,
     ErrorCommand,
-    HumanHandoffCommand,
     KnowledgeAnswerCommand,
     SetSlotCommand,
     SkipQuestionCommand,
@@ -1003,7 +1002,6 @@ class TestSingleStepLLMCommandGenerator:
             ("ChitChat()", [ChitChatAnswerCommand()]),
             ("SkipQuestion()", [SkipQuestionCommand()]),
             ("SearchAndReply()", [KnowledgeAnswerCommand()]),
-            ("HumanHandoff()", [HumanHandoffCommand()]),
             (
                 "Here is a list of commands:\nSetSlot(flow_name, some_flow)\n",
                 [StartFlowCommand(flow="some_flow")],

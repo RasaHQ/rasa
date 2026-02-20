@@ -22,7 +22,6 @@ Analyze the current conversation, and based on the context, generate a list of a
 * `Clarify(flow_name1, flow_name2)`: Clarifying which flow should be started, if the user utters a single word only such as "book" or "transfer". An example would be `Clarify(list_contacts, add_contact, remove_contact)` if the user just wrote "contacts" and there are multiple potential candidates. It also works with a single flow name to confirm you understood correctly, as in `Clarify(transfer_money)`.
 * `SearchAndReply()`: Responding to the user's questions by supplying relevant information, such as answering FAQs or explaining services.
 * `ChitChat()`: Responding to casual or social user messages that are unrelated to any flows, engaging in friendly conversation and addressing off-topic remarks.
-* `HumanHandoff()`: Handing over to a human, in case the user seems frustrated or explicitly asks to speak to one.
 * `SetSlot(slot_name, slot_value)`: Slot setting. For example, `SetSlot(recipient, Freddy)` can be used to correct and change previously set values.
 
 --

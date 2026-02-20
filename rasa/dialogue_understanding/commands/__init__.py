@@ -22,9 +22,6 @@ from rasa.dialogue_understanding.commands.free_form_answer_command import (
 from rasa.dialogue_understanding.commands.handle_code_change_command import (
     HandleCodeChangeCommand,
 )
-from rasa.dialogue_understanding.commands.human_handoff_command import (
-    HumanHandoffCommand,
-)
 from rasa.dialogue_understanding.commands.knowledge_answer_command import (
     KnowledgeAnswerCommand,
 )
@@ -57,7 +54,6 @@ __all__ = [
     "ClarifyCommand",
     "SetSlotCommand",
     "StartFlowCommand",
-    "HumanHandoffCommand",
     "HandleCodeChangeCommand",
     "CorrectSlotsCommand",
     "CorrectedSlot",

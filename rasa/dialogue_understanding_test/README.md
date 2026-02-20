@@ -104,7 +104,6 @@ Here are the default commands that can be used in a test case:
   The options are optional in Dialogue Understanding Tests.
 - **ChitChat()**: Initiates a casual conversation or response.
 - **SearchAndReply()**: Performs a search operation and generates a reply.
-- **HumanHandoff()**: Transfers the conversation to a human agent.
 - **SkipQuestion()**: The user asked to skip a certain step.
 - **RepeatLastBotMessages()**: Repeats the last bot message(s) to the user.
 

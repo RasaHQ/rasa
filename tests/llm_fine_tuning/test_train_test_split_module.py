@@ -7,8 +7,8 @@ import structlog
 from rasa.cli.e2e_test import read_test_cases
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
+    ChitChatAnswerCommand,
     ClarifyCommand,
-    HumanHandoffCommand,
     SetSlotCommand,
     StartFlowCommand,
 )
@@ -315,7 +315,7 @@ def test_get_minimum_test_case_groups_to_cover_all_commands_selects_few_cases() 
         {
             "test_case_name": "t1",
             "data_examples": [],
-            "commands": {StartFlowCommand, CancelFlowCommand, HumanHandoffCommand},
+            "commands": {StartFlowCommand, CancelFlowCommand, ChitChatAnswerCommand},
         },
         {"test_case_name": "t2", "data_examples": [], "commands": {CancelFlowCommand}},
         {"test_case_name": "t3", "data_examples": [], "commands": {SetSlotCommand}},
@@ -327,7 +327,7 @@ def test_get_minimum_test_case_groups_to_cover_all_commands_selects_few_cases() 
         {
             "test_case_name": "t5",
             "data_examples": [],
-            "commands": {SetSlotCommand, HumanHandoffCommand},
+            "commands": {SetSlotCommand, ChitChatAnswerCommand},
         },
     ]
 
@@ -348,7 +348,7 @@ def test_get_minimum_test_case_groups_to_cover_all_commands_selects_all_cases() 
         {
             "test_case_name": "t5",
             "data_examples": [],
-            "commands": {HumanHandoffCommand},
+            "commands": {ChitChatAnswerCommand},
         },
     ]
 
@@ -370,7 +370,7 @@ def test_get_minimum_test_case_groups_to_cover_all_commands_selects_first_case()
             "commands": {
                 StartFlowCommand,
                 CancelFlowCommand,
-                HumanHandoffCommand,
+                ChitChatAnswerCommand,
                 SetSlotCommand,
             },
         },
@@ -384,7 +384,7 @@ def test_get_minimum_test_case_groups_to_cover_all_commands_selects_first_case()
         {
             "test_case_name": "t5",
             "data_examples": [],
-            "commands": {SetSlotCommand, HumanHandoffCommand},
+            "commands": {SetSlotCommand, ChitChatAnswerCommand},
         },
     ]
 
@@ -408,7 +408,7 @@ def test_get_minimum_test_case_groups_to_cover_all_commands_selects_last_case() 
         {
             "test_case_name": "t4",
             "data_examples": [],
-            "commands": {SetSlotCommand, HumanHandoffCommand},
+            "commands": {SetSlotCommand, ChitChatAnswerCommand},
         },
         {
             "test_case_name": "t5",
@@ -416,7 +416,7 @@ def test_get_minimum_test_case_groups_to_cover_all_commands_selects_last_case() 
             "commands": {
                 StartFlowCommand,
                 CancelFlowCommand,
-                HumanHandoffCommand,
+                ChitChatAnswerCommand,
                 SetSlotCommand,
             },
         },

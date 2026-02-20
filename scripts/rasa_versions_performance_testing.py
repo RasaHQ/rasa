@@ -26,7 +26,6 @@ BASELINE = {
             "cancel_flow": {"f1_score": 0.9574468085106383},
             "chitchat": {"f1_score": 0.9105356228768207},
             "clarify": {"f1_score": 0.36257820456860174},
-            "human_handoff": {"f1_score": 0.9407114624505928},
             "knowledge": {"f1_score": 0.8235847350334599},
             "set_slot": {"f1_score": 0.9584818355565435},
             "start_flow": {"f1_score": 0.9085161964373478},
@@ -42,7 +41,6 @@ BASELINE = {
             "cancel_flow": {"f1_score": 0.9090909090909091},
             "chitchat": {"f1_score": 0.7999999999999999},
             "clarify": {"f1_score": 0.33333333333333337},
-            "human_handoff": {"f1_score": 1},
             "knowledge": {"f1_score": 0.6956521739130435},
             "set_slot": {"f1_score": 0.8286852589641432},
             "start_flow": {"f1_score": 0.9072164948453608},
@@ -137,14 +135,13 @@ def test_overall_f1_score_against_baseline(f1_metric: str, model: str) -> None:
         "clarify",
         "chitchat",
         "cancel_flow",
-        "human_handoff",
     },
 )
 def test_command_f1_score_against_baseline(command: str, model: str) -> None:
     """Verify f1-score of each command against baseline.
 
     Args:
-        command (str): 'start_flow', 'set_slot', 'knowledge', 'clarify', 'chitchat', 'cancel_flow' or 'human_handoff'.
+        command (str): 'start_flow', 'set_slot', 'knowledge', 'clarify', 'chitchat' or 'cancel_flow'.
         model (str): Model used for DUT tests.
     """
     assert (

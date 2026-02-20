@@ -6,7 +6,6 @@ from rasa.dialogue_understanding.commands import (
     ChitChatAnswerCommand,
     Command,
     CorrectSlotsCommand,
-    HumanHandoffCommand,
     KnowledgeAnswerCommand,
     RestartCommand,
     SessionStartCommand,
@@ -19,9 +18,6 @@ from rasa.dialogue_understanding.patterns.cannot_handle import (
     CannotHandlePatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.patterns.chitchat import ChitchatPatternFlowStackFrame
-from rasa.dialogue_understanding.patterns.human_handoff import (
-    HumanHandoffPatternFlowStackFrame,
-)
 from rasa.dialogue_understanding.patterns.restart import RestartPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.session_start import (
@@ -39,7 +35,6 @@ triggerable_pattern_to_command_class: Dict[str, Type[Command]] = {
     UserSilencePatternFlowStackFrame.flow_id: UserSilenceCommand,
     CancelPatternFlowStackFrame.flow_id: CancelFlowCommand,
     ChitchatPatternFlowStackFrame.flow_id: ChitChatAnswerCommand,
-    HumanHandoffPatternFlowStackFrame.flow_id: HumanHandoffCommand,
     SearchPatternFlowStackFrame.flow_id: KnowledgeAnswerCommand,
     SkipQuestionPatternFlowStackFrame.flow_id: SkipQuestionCommand,
     CannotHandlePatternFlowStackFrame.flow_id: CannotHandleCommand,

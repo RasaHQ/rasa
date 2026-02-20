@@ -9,7 +9,6 @@ from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     ChitChatAnswerCommand,
     ClarifyCommand,
-    HumanHandoffCommand,
     KnowledgeAnswerCommand,
     SetSlotCommand,
     StartFlowCommand,
@@ -57,11 +56,6 @@ def mappings() -> dict:
                 "from_dsl_regex": ChitChatAnswerCommand.regex_pattern(),
                 "to_dsl_pattern": "chat",
             },
-            # HumanHandoff() -> hand over
-            {
-                "from_dsl_regex": HumanHandoffCommand.regex_pattern(),
-                "to_dsl_pattern": "hand over",
-            },
         ]
     }
     return data
@@ -83,7 +77,7 @@ def test_load_valid_mapping(mappings: dict, tmp_path):
     loaded_mappings = load_mapping_config(str(tmp_path / "mappings.yaml"))
 
     assert isinstance(loaded_mappings, list)
-    assert len(loaded_mappings) == 7
+    assert len(loaded_mappings) == 6
     assert isinstance(loaded_mappings[0], DSLMapping)
     assert isinstance(loaded_mappings[1], DSLMapping)
 
@@ -129,7 +123,6 @@ def test_get_yaml_paths(tmp_path):
         ("StartFlow(flow_name)", "start flow_name"),
         ("SetSlot(slot_name, slot_value)", "set slot_name slot_value"),
         ("Clarify(flow_a, flow_b, flow_c)", "clarify flow_a, flow_b, flow_c"),
-        ("HumanHandoff()", "hand over"),
     ],
 )
 def test_transform_command(

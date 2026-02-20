@@ -17,7 +17,6 @@ Your task is to analyze the current conversation context and generate a list of 
 * `disambiguate flows flow_name1 flow_name2 ... flow_name_n`: Disambiguate which flow should be started when user input is ambiguous by listing the potential flows as options. For example, `disambiguate flows list_contacts add_contact remove_contact ...` if the user just wrote "contacts".
 * `provide info`: Responding to the user's questions by supplying relevant information, such as answering FAQs or explaining services.
 * `offtopic reply`: Responding to casual or social user messages that are unrelated to any flows, engaging in friendly conversation and addressing off-topic remarks.
-* `hand over`: Handing over to a human, in case the user seems frustrated or explicitly asks to speak to one.
 * `repeat message`: Repeating the last bot message.{% if active_agent %}
 * `continue agent`: Continue the currently active agent {{ active_agent.name }}. This has HIGHEST PRIORITY when an agent is active and the user is responding to agent questions.{% endif %}{% if completed_agents %}
 * `restart agent agent_name`: Restart the agent with the given name, in case the user wants to change some answer to a previous question asked by the agent. For example, `restart agent car_research_agent` if the user changed his mind about the car he wants to buy. ONLY use agents that are listed in the `completed_agents` section.{% endif %}

@@ -12,7 +12,6 @@ from rasa.dialogue_understanding.commands import (
     Command,
     CorrectedSlot,
     CorrectSlotsCommand,
-    HumanHandoffCommand,
     KnowledgeAnswerCommand,
     RestartCommand,
     SessionStartCommand,
@@ -485,7 +484,7 @@ class TestNLUCommandAdapter:
         [
             ("pattern_cancel_flow", CancelFlowCommand),
             ("pattern_search", KnowledgeAnswerCommand),
-            ("pattern_human_handoff", HumanHandoffCommand),
+            ("pattern_human_handoff", None),
             ("pattern_skip_question", SkipQuestionCommand),
             ("pattern_cannot_handle", CannotHandleCommand),
             ("pattern_collect_information", None),
