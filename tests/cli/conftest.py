@@ -11,6 +11,7 @@ from pytest import TempPathFactory, Testdir
 
 from rasa.cli import inspect
 from rasa.cli import run as cli_run
+from rasa.cli import tools as cli_tools
 from rasa.shared.constants import (
     CONFIG_LANGUAGE_KEY,
     CONFIG_PIPELINE_KEY,
@@ -144,4 +145,13 @@ def run_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="rasa")
     subparsers = parser.add_subparsers(help="Rasa commands")
     cli_run.add_subparser(subparsers, [])
+    return parser
+
+
+@pytest.fixture
+def tools_parser() -> argparse.ArgumentParser:
+    """Fixture for the `rasa tools` parser."""
+    parser = argparse.ArgumentParser(prog="rasa")
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    cli_tools.add_subparser(subparsers, [])
     return parser

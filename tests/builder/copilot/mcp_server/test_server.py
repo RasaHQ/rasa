@@ -5,28 +5,69 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+import rasa.builder.copilot.mcp_server.server as server_module
 from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
+from rasa.builder.copilot.mcp_server.constants import (
+    MCP_TRANSPORT_STDIO,
+    MCP_TRANSPORT_STREAMABLE_HTTP,
+)
+from rasa.builder.copilot.mcp_server.server import (
+    _get_project_folder,
+    _set_project_folder,
+    dummy_progress_reporter,
+    health_check,
+    run_server,
+    search_rasa_documentation,
+    system_prompt,
+    talk_to_assistant,
+    training_error_analysis,
+    validate_project,
+)
 from rasa.shared.exceptions import RasaException
 
+SERVER_MODULE = "rasa.builder.copilot.mcp_server.server"
 
-class TestGetProjectFolder:
-    """Test _get_project_folder function."""
 
-    def test_get_project_folder_returns_env_value(self, monkeypatch):
-        """Test that _get_project_folder returns RASA_PROJECT_FOLDER_ENV_VAR."""
-        from rasa.builder.copilot.mcp_server.server import _get_project_folder
+class TestProjectFolderState:
+    """Test _set_project_folder / _get_project_folder module-level state."""
 
-        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, "/test/project/path")
-        result = _get_project_folder()
-        assert result == "/test/project/path"
+    def test_get_project_folder_returns_stored_value(self, monkeypatch):
+        """Test if _get_project_folder returns the value set by _set_project_folder."""
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", None)
+        project_folder = "/test/project/path"
+        _set_project_folder(project_folder)
+        assert _get_project_folder() == project_folder
 
     def test_get_project_folder_raises_when_not_set(self, monkeypatch):
-        """Test that _get_project_folder raises when env var not set."""
-        from rasa.builder.copilot.mcp_server.server import _get_project_folder
-
-        monkeypatch.delenv(RASA_PROJECT_FOLDER_ENV_VAR, raising=False)
+        """Test that _get_project_folder raises when no folder was stored."""
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", None)
         with pytest.raises(RasaException, match="Project folder not configured"):
             _get_project_folder()
+
+    def test_run_server_stores_project_folder(self, monkeypatch, tmp_path):
+        """Test that run_server stores the project_folder in module state."""
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", None)
+
+        with patch(f"{SERVER_MODULE}.mcp") as mock_mcp:
+            mock_mcp.settings = MagicMock()
+            mock_mcp.run = MagicMock()
+
+            server_module.run_server(project_folder=str(tmp_path))
+
+        assert server_module._project_folder_path == str(tmp_path)
+
+    def test_run_server_falls_back_to_env_var(self, monkeypatch, tmp_path):
+        """Test that run_server falls back to the env var when no arg is given."""
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", None)
+        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(tmp_path))
+
+        with patch(f"{SERVER_MODULE}.mcp") as mock_mcp:
+            mock_mcp.settings = MagicMock()
+            mock_mcp.run = MagicMock()
+
+            server_module.run_server()
+
+        assert server_module._project_folder_path == str(tmp_path)
 
 
 class TestDummyProgressReporter:
@@ -35,8 +76,6 @@ class TestDummyProgressReporter:
     @pytest.mark.asyncio
     async def test_dummy_progress_reporter_reports_progress(self):
         """Test that dummy_progress_reporter reports progress."""
-        from rasa.builder.copilot.mcp_server.server import dummy_progress_reporter
-
         mock_ctx = MagicMock()
         mock_ctx.report_progress = AsyncMock()
         mock_ctx.info = AsyncMock()
@@ -52,8 +91,6 @@ class TestDummyProgressReporter:
     @pytest.mark.asyncio
     async def test_dummy_progress_reporter_stops_on_exit(self):
         """Test that progress reporting stops when context exits."""
-        from rasa.builder.copilot.mcp_server.server import dummy_progress_reporter
-
         mock_ctx = MagicMock()
         mock_ctx.report_progress = AsyncMock()
         mock_ctx.info = AsyncMock()
@@ -74,14 +111,12 @@ class TestMCPServerDocumentSearch:
     @pytest.fixture
     def mock_project_folder(self, monkeypatch, tmp_path):
         """Set up mock project folder."""
-        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(tmp_path))
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", str(tmp_path))
         return tmp_path
 
     @pytest.mark.asyncio
     async def test_search_rasa_documentation_tool(self, mock_project_folder):
         """Test search_rasa_documentation tool."""
-        from rasa.builder.copilot.mcp_server.server import search_rasa_documentation
-
         with patch(
             "rasa.builder.copilot.mcp_server.tools.document_search.search_rasa_documentation"
         ) as mock_search:
@@ -108,14 +143,12 @@ class TestMCPServerValidation:
     @pytest.fixture
     def mock_project_folder(self, monkeypatch, tmp_path):
         """Set up mock project folder."""
-        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(tmp_path))
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", str(tmp_path))
         return tmp_path
 
     @pytest.mark.asyncio
     async def test_validate_project_tool(self, mock_project_folder):
         """Test validate_project tool."""
-        from rasa.builder.copilot.mcp_server.server import validate_project
-
         mock_ctx = MagicMock()
         mock_ctx.info = AsyncMock()
         mock_ctx.report_progress = AsyncMock()
@@ -142,14 +175,12 @@ class TestMCPServerBotInteraction:
     @pytest.fixture
     def mock_project_folder(self, monkeypatch, tmp_path):
         """Set up mock project folder."""
-        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(tmp_path))
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", str(tmp_path))
         return tmp_path
 
     @pytest.mark.asyncio
     async def test_talk_to_assistant_empty_messages(self, mock_project_folder):
         """Test talk_to_assistant with empty messages."""
-        from rasa.builder.copilot.mcp_server.server import talk_to_assistant
-
         mock_ctx = MagicMock()
         mock_ctx.info = AsyncMock()
 
@@ -161,8 +192,6 @@ class TestMCPServerBotInteraction:
     @pytest.mark.asyncio
     async def test_talk_to_assistant_with_messages(self, mock_project_folder):
         """Test talk_to_assistant with messages."""
-        from rasa.builder.copilot.mcp_server.server import talk_to_assistant
-
         mock_ctx = MagicMock()
         mock_ctx.info = AsyncMock()
         mock_ctx.report_progress = AsyncMock()
@@ -190,8 +219,6 @@ class TestMCPServerPrompts:
     @pytest.mark.asyncio
     async def test_system_prompt(self):
         """Test system_prompt returns valid prompt structure."""
-        from rasa.builder.copilot.mcp_server.server import system_prompt
-
         with patch(
             "rasa.builder.copilot.mcp_server.prompts.prompt_loader.get_copilot_system_prompt"
         ) as mock_get_prompt:
@@ -208,8 +235,6 @@ class TestMCPServerPrompts:
     @pytest.mark.asyncio
     async def test_training_error_analysis_prompt(self):
         """Test training_error_analysis returns valid prompt structure."""
-        from rasa.builder.copilot.mcp_server.server import training_error_analysis
-
         with patch(
             "rasa.builder.copilot.mcp_server.prompts.prompt_loader.get_training_error_handler_prompt"
         ) as mock_get_prompt:
@@ -227,18 +252,77 @@ class TestRunServer:
 
     def test_run_server_logs_startup(self, monkeypatch, tmp_path):
         """Test that run_server logs startup information."""
-        from rasa.builder.copilot.mcp_server.server import run_server
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", None)
 
-        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(tmp_path))
-
-        # Mock the mcp.run to prevent actually starting the server
-        with patch("rasa.builder.copilot.mcp_server.server.mcp") as mock_mcp:
+        with patch(f"{SERVER_MODULE}.mcp") as mock_mcp:
             mock_mcp.settings = MagicMock()
             mock_mcp.run = MagicMock()
 
-            # This would normally start the server
-            run_server(host="127.0.0.1", port=5051)
+            run_server(host="127.0.0.1", port=5051, project_folder=str(tmp_path))
 
             mock_mcp.run.assert_called_once_with(transport="streamable-http")
             assert mock_mcp.settings.host == "127.0.0.1"
             assert mock_mcp.settings.port == 5051
+
+    def test_run_server_stdio_transport(self, monkeypatch, tmp_path):
+        """Test that run_server with stdio transport calls mcp.run correctly."""
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", None)
+
+        with patch(f"{SERVER_MODULE}.mcp") as mock_mcp:
+            mock_mcp.settings = MagicMock()
+            mock_mcp.run = MagicMock()
+
+            run_server(transport=MCP_TRANSPORT_STDIO, project_folder=str(tmp_path))
+
+            mock_mcp.run.assert_called_once_with(transport=MCP_TRANSPORT_STDIO)
+
+    def test_run_server_streamable_http_transport(self, monkeypatch, tmp_path):
+        """Test that run_server with streamable-http configures host/port."""
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", None)
+
+        with patch(f"{SERVER_MODULE}.mcp") as mock_mcp:
+            mock_mcp.settings = MagicMock()
+            mock_mcp.run = MagicMock()
+
+            run_server(
+                host="0.0.0.0",
+                port=9999,
+                transport=MCP_TRANSPORT_STREAMABLE_HTTP,
+                project_folder=str(tmp_path),
+            )
+
+            assert mock_mcp.settings.host == "0.0.0.0"
+            assert mock_mcp.settings.port == 9999
+            mock_mcp.run.assert_called_once_with(
+                transport=MCP_TRANSPORT_STREAMABLE_HTTP
+            )
+
+    def test_run_server_default_transport_is_streamable_http(
+        self, monkeypatch, tmp_path
+    ):
+        """Test that default transport is streamable-http for backward compatibility."""
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", None)
+
+        with patch(f"{SERVER_MODULE}.mcp") as mock_mcp:
+            mock_mcp.settings = MagicMock()
+            mock_mcp.run = MagicMock()
+
+            run_server(host="127.0.0.1", port=5051, project_folder=str(tmp_path))
+
+            mock_mcp.run.assert_called_once_with(transport="streamable-http")
+
+
+class TestHealthEndpoint:
+    """Test health_check endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_health_check_returns_ok(self):
+        """Test that health_check returns correct response."""
+        # Create a mock request
+        mock_request = MagicMock()
+
+        response = await health_check(mock_request)
+
+        # Verify response
+        assert response.status_code == 200
+        assert response.body == b'{"status":"ok"}'

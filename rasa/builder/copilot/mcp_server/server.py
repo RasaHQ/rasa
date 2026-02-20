@@ -8,7 +8,7 @@ https://modelcontextprotocol.io/docs/develop/build-server
 https://gofastmcp.com/servers/tools
 
 This server runs as a webserver alongside the Sanic server, with the project
-folder passed via RASA_PROJECT_FOLDER environment variable.
+folder passed via the project_folder parameter to run_server().
 """
 
 import asyncio
@@ -19,10 +19,14 @@ from typing import Annotated, AsyncIterator, Optional
 import structlog
 from mcp.server.fastmcp import Context, FastMCP
 from pydantic import Field
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from rasa.builder.copilot.mcp_server.constants import (
     INSTRUCTIONS_FILE_PATH,
+    MCP_DEFAULT_HOST,
+    MCP_DEFAULT_PORT,
     MCP_TOOL_GET_ASSISTANT_LOGS,
     MCP_TOOL_GET_DOMAIN_SCHEMA,
     MCP_TOOL_GET_E2E_SCHEMA,
@@ -40,6 +44,8 @@ from rasa.builder.copilot.mcp_server.constants import (
     MCP_TOOL_TALK_TO_ASSISTANT,
     MCP_TOOL_TRAIN_RASA_ASSISTANT,
     MCP_TOOL_VALIDATE_PROJECT,
+    MCP_TRANSPORT_STDIO,
+    MCP_TRANSPORT_STREAMABLE_HTTP,
 )
 from rasa.builder.copilot.mcp_server.models import (
     CustomActionsResponse,
@@ -64,6 +70,10 @@ from rasa.shared.exceptions import RasaException
 # All Rasa imports are lazy-loaded inside tools/resources/prompts
 
 structlogger = structlog.get_logger()
+
+# Project folder path, resolved once at startup by run_server().
+# All MCP tools read this via _get_project_folder().
+_project_folder_path: Optional[str] = None
 
 
 @asynccontextmanager
@@ -122,24 +132,47 @@ mcp = FastMCP(
 )
 
 
-def _get_project_folder() -> str:
-    """Get the project folder from environment.
+@mcp.custom_route("/health", methods=["GET"])  # type: ignore[misc]
+async def health_check(request: Request) -> JSONResponse:
+    """Health endpoint for the MCP server.
 
-    The project folder is passed via RASA_PROJECT_FOLDER_ENV_VAR environment variable
-    when the subprocess is spawned.
+    Available for HTTP transports only. Routes registered via @mcp.custom_route
+    are excluded from auth requirements, making this safe to use as a
+    lightweight liveness probe.
+
+    Returns:
+        JSONResponse with {"status": "ok"}
+    """
+    return JSONResponse({"status": "ok"})
+
+
+def _set_project_folder(folder: str) -> None:
+    """Store the project folder path for use by MCP tools.
+
+    Called once at startup by run_server(). Tools read the value
+    via _get_project_folder().
+    """
+    global _project_folder_path
+    _project_folder_path = folder
+
+
+def _get_project_folder() -> str:
+    """Get the project folder set at server startup.
 
     Returns:
         Project folder path as string
-    """
-    project_folder = os.getenv(RASA_PROJECT_FOLDER_ENV_VAR)
 
-    if project_folder is None:
+    Raises:
+        RasaException: If the project folder was not configured at startup.
+    """
+    if _project_folder_path is None:
         raise RasaException(
-            f"Project folder not configured. The {RASA_PROJECT_FOLDER_ENV_VAR} "
-            "environment variable must be set by the parent copilot process."
+            "Project folder not configured. Ensure run_server() is called with "
+            "a project_folder argument or the RASA_PROJECT_FOLDER environment "
+            "variable is set before the server starts."
         )
 
-    return project_folder
+    return _project_folder_path
 
 
 # ============================================================================
@@ -845,34 +878,69 @@ async def training_error_analysis() -> list:
 # ============================================================================
 
 
-def run_server(host: str = "127.0.0.1", port: int = 5051) -> None:
-    """Run the MCP server with SSE transport.
+def run_server(
+    host: str = MCP_DEFAULT_HOST,
+    port: int = MCP_DEFAULT_PORT,
+    transport: str = MCP_TRANSPORT_STREAMABLE_HTTP,
+    project_folder: Optional[str] = None,
+) -> None:
+    """Run the MCP server.
 
-    This is the entry point for the MCP webserver. It's started alongside the
-    Sanic server with RASA_PROJECT_FOLDER_ENV_VAR set in the environment.
+    This is the entry point for the MCP server. It can be started standalone
+    via `rasa tools run` or embedded alongside the Sanic server (builder mode).
 
-    The server uses SSE (Server-Sent Events) over HTTP for communication.
+    The resolved project folder is stored as module-level state so that MCP
+    tools can access it via _get_project_folder() without reading environment
+    variables at request time.
+
+    IMPORTANT: When using stdio transport, the caller MUST ensure all logging
+    goes to stderr, not stdout. The MCP stdio protocol requires stdout to
+    contain ONLY JSON-RPC messages. Any other output will corrupt the protocol
+    and break IDE client connections.
 
     Args:
-        host: Host to bind the server to (default: 127.0.0.1)
-        port: Port to bind the server to (default: 5051)
+        host: Host to bind the server to (only used for streamable-http).
+        port: Port to bind the server to (only used for streamable-http).
+        transport: FastMCP transport to use – MCP_TRANSPORT_STDIO or
+            MCP_TRANSPORT_STREAMABLE_HTTP (default: MCP_TRANSPORT_STREAMABLE_HTTP
+            for backward compatibility with the embedded builder server).
+        project_folder: Path to the Rasa project folder. If not provided,
+            falls back to the RASA_PROJECT_FOLDER environment variable.
     """
     try:
-        project_folder = os.getenv(RASA_PROJECT_FOLDER_ENV_VAR)
+        resolved_folder = project_folder or os.getenv(RASA_PROJECT_FOLDER_ENV_VAR)
+        if resolved_folder:
+            _set_project_folder(resolved_folder)
 
         structlogger.info(
             "mcp_server.server.starting",
-            event_info="Starting MCP streamable-http server",
-            project_folder=project_folder,
-            host=host,
-            port=port,
+            event_info="Starting MCP server",
+            transport=transport,
+            project_folder=resolved_folder,
+            host=host if transport != MCP_TRANSPORT_STDIO else None,
+            port=port if transport != MCP_TRANSPORT_STDIO else None,
         )
 
-        # FastMCP with SSE transport
-        # This serves the MCP server over HTTP with SSE for streaming
-        mcp.settings.host = host
-        mcp.settings.port = port
-        mcp.run(transport="streamable-http")
+        if transport == MCP_TRANSPORT_STDIO:
+            structlogger.info(
+                "mcp_server.server.ready",
+                event_info="MCP server ready (stdio mode)",
+                transport=transport,
+            )
+            mcp.run(transport=MCP_TRANSPORT_STDIO)
+        else:
+            mcp.settings.host = host
+            mcp.settings.port = port
+            structlogger.info(
+                "mcp_server.server.ready",
+                event_info="MCP server ready (http mode)",
+                transport=transport,
+                host=host,
+                port=port,
+                url=f"http://{host}:{port}/mcp",
+                health_url=f"http://{host}:{port}/health",
+            )
+            mcp.run(transport=MCP_TRANSPORT_STREAMABLE_HTTP)
 
     except Exception as e:
         structlogger.error(

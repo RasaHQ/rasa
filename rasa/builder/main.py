@@ -18,7 +18,6 @@ from sanic_openapi import openapi3_blueprint
 import rasa.telemetry
 from rasa.builder import config
 from rasa.builder.config_validation import validate_config
-from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from rasa.builder.logging_utils import (
     attach_request_id_processor,
     collecting_logs_processor,
@@ -251,9 +250,6 @@ def start_mcp_server(project_folder: str) -> None:
         project_folder: The project folder to pass to the MCP server
     """
     try:
-        # Set the project folder in environment for MCP server
-        os.environ[RASA_PROJECT_FOLDER_ENV_VAR] = project_folder
-
         structlogger.info(
             "builder.main.starting_mcp_server",
             event_info="Starting MCP server in background thread",
@@ -264,7 +260,11 @@ def start_mcp_server(project_folder: str) -> None:
 
         from rasa.builder.copilot.mcp_server.server import run_server
 
-        run_server(host=config.MCP_SERVER_HOST, port=config.MCP_SERVER_PORT)
+        run_server(
+            host=config.MCP_SERVER_HOST,
+            port=config.MCP_SERVER_PORT,
+            project_folder=project_folder,
+        )
 
     except Exception as e:
         structlogger.error(

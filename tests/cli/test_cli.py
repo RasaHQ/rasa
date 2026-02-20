@@ -41,7 +41,7 @@ def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("--help")
 
     help_text = f"""usage: {RASA_EXE} [-h] [--version]
-    {{init,run,shell,train,interactive,telemetry,test,visualize,data,export,x,evaluate,
+    {{init,run,shell,train,interactive,telemetry,test,tools,visualize,data,export,x,evaluate,
     llm,studio,license,markers,inspect}}
     ..."""
 

@@ -4,6 +4,15 @@ from pathlib import Path
 
 INSTRUCTIONS_FILE_PATH = Path(__file__).parent / "INSTRUCTIONS.md"
 
+# MCP Transport Modes
+MCP_TRANSPORT_STDIO = "stdio"
+MCP_TRANSPORT_STREAMABLE_HTTP = "streamable-http"
+
+# MCP Server Configuration
+MCP_DEFAULT_HOST = "127.0.0.1"
+MCP_DEFAULT_PORT = 5051  # Used by builder mode (embedded server)
+MCP_TOOLS_DEFAULT_PORT = 7331  # Used by `rasa tools run` (standalone server)
+
 # MCP Tool Names - Centralized constants for tool names used throughout the codebase
 # These are Rasa-specific tools exposed via the MCP server
 MCP_TOOL_SEARCH_RASA_DOCS = "search_rasa_documentation"

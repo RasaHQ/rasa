@@ -5,11 +5,11 @@ This script is used by E2E tests to start the MCP server in a subprocess.
 Usage: python run_test_server.py <project_folder> <host> <port>
 """
 
-import os
 import sys
 from pathlib import Path
 
-from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
+from rasa.builder.copilot.mcp_server.constants import MCP_TRANSPORT_STREAMABLE_HTTP
+from rasa.builder.copilot.mcp_server.server import run_server
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
@@ -20,18 +20,15 @@ if __name__ == "__main__":
     host = sys.argv[2]
     port = int(sys.argv[3])
 
-    # Set environment variable
-    os.environ[RASA_PROJECT_FOLDER_ENV_VAR] = str(project_folder)
-
-    # Import and configure server
-    from rasa.builder.copilot.mcp_server.server import mcp
-
-    mcp.settings.host = host
-    mcp.settings.port = port
-
     # Run server (blocking)
+    # run_server() properly initializes the global project folder variable
     try:
-        mcp.run(transport="streamable-http")
+        run_server(
+            host=host,
+            port=port,
+            transport=MCP_TRANSPORT_STREAMABLE_HTTP,
+            project_folder=str(project_folder),
+        )
     except KeyboardInterrupt:
         pass
     except Exception as e:

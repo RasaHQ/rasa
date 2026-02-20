@@ -5,7 +5,6 @@ import pytest
 from sanic import Sanic
 
 from rasa.builder import config
-from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from rasa.builder.main import create_app, setup_langfuse
 from rasa.builder.project_generator.project_generator import ProjectGenerator
 
@@ -198,26 +197,23 @@ class TestWaitForPort:
 class TestStartMcpServer:
     """Test the start_mcp_server function."""
 
-    def test_start_mcp_server_sets_environment(
+    def test_start_mcp_server_passes_project_folder(
         self, monkeypatch, tmp_path: Path
     ) -> None:
-        """Test that start_mcp_server sets RASA_PROJECT_FOLDER_ENV_VAR."""
-        import os
-
+        """Test that start_mcp_server passes project_folder to run_server."""
         from rasa.builder.main import start_mcp_server
 
-        # Clear the env var first
-        monkeypatch.delenv(RASA_PROJECT_FOLDER_ENV_VAR, raising=False)
+        monkeypatch.setattr("rasa.builder.config.MCP_SERVER_HOST", "127.0.0.1")
+        monkeypatch.setattr("rasa.builder.config.MCP_SERVER_PORT", 5051)
 
-        # Mock the run_server to prevent actual server startup
         with patch("rasa.builder.copilot.mcp_server.server.run_server") as mock_run:
             start_mcp_server(str(tmp_path))
 
-            # Verify env var was set
-            assert os.environ.get(RASA_PROJECT_FOLDER_ENV_VAR) == str(tmp_path)
-
-            # Verify run_server was called
-            mock_run.assert_called_once()
+            mock_run.assert_called_once_with(
+                host="127.0.0.1",
+                port=5051,
+                project_folder=str(tmp_path),
+            )
 
     def test_start_mcp_server_calls_run_server_with_config(
         self, monkeypatch, tmp_path: Path
@@ -225,14 +221,17 @@ class TestStartMcpServer:
         """Test that start_mcp_server calls run_server with correct config."""
         from rasa.builder.main import start_mcp_server
 
-        # Mock config values
         monkeypatch.setattr("rasa.builder.config.MCP_SERVER_HOST", "127.0.0.1")
         monkeypatch.setattr("rasa.builder.config.MCP_SERVER_PORT", 5055)
 
         with patch("rasa.builder.copilot.mcp_server.server.run_server") as mock_run:
             start_mcp_server(str(tmp_path))
 
-            mock_run.assert_called_once_with(host="127.0.0.1", port=5055)
+            mock_run.assert_called_once_with(
+                host="127.0.0.1",
+                port=5055,
+                project_folder=str(tmp_path),
+            )
 
     def test_start_mcp_server_handles_exception(
         self, monkeypatch, tmp_path: Path

@@ -325,7 +325,10 @@ class TestListCustomActionsServerTool:
     @pytest.fixture
     def mock_project_folder(self, monkeypatch, tmp_path):
         """Set up mock project folder."""
-        monkeypatch.setenv("RASA_PROJECT_FOLDER", str(tmp_path))
+        # Set the global _project_folder_path variable directly
+        monkeypatch.setattr(
+            "rasa.builder.copilot.mcp_server.server._project_folder_path", str(tmp_path)
+        )
 
         # Create actions folder with sample action
         actions_dir = tmp_path / "actions"
