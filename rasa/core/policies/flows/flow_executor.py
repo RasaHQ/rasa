@@ -508,6 +508,14 @@ async def advance_flows_until_next_action(
                 tracker.stack, number_of_steps_taken
             )
 
+        # If the conversation has been terminated, stop advancing
+        # flows and return action_listen to gracefully exit.
+        if tracker.terminated:
+            step_result = PauseFlowReturnPrediction(
+                FlowActionPrediction(ACTION_LISTEN_NAME, 1.0)
+            )
+            break
+
         active_frame = tracker.stack.top()
         if not isinstance(active_frame, BaseFlowStackFrame):
             # If there is no current flow, we assume that all flows are done

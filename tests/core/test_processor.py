@@ -473,6 +473,33 @@ async def test_run_action_ignored_on_terminated_tracker(
     assert tracker.terminated
 
 
+def test_should_handle_message_returns_false_for_terminated_tracker():
+    """Test that _should_handle_message returns False for terminated trackers.
+
+    When a conversation has been terminated with a SessionEnded event,
+    the prediction loop should not continue processing messages.
+    This prevents infinite loops in the flow executor when events are ignored.
+    """
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[ActionExecuted("action_listen"), UserUttered("hello"), SessionEnded()],
+    )
+
+    assert tracker.terminated is True
+    assert MessageProcessor._should_handle_message(tracker) is False
+
+
+def test_should_handle_message_returns_true_for_active_tracker():
+    """Test that _should_handle_message returns True for active trackers."""
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[ActionExecuted("action_listen"), UserUttered("hello")],
+    )
+
+    assert tracker.terminated is False
+    assert MessageProcessor._should_handle_message(tracker) is True
+
+
 async def test_reminder_aborted(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):

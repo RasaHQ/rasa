@@ -1132,6 +1132,8 @@ class MessageProcessor:
 
     @staticmethod
     def _should_handle_message(tracker: DialogueStateTracker) -> bool:
+        if tracker.terminated:
+            return False
         return not tracker.paused or MessageProcessor._last_user_intent_is_restart(
             tracker
         )

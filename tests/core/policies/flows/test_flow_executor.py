@@ -73,6 +73,7 @@ from rasa.shared.core.events import (
     Event,
     FlowCompleted,
     FlowStarted,
+    SessionEnded,
     SlotSet,
     UserUttered,
 )
@@ -3070,3 +3071,56 @@ async def test_pattern_completed_links_to_customer_satisfaction():
         slots=[continue_conversation_slot, csat_slot],
     )
     assert prediction.action_name == "utter_ask_csat_score"
+
+
+async def test_executor_exits_gracefully_when_tracker_is_terminated():
+    """Test that flow executor exits gracefully when tracker is terminated.
+
+    When a SessionEnded event has been applied to the tracker,
+    the flow executor should exit the loop and return
+    action_listen instead of continuing to process steps
+    (which would cause an infinite loop as events are ignored).
+    """
+    flow_with_action = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            description: flow foo
+            steps:
+            - id: "1"
+              action: action_foo
+            - id: "2"
+              action: action_bar
+              next: END
+        """
+    )
+
+    domain = Domain.empty()
+
+    stack = DialogueStack(
+        frames=[UserFlowStackFrame(flow_id="foo_flow", step_id="1", frame_id="some-id")]
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            ActionExecuted(action_name="action_listen"),
+            SessionEnded(),
+        ],
+        domain=domain,
+        slots=domain.slots,
+    )
+    tracker.update_stack(stack)
+
+    assert tracker.terminated is True
+
+    available_actions = ["action_foo", "action_bar", "action_listen"]
+
+    # The flow executor should exit gracefully with action_listen
+    # instead of raising FlowCircuitBreakerTrippedException
+    selection = await flow_executor.advance_flows_until_next_action(
+        tracker, available_actions, flow_with_action, slots=[]
+    )
+
+    assert selection.action_name == "action_listen"
+    assert selection.score == 1.0
