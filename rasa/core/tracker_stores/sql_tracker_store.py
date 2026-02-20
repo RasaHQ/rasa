@@ -17,6 +17,7 @@ from typing import (
     Optional,
     Text,
     Union,
+    cast,
 )
 
 import sqlalchemy as sa
@@ -553,6 +554,8 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                 self.SQLEvent.sender_id == sender_id
             )
             result = session.execute(statement)
+            if not isinstance(result, sa.engine.cursor.CursorResult):
+                result = cast(sa.engine.cursor.CursorResult, result)
 
             # Clean up users table
             user_statement = sa.delete(self.SQLUser).where(
@@ -822,6 +825,9 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
 
             result = session.execute(statement)
 
+            if not isinstance(result, sa.engine.cursor.CursorResult):
+                result = cast(sa.engine.cursor.CursorResult, result)
+
             # Maintain users table if tracker has user_id
             if tracker_to_keep.user_id:
                 self._upsert_user_mapping(
@@ -949,6 +955,9 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                 )
             )
             result = session.execute(update_stmt)
+
+            if not isinstance(result, sa.engine.cursor.CursorResult):
+                result = cast(sa.engine.cursor.CursorResult, result)
 
             # If no rows were updated, the row doesn't exist - insert it
             if result.rowcount == 0:
