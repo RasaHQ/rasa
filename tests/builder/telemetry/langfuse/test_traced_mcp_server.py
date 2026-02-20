@@ -1,14 +1,13 @@
 """Tests for TracedMCPServerWrapper."""
 
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+import asyncio
+from typing import ClassVar
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from agents.mcp import MCPServerStreamableHttp
 
-from rasa.builder.telemetry.langfuse.traced_mcp_server import (
-    TracedMCPServerWrapper,
-    create_traced_mcp_server,
-)
+from rasa.builder.telemetry.langfuse.traced_mcp_server import TracedMCPServerWrapper
 
 
 class TestTracedMCPServerWrapper:
@@ -27,29 +26,15 @@ class TestTracedMCPServerWrapper:
         assert wrapper is not None
         assert isinstance(wrapper, TracedMCPServerWrapper)
 
-    def test_langfuse_enabled_flag(self) -> None:
-        """Test that the Langfuse enabled flag is set correctly."""
-        from rasa.builder.telemetry.langfuse.langfuse_compat import (
-            is_langfuse_available,
-        )
-
-        wrapper = TracedMCPServerWrapper(
-            name="Mock MCP Server",
-            params={"url": "mock:5051/mcp", "timeout": 120},
-        )
-
-        # The wrapper should have the same langfuse availability as the system
-        assert wrapper._langfuse_enabled == is_langfuse_available()
-
     @pytest.mark.asyncio
     @patch.object(MCPServerStreamableHttp, "call_tool", new_callable=AsyncMock)
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server.is_langfuse_available",
+        "rasa.builder.telemetry.langfuse.langfuse_compat.is_langfuse_available",
         return_value=False,
     )
     async def test_call_tool_without_langfuse(
         self,
-        mock_is_langfuse_available: Mock,
+        mock_is_langfuse_available: AsyncMock,
         mock_mcp_server_call_tool: AsyncMock,
     ) -> None:
         """Test call_tool when Langfuse is not available."""
@@ -72,7 +57,7 @@ class TestTracedMCPServerWrapper:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "tool_name,arguments,expected_result,side_effect,expected_exception,verify_update",
+        "tool_name,arguments,expected_result,side_effect,expected_exception",
         [
             # Success case with arguments
             (
@@ -81,7 +66,6 @@ class TestTracedMCPServerWrapper:
                 {"status": "success", "output": "tool_output"},
                 None,
                 None,
-                True,
             ),
             # None arguments case
             (
@@ -90,7 +74,6 @@ class TestTracedMCPServerWrapper:
                 {"status": "success"},
                 None,
                 None,
-                True,
             ),
             # Empty arguments case
             (
@@ -99,7 +82,6 @@ class TestTracedMCPServerWrapper:
                 {"status": "success"},
                 None,
                 None,
-                True,
             ),
             # Exception case
             (
@@ -108,43 +90,24 @@ class TestTracedMCPServerWrapper:
                 None,
                 ValueError("Tool execution failed"),
                 ValueError,
-                False,
             ),
         ],
     )
     @patch.object(MCPServerStreamableHttp, "call_tool", new_callable=AsyncMock)
-    @patch("rasa.builder.telemetry.langfuse.traced_mcp_server.langfuse.get_client")
-    @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server.is_langfuse_available",
-        return_value=True,
-    )
-    async def test_call_tool_with_langfuse(
+    async def test_call_tool_scenarios(
         self,
-        mock_is_langfuse_available: Mock,
-        mock_get_client: Mock,
         mock_mcp_server_call_tool: AsyncMock,
         tool_name: str,
         arguments: dict | None,
         expected_result: dict | None,
         side_effect: Exception | None,
         expected_exception: type[Exception] | None,
-        verify_update: bool,
     ) -> None:
-        """Test call_tool with Langfuse enabled - various scenarios."""
+        """Test call_tool with various argument and exception scenarios."""
         wrapper = TracedMCPServerWrapper(
             name="Mock MCP Server",
             params={"url": "mock:5051/mcp", "timeout": 120},
         )
-
-        # Mock langfuse client and generation
-        mock_generation = MagicMock()
-        mock_generation.trace_id = "test-trace-123"
-        mock_generation.__enter__ = Mock(return_value=mock_generation)
-        mock_generation.__exit__ = Mock(return_value=False)
-
-        mock_client = MagicMock()
-        mock_client.start_as_current_generation.return_value = mock_generation
-        mock_get_client.return_value = mock_client
 
         # Setup parent call_tool mock
         if side_effect:
@@ -159,33 +122,138 @@ class TestTracedMCPServerWrapper:
         else:
             result = await wrapper.call_tool(tool_name, arguments)
 
-            # Verify langfuse span was created with correct parameters
-            expected_args = arguments if arguments is not None else {}
-            mock_client.start_as_current_generation.assert_called_once_with(
-                name=f"mcp_tool.{tool_name}",
-                input={
-                    "tool_name": tool_name,
-                    "arguments": expected_args,
-                },
-                metadata={
-                    "mcp_server": "Mock MCP Server",
-                    "tool_type": "mcp",
-                },
-            )
-
             # Verify parent's call_tool was called
             mock_mcp_server_call_tool.assert_called_once_with(tool_name, arguments)
-
-            if verify_update:
-                # Verify generation was updated with result
-                mock_generation.update.assert_called_once_with(output=expected_result)
 
             # Verify result is returned
             assert result == expected_result
 
 
-class TestCreateTracedMCPServer:
-    """Tests for the create_traced_mcp_server context manager."""
+class TestParseServerUrl:
+    """Tests for _parse_server_url (host/port derivation)."""
+
+    @pytest.mark.parametrize(
+        "url,expected_host,expected_port",
+        [
+            ("http://localhost/mcp", "localhost", 80),
+            ("https://localhost/mcp", "localhost", 443),
+            ("http://example.com", "example.com", 80),
+            ("https://mcp.example.com/path", "mcp.example.com", 443),
+            ("http://127.0.0.1:5051/mcp", "127.0.0.1", 5051),
+            ("https://host:8443/mcp", "host", 8443),
+        ],
+    )
+    def test_parse_server_url_derives_host_and_port(
+        self,
+        url: str,
+        expected_host: str,
+        expected_port: int,
+    ) -> None:
+        """URLs without explicit port use default port (http->80, https->443)."""
+        wrapper = TracedMCPServerWrapper(
+            name="Test",
+            params={"url": url},
+        )
+        host, port = wrapper._parse_server_url()
+        assert host == expected_host
+        assert port == expected_port
+
+    def test_parse_server_url_raises_when_no_hostname(self) -> None:
+        """Missing hostname in URL raises ValueError."""
+        wrapper = TracedMCPServerWrapper(
+            name="Test",
+            params={"url": "http:///path"},
+        )
+        with pytest.raises(ValueError, match="Cannot determine host"):
+            wrapper._parse_server_url()
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "localhost:80",
+            "localhost/mcp",
+            "example.com:9000/path",
+        ],
+    )
+    def test_parse_server_url_raises_when_scheme_missing(self, url: str) -> None:
+        """Scheme-less URLs raise ValueError instead of silently assuming http."""
+        wrapper = TracedMCPServerWrapper(
+            name="Test",
+            params={"url": url},
+        )
+        with pytest.raises(ValueError, match="must include a scheme"):
+            wrapper._parse_server_url()
+
+
+class TestAssertServerReachable:
+    """Tests for _assert_server_reachable (health check)."""
+
+    VALID_URLS: ClassVar[list[tuple[str, str, int]]] = [
+        ("http://localhost/mcp", "localhost", 80),
+        ("https://localhost/mcp", "localhost", 443),
+        ("http://example.com", "example.com", 80),
+        ("https://mcp.example.com/path", "mcp.example.com", 443),
+        ("http://127.0.0.1:5051/mcp", "127.0.0.1", 5051),
+        ("https://host:8443/mcp", "host", 8443),
+    ]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("url,expected_host,expected_port", VALID_URLS)
+    @patch.object(TracedMCPServerWrapper, "check_health", new_callable=AsyncMock)
+    async def test_healthy_server_does_not_raise(
+        self,
+        mock_check_health: AsyncMock,
+        url: str,
+        expected_host: str,
+        expected_port: int,
+    ) -> None:
+        mock_check_health.return_value = True
+        wrapper = TracedMCPServerWrapper(name="Test", params={"url": url})
+        await wrapper._assert_server_reachable()
+        mock_check_health.assert_called_once_with(expected_host, expected_port)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("url,expected_host,expected_port", VALID_URLS)
+    @patch.object(TracedMCPServerWrapper, "check_health", new_callable=AsyncMock)
+    async def test_unhealthy_server_raises_connection_error(
+        self,
+        mock_check_health: AsyncMock,
+        url: str,
+        expected_host: str,
+        expected_port: int,
+    ) -> None:
+        mock_check_health.return_value = False
+        wrapper = TracedMCPServerWrapper(name="Test", params={"url": url})
+        with pytest.raises(ConnectionError, match="not reachable"):
+            await wrapper._assert_server_reachable()
+        mock_check_health.assert_called_once_with(expected_host, expected_port)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "bad_url",
+        [
+            "http:///path",
+            "",
+            "://no-scheme",
+            "localhost:80",
+            "localhost/mcp",
+            "example.com:9000/path",
+        ],
+    )
+    @patch.object(TracedMCPServerWrapper, "check_health", new_callable=AsyncMock)
+    async def test_bad_url_raises_connection_error(
+        self,
+        mock_check_health: AsyncMock,
+        bad_url: str,
+    ) -> None:
+        wrapper = TracedMCPServerWrapper(name="Test", params={"url": bad_url})
+        with pytest.raises(ConnectionError, match="not reachable"):
+            await wrapper._assert_server_reachable()
+        mock_check_health.assert_not_called()
+
+
+class TestTracedMCPServerWrapperContextManager:
+    """Tests for TracedMCPServerWrapper used as async context manager."""
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -226,7 +294,7 @@ class TestCreateTracedMCPServer:
     )
     @patch.object(TracedMCPServerWrapper, "__aexit__", new_callable=AsyncMock)
     @patch.object(TracedMCPServerWrapper, "__aenter__", new_callable=AsyncMock)
-    async def test_create_traced_mcp_server(
+    async def test_wrapper_as_context_manager(
         self,
         mock_aenter: AsyncMock,
         mock_aexit: AsyncMock,
@@ -237,8 +305,13 @@ class TestCreateTracedMCPServer:
         exception_type: type[Exception] | None,
         verify_name: bool,
     ) -> None:
-        """Test create_traced_mcp_server with various scenarios."""
-        mock_aenter.return_value = None
+        """Test TracedMCPServerWrapper as async context manager."""
+        wrapper = TracedMCPServerWrapper(
+            name=name,
+            params=params,
+            **kwargs,
+        )
+        mock_aenter.return_value = wrapper
 
         if should_raise:
             # Make __aexit__ return False to propagate the exception
@@ -247,21 +320,12 @@ class TestCreateTracedMCPServer:
             test_exception = exception_type("Connection failed")
 
             with pytest.raises(exception_type, match="Connection failed"):
-                async with create_traced_mcp_server(
-                    name=name,
-                    params=params,
-                    **kwargs,
-                ):
+                async with wrapper as server:
                     raise test_exception
 
-            # Verify __aexit__ was called even with exception
             mock_aexit.assert_called_once()
         else:
-            async with create_traced_mcp_server(
-                name=name,
-                params=params,
-                **kwargs,
-            ) as server:
+            async with wrapper as server:
                 # Verify we got a TracedMCPServerWrapper instance
                 assert isinstance(server, TracedMCPServerWrapper)
                 if verify_name:
@@ -274,29 +338,362 @@ class TestCreateTracedMCPServer:
     @pytest.mark.asyncio
     @patch.object(MCPServerStreamableHttp, "call_tool", new_callable=AsyncMock)
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server.is_langfuse_available",
+        "rasa.builder.telemetry.langfuse.langfuse_compat.is_langfuse_available",
         return_value=False,
     )
     @patch.object(TracedMCPServerWrapper, "__aexit__", new_callable=AsyncMock)
     @patch.object(TracedMCPServerWrapper, "__aenter__", new_callable=AsyncMock)
-    async def test_create_traced_mcp_server_can_call_tool(
+    async def test_wrapper_context_manager_can_call_tool(
         self,
         mock_aenter: AsyncMock,
         mock_aexit: AsyncMock,
         mock_is_langfuse_available: Mock,
         mock_mcp_server_call_tool: AsyncMock,
     ) -> None:
-        """Test that server created by context manager can call tools."""
-        # Set the return value
+        """Test that wrapper used as context manager can call tools."""
         mock_mcp_server_call_tool.return_value = {"result": "success"}
 
-        async with create_traced_mcp_server(
+        wrapper = TracedMCPServerWrapper(
             name="Tool Server",
             params={"url": "mock:5051/mcp"},
-        ) as server:
+        )
+        mock_aenter.return_value = wrapper
+
+        async with wrapper as server:
             result = await server.call_tool("test_tool", {"arg": "val"})
 
             mock_mcp_server_call_tool.assert_called_once_with(
                 "test_tool", {"arg": "val"}
             )
             assert result == {"result": "success"}
+
+
+class TestTracedMCPServerWrapperEnterExitTracing:
+    """Tests that __aenter__ and __aexit__ call the correct tracing methods."""
+
+    @pytest.mark.asyncio
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception"
+    )
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
+    )
+    @patch.object(
+        MCPServerStreamableHttp,
+        "__aenter__",
+        new_callable=AsyncMock,
+    )
+    async def test_enter_emits_created_when_parent_returns(
+        self,
+        mock_parent_aenter: AsyncMock,
+        mock_emit_lifecycle_event: Mock,
+        mock_mark_current_span_with_base_exception: Mock,
+    ) -> None:
+        # Given
+        name = "Test MCP Server"
+        api_endpoint = "http://localhost:5050/mcp"
+        wrapper = TracedMCPServerWrapper(
+            name=name,
+            params={"url": api_endpoint, "timeout": 120},
+        )
+        mock_parent_aenter.return_value = wrapper
+
+        # When
+        await wrapper.__aenter__()
+
+        # Then
+        mock_emit_lifecycle_event.assert_called_once()
+        call_kw = mock_emit_lifecycle_event.call_args[1]
+        assert call_kw["span_name"] == ("traced_mcp_server.create_connection.created")
+        assert call_kw["mcp_server_name"] == name
+        assert call_kw["api_endpoint"] == api_endpoint
+        assert call_kw.get("level") is None
+        mock_mark_current_span_with_base_exception.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception"
+    )
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
+    )
+    @patch.object(
+        MCPServerStreamableHttp,
+        "__aenter__",
+        new_callable=AsyncMock,
+    )
+    async def test_enter_emits_error_when_parent_raises_exception(
+        self,
+        mock_parent_aenter: AsyncMock,
+        mock_emit_lifecycle_event: Mock,
+        mock_mark_current_span_with_base_exception: Mock,
+    ) -> None:
+        # Given
+        name = "Test MCP Server"
+        api_endpoint = "http://localhost:5050/mcp"
+        wrapper = TracedMCPServerWrapper(
+            name=name,
+            params={"url": api_endpoint, "timeout": 120},
+        )
+        mock_parent_aenter.side_effect = ConnectionError("Connection refused")
+
+        # When
+        with pytest.raises(ConnectionError, match="Connection refused"):
+            await wrapper.__aenter__()
+
+        # Then
+        mock_emit_lifecycle_event.assert_called_once()
+        call_kw = mock_emit_lifecycle_event.call_args[1]
+        assert call_kw["span_name"] == ("traced_mcp_server.create_connection.error")
+        assert call_kw["level"] == "ERROR"
+        mock_mark_current_span_with_base_exception.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch.object(TracedMCPServerWrapper, "check_health", new_callable=AsyncMock)
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
+    )
+    @patch.object(
+        MCPServerStreamableHttp,
+        "__aenter__",
+        new_callable=AsyncMock,
+    )
+    async def test_enter_health_probe_base_exception_is_swallowed(
+        self,
+        mock_parent_aenter: AsyncMock,
+        mock_emit_lifecycle_event: Mock,
+        mock_check_health: AsyncMock,
+    ) -> None:
+        """Health probe BaseException is swallowed, original error re-raised."""
+        wrapper = TracedMCPServerWrapper(
+            name="Test MCP Server",
+            params={"url": "http://localhost:5050/mcp", "timeout": 120},
+        )
+        original_error = asyncio.CancelledError()
+        mock_parent_aenter.side_effect = original_error
+        mock_check_health.side_effect = asyncio.CancelledError("probe cancelled")
+
+        with pytest.raises(asyncio.CancelledError) as exc_info:
+            await wrapper.__aenter__()
+
+        assert exc_info.value is original_error
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("is_healthy", [True, False])
+    @patch.object(TracedMCPServerWrapper, "check_health", new_callable=AsyncMock)
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.trace_health"
+    )
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
+    )
+    @patch.object(
+        MCPServerStreamableHttp,
+        "__aenter__",
+        new_callable=AsyncMock,
+    )
+    async def test_enter_diagnoses_health_and_reraises_base_exception(
+        self,
+        mock_parent_aenter: AsyncMock,
+        mock_emit_lifecycle_event: Mock,
+        mock_trace_health: Mock,
+        mock_check_health: AsyncMock,
+        is_healthy: bool,
+    ) -> None:
+        """CancelledError is always re-raised; health is traced regardless."""
+        # Given
+        wrapper = TracedMCPServerWrapper(
+            name="Test MCP Server",
+            params={"url": "http://localhost:5050/mcp", "timeout": 120},
+        )
+        mock_parent_aenter.side_effect = asyncio.CancelledError()
+        mock_check_health.return_value = is_healthy
+
+        # When
+        with pytest.raises(asyncio.CancelledError):
+            await wrapper.__aenter__()
+
+        # Then – health was probed and traced
+        mock_check_health.assert_called_once_with("localhost", 5050)
+        mock_trace_health.assert_called_once_with(
+            is_healthy=is_healthy,
+            host="localhost",
+            port=5050,
+            raw_url="http://localhost:5050/mcp",
+        )
+
+        # Then – lifecycle event was traced
+        mock_emit_lifecycle_event.assert_called()
+        call_kw = mock_emit_lifecycle_event.call_args[1]
+        assert call_kw["span_name"] == ("traced_mcp_server.create_connection.cancelled")
+        assert call_kw["level"] == "ERROR"
+
+    @pytest.mark.asyncio
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception"
+    )
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
+    )
+    @patch.object(
+        MCPServerStreamableHttp,
+        "__aexit__",
+        new_callable=AsyncMock,
+    )
+    async def test_exit_emits_closed_when_normal_exit(
+        self,
+        mock_parent_aexit: AsyncMock,
+        mock_emit_lifecycle_event: Mock,
+        mock_mark_current_span_with_base_exception: Mock,
+    ) -> None:
+        # Given
+        name = "Test MCP Server"
+        api_endpoint = "http://localhost:5050/mcp"
+        wrapper = TracedMCPServerWrapper(
+            name=name,
+            params={"url": api_endpoint, "timeout": 120},
+        )
+        mock_parent_aexit.return_value = None
+        exc_type, exc_val, exc_tb = None, None, None
+
+        # When
+        await wrapper.__aexit__(exc_type, exc_val, exc_tb)
+
+        # Then
+        mock_emit_lifecycle_event.assert_called_once()
+        call_kw = mock_emit_lifecycle_event.call_args[1]
+        assert call_kw["span_name"] == ("traced_mcp_server.close_connection.closed")
+        assert call_kw["mcp_server_name"] == name
+        assert call_kw["metadata"].get("reason") == "normal"
+        assert call_kw.get("level") is None
+        mock_mark_current_span_with_base_exception.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception"
+    )
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
+    )
+    @patch.object(
+        MCPServerStreamableHttp,
+        "__aexit__",
+        new_callable=AsyncMock,
+    )
+    async def test_exit_emits_closed_on_error_when_context_raised(
+        self,
+        mock_parent_aexit: AsyncMock,
+        mock_emit_lifecycle_event: Mock,
+        mock_mark_current_span_with_base_exception: Mock,
+    ) -> None:
+        # Given
+        name = "Test MCP Server"
+        api_endpoint = "http://localhost:5050/mcp"
+        wrapper = TracedMCPServerWrapper(
+            name=name,
+            params={"url": api_endpoint, "timeout": 120},
+        )
+        mock_parent_aexit.return_value = None
+        exc_val = ValueError("context body raised")
+        exc_type, exc_tb = type(exc_val), None
+
+        # When
+        await wrapper.__aexit__(exc_type, exc_val, exc_tb)
+
+        # Then
+        mock_emit_lifecycle_event.assert_called_once()
+        call_kw = mock_emit_lifecycle_event.call_args[1]
+        assert call_kw["span_name"] == (
+            "traced_mcp_server.close_connection.closed_on_error"
+        )
+        assert call_kw["level"] == "ERROR"
+        mock_mark_current_span_with_base_exception.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception"
+    )
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
+    )
+    @patch.object(
+        MCPServerStreamableHttp,
+        "__aexit__",
+        new_callable=AsyncMock,
+    )
+    async def test_exit_emits_cleanup_error_when_parent_raises_exception(
+        self,
+        mock_parent_aexit: AsyncMock,
+        mock_emit_lifecycle_event: Mock,
+        mock_mark_current_span_with_base_exception: Mock,
+    ) -> None:
+        # Given
+        name = "Test MCP Server"
+        api_endpoint = "http://localhost:5050/mcp"
+        wrapper = TracedMCPServerWrapper(
+            name=name,
+            params={"url": api_endpoint, "timeout": 120},
+        )
+        mock_parent_aexit.side_effect = RuntimeError("cleanup failed")
+        exc_type, exc_val, exc_tb = None, None, None
+
+        # When
+        with pytest.raises(RuntimeError, match="cleanup failed"):
+            await wrapper.__aexit__(exc_type, exc_val, exc_tb)
+
+        # Then
+        mock_emit_lifecycle_event.assert_called_once()
+        call_kw = mock_emit_lifecycle_event.call_args[1]
+        assert call_kw["span_name"] == (
+            "traced_mcp_server.close_connection.cleanup_error"
+        )
+        assert call_kw["level"] == "ERROR"
+        mock_mark_current_span_with_base_exception.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch(
+        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
+    )
+    @patch.object(
+        MCPServerStreamableHttp,
+        "__aexit__",
+        new_callable=AsyncMock,
+    )
+    async def test_exit_traces_lifecycle_when_parent_raises_base_exception(
+        self,
+        mock_parent_aexit: AsyncMock,
+        mock_emit_lifecycle_event: Mock,
+    ) -> None:
+        # Given
+        name = "Test MCP Server"
+        api_endpoint = "http://localhost:5050/mcp"
+        wrapper = TracedMCPServerWrapper(
+            name=name,
+            params={"url": api_endpoint, "timeout": 120},
+        )
+        mock_parent_aexit.side_effect = asyncio.CancelledError()
+        exc_type, exc_val, exc_tb = None, None, None
+
+        # When
+        with pytest.raises(asyncio.CancelledError):
+            await wrapper.__aexit__(exc_type, exc_val, exc_tb)
+
+        # Then
+        mock_emit_lifecycle_event.assert_called_once()
+        call_kw = mock_emit_lifecycle_event.call_args[1]
+        assert call_kw["span_name"] == ("traced_mcp_server.close_connection.cancelled")
+        assert call_kw["level"] == "ERROR"

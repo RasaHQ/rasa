@@ -67,8 +67,11 @@ COPILOT_HANDLER_ROLLING_BUFFER_SIZE = 20
 # Maximum time (seconds) we will wait for the next streaming event from the LLM
 # before failing the request. This prevents "hung" responses when a streaming
 # connection stalls without closing.
+# Must be strictly greater than MCP_TOOL_CALL_TIMEOUT so that slow MCP tool
+# calls always time out via the MCP layer first, giving us the correct failure
+# mode instead of a premature CopilotNextStreamEventTimeoutException.
 COPILOT_MAX_NEXT_STREAM_EVENT_WAIT_TIME_SECONDS = float(
-    os.getenv("COPILOT_MAX_NEXT_STREAM_EVENT_WAIT_TIME_SECONDS", "180")
+    os.getenv("COPILOT_MAX_NEXT_STREAM_EVENT_WAIT_TIME_SECONDS", "130")
 )
 COPILOT_ASSISTANT_TRACKER_MAX_TURNS = 10
 COPILOT_DOCUMENTATION_SEARCH_QUERY_HISTORY_MESSAGES = 5
@@ -151,6 +154,7 @@ USE_AGENT_SDK_COPILOT = os.getenv("USE_AGENT_SDK_COPILOT", "false").lower() == "
 
 
 # MCP Server Configuration
+MCP_SERVER_PROTOCOL = os.getenv("MCP_SERVER_PROTOCOL", "http")
 MCP_SERVER_HOST = os.getenv("MCP_SERVER_HOST", "127.0.0.1")
 MCP_SERVER_PORT = int(os.getenv("MCP_SERVER_PORT", "5051"))
 # Timeout for MCP server client session (in seconds)
@@ -158,6 +162,10 @@ MCP_SERVER_PORT = int(os.getenv("MCP_SERVER_PORT", "5051"))
 # Validation and training tools can take 60+ seconds
 MCP_TOOL_CALL_TIMEOUT = int(os.getenv("MCP_TOOL_CALL_TIMEOUT", "120"))
 MCP_MAX_RETRY_ATTEMPTS = int(os.getenv("MCP_MAX_RETRY_ATTEMPTS", "3"))
+# Timeout for the MCP client session (in seconds)
+MCP_CLIENT_SESSION_TIMEOUT = int(os.getenv("MCP_CLIENT_SESSION_TIMEOUT", "120"))
+# Whether to cache the MCP tools list
+MCP_CACHE_TOOLS_LIST = os.getenv("MCP_CACHE_TOOLS_LIST", "true").lower() == "true"
 # Timeout for waiting for MCP server to start accepting connections (in seconds)
 MCP_SERVER_STARTUP_TIMEOUT = int(os.getenv("MCP_SERVER_STARTUP_TIMEOUT", "30"))
 

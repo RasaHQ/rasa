@@ -17,6 +17,7 @@ from sanic_openapi import openapi3_blueprint
 
 import rasa.telemetry
 from rasa.builder import config
+from rasa.builder.config_validation import validate_config
 from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from rasa.builder.logging_utils import (
     attach_request_id_processor,
@@ -278,6 +279,9 @@ def main(project_folder: Optional[str] = None) -> None:
     try:
         # Setup logging
         setup_logging()
+
+        # Validate config
+        validate_config()
 
         # Setup telemetry
         rasa.telemetry.initialize_telemetry()

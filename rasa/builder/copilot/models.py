@@ -1,4 +1,6 @@
+import traceback
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Type, TypeVar, Union
 
@@ -9,6 +11,7 @@ from openai.types.responses import ResponseCompletedEvent
 from pydantic import (
     BaseModel,
     Field,
+    computed_field,
     field_serializer,
     field_validator,
     model_validator,
@@ -654,7 +657,13 @@ class GeneratedContent(CopilotOutput):
 
 
 class ExceptionContent(GeneratedContent):
-    """Generated content for exceptions."""
+    """Generated content for exceptions.
+
+    Captures full diagnostic context for exceptions including the exception
+    type, message, and stack trace.  Diagnostic details are exposed as
+    computed properties derived from ``original_exception`` and bundled
+    into ``exception_metadata`` for easy consumption by telemetry.
+    """
 
     content: str
     response_category: ResponseCategory = Field(
@@ -663,7 +672,7 @@ class ExceptionContent(GeneratedContent):
     response_completeness: ResponseCompleteness = Field(
         default=ResponseCompleteness.COMPLETE, frozen=True
     )
-    original_exception: Optional[Exception] = Field(
+    original_exception: Optional[BaseException] = Field(
         default=None,
         description="The original exception that occurred.",
     )
@@ -672,6 +681,79 @@ class ExceptionContent(GeneratedContent):
         """Config for ExceptionContent."""
 
         arbitrary_types_allowed = True
+
+    # ------------------------------------------------------------------
+    # Computed diagnostic properties
+    # ------------------------------------------------------------------
+
+    @property
+    def exception_type(self) -> Optional[str]:
+        """Fully-qualified type/class name of the exception."""
+        if self.original_exception is None:
+            return None
+        return type(self.original_exception).__qualname__
+
+    @property
+    def exception_message(self) -> Optional[str]:
+        """Exception message, falling back to ``repr`` when empty."""
+        if self.original_exception is None:
+            return None
+        msg = str(self.original_exception)
+        return msg if msg else repr(self.original_exception)
+
+    @property
+    def exception_stack_trace(self) -> Optional[str]:
+        """Full stack trace captured from the exception's traceback."""
+        if self.original_exception is None:
+            return None
+        return "".join(
+            traceback.format_exception(
+                type(self.original_exception),
+                self.original_exception,
+                self.original_exception.__traceback__,
+            )
+        )
+
+    @property
+    def exception_cause(self) -> Optional[str]:
+        """The chained cause (``__cause__`` or ``__context__``) if present."""
+        if self.original_exception is None:
+            return None
+        cause = self.original_exception.__cause__ or self.original_exception.__context__
+        if cause is None:
+            return None
+        return repr(cause)
+
+    @property
+    def metadata(self) -> Optional[Dict[str, Any]]:
+        """Diagnostic metadata dict for telemetry / tracing.
+
+        Returns ``None`` when no exception is stored; otherwise a dict
+        containing ``exception_type``, ``exception_message``, and
+        ``exception_stack_trace``.
+        """
+        if self.original_exception is None:
+            return None
+        return {
+            "exception_type": self.exception_type,
+            "exception_message": self.exception_message,
+            "exception_stack_trace": self.exception_stack_trace,
+            "exception_cause": self.exception_cause,
+        }
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def safe_metadata(self) -> Optional[Dict[str, Any]]:
+        """Safe metadata dict for telemetry / tracing."""
+        if self.metadata is None:
+            return None
+        safe_metadata = deepcopy(self.metadata)
+        safe_metadata.pop("exception_stack_trace", None)
+        return safe_metadata
+
+    # ------------------------------------------------------------------
+    # Serialisation
+    # ------------------------------------------------------------------
 
     @property
     def stringified_original_exception(self) -> Optional[str]:
@@ -685,7 +767,11 @@ class ExceptionContent(GeneratedContent):
         """Serialize exception to string representation."""
         if value is None:
             return None
-        return str(value)
+        return repr(value)
+
+    # ------------------------------------------------------------------
+    # Validators
+    # ------------------------------------------------------------------
 
     @model_validator(mode="after")
     def validate_response_category(self) -> "ExceptionContent":

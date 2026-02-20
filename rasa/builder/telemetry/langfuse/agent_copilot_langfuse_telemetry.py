@@ -1,3 +1,4 @@
+import asyncio
 from functools import wraps
 from typing import TYPE_CHECKING, Any, AsyncGenerator, Callable, Dict, List
 
@@ -12,6 +13,7 @@ from rasa.builder.copilot.response_handling.utils import (
     is_tool_call_event,
     is_tool_output_event,
 )
+from rasa.builder.logging_utils import ExceptionFields
 from rasa.builder.telemetry.langfuse.langfuse_compat import (
     is_langfuse_available,
     langfuse,
@@ -51,25 +53,41 @@ class AgentCopilotLangfuseTelemetry:
             with langfuse_client.start_as_current_generation(
                 name=f"{self.__class__.__name__}.{func.__name__}",
                 input={"system_prompt": system_prompt, "messages": messages},
+                model_parameters=self.llm_config,
             ) as generation:
                 output: list[dict[str, Any]] = []
-                # Call the original streaming function and start capturing the output
-                async for stream_event in func(self, system_prompt, messages):
-                    parsed_stream_event = AgentCopilotLangfuseTelemetry._parse_stream_event_output_for_tracing(  # noqa: E501
-                        stream_event
-                    )
-                    output.append(parsed_stream_event)
-                    yield stream_event
+                try:
+                    # Call the original streaming function and start capturing the
+                    # output
+                    async for stream_event in func(self, system_prompt, messages):
+                        parsed_stream_event = AgentCopilotLangfuseTelemetry._parse_stream_event_output_for_tracing(  # noqa: E501
+                            stream_event
+                        )
+                        output.append(parsed_stream_event)
+                        yield stream_event
 
-                # Update the span's model parameters and output after streaming is
-                # complete
-                generation.update(model_parameters=self.llm_config, output=output)
+                    # Update span's output after streaming is complete
+                    generation.update(output=output)
 
-                # Update the span's usage statistics after streaming is complete
-                if self.usage_statistics:
-                    update_generation_span_with_usage_statistics(
-                        generation, self.usage_statistics
+                    # Update the span's usage statistics after streaming is complete
+                    if self.usage_statistics:
+                        update_generation_span_with_usage_statistics(
+                            generation, self.usage_statistics
+                        )
+
+                except Exception as e:
+                    generation.update(
+                        level="ERROR",
+                        output=ExceptionFields.from_exception(e).to_dict(),
                     )
+                    raise
+
+                except asyncio.CancelledError as e:
+                    generation.update(
+                        level="ERROR",
+                        output=ExceptionFields.from_exception(e).to_dict(),
+                    )
+                    raise
 
         return wrapper
 

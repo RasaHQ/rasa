@@ -28,3 +28,17 @@ def update_generation_span_with_usage_statistics(
         },
         model=usage_statistics.model,
     )
+
+
+def create_session_id(
+    hello_rasa_project_id: str,
+    user_id: str,
+    chat_id: str,
+) -> str:
+    """Create a session ID as a composite from project id, user id and chat id."""
+    pattern = "PID-{project_id}-UID-{user_id}-CID-{chat_id}"
+    return pattern.format(
+        project_id=hello_rasa_project_id,
+        user_id=user_id,
+        chat_id=chat_id,
+    )

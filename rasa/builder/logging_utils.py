@@ -6,12 +6,14 @@ import json
 import logging
 import threading
 import time
+import traceback
 import uuid
 from contextlib import contextmanager
 from typing import Any, Deque, Dict, Generator, List, Mapping, MutableMapping, Optional
 
 import sentry_sdk
 import structlog
+from pydantic import BaseModel
 from sanic import Request
 
 from rasa.builder import config
@@ -298,3 +300,57 @@ def log_request_end(request: Any, response: Any, start: float) -> None:
         latency_ms=latency_ms,
         correlation_id=cid,
     )
+
+
+class ExceptionFields(BaseModel, frozen=True):
+    """Structured representation of exception details for logging.
+
+    Use the :meth:`from_exception` class method to build an instance
+    from an exception, then access the typed attributes directly
+    instead of working with raw dict keys.
+    """
+
+    error: str
+    error_type: str
+    error_stack_trace: str
+    error_cause: Optional[str] = None
+
+    @classmethod
+    def from_exception(cls, exc: BaseException) -> "ExceptionFields":
+        """Build an :class:`ExceptionFields` from an exception."""
+        cause = exc.__cause__ or exc.__context__
+        return cls(
+            error=repr(exc),
+            error_type=type(exc).__qualname__,
+            error_stack_trace="".join(
+                traceback.format_exception(type(exc), exc, exc.__traceback__)
+            ),
+            error_cause=repr(cause) if cause else None,
+        )
+
+    def safe_dict(self) -> Dict[str, Any]:
+        """Return fields safe for non-debug log levels (no stack trace)."""
+        return self.model_dump(exclude={"error_stack_trace"})
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Return all fields including the stack trace."""
+        return self.model_dump()
+
+
+def log_exception(
+    event_name: str,
+    event_info: str,
+    exc: BaseException,
+    **extra: Any,
+) -> ExceptionFields:
+    exception_fields = ExceptionFields.from_exception(exc)
+    safe_exception_fields = exception_fields.safe_dict()
+    structlogger.error(
+        event_name, event_info=event_info, **extra, **safe_exception_fields
+    )
+    structlogger.debug(
+        f"{event_name}.stack_trace",
+        error_stack_trace=exception_fields.error_stack_trace,
+        **{k: v for k, v in extra.items() if k != "event_info"},
+    )
+    return exception_fields

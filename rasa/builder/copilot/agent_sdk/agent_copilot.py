@@ -39,6 +39,7 @@ from rasa.builder.copilot.response_handling.agent_copilot_response_handler impor
     AgentCopilotResponseHandler,
 )
 from rasa.builder.copilot.response_handling.utils import is_response_completed_event
+from rasa.builder.logging_utils import log_exception
 from rasa.builder.telemetry.langfuse.agent_copilot_langfuse_telemetry import (
     AgentCopilotLangfuseTelemetry,
 )
@@ -117,7 +118,7 @@ class AgentCopilot(BaseCopilot):
         Yields:
             Connected TracedMCPServerWrapper instance with Langfuse tracing
         """
-        mcp_url = f"http://{config.MCP_SERVER_HOST}:{config.MCP_SERVER_PORT}/mcp"
+        mcp_url = f"{config.MCP_SERVER_PROTOCOL}://{config.MCP_SERVER_HOST}:{config.MCP_SERVER_PORT}/mcp"
         structlogger.info(
             "agent_sdk.mcp_client.connecting",
             event_info="Creating traced MCP client connection",
@@ -132,8 +133,8 @@ class AgentCopilot(BaseCopilot):
                     "url": mcp_url,
                     "timeout": config.MCP_TOOL_CALL_TIMEOUT,
                 },
-                client_session_timeout_seconds=120,
-                cache_tools_list=True,
+                client_session_timeout_seconds=config.MCP_CLIENT_SESSION_TIMEOUT,
+                cache_tools_list=config.MCP_CACHE_TOOLS_LIST,
                 max_retry_attempts=config.MCP_MAX_RETRY_ATTEMPTS,
             ) as server:
                 structlogger.info(
@@ -146,10 +147,10 @@ class AgentCopilot(BaseCopilot):
                     event_info="Closing traced MCP client connection",
                 )
         except Exception as e:
-            structlogger.error(
-                "agent_sdk.mcp_client.connection_error",
+            log_exception(
+                event_name="agent_sdk.mcp_client.connection_error",
+                exc=e,
                 event_info="Failed to connect to MCP server",
-                error=str(e),
                 mcp_url=mcp_url,
             )
             raise
@@ -356,10 +357,22 @@ class AgentCopilot(BaseCopilot):
                     yield event
 
         except Exception as e:
-            structlogger.error(
-                "agent_sdk.agent_copilot.stream_response.error",
+            log_exception(
+                event_name="agent_sdk.agent_copilot.stream_response.error",
                 event_info="Error streaming agent response",
-                error=str(e),
+                exc=e,
+            )
+            raise
+
+        except asyncio.CancelledError as e:
+            # asyncio.CancelledError is a special exception that is raised when the
+            # generator is cancelled. It is not an error, so we re-raise it.
+            log_exception(
+                event_name="agent_sdk.agent_copilot.stream_response.cancelled_error",
+                event_info=(
+                    "asyncio.CancelledError occured while streaming agent response"
+                ),
+                exc=e,
             )
             raise
 
@@ -384,9 +397,10 @@ class AgentCopilot(BaseCopilot):
                 )
                 break
             except asyncio.TimeoutError as exc:
-                structlogger.error(
-                    "agent_sdk.agent_copilot.stream_response.timeout",
+                log_exception(
+                    event_name="agent_sdk.agent_copilot.stream_response.timeout",
                     event_info="Timeout waiting for next stream event.",
+                    exc=exc,
                     timeout=self._timeout_for_next_stream_event,
                 )
                 raise CopilotNextStreamEventTimeoutException(

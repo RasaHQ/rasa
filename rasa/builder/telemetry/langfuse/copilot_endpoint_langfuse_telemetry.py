@@ -1,14 +1,20 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+import structlog
+
 from rasa.builder.copilot.models import CopilotTurnRequest, EventContent
 from rasa.builder.document_retrieval.models import Document
+from rasa.builder.logging_utils import ExceptionFields
 from rasa.builder.models import BotFiles
 from rasa.builder.shared.tracker_context import TrackerContext
 from rasa.builder.telemetry.langfuse.langfuse_compat import with_langfuse
+from rasa.builder.telemetry.langfuse.shared import create_session_id
 
 if TYPE_CHECKING:
     from rasa.builder.copilot import BaseCopilotResponseHandler
     from rasa.builder.copilot.models import CopilotContext
+
+structlogger = structlog.get_logger()
 
 
 class CopilotEndpointLangfuseTelemetry:
@@ -28,21 +34,28 @@ class CopilotEndpointLangfuseTelemetry:
                 fetched from the tracker.
             session_id: The session ID used to fetch the right tracker.
         """
-        with with_langfuse() as lf:
-            if not lf:
-                return
-            langfuse_client = lf.get_client()
-            # Use `update_current_span` to update the current span of the trace.
-            langfuse_client.update_current_span(
-                output={
-                    "tracker_context": (
-                        tracker_context.model_dump() if tracker_context else None
-                    ),
-                },
-                metadata={
-                    "max_conversation_turns": max_conversation_turns,
-                    "session_id": session_id,
-                },
+        try:
+            with with_langfuse() as lf:
+                if not lf:
+                    return
+                langfuse_client = lf.get_client()
+                # Use `update_current_span` to update the current span of the trace.
+                langfuse_client.update_current_span(
+                    output={
+                        "tracker_context": (
+                            tracker_context.model_dump() if tracker_context else None
+                        ),
+                    },
+                    metadata={
+                        "max_conversation_turns": max_conversation_turns,
+                        "session_id": session_id,
+                    },
+                )
+        except Exception as e:
+            structlogger.debug(
+                "copilot_endpoint_langfuse_telemetry"
+                ".trace_copilot_tracker_context.failed",
+                error=repr(e),
             )
 
     @staticmethod
@@ -54,15 +67,22 @@ class CopilotEndpointLangfuseTelemetry:
         Args:
             relevant_assistant_files: The relevant assistant files.
         """
-        with with_langfuse() as lf:
-            if not lf:
-                return
-            langfuse_client = lf.get_client()
-            # Use `update_current_span` to update the current span of the trace.
-            langfuse_client.update_current_span(
-                output={
-                    "relevant_assistant_files": relevant_assistant_files,
-                },
+        try:
+            with with_langfuse() as lf:
+                if not lf:
+                    return
+                langfuse_client = lf.get_client()
+                # Use `update_current_span` to update the current span of the trace.
+                langfuse_client.update_current_span(
+                    output={
+                        "relevant_assistant_files": relevant_assistant_files,
+                    },
+                )
+        except Exception as e:
+            structlogger.debug(
+                "copilot_endpoint_langfuse_telemetry"
+                ".trace_copilot_relevant_assistant_files.failed",
+                error=repr(e),
             )
 
     @staticmethod
@@ -89,71 +109,118 @@ class CopilotEndpointLangfuseTelemetry:
         Returns:
             None
         """
-        with with_langfuse() as lf:
-            if not lf:
-                return
-            langfuse_client = lf.get_client()
-            user_message = request.message.get_flattened_text_content()
-            tracker_event_attachments = CopilotEndpointLangfuseTelemetry._extract_tracker_event_attachments_from_turn(  # noqa: E501
-                request
-            )
-            response_category = handler.extract_response_category().value
-            reference_section_entries = (
-                CopilotEndpointLangfuseTelemetry._extract_references(handler)
+        try:
+            with with_langfuse() as lf:
+                if not lf:
+                    return
+                langfuse_client = lf.get_client()
+                user_message = request.message.get_flattened_text_content()
+                tracker_event_attachments = CopilotEndpointLangfuseTelemetry._extract_tracker_event_attachments_from_turn(  # noqa: E501
+                    request
+                )
+                response_category = handler.extract_response_category().value
+                reference_section_entries = (
+                    CopilotEndpointLangfuseTelemetry._extract_references(handler)
+                )
+
+                # Create a session ID as a composite ID from project id, user id and
+                # chat id
+                session_id = create_session_id(hello_rasa_project_id, user_id, chat_id)
+                # Extract the final response (output) for the trace.
+                output: Dict[str, Any]
+                if (
+                    exception_response := handler.extract_exception_response()
+                ) is not None:
+                    output = {
+                        "answer": exception_response.content,
+                        "response_category": exception_response.response_category.value,
+                        "references": [],
+                        "original_exception": exception_response.stringified_original_exception,  # noqa: E501
+                        "exception_metadata": exception_response.safe_metadata,
+                    }
+                else:
+                    output = {
+                        "answer": handler.extract_text_from_generated_responses(),
+                        "response_category": response_category,
+                        "references": reference_section_entries,
+                    }
+                # Use `update_current_trace` to update the top level trace.
+                langfuse_client.update_current_trace(
+                    user_id=user_id,
+                    session_id=session_id,
+                    input={
+                        "message": user_message,
+                        "tracker_event_attachments": tracker_event_attachments,
+                    },
+                    output=output,
+                    metadata={
+                        "ids": {
+                            "user_id": user_id,
+                            "project_id": hello_rasa_project_id,
+                            "chat_history_id": chat_id,
+                        },
+                        "copilot_additional_context": {
+                            "relevant_documents": [
+                                doc.model_dump() for doc in relevant_documents
+                            ],
+                            "relevant_assistant_files": copilot_context.assistant_files,
+                            "assistant_tracker_context": (
+                                copilot_context.tracker_context.model_dump()
+                                if copilot_context.tracker_context
+                                else None
+                            ),
+                            "assistant_logs": copilot_context.assistant_logs,
+                            "copilot_chat_history": [
+                                message.model_dump()
+                                for message in copilot_context.copilot_chat_history
+                            ],
+                        },
+                    },
+                    tags=[response_category],
+                )
+        except Exception as e:
+            structlogger.debug(
+                "copilot_endpoint_langfuse_telemetry"
+                ".setup_copilot_endpoint_call_trace_attributes.failed",
+                error=repr(e),
             )
 
-            # Create a session ID as a composite ID from project id, user id and chat id
-            session_id = CopilotEndpointLangfuseTelemetry._create_session_id(
-                hello_rasa_project_id, user_id, chat_id
-            )
-            # Extract the final response (output) for the trace.
-            output: Dict[str, Any]
-            if (exception_response := handler.extract_exception_response()) is not None:
-                output = {
-                    "answer": exception_response.content,
-                    "response_category": exception_response.response_category.value,
-                    "references": [],
-                    "original_exception": exception_response.stringified_original_exception,  # noqa: E501
-                }
-            else:
-                output = {
-                    "answer": handler.extract_text_from_generated_responses(),
-                    "response_category": response_category,
-                    "references": reference_section_entries,
-                }
-            # Use `update_current_trace` to update the top level trace.
-            langfuse_client.update_current_trace(
-                user_id=user_id,
-                session_id=session_id,
-                input={
-                    "message": user_message,
-                    "tracker_event_attachments": tracker_event_attachments,
-                },
-                output=output,
-                metadata={
-                    "ids": {
-                        "user_id": user_id,
-                        "project_id": hello_rasa_project_id,
-                        "chat_history_id": chat_id,
-                    },
-                    "copilot_additional_context": {
-                        "relevant_documents": [
-                            doc.model_dump() for doc in relevant_documents
-                        ],
-                        "relevant_assistant_files": copilot_context.assistant_files,
-                        "assistant_tracker_context": (
-                            copilot_context.tracker_context.model_dump()
-                            if copilot_context.tracker_context
+    @staticmethod
+    def update_trace_on_error(
+        request: Optional[CopilotTurnRequest], exc: BaseException
+    ) -> None:
+        """Best-effort fallback to tag the Langfuse trace when the main update failed.
+
+        Called from the endpoint's outer except blocks so the trace always
+        carries at least the error information, even when
+        ``setup_copilot_endpoint_call_trace_attributes`` was never reached.
+
+        Args:
+            request: The CopilotTurnRequest object. Can be None if the request is not
+                available.
+            exc: The exception that caused the endpoint to fail.
+        """
+        try:
+            with with_langfuse() as lf:
+                if not lf:
+                    return
+                fields = ExceptionFields.from_exception(exc).to_dict()
+                langfuse_client = lf.get_client()
+                langfuse_client.update_current_trace(
+                    input={
+                        "message": (
+                            request.message.get_flattened_text_content()
+                            if request
                             else None
-                        ),
-                        "assistant_logs": copilot_context.assistant_logs,
-                        "copilot_chat_history": [
-                            message.model_dump()
-                            for message in copilot_context.copilot_chat_history
-                        ],
+                        )
                     },
-                },
-                tags=[response_category],
+                    output=fields,
+                    tags=["error"],
+                )
+        except Exception as inner:
+            structlogger.debug(
+                "copilot_endpoint_langfuse_telemetry.update_trace_on_error.failed",
+                error=str(inner),
             )
 
     @staticmethod
@@ -196,17 +263,3 @@ class CopilotEndpointLangfuseTelemetry:
             )
 
         return reference_entries
-
-    @staticmethod
-    def _create_session_id(
-        hello_rasa_project_id: str,
-        user_id: str,
-        chat_id: str,
-    ) -> str:
-        """Create a session ID as a composite from project id, user id and chat id."""
-        pattern = "PID-{project_id}-UID-{user_id}-CID-{chat_id}"
-        return pattern.format(
-            project_id=hello_rasa_project_id,
-            user_id=user_id,
-            chat_id=chat_id,
-        )

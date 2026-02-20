@@ -11,15 +11,21 @@ Reference implementation:
 https://github.com/langfuse/langfuse-examples/tree/main/applications/mcp-tracing
 """
 
-from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Optional
+import asyncio
+import socket
+from typing import Any, Optional
+from urllib.parse import urlparse
 
 import structlog
 from agents.mcp import MCPServerStreamableHttp
 
+from rasa.builder.logging_utils import log_exception
 from rasa.builder.telemetry.langfuse.langfuse_compat import (
-    is_langfuse_available,
-    langfuse,
+    observe,
+    with_langfuse,
+)
+from rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry import (
+    MCPLifecycleLangfuseTelemetry,
 )
 
 structlogger = structlog.get_logger()
@@ -60,8 +66,14 @@ class TracedMCPServerWrapper(MCPServerStreamableHttp):
             cache_tools_list=cache_tools_list,
             max_retry_attempts=max_retry_attempts,
         )
-        self._langfuse_enabled = is_langfuse_available()
+        self._api_endpoint: str = (
+            params.get("url", "unknown") if isinstance(params, dict) else "unknown"
+        )
 
+    # ------------------------------------------------------------------
+    # Tool calls
+    # ------------------------------------------------------------------
+    @observe(as_type="generation")
     async def call_tool(
         self, tool_name: str, arguments: Optional[dict[str, Any]] = None
     ) -> Any:
@@ -77,89 +89,316 @@ class TracedMCPServerWrapper(MCPServerStreamableHttp):
         Returns:
             The result from the tool execution
         """
-        if not self._langfuse_enabled:
-            # If Langfuse is not available, just call the parent's tool directly
-            return await super().call_tool(tool_name, arguments)
+        MCPLifecycleLangfuseTelemetry.update_tool_call_span(
+            tool_name=tool_name,
+            mcp_server_name=self.name,
+        )
 
-        # Create a Langfuse span for this tool call
-        langfuse_client = langfuse.get_client()
+        trace_id = None
+        with with_langfuse() as lf:
+            if lf:
+                langfuse_client = lf.get_client()
+                trace_id = langfuse_client.get_current_trace_id()
+
+        structlogger.debug(
+            "traced_mcp_server.tool_call_start",
+            tool_name=tool_name,
+            arguments=arguments,
+            trace_id=trace_id,
+        )
 
         try:
-            with langfuse_client.start_as_current_generation(
-                name=f"mcp_tool.{tool_name}",
-                input={"tool_name": tool_name, "arguments": arguments or {}},
-                metadata={
-                    "mcp_server": self.name,
-                    "tool_type": "mcp",
-                },
-            ) as generation:
-                structlogger.debug(
-                    "traced_mcp_server.tool_call_start",
-                    tool_name=tool_name,
-                    arguments=arguments,
-                    trace_id=generation.trace_id if generation else None,
-                )
+            result = await super().call_tool(tool_name, arguments)
 
-                # Call the parent's tool method
-                result = await super().call_tool(tool_name, arguments)
+            structlogger.debug(
+                "traced_mcp_server.tool_call_complete",
+                tool_name=tool_name,
+                trace_id=trace_id,
+            )
 
-                # Update the span with the result
-                generation.update(output=result)
-
-                structlogger.debug(
-                    "traced_mcp_server.tool_call_complete",
-                    tool_name=tool_name,
-                    trace_id=generation.trace_id if generation else None,
-                )
-
-                return result
+            return result
 
         except Exception as e:
-            structlogger.error(
-                "traced_mcp_server.tool_call_error",
+            log_exception(
+                event_name="traced_mcp_server.tool_call_error",
+                event_info="MCP tool call failed",
+                exc=e,
                 tool_name=tool_name,
+                trace_id=trace_id,
+            )
+            MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception(e)
+            raise
+
+        except BaseException as e:
+            # CancelledError and other BaseExceptions bypass @observe's
+            # error tracking. Log so the failure is not completely silent.
+            log_exception(
+                event_name="traced_mcp_server.tool_call_error.raised_base_exception",
+                event_info="MCP tool call failed",
+                exc=e,
+                tool_name=tool_name,
+                trace_id=trace_id,
+            )
+            MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception(e)
+            raise
+
+    # ------------------------------------------------------------------
+    # Health check
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    async def check_health(host: str, port: int, timeout: float = 2.0) -> bool:
+        """Check if the MCP server is reachable via a TCP connection.
+
+        Runs the TCP probe off the event loop to avoid blocking when MCP
+        is slow or down.
+
+        Args:
+            host: Hostname or IP of the MCP server.
+            port: Port of the MCP server.
+            timeout: Connection timeout in seconds.
+
+        Returns:
+            True if the server accepted a TCP connection, False otherwise.
+        """
+
+        def _tcp_probe() -> bool:
+            try:
+                with socket.create_connection((host, port), timeout=timeout):
+                    return True
+            except (OSError, ConnectionRefusedError, TimeoutError):
+                return False
+
+        return await asyncio.to_thread(_tcp_probe)
+
+    async def _assert_server_reachable(self) -> None:
+        """Raise if the MCP server port is not accepting connections.
+
+        Also traces health to Langfuse (single source of health observability).
+        """
+        try:
+            host, port = self._parse_server_url()
+            is_healthy = await self.check_health(host, port)
+        except ValueError as e:
+            structlogger.warning(
+                "traced_mcp_server.assert_server_reachable.error",
                 error=str(e),
+            )
+            is_healthy = False
+            host = None
+            port = None
+
+        raw_url = self.params.get("url", "") if isinstance(self.params, dict) else ""
+        MCPLifecycleLangfuseTelemetry.trace_health(
+            is_healthy=is_healthy,
+            host=host,
+            port=port,
+            raw_url=raw_url,
+        )
+
+        if not is_healthy:
+            structlogger.warning(
+                "traced_mcp_server.assert_server_reachable.error",
+                error=f"MCP server is not reachable at url: {raw_url}",
+            )
+            raise ConnectionError(f"MCP server is not reachable at url: {raw_url}")
+
+    def _parse_server_url(self) -> tuple[str, int]:
+        """Extract (host, port) from the configured MCP server URL.
+
+        Raises:
+            ValueError: If the hostname cannot be determined from the URL.
+        """
+        url = self.params.get("url", "") if isinstance(self.params, dict) else ""
+        if "://" not in url:
+            raise ValueError(
+                f"MCP server URL must include a scheme "
+                f"(e.g. http:// or https://), got: {url!r}"
+            )
+        parsed_url = urlparse(url)
+
+        if not parsed_url.hostname:
+            raise ValueError(f"Cannot determine host from MCP server URL: {url!r}")
+
+        port = parsed_url.port
+        if port is None:
+            port = 443 if parsed_url.scheme == "https" else 80
+
+        return parsed_url.hostname, port
+
+    async def _diagnose_and_trace_health(self) -> None:
+        """Best-effort health probe for diagnostic tracing only."""
+        try:
+            await self._assert_server_reachable()
+        except BaseException:
+            # Swallow any exception to avoid interfering with the caller's exception
+            # handling.
+            pass
+
+    # ------------------------------------------------------------------
+    # Connection lifecycle
+    # ------------------------------------------------------------------
+
+    async def __aenter__(self) -> "TracedMCPServerWrapper":
+        """Establish the MCP connection, logging and tracing the outcome."""
+        try:
+            await super().__aenter__()  # type: ignore[no-untyped-call]
+
+            # Connection created successfully, trace health.
+            MCPLifecycleLangfuseTelemetry.trace_health(
+                is_healthy=True,
+                host=None,
+                port=None,
+                raw_url=self._api_endpoint,
+            )
+            self._log_and_trace_lifecycle_event(
+                event_name="traced_mcp_server.create_connection.created",
+                event_info="MCP server connection created",
+                metadata={
+                    "api_endpoint": self._api_endpoint,
+                },
+            )
+            return self
+        except Exception as e:
+            self._log_and_trace_lifecycle_error(
+                event_name="traced_mcp_server.create_connection.error",
+                event_info="MCP server connection failed during creation",
+                exc=e,
+            )
+            raise
+        except asyncio.CancelledError as e:
+            self._log_and_trace_lifecycle_base_exception(
+                event_name="traced_mcp_server.create_connection.cancelled",
+                event_info="Error during MCP server connection creation",
+                exc=e,
+                metadata={
+                    "api_endpoint": self._api_endpoint,
+                    "reason": "error",
+                },
+            )
+            # Best-effort: diagnose and trace MCP server health.
+            await self._diagnose_and_trace_health()
+            raise
+
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Close the MCP connection, logging and tracing the outcome."""
+        try:
+            await super().__aexit__(exc_type, exc_val, exc_tb)  # type: ignore[no-untyped-call]
+
+            # The context body raised an exception; cleanup succeeded but
+            # the shutdown was triggered by an error, not a normal exit.
+            if exc_type is not None:
+                self._log_and_trace_lifecycle_error(
+                    event_name="traced_mcp_server.close_connection.closed_on_error",
+                    event_info="MCP server connection closed due to error",
+                    exc=exc_val,
+                )
+            # Normal shutdown — no exception from the context body.
+            else:
+                self._log_and_trace_lifecycle_event(
+                    event_name="traced_mcp_server.close_connection.closed",
+                    event_info="MCP server connection closed normally",
+                    metadata={
+                        "api_endpoint": self._api_endpoint,
+                        "reason": "normal",
+                    },
+                )
+            return
+
+        # Handle exceptions during cleanup/teardown
+        except Exception as e:
+            self._log_and_trace_lifecycle_error(
+                event_name="traced_mcp_server.close_connection.cleanup_error",
+                event_info="Error during MCP server connection cleanup",
+                exc=e,
             )
             raise
 
+        except asyncio.CancelledError as e:
+            self._log_and_trace_lifecycle_base_exception(
+                event_name="traced_mcp_server.close_connection.cancelled",
+                event_info="Error during MCP server connection cleanup",
+                exc=e,
+                metadata={
+                    "api_endpoint": self._api_endpoint,
+                    "reason": "error",
+                },
+            )
+            raise
 
-@asynccontextmanager
-async def create_traced_mcp_server(
-    name: str,
-    params: Any,
-    client_session_timeout_seconds: int = 120,
-    cache_tools_list: bool = True,
-    max_retry_attempts: int = 3,
-) -> AsyncIterator[TracedMCPServerWrapper]:
-    """Context manager to create a traced MCP server connection.
+    # ------------------------------------------------------------------
+    # Error logging helpers
+    # ------------------------------------------------------------------
 
-    This is a convenience function that creates and manages a TracedMCPServerWrapper
-    instance, ensuring proper cleanup.
+    def _log_and_trace_lifecycle_event(
+        self,
+        event_name: str,
+        event_info: str,
+        metadata: dict[str, Any],
+    ) -> None:
+        structlogger.info(
+            event_name,
+            event_info=event_info,
+            **metadata,
+        )
+        MCPLifecycleLangfuseTelemetry.emit_lifecycle_event(
+            span_name=event_name,
+            mcp_server_name=self.name,
+            api_endpoint=self._api_endpoint,
+            metadata=metadata,
+        )
 
-    Args:
-        name: Name of the MCP server
-        params: Parameters for the MCP server (url, timeout, etc.)
-        client_session_timeout_seconds: Timeout for client session
-        cache_tools_list: Whether to cache the tools list
-        max_retry_attempts: Maximum number of retry attempts
+    def _log_and_trace_lifecycle_error(
+        self,
+        event_name: str,
+        event_info: str,
+        exc: Optional[BaseException],
+        reason: str = "error",
+    ) -> None:
+        """Log an exception and emit a Langfuse lifecycle span."""
+        fields: dict[str, Any]
+        if exc is not None:
+            exception_fields = log_exception(
+                event_name=event_name,
+                event_info=event_info,
+                exc=exc,
+                api_endpoint=self._api_endpoint,
+                reason=reason,
+            )
+            fields = exception_fields.to_dict()
+        else:
+            fields = {}
+        MCPLifecycleLangfuseTelemetry.emit_lifecycle_event(
+            span_name=event_name,
+            mcp_server_name=self.name,
+            api_endpoint=self._api_endpoint,
+            metadata={
+                "api_endpoint": self._api_endpoint,
+                "reason": reason,
+            },
+            output=fields,
+            level="ERROR",
+        )
 
-    Yields:
-        Connected TracedMCPServerWrapper instance
-
-    Example:
-        async with create_traced_mcp_server(
-            name="Rasa MCP Server",
-            params={"url": "http://localhost:5051/mcp", "timeout": 120}
-        ) as server:
-            result = await server.call_tool("search_docs", {"query": "flows"})
-    """
-    server = TracedMCPServerWrapper(
-        name=name,
-        params=params,
-        client_session_timeout_seconds=client_session_timeout_seconds,
-        cache_tools_list=cache_tools_list,
-        max_retry_attempts=max_retry_attempts,
-    )
-
-    async with server:
-        yield server
+    def _log_and_trace_lifecycle_base_exception(
+        self,
+        event_name: str,
+        event_info: str,
+        exc: BaseException,
+        metadata: dict[str, Any],
+    ) -> None:
+        """Log a base exception and emit a dedicated Langfuse lifecycle span."""
+        exception_fields = log_exception(
+            event_name=event_name,
+            event_info=event_info,
+            exc=exc,
+            **metadata,
+        )
+        MCPLifecycleLangfuseTelemetry.emit_lifecycle_event(
+            span_name=event_name,
+            mcp_server_name=self.name,
+            api_endpoint=self._api_endpoint,
+            metadata=metadata,
+            output=exception_fields.to_dict(),
+            level="ERROR",
+        )

@@ -24,7 +24,6 @@ from rasa.builder.config import (
     HELLO_RASA_PROJECT_ID,
     LAKERA_ASSISTANT_HISTORY_GUARDRAIL_PROJECT_ID,
     LAKERA_COPILOT_HISTORY_GUARDRAIL_PROJECT_ID,
-    USE_AGENT_SDK_COPILOT,
 )
 from rasa.builder.copilot import get_copilot_class
 from rasa.builder.copilot.constants import DEFAULT_COPILOT_CHAT_ID, ROLE_USER
@@ -1410,9 +1409,12 @@ async def download_bot_project(request: Request) -> HTTPResponse:
 @observe(capture_input=False, capture_output=False)
 async def copilot(request: Request) -> None:
     """Handle copilot requests with streaming markdown responses."""
+    from rasa.builder.copilot import get_copilot_mode as _get_copilot_mode
+
     sse = await request.respond(content_type="text/event-stream")
     project_generator = get_project_generator(request)
 
+    req: Optional[CopilotTurnRequest] = None
     try:
         # 1. Validate and unpack input
         req = CopilotTurnRequest(**request.json)
@@ -1655,15 +1657,19 @@ async def copilot(request: Request) -> None:
             structlogger.warning(
                 "builder.copilot.history.no_assistant_text",
                 session_id=req.session_id,
-                implementation="agent_sdk" if USE_AGENT_SDK_COPILOT else "legacy",
+                implementation=_get_copilot_mode(),
             )
 
     except CopilotStreamError as e:
         capture_exception_with_context(
             e,
             "bot_builder_service.copilot.generation_error",
-            extra={"session_id": req.session_id},
+            extra={"session_id": req.session_id if req is not None else None},
             tags={"endpoint": "/api/copilot"},
+        )
+        CopilotEndpointLangfuseTelemetry.update_trace_on_error(
+            request=req,
+            exc=e,
         )
         await sse.send(
             ServerSentEvent(
@@ -1672,12 +1678,28 @@ async def copilot(request: Request) -> None:
             ).format()
         )
 
+    except asyncio.CancelledError as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.copilot.cancelled",
+            extra={"session_id": req.session_id if req is not None else None},
+            tags={"endpoint": "/api/copilot"},
+        )
+        CopilotEndpointLangfuseTelemetry.update_trace_on_error(
+            request=req,
+            exc=exc,
+        )
+
     except Exception as exc:
         capture_exception_with_context(
             exc,
             "bot_builder_service.copilot.unexpected_error",
-            extra={"session_id": req.session_id if "req" in locals() else None},
+            extra={"session_id": req.session_id if req is not None else None},
             tags={"endpoint": "/api/copilot"},
+        )
+        CopilotEndpointLangfuseTelemetry.update_trace_on_error(
+            request=req,
+            exc=exc,
         )
         await sse.send(
             ServerSentEvent(
@@ -1840,9 +1862,9 @@ async def delete_copilot_history(request: Request) -> HTTPResponse:
 )
 async def get_copilot_mode(request: Request) -> HTTPResponse:
     """Get current copilot mode."""
-    from rasa.builder.copilot import get_copilot_mode
+    from rasa.builder.copilot import get_copilot_mode as _get_copilot_mode
 
-    return response.json({"mode": get_copilot_mode()})
+    return response.json({"mode": _get_copilot_mode()})
 
 
 @bp.route("/copilot/mode", methods=["POST"])

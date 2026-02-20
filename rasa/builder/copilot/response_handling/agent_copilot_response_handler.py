@@ -59,6 +59,7 @@ from rasa.builder.copilot.response_handling.utils import (
     remove_suffix,
 )
 from rasa.builder.document_retrieval.models import Document
+from rasa.builder.logging_utils import log_exception
 
 structlogger = structlog.get_logger()
 
@@ -612,11 +613,26 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
                 # (don't break on non-text events as the Agent SDK sends many
                 # event types before text content parts)
 
+        except asyncio.CancelledError as e:
+            log_exception(
+                event_name="copilot_response_handler.stream.cancelled",
+                event_info="Stream cancelled. Returning exception content.",
+                exc=e,
+            )
+            exception_content = ExceptionContent(
+                content=EXCEPTION_RESPONSE,
+                original_exception=e,
+            )
+            self._generated_responses.append(exception_content)
+            yield exception_content
+            # Re-raise so the cancellation propagates to service.py and
+            # prevents post-stream work (commit, training, history persistence).
+            raise
         except Exception as e:
-            structlogger.error(
-                "copilot_response_handler.stream.error",
-                event_info="Stream ended with an error.",
-                error=e,
+            log_exception(
+                event_name="copilot_response_handler.stream.error",
+                event_info="Stream ended with an error. Returning exception content.",
+                exc=e,
             )
             exception_content = ExceptionContent(
                 content=EXCEPTION_RESPONSE,
@@ -732,8 +748,10 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
 
         # Unexpected error occurred.
         except Exception as e:
-            structlogger.exception(
-                "copilot_response_handler.handle_response.unexpected_error",
+            log_exception(
+                event_name="copilot_response_handler.handle_response.unexpected_error",
+                event_info="Unexpected error occurred while handling response",
+                exc=e,
             )
             raise e
 
@@ -783,11 +801,17 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
 
         # For unexpected errors, propagate the exception to the caller.
         except Exception as e:
-            structlogger.exception(
-                "copilot_response_handler"
-                "._exhaust_text_content_part_buffer_for_early_detection"
-                ".unexpected_error",
-                error=e,
+            log_exception(
+                event_name=(
+                    "copilot_response_handler"
+                    "._exhaust_text_content_part_buffer_for_early_detection"
+                    ".unexpected_error"
+                ),
+                event_info=(
+                    "Unexpected error occurred while exhausting text content part "
+                    "buffer for early detection"
+                ),
+                exc=e,
             )
             raise e
 
@@ -860,8 +884,10 @@ class AgentCopilotResponseHandler(BaseCopilotResponseHandler):
             raise CopilotFinalBufferReached()
 
         except Exception as e:
-            structlogger.exception(
-                "copilot_response_handler._buffer_stream.unexpected_error",
+            log_exception(
+                event_name="copilot_response_handler._buffer_stream.unexpected_error",
+                event_info="Unexpected error occurred while buffering stream",
+                exc=e,
             )
             raise e
 
