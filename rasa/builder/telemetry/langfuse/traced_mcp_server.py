@@ -18,6 +18,7 @@ from urllib.parse import urlparse
 
 import structlog
 from agents.mcp import MCPServerStreamableHttp
+from mcp.types import CallToolResult
 
 from rasa.builder.logging_utils import log_exception
 from rasa.builder.telemetry.langfuse.langfuse_compat import (
@@ -75,8 +76,11 @@ class TracedMCPServerWrapper(MCPServerStreamableHttp):
     # ------------------------------------------------------------------
     @observe(as_type="generation")
     async def call_tool(
-        self, tool_name: str, arguments: Optional[dict[str, Any]] = None
-    ) -> Any:
+        self,
+        tool_name: str,
+        arguments: Optional[dict[str, Any]] = None,
+        meta: Optional[dict[str, Any]] = None,
+    ) -> CallToolResult:
         """Call an MCP tool with Langfuse tracing.
 
         This method wraps the underlying MCP server's call_tool method and
@@ -85,6 +89,7 @@ class TracedMCPServerWrapper(MCPServerStreamableHttp):
         Args:
             tool_name: Name of the tool to call
             arguments: Arguments to pass to the tool
+            meta: Optional metadata for the tool call
 
         Returns:
             The result from the tool execution
@@ -108,7 +113,7 @@ class TracedMCPServerWrapper(MCPServerStreamableHttp):
         )
 
         try:
-            result = await super().call_tool(tool_name, arguments)
+            result = await super().call_tool(tool_name, arguments, meta)
 
             structlogger.debug(
                 "traced_mcp_server.tool_call_complete",

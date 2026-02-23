@@ -19,7 +19,7 @@ structlogger = structlog.get_logger()
 
 
 class ResponseClassificationEvaluator:
-    def __init__(self):  # type: ignore[no-untyped-def]
+    def __init__(self) -> None:
         self._classes: List[ResponseCategory] = [
             ResponseCategory.COPILOT,
             ResponseCategory.OUT_OF_SCOPE_DETECTION,

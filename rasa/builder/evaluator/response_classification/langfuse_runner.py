@@ -148,7 +148,7 @@ class ResponseClassificationLangfuseRunner:
 
         # Run the response classification evaluator on the classification results and
         # get the metrics summary
-        evaluator = ResponseClassificationEvaluator()  # type: ignore[no-untyped-call]
+        evaluator = ResponseClassificationEvaluator()
         metrics_summary = evaluator.evaluate(classification_results)
 
         # Record the metrics in Langfuse.

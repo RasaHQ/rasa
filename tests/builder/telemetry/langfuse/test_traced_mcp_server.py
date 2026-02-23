@@ -51,7 +51,7 @@ class TestTracedMCPServerWrapper:
 
         # Verify parent's call_tool was called
         mock_mcp_server_call_tool.assert_called_once_with(
-            "test_tool", {"arg1": "value1"}
+            "test_tool", {"arg1": "value1"}, None
         )
         assert result == expected_result
 
@@ -123,7 +123,9 @@ class TestTracedMCPServerWrapper:
             result = await wrapper.call_tool(tool_name, arguments)
 
             # Verify parent's call_tool was called
-            mock_mcp_server_call_tool.assert_called_once_with(tool_name, arguments)
+            mock_mcp_server_call_tool.assert_called_once_with(
+                tool_name, arguments, None
+            )
 
             # Verify result is returned
             assert result == expected_result
@@ -363,7 +365,7 @@ class TestTracedMCPServerWrapperContextManager:
             result = await server.call_tool("test_tool", {"arg": "val"})
 
             mock_mcp_server_call_tool.assert_called_once_with(
-                "test_tool", {"arg": "val"}
+                "test_tool", {"arg": "val"}, None
             )
             assert result == {"result": "success"}
 
