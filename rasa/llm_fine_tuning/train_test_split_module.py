@@ -358,13 +358,13 @@ def split_e2e_test_suite(
     # Creating new TestSuite instances for train and validation
     train_suite = TestSuite(
         test_cases=train_test_cases,
-        fixtures=e2e_test_suite.fixtures,
+        fixtures_per_test=e2e_test_suite.fixtures_per_test,
         metadata=e2e_test_suite.metadata,
         stub_custom_actions=e2e_test_suite.stub_custom_actions,
     )
     validation_suite = TestSuite(
         test_cases=validation_test_cases,
-        fixtures=e2e_test_suite.fixtures,
+        fixtures_per_test=e2e_test_suite.fixtures_per_test,
         metadata=e2e_test_suite.metadata,
         stub_custom_actions=e2e_test_suite.stub_custom_actions,
     )

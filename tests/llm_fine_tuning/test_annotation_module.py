@@ -5,7 +5,12 @@ import pytest
 from structlog.testing import capture_logs
 
 from rasa.dialogue_understanding.commands import StartFlowCommand
-from rasa.e2e_test.e2e_test_case import ActualStepOutput, TestCase, TestStep, TestSuite
+from rasa.e2e_test.e2e_test_case import (
+    ActualStepOutput,
+    TestCase,
+    TestStep,
+    TestSuite,
+)
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.llm_fine_tuning.annotation_module import (
     _convert_to_conversation_step,
@@ -76,7 +81,7 @@ def test_annotate_e2e_tests(mock_asyncio_run: Mock):
     mock_runner = MagicMock(spec=E2ETestRunner)
     mock_test_suite = MagicMock(spec=TestSuite)
     mock_test_suite.test_cases = MagicMock(spec=List[TestCase])
-    mock_test_suite.fixtures = []
+    mock_test_suite.fixtures_per_test = []
     mock_test_suite.metadata = None
     mock_storage_context = MagicMock(spec=StorageContext)
 
@@ -89,7 +94,9 @@ def test_annotate_e2e_tests(mock_asyncio_run: Mock):
 
     # Assertions
     mock_runner.run_tests_for_fine_tuning.assert_called_once_with(
-        mock_test_suite.test_cases, mock_test_suite.fixtures, mock_test_suite.metadata
+        mock_test_suite.test_cases,
+        mock_test_suite.fixtures_per_test,
+        mock_test_suite.metadata,
     )
 
     mock_storage_context.write_conversations.assert_called_once_with(

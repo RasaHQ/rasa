@@ -125,7 +125,7 @@ def test_execute_e2e_tests_fail_fast_true(
 
     run_tests_mock.assert_called_once_with(
         test_suite.test_cases,
-        test_suite.fixtures,
+        test_suite.fixtures_per_test,
         cli_args.fail_fast,
         input_metadata=test_suite.metadata,
         coverage=cli_args.coverage_report,
@@ -209,7 +209,7 @@ def test_execute_e2e_tests_fail_fast_false(
 
     run_tests_mock.assert_called_once_with(
         test_suite.test_cases,
-        test_suite.fixtures,
+        test_suite.fixtures_per_test,
         cli_args.fail_fast,
         input_metadata=test_suite.metadata,
         coverage=cli_args.coverage_report,
@@ -291,7 +291,7 @@ def test_execute_e2e_tests_fail_fast_false_no_failure(
 
     run_tests_mock.assert_called_once_with(
         test_suite.test_cases,
-        test_suite.fixtures,
+        test_suite.fixtures_per_test,
         cli_args.fail_fast,
         input_metadata=test_suite.metadata,
         coverage=cli_args.coverage_report,

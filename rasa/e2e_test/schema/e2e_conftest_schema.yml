@@ -1,0 +1,24 @@
+# Schema for conftest files when loading for the fixture chain.
+# Supports only fixtures; optional keys allow root conftests that also
+# contain llm_judge / llm_e2e_test_conversion to pass validation.
+mapping:
+  fixtures:
+    allowempty: True
+    type: "seq"
+    sequence:
+      - type: map
+        mapping:
+          regex;(^[a-zA-Z_]+[a-zA-Z0-9_\-]*$):
+            type: "seq"
+            sequence:
+              - type: map
+                mapping:
+                  regex;(^[a-zA-Z_]+[a-zA-Z0-9_\-]*$):
+                    type: any
+
+  llm_judge:
+    type: map
+    allowempty: true
+  llm_e2e_test_conversion:
+    type: map
+    allowempty: true

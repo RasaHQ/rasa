@@ -34,7 +34,9 @@ from scripts.dialogue_understanding_test.convert_e2e_tests_to_du_tests import (
 
 @pytest.fixture
 def test_suite() -> TestSuite:
-    return TestSuite(test_cases=[], fixtures=[], metadata=[], stub_custom_actions={})
+    return TestSuite(
+        test_cases=[], fixtures_per_test=[], metadata=[], stub_custom_actions={}
+    )
 
 
 @pytest.fixture

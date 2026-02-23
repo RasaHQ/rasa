@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 from structlog.testing import capture_logs
 
-from rasa.e2e_test.e2e_test_case import TestCase
+from rasa.e2e_test.e2e_test_case import Fixture, TestCase, TestCaseFixtures
 from rasa.e2e_test.utils.validation import (
     validate_model_path,
     validate_path_to_test_cases,
@@ -18,7 +18,7 @@ from rasa.exceptions import ModelNotFound, ValidationError
 from rasa.shared.constants import DEFAULT_MODELS_PATH
 
 if typing.TYPE_CHECKING:
-    from rasa.e2e_test.e2e_test_case import Fixture, Metadata
+    from rasa.e2e_test.e2e_test_case import Metadata
 
 
 def test_validate_model_path(tmp_path: Path) -> None:
@@ -84,11 +84,34 @@ def test_validate_test_case() -> None:
     )
 
     with pytest.raises(ValidationError) as exc_info:
-        validate_test_case(test_case, [], {}, {})
+        validate_test_case(test_case, [], [], {})
 
     err = exc_info.value
     assert err.code == expected_code
     assert expected_msg in str(err)
+
+
+def test_validate_test_case_raises_when_fixture_missing() -> None:
+    """Raises when a test case references an undefined fixture."""
+    test_case = TestCase(
+        name="my_test",
+        steps=[],
+        file="/path/test.yml",
+        fixture_names=["premium"],
+    )
+    # fixtures_per_test entry for this test case has no fixtures (empty list)
+    fixtures_per_test = [
+        TestCaseFixtures(
+            test_case_name="my_test",
+            file="/path/test.yml",
+            fixtures=[],
+        )
+    ]
+    with pytest.raises(ValidationError) as exc_info:
+        validate_test_case("", [test_case], fixtures_per_test, {})
+
+    err = exc_info.value
+    assert err.code == "e2e_test.utils.validation.missing_fixtures_or_metadata"
 
 
 @pytest.mark.parametrize(
@@ -97,28 +120,28 @@ def test_validate_test_case() -> None:
         # No fixtures referenced or defined
         (
             None,
-            {},
+            [],
             [],
             True,
         ),
         # No fixtures referenced at all
         (
             None,
-            {"fixture_1": MagicMock(), "fixture_2": MagicMock()},
+            [Fixture("fixture_1", {}), Fixture("fixture_2", {})],
             [],
             True,
         ),
         # All fixtures referenced are defined
         (
             ["fixture_1", "fixture_2"],
-            {"fixture_1": MagicMock(), "fixture_2": MagicMock()},
+            [Fixture("fixture_1", {}), Fixture("fixture_2", {})],
             [],
             True,
         ),
         # Some fixtures referenced are not defined
         (
             ["fixture_1", "fixture_3"],
-            {"fixture_1": MagicMock(), "fixture_2": MagicMock()},
+            [Fixture("fixture_1", {}), Fixture("fixture_2", {})],
             [
                 {
                     "event_info": (
@@ -134,7 +157,7 @@ def test_validate_test_case() -> None:
         # Fixtures referenced with no defined fixtures
         (
             ["fixture_1", "fixture_2"],
-            {},
+            [],
             [
                 {
                     "event_info": (
@@ -159,7 +182,7 @@ def test_validate_test_case() -> None:
 )
 def test_validate_test_case_fixtures(
     fixture_names: Optional[List[str]],
-    fixtures: Dict[str, "Fixture"],
+    fixtures: List[Fixture],
     expected_warnings: List[Dict[str, Any]],
     expected_all_good: bool,
 ):

@@ -19,17 +19,23 @@ from rasa.dialogue_understanding_test.du_test_result import (
     DialogueUnderstandingTestSuiteResult,
     FailedTestStep,
 )
-from rasa.e2e_test.constants import KEY_TEST_CASE, KEY_TEST_CASES
+from rasa.e2e_test.constants import (
+    E2E_CONFTEST_SCHEMA_FILE_PATH,
+    KEY_TEST_CASE,
+    KEY_TEST_CASES,
+)
 from rasa.e2e_test.e2e_test_case import (
     DialogueUnderstandingTestCase,
     Fixture,
     Metadata,
+    TestCaseFixtures,
     TestSuite,
 )
 from rasa.e2e_test.stub_custom_action import StubCustomAction
+from rasa.e2e_test.utils.fixture_utils import extract_test_case_fixtures
 from rasa.e2e_test.utils.io import (
+    _get_resolved_fixtures_for_test_file,
     check_beta_feature_flag_for_custom_actions_stubs,
-    extract_fixtures,
     extract_metadata,
     extract_stub_custom_actions,
     extract_test_case_from_path,
@@ -39,7 +45,7 @@ from rasa.e2e_test.utils.io import (
     validate_test_case,
 )
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.exceptions import DuplicateFixtureException, RasaException
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     KEY_LATENCY,
     KEY_PROMPT_NAME,
@@ -72,6 +78,10 @@ def read_test_suite(
     remove_default_commands: List[str] = [],
 ) -> TestSuite:
     """Read the test cases from the given test case path.
+
+    Fixtures are resolved per test file by loading parent conftest files
+    (conftest.yml / conftest.yaml) from the path's directory upward; the test
+    file's own fixtures override conftest definitions (same as e2e read_test_cases).
 
     Args:
         test_case_path: Path to the test cases.
@@ -133,13 +143,15 @@ def read_test_suite(
     # Load test files and schema
     test_files = rasa.shared.data.get_data_files([test_case_path], is_test_case_file)
     test_schema = read_du_test_schema()
+    conftest_schema = read_schema_file(E2E_CONFTEST_SCHEMA_FILE_PATH)
 
     # Initialize containers
-    input_test_cases = []
-    fixtures: Dict[str, Fixture] = {}
+    input_test_cases: List[DialogueUnderstandingTestCase] = []
+    fixtures_per_test: List[TestCaseFixtures] = []
     metadata: Dict[str, Metadata] = {}
     stub_custom_actions: Dict[str, StubCustomAction] = {}
     fixture_errors: List[str] = []
+    conftest_cache: Dict[str, Dict[str, Fixture]] = {}
 
     # Process each test file
     for test_file in test_files:
@@ -148,7 +160,7 @@ def read_test_suite(
         # Validate YAML content using the provided function
         validate_yaml_content_using_schema(test_file_content, test_schema)
 
-        # Parse test cases, fixtures, metadata, and stub custom actions
+        # Parse test cases
         test_cases = _extract_test_cases(
             test_file_content,
             test_case_name,
@@ -157,29 +169,39 @@ def read_test_suite(
             custom_command_classes,
             remove_default_commands,
         )
-        try:
-            fixtures.update(extract_fixtures(test_file_content, fixtures, test_file))
-        except DuplicateFixtureException as e:
-            fixture_errors.append(str(e))
+
+        # Resolve fixtures for this file (parent conftests + test file; child overrides)
+        resolved_fixtures, fixture_error = _get_resolved_fixtures_for_test_file(
+            test_file, test_file_content, conftest_cache, conftest_schema
+        )
+        if fixture_error:
+            fixture_errors.append(fixture_error)
+            continue
+
+        if resolved_fixtures is not None:
+            fixtures_per_test.extend(
+                extract_test_case_fixtures(test_cases, list(resolved_fixtures.values()))
+            )
+        input_test_cases.extend(test_cases)
         metadata.update(extract_metadata(test_file_content, metadata))
         stub_custom_actions.update(
             extract_stub_custom_actions(test_file_content, test_file)
         )
-        input_test_cases.extend(test_cases)
 
-    # Report all fixture errors at once
+    # Report all fixture errors at once (duplicates or validation e.g. mocked_datetime)
     if fixture_errors:
         raise RasaException(
-            "Duplicate fixtures found in file(s):\n  - " + "\n  - ".join(fixture_errors)
+            "Duplicate or invalid fixtures in file(s):\n  - "
+            + "\n  - ".join(fixture_errors)
         )
 
-    validate_test_case(test_case_name, input_test_cases, fixtures, metadata)
+    validate_test_case(test_case_name, input_test_cases, fixtures_per_test, metadata)
     if stub_custom_actions:
         check_beta_feature_flag_for_custom_actions_stubs()
 
     return TestSuite(
         input_test_cases,
-        list(fixtures.values()),
+        fixtures_per_test,
         list(metadata.values()),
         stub_custom_actions,
     )

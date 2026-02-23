@@ -29,10 +29,10 @@ from rasa.dialogue_understanding_test.test_case_simulation.test_case_tracker_sim
 from rasa.dialogue_understanding_test.utils import filter_metadata
 from rasa.e2e_test.e2e_test_case import (
     KEY_STUB_CUSTOM_ACTIONS,
-    Fixture,
     Metadata,
 )
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
+from rasa.e2e_test.utils.fixture_utils import get_fixtures_for_test_case
 from rasa.shared.agents.agent_setup import AgentsConnectionCleanup
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -42,6 +42,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from rasa.core.agent import Agent
+    from rasa.e2e_test.e2e_test_case import TestCaseFixtures
 
 structlogger = structlog.get_logger()
 
@@ -115,14 +116,14 @@ class DialogueUnderstandingTestRunner:
     async def run_test_cases(
         self,
         test_cases: List[DialogueUnderstandingTestCase],
-        fixtures: List[Fixture],
+        fixtures_per_test: List["TestCaseFixtures"],
         metadata: List[Metadata],
     ) -> List[DialogueUnderstandingTestResult]:
         """Run the dialogue understanding tests.
 
         Args:
             test_cases: List of test cases.
-            fixtures: List of fixtures.
+            fixtures_per_test: Per-file resolved fixtures (conftest + local).
             metadata: List of metadata.
 
         Returns:
@@ -135,6 +136,9 @@ class DialogueUnderstandingTestRunner:
 
         for i in tqdm(range(len(test_cases))):
             test_case = test_cases[i]
+
+            # Find the fixtures for the test case
+            fixtures = get_fixtures_for_test_case(test_case, fixtures_per_test)
 
             # set up the tracker by simulating the conversation
             tracker_simulator = TestCaseTrackerSimulator(self.agent, test_case)

@@ -102,14 +102,15 @@ def test_read_test_suite(dialogue_understanding_tests_input_folder: Path) -> Non
     assert step_7.actor == "bot"
     assert step_7.template == "utter_ask_transfer_money_recipient"
 
-    # Assert fixtures
-    assert len(test_suite.fixtures) == 2
-    fixture_premium = test_suite.fixtures[0]
-    assert fixture_premium.name == "premium"
-    assert fixture_premium.slots_set == {"membership_type": "premium"}
-
-    fixture_standard = test_suite.fixtures[1]
-    assert fixture_standard.name == "standard"
+    assert len(test_suite.fixtures_per_test) == 1
+    tc_fixtures = test_suite.fixtures_per_test[0]
+    assert tc_fixtures.test_case_name == "cancellation respects scope"
+    assert Path(tc_fixtures.file).name == "valid_test_case.yml"
+    # fixtures_per_test only includes fixtures used by this test case (standard)
+    # not all file fixtures
+    fixtures_by_name = {f.name: f for f in tc_fixtures.fixtures}
+    assert len(fixtures_by_name) == 1
+    fixture_standard = fixtures_by_name["standard"]
     assert fixture_standard.slots_set == {"membership_type": "standard"}
 
     # Assert metadata

@@ -1,5 +1,6 @@
-SCHEMA_FILE_PATH = "e2e_test/e2e_test_schema.yml"
-E2E_CONFIG_SCHEMA_FILE_PATH = "e2e_test/e2e_config_schema.yml"
+SCHEMA_FILE_PATH = "e2e_test/schema/e2e_test_schema.yml"
+E2E_CONFIG_SCHEMA_FILE_PATH = "e2e_test/schema/e2e_config_schema.yml"
+E2E_CONFTEST_SCHEMA_FILE_PATH = "e2e_test/schema/e2e_conftest_schema.yml"
 TEST_FILE_NAME = "test_file_name"
 TEST_CASE_NAME = "test_case_name"
 STUB_CUSTOM_ACTION_NAME_SEPARATOR = "::"
@@ -26,6 +27,9 @@ KEY_MODEL = "model"
 KEY_LLM_JUDGE = "llm_judge"
 KEY_LLM_E2E_TEST_CONVERSION = "llm_e2e_test_conversion"
 
+# Conftest: shared fixture files (parent dirs loaded when running from a path)
+CONFTEST_FILENAMES = ("conftest.yml", "conftest.yaml")
+
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
 DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
 DEFAULT_COVERAGE_OUTPUT_PATH = "e2e_coverage_results"
@@ -45,3 +49,4 @@ DEFAULT_E2E_TESTING_MODEL = "gpt-4.1-mini-2025-04-14"
 KEY_SCORE = "score"
 KEY_JUSTIFICATION = "justification"
 KEY_EXTRA_PARAMETERS = "extra_parameters"
+KEY_FILE_NAME = "file_name"

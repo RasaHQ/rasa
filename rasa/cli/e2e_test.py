@@ -32,9 +32,7 @@ from rasa.e2e_test.constants import (
     STATUS_FAILED,
     STATUS_PASSED,
 )
-from rasa.e2e_test.e2e_test_case import (
-    KEY_STUB_CUSTOM_ACTIONS,
-)
+from rasa.e2e_test.e2e_test_case import KEY_STUB_CUSTOM_ACTIONS
 from rasa.e2e_test.e2e_test_coverage_report import (
     create_coverage_report,
     extract_tested_commands,
@@ -231,7 +229,7 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         async with AgentsConnectionCleanup():
             return await test_runner.run_tests(
                 test_suite.test_cases,
-                test_suite.fixtures,
+                test_suite.fixtures_per_test,
                 args.fail_fast,
                 input_metadata=test_suite.metadata,
                 coverage=args.coverage_report,
@@ -263,7 +261,7 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         )
         write_failed_tests_to_file(
             test_suite.test_cases,
-            test_suite.fixtures,
+            test_suite.fixtures_per_test,
             test_suite.metadata,
             failed,
             failed_tests_file,

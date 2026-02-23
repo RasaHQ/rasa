@@ -18,6 +18,8 @@ import rasa.shared.data
 import rasa.shared.utils.cli
 import rasa.utils.io
 from rasa.e2e_test.constants import (
+    CONFTEST_FILENAMES,
+    E2E_CONFTEST_SCHEMA_FILE_PATH,
     KEY_FIXTURES,
     KEY_METADATA,
     KEY_STUB_CUSTOM_ACTIONS,
@@ -27,20 +29,33 @@ from rasa.e2e_test.constants import (
     STATUS_PASSED,
     STUB_CUSTOM_ACTION_NAME_SEPARATOR,
 )
-from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestSuite
+from rasa.e2e_test.e2e_test_case import (
+    Fixture,
+    Metadata,
+    TestCase,
+    TestCaseFixtures,
+    TestSuite,
+)
 from rasa.e2e_test.stub_custom_action import (
     StubCustomAction,
     get_stub_custom_action_key,
+)
+from rasa.e2e_test.utils.fixture_utils import (
+    extract_test_case_fixtures,
+    validate_and_convert_fixtures,
 )
 from rasa.e2e_test.utils.validation import (
     read_e2e_test_schema,
     validate_path_to_test_cases,
     validate_test_case,
 )
+from rasa.exceptions import ValidationError
 from rasa.shared.exceptions import DuplicateFixtureException, RasaException
 from rasa.shared.utils.yaml import (
     is_key_in_yaml,
     parse_raw_yaml,
+    read_schema_file,
+    validate_yaml_content_using_schema,
     validate_yaml_data_using_schema_with_assertions,
 )
 from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
@@ -312,6 +327,33 @@ def is_test_case_file(file_path: Union[str, Path]) -> bool:
     )
 
 
+def get_conftest_files_for_directory(dir_path: str) -> List[str]:
+    """List conftest files from directory up to root (root first, then leaf).
+
+    Args:
+        dir_path: Absolute or relative directory path.
+
+    Returns:
+        Ordered list of conftest file paths: root conftest first, then child, etc.
+    """
+    dir_path = os.path.abspath(os.path.normpath(dir_path))
+    if not os.path.isdir(dir_path):
+        dir_path = os.path.dirname(dir_path)
+    chain: List[str] = []
+    current: Optional[str] = dir_path
+    while current:
+        for name in CONFTEST_FILENAMES:
+            p = os.path.join(current, name)
+            if os.path.isfile(p):
+                chain.append(p)
+                break
+        current = (
+            os.path.dirname(current) if current != os.path.dirname(current) else None
+        )
+    chain.reverse()
+    return chain
+
+
 def extract_test_cases(
     test_file_content: dict,
     test_case_name: str,
@@ -340,53 +382,44 @@ def extract_test_cases(
     ]
 
 
-def extract_fixtures(
-    test_file_content: dict,
-    existing_fixtures: Dict[str, Fixture],
+def extract_fixtures_from_content(
+    content: dict,
     source_file: Optional[str] = None,
 ) -> Dict[str, Fixture]:
-    """Extract fixtures from the test file content.
+    """Extract fixtures from YAML content. Only within-file duplicates raise.
 
-    Duplicate fixture names are not allowed. This function collects all
-    duplicates (both within the file and across files) before raising,
-    so users can see all issues at once.
+    Used for conftest and per-file chain building where later files override
+    earlier; cross-file duplicates are allowed.
 
     Args:
-        test_file_content: Content of the test file.
-        existing_fixtures: Existing fixtures from previously processed files.
-        source_file: Path to the source file (used for error messages).
+        content: Parsed YAML dict (must have KEY_FIXTURES).
+        source_file: Path for error messages.
 
     Returns:
-        Dict of fixtures.
+        Dict of fixture name -> Fixture (no duplicates within this content).
 
     Raises:
-        DuplicateFixtureException: If any duplicate fixture names are found.
+        DuplicateFixtureException: If the same fixture name appears twice.
+        ValidationError: If any fixture has invalid values (e.g. mocked_datetime).
     """
-    fixtures_content = test_file_content.get(KEY_FIXTURES) or []
-    _fixtures = {}
-    seen_in_this_file: set = set()
+    fixtures_content = content.get(KEY_FIXTURES) or []
+    seen: set = set()
     duplicates: List[str] = []
+    fixture_objs: List[Fixture] = []
 
     for fixture in fixtures_content:
         fixture_obj = Fixture.from_dict(fixture_dict=fixture)
-
-        # Check for duplicates within the same file
-        if fixture_obj.name in seen_in_this_file:
+        if fixture_obj.name in seen:
             duplicates.append(fixture_obj.name)
             continue
-        seen_in_this_file.add(fixture_obj.name)
+        seen.add(fixture_obj.name)
+        fixture_objs.append(fixture_obj)
 
-        # Check for duplicates across files
-        if fixture_obj.name in existing_fixtures:
-            duplicates.append(fixture_obj.name)
-            continue
-
-        _fixtures[fixture_obj.name] = fixture_obj
-
-    # Report all duplicates found in this file
     if duplicates:
         raise DuplicateFixtureException(duplicates, source_file or "")
 
+    converted_fixtures = validate_and_convert_fixtures(fixture_objs)
+    _fixtures = {f.name: f for f in converted_fixtures}
     return _fixtures
 
 
@@ -439,8 +472,90 @@ def extract_stub_custom_actions(
     return _stub_custom_actions
 
 
+def _load_conftest(
+    conftest_path: str,
+    conftest_schema: Union[Dict[str, Any], List[Any]],
+) -> Dict[str, Fixture]:
+    """Load and parse a single conftest file (fixtures only).
+
+    Uses conftest schema (fixtures only) so files that also contain
+    llm_judge or other config keys pass validation.
+    """
+    content = parse_raw_yaml(Path(conftest_path).read_text(encoding="utf-8"))
+    validate_yaml_content_using_schema(content, conftest_schema)
+    return extract_fixtures_from_content(content, conftest_path)
+
+
+def _merge_fixture_chain(chain: List[Dict[str, Fixture]]) -> Dict[str, Fixture]:
+    """Merge fixture dicts in order; later overrides earlier. O(n) single pass."""
+    merged: Dict[str, Fixture] = {}
+    for d in chain:
+        merged.update(d)
+    return merged
+
+
+def _load_and_validate_test_file(
+    test_file: str,
+    e2e_test_schema: Union[Dict[str, Any], List[Any]],
+) -> Dict[str, Any]:
+    """Parse and schema-validate a single test file. Returns parsed YAML content."""
+    test_file_content = parse_raw_yaml(Path(test_file).read_text(encoding="utf-8"))
+    validate_yaml_data_using_schema_with_assertions(
+        yaml_data=test_file_content, schema_content=e2e_test_schema
+    )
+    return test_file_content
+
+
+def _get_resolved_fixtures_for_test_file(
+    test_file: str,
+    test_file_content: Dict[str, Any],
+    conftest_cache: Dict[str, Dict[str, Fixture]],
+    conftest_schema: Union[Dict[str, Any], List[Any]],
+) -> Tuple[Optional[Dict[str, Fixture]], Optional[str]]:
+    """Resolve fixtures for a test file: parent conftests first, then child overrides.
+
+    Fetches all parent conftest files (root first), then adds the test file's own
+    fixtures. Later definitions override earlier (child overrides parent).
+
+    Returns:
+        (merged_fixtures_dict, None) on success, or (None, error_message) on
+        DuplicateFixtureException or ValidationError.
+    """
+    chain: List[Dict[str, Fixture]] = []
+    for conftest_path in get_conftest_files_for_directory(os.path.dirname(test_file)):
+        if conftest_path not in conftest_cache:
+            try:
+                conftest_cache[conftest_path] = _load_conftest(
+                    conftest_path, conftest_schema
+                )
+            except (DuplicateFixtureException, ValidationError) as e:
+                return (None, str(e))
+        if conftest_path in conftest_cache:
+            chain.append(conftest_cache[conftest_path])
+
+    try:
+        chain.append(extract_fixtures_from_content(test_file_content, test_file))
+    except (DuplicateFixtureException, ValidationError) as e:
+        return (None, str(e))
+
+    merged = _merge_fixture_chain(chain)
+    return (merged, None)
+
+
 def read_test_cases(path: str) -> TestSuite:
     """Read test cases from the given path.
+
+    For every test file:
+    1. Load and validate the test file and get test file content.
+    2. Extract test cases from the test file.
+    3. Extract fixtures for the test file by fetching all parent conftest files
+       and overriding with child (test file) fixtures.
+    4. Create an entry in fixtures_per_test for each test case with test_name,
+       file_name, and associated fixtures.
+
+    Conftest files (conftest.yml / conftest.yaml) are loaded from the path's
+    directory and parent directories; when the same fixture name is defined in
+    a conftest and in a test file, the test file's definition wins for that file.
 
     Args:
         path: Path to the file or folder containing test cases.
@@ -448,57 +563,64 @@ def read_test_cases(path: str) -> TestSuite:
     Returns:
         TestSuite.
     """
-    # Extract test case path and name
     path, test_case_name = extract_test_case_from_path(path)
     validate_path_to_test_cases(path)
 
-    # Load test files and schema
     test_files = rasa.shared.data.get_data_files([path], is_test_case_file)
+    # read the e2e test schema
     e2e_test_schema = read_e2e_test_schema()
+    # read the conftest schema
+    conftest_schema = read_schema_file(E2E_CONFTEST_SCHEMA_FILE_PATH)
 
-    # Initialize containers
-    input_test_cases = []
-    fixtures: Dict[str, Fixture] = {}
+    input_test_cases: List[TestCase] = []
     metadata: Dict[str, Metadata] = {}
     stub_custom_actions: Dict[str, StubCustomAction] = {}
+    fixtures_per_test: List[TestCaseFixtures] = []
     fixture_errors: List[str] = []
+    conftest_cache: Dict[str, Dict[str, Fixture]] = {}
 
-    # Process each test file
     for test_file in test_files:
-        test_file_content = parse_raw_yaml(Path(test_file).read_text(encoding="utf-8"))
+        # 1. Load and validate the test file and get test file content
+        test_file_content = _load_and_validate_test_file(test_file, e2e_test_schema)
 
-        # Validate YAML content using the provided function
-        validate_yaml_data_using_schema_with_assertions(
-            yaml_data=test_file_content, schema_content=e2e_test_schema
-        )
-
-        # Parse test cases, fixtures, metadata, and stub custom actions
+        # 2. Extract test cases from the test file
         test_cases = extract_test_cases(test_file_content, test_case_name, test_file)
-        try:
-            fixtures.update(extract_fixtures(test_file_content, fixtures, test_file))
-        except DuplicateFixtureException as e:
-            fixture_errors.append(str(e))
+
+        # 3. Extract resolved fixtures for the test file.
+        resolved_fixtures, fixture_error = _get_resolved_fixtures_for_test_file(
+            test_file, test_file_content, conftest_cache, conftest_schema
+        )
+        if fixture_error:
+            fixture_errors.append(fixture_error)
+            continue
+
+        # 4. Create an entry in fixtures_per_test for each test case
+        # (only fixtures used by that test)
+        if resolved_fixtures is not None:
+            fixtures_per_test.extend(
+                extract_test_case_fixtures(test_cases, list(resolved_fixtures.values()))
+            )
+        input_test_cases.extend(test_cases)
         metadata.update(extract_metadata(test_file_content, metadata))
         stub_custom_actions.update(
             extract_stub_custom_actions(test_file_content, test_file)
         )
-        input_test_cases.extend(test_cases)
 
-    # Report all fixture errors at once
     if fixture_errors:
         raise RasaException(
-            "Duplicate fixtures found in file(s):\n  - " + "\n  - ".join(fixture_errors)
+            "Errors while loading fixtures from file(s):\n  - "
+            + "\n  - ".join(fixture_errors)
         )
 
-    validate_test_case(test_case_name, input_test_cases, fixtures, metadata)
+    validate_test_case(test_case_name, input_test_cases, fixtures_per_test, metadata)
     if stub_custom_actions:
         check_beta_feature_flag_for_custom_actions_stubs()
 
     return TestSuite(
-        input_test_cases,
-        list(fixtures.values()),
-        list(metadata.values()),
-        stub_custom_actions,
+        test_cases=input_test_cases,
+        fixtures_per_test=fixtures_per_test,
+        metadata=list(metadata.values()),
+        stub_custom_actions=stub_custom_actions,
     )
 
 
@@ -564,7 +686,7 @@ def write_test_results_to_file(results: List["TestResult"], output_file: str) ->
 
 def write_failed_tests_to_file(
     test_cases: List["TestCase"],
-    fixtures: List["Fixture"],
+    fixtures_per_test: List[TestCaseFixtures],
     metadata: List["Metadata"],
     results: List["TestResult"],
     output_file: str,
@@ -573,7 +695,7 @@ def write_failed_tests_to_file(
 
     Args:
         test_cases: List of test cases.
-        fixtures: List of fixtures.
+        fixtures_per_test: Per-file resolved fixtures.
         metadata: List of metadata.
         results: List of failed test results.
         output_file: Path to the output file.
@@ -582,15 +704,28 @@ def write_failed_tests_to_file(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.touch()
 
-    fixture_list = [fixture.as_dict() for fixture in fixtures]
+    # 1. Fetch the failed test cases
+    failed_test_cases = [r.test_case for r in results]
+
+    # 2. Get the fixtures from fixtures_per_test for the failed test cases
+    failed_keys = {(tc.name, tc.file or "") for tc in failed_test_cases}
+    fixtures_for_failed: List[Fixture] = []
+    for tc_fixtures in fixtures_per_test:
+        if (tc_fixtures.test_case_name, tc_fixtures.file) in failed_keys:
+            fixtures_for_failed.extend(tc_fixtures.fixtures)
+
+    # 3. Merge the fixtures: first come first serve, output is a list of fixtures
+    fixture_list: List[Dict[str, Any]] = []
+    seen_names: set = set()
+    for fixture in fixtures_for_failed:
+        if fixture.name not in seen_names:
+            seen_names.add(fixture.name)
+            fixture_list.append(fixture.as_dict())
+
     metadata_list = [m_data.as_dict() for m_data in metadata]
 
-    data = {
-        f"{KEY_TEST_CASES}": [
-            test_case.as_dict()
-            for test_case in test_cases
-            if test_case.name in [result.test_case.name for result in results]
-        ],
+    data: Dict[str, Any] = {
+        KEY_TEST_CASES: [tc.as_dict() for tc in failed_test_cases],
     }
     if fixture_list:
         data[KEY_FIXTURES] = fixture_list
@@ -690,14 +825,14 @@ def save_test_cases_to_yaml(
     test_cases = [result.test_case for result in test_results]
     new_test_suite = TestSuite(
         test_cases=test_cases,
-        fixtures=test_suite.fixtures,
+        fixtures_per_test=test_suite.fixtures_per_test,
         metadata=test_suite.metadata,
         stub_custom_actions=test_suite.stub_custom_actions,
     )
 
     output_filename = f"{status}.yml"
     output_file_path = os.path.join(output_dir, output_filename)
-    rasa.utils.io.write_yaml(new_test_suite.as_dict(), target=output_file_path)
+    rasa.utils.io.write_yaml(new_test_suite.as_writable(), target=output_file_path)
 
     structlogger.info(
         "rasa.e2e_test.save_e2e_test_cases",

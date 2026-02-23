@@ -130,7 +130,7 @@ class FileStorageStrategy(StorageStrategy):
         """
         file_path = self._get_file_path(module_storage_location, file_name)
         self._create_output_dir(file_path)
-        write_yaml(e2e_test_suite.as_dict(), str(file_path))
+        write_yaml(e2e_test_suite.as_writable(), str(file_path))
 
 
 class StorageContext:

@@ -14,7 +14,7 @@ from collections import defaultdict
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type, cast
+from typing import Any, Callable, Dict, List, Optional, Set, Text, Tuple, Type, cast
 
 import importlib_resources
 import requests
@@ -63,7 +63,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.channels.channel import InputChannel
     from rasa.core.config.available_endpoints import AvailableEndpoints
     from rasa.core.tracker_stores.tracker_store import TrackerStore
-    from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase
+    from rasa.e2e_test.e2e_test_case import Metadata, TestCase, TestCaseFixtures
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.shared.nlu.training_data.training_data import TrainingData
 
@@ -1802,14 +1802,19 @@ def extract_assertion_type_counts(
 @ensure_telemetry_enabled
 def track_e2e_test_run(
     input_test_cases: List["TestCase"],
-    input_fixtures: List["Fixture"],
+    fixtures_per_test: List["TestCaseFixtures"],
     input_metadata: List["Metadata"],
 ) -> None:
     """Track an end-to-end test run."""
+    input_fixture_names: Set[Text] = set()
+    for fixture_per_test in fixtures_per_test:
+        for fixture in fixture_per_test.fixtures:
+            input_fixture_names.add(fixture.name)
+
     properties = {
         "number_of_test_cases": len(input_test_cases),
-        "number_of_fixtures": len(input_fixtures),
-        "uses_fixtures": len(input_fixtures) > 0,
+        "number_of_fixtures": len(input_fixture_names),
+        "uses_fixtures": len(input_fixture_names) > 0,
         "uses_metadata": len(input_metadata) > 0,
         "number_of_metadata": len(input_metadata),
     }

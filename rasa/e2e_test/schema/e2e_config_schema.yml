@@ -1,4 +1,20 @@
+# Schema for conftest.yml: allows fixture-chain keys and LLM Judge/config keys
+# so a root conftest used by both fixtures and LLM Judge passes validation.
 mapping:
+  fixtures:
+    allowempty: True
+    type: "seq"
+    sequence:
+      - type: map
+        mapping:
+          regex;(^[a-zA-Z_]+[a-zA-Z0-9_\-]*$):
+            type: "seq"
+            sequence:
+              - type: map
+                mapping:
+                  regex;(^[a-zA-Z_]+[a-zA-Z0-9_\-]*$):
+                    type: any
+
   llm_judge:
     type: map
     mapping:
@@ -41,4 +57,3 @@ mapping:
         type: str
       "=":
         type: any
-

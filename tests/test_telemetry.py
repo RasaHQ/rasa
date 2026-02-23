@@ -32,7 +32,13 @@ from rasa.dialogue_understanding.generator.constants import (
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     DEFAULT_EMBEDDINGS_CONFIG,
 )
-from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestSuite
+from rasa.e2e_test.e2e_test_case import (
+    Fixture,
+    Metadata,
+    TestCase,
+    TestCaseFixtures,
+    TestSuite,
+)
 from rasa.privacy.privacy_config import PrivacyConfig
 from rasa.shared.constants import (
     CONFIG_LANGUAGE_KEY,
@@ -138,6 +144,11 @@ def get_test_cases() -> List[TestCase]:
         TestCase(name="case 2", steps=[]),
         TestCase(name="case 3", steps=[]),
     ]
+
+
+def _fixtures_per_test_from_list(fixtures: List[Fixture]) -> List[TestCaseFixtures]:
+    """Build fixtures_per_test from a list of fixtures (for tests)."""
+    return [TestCaseFixtures(test_case_name="", file="", fixtures=fixtures)]
 
 
 def get_test_fixtures() -> List[Fixture]:
@@ -733,7 +744,12 @@ def test_get_telemetry_id_invalid(
     """,
     [
         (
-            TestSuite(get_test_cases(), get_test_fixtures(), get_test_metadata(), {}),
+            TestSuite(
+                get_test_cases(),
+                _fixtures_per_test_from_list(get_test_fixtures()),
+                get_test_metadata(),
+                {},
+            ),
             3,
             2,
             True,
@@ -741,7 +757,12 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite([], get_test_fixtures(), get_test_metadata(), {}),
+            TestSuite(
+                [],
+                _fixtures_per_test_from_list(get_test_fixtures()),
+                get_test_metadata(),
+                {},
+            ),
             0,
             2,
             True,
@@ -757,7 +778,12 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite(get_test_cases(), get_test_fixtures(), [], {}),
+            TestSuite(
+                get_test_cases(),
+                _fixtures_per_test_from_list(get_test_fixtures()),
+                [],
+                {},
+            ),
             3,
             2,
             True,
@@ -773,7 +799,12 @@ def test_get_telemetry_id_invalid(
             0,
         ),
         (
-            TestSuite([], get_test_fixtures(), [], {}),
+            TestSuite(
+                [],
+                _fixtures_per_test_from_list(get_test_fixtures()),
+                [],
+                {},
+            ),
             0,
             2,
             True,
@@ -812,7 +843,9 @@ def test_track_e2e_test_run(
     monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
 
     telemetry.track_e2e_test_run(
-        test_suite.test_cases, test_suite.fixtures, test_suite.metadata
+        test_suite.test_cases,
+        test_suite.fixtures_per_test,
+        test_suite.metadata,
     )
 
     mock_track.assert_called_once_with(

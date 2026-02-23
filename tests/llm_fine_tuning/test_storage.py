@@ -257,5 +257,22 @@ def test_write_e2e_test_suite_to_yaml_file(tmpdir: str, file_name: str):
     # Read the test suite from the newly created file.
     loaded_data = read_test_cases(expected_file_path)
 
-    # Assert that the loaded data is the same as the original test suite.
-    assert loaded_data.as_dict() == test_suite.as_dict()
+    # Expected matches original except file_name becomes the path we wrote to.
+    def _norm_paths(obj: object, old: str, new: str) -> object:
+        if isinstance(obj, dict):
+            return {
+                k: (new if k == "file_name" and v == old else _norm_paths(v, old, new))
+                for k, v in obj.items()
+            }
+        if isinstance(obj, list):
+            return [_norm_paths(x, old, new) for x in obj]
+        return obj
+
+    source = (
+        test_suite.test_cases[0].file
+        if test_suite.test_cases
+        else test_suite.fixtures_per_test[0].file
+    )
+    assert loaded_data.as_dict() == _norm_paths(
+        test_suite.as_dict(), source, expected_file_path
+    )

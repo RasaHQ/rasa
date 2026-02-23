@@ -13,7 +13,12 @@ from pytest import CaptureFixture, MonkeyPatch
 from rasa.core.agent import Agent, load_agent
 from rasa.core.config.configuration import Configuration
 from rasa.core.persistor import AWSPersistor, RemoteStorageType
-from rasa.e2e_test.e2e_test_case import Fixture, TestCase, TestStep
+from rasa.e2e_test.e2e_test_case import (
+    Fixture,
+    TestCase,
+    TestCaseFixtures,
+    TestStep,
+)
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from tests.conftest import TrainedAsync
 
@@ -207,6 +212,8 @@ async def test_e2e_test_runner_with_customized_action_session_start(
     fixture_names: List[str],
     trained_custom_action_session_start_calm_bot: str,
 ) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-integration-test")
+
     mock_flow_search_create_embedder.return_value = Mock()
     mock_load_local.return_value = Mock()
 
@@ -238,20 +245,31 @@ async def test_e2e_test_runner_with_customized_action_session_start(
     )
 
     test_runner = E2ETestRunner()
+    test_case_name = "test_e2e_test_runner_with_customized_action_session_start"
+    test_file_name = (
+        "data/test_e2e_test_runner_with_customised_action_session_start/e2e_test.yml"
+    )
+    fixtures_per_test = [
+        TestCaseFixtures(
+            test_case_name=test_case_name,
+            file=test_file_name,
+            fixtures=[
+                Fixture.from_dict({"test_fixture": [{"add_contact_handle": "test"}]})
+            ],
+        )
+    ]
     result = await test_runner.run_tests(
-        input_test_cases=[
+        [
             TestCase(
                 steps=[
                     TestStep.from_dict({"user": "Hi!"}),
                 ],
-                name="test_e2e_test_runner_with_customized_action_session_start",
+                name=test_case_name,
                 file="data/test_e2e_test_runner_with_customised_action_session_start/e2e_test.yml",
                 fixture_names=fixture_names,
             )
         ],
-        input_fixtures=[
-            Fixture.from_dict({"test_fixture": [{"add_contact_handle": "test"}]})
-        ],
+        fixtures_per_test,
         input_metadata=[],
     )
 

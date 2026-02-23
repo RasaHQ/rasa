@@ -235,10 +235,7 @@ class TestCaseTrackerSimulator:
         )
 
         if fixtures and self.test_case.fixture_names:
-            test_fixtures = self._filter_fixtures_for_test_case(
-                self.test_case.fixture_names, fixtures
-            )
-            await self._set_up_fixtures(test_fixtures, tracker)
+            await self._set_up_fixtures(fixtures, tracker)
 
         # store the tracker with the unique sender id
         await self.agent.tracker_store.save(tracker)
@@ -255,17 +252,6 @@ class TestCaseTrackerSimulator:
         for fixture in fixtures:
             for slot_name, slot_value in fixture.slots_set.items():
                 tracker.update(SlotSet(slot_name, slot_value))
-
-    @staticmethod
-    def _filter_fixtures_for_test_case(
-        fixture_names: Optional[List[str]], fixtures: List[Fixture]
-    ) -> List[Fixture]:
-        """Filters fixtures applicable to the test case."""
-        return [
-            fixture
-            for fixture in fixtures
-            if fixture_names and fixture.name in fixture_names
-        ]
 
     async def _send_user_message_with_commands(
         self,

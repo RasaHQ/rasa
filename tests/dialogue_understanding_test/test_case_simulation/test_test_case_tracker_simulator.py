@@ -206,51 +206,6 @@ def test_get_latest_bot_uttered_events():
     assert bot_uttered_events[0].text == "Sure, what do you need help with?"
 
 
-@pytest.mark.parametrize(
-    "fixture_names, fixtures, expected_length, expected_names",
-    [
-        (
-            ["fixture1"],
-            [
-                Fixture(name="fixture1", slots_set={"slot1": "value1"}),
-                Fixture(name="fixture2", slots_set={"slot2": "value2"}),
-            ],
-            1,
-            ["fixture1"],
-        ),
-        (
-            ["fixture3"],
-            [
-                Fixture(name="fixture1", slots_set={"slot1": "value1"}),
-                Fixture(name="fixture2", slots_set={"slot2": "value2"}),
-            ],
-            0,
-            [],
-        ),
-        (
-            None,
-            [
-                Fixture(name="fixture1", slots_set={"slot1": "value1"}),
-                Fixture(name="fixture2", slots_set={"slot2": "value2"}),
-            ],
-            0,
-            [],
-        ),
-    ],
-)
-def test_filter_fixtures_for_test_case(
-    fixture_names: List[str],
-    fixtures: List[Fixture],
-    expected_length: int,
-    expected_names: List[str],
-):
-    filtered_fixtures = TestCaseTrackerSimulator._filter_fixtures_for_test_case(
-        fixture_names, fixtures
-    )
-    assert len(filtered_fixtures) == expected_length
-    assert [fixture.name for fixture in filtered_fixtures] == expected_names
-
-
 @pytest.mark.asyncio
 async def test_set_up_fixtures(sample_test_case: DialogueUnderstandingTestCase):
     # Create mock objects

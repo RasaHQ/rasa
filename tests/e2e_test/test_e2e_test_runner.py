@@ -28,10 +28,15 @@ from rasa.e2e_test.e2e_test_case import (
     Fixture,
     Metadata,
     TestCase,
+    TestCaseFixtures,
     TestStep,
 )
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
+from rasa.e2e_test.utils.fixture_utils import (
+    _get_validated_mocked_datetime,
+    get_fixtures_for_test_case,
+)
 from rasa.exceptions import ValidationError
 from rasa.llm_fine_tuning.conversations import Conversation
 from rasa.shared.core.constants import (
@@ -1009,9 +1014,7 @@ async def test_set_up_fixtures(
     test_case = next(
         iter(filter(lambda x: x.name == test_case_name, test_suite.test_cases))
     )
-    test_fixtures = mock_e2e_test_runner.filter_fixtures_for_test_case(
-        test_case, test_suite.fixtures
-    )
+    test_fixtures = get_fixtures_for_test_case(test_case, test_suite.fixtures_per_test)
     sender_id = f"{test_case.name}_{datetime.datetime.now()}"
 
     await mock_e2e_test_runner.set_up_fixtures(test_fixtures, sender_id=sender_id)
@@ -1190,6 +1193,9 @@ async def test_run_tests_with_fail_fast(
         ),
     ]
     test_fixtures = [Fixture(name="premium", slots_set={"premium": True})]
+    fixtures_per_test = [
+        TestCaseFixtures(test_case_name="test_hi", file="", fixtures=test_fixtures),
+    ]
 
     empty_domain = Domain.empty()
     mock_e2e_test_runner.agent.domain = empty_domain
@@ -1198,7 +1204,7 @@ async def test_run_tests_with_fail_fast(
     monkeypatch.setattr(
         mock_e2e_test_runner,
         "run_prediction_loop",
-        AsyncMock(),
+        AsyncMock(return_value={}),
     )
 
     generate_test_result_mock = Mock()
@@ -1213,7 +1219,7 @@ async def test_run_tests_with_fail_fast(
 
     results = await mock_e2e_test_runner.run_tests(
         test_cases,
-        test_fixtures,
+        fixtures_per_test,
         fail_fast=fail_fast,
         input_metadata=test_suite_metadata,
     )
@@ -1260,7 +1266,7 @@ async def test_run_tests_for_fine_tuning(monkeypatch: MonkeyPatch) -> None:
     )
     monkeypatch.setattr(
         "rasa.e2e_test.e2e_test_runner.E2ETestRunner.run_prediction_loop",
-        AsyncMock(),
+        AsyncMock(return_value={}),
     )
 
     mock_test_results = MagicMock(
@@ -2780,7 +2786,7 @@ async def test_error_logging_with_partial_custom_action_stubbing(
         runner = E2ETestRunner()
         await runner.run_tests(
             test_cases,
-            input_fixtures=[],
+            [],
             input_metadata=[],
         )
         assert expected_error in logs
@@ -3011,10 +3017,10 @@ async def test_fail_fast_assertions_failure_occurs(
 
     with capture_logs() as caplog:
         results = await assertions_e2e_test_runner.run_tests(
-            input_test_cases=[test_case],
-            input_fixtures=[],
-            input_metadata=[],
+            [test_case],
+            [],
             fail_fast=True,
+            input_metadata=[],
         )
 
     # Assert that 2/3 assertions have been executed
@@ -3088,10 +3094,10 @@ async def test_fail_fast_assertions_no_failure(
     # Run the test
     with capture_logs() as caplog:
         results = await assertions_e2e_test_runner.run_tests(
-            input_test_cases=[test_case],
-            input_fixtures=[],
-            input_metadata=[],
+            [test_case],
+            [],
             fail_fast=True,
+            input_metadata=[],
         )
 
     # Assert that all assertions have been executed
@@ -3119,7 +3125,7 @@ async def test_fail_fast_assertions_no_failure(
 
 
 # ============================================================================
-# _get_validated_mocked_datetime Tests
+# _get_validated_mocked_datetime Tests (function lives in fixture_utils)
 # ============================================================================
 
 
@@ -3161,12 +3167,11 @@ async def test_fail_fast_assertions_no_failure(
     ],
 )
 def test_get_validated_mocked_datetime_valid_values(
-    mock_e2e_test_runner: E2ETestRunner,
     mocked_datetime_value: Any,
     expected_result: Optional[str],
 ) -> None:
     """Test _get_validated_mocked_datetime with valid input values."""
-    result = mock_e2e_test_runner._get_validated_mocked_datetime(mocked_datetime_value)
+    result = _get_validated_mocked_datetime(mocked_datetime_value)
     assert result == expected_result
     if result is not None:
         # Verify it's a valid ISO format string that can be parsed
@@ -3189,11 +3194,11 @@ def test_get_validated_mocked_datetime_valid_values(
     ],
 )
 def test_get_validated_mocked_datetime_invalid_string_formats(
-    mock_e2e_test_runner: E2ETestRunner, invalid_value: str
+    invalid_value: str,
 ) -> None:
     """_get_validated_mocked_datetime raises ValidationError for invalid formats."""
     with pytest.raises(ValidationError) as exc_info:
-        mock_e2e_test_runner._get_validated_mocked_datetime(invalid_value)
+        _get_validated_mocked_datetime(invalid_value)
 
     assert (
         exc_info.value.code
@@ -3214,11 +3219,11 @@ def test_get_validated_mocked_datetime_invalid_string_formats(
     ],
 )
 def test_get_validated_mocked_datetime_invalid_types(
-    mock_e2e_test_runner: E2ETestRunner, invalid_value: Any
+    invalid_value: Any,
 ) -> None:
     """_get_validated_mocked_datetime raises ValidationError for invalid value types."""
     with pytest.raises(ValidationError) as exc_info:
-        mock_e2e_test_runner._get_validated_mocked_datetime(invalid_value)
+        _get_validated_mocked_datetime(invalid_value)
 
     assert (
         exc_info.value.code

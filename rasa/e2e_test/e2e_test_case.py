@@ -1,6 +1,6 @@
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Text, Union
+from typing import Any, Dict, List, Optional, Set, Text, Union
 
 import structlog
 
@@ -11,6 +11,7 @@ from rasa.e2e_test.constants import (
     KEY_ASSERTIONS,
     KEY_BOT_INPUT,
     KEY_BOT_UTTERED,
+    KEY_FILE_NAME,
     KEY_FIXTURES,
     KEY_METADATA,
     KEY_SLOT_NOT_SET,
@@ -548,18 +549,62 @@ class Metadata:
 
 
 @dataclass(frozen=True)
+class TestCaseFixtures:
+    """Class for storing the fixtures for a test case."""
+
+    test_case_name: Text
+    file: Text  # File name; named 'file' for consistency with TestCase.file
+    fixtures: List[Fixture]
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns the test case fixtures as a dictionary."""
+        return {
+            f"{KEY_TEST_CASE}": self.test_case_name,
+            f"{KEY_FILE_NAME}": self.file,
+            f"{KEY_FIXTURES}": [fixture.as_dict() for fixture in self.fixtures],
+        }
+
+
+@dataclass(frozen=True)
 class TestSuite:
-    """Class for representing all top level test suite keys."""
+    """Class for representing all top level test suite keys.
+
+    Fixtures are stored only in fixtures_per_test.
+    """
 
     test_cases: List[Union[TestCase, DialogueUnderstandingTestCase]]
-    fixtures: List[Fixture]
+    fixtures_per_test: List[TestCaseFixtures]
     metadata: List[Metadata]
     stub_custom_actions: Dict[Text, StubCustomAction]
 
     def as_dict(self) -> Dict[Text, Any]:
-        """Returns the test suite as a dictionary."""
+        """Returns the test suite as a dictionary (each attribute via its as_dict())."""
         return {
-            KEY_FIXTURES: [fixture.as_dict() for fixture in self.fixtures],
+            KEY_FIXTURES: [
+                tc_fixture.as_dict() for tc_fixture in self.fixtures_per_test
+            ],
+            KEY_METADATA: [metadata.as_dict() for metadata in self.metadata],
+            KEY_STUB_CUSTOM_ACTIONS: {
+                key: value.as_dict() for key, value in self.stub_custom_actions.items()
+            },
+            KEY_TEST_CASES: [test_case.as_dict() for test_case in self.test_cases],
+        }
+
+    def as_writable(self) -> Dict[Text, Any]:
+        """Returns the test suite as a schema-compatible dict for writing to YAML.
+
+        Fixtures are flattened to a sequence of fixture definitions, deduplicated
+        by name so round-tripping and schema validation work.
+        """
+        seen_fixture_names: Set[Text] = set()
+        fixture_definitions: List[Dict[Text, Any]] = []
+        for tc_fixtures in self.fixtures_per_test:
+            for fixture in tc_fixtures.fixtures:
+                if fixture.name not in seen_fixture_names:
+                    seen_fixture_names.add(fixture.name)
+                    fixture_definitions.append(fixture.as_dict())
+        return {
+            KEY_FIXTURES: fixture_definitions,
             KEY_METADATA: [metadata.as_dict() for metadata in self.metadata],
             KEY_STUB_CUSTOM_ACTIONS: {
                 key: value.as_dict() for key, value in self.stub_custom_actions.items()

@@ -57,7 +57,7 @@ MODEL_CONFIG_SCHEMA_FILE = "shared/utils/schemas/model_config.yml"
 CONFIG_SCHEMA_FILE = "shared/utils/schemas/config.yml"
 RESPONSES_SCHEMA_FILE = "shared/nlu/training_data/schemas/responses.yml"
 SCHEMA_EXTENSIONS_FILE = "shared/utils/pykwalify_extensions.py"
-ASSERTIONS_SCHEMA_FILE = "e2e_test/assertions_schema.yml"
+ASSERTIONS_SCHEMA_FILE = "e2e_test/schema/assertions_schema.yml"
 ASSERTIONS_SCHEMA_EXTENSIONS_FILE = "e2e_test/pykwalify_extensions.py"
 LATEST_TRAINING_DATA_FORMAT_VERSION = "3.1"
 

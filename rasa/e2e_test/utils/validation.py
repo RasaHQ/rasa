@@ -5,11 +5,12 @@ import structlog
 
 from rasa.e2e_test.constants import SCHEMA_FILE_PATH
 from rasa.e2e_test.e2e_test_case import Fixture, Metadata
+from rasa.e2e_test.utils.fixture_utils import get_fixtures_for_test_case
 from rasa.exceptions import ModelNotFound, ValidationError
 from rasa.shared.utils.yaml import read_schema_file
 
 if TYPE_CHECKING:
-    from rasa.e2e_test.e2e_test_case import TestCase
+    from rasa.e2e_test.e2e_test_case import TestCase, TestCaseFixtures
 
 
 structlogger = structlog.get_logger()
@@ -28,7 +29,7 @@ def validate_path_to_test_cases(path: str) -> None:
 def validate_test_case(
     test_case_name: str,
     input_test_cases: List["TestCase"],
-    fixtures: Dict[str, Fixture],
+    fixtures_per_test: List["TestCaseFixtures"],
     metadata: Dict[str, Metadata],
 ) -> None:
     """
@@ -37,11 +38,12 @@ def validate_test_case(
     Args:
         test_case_name (str): The name of the test case to validate.
         input_test_cases (List["TestCase"]): A list of test cases to validate.
-        fixtures (Dict[str, Fixture]): A dictionary of defined fixtures.
+        fixtures_per_test (List["TestCaseFixtures"]): List of TestCaseFixtures;
+            each test case is validated against the matching entry's fixtures.
         metadata (Dict[str, Metadata]): A dictionary of defined metadata.
 
     Raises:
-        SystemExit: If the test case, fixtures, or metadata are not defined.
+        ValidationError: If the test case, fixtures, or metadata are not defined.
     """
     if test_case_name and not input_test_cases:
         raise ValidationError(
@@ -52,6 +54,7 @@ def validate_test_case(
 
     all_good = True
     for test_case in input_test_cases:
+        fixtures = get_fixtures_for_test_case(test_case, fixtures_per_test)
         all_good_fixtures = validate_test_case_fixtures(test_case, fixtures)
         all_good_metadata = validate_test_case_metadata(test_case, metadata)
         all_good = all_good and all_good_fixtures and all_good_metadata
@@ -64,14 +67,12 @@ def validate_test_case(
         )
 
 
-def validate_test_case_fixtures(
-    test_case: "TestCase", fixtures: Dict[str, Fixture]
-) -> bool:
+def validate_test_case_fixtures(test_case: "TestCase", fixtures: List[Fixture]) -> bool:
     """Validates that the fixtures used in the test case are defined.
 
     Args:
         test_case (TestCase): The test case to validate.
-        fixtures (Dict[str, Fixture]): A dictionary of defined fixtures.
+        fixtures (List[Fixture]): List of defined fixtures.
 
     Returns:
         True if all fixtures used in the test case are defined, False otherwise.
@@ -83,8 +84,9 @@ def validate_test_case_fixtures(
     if not test_case.fixture_names:
         return all_good
 
+    defined_names = {f.name for f in fixtures}
     for fixture_name in test_case.fixture_names:
-        if fixture_name not in fixtures:
+        if fixture_name not in defined_names:
             structlogger.error(
                 "e2e_test.utils.validation.validate_test_case_fixtures",
                 event_info=(

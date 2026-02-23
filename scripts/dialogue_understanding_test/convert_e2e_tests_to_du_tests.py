@@ -34,7 +34,9 @@ from rasa.e2e_test.e2e_test_case import (
     TestStep,
     TestSuite,
 )
+from rasa.e2e_test.constants import KEY_FIXTURES
 from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE
+from rasa.e2e_test.utils.fixture_utils import get_fixtures_for_test_case
 from rasa.e2e_test.utils.io import read_test_cases
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.constants import USER
@@ -89,7 +91,7 @@ def convert_e2e_tests_to_du_tests(args: argparse.Namespace) -> None:
         ready_du_test_cases, to_review_du_test_cases = asyncio.run(
             e2e_test_runner.run_tests_to_convert_tests_to_du_tests(
                 e2e_test_suite.test_cases,
-                e2e_test_suite.fixtures,
+                e2e_test_suite.fixtures_per_test,
                 e2e_test_suite.metadata,
                 convert_test_case,
             )
@@ -185,20 +187,32 @@ def _write_du_test_cases_to_file(
     du_test_cases: List[DialogueUnderstandingTestCase],
 ):
     # group test cases by file name
-    file_to_du_test_cases = defaultdict(list)
+    file_to_du_test_cases = defaultdict[str, List[DialogueUnderstandingTestCase]](list)
     for test_case in du_test_cases:
         file_to_du_test_cases[test_case.file].append(test_case)
 
     # create test suites for test cases that should end up in one file
     for file, test_cases in file_to_du_test_cases.items():
-        # filter fixtures and metadata for the test cases
-        fixtures = _filter_fixtures(e2e_test_suite.fixtures, test_cases)
+        # Merge all fixtures from all test cases (dedupe by name, first occurrence wins)
+        seen_fixture_names = set()
+        merged_fixtures: List[Fixture] = []
+        for tc in test_cases:
+            for fixture in get_fixtures_for_test_case(tc, e2e_test_suite.fixtures_per_test):
+                if fixture.name not in seen_fixture_names:
+                    seen_fixture_names.add(fixture.name)
+                    merged_fixtures.append(fixture)
+
         metadata = _filter_metadata(e2e_test_suite.metadata, test_cases)
 
         test_suite = TestSuite(
-            test_cases, fixtures, metadata, e2e_test_suite.stub_custom_actions
+            test_cases=test_cases,
+            fixtures_per_test=[],
+            metadata=metadata,
+            stub_custom_actions=e2e_test_suite.stub_custom_actions,
         )
-        data = test_suite.as_dict()
+        data = test_suite.as_writable()
+        # Write fixtures as a single merged list (format: - name: [slots])
+        data[KEY_FIXTURES] = [f.as_dict() for f in merged_fixtures]
         # remove empty fixtures, metadata and stub custom actions
         data = {k: v for k, v in data.items() if v}
 

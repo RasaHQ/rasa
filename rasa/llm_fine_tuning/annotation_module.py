@@ -5,7 +5,12 @@ from typing import Generator, List, Optional, Tuple, Union
 import structlog
 
 from rasa.dialogue_understanding.commands import Command
-from rasa.e2e_test.e2e_test_case import ActualStepOutput, TestCase, TestStep, TestSuite
+from rasa.e2e_test.e2e_test_case import (
+    ActualStepOutput,
+    TestCase,
+    TestStep,
+    TestSuite,
+)
 from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.storage import StorageContext
@@ -42,7 +47,7 @@ def annotate_e2e_tests(
         conversations = asyncio.run(
             e2e_test_runner.run_tests_for_fine_tuning(
                 test_suite.test_cases,
-                test_suite.fixtures,
+                test_suite.fixtures_per_test,
                 test_suite.metadata,
             )
         )

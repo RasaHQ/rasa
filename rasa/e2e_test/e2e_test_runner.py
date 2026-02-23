@@ -1,10 +1,9 @@
 import asyncio
 import copy
-import dataclasses
 import difflib
 from asyncio import CancelledError
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -36,15 +35,12 @@ from rasa.core.constants import (
 )
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import StorageType
-from rasa.dialogue_understanding_test.du_test_case import DialogueUnderstandingTestCase
 from rasa.e2e_test.constants import TEST_CASE_NAME, TEST_FILE_NAME
 from rasa.e2e_test.e2e_config import create_llm_judge_config
 from rasa.e2e_test.e2e_test_case import (
     KEY_STUB_CUSTOM_ACTIONS,
     ActualStepOutput,
-    Fixture,
     Metadata,
-    TestCase,
     TestStep,
 )
 from rasa.e2e_test.e2e_test_result import (
@@ -53,11 +49,10 @@ from rasa.e2e_test.e2e_test_result import (
     TestFailure,
     TestResult,
 )
-from rasa.exceptions import ValidationError
+from rasa.e2e_test.utils.fixture_utils import get_fixtures_for_test_case
 from rasa.llm_fine_tuning.conversations import Conversation
 from rasa.shared.agents.agent_setup import AgentsConnectionCleanup
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
-from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
@@ -76,6 +71,10 @@ from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from rasa.core.agent import Agent
+    from rasa.dialogue_understanding_test.du_test_case import (
+        DialogueUnderstandingTestCase,
+    )
+    from rasa.e2e_test.e2e_test_case import Fixture, TestCase, TestCaseFixtures
     from rasa.shared.core.flows import FlowsList
 
 structlogger = structlog.get_logger()
@@ -373,7 +372,7 @@ class E2ETestRunner:
     def generate_test_result(
         cls,
         test_turns: TEST_TURNS_TYPE,
-        test_case: TestCase,
+        test_case: "TestCase",
     ) -> TestResult:
         """Generates test result.
 
@@ -404,7 +403,7 @@ class E2ETestRunner:
         step: TestStep,
         input_metadata: List[Metadata],
         tracker: DialogueStateTracker,
-        test_case: TestCase,
+        test_case: "TestCase",
     ) -> Dict[str, Any]:
         """Returns additional splitting conditions for the user message."""
         additional_splitting_conditions: Dict[str, Any] = {"text": step.text}
@@ -505,7 +504,7 @@ class E2ETestRunner:
     async def run_assertions(
         self,
         sender_id: str,
-        test_case: TestCase,
+        test_case: "TestCase",
         input_metadata: Optional[List[Metadata]],
     ) -> TestResult:
         """Runs the assertions defined in the test case."""
@@ -831,14 +830,14 @@ class E2ETestRunner:
     def find_test_failures(
         cls,
         test_turns: TEST_TURNS_TYPE,
-        test_case: Optional[TestCase],
+        test_case: Optional["TestCase"],
         last_user_step_position: int = 0,
     ) -> List[Tuple[TestFailure, int]]:
         """Finds the test failures in the transcript.
 
         Args:
             test_turns (TEST_TURNS_TYPE): The transcript of test cases and events.
-            test_case (Optional[TestCase]): The test case.
+            test_case (Optional["TestCase"]): The test case.
             last_user_step_position (int): The start position in the test turns.
 
         Returns:
@@ -897,7 +896,7 @@ class E2ETestRunner:
 
     async def set_up_fixtures(
         self,
-        fixtures: List[Fixture],
+        fixtures: List["Fixture"],
         sender_id: Text,
     ) -> None:
         """Sets slots in the tracker as defined by the input fixtures.
@@ -920,27 +919,6 @@ class E2ETestRunner:
                 tracker.update(SlotSet(slot_name, slot_value))
 
         await self.agent.tracker_store.save(tracker)
-
-    @staticmethod
-    def filter_fixtures_for_test_case(
-        test_case: TestCase, fixtures: List[Fixture]
-    ) -> List[Fixture]:
-        """Filters the input fixtures for the input test case.
-
-        Args:
-            test_case: The test case.
-            fixtures: The fixtures.
-
-        Returns:
-        The filtered fixtures.
-        """
-        return list(
-            filter(
-                lambda fixture: test_case.fixture_names
-                and fixture.name in test_case.fixture_names,
-                fixtures,
-            )
-        )
 
     @staticmethod
     def filter_metadata_for_input(
@@ -977,8 +955,8 @@ class E2ETestRunner:
 
     async def run_tests(
         self,
-        input_test_cases: List[TestCase],
-        input_fixtures: List[Fixture],
+        input_test_cases: List["TestCase"],
+        fixtures_per_test: List["TestCaseFixtures"],
         fail_fast: bool = False,
         **kwargs: Any,
     ) -> List["TestResult"]:
@@ -986,7 +964,7 @@ class E2ETestRunner:
 
         Args:
             input_test_cases: Input test cases.
-            input_fixtures: Input fixtures.
+            fixtures_per_test: Per-file resolved fixtures.
             fail_fast: Whether to fail fast.
             **kwargs: Additional arguments which are passed here.
 
@@ -997,18 +975,10 @@ class E2ETestRunner:
         input_metadata = kwargs.get("input_metadata", None)
 
         # telemetry call for tracking test runs
-        track_e2e_test_run(input_test_cases, input_fixtures, input_metadata)
-
-        # Validate and convert all fixtures upfront before running any tests
-        # This ensures we fail fast on validation errors rather than running
-        # some tests before hitting an invalid fixture, and stores converted
-        # values in fixtures to avoid repeated validation/conversion
-        input_fixtures = self._validate_and_convert_all_fixtures(input_fixtures)
+        track_e2e_test_run(input_test_cases, fixtures_per_test, input_metadata)
 
         for test_case in input_test_cases:
             test_case_name = test_case.name.replace(" ", "_")
-            # Add the name of the file and the current test case name being
-            # executed in order to properly retrieve stub custom action
             if self.agent.endpoints and self.agent.endpoints.action:
                 self.agent.endpoints.action.kwargs[TEST_FILE_NAME] = Path(
                     test_case.file
@@ -1016,6 +986,10 @@ class E2ETestRunner:
                 self.agent.endpoints.action.kwargs[TEST_CASE_NAME] = test_case_name
 
             sender_id = self.generate_sender_id(test_case.name)
+
+            # Find the fixtures for the test case
+            input_fixtures = get_fixtures_for_test_case(test_case, fixtures_per_test)
+
             _, test_result = await self._process_test_case(
                 test_case, sender_id, input_fixtures, input_metadata
             )
@@ -1044,17 +1018,14 @@ class E2ETestRunner:
     async def _run_test_case(
         self,
         sender_id: str,
-        input_fixtures: List[Fixture],
+        input_fixtures: List["Fixture"],
         input_metadata: Optional[List[Metadata]],
-        test_case: TestCase,
+        test_case: "TestCase",
     ) -> TEST_TURNS_TYPE:
         collector = CollectingOutputChannel()
 
         if input_fixtures:
-            test_fixtures = self.filter_fixtures_for_test_case(
-                test_case, input_fixtures
-            )
-            await self.set_up_fixtures(test_fixtures, sender_id)
+            await self.set_up_fixtures(input_fixtures, sender_id)
 
         test_case_metadata = None
         if input_metadata:
@@ -1075,139 +1046,11 @@ class E2ETestRunner:
         # add timestamp suffix to ensure sender_id is unique
         return f"{test_case_name}_{datetime.now()}"
 
-    def _validate_and_convert_all_fixtures(
-        self, fixtures: List[Fixture]
-    ) -> List[Fixture]:
-        """Validate and convert all fixtures upfront before running any tests.
-
-        This ensures we fail fast on validation errors (e.g., invalid mocked_datetime)
-        rather than running some tests before hitting an invalid fixture.
-        Collects all validation errors and reports them in a single ValidationError.
-        Also converts mocked_datetime values to ISO format and stores them in fixtures
-        to avoid repeated validation/conversion.
-
-        Args:
-            fixtures: List of all fixtures to validate and convert.
-
-        Returns:
-            List of fixtures with converted mocked_datetime values.
-
-        Raises:
-            ValidationError: If any fixture has invalid mocked_datetime values.
-                The error message includes all invalid fixtures.
-        """
-        validation_errors: List[
-            Tuple[str, str]
-        ] = []  # List of (fixture_name, mocked_datetime_value)
-        converted_fixtures = []
-
-        # Single pass: validate and convert fixtures
-        for fixture in fixtures:
-            converted_slots = fixture.slots_set.copy()
-            for slot_name, slot_value in fixture.slots_set.items():
-                if slot_name == MOCKED_DATETIME_SLOT:
-                    try:
-                        # Validate and convert to ISO format
-                        converted_value = self._get_validated_mocked_datetime(
-                            slot_value
-                        )
-                        converted_slots[slot_name] = converted_value
-                    except ValidationError:
-                        # Collect the error for later reporting
-                        validation_errors.append((fixture.name, str(slot_value)))
-
-            # Create new fixture with converted values (even if validation failed,
-            # we'll raise an error after processing all fixtures)
-            converted_fixture = dataclasses.replace(fixture, slots_set=converted_slots)
-            converted_fixtures.append(converted_fixture)
-
-        # If there are any validation errors, raise a single comprehensive error
-        if validation_errors:
-            valid_formats = [
-                "YYYY-MM-DDTHH:MM:SS±HH:MM  e.g. '2024-01-15T14:30:00+05:30'",
-                "YYYY-MM-DDTHH:MM:SS±HHMM   e.g. '2024-01-15T14:30:00+0530'",
-                "YYYY-MM-DD HH:MM:SS        e.g. '2024-01-15 14:30:00'",
-                "YYYY-MM-DDTHH:MM:SS        e.g. '2024-01-15T14:30:00'",
-                "YYYY-MM-DD                 e.g. '2024-01-15'",
-            ]
-
-            error_details = "\n".join(
-                f"{i + 1}. Fixture - `{fixture_name}`, mocked_datetime value: "
-                f"`{mocked_datetime_value}`"
-                for i, (fixture_name, mocked_datetime_value) in enumerate(
-                    validation_errors
-                )
-            )
-
-            raise ValidationError(
-                code="e2e_test_runner.validate_mocked_datetime.invalid_value_format",
-                event_info=(
-                    "Unable to convert to a valid datetime. Invalid `mocked_datetime` "
-                    "value present in the following fixtures."
-                    + f"\n\n{error_details}\n\n"
-                    + "Accepted formats include:\n"
-                    + "\n".join(f"  * {fmt}" for fmt in valid_formats)
-                ),
-            )
-
-        return converted_fixtures
-
-    def _get_validated_mocked_datetime(
-        self, mocked_datetime_value: Any
-    ) -> Optional[str]:
-        """Validates and converts mocked_datetime to ISO 8601 format.
-
-        Args:
-            mocked_datetime_value: The value of the mocked_datetime slot.
-                Expected to be a string from YAML fixtures, or None.
-
-        Returns:
-            An ISO 8601 format string (timezone-aware) or None.
-            Example: '2024-01-15T14:30:45+00:00'
-
-        Raises:
-            ValidationError: If the mocked_datetime value cannot be converted
-                to a datetime object.
-        """
-        if mocked_datetime_value is None:
-            return None
-
-        if not isinstance(mocked_datetime_value, str):
-            # YAML fixtures only provide strings, so other types are invalid
-            raise ValidationError(
-                code="e2e_test_runner.validate_mocked_datetime.invalid_value_type",
-                event_info="Unable to convert to a valid datetime.",
-            )
-
-        valid_datetime_formats = {
-            "%Y-%m-%dT%H:%M:%S%z": True,  # already timezone-aware
-            "%Y-%m-%d %H:%M:%S": False,  # needs UTC
-            "%Y-%m-%dT%H:%M:%S": False,  # needs UTC
-            "%Y-%m-%d": False,  # needs UTC
-        }
-
-        for datetime_format, timezone_aware in valid_datetime_formats.items():
-            try:
-                parsed = datetime.strptime(mocked_datetime_value, datetime_format)
-                # Ensure timezone-aware
-                if not timezone_aware:
-                    parsed = parsed.replace(tzinfo=timezone.utc)
-                # Return ISO format string
-                return parsed.isoformat()
-            except ValueError:
-                continue
-
-        # If we get here, the conversion failed. i.e. all parsing attempts fail
-        raise ValidationError(
-            code="e2e_test_runner.validate_mocked_datetime.invalid_value_format",
-            event_info="Unable to convert to a valid datetime.",
-        )
-
     async def _process_test_case(
         self,
-        test_case: TestCase,
+        test_case: "TestCase",
         sender_id: str,
-        input_fixtures: List[Fixture],
+        input_fixtures: List["Fixture"],
         input_metadata: Optional[List[Metadata]],
     ) -> Tuple[TEST_TURNS_TYPE, TestResult]:
         """Runs a single test case and returns the test turns and result."""
@@ -1226,8 +1069,8 @@ class E2ETestRunner:
 
     async def run_tests_for_fine_tuning(
         self,
-        input_test_cases: List[TestCase],
-        input_fixtures: List[Fixture],
+        input_test_cases: List["TestCase"],
+        fixtures_per_test: List["TestCaseFixtures"],
         input_metadata: Optional[List[Metadata]],
     ) -> List[Conversation]:
         """Runs the test cases for fine-tuning.
@@ -1237,7 +1080,7 @@ class E2ETestRunner:
 
         Args:
             input_test_cases: Input test cases.
-            input_fixtures: Input fixtures.
+            fixtures_per_test: Input fixtures per test case.
             input_metadata: Input metadata.
 
         Returns:
@@ -1250,6 +1093,9 @@ class E2ETestRunner:
         for i in tqdm(range(len(input_test_cases))):
             test_case = input_test_cases[i]
             sender_id = self.generate_sender_id(test_case.name)
+
+            # Find the fixtures for the test case
+            input_fixtures = get_fixtures_for_test_case(test_case, fixtures_per_test)
 
             test_turns, test_result = await self._process_test_case(
                 test_case, sender_id, input_fixtures, input_metadata
@@ -1275,15 +1121,15 @@ class E2ETestRunner:
 
     async def run_tests_to_convert_tests_to_du_tests(
         self,
-        input_test_cases: List[TestCase],
-        input_fixtures: List[Fixture],
+        input_test_cases: List["TestCase"],
+        fixtures_per_test: List["TestCaseFixtures"],
         input_metadata: Optional[List[Metadata]],
         converting_method: Callable[
-            [TEST_TURNS_TYPE, TestCase, bool, bool],
-            Optional[DialogueUnderstandingTestCase],
+            [TEST_TURNS_TYPE, "TestCase", bool, bool],
+            Optional["DialogueUnderstandingTestCase"],
         ],
     ) -> Tuple[
-        List[DialogueUnderstandingTestCase], List[DialogueUnderstandingTestCase]
+        List["DialogueUnderstandingTestCase"], List["DialogueUnderstandingTestCase"]
     ]:
         """Runs the test cases to convert them into dialogue understanding tests.
 
@@ -1291,7 +1137,7 @@ class E2ETestRunner:
 
         Args:
             input_test_cases: Input test cases.
-            input_fixtures: Input fixtures.
+            fixtures_per_test: Input fixtures per test case.
             input_metadata: Input metadata.
             converting_method: The method to convert the e2e test case into a
               dialogue understanding test case.
@@ -1306,6 +1152,9 @@ class E2ETestRunner:
         for i in tqdm(range(len(input_test_cases))):
             test_case = input_test_cases[i]
             sender_id = self.generate_sender_id(test_case.name)
+
+            # Find the fixtures for the test case
+            input_fixtures = get_fixtures_for_test_case(test_case, fixtures_per_test)
 
             test_turns, test_result = await self._process_test_case(
                 test_case, sender_id, input_fixtures, input_metadata

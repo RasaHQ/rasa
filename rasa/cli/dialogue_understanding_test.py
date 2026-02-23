@@ -262,7 +262,9 @@ def execute_dialogue_understanding_tests(args: argparse.Namespace) -> None:
         # cleanup, this prevents abrupt closure when asyncio.run finishes.
         async with AgentsConnectionCleanup():
             return await test_runner.run_test_cases(
-                test_suite.test_cases, test_suite.fixtures, test_suite.metadata
+                test_suite.test_cases,
+                test_suite.fixtures_per_test,
+                test_suite.metadata,
             )
         # Defensive return for mypy - never actually reached
         return
