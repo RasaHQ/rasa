@@ -192,7 +192,7 @@ pydot = "~4.0.1"
 SQLAlchemy = "~2.0.46"
 psycopg2-binary = "~2.9.11"
 python-dateutil = "~2.8.2"
-protobuf = "~5.29.5"
+protobuf = "~5.29.6"
 setuptools = "~78.1.1"
 ujson = ">=5.8,<6.0"
 regex = "~2024.7.24" # required by litellm + whitespacetokenizer
@@ -359,7 +359,7 @@ optional = true
 # --------------------------------------------------------------------------------------
 
 [tool.poetry.dependencies.sentencepiece]
-version = "~0.1.99"
+version = ">=0.2.1"
 markers = "python_version < '3.12'"
 optional = true
 
