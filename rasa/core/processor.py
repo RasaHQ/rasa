@@ -89,9 +89,12 @@ from rasa.shared.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
     BotUttered,
+    ConversationInactive,
     Event,
     ReminderCancelled,
     ReminderScheduled,
+    SessionEnded,
+    SessionStarted,
     SlotSet,
     UserUttered,
 )
@@ -117,7 +120,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from rasa.core.config.available_endpoints import AvailableEndpoints
-    from rasa.core.timer_store import SessionTimerStore
+    from rasa.core.timer_managers.timer_manager import SessionTimerManager
     from rasa.privacy.privacy_manager import BackgroundPrivacyManager
 
 structlogger = structlog.get_logger()
@@ -144,13 +147,13 @@ class MessageProcessor:
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional["AvailableEndpoints"] = None,
         privacy_manager: Optional["BackgroundPrivacyManager"] = None,
-        timer_store: Optional["SessionTimerStore"] = None,
+        timer_manager: Optional["SessionTimerManager"] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
         self.nlg = generator
         self.tracker_store = tracker_store
         self.lock_store = lock_store
-        self.timer_store = timer_store
+        self.timer_manager = timer_manager
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
         self.model_filename, self.model_metadata, self.graph_runner = self._load_model(
@@ -707,6 +710,81 @@ class MessageProcessor:
                     intent, entities, tracker, output_channel
                 )
 
+    async def handle_session_timeout(
+        self,
+        sender_id: Text,
+        session_id: Optional[Text],
+        scheduled_time: Optional[float] = None,
+    ) -> None:
+        """Handle a session timeout triggered by the timer.
+
+        This method is called when the session timer fires due to inactivity.
+        It acquires a lock, re-fetches the tracker, validates the session,
+        and emits the ConversationInactive event if appropriate.
+
+        Args:
+            sender_id: The conversation ID.
+            session_id: The session ID when the timer was scheduled.
+            scheduled_time: When the timer was scheduled (Unix timestamp).
+                If provided, expiration is skipped when a user message arrived
+                after this time (avoids race in multi-pod deployments).
+        """
+        async with self.lock_store.lock(sender_id):
+            tracker = await self.get_tracker(sender_id)
+
+            # Validate: conversation must not be terminated
+            if tracker.terminated:
+                structlogger.debug(
+                    "processor.session_timeout.already_terminated",
+                    sender_id=sender_id,
+                )
+                return
+
+            # Validate: session ID must match (session hasn't restarted)
+            if session_id and tracker.current_session_id != session_id:
+                structlogger.debug(
+                    "processor.session_timeout.session_mismatch",
+                    sender_id=sender_id,
+                    expected_session_id=session_id,
+                    actual_session_id=tracker.current_session_id,
+                )
+                return
+
+            # Validate: conversation must not already be inactive
+            if tracker.inactive:
+                structlogger.debug(
+                    "processor.session_timeout.already_inactive",
+                    sender_id=sender_id,
+                )
+                return
+
+            # Message timestamp check: cancel expiration if a user message
+            # arrived after the timer was scheduled (multi-pod race safeguard).
+            if scheduled_time is not None:
+                user_uttered = tracker.get_last_event_for(UserUttered)
+                if (
+                    user_uttered is not None
+                    and isinstance(user_uttered, UserUttered)
+                    and user_uttered.timestamp > scheduled_time
+                ):
+                    structlogger.debug(
+                        "processor.session_timeout.message_after_timer",
+                        sender_id=sender_id,
+                        session_id=session_id,
+                    )
+                    return
+
+            # Emit ConversationInactive event
+            event = ConversationInactive()
+            structlogger.info(
+                "processor.session_timeout.conversation_inactive",
+                sender_id=sender_id,
+                session_id=session_id,
+            )
+
+            tracker.update(event, self.domain)
+            await self.save_tracker(tracker)
+
     async def trigger_external_user_uttered(
         self,
         intent_name: Text,
@@ -1118,6 +1196,9 @@ class MessageProcessor:
             self.domain,
         )
 
+        # Reschedule session timer on user activity
+        await self._reschedule_session_timer(tracker)
+
         if parse_data[ENTITIES]:
             self._log_slots(tracker)
 
@@ -1297,6 +1378,7 @@ class MessageProcessor:
         await self._send_bot_messages(events, tracker, output_channel)
         await self._schedule_reminders(events, tracker, output_channel)
         await self._cancel_reminders(events, tracker)
+        await self._handle_session_timer_events(events, tracker)
 
     @staticmethod
     async def _send_bot_messages(
@@ -1350,6 +1432,98 @@ class MessageProcessor:
                         scheduled_job.name, tracker.sender_id
                     ):
                         scheduler.remove_job(scheduled_job.id)
+
+    async def _handle_session_timer_events(
+        self,
+        events: List[Event],
+        tracker: DialogueStateTracker,
+    ) -> None:
+        """Handle session timer scheduling based on events.
+
+        Schedules a timer when SessionStarted is detected.
+        Cancels timer when SessionEnded is detected.
+
+        Args:
+            events: List of events to process.
+            tracker: The current conversation tracker.
+        """
+        if not self.timer_manager:
+            return
+
+        for event in events:
+            if isinstance(event, SessionStarted):
+                await self._schedule_session_timer(tracker)
+            elif isinstance(event, (ConversationInactive, SessionEnded)):
+                await self.timer_manager.cancel_timer(tracker.sender_id)
+
+    async def _schedule_session_timer(
+        self,
+        tracker: DialogueStateTracker,
+    ) -> None:
+        """Schedule a session inactivity timer.
+
+        Args:
+            tracker: The current conversation tracker.
+        """
+        if not self.timer_manager:
+            return
+
+        # Don't schedule timer if sessions are disabled (expiration_time=0)
+        if self.domain.session_config.session_expiration_time <= 0:
+            return
+
+        timeout_seconds = self.domain.session_config.session_expiration_time * 60
+
+        await self.timer_manager.schedule_timer(
+            sender_id=tracker.sender_id,
+            session_id=tracker.current_session_id,
+            timeout_seconds=timeout_seconds,
+            callback=self.handle_session_timeout,
+        )
+
+        structlogger.debug(
+            "processor.session_timer.scheduled",
+            sender_id=tracker.sender_id,
+            session_id=tracker.current_session_id,
+            timeout_minutes=self.domain.session_config.session_expiration_time,
+        )
+
+    async def _reschedule_session_timer(
+        self,
+        tracker: DialogueStateTracker,
+    ) -> None:
+        """Schedule the session inactivity timer after user activity.
+
+        Args:
+            tracker: The current conversation tracker.
+        """
+        if not self.timer_manager:
+            return
+
+        if self.domain.session_config.session_expiration_time <= 0:
+            return
+
+        # Don't reschedule timer for terminated conversations
+        if tracker.terminated:
+            return
+
+        timeout_seconds = self.domain.session_config.session_expiration_time * 60
+        sender_id = tracker.sender_id
+        session_id = tracker.current_session_id
+
+        await self.timer_manager.schedule_timer(
+            sender_id=sender_id,
+            session_id=session_id,
+            timeout_seconds=timeout_seconds,
+            callback=self.handle_session_timeout,
+        )
+
+        structlogger.debug(
+            "processor.session_timer.rescheduled",
+            sender_id=sender_id,
+            session_id=session_id,
+            timeout_minutes=self.domain.session_config.session_expiration_time,
+        )
 
     async def run_command_processor(
         self, tracker: DialogueStateTracker

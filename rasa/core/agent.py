@@ -24,7 +24,10 @@ from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGene
 from rasa.core.persistor import StorageType
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
-from rasa.core.timer_store import SessionTimerStore
+from rasa.core.timer_managers.timer_manager import (
+    SessionTimerManager,
+    create_timer_manager,
+)
 from rasa.core.tracker_stores.tracker_store import (
     FailSafeTrackerStore,
     InMemoryTrackerStore,
@@ -226,7 +229,7 @@ async def load_agent(
 
     tracker_store = None
     lock_store = None
-    timer_store = None
+    timer_manager = None
     generator = None
     action_endpoint = None
     http_interpreter = None
@@ -238,7 +241,7 @@ async def load_agent(
             endpoints.tracker_store, event_broker=broker
         )
         lock_store = LockStore.create(endpoints.lock_store)
-        timer_store = SessionTimerStore.create(endpoints.timer_store)
+        timer_manager = create_timer_manager(endpoints.timer_store)
         generator = endpoints.nlg
         action_endpoint = endpoints.action
         model_server = endpoints.model if endpoints.model else model_server
@@ -261,7 +264,7 @@ async def load_agent(
         generator=generator,
         tracker_store=tracker_store,
         lock_store=lock_store,
-        timer_store=timer_store,
+        timer_manager=timer_manager,
         action_endpoint=action_endpoint,
         model_server=model_server,
         remote_storage=remote_storage,
@@ -272,7 +275,10 @@ async def load_agent(
 
     try:
         if model_server is not None:
-            return await load_from_server(agent, model_server)
+            agent = await load_from_server(agent, model_server)
+            # Initialize timer manager after model is loaded
+            await agent.initialize_timer_manager()
+            return agent
 
         elif remote_storage is not None:
             agent.load_model_from_remote_storage(model_path)
@@ -297,6 +303,9 @@ async def load_agent(
             # With all required data available,
             # this is the best spot to initialize the subagents.
             await initialize_agents(flows, sub_agents)
+
+        # Initialize timer manager after model is loaded
+        await agent.initialize_timer_manager()
 
         return agent
 
@@ -338,7 +347,7 @@ class Agent:
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
         tracker_store: Optional[TrackerStore] = None,
         lock_store: Optional[LockStore] = None,
-        timer_store: Optional[SessionTimerStore] = None,
+        timer_manager: Optional[SessionTimerManager] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
         model_server: Optional[EndpointConfig] = None,
@@ -355,7 +364,7 @@ class Agent:
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self._create_tracker_store(tracker_store, self.domain)
         self.lock_store = self._create_lock_store(lock_store)
-        self.timer_store = self._create_timer_store(timer_store)
+        self.timer_manager = self._create_timer_manager(timer_manager)
         self.action_endpoint = action_endpoint
         self.http_interpreter = http_interpreter
         self.endpoints = endpoints
@@ -374,7 +383,7 @@ class Agent:
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
         tracker_store: Optional[TrackerStore] = None,
         lock_store: Optional[LockStore] = None,
-        timer_store: Optional[SessionTimerStore] = None,
+        timer_manager: Optional[SessionTimerManager] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
         model_server: Optional[EndpointConfig] = None,
@@ -389,7 +398,7 @@ class Agent:
             generator=generator,
             tracker_store=tracker_store,
             lock_store=lock_store,
-            timer_store=timer_store,
+            timer_manager=timer_manager,
             action_endpoint=action_endpoint,
             fingerprint=fingerprint,
             model_server=model_server,
@@ -409,7 +418,7 @@ class Agent:
             model_path=model_path,
             tracker_store=self.tracker_store,
             lock_store=self.lock_store,
-            timer_store=self.timer_store,
+            timer_manager=self.timer_manager,
             action_endpoint=self.action_endpoint,
             generator=self.nlg,
             http_interpreter=self.http_interpreter,
@@ -438,6 +447,34 @@ class Agent:
     def is_ready(self) -> bool:
         """Check if all necessary components are instantiated to use agent."""
         return self.tracker_store is not None and self.processor is not None
+
+    async def initialize_timer_manager(self) -> None:
+        """Initialize the timer manager with callback and start it.
+
+        This should be called after the processor is created and before
+        handling messages. For Redis-based timer managers, this sets the
+        callback and starts the polling loop for timer recovery.
+        """
+        if self.timer_manager is None or self.processor is None:
+            return
+
+        # Set the callback to processor.handle_session_timeout
+        self.timer_manager.set_callback(self.processor.handle_session_timeout)
+
+        # Start the timer manager (begins polling for Redis, no-op for in-memory)
+        await self.timer_manager.start()
+
+        logger.debug(f"Timer manager initialized: {type(self.timer_manager).__name__}")
+
+    async def close(self) -> None:
+        """Close the agent and release resources.
+
+        This stops the timer manager and performs any necessary cleanup.
+        Should be called when the agent is no longer needed.
+        """
+        if self.timer_manager is not None:
+            await self.timer_manager.stop()
+            logger.debug("Timer manager stopped")
 
     @agent_must_be_ready
     async def parse_message(self, message_data: Text) -> Dict[Text, Any]:
@@ -593,8 +630,12 @@ class Agent:
         return InMemoryLockStore()
 
     @staticmethod
-    def _create_timer_store(store: Optional[SessionTimerStore]) -> SessionTimerStore:
-        return SessionTimerStore.create(store)
+    def _create_timer_manager(
+        manager: Optional[SessionTimerManager],
+    ) -> SessionTimerManager:
+        if manager is not None:
+            return manager
+        return create_timer_manager()
 
     def load_model_from_remote_storage(self, model_name: Text) -> None:
         """Loads an Agent from remote storage."""

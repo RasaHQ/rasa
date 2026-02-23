@@ -411,6 +411,8 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
         logger.debug("No agent found when shutting down server.")
         return
 
+    await current_agent.close()
+
     event_broker = current_agent.tracker_store.event_broker
     if event_broker:
         await event_broker.close()

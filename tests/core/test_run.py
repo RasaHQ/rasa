@@ -3,7 +3,7 @@ from asyncio import AbstractEventLoop
 from pathlib import Path
 from time import sleep, time
 from typing import Text
-from unittest.mock import MagicMock, Mock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from sanic import Sanic
@@ -110,11 +110,16 @@ async def test_load_agent_on_start_with_bad_model_file(
 async def test_close_resources(loop: AbstractEventLoop):
     broker = SQLEventBroker()
     app = Mock()
+    app.ctx.agent = Mock()
+    app.ctx.agent.close = AsyncMock()
     app.ctx.agent.tracker_store.event_broker = broker
+    app.ctx.agent.privacy_manager = None
 
     with warnings.catch_warnings() as record:
         await run.close_resources(app, loop)
         assert record is None
+
+    app.ctx.agent.close.assert_called_once()
 
 
 @pytest.mark.parametrize("inspect", [False, True])

@@ -76,6 +76,16 @@ def loop(
 
 
 @pytest.fixture
+def mock_redis() -> Mock:
+    """Create a mock Redis client for timer store/manager tests."""
+    mock = Mock()
+    mock.pipeline.return_value = mock
+    mock.execute.return_value = [1, 1]
+    mock.eval.return_value = 1
+    return mock
+
+
+@pytest.fixture
 def default_channel() -> OutputChannel:
     return CollectingOutputChannel()
 

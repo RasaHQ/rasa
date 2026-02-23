@@ -112,6 +112,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     ActiveLoop,
     BotUttered,
+    ConversationInactive,
     DefinePrevUserUtteredFeaturization,
     DialogueStackUpdated,
     Event,
@@ -3665,3 +3666,315 @@ async def test_processor_get_events_from_action_execution_failure_nlu_assistant(
     )
     assert events == []
     assert actual_tracker == tracker
+
+
+# ============================================================================
+# Session Timer Integration Tests
+# ============================================================================
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_session_timer_scheduled_on_session_start(
+    default_processor: MessageProcessor,
+):
+    """Timer is scheduled when a new session starts."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    # Simulate session start event processing
+    with capture_logs() as caplog:
+        events = [SessionStarted()]
+        await default_processor._handle_session_timer_events(events, tracker)
+
+    # Verify timer was scheduled
+    timer = await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID)
+    assert timer is not None
+    assert timer.sender_id == DEFAULT_SENDER_ID
+    assert timer.session_id == tracker.current_session_id
+    logs = filter_logs(caplog, "processor.session_timer.scheduled", "debug")
+    assert len(logs) == 1
+    assert logs[0]["sender_id"] == DEFAULT_SENDER_ID
+
+    # Cleanup
+    await default_processor.timer_manager.cancel_timer(DEFAULT_SENDER_ID)
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_session_timer_reset_on_user_message(
+    default_processor: MessageProcessor,
+):
+    """Timer is reset when user sends a message."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    # Schedule initial timer
+    timeout_seconds = (
+        default_processor.domain.session_config.session_expiration_time * 60
+    )
+    await default_processor.timer_manager.schedule_timer(
+        sender_id=DEFAULT_SENDER_ID,
+        session_id=tracker.current_session_id,
+        timeout_seconds=timeout_seconds,
+        callback=default_processor.handle_session_timeout,
+    )
+
+    original_timer = await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID)
+    original_scheduled_time = original_timer.scheduled_time
+
+    # Small delay to ensure different scheduled time
+    await asyncio.sleep(0.01)
+
+    # Reschedule timer (simulates what happens on user message)
+    with capture_logs() as caplog:
+        await default_processor._reschedule_session_timer(tracker)
+
+    new_timer = await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID)
+    assert new_timer.scheduled_time > original_scheduled_time
+    logs = filter_logs(caplog, "processor.session_timer.rescheduled", "debug")
+    assert len(logs) == 1
+    assert logs[0]["sender_id"] == DEFAULT_SENDER_ID
+
+    # Cleanup
+    await default_processor.timer_manager.cancel_timer(DEFAULT_SENDER_ID)
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_session_timeout_emits_conversation_inactive(
+    default_processor: MessageProcessor,
+):
+    """Session timeout handler emits ConversationInactive event."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    # Update tracker with UserUttered to ensure valid state
+    tracker.update(UserUttered("test"), default_processor.domain)
+    await default_processor.tracker_store.save(tracker)
+    session_id = tracker.current_session_id
+
+    # Trigger session timeout
+    with capture_logs() as caplog:
+        await default_processor.handle_session_timeout(DEFAULT_SENDER_ID, session_id)
+
+    # Verify tracker state
+    updated_tracker = await default_processor.tracker_store.retrieve(DEFAULT_SENDER_ID)
+    assert updated_tracker.inactive is True
+
+    # Verify ConversationInactive event was added
+    inactive_events = [
+        e for e in updated_tracker.events if isinstance(e, ConversationInactive)
+    ]
+    assert len(inactive_events) == 1
+    logs = filter_logs(
+        caplog, "processor.session_timeout.conversation_inactive", "info"
+    )
+    assert len(logs) == 1
+    assert logs[0]["sender_id"] == DEFAULT_SENDER_ID
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_session_timeout_validates_session_id(
+    default_processor: MessageProcessor,
+):
+    """Session timeout is ignored if session_id doesn't match."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    # Update tracker with UserUttered
+    tracker.update(UserUttered("test"), default_processor.domain)
+    await default_processor.tracker_store.save(tracker)
+
+    # Trigger timeout with wrong session_id
+    with capture_logs() as caplog:
+        await default_processor.handle_session_timeout(
+            DEFAULT_SENDER_ID, "wrong_session_id"
+        )
+
+    # Verify tracker state unchanged
+    updated_tracker = await default_processor.tracker_store.retrieve(DEFAULT_SENDER_ID)
+    assert updated_tracker.inactive is False
+
+    # Verify no ConversationInactive event
+    inactive_events = [
+        e for e in updated_tracker.events if isinstance(e, ConversationInactive)
+    ]
+    assert len(inactive_events) == 0
+    logs = filter_logs(caplog, "processor.session_timeout.session_mismatch", "debug")
+    assert len(logs) == 1
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_session_timeout_skips_when_message_after_timer_scheduled(
+    default_processor: MessageProcessor,
+):
+    """Session timeout is skipped when a user message arrived after timer was scheduled
+    (multi-pod race safeguard).
+    """
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    # Timer was "scheduled" at T1
+    scheduled_time = time.time() - 10.0
+
+    # User sent a message at T2 (after T1)
+    message_time = time.time() - 5.0
+    tracker.update(
+        UserUttered("hello", timestamp=message_time), default_processor.domain
+    )
+    await default_processor.tracker_store.save(tracker)
+    session_id = tracker.current_session_id
+
+    # Trigger timeout with scheduled_time before the message
+    with capture_logs() as caplog:
+        await default_processor.handle_session_timeout(
+            DEFAULT_SENDER_ID, session_id, scheduled_time=scheduled_time
+        )
+
+    # Verify no ConversationInactive (message timestamp check cancelled expiration)
+    updated_tracker = await default_processor.tracker_store.retrieve(DEFAULT_SENDER_ID)
+    assert updated_tracker.inactive is False
+    inactive_events = [
+        e for e in updated_tracker.events if isinstance(e, ConversationInactive)
+    ]
+    assert len(inactive_events) == 0
+    logs = filter_logs(caplog, "processor.session_timeout.message_after_timer", "debug")
+    assert len(logs) == 1
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_session_timeout_skips_if_already_inactive(
+    default_processor: MessageProcessor,
+):
+    """Session timeout is ignored if conversation is already inactive."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    # Set conversation as inactive
+    tracker.update(UserUttered("test"), default_processor.domain)
+    tracker.update(ConversationInactive(), default_processor.domain)
+    await default_processor.tracker_store.save(tracker)
+    session_id = tracker.current_session_id
+
+    # Count events before timeout
+    events_before = len(tracker.events)
+
+    # Trigger session timeout
+    with capture_logs() as caplog:
+        await default_processor.handle_session_timeout(DEFAULT_SENDER_ID, session_id)
+
+    # Verify no additional events were added
+    updated_tracker = await default_processor.tracker_store.retrieve(DEFAULT_SENDER_ID)
+    assert len(updated_tracker.events) == events_before
+    logs = filter_logs(caplog, "processor.session_timeout.already_inactive", "debug")
+    assert len(logs) == 1
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_session_timeout_skips_if_terminated(
+    default_processor: MessageProcessor,
+):
+    """Session timeout is ignored if conversation is terminated."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    # Set conversation as terminated
+    tracker.update(UserUttered("test"), default_processor.domain)
+    tracker.update(SessionEnded(), default_processor.domain)
+    await default_processor.tracker_store.save(tracker)
+    session_id = tracker.current_session_id
+
+    # Count events before timeout
+    events_before = len(tracker.events)
+
+    # Trigger session timeout
+    with capture_logs() as caplog:
+        await default_processor.handle_session_timeout(DEFAULT_SENDER_ID, session_id)
+
+    # Verify no additional events were added
+    updated_tracker = await default_processor.tracker_store.retrieve(DEFAULT_SENDER_ID)
+    assert len(updated_tracker.events) == events_before
+    logs = filter_logs(caplog, "processor.session_timeout.already_terminated", "debug")
+    assert len(logs) == 1
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_session_timer_cancelled_on_session_end(
+    default_processor: MessageProcessor,
+):
+    """Timer is cancelled when SessionEnded event is processed."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    # Schedule timer
+    await default_processor.timer_manager.schedule_timer(
+        sender_id=DEFAULT_SENDER_ID,
+        session_id=tracker.current_session_id,
+        timeout_seconds=60.0,
+        callback=default_processor.handle_session_timeout,
+    )
+
+    # Verify timer exists
+    assert (
+        await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is not None
+    )
+
+    # Process SessionEnded event
+    events = [SessionEnded()]
+    await default_processor._handle_session_timer_events(events, tracker)
+
+    # Verify timer was cancelled
+    assert await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is None
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_timer_scheduled_when_no_existing_timer(
+    default_processor: MessageProcessor,
+):
+    """When no timer exists, _reschedule_session_timer schedules a new one."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    # Ensure no timer exists
+    assert await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is None
+
+    # Schedule timer via _reschedule_session_timer
+    await default_processor._reschedule_session_timer(tracker)
+
+    # Verify a timer was scheduled
+    timer = await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID)
+    assert timer is not None
+    assert timer.sender_id == DEFAULT_SENDER_ID
+
+    await default_processor.timer_manager.cancel_timer(DEFAULT_SENDER_ID)
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_timer_not_scheduled_when_sessions_disabled(
+    default_processor: MessageProcessor,
+):
+    """Timer is not scheduled when sessions are disabled in domain config."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    # Temporarily disable sessions
+    disabled_config = SessionConfig(
+        session_expiration_time=0,  # Disables sessions
+        carry_over_slots=True,
+    )
+
+    # Use patching to temporarily change session config
+    with patch.object(default_processor.domain, "session_config", disabled_config):
+        events = [SessionStarted()]
+        await default_processor._handle_session_timer_events(events, tracker)
+
+    # Verify no timer was scheduled
+    assert await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is None

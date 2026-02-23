@@ -203,11 +203,11 @@ async def test_load_agent(trained_rasa_model: Text):
 
     assert agent.tracker_store is not None
     assert agent.lock_store is not None
-    assert agent.timer_store is not None
+    assert agent.timer_manager is not None
     assert agent.processor is not None
     assert agent.processor.graph_runner is not None
-    # Verify timer store is propagated to processor
-    assert agent.processor.timer_store is agent.timer_store
+    # Verify timer manager is propagated to processor
+    assert agent.processor.timer_manager is agent.timer_manager
 
 
 async def test_load_agent_on_not_existing_path():

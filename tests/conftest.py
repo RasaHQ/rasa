@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import contextlib
 import copy
+import logging
 import os
 import pathlib
 import random
@@ -18,6 +19,7 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
+    AsyncIterator,
     Callable,
     Coroutine,
     Dict,
@@ -149,6 +151,20 @@ pytest_plugins = ["pytester"]
 
 # these tests are run separately
 collect_ignore_glob = ["docs/*.py"]
+
+
+# Suppress only "Task was destroyed but it is pending" warnings from asyncio.
+# These occur during test cleanup when timer tasks can't be properly cancelled
+# (e.g., when a test fails before agent.close() is called).
+class TaskDestroyedFilter(logging.Filter):
+    """Filter out 'Task was destroyed but it is pending' warnings."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "Task was destroyed but it is pending" not in record.getMessage()
+
+
+logging.getLogger("asyncio").addFilter(TaskDestroyedFilter())
+
 
 # Defines how tests are parallelized in the CI
 PATH_PYTEST_MARKER_MAPPINGS = {
@@ -519,9 +535,13 @@ def reset_conversation_state(agent: Agent) -> Agent:
 
 
 @pytest.fixture
-def default_agent(trained_default_agent_model: Text) -> Agent:
+async def default_agent(trained_default_agent_model: Text) -> AsyncIterator[Agent]:
     Configuration.initialise_empty_endpoints()
-    return Agent.load(trained_default_agent_model)
+    agent = Agent.load(trained_default_agent_model)
+    yield agent
+    # Cleanup: stop the timer manager to avoid "Task was destroyed" warnings
+    if agent.timer_manager is not None:
+        await agent.timer_manager.stop()
 
 
 @pytest.fixture(scope="session")
