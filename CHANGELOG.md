@@ -10,6 +10,26 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.12] - 2026-02-23
+                         
+Rasa Pro 3.15.12 (2026-02-23)                              
+### Bugfixes
+- [#4634](https://github.com/rasahq/rasa-private/issues/4634): **E2E fixture resolution and conftest hierarchy:** 
+
+  Fixture resolution now uses a conftest-style hierarchy, with local overrides taking precedence over global fixtures.
+  This is a change from the previous behavior where all fixtures were merged into a single list, which could lead to silent data loss if duplicate fixture names were used. Now, every test case has its own resolved set of fixtures, and duplicate fixture names are allowed when the intent is "override".
+
+  Details:
+    - **Conftest-style hierarchy:** Fixtures can be defined at root or folder level (e.g. `conftest.yml` / `conftest.yaml`); all e2e tests under that path see them.
+    - **Single-file run parity:** Running one test file resolves fixtures the same way as when that file is run as part of the full suite (global/conftest fixtures are loaded for that file’s path).
+    - **Runtime namespace:** Each test case has its own resolved set of fixtures; there is no shared mutable fixture state between tests. Duplicate fixture names in **different** files are allowed when the intent is “override” (no need to remove or rename for full-suite runs).
+    - **Override semantics:** Local (file-level) fixtures override folder-level; folder-level overrides root. Within a single file, duplicate fixture names remain an error.
+- [#4649](https://github.com/rasahq/rasa-private/issues/4649): Update cryptography dependency to 46.0.5 to address CVE-2026-26007.
+  Update pillow dependency to  12.1.1 to address CVE-2026-25990.
+  Update pyasn1 dependency to 0.6.2 to address CVE-2026-23490.
+  Update python-multipart dependency to 0.0.22 to address CVE-2026-24486.
+
+
 ## [3.15.11] - 2026-02-18
                          
 Rasa Pro 3.15.11 (2026-02-18)                              
