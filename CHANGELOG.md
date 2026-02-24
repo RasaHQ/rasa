@@ -263,6 +263,26 @@ Rasa Pro 3.15.0 (2025-11-26)
 ### Miscellaneous internal changes
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
 
+
+## [3.14.15] - 2026-02-23
+                         
+Rasa Pro 3.14.15 (2026-02-23)                              
+### Bugfixes
+- [#4623](https://github.com/rasahq/rasa-private/issues/4623): Remove config file content from endpoint read success logs to prevent sensitive data exposure.
+- [#4627](https://github.com/rasahq/rasa-private/issues/4627): Update `protobuf` to v5.29.6 to address CVE-2026-0994.
+  Update `wheel` to v0.46.3 to address CVE-2026-24049.
+- [#4634](https://github.com/rasahq/rasa-private/issues/4634): **E2E fixture resolution and conftest hierarchy:** 
+
+  Fixture resolution now uses a conftest-style hierarchy, with local overrides taking precedence over global fixtures.
+  This is a change from the previous behavior where all fixtures were merged into a single list, which could lead to silent data loss if duplicate fixture names were used. Now, every test case has its own resolved set of fixtures, and duplicate fixture names are allowed when the intent is "override".
+
+  Details:
+    - **Conftest-style hierarchy:** Fixtures can be defined at root or folder level (e.g. `conftest.yml` / `conftest.yaml`); all e2e tests under that path see them.
+    - **Single-file run parity:** Running one test file resolves fixtures the same way as when that file is run as part of the full suite (global/conftest fixtures are loaded for that file’s path).
+    - **Runtime namespace:** Each test case has its own resolved set of fixtures; there is no shared mutable fixture state between tests. Duplicate fixture names in **different** files are allowed when the intent is “override” (no need to remove or rename for full-suite runs).
+    - **Override semantics:** Local (file-level) fixtures override folder-level; folder-level overrides root. Within a single file, duplicate fixture names remain an error.
+
+
 ## [3.14.14] - 2026-02-12
                          
 Rasa Pro 3.14.14 (2026-02-12)              
