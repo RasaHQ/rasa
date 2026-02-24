@@ -840,6 +840,22 @@ Rasa Pro 3.14.0 (2025-10-09)
 - [#1892](https://github.com/rasahq/rasa-private/issues/1892), [#2184](https://github.com/rasahq/rasa-private/issues/2184), [#2767](https://github.com/rasahq/rasa-private/issues/2767), [#2814](https://github.com/rasahq/rasa-private/issues/2814), [#2863](https://github.com/rasahq/rasa-private/issues/2863), [#2911](https://github.com/rasahq/rasa-private/issues/2911), [#2913](https://github.com/rasahq/rasa-private/issues/2913), [#2916](https://github.com/rasahq/rasa-private/issues/2916), [#2957](https://github.com/rasahq/rasa-private/issues/2957), [#2990](https://github.com/rasahq/rasa-private/issues/2990), [#3018](https://github.com/rasahq/rasa-private/issues/3018), [#3019](https://github.com/rasahq/rasa-private/issues/3019), [#3052](https://github.com/rasahq/rasa-private/issues/3052), [#3078](https://github.com/rasahq/rasa-private/issues/3078), [#3094](https://github.com/rasahq/rasa-private/issues/3094), [#3121](https://github.com/rasahq/rasa-private/issues/3121), [#3125](https://github.com/rasahq/rasa-private/issues/3125), [#3207](https://github.com/rasahq/rasa-private/issues/3207), [#3208](https://github.com/rasahq/rasa-private/issues/3208), [#3260](https://github.com/rasahq/rasa-private/issues/3260), [#3289](https://github.com/rasahq/rasa-private/issues/3289), [#3319](https://github.com/rasahq/rasa-private/issues/3319), [#3374](https://github.com/rasahq/rasa-private/issues/3374), [#3375](https://github.com/rasahq/rasa-private/issues/3375), [#3411](https://github.com/rasahq/rasa-private/issues/3411)
 
 
+## [3.13.24] - 2026-02-23
+                         
+Rasa Pro 3.13.24 (2026-02-23)                              
+### Bugfixes
+- [#4634](https://github.com/rasahq/rasa-private/issues/4634): **E2E fixture resolution and conftest hierarchy:** 
+
+  Fixture resolution now uses a conftest-style hierarchy, with local overrides taking precedence over global fixtures.
+  This is a change from the previous behavior where all fixtures were merged into a single list, which could lead to silent data loss if duplicate fixture names were used. Now, every test case has its own resolved set of fixtures, and duplicate fixture names are allowed when the intent is "override".
+
+  Details:
+    - **Conftest-style hierarchy:** Fixtures can be defined at root or folder level (e.g. `conftest.yml` / `conftest.yaml`); all e2e tests under that path see them.
+    - **Single-file run parity:** Running one test file resolves fixtures the same way as when that file is run as part of the full suite (global/conftest fixtures are loaded for that file’s path).
+    - **Runtime namespace:** Each test case has its own resolved set of fixtures; there is no shared mutable fixture state between tests. Duplicate fixture names in **different** files are allowed when the intent is “override” (no need to remove or rename for full-suite runs).
+    - **Override semantics:** Local (file-level) fixtures override folder-level; folder-level overrides root. Within a single file, duplicate fixture names remain an error.
+
+
 ## [3.13.23] - 2026-02-12
                          
 Rasa Pro 3.13.23 (2026-02-12)                              
