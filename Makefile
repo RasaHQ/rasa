@@ -92,6 +92,10 @@ install-monitoring:  ## Install rasa with monitoring extras (langfuse)
 	poetry run python -m pip install -U pip
 	poetry install --extras monitoring
 
+install-channels:  ## Install rasa with channels extras
+	poetry run python -m pip install -U pip
+	poetry install --extras channels
+
 format: ## Apply ruff formatting to code.
 	poetry run ruff format rasa tests
 	poetry run ruff check rasa tests --ignore D --fix

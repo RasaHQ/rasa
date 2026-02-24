@@ -94,6 +94,9 @@ voice-files:
   - tests/integration_tests/core/channels/websocket_replay.py
   - tests/integration_tests/core/channels/twilio_media_stream_replay.py
   - tests/integration_tests/core/channels/test_twilio_media_stream_replay.py
+  - .github/workflows/voice-e2e-ci.yml
+  - .github/workflows/run-voice-channel-tests.yml
+
 
 broker-files:
   - rasa/core/brokers/**

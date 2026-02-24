@@ -33,11 +33,11 @@ jobs:
         run: |
           echo "voice-files: ${{  steps.filter.outputs.voice-files }}"
 
-  voice_integration_tests:
+  voice-integration-tests:
     name: Run Voice Integration Tests
     runs-on: warp-ubuntu-latest-x64-4x
     needs: [check-voice-code-changes]
-    if: needs.check-voice-code-changes.outputs.voice-files == 'true'
+    if: needs.check-voice-code-changes.outputs.voice-files == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -105,14 +105,20 @@ jobs:
   send_slack_notification_on_failure:
     name: Notify Slack
     runs-on: warp-ubuntu-latest-x64-2x
-    needs: [check-voice-code-changes, voice_integration_tests]
+    if: always()
+    needs: [check-voice-code-changes, voice-integration-tests]
 
     steps:
       - name: Notify Slack of failure ⛔️
-        # send notification if 'voice_integration_tests' is skipped (previous needed job failed) or failed
-        if: ${{ needs.check-voice-code-changes.outputs.voice-files == 'true' && needs.voice_integration_tests.result != 'success' }}
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
-        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        # send notification if 'voice-integration-tests' is skipped (previous needed job failed) or failed on main branch
+        if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && needs.voice-integration-tests.result != 'success' }}
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
-          args: "⛔️ *Voice Integration Tests on Main* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          # Send notification to #rasa-pro-alerts (channel C01M5TAHDHA)
+          payload: |
+            {
+              "channel": "C01M5TAHDHA",
+              "text": "<!subteam^S08R2BLUZC6> :broken_heart: Voice Integration Tests on Main failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
