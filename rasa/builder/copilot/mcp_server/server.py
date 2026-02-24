@@ -27,6 +27,8 @@ from rasa.builder.copilot.mcp_server.constants import (
     INSTRUCTIONS_FILE_PATH,
     MCP_DEFAULT_HOST,
     MCP_DEFAULT_PORT,
+    MCP_HTTP_HEALTH_URL_PATTERN,
+    MCP_HTTP_URL_PATTERN,
     MCP_TOOL_GET_ASSISTANT_LOGS,
     MCP_TOOL_GET_DOMAIN_SCHEMA,
     MCP_TOOL_GET_E2E_SCHEMA,
@@ -146,30 +148,32 @@ async def health_check(request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok"})
 
 
-def _set_project_folder(folder: str) -> None:
+def _set_project_folder(folder: Optional[str]) -> None:
     """Store the project folder path for use by MCP tools.
 
-    Called once at startup by run_server(). Tools read the value
+    Falls back to the RASA_PROJECT_FOLDER environment variable when *folder*
+    is not provided.  Call this once at startup; tools read the stored value
     via _get_project_folder().
     """
     global _project_folder_path
-    _project_folder_path = folder
+    _project_folder_path = folder or os.getenv(RASA_PROJECT_FOLDER_ENV_VAR)
 
 
 def _get_project_folder() -> str:
-    """Get the project folder set at server startup.
+    """Return the project folder stored by _set_project_folder.
 
     Returns:
         Project folder path as string
 
     Raises:
-        RasaException: If the project folder was not configured at startup.
+        RasaException: If _set_project_folder has not been called or neither
+            the argument nor the RASA_PROJECT_FOLDER env var was set.
     """
     if _project_folder_path is None:
         raise RasaException(
             "Project folder not configured. Ensure run_server() is called with "
-            "a project_folder argument or the RASA_PROJECT_FOLDER environment "
-            "variable is set before the server starts."
+            f"a project_folder argument or the {RASA_PROJECT_FOLDER_ENV_VAR} "
+            "environment variable is set before the server starts."
         )
 
     return _project_folder_path
@@ -908,9 +912,8 @@ def run_server(
             falls back to the RASA_PROJECT_FOLDER environment variable.
     """
     try:
-        resolved_folder = project_folder or os.getenv(RASA_PROJECT_FOLDER_ENV_VAR)
-        if resolved_folder:
-            _set_project_folder(resolved_folder)
+        _set_project_folder(project_folder)
+        resolved_folder = _get_project_folder()
 
         structlogger.info(
             "mcp_server.server.starting",
@@ -937,8 +940,8 @@ def run_server(
                 transport=transport,
                 host=host,
                 port=port,
-                url=f"http://{host}:{port}/mcp",
-                health_url=f"http://{host}:{port}/health",
+                url=MCP_HTTP_URL_PATTERN.format(host=host, port=port),
+                health_url=MCP_HTTP_HEALTH_URL_PATTERN.format(host=host, port=port),
             )
             mcp.run(transport=MCP_TRANSPORT_STREAMABLE_HTTP)
 

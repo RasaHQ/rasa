@@ -39,10 +39,32 @@ class TestProjectFolderState:
         assert _get_project_folder() == project_folder
 
     def test_get_project_folder_raises_when_not_set(self, monkeypatch):
-        """Test that _get_project_folder raises when no folder was stored."""
+        """_get_project_folder raises when _set_project_folder was never called."""
         monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", None)
         with pytest.raises(RasaException, match="Project folder not configured"):
             _get_project_folder()
+
+    def test_set_project_folder_falls_back_to_env_var(self, monkeypatch, tmp_path):
+        """_set_project_folder uses the env var when no explicit folder is given."""
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", None)
+        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(tmp_path))
+
+        _set_project_folder(None)
+
+        assert _get_project_folder() == str(tmp_path)
+
+    def test_set_project_folder_explicit_arg_takes_priority_over_env_var(
+        self, monkeypatch, tmp_path
+    ):
+        """Explicit folder argument takes precedence over the env var."""
+        explicit = str(tmp_path / "explicit")
+        env_path = str(tmp_path / "env")
+        monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", None)
+        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, env_path)
+
+        _set_project_folder(explicit)
+
+        assert _get_project_folder() == explicit
 
     def test_run_server_stores_project_folder(self, monkeypatch, tmp_path):
         """Test that run_server stores the project_folder in module state."""

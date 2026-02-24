@@ -1,17 +1,20 @@
 """Constants for MCP server."""
 
 from pathlib import Path
+from typing import Literal
 
 INSTRUCTIONS_FILE_PATH = Path(__file__).parent / "INSTRUCTIONS.md"
 
 # MCP Transport Modes
-MCP_TRANSPORT_STDIO = "stdio"
-MCP_TRANSPORT_STREAMABLE_HTTP = "streamable-http"
+MCP_TRANSPORT_STDIO: Literal["stdio"] = "stdio"
+MCP_TRANSPORT_STREAMABLE_HTTP: Literal["streamable-http"] = "streamable-http"
 
 # MCP Server Configuration
 MCP_DEFAULT_HOST = "127.0.0.1"
 MCP_DEFAULT_PORT = 5051  # Used by builder mode (embedded server)
 MCP_TOOLS_DEFAULT_PORT = 7331  # Used by `rasa tools run` (standalone server)
+MCP_HTTP_URL_PATTERN = "http://{host}:{port}/mcp"
+MCP_HTTP_HEALTH_URL_PATTERN = "http://{host}:{port}/health"
 
 # MCP Tool Names - Centralized constants for tool names used throughout the codebase
 # These are Rasa-specific tools exposed via the MCP server

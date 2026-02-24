@@ -7,12 +7,11 @@ built-in file operation capabilities.
 
 This module contains:
 1. Implementation functions that take project_folder as a parameter
-2. @function_tool decorated wrappers that get project_folder from environment
+2. @function_tool decorated wrappers that read project_folder from the MCP server global
 3. FILE_OPERATION_TOOLS list for injection into the Agent
 """
 
 import json
-import os
 from pathlib import Path
 from typing import Annotated, Dict, List, Optional
 
@@ -36,6 +35,7 @@ from rasa.builder.copilot.mcp_server.models import (
     UpdateFilesResponse,
     WriteFileResponse,
 )
+from rasa.builder.copilot.mcp_server.server import _get_project_folder
 from rasa.builder.project_generator import (
     bot_file_paths,
     get_bot_files,
@@ -43,28 +43,9 @@ from rasa.builder.project_generator import (
     unsafe_write_to_bot_files,
 )
 from rasa.builder.telemetry.langfuse.langfuse_compat import observe
-from rasa.shared.exceptions import RasaException
 from rasa.utils.io import InvalidPathException
 
 structlogger = structlog.get_logger()
-
-
-def _get_project_folder() -> str:
-    """Get the project folder from environment.
-
-    Returns:
-        Project folder path as string
-
-    Raises:
-        RasaException: If RASA_PROJECT_FOLDER is not set
-    """
-    project_folder = os.getenv("RASA_PROJECT_FOLDER")
-    if project_folder is None:
-        raise RasaException(
-            "Project folder not configured. The RASA_PROJECT_FOLDER environment "
-            "variable must be set."
-        )
-    return project_folder
 
 
 # ============================================================================
@@ -358,7 +339,8 @@ async def update_files(
 # ============================================================================
 # FUNCTION TOOL WRAPPERS
 # These are @function_tool decorated wrappers that the Agent SDK can call.
-# They get the project folder from environment and delegate to implementations.
+# They get the project folder from the MCP server global and delegate to
+# the implementation functions above.
 # ============================================================================
 
 

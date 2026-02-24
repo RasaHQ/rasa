@@ -321,7 +321,7 @@ class TestUpdateFiles:
 class TestFunctionToolWrappers:
     @pytest.fixture
     def project_folder(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-        """Create a project folder and set RASA_PROJECT_FOLDER env var."""
+        """Create a project folder and configure the server-level global."""
         # Create some test files
         (tmp_path / "domain.yml").write_text("version: '3.1'")
         (tmp_path / "config.yml").write_text("pipeline: []")
@@ -330,8 +330,10 @@ class TestFunctionToolWrappers:
         data_dir.mkdir()
         (data_dir / "nlu.yml").write_text("nlu: []")
 
-        # Set the environment variable
-        monkeypatch.setenv("RASA_PROJECT_FOLDER", str(tmp_path))
+        monkeypatch.setattr(
+            "rasa.builder.copilot.mcp_server.server._project_folder_path",
+            str(tmp_path),
+        )
 
         return tmp_path
 
@@ -410,14 +412,18 @@ class TestFunctionToolWrappers:
         assert "Invalid input format" in result.failed[0].error
 
     @pytest.mark.asyncio
-    async def test_wrapper_without_env_var(self, monkeypatch: pytest.MonkeyPatch):
-        """Test that wrappers return error when RASA_PROJECT_FOLDER is not set."""
-        # Unset the environment variable
-        monkeypatch.delenv("RASA_PROJECT_FOLDER", raising=False)
+    async def test_wrapper_without_project_folder(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        """Test that wrappers return error when project folder is not set."""
+        monkeypatch.setattr(
+            "rasa.builder.copilot.mcp_server.server._project_folder_path",
+            None,
+        )
 
         # on_invoke_tool catches exceptions and returns error as string
         result = await list_project_files.on_invoke_tool(None, "{}")
 
         assert isinstance(result, str)
-        assert "RASA_PROJECT_FOLDER" in result
+        assert "project folder" in result.lower()
         assert "error" in result.lower()
