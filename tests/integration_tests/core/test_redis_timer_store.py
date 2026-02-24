@@ -49,8 +49,9 @@ def redis_timer_store(
     """Create a Redis timer store for testing across all deployment modes."""
     # we need one redis database per worker, otherwise
     # tests conflicts with each others when databases are flushed
+    # Use a DB range offset from other fixtures to avoid conflicts.
     pytest_worker_id = os.getenv("PYTEST_XDIST_WORKER", "gw0")
-    redis_database = int(pytest_worker_id.replace("gw", ""))
+    redis_database = int(pytest_worker_id.replace("gw", "")) + 10
 
     # Base configuration
     config_dict = {"host": REDIS_HOST, "port": REDIS_PORT, "key_prefix": "test"}
