@@ -47,7 +47,6 @@ Your task is to analyze the current conversation context and generate a list of 
 * When an agent is active, ALWAYS prioritize `continue agent` over `search and reply` unless the user is clearly asking something unrelated to the agent's task.{% endif %}{% if completed_agents %}
 * ONLY use `restart agent` with agents that are listed in the `completed_agents` section. Do NOT restart non-existent agents.{% endif %}
 * If you're unsure about agent names, refer to the structured data provided in the `Current State` section.
-{% endif %}
 ### General Tips
 * Only use information provided by the user.
 * Strictly adhere to the provided action format.

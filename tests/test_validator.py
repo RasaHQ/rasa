@@ -35,6 +35,11 @@ from rasa.telemetry import (
 from rasa.validator import Validator
 from tests.utilities import filter_logs, flows_from_str
 
+PROMPT_TEMPLATES_DIR = Path("rasa/dialogue_understanding/generator/prompt_templates")
+ALL_DIALOGUE_UNDERSTANDING_PROMPT_TEMPLATES = sorted(
+    PROMPT_TEMPLATES_DIR.glob("*.jinja2")
+)
+
 
 @pytest.fixture(autouse=True)
 def default_config() -> Configuration:
@@ -3865,6 +3870,22 @@ def test_verify_prompt_templates_with_custom_filter(tmp_path: Path) -> None:
         Domain.empty(), TrainingData(), StoryGraph([]), FlowsList([]), config
     )
     assert validator.verify_prompt_templates() is True
+
+
+@pytest.mark.parametrize(
+    "prompt_template_path",
+    ALL_DIALOGUE_UNDERSTANDING_PROMPT_TEMPLATES,
+    ids=lambda path: path.name,
+)
+def test_verify_prompt_templates_all_dialogue_understanding_templates_are_valid(
+    validator: Validator, prompt_template_path: Path
+) -> None:
+    """Ensure every DU generator prompt template passes Jinja2 syntax validation."""
+    assert validator._validate_template_file(
+        str(prompt_template_path),
+        component_name="SearchReadyLLMCommandGenerator",
+        component_type="pipeline component",
+    )
 
 
 @pytest.mark.parametrize(
