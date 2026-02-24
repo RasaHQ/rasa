@@ -53,6 +53,7 @@ ACTION_TRIGGER_SEARCH = "action_trigger_search"
 ACTION_TRIGGER_CHITCHAT = "action_trigger_chitchat"
 ACTION_RESET_ROUTING = "action_reset_routing"
 ACTION_HANGUP = "action_hangup"
+ACTION_HANDOFF_METRIC = "action_handoff_metric"
 ACTION_REPEAT_BOT_MESSAGES = "action_repeat_bot_messages"
 
 # pattern continue interrupted flows
@@ -94,6 +95,7 @@ DEFAULT_ACTION_NAMES = [
     ACTION_TRIGGER_CHITCHAT,
     ACTION_RESET_ROUTING,
     ACTION_HANGUP,
+    ACTION_HANDOFF_METRIC,
     ACTION_REPEAT_BOT_MESSAGES,
     ACTION_CONTINUE_INTERRUPTED_FLOW,
     ACTION_CANCEL_INTERRUPTED_FLOWS,
