@@ -8,7 +8,9 @@ import pytest
 import sqlalchemy as sa
 
 from rasa.core.lock_store import RedisLockStore, RedisLockStoreConfig
-from rasa.core.tracker_stores.redis_tracker_store import RedisTrackerStore
+from rasa.core.tracker_stores.redis_tracker_store import (
+    RedisTrackerStore,
+)
 from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event, SessionStarted, UserUttered
@@ -143,24 +145,37 @@ def _drop_db(connection: sa.engine.Connection, database_name: Text) -> None:
 def redis_tracker_store(
     domain: Domain, request: pytest.FixtureRequest
 ) -> Iterator[RedisTrackerStore]:
-    # we need one redis database per worker, otherwise
-    # tests conflicts with each others when databases are flushed
+    # We need one Redis db per worker for standard/sentinel; otherwise
+    # tests conflict with each other when databases are flushed.
+    # Reserve db 0 for cluster.
     pytest_worker_id = os.getenv("PYTEST_XDIST_WORKER", "gw0")
-    redis_database = int(pytest_worker_id.replace("gw", ""))
+    worker_index = int(pytest_worker_id.replace("gw", ""))
     # Base configuration
     config = {"domain": domain}
+    cluster_tag = uuid.uuid4().hex
 
-    # For cluster mode, don't set db (clusters only support db 0)
-    if request.param["deployment_mode"] != "cluster":
-        config["db"] = redis_database
+    # Cluster only supports db 0. Standard and sentinel use db 1, 2, 3, ...
+    if request.param["deployment_mode"] == "cluster":
+        # Use a hash tag so all keys land on the same cluster slot; then
+        # KEYS/DELETE in teardown see them.
+        config["key_prefix"] = cluster_tag
+    else:
+        config["db"] = worker_index + 1
 
     config.update(request.param)
 
     tracker_store = RedisTrackerStore(**config)
+
     try:
         yield tracker_store
     finally:
-        tracker_store.red.flushdb()
+        # Cluster: delete only its keys (same hash tag = same slot).
+        if cluster_tag in tracker_store.key_prefix:
+            keys = tracker_store.red.keys(cluster_tag + ":*")
+            if keys:
+                tracker_store.red.delete(*keys)
+        else:
+            tracker_store.red.flushdb()
 
 
 async def create_tracker_with_user_id(

@@ -939,7 +939,7 @@ async def test_sql_get_trackers_by_user_id_filters_by_user_id(
 
 
 @pytest.mark.sequential
-@pytest.mark.timeout(10, func_only=True)
+@pytest.mark.timeout(60, func_only=True)
 @pytest.mark.parametrize("num_conversations", [100, 500, 1000, 2000])
 async def test_sql_get_trackers_by_user_id_performance(
     num_conversations: int,

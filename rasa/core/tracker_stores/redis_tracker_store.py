@@ -117,6 +117,11 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         Returns:
             Redis key for the user's tracker sorted set.
         """
+        # When key_prefix is in use, use same key_prefix for the index
+        # so all keys can be isolated by the prefix.
+        if DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX in self.key_prefix:
+            namespace = self.key_prefix.split(DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX)[0]
+            return f"{namespace}user_trackers:{user_id}"
         return f"user_trackers:{user_id}"
 
     def _get_expiration_timestamp(self, ttl: Optional[float]) -> Optional[float]:
