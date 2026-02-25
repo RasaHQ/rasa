@@ -55,7 +55,7 @@ jobs:
 
   gitleaks:
     name: Run Gitleaks secret scan
-    uses: RasaHQ/infrasec-workflows/.github/workflows/scan-secret-gitleaks.yml@main
+    uses: RasaHQ/infrasec-workflows/.github/workflows/scan-secret-gitleaks.yml@77bf1ab46b87f26e60e981ae2bafb5bbab2adb29
     secrets:
       GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
@@ -94,25 +94,21 @@ jobs:
             echo "summary=All security scans passed successfully" >> $GITHUB_OUTPUT
           fi
 
-      - name: Send Slack notification on infrasec-alert channel
+      - name: Send Slack notification to infrasec-alert channel
         if: steps.summary.outputs.failed == 'true'
         uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
-          webhook: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
-            {
-              "text": "*Security scans:* some jobs failed :rotating_light:\nRepository: ${{ github.repository }}\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Open run>\n\n${{ steps.summary.outputs.summary }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Security scans:* some jobs failed :rotating_light:\n*Repository:* `${{ github.repository }}`\n*Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Open run>\n\n${{ steps.summary.outputs.summary }}"
-                  }
-                }
-              ]
-            }
+            channel: "C0351QXJ5CP"
+            text: |
+              *Security scans:* some jobs failed :rotating_light:
+              ${{ steps.summary.outputs.summary }}
+              *Repository:* `${{ github.repository }}`
+              *Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Open run>
+              *Remedy guide:* <https://www.notion.so/rasa/Guide-How-to-Remove-a-Committed-Security-Key-From-GitHub-and-Clean-Repo-History-2afb9c0d544a8080bee6f5380b8e22e0|How to remove a committed security key>
+              _This notification was also sent to #rasa-pro-alerts._
       
       - name: Send Slack notification to rasa-pro-alerts channel
         if: steps.summary.outputs.failed == 'true'
