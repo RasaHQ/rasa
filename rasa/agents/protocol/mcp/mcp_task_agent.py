@@ -448,32 +448,6 @@ class MCPTaskAgent(MCPBaseAgent):
                                 }
                             )
 
-                        exit_met, internal_error = self._is_exit_conditions_met(
-                            agent_input, _slot_values
-                        )
-
-                        # Agent signals task completion if exit conditions are met.
-                        if exit_met:
-                            return self._generate_agent_task_completed_output(
-                                agent_input, _slot_values, tool_results
-                            )
-
-                        # If an internal error occurred while checking the exit
-                        # conditions, return a fatal error output.
-                        if internal_error:
-                            return AgentOutput(
-                                id=agent_input.id,
-                                status=AgentStatus.FATAL_ERROR,
-                                response_message=(
-                                    "An internal error occurred while checking the "
-                                    "exit conditions."
-                                ),
-                                structured_results=self._get_structured_results_for_agent_output(
-                                    agent_input, tool_results
-                                ),
-                                error_message=internal_error,
-                            )
-
             except Exception as e:
                 if isinstance(e, ProviderClientAPIException) and isinstance(
                     e.original_exception, LLMToolResponseDecodeError
@@ -524,3 +498,44 @@ class MCPTaskAgent(MCPBaseAgent):
                 agent_input, tool_results
             ),
         )
+
+    async def evaluate_exit_conditions(
+        self, agent_input: AgentInput, output: AgentOutput
+    ) -> AgentOutput:
+        """Evaluate exit conditions after process_output.
+
+        Merges slot values from agent_input.slots with any SlotSet events
+        in the output, then checks exit conditions. If met, returns a
+        COMPLETED output with the response message discarded.
+        """
+        # Merge slot values: start with input slots, overlay with output events
+        slot_values = {slot.name: slot.value for slot in agent_input.slots}
+        if output.events:
+            for event in output.events:
+                if isinstance(event, SlotSet):
+                    slot_values[event.key] = event.value
+
+        exit_met, internal_error = self._is_exit_conditions_met(
+            agent_input, slot_values
+        )
+
+        if internal_error:
+            return AgentOutput(
+                id=agent_input.id,
+                status=AgentStatus.FATAL_ERROR,
+                response_message=(
+                    "An internal error occurred while checking the " "exit conditions."
+                ),
+                structured_results=output.structured_results,
+                error_message=internal_error,
+            )
+
+        if exit_met:
+            completed_output = self._generate_agent_task_completed_output(
+                agent_input, slot_values, {}
+            )
+            completed_output.structured_results = output.structured_results
+            completed_output.response_message = None
+            return completed_output
+
+        return output

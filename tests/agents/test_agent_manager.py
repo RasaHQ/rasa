@@ -6,10 +6,12 @@ import pytest
 
 from rasa.agents.agent_manager import AgentManager
 from rasa.agents.core.types import AgentIdentifier, AgentStatus, ProtocolType
+from rasa.agents.protocol.mcp.mcp_task_agent import MCPTaskAgent
 from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentOutput
 from rasa.core.available_agents import AgentConfig, AgentInfo, ProtocolConfig
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.shared.agents.utils import make_agent_identifier
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.events import SlotSet
 from rasa.shared.exceptions import AgentInitializationException
 
@@ -388,6 +390,80 @@ async def test_run_agent_process_output_failure(
 
 
 @pytest.mark.asyncio
+async def test_run_agent_evaluate_exit_conditions_called_only_for_mcp_task_agent(
+    agent_manager: AgentManager,
+    mock_agent_input: AgentInput,
+    mock_agent_output: AgentOutput,
+) -> None:
+    """Test that evaluate_exit_conditions is invoked only for MCPTaskAgent."""
+    processed_input = AgentInput(**mock_agent_input.dict())
+
+    # Non-task agent (e.g. MCP_OPEN): evaluate_exit_conditions must not be called
+    non_task_agent = AsyncMock()
+    non_task_agent.protocol_type = ProtocolType.MCP_OPEN
+    non_task_agent.process_input = AsyncMock(return_value=processed_input)
+    non_task_agent.run = AsyncMock(return_value=mock_agent_output)
+    non_task_agent.process_output = AsyncMock(return_value=mock_agent_output)
+    non_task_agent.evaluate_exit_conditions = AsyncMock(return_value=mock_agent_output)
+
+    agent_manager._add_agent(
+        make_agent_identifier("open_agent", ProtocolType.MCP_OPEN),
+        non_task_agent,
+    )
+    await agent_manager.run_agent("open_agent", ProtocolType.MCP_OPEN, mock_agent_input)
+
+    non_task_agent.evaluate_exit_conditions.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_run_agent_evaluate_exit_conditions_called_for_mcp_task_agent(
+    agent_manager: AgentManager,
+    mock_agent_input: AgentInput,
+    mock_agent_output: AgentOutput,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that evaluate_exit_conditions is invoked when agent is MCPTaskAgent."""
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock-key-for-agent-manager-test")
+    task_agent = MCPTaskAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="task_agent",
+                description="Test task agent",
+                protocol=ProtocolConfig.RASA,
+            )
+        )
+    )
+    processed_input = AgentInput(**mock_agent_input.dict())
+
+    with (
+        patch.object(MCPTaskAgent, "process_input", new_callable=AsyncMock) as mock_pi,
+        patch.object(MCPTaskAgent, "run", new_callable=AsyncMock) as mock_run,
+        patch.object(MCPTaskAgent, "process_output", new_callable=AsyncMock) as mock_po,
+        patch.object(
+            MCPTaskAgent,
+            "evaluate_exit_conditions",
+            new_callable=AsyncMock,
+        ) as mock_evaluate_exit_conditions,
+    ):
+        mock_pi.return_value = processed_input
+        mock_run.return_value = mock_agent_output
+        mock_po.return_value = mock_agent_output
+        mock_evaluate_exit_conditions.return_value = mock_agent_output
+
+        agent_manager._add_agent(
+            make_agent_identifier("task_agent", ProtocolType.MCP_TASK),
+            task_agent,
+        )
+        await agent_manager.run_agent(
+            "task_agent", ProtocolType.MCP_TASK, mock_agent_input
+        )
+
+        mock_evaluate_exit_conditions.assert_called_once_with(
+            processed_input, mock_agent_output
+        )
+
+
+@pytest.mark.asyncio
 async def test_disconnect_agent_success(
     agent_manager: AgentManager, mock_agent_protocol: AsyncMock
 ) -> None:
@@ -476,8 +552,10 @@ def test_multiple_agents_management(agent_manager: AgentManager) -> None:
 
 
 def test_agent_with_same_name_different_protocols(agent_manager: AgentManager) -> None:
-    """Test that agents with same name but different protocols
-    are separately managed.
+    """Test that agents with same name but different protocols are separately managed.
+
+    Agents with the same name but different protocol types are stored as
+    separate entries in the manager.
     """
     agent1_id = make_agent_identifier("same_name", ProtocolType.MCP_TASK)
     agent2_id = make_agent_identifier("same_name", ProtocolType.MCP_OPEN)

@@ -12,8 +12,9 @@ from rasa.agents.constants import (
     AGENT_METADATA_MODEL_ID_KEY,
     AGENT_METADATA_SENDER_ID_KEY,
 )
+from rasa.agents.core.types import AgentStatus
 from rasa.agents.protocol.mcp.mcp_task_agent import MCPTaskAgent
-from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentToolResult
+from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentOutput, AgentToolResult
 from rasa.core.available_agents import (
     AgentConfig,
     AgentConfiguration,
@@ -807,7 +808,12 @@ class TestMCPTaskAgent:
     async def test_send_message_set_slot_tool_success(
         self, mcp_task_agent, mock_agent_input
     ):
-        """Test send_message with successful set slot tool call."""
+        """Test send_message with successful set slot tool call.
+
+        After setting a slot, the loop continues to the next iteration.
+        Exit conditions are no longer checked in send_message — they are
+        evaluated after process_output via evaluate_exit_conditions.
+        """
         mock_tool_call = LLMToolCall(
             id="call_123",
             type="function",
@@ -815,30 +821,37 @@ class TestMCPTaskAgent:
             tool_args={"slot_value": "Jane"},
         )
 
-        mock_llm_response = LLMResponse(
+        first_response = LLMResponse(
             id="test_id",
             created=1642248600,
             choices=["Slot set successfully"],
             tool_calls=[mock_tool_call],
         )
 
+        # After setting the slot, LLM responds with text on the next iteration
+        second_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Done!"],
+            tool_calls=[],
+        )
+
         with (
             patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
             patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
-            patch.object(
-                mcp_task_agent, "_is_exit_conditions_met"
-            ) as mock_exit_conditions,
         ):
-            mock_llm_client.acompletion = AsyncMock(return_value=mock_llm_response)
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=[first_response, second_response]
+            )
             mock_tool = MagicMock()
             mock_tool.name = "set_slot_user_name"
             mock_get_tools.return_value = [mock_tool]
-            mock_exit_conditions.return_value = (True, None)  # Exit conditions met
 
             result = await mcp_task_agent.send_message(mock_agent_input)
 
             assert result.id == mock_agent_input.id
-            assert result.status.name == "COMPLETED"
+            assert result.status.name == "INPUT_REQUIRED"
+            assert result.response_message == "Done!"
 
     @pytest.mark.asyncio
     async def test_send_message_set_slot_tool_slot_not_found(
@@ -1034,3 +1047,114 @@ class TestMCPTaskAgent:
             assert call_args is not None
             assert "metadata" in call_args.kwargs
             assert call_args.kwargs["metadata"] == expected_metadata
+
+    @pytest.mark.asyncio
+    async def test_evaluate_exit_conditions_met_from_output_events(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Test that evaluate_exit_conditions returns COMPLETED when
+        SlotSet events in the output satisfy exit conditions.
+        """
+        from rasa.shared.core.events import SlotSet
+
+        mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
+
+        output = AgentOutput(
+            id=mock_agent_input.id,
+            status=AgentStatus.INPUT_REQUIRED,
+            response_message="Here is your answer!",
+            events=[SlotSet("user_name", "Jane")],
+        )
+
+        result = await mcp_task_agent.evaluate_exit_conditions(mock_agent_input, output)
+
+        assert result.status == AgentStatus.COMPLETED
+        assert result.response_message is None
+
+    @pytest.mark.asyncio
+    async def test_evaluate_exit_conditions_not_met(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Test that evaluate_exit_conditions returns output unchanged
+        when exit conditions are not met.
+        """
+        mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
+
+        output = AgentOutput(
+            id=mock_agent_input.id,
+            status=AgentStatus.INPUT_REQUIRED,
+            response_message="Need more info",
+        )
+
+        result = await mcp_task_agent.evaluate_exit_conditions(mock_agent_input, output)
+
+        assert result.status == AgentStatus.INPUT_REQUIRED
+        assert result.response_message == "Need more info"
+
+    @pytest.mark.asyncio
+    async def test_evaluate_exit_conditions_merges_input_slots_and_output_events(
+        self, mcp_task_agent
+    ):
+        """Test that evaluate_exit_conditions merges slot values from
+        agent_input.slots with SlotSet events in output.events.
+        """
+        from rasa.shared.core.events import SlotSet
+
+        agent_input = AgentInput(
+            id="test_id",
+            user_message="test",
+            slots=[
+                AgentInputSlot(
+                    name="user_name", value="John", type="text", allowed_values=None
+                ),
+                AgentInputSlot(
+                    name="confirmed", value=None, type="text", allowed_values=None
+                ),
+            ],
+            conversation_history="",
+            events=[],
+            metadata={
+                "exit_if": ["slots.user_name == 'John' and slots.confirmed == 'yes'"]
+            },
+        )
+
+        # process_output added the SlotSet event for "confirmed"
+        output = AgentOutput(
+            id="test_id",
+            status=AgentStatus.INPUT_REQUIRED,
+            response_message="Confirmed!",
+            events=[SlotSet("confirmed", "yes")],
+        )
+
+        result = await mcp_task_agent.evaluate_exit_conditions(agent_input, output)
+
+        assert result.status == AgentStatus.COMPLETED
+        assert result.response_message is None
+
+    @pytest.mark.asyncio
+    async def test_evaluate_exit_conditions_internal_error(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Test that evaluate_exit_conditions returns FATAL_ERROR
+        when exit condition evaluation encounters an internal error.
+        """
+        mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'John'"]}
+
+        output = AgentOutput(
+            id=mock_agent_input.id,
+            status=AgentStatus.INPUT_REQUIRED,
+            response_message="test",
+            events=[],
+        )
+
+        with patch.object(
+            MCPTaskAgent,
+            "_is_exit_conditions_met",
+            return_value=(False, "predicate evaluation error"),
+        ):
+            result = await mcp_task_agent.evaluate_exit_conditions(
+                mock_agent_input, output
+            )
+
+            assert result.status == AgentStatus.FATAL_ERROR
+            assert result.error_message is not None

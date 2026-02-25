@@ -5,6 +5,7 @@ import structlog
 from rasa.agents.agent_factory import AgentFactory
 from rasa.agents.core.agent_protocol import AgentProtocol
 from rasa.agents.core.types import AgentIdentifier, ProtocolType
+from rasa.agents.protocol.mcp.mcp_task_agent import MCPTaskAgent
 from rasa.agents.schemas import AgentInput, AgentOutput
 from rasa.core.available_agents import AgentConfig
 from rasa.core.channels.channel import OutputChannel
@@ -170,6 +171,12 @@ class AgentManager(metaclass=Singleton):
                 error_message=str(e),
             )
             raise
+
+        # Evaluate exit conditions after process_output (task-specific agents only)
+        if isinstance(agent, MCPTaskAgent):
+            processed_output = await agent.evaluate_exit_conditions(
+                processed_input, processed_output
+            )
 
         # Ensure metadata contains the concrete agent class name
         processed_output.metadata = processed_output.metadata or {}
