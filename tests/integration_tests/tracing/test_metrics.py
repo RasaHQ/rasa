@@ -485,13 +485,34 @@ def send_user_message() -> str:
 def test_metrics_get_sent_to_otlp_collector(
     send_user_message: str,
 ) -> None:
-    # make sure the OTLP collector has collected the metrics
-    while True:
-        response = requests.get(OTLP_METRICS_TEST_URL)
-        assert response.status_code == 200
+    # Give the collector time to receive metrics from Rasa and expose them.
+    time.sleep(10)
+    # Poll with retries for transient connection errors
+    # and until the collector returns non-empty metrics.
+    request_timeout = 10
+    max_wait_seconds = 120
+    deadline = time.time() + max_wait_seconds
+    response = None
+    timed_out = True
 
-        if len(response.text) > 0:
-            break
+    while time.time() < deadline:
+        try:
+            response = requests.get(OTLP_METRICS_TEST_URL, timeout=request_timeout)
+            if response.status_code == 200 and len(response.text) > 0:
+                timed_out = False
+                break
+            time.sleep(1)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            time.sleep(2)
+
+    assert not timed_out, (
+        f"OTLP collector returned no metrics within {max_wait_seconds}s "
+        f"(last: status={response.status_code if response else 'N/A'}, "
+        f"body_len={len(response.text) if response else 0})"
+    )
+    assert (
+        response is not None and response.status_code == 200 and len(response.text) > 0
+    )
 
     assert LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME in response.text
     assert LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME in response.text

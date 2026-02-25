@@ -92,7 +92,12 @@ jobs:
 
       - name: Prepare test results
         if: always()
-        run: mv integration-test-results.xml ${{ github.workspace }}/integration-results-voice-ready-and-stream-results-python-${{ matrix.python-version }}.xml
+        run: |
+          if [ -f integration-test-results.xml ]; then
+            mv integration-test-results.xml ${{ github.workspace }}/integration-results-voice-ready-and-stream-results-python-${{ matrix.python-version }}.xml
+          else
+            echo "No test results file (tests may have failed before writing XML), skipping move"
+          fi
 
       - name: Save Test Results
         if: always()
@@ -101,6 +106,7 @@ jobs:
           name: integration-results-voice-ready-and-stream-results-python-${{ matrix.python-version }}
           path: |
             ${{ github.workspace }}/integration-results-voice-ready-and-stream-results-python-${{ matrix.python-version }}.xml
+          if-no-files-found: ignore
 
   send_slack_notification_on_failure:
     name: Notify Slack
@@ -110,8 +116,9 @@ jobs:
 
     steps:
       - name: Notify Slack of failure ⛔️
-        # send notification if 'voice-integration-tests' is skipped (previous needed job failed) or failed on main branch
-        if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && needs.voice-integration-tests.result != 'success' }}
+        # send notification if 'voice-integration-tests' failed or was skipped (e.g. dependency failed) on main branch.
+        # skip notification when the run/job was cancelled (e.g. by a newer push to main).
+        if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && needs.voice-integration-tests.result != 'success' && needs.voice-integration-tests.result != 'cancelled' }}
         uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
           method: chat.postMessage
