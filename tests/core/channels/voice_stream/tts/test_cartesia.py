@@ -12,7 +12,7 @@ async def test_environment_validation():
     # no api key set
     with mock.patch.dict("os.environ", {}, clear=True):
         with pytest.raises(ProviderClientValidationError) as e:
-            CartesiaTTS()
+            CartesiaTTS(rasa_language="en")
         assert e.match(CartesiaTTS.required_env_vars[0])
         assert e.match("TTS Engine CartesiaTTS")
 
@@ -35,7 +35,7 @@ async def test_environment_validation():
 
 async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("CARTESIA_API_KEY", "bad_key")
-    tts_engine = CartesiaTTS()
+    tts_engine = CartesiaTTS(rasa_language="en")
     text = "Hello there!"
     with pytest.raises(TTSError):
         async for chunk in tts_engine.synthesize(text):
@@ -44,13 +44,14 @@ async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch):
 
 def test_default_config():
     config = CartesiaTTS.get_default_config()
-    assert config.language == "en"
-    assert config.voice == "f786b574-daa5-4673-aa0c-cbe3e8534c02"
+    assert "en" in config.language_map
+    assert config.language_map["en"].language == "en"
+    assert config.language_map["en"].voice == "f786b574-daa5-4673-aa0c-cbe3e8534c02"
     assert config.model_id == "sonic-3"
     assert config.version == "2025-04-16"
 
 
 async def test_tts_session_sharing():
-    tts_engine = CartesiaTTS()
-    tts_engine_2 = CartesiaTTS()
+    tts_engine = CartesiaTTS(rasa_language="en")
+    tts_engine_2 = CartesiaTTS(rasa_language="en")
     assert tts_engine_2.session is tts_engine.session

@@ -1,17 +1,21 @@
 import base64
 import os
 from dataclasses import dataclass
-from typing import AsyncIterator, Dict, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 import aiohttp
 import structlog
 from aiohttp import ClientTimeout
 
-from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import (
+    HERTZ,
+    RasaAudioBytes,
+)
 from rasa.core.channels.voice_stream.tts.tts_engine import (
     TTSEngine,
     TTSEngineConfig,
     TTSError,
+    TTSLanguageMapEntry,
 )
 from rasa.shared.constants import CARTESIA_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
@@ -32,8 +36,18 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
     ws: Optional[aiohttp.ClientWebSocketResponse] = None
     streaming_input: bool = True
 
-    def __init__(self, config: Optional[CartesiaTTSConfig] = None):
-        super().__init__(config)
+    @classmethod
+    def name(cls) -> str:
+        """Return the name identifier for this TTS engine."""
+        return "cartesia"
+
+    def __init__(
+        self,
+        rasa_language: str,
+        config: Optional[CartesiaTTSConfig] = None,
+        additional_languages: Optional[List[str]] = None,
+    ):
+        super().__init__(rasa_language, config, additional_languages or [])
         timeout = ClientTimeout(total=self.config.timeout)
         # Have to create this class-shared session lazily at run time otherwise
         # the async event loop doesn't work
@@ -81,9 +95,9 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
             "model_id": self.config.model_id,
             "voice": {
                 "mode": "id",
-                "id": self.config.voice,
+                "id": self.current_language_config.voice,
             },
-            "language": self.config.language,
+            "language": self.current_language_config.engine_language_key,
             "output_format": {
                 "container": "raw",
                 "encoding": "pcm_mulaw",
@@ -171,14 +185,40 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
     @staticmethod
     def get_default_config() -> CartesiaTTSConfig:
         return CartesiaTTSConfig(
-            language="en",
-            voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",
             timeout=30,
             model_id="sonic-3",
             version="2025-04-16",
             endpoint="wss://api.cartesia.ai/tts/websocket",
+            language_map={
+                "en": TTSLanguageMapEntry(
+                    language="en",
+                    voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",
+                ),
+            },
         )
 
     @classmethod
-    def from_config_dict(cls, config: Dict) -> "CartesiaTTS":
-        return cls(CartesiaTTSConfig.from_dict(config))
+    def from_config_dict(
+        cls,
+        config: Any,
+        rasa_language: str,
+        additional_languages: Optional[List[str]] = None,
+    ) -> "CartesiaTTS":
+        cfg = (
+            config
+            if type(config).__name__ == "CartesiaTTSConfig"
+            else CartesiaTTSConfig.from_dict(config)
+        )
+        return cls(
+            rasa_language,
+            cfg,
+            additional_languages,
+        )
+
+    async def set_language(self, rasa_language: str) -> None:
+        """Update the TTS language for next synthesis"""
+        await super().set_language(rasa_language)
+
+        # need to reconnect to apply new language
+        await self.close_connection()
+        await self.connect()

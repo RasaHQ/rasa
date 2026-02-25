@@ -181,6 +181,7 @@ class BrowserAudioInputChannel(VoiceInputChannel):
     ) -> Blueprint:
         """Defines a Sanic blueprint"""
         blueprint = Blueprint("browser_audio", __name__)
+        self._register_listeners(blueprint)
 
         @blueprint.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
@@ -194,7 +195,9 @@ class BrowserAudioInputChannel(VoiceInputChannel):
                     self._start_recording(call_parameters.call_id, "local")
                 await self.run_audio_streaming(on_new_message, ws)
             except Exception as e:
-                logger.error("browser_audio.handle_message.error", error=e)
+                logger.error(
+                    "browser_audio.handle_message.error", error=e, exc_info=True
+                )
             finally:
                 self._stop_recording()
 

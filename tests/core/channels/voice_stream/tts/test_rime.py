@@ -13,16 +13,17 @@ async def test_environment_validation():
     # no api key set
     with mock.patch.dict("os.environ", {}, clear=True):
         with pytest.raises(ProviderClientValidationError) as e:
-            RimeTTS()
+            RimeTTS(rasa_language="en")
         assert e.match(RimeTTS.required_env_vars[0])
         assert e.match("TTS Engine RimeTTS")
 
 
 def test_default_config():
     config = RimeTTS.get_default_config()
-    assert config.speaker == "cove"
+    assert "en" in config.language_map
+    assert config.language_map["en"].voice == "cove"
+    assert config.language_map["en"].language == "eng"
     assert config.model_id == "mistv2"
-    assert config.language == "eng"
     assert config.timeout == 30
     assert config.endpoint == "wss://users.rime.ai/ws2"
     assert config.speed_alpha == 1.0
@@ -32,14 +33,14 @@ def test_default_config():
 
 async def test_tts_session_sharing(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS()
-    tts_engine_2 = RimeTTS()
+    tts_engine = RimeTTS(rasa_language="en")
+    tts_engine_2 = RimeTTS(rasa_language="en")
     assert tts_engine_2.session is tts_engine.session
 
 
-def test_websocket_url_creation(monkeypatch: MonkeyPatch):
+async def test_websocket_url_creation(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS()
+    tts_engine = RimeTTS(rasa_language="en")
     ws_url = tts_engine.get_websocket_url()
     assert "wss://users.rime.ai/ws2" in ws_url
     assert "speaker=cove" in ws_url
@@ -52,13 +53,14 @@ def test_websocket_url_creation(monkeypatch: MonkeyPatch):
 def test_websocket_url_with_optional_params(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RIME_API_KEY", "test_key")
     config = RimeTTSConfig(
-        speaker="aria",
         model_id="mistv2",
-        language="eng",
         speed_alpha=1.5,
         segment="sentence",
+        language_map={
+            "en": {"language": "eng", "voice": "aria"},
+        },
     )
-    tts_engine = RimeTTS(config)
+    tts_engine = RimeTTS(rasa_language="en", config=config)
     ws_url = tts_engine.get_websocket_url()
     assert "speedAlpha=1.5" in ws_url
     assert "segment=sentence" in ws_url
@@ -74,7 +76,7 @@ def test_request_headers(monkeypatch: MonkeyPatch):
 async def test_signal_text_done_resets_context_id(monkeypatch: MonkeyPatch):
     """Test that context_id gets reset every time signal_text_done is called."""
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS()
+    tts_engine = RimeTTS(rasa_language="en")
 
     # Mock the websocket
     mock_ws = AsyncMock()
@@ -105,7 +107,7 @@ async def test_signal_text_done_raises_error_when_ws_not_connected(
 ):
     """Test that signal_text_done raises TTSError when WebSocket is not connected."""
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS()
+    tts_engine = RimeTTS(rasa_language="en")
 
     # WebSocket is None (not connected)
     tts_engine.ws = None
@@ -119,7 +121,7 @@ async def test_signal_text_done_raises_error_when_ws_closed(
 ):
     """Test that signal_text_done raises TTSError when WebSocket is closed."""
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS()
+    tts_engine = RimeTTS(rasa_language="en")
 
     # Mock a closed websocket
     mock_ws = AsyncMock()
@@ -133,7 +135,7 @@ async def test_signal_text_done_raises_error_when_ws_closed(
 async def test_send_text_chunk_includes_context_id(monkeypatch: MonkeyPatch):
     """Test that send_text_chunk sends text with the current context_id."""
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS()
+    tts_engine = RimeTTS(rasa_language="en")
 
     # Mock the websocket
     mock_ws = AsyncMock()

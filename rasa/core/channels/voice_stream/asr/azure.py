@@ -1,17 +1,24 @@
 import asyncio
 import os
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional
 
 import structlog
 
-from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine, ASREngineConfig
+from rasa.core.channels.voice_stream.asr.asr_engine import (
+    ASREngine,
+    ASREngineConfig,
+    ASRLanguageMapEntry,
+)
 from rasa.core.channels.voice_stream.asr.asr_event import (
     ASREvent,
     NewTranscript,
     UserIsSpeaking,
 )
-from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import (
+    HERTZ,
+    RasaAudioBytes,
+)
+from rasa.core.channels.voice_stream.tts.tts_engine import TTSConfigError
 from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
 
@@ -21,9 +28,19 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 
-@dataclass
 class AzureASRConfig(ASREngineConfig):
+    """Configuration for Azure ASR.
+
+    Attributes:
+        language: ASR language code (typically set from language_map).
+        speech_region: Azure speech service region.
+        speech_host: Custom host URL.
+        speech_endpoint: Custom endpoint URL.
+        model: Optional model identifier.
+    """
+
     language: Optional[str] = None
+    model: Optional[str] = None
     speech_region: Optional[str] = None
     speech_host: Optional[str] = None
     speech_endpoint: Optional[str] = None
@@ -33,8 +50,17 @@ class AzureASR(ASREngine[AzureASRConfig]):
     required_env_vars = (AZURE_SPEECH_API_KEY_ENV_VAR,)
     required_packages = ("azure.cognitiveservices.speech",)
 
-    def __init__(self, config: Optional[AzureASRConfig] = None):
-        super().__init__(config)
+    @classmethod
+    def name(cls) -> str:
+        return "azure"
+
+    def __init__(
+        self,
+        rasa_language: str,
+        config: Optional[AzureASRConfig] = None,
+        additional_languages: Optional[List[str]] = None,
+    ):
+        super().__init__(rasa_language, config, additional_languages)
 
         import azure.cognitiveservices.speech as speechsdk
 
@@ -59,20 +85,24 @@ class AzureASR(ASREngine[AzureASRConfig]):
         self.main_loop.call_soon_threadsafe(self.queue.put_nowait, event)
 
     async def connect(self) -> None:
+        """Connect to Azure ASR service and set up callbacks."""
+
+        # Validate that at least one of the connection parameters is set
+        if not (
+            self.config.speech_region
+            or self.config.speech_host
+            or self.config.speech_endpoint
+        ):
+            raise TTSConfigError(
+                f"Azure ASR config requires at least one of speech_region "
+                f"({self.config.speech_region}), "
+                f"speech_host ({self.config.speech_host}), "
+                f"or speech_endpoint ({self.config.speech_endpoint}) to be set."
+            )
+
+        # Set up Azure Speech SDK configuration
         import azure.cognitiveservices.speech as speechsdk
 
-        # connecting to eastus by default
-        if (
-            self.config.speech_region is None
-            and self.config.speech_host is None
-            and self.config.speech_endpoint is None
-        ):
-            self.config.speech_region = "eastus"
-            logger.warning(
-                "voice_channel.asr.azure.no_region",
-                message="No speech region configured, using 'eastus' as default",
-                region="eastus",
-            )
         speech_config = speechsdk.SpeechConfig(
             subscription=os.environ[AZURE_SPEECH_API_KEY_ENV_VAR],
             region=self.config.speech_region,
@@ -89,7 +119,7 @@ class AzureASR(ASREngine[AzureASRConfig]):
         audio_config = speechsdk.audio.AudioConfig(stream=self.stream)
         self.speech_recognizer = speechsdk.SpeechRecognizer(
             speech_config=speech_config,
-            language=self.config.language,
+            language=self.current_language_config.engine_language_key,
             audio_config=audio_config,
         )
         self.speech_recognizer.recognized.connect(self.fill_queue)
@@ -147,9 +177,22 @@ class AzureASR(ASREngine[AzureASRConfig]):
     @staticmethod
     def get_default_config() -> AzureASRConfig:
         return AzureASRConfig(
-            language=None, speech_region=None, speech_host=None, speech_endpoint=None
+            language_map={
+                "en": ASRLanguageMapEntry(
+                    language="en-US",
+                ),
+            }
         )
 
     @classmethod
-    def from_config_dict(cls, config: Dict) -> "AzureASR":
-        return AzureASR(AzureASRConfig.from_dict(config))
+    def from_config_dict(
+        cls,
+        config: Dict,
+        rasa_language: str,
+        additional_languages: Optional[List[str]] = None,
+    ) -> "AzureASR":
+        return cls(
+            rasa_language,
+            AzureASRConfig(**config),
+            additional_languages,
+        )

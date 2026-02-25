@@ -1,16 +1,20 @@
 import os
 from dataclasses import dataclass
-from typing import AsyncIterator, Dict, Optional
+from typing import AsyncIterator, Dict, List, Optional
 
 import aiohttp
 import structlog
 from aiohttp import ClientConnectorError, ClientTimeout
 
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import (
+    CurrentLanguageConfig,
+    RasaAudioBytes,
+)
 from rasa.core.channels.voice_stream.tts.tts_engine import (
     TTSEngine,
     TTSEngineConfig,
     TTSError,
+    TTSLanguageMapEntry,
 )
 from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
@@ -20,8 +24,17 @@ structlogger = structlog.get_logger()
 
 @dataclass
 class AzureTTSConfig(TTSEngineConfig):
-    speech_region: Optional[str] = None
+    """Configuration for Azure TTS.
+
+    Attributes:
+        speech_region: Azure speech service region.
+        endpoint: Custom endpoint URL. If None, constructed from speech_region.
+        timeout: Request timeout in seconds.
+    """
+
+    speech_region: str = "eastus"
     endpoint: Optional[str] = None
+    timeout: int = 10
 
 
 class AzureTTS(TTSEngine[AzureTTSConfig]):
@@ -29,8 +42,18 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
     required_env_vars = (AZURE_SPEECH_API_KEY_ENV_VAR,)
     streaming_input: bool = False
 
-    def __init__(self, config: Optional[AzureTTSConfig] = None):
-        super().__init__(config)
+    @classmethod
+    def name(cls) -> str:
+        """Return the name identifier for this TTS engine."""
+        return "azure"
+
+    def __init__(
+        self,
+        rasa_language: str,
+        config: Optional[AzureTTSConfig] = None,
+        additional_languages: Optional[List[str]] = None,
+    ):
+        super().__init__(rasa_language, config, additional_languages)
         timeout = ClientTimeout(total=self.config.timeout)
         # Have to create this class-shared session lazily at run time otherwise
         # the async event loop doesn't work
@@ -44,7 +67,7 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
         config = self.config.merge(config)
         azure_speech_url = self.get_tts_endpoint(config)
         headers = self.get_request_headers()
-        body = self.create_request_body(text, config)
+        body = self.create_request_body(text, self.current_language_config)
         if self.session is None:
             raise ConnectionException("Client session is not initialized")
         try:
@@ -96,11 +119,16 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
             )
 
     @staticmethod
-    def create_request_body(text: str, conf: AzureTTSConfig) -> str:
+    def create_request_body(text: str, lang_model: CurrentLanguageConfig) -> str:
         return f"""
-        <speak version='1.0' xml:lang='{conf.language}' xmlns:mstts='http://www.w3.org/2001/mstts'
-                xmlns='http://www.w3.org/2001/10/synthesis'>
-            <voice xml:lang='{conf.language}' name='{conf.voice}'>
+        <speak
+            version='1.0'
+            xml:lang='{lang_model.engine_language_key}'
+            xmlns:mstts='http://www.w3.org/2001/mstts'
+            xmlns='http://www.w3.org/2001/10/synthesis'
+        >
+            <voice xml:lang='{lang_model.engine_language_key}'
+            name='{lang_model.voice}'>
                 {text}
             </voice>
         </speak>"""
@@ -112,18 +140,23 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
     @staticmethod
     def get_default_config() -> AzureTTSConfig:
         return AzureTTSConfig(
-            language="en-US",
-            voice="en-US-JennyNeural",
-            timeout=10,
-            speech_region="eastus",
-            endpoint=None,
+            language_map={
+                "en": TTSLanguageMapEntry(
+                    language="en-US",
+                    voice="en-US-JennyNeural",
+                ),
+            }
         )
 
     @classmethod
-    def name(cls) -> str:
-        """Return the name identifier for this TTS engine."""
-        return "azure"
-
-    @classmethod
-    def from_config_dict(cls, config: Dict) -> "AzureTTS":
-        return cls(AzureTTSConfig.from_dict(config))
+    def from_config_dict(
+        cls,
+        config: Dict,
+        rasa_language: str,
+        additional_languages: Optional[List[str]] = None,
+    ) -> "AzureTTS":
+        return cls(
+            rasa_language,
+            AzureTTSConfig.from_dict(config),
+            additional_languages,
+        )

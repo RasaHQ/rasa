@@ -1,39 +1,160 @@
 from dataclasses import dataclass
-from typing import AsyncIterator, Dict, Generic, Optional, Tuple, Type, TypeVar
+from typing import AsyncIterator, Dict, Generic, List, Optional, Tuple, Type, TypeVar
 
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+import structlog
+
+from rasa.core.channels.voice_stream.audio_bytes import (
+    CurrentLanguageConfig,
+    RasaAudioBytes,
+)
 from rasa.core.channels.voice_stream.util import MergeableConfig
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.common import validate_environment
+
+logger = structlog.get_logger(__name__)
 
 
 class TTSError(RasaException):
     pass
 
 
+class TTSConfigError(RasaException):
+    """Error raised when TTS configuration is invalid."""
+
+    pass
+
+
 T = TypeVar("T", bound="TTSEngineConfig")
 E = TypeVar("E", bound="TTSEngine")
+L = TypeVar("L", bound="TTSLanguageMapEntry")
+
+
+@dataclass
+class TTSLanguageMapEntry:
+    """Entry in the language_map mapping Rasa language to TTS settings.
+    Usually a TTS Engine will require at least a language code and voice
+    identifier to be able to synthesize speech. This class can be extended with
+    additional fields as needed for specific engines.
+
+    Attributes:
+        language: Optional TTS-specific language code (e.g., 'en-US' for Azure).
+        voice: Optional TTS-specific voice identifier.
+        model: Optional model identifier for engines that support multiple models.
+    """
+
+    language: Optional[str] = None
+    voice: Optional[str] = None
+    model: Optional[str] = None
 
 
 @dataclass
 class TTSEngineConfig(MergeableConfig):
+    """Base configuration for TTS engines.
+
+    Attributes:
+        language: (deprecated) TTS language code.
+        voice: (deprecated) TTS voice identifier.
+        timeout: Request timeout in seconds.
+        language_map: Maps Rasa language codes to TTS-specific settings.
+            Each TTS engine should provide sensible defaults.
+    """
+
     language: Optional[str] = None
     voice: Optional[str] = None
-    timeout: Optional[int] = None
+    timeout: int = 30
+    language_map: Optional[Dict[str, TTSLanguageMapEntry]] = None
+
+    @classmethod
+    def from_dict(cls: Type["TTSEngineConfig"], data: dict) -> "TTSEngineConfig":
+        """Create config from dict, converting language_map entries."""
+        if data.get("language_map"):
+            data = {**data}  # shallow copy to avoid mutating the original
+            data["language_map"] = {
+                k: TTSLanguageMapEntry(**v) if isinstance(v, dict) else v
+                for k, v in data["language_map"].items()
+            }
+        return cls(**data)
+
+    def validate_language_map_keys(
+        self,
+        rasa_language: Optional[str],
+        additional_languages: Optional[List[str]] = None,
+    ) -> None:
+        """Validate that language_map is configured and contains valid languages.
+
+        Checks that:
+        1. language_map is not empty
+        2. rasa_language is provided
+        3. rasa_language exists in language_map
+        4. All language_map keys are in the set of allowed languages
+           (rasa_language + additional_languages)
+        """
+        if not self.language_map:
+            raise TTSConfigError(
+                "TTS configuration requires 'language_map' to be set. "
+                "The language_map should map Rasa language codes to TTS settings."
+            )
+
+        if rasa_language is None:
+            raise TTSConfigError(
+                "A language key must be provided in config.yml, "
+                "this key is used to determine which language and "
+                "voice to use from the language_map."
+            )
+
+        if rasa_language not in self.language_map:
+            available_languages = list(self.language_map.keys())
+            raise TTSConfigError(
+                f"Language '{rasa_language}' not found in language_map. "
+                f"Available languages: {available_languages}. "
+                f"Please add '{rasa_language}' to the language_map configuration."
+            )
+
+        # Validate that language_map keys are subset of allowed languages
+        allowed_languages = {rasa_language}
+        if additional_languages:
+            allowed_languages.update(additional_languages)
+
+        language_map_keys = set(self.language_map.keys())
+        invalid_keys = language_map_keys - allowed_languages
+        if invalid_keys:
+            raise TTSConfigError(
+                f"language_map contains invalid language keys: {sorted(invalid_keys)}. "
+                f"Allowed languages are: {sorted(allowed_languages)}. "
+                f"These must match 'language' and 'additional_languages' in config.yml."
+            )
 
 
 class TTSEngine(Generic[T]):
     required_env_vars: Tuple[str, ...] = ()
     required_packages: Tuple[str, ...] = ()
+
+    # If TTS supports input text streaming
     streaming_input: bool = False
 
-    def __init__(self, config: Optional[T] = None):
+    # Runtime language/model state
+    current_language_config: CurrentLanguageConfig
+
+    @classmethod
+    def name(cls) -> str:
+        raise NotImplementedError(
+            "Subclasses must implement name() method to return engine name."
+        )
+
+    def __init__(
+        self,
+        rasa_language: str,
+        config: Optional[T] = None,
+        additional_languages: Optional[List[str]] = None,
+    ):
         self.config = self.get_default_config().merge(config)
+        self.config.validate_language_map_keys(rasa_language, additional_languages)
         validate_environment(
             self.required_env_vars,
             self.required_packages,
             f"TTS Engine {self.__class__.__name__}",
         )
+        self._set_current_language_config(rasa_language)
 
     async def connect(self, config: Optional[T] = None) -> None:
         """Establish connection to the TTS engine if necessary."""
@@ -88,5 +209,50 @@ class TTSEngine(Generic[T]):
         raise NotImplementedError
 
     @classmethod
-    def from_config_dict(cls: Type[E], config: Dict) -> E:
+    def from_config_dict(
+        cls: Type[E],
+        config: Dict,
+        rasa_language: str,
+        additional_languages: Optional[List[str]] = None,
+    ) -> E:
         raise NotImplementedError
+
+    async def set_language(self, rasa_language: str) -> None:
+        """Update the TTS language for subsequent synthesis calls.
+
+        Called by the voice channel when the language slot changes.
+
+        Args:
+            rasa_language: Value of Rasa's language slot.
+        """
+        if self.current_language_config.is_same_language(rasa_language):
+            return
+
+        old_language_config = self.current_language_config
+        self._set_current_language_config(rasa_language)
+        logger.info(
+            f"tts.{self.name()}.language_changed",
+            before=old_language_config,
+            after=self.current_language_config,
+        )
+
+    def _set_current_language_config(self, rasa_language: str) -> None:
+        """Helper method to set the current language configuration."""
+        assert (
+            self.config.language_map is not None
+        ), "language_map must be set in config"
+        try:
+            entry = self.config.language_map[rasa_language]
+        except KeyError:
+            logger.error(
+                f"tts.{self.name()}.language_not_in_map",
+                language=rasa_language,
+                available_languages=list(self.config.language_map.keys()),
+            )
+            return
+        self.current_language_config = CurrentLanguageConfig(
+            rasa_language_key=rasa_language,
+            engine_language_key=entry.language,
+            voice=entry.voice,
+            model=entry.model,
+        )

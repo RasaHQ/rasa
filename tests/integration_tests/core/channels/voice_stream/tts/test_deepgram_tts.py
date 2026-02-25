@@ -9,7 +9,7 @@ from rasa.core.channels.voice_stream.tts.deepgram import DeepgramTTS
 @pytest.mark.asyncio
 async def test_deepgram_tts(tmp_path):
     output_path = tmp_path / "output.wav"
-    tts_engine = DeepgramTTS()
+    tts_engine = DeepgramTTS("en")
     text = "hello my name is Edgar"
     audio_bytes = b""
     try:

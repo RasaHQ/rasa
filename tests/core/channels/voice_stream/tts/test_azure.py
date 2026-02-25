@@ -17,20 +17,20 @@ async def test_environment_validation():
     # no api key set
     with mock.patch.dict("os.environ", {}, clear=True):
         with pytest.raises(ProviderClientValidationError) as e:
-            AzureTTS()
+            AzureTTS(rasa_language="en")
         assert e.match(AzureTTS.required_env_vars[0])
         assert e.match("TTS Engine AzureTTS")
 
 
 async def test_synthesis_with_asr():
     tts_engine = AzureTTS(
-        AzureTTSConfig(
+        rasa_language="en",
+        config=AzureTTSConfig(
             speech_region="germanywestcentral",
-            language="en-US",
-        )
+        ),
     )
     text = "hello my name is Edgar"
-    asr_engine = DeepgramASR()
+    asr_engine = DeepgramASR(rasa_language="en")
     await run_single_utterance_through_tts_and_asr(text, asr_engine, tts_engine)
 
 
@@ -42,7 +42,7 @@ async def test_synthesis_with_asr():
     ],
 )
 async def test_synthesis_error(bad_config):
-    tts_engine = AzureTTS()
+    tts_engine = AzureTTS(rasa_language="en")
     text = "Hello there!"
     with pytest.raises(TTSError):
         async for chunk in tts_engine.synthesize(text, bad_config):
@@ -51,7 +51,7 @@ async def test_synthesis_error(bad_config):
 
 async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("AZURE_SPEECH_API_KEY", "bad key")
-    tts_engine = AzureTTS()
+    tts_engine = AzureTTS(rasa_language="en")
     text = "Hello there!"
     with pytest.raises(TTSError):
         async for chunk in tts_engine.synthesize(text):
@@ -60,8 +60,9 @@ async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch):
 
 def test_azure_default_config():
     config = AzureTTS.get_default_config()
-    assert config.language == "en-US"
-    assert config.voice == "en-US-JennyNeural"
+    assert "en" in config.language_map
+    assert config.language_map["en"].language == "en-US"
+    assert config.language_map["en"].voice == "en-US-JennyNeural"
     assert config.speech_region == "eastus"
 
 
@@ -73,12 +74,14 @@ def test_tts_url_creation():
 
 
 def test_tts_request_body():
-    config = AzureTTS.get_default_config()
+    tts_engine = AzureTTS(rasa_language="en")
     text = "Hi there, how can I help you today?"
-    request_body = AzureTTS.create_request_body(text, config)
+    request_body = AzureTTS.create_request_body(
+        text, tts_engine.current_language_config
+    )
     assert text in request_body
-    assert config.voice in request_body
-    assert config.language in request_body
+    assert tts_engine.current_language_config.voice in request_body
+    assert tts_engine.current_language_config.engine_language_key in request_body
 
 
 def test_tts_headers():
@@ -90,14 +93,14 @@ def test_tts_headers():
 
 
 async def test_tts_session_sharing():
-    tts_engine = AzureTTS()
-    tts_engine_2 = AzureTTS()
+    tts_engine = AzureTTS(rasa_language="en")
+    tts_engine_2 = AzureTTS(rasa_language="en")
     assert tts_engine_2.session is tts_engine.session
 
 
 async def test_synthesize_timeout(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("AZURE_SPEECH_API_KEY", "my key")
-    tts_engine = AzureTTS()
+    tts_engine = AzureTTS(rasa_language="en")
     text = "Test timeout"
     assert tts_engine.session is not None
 

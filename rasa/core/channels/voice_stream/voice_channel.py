@@ -6,6 +6,7 @@ import string
 import time
 from dataclasses import asdict, dataclass
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncIterator,
     Awaitable,
@@ -18,7 +19,7 @@ from typing import (
 )
 
 import structlog
-from sanic import Websocket  # type: ignore
+from sanic import Blueprint, Websocket  # type: ignore
 from sanic.exceptions import WebsocketClosed
 
 from rasa.core.channels import InputChannel, OutputChannel, UserMessage
@@ -55,13 +56,16 @@ from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
 from rasa.core.channels.voice_stream.util import (
     generate_silence,
 )
-from rasa.shared.core.constants import SILENCE_TIMEOUT_SLOT
+from rasa.shared.core.constants import LANGUAGE_SLOT, SILENCE_TIMEOUT_SLOT
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.utils.common import (
     class_from_module_path,
     mark_as_beta_feature,
 )
 from rasa.utils.io import remove_emojis
+
+if TYPE_CHECKING:
+    from rasa.core.agent import Agent
 
 logger = structlog.get_logger(__name__)
 
@@ -100,7 +104,11 @@ class DTMFInputAction(VoiceChannelAction):
     digit: str
 
 
-def asr_engine_from_config(asr_config: Dict) -> ASREngine:
+def asr_engine_from_config(
+    asr_config: Dict,
+    language: str,
+    additional_languages: Optional[List[str]] = None,
+) -> ASREngine:
     if not asr_config:
         raise ValueError("ASR configuration dictionary cannot be empty")
 
@@ -113,14 +121,16 @@ def asr_engine_from_config(asr_config: Dict) -> ASREngine:
     asr_config = copy.copy(asr_config)
     asr_config.pop("name")
     if name.lower() == "deepgram":
-        return DeepgramASR.from_config_dict(asr_config)
+        return DeepgramASR.from_config_dict(asr_config, language, additional_languages)
     if name == "azure":
-        return AzureASR.from_config_dict(asr_config)
+        return AzureASR.from_config_dict(asr_config, language, additional_languages)
     else:
         mark_as_beta_feature("Custom ASR Engine")
         try:
             asr_engine_class = class_from_module_path(name)
-            return asr_engine_class.from_config_dict(asr_config)
+            return asr_engine_class.from_config_dict(
+                asr_config, language, additional_languages
+            )
         except NameError:
             raise InvalidConfigException(
                 f"Failed to initialize ASR Engine with type '{name}'. "
@@ -134,7 +144,11 @@ def asr_engine_from_config(asr_config: Dict) -> ASREngine:
             )
 
 
-def tts_engine_from_config(tts_config: Dict) -> TTSEngine:
+def tts_engine_from_config(
+    tts_config: Dict,
+    language: str,
+    additional_languages: Optional[List[str]] = None,
+) -> TTSEngine:
     if not tts_config:
         raise ValueError("TTS configuration dictionary cannot be empty")
 
@@ -147,18 +161,20 @@ def tts_engine_from_config(tts_config: Dict) -> TTSEngine:
     tts_config = copy.copy(tts_config)
     tts_config.pop("name")
     if name.lower() == "azure":
-        return AzureTTS.from_config_dict(tts_config)
+        return AzureTTS.from_config_dict(tts_config, language, additional_languages)
     elif name.lower() == "cartesia":
-        return CartesiaTTS.from_config_dict(tts_config)
+        return CartesiaTTS.from_config_dict(tts_config, language, additional_languages)
     elif name.lower() == "deepgram":
-        return DeepgramTTS.from_config_dict(tts_config)
+        return DeepgramTTS.from_config_dict(tts_config, language, additional_languages)
     elif name.lower() == "rime":
-        return RimeTTS.from_config_dict(tts_config)
+        return RimeTTS.from_config_dict(tts_config, language, additional_languages)
     else:
         mark_as_beta_feature("Custom TTS Engine")
         try:
             tts_engine_class = class_from_module_path(name)
-            return tts_engine_class.from_config_dict(tts_config)
+            return tts_engine_class.from_config_dict(
+                tts_config, language, additional_languages
+            )
         except NameError:
             raise InvalidConfigException(
                 f"Failed to initialize TTS Engine with type '{name}'. "
@@ -239,6 +255,30 @@ class VoiceOutputChannel(OutputChannel):
                 "voice_channel.silence_timeout_updated",
                 silence_timeout=call_state.silence_timeout,
             )
+
+    def get_current_language(self) -> Optional[str]:
+        """Get the current language from the tracker state."""
+        if self.tracker_state:
+            return self.tracker_state["slots"].get(LANGUAGE_SLOT)
+        return None
+
+    def check_language_change(self) -> Optional[str]:
+        """Check if the language slot has changed.
+
+        Returns:
+            The new language if changed, None otherwise.
+        """
+        language = self.get_current_language()
+        if language != call_state.current_language:
+            logger.info(
+                "voice_channel.language_slot_changed",
+                old_language=call_state.current_language,
+                new_language=language,
+            )
+            call_state.current_language = language
+            return language
+
+        return None
 
     async def send_text_with_buttons(
         self,
@@ -437,6 +477,13 @@ class VoiceOutputChannel(OutputChannel):
             logger.debug("voice_channel.skip_non_streaming_response")
             return
 
+        # set the current language on TTS
+        # does NOT change call_state.current_language
+        # because ASR does it later in handle_asr_event
+        language = self.get_current_language()
+        if language:
+            await self.tts_engine.set_language(language)
+
         self._track_rasa_processing_latency()
         call_state.tts_start_time = time.time()
 
@@ -503,6 +550,9 @@ class VoiceInputChannel(InputChannel):
     # All children of this class require a voice license to be used.
     requires_voice_license = True
 
+    language: Optional[str] = None
+    additional_languages: Optional[List[str]] = None
+
     def __init__(
         self,
         server_url: str,
@@ -513,14 +563,18 @@ class VoiceInputChannel(InputChannel):
         if self.requires_voice_license:
             validate_voice_license_scope()
 
+        self.agent: Optional[Agent] = None
         self.server_url = server_url
         self.asr_config = asr_config
         self.tts_config = tts_config
+        self.language = "en"
+        self.additional_languages = None
         self.tts_cache = TTSCache(tts_config.get("cache_size", 1000))
-        if interruptions:
-            self.interruption_config = InterruptionConfig(**interruptions)
-        else:
-            self.interruption_config = InterruptionConfig()
+        self.interruption_config = (
+            InterruptionConfig(**interruptions)
+            if interruptions
+            else InterruptionConfig()
+        )
 
         if self.interruption_config.enabled:
             mark_as_beta_feature(f"Interruption Handling in {self.name()}")
@@ -533,6 +587,14 @@ class VoiceInputChannel(InputChannel):
             tts_config=self.tts_config,
             interruption_config=self.interruption_config,
         )
+
+    def _register_listeners(self, bp: Blueprint) -> None:
+        """Attach shared listeners to a blueprint."""
+
+        @bp.listener("after_server_start")  # type: ignore[misc]
+        async def after_server_start(app: Any, loop: Any) -> None:
+            if hasattr(app.ctx, "agent"):
+                self.agent = app.ctx.agent
 
     def get_sender_id(self, call_parameters: CallParameters) -> str:
         """Get the sender ID for the channel."""
@@ -672,6 +734,7 @@ class VoiceInputChannel(InputChannel):
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
         tts_engine: TTSEngine,
         call_parameters: CallParameters,
+        asr_engine: ASREngine,
     ) -> None:
         while True:
             event = await asr_event_queue.get()
@@ -681,6 +744,7 @@ class VoiceInputChannel(InputChannel):
                 on_new_message,
                 tts_engine,
                 call_parameters,
+                asr_engine,
             )
 
     async def asr_keep_alive_task(self, asr_engine: ASREngine) -> None:
@@ -689,16 +753,36 @@ class VoiceInputChannel(InputChannel):
             await asyncio.sleep(interval)
             await asr_engine.send_keep_alive()
 
+    def _initialize_call_state(self) -> None:
+        _call_state.set(CallState())
+        if self.agent and self.agent.processor and self.agent.processor.model_metadata:
+            self.language = self.agent.processor.model_metadata.language
+            self.additional_languages = (
+                self.agent.processor.model_metadata.additional_languages
+            )
+            logger.debug(
+                "voice_channel.set_initial_language_from_model_metadata",
+                language=self.language,
+                additional_languages=self.additional_languages,
+            )
+        call_state.current_language = self.language
+
     async def run_audio_streaming(
         self,
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
         channel_websocket: Websocket,
     ) -> None:
         """Pipe input audio to ASR and consume ASR events simultaneously."""
-        _call_state.set(CallState())
-        asr_engine = asr_engine_from_config(self.asr_config)
-        tts_engine = tts_engine_from_config(self.tts_config)
+        self._initialize_call_state()
         asr_event_queue: asyncio.Queue = asyncio.Queue()
+
+        # Initialize ASR and TTS based on config
+        asr_engine = asr_engine_from_config(
+            self.asr_config, self.language, self.additional_languages
+        )
+        tts_engine = tts_engine_from_config(
+            self.tts_config, self.language, self.additional_languages
+        )
 
         # Connect both ASR and TTS at the beginning
         await asr_engine.connect()
@@ -763,6 +847,7 @@ class VoiceInputChannel(InputChannel):
                     on_new_message,
                     tts_engine,
                     call_parameters,
+                    asr_engine,
                 )
             ),
             asyncio.create_task(self.asr_keep_alive_task(asr_engine)),
@@ -809,12 +894,10 @@ class VoiceInputChannel(InputChannel):
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
         tts_engine: TTSEngine,
         call_parameters: CallParameters,
+        asr_engine: ASREngine,
     ) -> None:
         """Handle a new event from the ASR system."""
         if isinstance(e, NewTranscript) and e.text:
-            logger.debug(
-                "VoiceInputChannel.handle_asr_event.new_transcript", transcript=e.text
-            )
             call_state.is_user_speaking = False
 
             # Track ASR and Rasa latencies
@@ -843,6 +926,13 @@ class VoiceInputChannel(InputChannel):
             )
             await on_new_message(message)
             await output_channel.send_turn_end_marker(sender_id)
+
+            # Check for language slot changes and notify engines
+            # TTS is notified in send_text_message
+            new_language = output_channel.check_language_change()
+            if new_language:
+                await asr_engine.set_language(new_language)
+
         elif isinstance(e, UserIsSpeaking):
             # Track when user starts speaking for ASR latency calculation
             if not call_state.is_user_speaking:

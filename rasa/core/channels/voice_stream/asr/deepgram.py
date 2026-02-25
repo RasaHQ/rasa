@@ -1,7 +1,6 @@
 import json
 import os
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, List, Optional
 from urllib.parse import urlencode
 
 import structlog
@@ -9,7 +8,11 @@ import websockets
 import websockets.exceptions
 from websockets.legacy.client import WebSocketClientProtocol
 
-from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine, ASREngineConfig
+from rasa.core.channels.voice_stream.asr.asr_engine import (
+    ASREngine,
+    ASREngineConfig,
+    ASRLanguageMapEntry,
+)
 from rasa.core.channels.voice_stream.asr.asr_event import (
     ASREvent,
     NewTranscript,
@@ -21,7 +24,6 @@ from rasa.shared.constants import DEEPGRAM_API_KEY_ENV_VAR
 logger = structlog.get_logger(__name__)
 
 
-@dataclass
 class DeepgramASRConfig(ASREngineConfig):
     endpoint: Optional[str] = None
     # number of milliseconds of silence to determine end of speech
@@ -37,17 +39,27 @@ class DeepgramASRConfig(ASREngineConfig):
 class DeepgramASR(ASREngine[DeepgramASRConfig]):
     required_env_vars = (DEEPGRAM_API_KEY_ENV_VAR,)
 
-    def __init__(self, config: Optional[DeepgramASRConfig] = None):
-        super().__init__(config)
+    @classmethod
+    def name(cls) -> str:
+        return "deepgram"
+
+    def __init__(
+        self,
+        rasa_language: str,
+        config: Optional[DeepgramASRConfig] = None,
+        additional_languages: Optional[List[str]] = None,
+    ):
+        super().__init__(rasa_language, config, additional_languages)
         self.accumulated_transcript = ""
 
     async def open_websocket_connection(self) -> WebSocketClientProtocol:
         """Connect to the ASR system."""
         deepgram_api_key = os.environ[DEEPGRAM_API_KEY_ENV_VAR]
         extra_headers = {"Authorization": f"Token {deepgram_api_key}"}
+        url = self._get_api_url_with_query_params()
         try:
             return await websockets.connect(  # type: ignore
-                self._get_api_url_with_query_params(),
+                url,
                 extra_headers=extra_headers,
             )
         except websockets.exceptions.InvalidStatusCode as e:
@@ -59,6 +71,7 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
                 "deepgram.connection.failed",
                 status_code=e.status_code,
                 error=error_msg,
+                url=url,
             )
             raise
 
@@ -77,9 +90,9 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
             "sample_rate": HERTZ,
             "endpointing": self.config.endpointing,
             "vad_events": "true",
-            "language": self.config.language,
+            "language": self.current_language_config.engine_language_key,
             "interim_results": "true",
-            "model": self.config.model,
+            "model": self.current_language_config.model,
             "smart_format": str(self.config.smart_format).lower(),
         }
         if self.config.utterance_end_ms and self.config.utterance_end_ms > 0:
@@ -131,15 +144,33 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
         return DeepgramASRConfig(
             endpoint="api.deepgram.com",
             endpointing=400,
-            language="en",
-            model="nova-2-general",
             smart_format=True,
             utterance_end_ms=1000,
+            language_map={
+                "en": ASRLanguageMapEntry(
+                    language="en",
+                    model="nova-2-general",
+                ),
+            },
         )
 
     @classmethod
-    def from_config_dict(cls, config: Dict) -> "DeepgramASR":
-        return DeepgramASR(DeepgramASRConfig.from_dict(config))
+    def from_config_dict(
+        cls,
+        config: Any,
+        rasa_language: str,
+        additional_languages: Optional[List[str]] = None,
+    ) -> "DeepgramASR":
+        cfg = (
+            config
+            if isinstance(config, DeepgramASRConfig)
+            else DeepgramASRConfig(**config)
+        )
+        return cls(
+            rasa_language,
+            cfg,
+            additional_languages,
+        )
 
     @staticmethod
     def concatenate_transcripts(t1: str, t2: str) -> str:

@@ -11,12 +11,14 @@ class MessageProcessingConfig:
         self,
         recipe: str,
         language: str,
+        additional_languages: List[str],
         assistant_id: str,
         pipeline: List[Dict[str, Any]],
         policies: List[Dict[str, Any]],
     ):
         self.recipe = recipe
         self.language = language
+        self.additional_languages = additional_languages
         self.assistant_id = assistant_id
         self.pipeline = pipeline
         self.policies = policies
@@ -27,8 +29,11 @@ class MessageProcessingConfig:
 
         recipe = credentials_dict.get("recipe", "")
         language = credentials_dict.get("language", "")
+        additional_languages = credentials_dict.get("additional_languages", [])
         assistant_id = credentials_dict.get("assistant_id", "")
         pipeline = credentials_dict.get("pipeline", [])
         policies = credentials_dict.get("policies", [])
 
-        return cls(recipe, language, assistant_id, pipeline, policies)
+        return cls(
+            recipe, language, additional_languages, assistant_id, pipeline, policies
+        )

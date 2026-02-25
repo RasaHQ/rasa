@@ -199,6 +199,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
         blueprint = Blueprint("jambonz_stream", __name__)
+        self._register_listeners(blueprint)
 
         @blueprint.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:

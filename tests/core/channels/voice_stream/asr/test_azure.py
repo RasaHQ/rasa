@@ -1,9 +1,8 @@
-from dataclasses import asdict
 from unittest import mock
 
 import pytest
 
-from rasa.core.channels.voice_stream.asr.azure import AzureASR
+from rasa.core.channels.voice_stream.asr.azure import AzureASR, AzureASRConfig
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ProviderClientValidationError
@@ -13,7 +12,7 @@ async def test_environment_validation():
     # no api key set
     with mock.patch.dict("os.environ", {}, clear=True):
         with pytest.raises(ProviderClientValidationError) as e:
-            AzureASR()
+            AzureASR(rasa_language="en", config=AzureASRConfig(speech_region="eastus"))
         assert e.match(AZURE_SPEECH_API_KEY_ENV_VAR)
         assert e.match("ASR Engine AzureASR")
 
@@ -21,30 +20,33 @@ async def test_environment_validation():
     with mock.patch("importlib.import_module") as mock_call:
         mock_call.side_effect = ImportError
         with pytest.raises(MissingDependencyException) as e:
-            AzureASR()
+            AzureASR(rasa_language="en", config=AzureASRConfig(speech_region="eastus"))
         assert e.match("ASR Engine AzureASR")
         assert e.match(AzureASR.required_packages[0])
 
 
 async def test_configurating_endpoint():
-    custom_region = "local_endpoint.myurl.com"
+    custom_region = "germanywestcentral"
     config = {"speech_region": custom_region}
-    default_config = AzureASR.get_default_config()
-    asr_engine = AzureASR.from_config_dict(config)
+    asr_engine = AzureASR.from_config_dict(config, rasa_language="en")
     assert asr_engine.config.speech_region == custom_region
-    assert asdict(asr_engine.config) == {**asdict(default_config), **config}
 
 
 async def test_configurating_language():
-    custom_language = "es"
-    config = {"language": custom_language}
-    default_config = AzureASR.get_default_config()
-    asr_engine = AzureASR.from_config_dict(config)
-    assert asr_engine.config.language == custom_language
-    assert asdict(asr_engine.config) == {**asdict(default_config), **config}
+    config = {
+        "speech_host": "custom.host.url",
+        "language_map": {
+            "en": {"language": "en-US"},
+            "es": {"language": "es-ES"},
+        },
+    }
+    asr_engine = AzureASR.from_config_dict(
+        config, rasa_language="es", additional_languages=["en"]
+    )
+    assert asr_engine.current_language_config.engine_language_key == "es-ES"
 
 
 async def test_configuration_addioinal_attributes():
     config = {"testingXYZ@@": "@@"}
-    with pytest.raises(TypeError):
-        AzureASR.from_config_dict(config)
+    with pytest.raises(Exception):  # Pydantic raises ValidationError for extra fields
+        AzureASR.from_config_dict(config, rasa_language="en")

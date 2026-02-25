@@ -302,6 +302,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
     ) -> Blueprint:
         """Defines a Sanic blueprint"""
         blueprint = Blueprint("audiocodes_stream", __name__)
+        self._register_listeners(blueprint)
 
         @blueprint.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:

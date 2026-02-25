@@ -21,7 +21,7 @@ def test_tts_config_from_dict():
 
 
 def test_tts_config_from_dict_extra_params():
-    with pytest.raises(TypeError):
+    with pytest.raises(Exception):  # Pydantic raises ValidationError for extra fields
         TTSEngineConfig.from_dict({"voice": "test-voice", "accent": "british"})
 
 

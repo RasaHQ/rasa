@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import AsyncIterator, Dict, Optional
+from typing import AsyncIterator, Dict, List, Optional
 from urllib.parse import urlencode
 
 import aiohttp
@@ -8,11 +8,14 @@ import orjson
 import structlog
 from aiohttp import ClientTimeout, WSMsgType
 
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import (
+    RasaAudioBytes,
+)
 from rasa.core.channels.voice_stream.tts.tts_engine import (
     TTSEngine,
     TTSEngineConfig,
     TTSError,
+    TTSLanguageMapEntry,
 )
 from rasa.shared.constants import DEEPGRAM_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
@@ -32,8 +35,18 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
     ws: Optional[aiohttp.ClientWebSocketResponse] = None
     streaming_input: bool = True
 
-    def __init__(self, config: Optional[DeepgramTTSConfig] = None):
-        super().__init__(config)
+    @classmethod
+    def name(cls) -> str:
+        """Return the name identifier for this TTS engine."""
+        return "deepgram"
+
+    def __init__(
+        self,
+        rasa_language: str,
+        config: Optional[DeepgramTTSConfig] = None,
+        additional_languages: Optional[List[str]] = None,
+    ):
+        super().__init__(rasa_language, config, additional_languages)
         timeout = ClientTimeout(total=self.config.timeout)
         # Have to create this class-shared session lazily at run time otherwise
         # the async event loop doesn't work
@@ -70,7 +83,7 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
         """Build WebSocket URL with query parameters."""
         base_url = config.endpoint
         query_params = {
-            "model": config.model_id,
+            "model": self.current_language_config.model,
             "encoding": "mulaw",
             "sample_rate": "8000",
         }
@@ -164,11 +177,32 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
     @staticmethod
     def get_default_config() -> DeepgramTTSConfig:
         return DeepgramTTSConfig(
-            model_id="aura-2-andromeda-en",
             endpoint="wss://api.deepgram.com/v1/speak",
             timeout=30,
+            language_map={
+                "en": TTSLanguageMapEntry(
+                    model="aura-2-andromeda-en",
+                ),
+            },
         )
 
     @classmethod
-    def from_config_dict(cls, config: Dict) -> "DeepgramTTS":
-        return cls(DeepgramTTSConfig.from_dict(config))
+    def from_config_dict(
+        cls,
+        config: Dict,
+        rasa_language: str,
+        additional_languages: Optional[List[str]] = None,
+    ) -> "DeepgramTTS":
+        return cls(
+            rasa_language,
+            DeepgramTTSConfig.from_dict(config),
+            additional_languages,
+        )
+
+    async def set_language(self, rasa_language: str) -> None:
+        """Update the TTS language for next synthesis"""
+        await super().set_language(rasa_language)
+
+        # need to reconnect to apply new language
+        await self.close_connection()
+        await self.connect()

@@ -1,7 +1,7 @@
 import base64
 import os
 from dataclasses import dataclass
-from typing import AsyncIterator, Dict, Optional
+from typing import Any, AsyncIterator, List, Optional
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -9,11 +9,15 @@ import aiohttp
 import structlog
 from aiohttp import ClientTimeout
 
-from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import (
+    HERTZ,
+    RasaAudioBytes,
+)
 from rasa.core.channels.voice_stream.tts.tts_engine import (
     TTSEngine,
     TTSEngineConfig,
     TTSError,
+    TTSLanguageMapEntry,
 )
 from rasa.shared.constants import RIME_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
@@ -65,8 +69,18 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
     # gets reset in signal_text_done()
     context_id = uuid4().hex
 
-    def __init__(self, config: Optional[RimeTTSConfig] = None):
-        super().__init__(config)
+    @classmethod
+    def name(cls) -> str:
+        """Return the name identifier for this TTS engine."""
+        return "rime"
+
+    def __init__(
+        self,
+        rasa_language: str,
+        config: Optional[RimeTTSConfig] = None,
+        additional_languages: Optional[List[str]] = None,
+    ):
+        super().__init__(rasa_language, config, additional_languages or [])
         timeout = ClientTimeout(total=self.config.timeout)
         # Have to create this class-shared session lazily at run time otherwise
         # the async event loop doesn't work
@@ -81,9 +95,9 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         # Audio format and sample rate are fixed to match RasaAudioBytes spec:
         # raw wave, 8khz, 8bit, mono channel, mulaw encoding
         query_params = {
-            "speaker": self.config.speaker,
+            "speaker": self.current_language_config.voice,
             "modelId": self.config.model_id,
-            "lang": self.config.language,
+            "lang": self.current_language_config.engine_language_key,
             "audioFormat": "mulaw",  # Fixed: required for RasaAudioBytes
             "samplingRate": str(HERTZ),  # Fixed: 8000 Hz required for RasaAudioBytes
         }
@@ -226,16 +240,42 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
     @staticmethod
     def get_default_config() -> RimeTTSConfig:
         return RimeTTSConfig(
-            speaker="cove",
             model_id="mistv2",
-            language="eng",
             timeout=30,
             endpoint="wss://users.rime.ai/ws2",
             speed_alpha=1.0,
             segment="immediate",  # Synthesize immediately for low latency
             no_text_normalization=False,
+            language_map={
+                "en": TTSLanguageMapEntry(
+                    language="eng",
+                    voice="cove",
+                ),
+            },
         )
 
     @classmethod
-    def from_config_dict(cls, config: Dict) -> "RimeTTS":
-        return cls(RimeTTSConfig.from_dict(config))
+    def from_config_dict(
+        cls,
+        config: Any,
+        rasa_language: str,
+        additional_languages: Optional[List[str]] = None,
+    ) -> "RimeTTS":
+        cfg = (
+            config
+            if type(config).__name__ == "RimeTTSConfig"
+            else RimeTTSConfig.from_dict(config)
+        )
+        return cls(
+            rasa_language,
+            cfg,
+            additional_languages,
+        )
+
+    async def set_language(self, rasa_language: str) -> None:
+        """Update the TTS language for next synthesis"""
+        await super().set_language(rasa_language)
+
+        # need to reconnect to apply new language
+        await self.close_connection()
+        await self.connect()

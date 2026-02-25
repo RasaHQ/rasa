@@ -1,9 +1,9 @@
-from dataclasses import dataclass
 from typing import (
     Any,
     AsyncIterator,
     Dict,
     Generic,
+    List,
     Optional,
     Tuple,
     Type,
@@ -11,36 +11,155 @@ from typing import (
 )
 
 import structlog
+from pydantic import BaseModel, field_validator
 from websockets.legacy.client import WebSocketClientProtocol
 
 from rasa.core.channels.voice_stream.asr.asr_event import ASREvent
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
-from rasa.core.channels.voice_stream.util import MergeableConfig
-from rasa.shared.exceptions import ConnectionException
+from rasa.core.channels.voice_stream.audio_bytes import (
+    CurrentLanguageConfig,
+    RasaAudioBytes,
+)
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.utils.common import validate_environment
 
 T = TypeVar("T", bound="ASREngineConfig")
 E = TypeVar("E", bound="ASREngine")
+L = TypeVar("L", bound="ASRLanguageMapEntry")
 logger = structlog.get_logger(__name__)
 
 
-@dataclass
-class ASREngineConfig(MergeableConfig):
-    keep_alive_interval: int = 5  # seconds
+class ASRConfigError(RasaException):
+    """Error raised when ASR configuration is invalid."""
+
+    pass
+
+
+class ASRLanguageMapEntry(BaseModel):
+    """Entry in the language_map mapping Rasa language to ASR settings.
+
+    Attributes:
+        language: ASR-specific language code (e.g., 'en-US' for Azure).
+        model: Optional model identifier for engines that support multiple models.
+    """
+
+    language: str
+    model: Optional[str] = None
+
+
+class ASREngineConfig(BaseModel):
+    """Base configuration for ASR engines.
+
+    Attributes:
+        keep_alive_interval: Interval in seconds for keep-alive messages.
+        language_map: Maps Rasa language codes to ASR-specific settings.
+            Each ASR engine should provide sensible defaults via get_default_config().
+    """
+
+    keep_alive_interval: int = 5
+    language_map: Optional[Dict[str, ASRLanguageMapEntry]] = None
+
+    class Config:
+        extra = "forbid"
+
+    def merge(self: T, other: Optional[T]) -> T:
+        """Merges two configs while dropping None values of the second config."""
+        if other is None:
+            return self
+        other_dict = other.model_dump()
+        other_dict_clean = {k: v for k, v in other_dict.items() if v is not None}
+        merged = {**self.model_dump(), **other_dict_clean}
+        return self.__class__(**merged)
+
+    @field_validator("language_map", mode="before")
+    @classmethod
+    def convert_language_map(cls, v: Any) -> Optional[Dict[str, ASRLanguageMapEntry]]:
+        """Convert language_map dict entries to ASRLanguageMapEntry objects."""
+        if v is None:
+            return None
+        if isinstance(v, dict):
+            return {
+                k: ASRLanguageMapEntry(**val) if isinstance(val, dict) else val
+                for k, val in v.items()
+            }
+        return v
+
+    def validate_language_map_keys(
+        self,
+        rasa_language: Optional[str],
+        additional_languages: Optional[List[str]] = None,
+    ) -> None:
+        """Validate that rasa_language and allowed languages match language_map keys.
+
+        Checks that:
+        1. rasa_language is provided
+        2. rasa_language exists in language_map
+        3. All language_map keys are in the set of allowed languages
+           (rasa_language + additional_languages)
+        """
+        if rasa_language is None:
+            raise ASRConfigError(
+                "A language key must be provided in config.yml, "
+                "this key is used to determine which language "
+                "to use from the language_map."
+            )
+
+        assert self.language_map is not None, "language_map must be set in config"
+        if rasa_language not in self.language_map:
+            available_languages = (
+                list(self.language_map.keys()) if self.language_map else []
+            )
+            raise ASRConfigError(
+                f"Language '{rasa_language}' not found in language_map. "
+                f"Available languages: {available_languages}. "
+                f"Please add '{rasa_language}' to the language_map configuration."
+            )
+
+        # Validate that language_map keys are subset of allowed languages
+        allowed_languages = {rasa_language}
+        if additional_languages:
+            allowed_languages.update(additional_languages)
+
+        language_map_keys = (
+            set(self.language_map.keys()) if self.language_map else set()
+        )
+        invalid_keys = language_map_keys - allowed_languages
+        if invalid_keys:
+            raise ASRConfigError(
+                f"language_map contains invalid language keys: {sorted(invalid_keys)}. "
+                f"Allowed languages are: {sorted(allowed_languages)}. "
+                f"These must match 'language' and 'additional_languages' in config.yml."
+            )
 
 
 class ASREngine(Generic[T]):
+    config: T
     required_env_vars: Tuple[str, ...] = ()
     required_packages: Tuple[str, ...] = ()
 
-    def __init__(self, config: Optional[T] = None):
+    # runtime language config
+    current_language_config: CurrentLanguageConfig
+
+    @classmethod
+    def name(cls) -> str:
+        raise NotImplementedError(
+            "Subclasses must implement name() method to return engine name."
+        )
+
+    def __init__(
+        self,
+        rasa_language: str,
+        config: Optional[T] = None,
+        additional_languages: Optional[List[str]] = None,
+    ):
         self.config = self.get_default_config().merge(config)
+        self.config.validate_language_map_keys(rasa_language, additional_languages)
         self.asr_socket: Optional[WebSocketClientProtocol] = None
         validate_environment(
             self.required_env_vars,
             self.required_packages,
             f"ASR Engine {self.__class__.__name__}",
         )
+        self._set_current_language_config(rasa_language)
 
     async def connect(self) -> None:
         self.asr_socket = await self.open_websocket_connection()
@@ -50,7 +169,12 @@ class ASREngine(Generic[T]):
         raise NotImplementedError
 
     @classmethod
-    def from_config_dict(cls: Type[E], config: Dict) -> E:
+    def from_config_dict(
+        cls: Type[E],
+        config: Dict,
+        rasa_language: str,
+        additional_languages: Optional[List[str]] = None,
+    ) -> E:
         raise NotImplementedError
 
     async def close_connection(self) -> None:
@@ -97,3 +221,48 @@ class ASREngine(Generic[T]):
     async def send_keep_alive(self) -> None:
         """Send a keep-alive message to the ASR system if supported."""
         pass
+
+    async def set_language(self, rasa_language: str) -> None:
+        """Update the ASR language for the current session.
+
+        Called by the voice channel when the language slot changes.
+        Subclasses should implement engine-specific language switching logic.
+
+        Args:
+            rasa_language: Value of Rasa's language slot.
+        """
+        if self.current_language_config.is_same_language(rasa_language):
+            return
+
+        old_language_config = self.current_language_config
+        self._set_current_language_config(rasa_language)
+        logger.info(
+            f"asr.{self.name()}.language_changed",
+            before=old_language_config,
+            after=self.current_language_config,
+        )
+
+        # reconnect asr with new language config
+        await self.close_connection()
+        await self.connect()
+
+    def _set_current_language_config(self, rasa_language: str) -> None:
+        """Helper method to set the current language configuration."""
+        assert (
+            self.config.language_map is not None
+        ), "language_map must be set in config"
+        try:
+            entry = self.config.language_map[rasa_language]
+        except KeyError:
+            logger.error(
+                f"asr.{self.name()}.set_language.language_not_found",
+                rasa_language=rasa_language,
+                available_languages=list(self.config.language_map.keys()),
+            )
+            return
+
+        self.current_language_config = CurrentLanguageConfig(
+            rasa_language_key=rasa_language,
+            engine_language_key=entry.language,
+            model=entry.model,
+        )

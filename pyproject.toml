@@ -346,6 +346,10 @@ optional = true
 version = "^0.5.1"
 optional = true
 
+[tool.poetry.dependencies.azure-cognitiveservices-speech]
+version = "^1.48.2"
+optional = true
+
 # --------------------------------------------------------------------------------------
 # OPTIONAL DEPENDENCIES REQUIRED FOR MONITORING
 # --------------------------------------------------------------------------------------
@@ -499,6 +503,7 @@ nlu = [
      "aiogram",
      "slack-sdk",
      "cvg-python-sdk",
+     "azure.cognitiveservices.speech",
  ]
 # monitoring encompasses all dependencies required for monitoring
 monitoring = [

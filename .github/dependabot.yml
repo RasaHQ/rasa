@@ -74,6 +74,7 @@ updates:
           - "slack-sdk"
           - "azure-identity"
           - "aws-msk-iam-sasl-signer-python"
+          - "azure-cognitiveservices-speech"
       static-analysis-tools:
         dependency-type: production
         patterns:

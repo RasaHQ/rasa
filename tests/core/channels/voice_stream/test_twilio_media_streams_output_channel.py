@@ -15,7 +15,7 @@ from rasa.core.channels.voice_stream.twilio_media_streams import (
 
 
 @pytest.fixture
-def mock_websocket() -> AsyncMock:
+async def mock_websocket() -> AsyncMock:
     """Mock websocket for testing."""
     return AsyncMock()
 
@@ -36,9 +36,9 @@ def azure_tts_config() -> AzureTTSConfig:
 
 
 @pytest.fixture
-def tts_engine(azure_tts_config: AzureTTSConfig) -> AzureTTS:
+async def tts_engine(azure_tts_config: AzureTTSConfig) -> AzureTTS:
     """TTS engine for testing."""
-    return AzureTTS(azure_tts_config)
+    return AzureTTS("en", azure_tts_config)
 
 
 def ensure_call_state_context():
@@ -60,16 +60,17 @@ def check_mark_message(message: str, recipient_id: str):
 
 
 async def test_twilio_media_streams_output_channel_send(
-    azure_tts_config: AzureTTSConfig,
+    tts_engine: AzureTTS,
+    tts_cache: TTSCache,
+    mock_websocket: AsyncMock,
 ):
     ensure_call_state_context()
-    websocket = AsyncMock()
-    tts_cache = TTSCache(1)
-    tts_engine = AzureTTS(azure_tts_config)
     recipient_id = "test_id"
-    output_channel = TwilioMediaStreamsOutputChannel(websocket, tts_engine, tts_cache)
+    output_channel = TwilioMediaStreamsOutputChannel(
+        mock_websocket, tts_engine, tts_cache
+    )
     await output_channel.send_text_message(recipient_id, "Hi There.")
-    messages = websocket.send.call_args_list
+    messages = mock_websocket.send.call_args_list
     # receiving chunked messages
     assert len(messages) > 1
     for i in range(len(messages)):
@@ -84,14 +85,15 @@ async def test_twilio_media_streams_output_channel_send(
 
 
 async def test_twilio_media_streams_output_channel_caching(
-    azure_tts_config: AzureTTSConfig,
+    tts_engine: AzureTTS,
+    tts_cache: TTSCache,
+    mock_websocket: AsyncMock,
 ):
     ensure_call_state_context()
-    websocket = AsyncMock()
-    tts_cache = TTSCache(1)
-    tts_engine = AzureTTS(azure_tts_config)
     recipient_id = "test_id"
-    output_channel = TwilioMediaStreamsOutputChannel(websocket, tts_engine, tts_cache)
+    output_channel = TwilioMediaStreamsOutputChannel(
+        mock_websocket, tts_engine, tts_cache
+    )
     await output_channel.send_text_message(recipient_id, "Hi There.")
 
     websocket_2 = AsyncMock()

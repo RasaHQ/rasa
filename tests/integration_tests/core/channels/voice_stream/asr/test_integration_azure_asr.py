@@ -6,10 +6,10 @@ from tests.core.channels.voice_stream.asr import (
 
 def get_azure_asr():
     return AzureASR(
-        AzureASRConfig(
+        rasa_language="en",
+        config=AzureASRConfig(
             speech_region="germanywestcentral",
-            language="en-US",
-        )
+        ),
     )
 
 

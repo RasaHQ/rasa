@@ -322,7 +322,7 @@ async def test_fitting_output_channel_creation(
 ):
     tts_config = {"name": "azure"}
     websocket = AsyncMock()
-    tts_engine = tts_engine_from_config(tts_config)
+    tts_engine = tts_engine_from_config(tts_config, language="en")
     output_channel = input_channel.create_output_channel(websocket, tts_engine)
     assert isinstance(output_channel, TwilioMediaStreamsOutputChannel)
     assert output_channel.tts_cache == input_channel.tts_cache

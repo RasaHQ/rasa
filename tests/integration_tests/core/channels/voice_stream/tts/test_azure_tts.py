@@ -10,10 +10,10 @@ from rasa.core.channels.voice_stream.tts.azure import AzureTTS, AzureTTSConfig
 async def test_azure_tts(tmp_path):
     output_path = tmp_path / "output.wav"
     tts_engine = AzureTTS(
-        AzureTTSConfig(
+        rasa_language="en",
+        config=AzureTTSConfig(
             speech_region="germanywestcentral",
-            language="en-US",
-        )
+        ),
     )
     text = "hello my name is Edgar"
     audio_bytes = b""

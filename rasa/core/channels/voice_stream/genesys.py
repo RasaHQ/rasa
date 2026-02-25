@@ -416,6 +416,7 @@ class GenesysInputChannel(VoiceInputChannel):
     ) -> Blueprint:
         """Defines a Sanic blueprint for the voice input channel."""
         blueprint = Blueprint("genesys", __name__)
+        self._register_listeners(blueprint)
 
         @blueprint.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:

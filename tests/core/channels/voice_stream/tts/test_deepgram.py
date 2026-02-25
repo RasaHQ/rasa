@@ -12,14 +12,14 @@ async def test_environment_validation():
     # no api key set
     with mock.patch.dict("os.environ", {}, clear=True):
         with pytest.raises(ProviderClientValidationError) as e:
-            DeepgramTTS()
+            DeepgramTTS(rasa_language="en")
         assert e.match(DeepgramTTS.required_env_vars[0])
         assert e.match("TTS Engine DeepgramTTS")
 
 
 async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("DEEPGRAM_API_KEY", "bad_key")
-    tts_engine = DeepgramTTS()
+    tts_engine = DeepgramTTS(rasa_language="en")
     text = "Hello there!"
     with pytest.raises(TTSError):
         async for chunk in tts_engine.synthesize(text):
@@ -29,10 +29,11 @@ async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch):
 def test_default_config():
     config = DeepgramTTS.get_default_config()
     assert config.endpoint == "wss://api.deepgram.com/v1/speak"
-    assert config.model_id == "aura-2-andromeda-en"
+    assert "en" in config.language_map
+    assert config.language_map["en"].model == "aura-2-andromeda-en"
 
 
 async def test_tts_session_sharing():
-    tts_engine = DeepgramTTS()
-    tts_engine_2 = DeepgramTTS()
+    tts_engine = DeepgramTTS(rasa_language="en")
+    tts_engine_2 = DeepgramTTS(rasa_language="en")
     assert tts_engine_2.session is tts_engine.session

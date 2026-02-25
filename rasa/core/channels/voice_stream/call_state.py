@@ -40,6 +40,9 @@ class CallState:
     # Generic field for channel-specific state data
     channel_data: Dict[str, Any] = field(default_factory=dict)
 
+    # Language state - tracks the current language slot value
+    current_language: Optional[str] = None
+
 
 _call_state: ContextVar[CallState] = ContextVar("call_state")
 call_state: CallState = cast(CallState, LocalProxy(_call_state))
