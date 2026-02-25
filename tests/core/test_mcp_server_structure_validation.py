@@ -98,3 +98,38 @@ def test_mcp_server_config_direct_validation() -> None:
     with pytest.raises(ValidationError) as exc_info:
         MCPServerConfig(name="test_server", url="", type="http")
     assert "Name and URL cannot be empty" in str(exc_info.value)
+
+
+def test_mcp_server_oauth_unquoted_env_vars_preserved() -> None:
+    """Test that unquoted OAuth env vars in endpoints.yml are not expanded at load.
+
+    Ensures client_id and client_secret stay as ${VAR} so validation and runtime
+    resolution work like other endpoint fields.
+    """
+    endpoints_content = """action_endpoint:
+  url: "http://localhost:5055/webhook"
+mcp_servers:
+  - name: test_oauth
+    url: http://localhost:8000/mcp
+    type: http
+    oauth:
+      client_id: ${MCP_CLIENT_ID}
+      client_secret: ${MCP_CLIENT_SECRET}
+      token_url: ${MCP_TOKEN_URL}
+      scope: read:data write:data
+"""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        endpoints_path = os.path.join(temp_dir, "endpoints.yml")
+        with open(endpoints_path, "w") as f:
+            f.write(endpoints_content)
+
+        endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
+
+    assert endpoints.mcp_servers is not None
+    assert len(endpoints.mcp_servers) == 1
+    server = endpoints.mcp_servers[0]
+    oauth = (server.additional_params or {}).get("oauth")
+    assert oauth is not None
+    assert oauth["client_id"] == "${MCP_CLIENT_ID}"
+    assert oauth["client_secret"] == "${MCP_CLIENT_SECRET}"
+    assert oauth["token_url"] == "${MCP_TOKEN_URL}"
