@@ -3,6 +3,7 @@ import logging
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, cast
 
+import structlog
 from jsonschema import Draft202012Validator
 
 import rasa.core
@@ -109,6 +110,7 @@ if TYPE_CHECKING:
     from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
@@ -703,6 +705,18 @@ class ActionSessionStart(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
+        # If the session was already started for this message (e.g. by
+        # MessageProcessor), skip to prevent double execution.
+        if tracker.has_session_started_for_current_message():
+            structlogger.debug(
+                "action.run.session_start.skipped",
+                event_info=(
+                    "Session was already started for the current message. "
+                    "Skipping execution of action_session_start."
+                ),
+            )
+            return []
+
         _events: List[Event] = [SessionStarted()]
 
         if domain.session_config.carry_over_slots:

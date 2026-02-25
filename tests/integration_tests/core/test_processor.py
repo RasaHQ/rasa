@@ -19,6 +19,7 @@ from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
+    USER_INTENT_SESSION_START,
 )
 from rasa.shared.core.domain import SessionConfig
 from rasa.shared.core.events import (
@@ -674,6 +675,31 @@ async def test_processor_non_expired_session_continues_same_session(
     await _resume_with_user_message(processor)
 
     tracker = await processor.tracker_store.retrieve_full_tracker(DEFAULT_SENDER_ID)
+    assert tracker is not None
+
+    session_started_count = sum(
+        1 for event in tracker.events if isinstance(event, SessionStarted)
+    )
+    assert session_started_count == 1
+
+
+async def test_action_session_start_executes_once_on_session_start_intent(
+    default_agent: Agent,
+):
+    """Test that action_session_start runs only once when /session_start is sent.
+
+    When a user sends /session_start to start a new session, both
+    MessageProcessor and FlowPolicy would previously trigger
+    action_session_start. This test verifies it runs exactly once.
+    """
+    processor = default_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    await processor.handle_message(
+        UserMessage(f"/{USER_INTENT_SESSION_START}", sender_id=sender_id)
+    )
+
+    tracker = await processor.tracker_store.retrieve_full_tracker(sender_id)
     assert tracker is not None
 
     session_started_count = sum(

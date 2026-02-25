@@ -341,6 +341,7 @@ jobs:
       create_dev_docker_images: ${{ steps.set-dev-image-flag.outputs.create_dev_docker_images }}
       rasa-core-dependencies-files: ${{ steps.filter.outputs.rasa-core-dependencies-files }}
       concurrent-lockstore-files: ${{ steps.filter.outputs.concurrent-lockstore-files }}
+      timer-store-files: ${{ steps.filter.outputs.timer-store-files }}
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -1354,6 +1355,59 @@ jobs:
         with:
           name: Dynamo Tracker Store Integration Test Results
           path: integration-results-dynamo-tracker-store.xml
+
+  redis-timer-store-integration-test:
+    name: Run Redis Timer Store Integration Tests
+    runs-on: warp-ubuntu-latest-x64-2x
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.timer-store-files == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
+    needs: [install-and-cache-rasa, check-code-changes]
+    timeout-minutes: 60
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          RASA_INSTALL_GROUP: "default"
+
+      - name: Run Redis containers for timer store integration testing
+        run: |
+          make run-redis-timer-store-container
+
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
+      - name: Test Code with Services 🩺
+        env:
+          JOBS: 1
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          make test-redis-timer-store
+
+      - name: Save Test Results
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: Redis Timer Store Integration Test Results
+          path: integration-results-redis-timer-store.xml
+
+      - name: Show container logs for Redis timer store integration testing
+        run: |
+          make show-redis-timer-store-container-logs
+
+      - name: Stop Redis containers for timer store integration testing
+        run: |
+          make stop-redis-timer-store-container
 
   concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests

@@ -282,3 +282,11 @@ channel-files:
 builder-files:
   - rasa/builder/**
   - tests/builder/**
+
+timer-store-files:
+  - rasa/core/timer_managers/**
+  - rasa/core/timer_stores/**
+  - tests/core/test_timer_managers/**
+  - tests/core/test_timer_stores/**
+  - tests/core/timer_test_helpers.py
+  - tests/integration_tests/core/timer_stores/**

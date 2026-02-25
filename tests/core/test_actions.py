@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, Mock
 import aiohttp
 import freezegun
 import pytest
+import structlog.testing
 from aioresponses import aioresponses
 from jsonschema import ValidationError
 from pytest import CaptureFixture, LogCaptureFixture, MonkeyPatch
@@ -63,6 +64,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
     ACTIVE_LOOP,
     DEFAULT_ACTION_NAMES,
     FLOW_HASHES_SLOT,
@@ -113,7 +115,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.conftest import with_session_ids
-from tests.utilities import json_of_latest_request, latest_request
+from tests.utilities import filter_logs, json_of_latest_request, latest_request
 
 
 @pytest.fixture(autouse=True)
@@ -1078,6 +1080,179 @@ async def test_action_session_start_without_slots(
         default_channel, template_nlg, template_sender_tracker, domain
     )
     assert events == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
+
+
+@pytest.mark.parametrize(
+    "events_before_user_message",
+    [
+        # Standard case: ActionExecuted + SessionStarted
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        # Custom action_session_start that returns empty events list
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    ],
+)
+async def test_action_session_start_is_noop_when_session_already_started(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    domain: Domain,
+    events_before_user_message: List[Event],
+):
+    """Test that ActionSessionStart is a no-op if session was already started.
+
+    When MessageProcessor already started the session before the current
+    UserUttered, action_session_start should return no events to prevent
+    double execution.
+    """
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=events_before_user_message
+        + [UserUttered("/session_start", {"name": "session_start"})],
+    )
+
+    with structlog.testing.capture_logs() as caplog:
+        result = await ActionSessionStart().run(
+            default_channel, template_nlg, tracker, domain
+        )
+
+    assert result == []
+    logs = filter_logs(
+        caplog,
+        "action.run.session_start.skipped",
+        "debug",
+    )
+    assert len(logs) == 1
+    assert (
+        "Session was already started for the current message. " in logs[0]["event_info"]
+    )
+    assert "Skipping execution of action_session_start." in logs[0]["event_info"]
+
+
+async def test_action_session_start_runs_when_session_not_started_for_current_message(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    domain: Domain,
+):
+    """Test that ActionSessionStart runs when no session was started for this message.
+
+    When the user explicitly sends /session_start on an existing session (not expired),
+    there is no SessionStarted or ActionExecuted(action_session_start) immediately
+    before the current UserUttered, so the action should proceed normally.
+    """
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            # Previous session (old)
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("hello", {"name": "greet"}),
+            ActionExecuted("utter_greet"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            # User explicitly sends /session_start (no new SessionStarted before this)
+            UserUttered("/session_start", {"name": "session_start"}),
+        ],
+    )
+
+    result = await ActionSessionStart().run(
+        default_channel, template_nlg, tracker, domain
+    )
+
+    assert result == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
+
+
+@pytest.mark.parametrize(
+    "session_config",
+    [
+        SessionConfig(
+            session_expiration_time=60,
+            carry_over_slots=False,
+            start_session_after_expiry=True,
+        ),
+        SessionConfig.default(),
+    ],
+)
+async def test_action_session_start_runs_on_session_expiry(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    domain: Domain,
+    session_config: SessionConfig,
+):
+    """Test that ActionSessionStart runs when invoked before the new UserUttered.
+
+    When start_session_after_expiry=True and a session expires, MessageProcessor
+    runs action_session_start before appending the new UserUttered. At that point
+    the tracker ends with action_listen. The action should not treat the previous
+    session's start as belonging to the current message.
+    """
+    domain.session_config = session_config
+
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            # Previous session — bot responded and is now waiting.
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("hello", {"name": "greet"}),
+            ActionExecuted("utter_greet"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            # Session expired. MessageProcessor is running action_session_start
+            # now, before the new UserUttered has been appended.
+        ],
+    )
+
+    result = await ActionSessionStart().run(
+        default_channel, template_nlg, tracker, domain
+    )
+
+    assert result == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
+
+
+async def test_action_session_start_runs_when_start_session_after_expiry_is_false(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    domain: Domain,
+):
+    """Test that ActionSessionStart runs when start_session_after_expiry=False.
+
+    When start_session_after_expiry is False, MessageProcessor does not run
+    action_session_start on session expiry — the new UserUttered is appended
+    directly. If the dialogue flow then triggers action_session_start (e.g. via
+    /session_start intent), it should not be suppressed as a duplicate.
+    """
+    domain.session_config = SessionConfig(
+        session_expiration_time=60,
+        carry_over_slots=False,
+        start_session_after_expiry=False,
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            # Initial session (started once for the tracker lifetime).
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("hello", {"name": "greet"}),
+            ActionExecuted("utter_greet"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            # Session expired but start_session_after_expiry=False, so no new
+            # action_session_start from MessageProcessor before this message.
+            UserUttered("/session_start", {"name": "session_start"}),
+        ],
+    )
+
+    result = await ActionSessionStart().run(
+        default_channel, template_nlg, tracker, domain
+    )
+
+    assert result == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
 
 
 @pytest.mark.parametrize(

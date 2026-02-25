@@ -34,6 +34,7 @@ CALM_KAFKA_RESTART_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/broke
 INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
 TRANSFORMERS_OFFLINE ?= 1
 CONCURRENT_LOCK_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/concurrent_lock_stores
+TIMER_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/timer_stores
 
 # Optional pytest arguments that can be passed via environment variable
 ARGS ?=
@@ -198,6 +199,7 @@ ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))
 			--ignore $(CALM_PII_INTEGRATION_TEST_PATH) \
 			--ignore $(CALM_KAFKA_RESTART_INTEGRATION_TEST_PATH) \
 			--ignore tests/integration_tests/core/brokers/test_pika.py \
+			--ignore $(TIMER_STORE_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml
 else
 	set -o allexport; \
@@ -216,6 +218,7 @@ else
 			--ignore $(TRACKER_STORE_INTEGRATION_TEST_PATH) \
 			--ignore $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH) \
 			--ignore tests/integration_tests/core/brokers/test_pika.py \
+			--ignore $(TIMER_STORE_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml && \
 	set +o allexport
 endif
@@ -788,3 +791,31 @@ show-concurrent-lock-store-container-logs:
 	docker compose -f $(CONCURRENT_LOCK_STORE_TEST_DOCKER_COMPOSE) logs \
 		redis redis-cluster redis-master \
 		redis-replica-1 redis-replica-2 redis-sentinel-1 redis-sentinel-2 redis-sentinel-3
+
+TIMER_STORE_DOCKER_COMPOSE_FILE_PATH = $(TIMER_STORE_INTEGRATION_TEST_PATH)/docker-compose.yml
+
+RUN_REDIS_TIMER_STORE_CONTAINER_COMMAND = docker compose \
+		-f $(TIMER_STORE_DOCKER_COMPOSE_FILE_PATH) \
+		up --wait
+
+STOP_REDIS_TIMER_STORE_CONTAINER_COMMAND = docker compose \
+		-f $(TIMER_STORE_DOCKER_COMPOSE_FILE_PATH) \
+		down
+
+run-redis-timer-store-container: ## Run the Redis containers for timer store integration tests.
+	$(RUN_REDIS_TIMER_STORE_CONTAINER_COMMAND)
+
+stop-redis-timer-store-container: ## Stop the Redis containers for timer store integration tests.
+	$(STOP_REDIS_TIMER_STORE_CONTAINER_COMMAND)
+
+show-redis-timer-store-container-logs: ## Show logs for the Redis containers used in timer store integration tests.
+	docker compose -f $(TIMER_STORE_DOCKER_COMPOSE_FILE_PATH) logs \
+		redis redis-cluster redis-master \
+		redis-replica-1 redis-replica-2 redis-sentinel-1 redis-sentinel-2 redis-sentinel-3
+
+test-redis-timer-store:  ## Run the Redis timer store integration tests. Make sure to run run-redis-timer-store-container before running this target.
+	poetry run \
+		pytest $(TIMER_STORE_INTEGRATION_TEST_PATH) \
+			-n $(JOBS) \
+			--reruns 3 --reruns-delay 1 \
+			--junitxml=integration-results-redis-timer-store.xml

@@ -942,6 +942,36 @@ class DialogueStateTracker:
 
         return False
 
+    def has_session_started_for_current_message(self) -> bool:
+        """Checks if a session was already started for the current user message.
+
+        Scans backwards through events looking for a SessionStarted or
+        ActionExecuted(action_session_start) between the previous UserUttered and
+        the current one. Both event types are checked because custom overrides of
+        action_session_start may not emit SessionStarted.
+        """
+        found_current_message = False
+
+        for event in reversed(self.events):
+            if isinstance(event, UserUttered):
+                if found_current_message:
+                    # Crossed into the previous message without finding a session start
+                    return False
+                found_current_message = True
+            elif not found_current_message and (
+                isinstance(event, ActionExecuted)
+                and event.action_name == ACTION_LISTEN_NAME
+            ):
+                # session expired and MessageProcessor ran action_session_start.
+                return False
+            elif found_current_message and (
+                isinstance(event, SessionStarted)
+                or self._is_action_session_start(event)
+            ):
+                return True
+
+        return False
+
     def _prepare_event_metadata(self, event: Event, is_replay: bool) -> None:
         """Prepare and inject tracker metadata into the event.
 
