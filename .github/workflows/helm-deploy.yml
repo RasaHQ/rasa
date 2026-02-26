@@ -23,15 +23,35 @@ on:
       UNIQUE_IDENTIFIER:
         description: "Unique identifier for the deployment"
         required: false
+  pull_request:
 
 permissions:
   id-token: write
   contents: read
+  pull-requests: read
 
 jobs:
+  check-sql-tracker-store-code-changes:
+    runs-on: warp-ubuntu-latest-x64-2x
+    outputs:
+      sql-store-files: ${{ steps.filter.outputs.sql-store-files }}
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - id: filter
+        name: Check for changes in sql-tracker-store related files
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: .github/change_filters.yml
+      - name: Debug sql-store-files output
+        run: |
+          echo "sql-store-files: ${{  steps.filter.outputs.sql-store-files }}"
+
   build-train-deploy:
     name: Build train and deploy to CI EKS
     runs-on: warp-ubuntu-latest-x64-2x
+    needs: [check-sql-tracker-store-code-changes]
+    if: (github.event_name == 'pull_request' && needs.check-sql-tracker-store-code-changes.outputs.sql-store-files == 'true') || (github.event_name == 'workflow_dispatch')
     outputs:
       unique_identifier: ${{ steps.set-branch-timestamp.outputs.unique_identifier }}
 
@@ -55,7 +75,7 @@ jobs:
           INPUT_UNIQUE_IDENTIFIER: ${{ inputs.UNIQUE_IDENTIFIER }}
         run: |
           if [ -z "$INPUT_UNIQUE_IDENTIFIER" ]; then
-            UNIQUE_IDENTIFIER=$(echo "${GITHUB_REF##*/}-$(date +%Y%m%d%H%M%S)" | tr '[:upper:]' '[:lower:]')
+            UNIQUE_IDENTIFIER="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           else
             UNIQUE_IDENTIFIER="$INPUT_UNIQUE_IDENTIFIER"
           fi
@@ -166,6 +186,23 @@ jobs:
       - name: Wait for deployment to stabilize
         run: |
             sleep 120 # wait for 2 minutes to allow services to stabilize
+
+      - name: Get deployment URL
+        id: get-deployment-url
+        working-directory: ./infrastructure/eks-helm
+        run: |
+          pulumi stack select rasa/eks-helm/${{ env.UNIQUE_IDENTIFIER }}
+          echo "DEPLOYMENT_URL=$(pulumi stack output rasaProServerUrl)" >> $GITHUB_ENV
+          echo "url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "rasaProServerUrl: $DEPLOYMENT_URL"
+
+      - name: Run integration tests against deployed environment
+        env:
+          DEPLOYMENT_URL: ${{ env.DEPLOYMENT_URL }}
+          AUTH_TOKEN: ${{ secrets.HELM_DEPLOYMENT_AUTH_TOKEN }}
+        run: |
+          make test-aws-rds-sql-tracker-store
+        shell: bash
 
   cleanup:
     name: Clean up deployment resources

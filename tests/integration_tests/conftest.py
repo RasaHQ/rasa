@@ -1,3 +1,4 @@
+import os
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -34,6 +35,10 @@ def get_conversation_tracker(server_location: str, conversation_id: str) -> dict
         "include_events": "AFTER_RESTART",  # Include events after the last restart
         "until": None,  # Get all events up to the present
     }
+
+    auth_token = os.getenv("AUTH_TOKEN")
+    if auth_token:
+        params["token"] = auth_token
 
     try:
         response = requests.get(

@@ -290,3 +290,10 @@ timer-store-files:
   - tests/core/test_timer_stores/**
   - tests/core/timer_test_helpers.py
   - tests/integration_tests/core/timer_stores/**
+
+sql-store-files:
+  - rasa/core/tracker_stores/sql_tracker_store.py
+  - rasa/core/iam_credentials_providers/aws_iam_credentials_provider.py
+  - tests/integration_tests/core/tracker_stores/test_sql_tracker_store.py
+  - tests/core/tracker_stores/test_sql_tracker_store.py
+  - .github/workflows/helm-deploy.yml

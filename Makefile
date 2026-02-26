@@ -704,6 +704,13 @@ test-dynamo-tracker-store:  ## Run the dynamo tracker store integration tests. M
 			--reruns 3 --reruns-delay 1 \
 			--junitxml=integration-results-dynamo-tracker-store.xml
 
+test-aws-rds-sql-tracker-store:  ## Run the AWS RDS SQL tracker store integration tests. Make sure to run train-rds-tracker-bot before running this target.
+	poetry run \
+		pytest $(TRACKER_STORE_INTEGRATION_TEST_PATH)/test_sql_tracker_store.py \
+			-n $(JOBS) \
+			--reruns 3 --reruns-delay 1 \
+			--junitxml=integration-results-rds-sql-tracker-store.xml
+
 TRAIN_PII_BOT_COMMAND = docker run --rm \
 		-u $(USER_ID) \
 		--name $(CONTAINER_NAME) \
