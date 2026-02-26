@@ -93,9 +93,9 @@ runs:
         . .venv/bin/activate
         if [[ "${RASA_DEFAULT_INSTALLATION_ONLY}" == "true" ]]; 
         then
-            pip install . -v
+            pip install -e . -v
         else
-            pip install .["${OPTIONAL_GROUP_TO_INSTALL}"] -v
+            pip install -e .["${OPTIONAL_GROUP_TO_INSTALL}"] -v
         fi
       shell: bash
 
@@ -111,9 +111,9 @@ runs:
         . .venv/bin/activate
         if [[ "${RASA_DEFAULT_INSTALLATION_ONLY}" == "true" ]]; 
         then
-            uv pip install . -v
+            uv pip install -e . -v
         else
-            uv pip install .["${OPTIONAL_GROUP_TO_INSTALL}"] -v
+            uv pip install -e .["${OPTIONAL_GROUP_TO_INSTALL}"] -v
         fi
       shell: bash
 

@@ -83,6 +83,10 @@ jobs:
             install-method: pip
           - python-version: "3.9"
             install-method: uv
+          - python-version: "3.13"
+            install-group: nlu
+          - python-version: "3.13"
+            install-group: full
     name: rasa init Py${{ matrix.python-version }} ${{ matrix.install-group }}-group (with ${{ matrix.install-method }} install) ${{ matrix.template }}-template
     env:
       RASA_INIT_TEST_DIRECTORY: test-rasa-init
