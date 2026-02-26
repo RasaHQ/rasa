@@ -1,7 +1,7 @@
 import importlib
 import json
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import structlog
 from jinja2 import Template
@@ -26,7 +26,7 @@ from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.constants import (
     ROLE_TOOL,
 )
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.exceptions import (
     LLMToolResponseDecodeError,
     ProviderClientAPIException,
@@ -228,6 +228,21 @@ class MCPTaskAgent(MCPBaseAgent):
 
         return {slot_name: slot_value}
 
+    def _get_slot_set_events_for_changed_slots(
+        self,
+        agent_input: AgentInput,
+        initial_slot_values: Dict[str, Any],
+        current_slot_values: Dict[str, Any],
+    ) -> List[SlotSet]:
+        """Return SlotSet events for exit-condition slots that changed."""
+        slot_names_to_be_filled = self._get_slot_names_from_exit_conditions(agent_input)
+        return [
+            SlotSet(slot_name, current_slot_values[slot_name])
+            for slot_name in slot_names_to_be_filled
+            if slot_name in current_slot_values
+            and current_slot_values[slot_name] != initial_slot_values.get(slot_name)
+        ]
+
     def _generate_agent_task_completed_output(
         self,
         agent_input: AgentInput,
@@ -267,6 +282,7 @@ class MCPTaskAgent(MCPBaseAgent):
         tool_results: Dict[str, AgentToolResult] = {}
 
         _slot_values = {slot.name: slot.value for slot in agent_input.slots}
+        _initial_slot_values = dict(_slot_values)
         _available_tools = self.get_available_tools(agent_input)
         _available_tools_names = [tool.name for tool in _available_tools]
 
@@ -332,6 +348,14 @@ class MCPTaskAgent(MCPBaseAgent):
                         id=agent_input.id,
                         status=AgentStatus.INPUT_REQUIRED,
                         response_message=llm_response.choices[0],
+                        events=cast(
+                            List[Event],
+                            self._get_slot_set_events_for_changed_slots(
+                                agent_input,
+                                _initial_slot_values,
+                                _slot_values,
+                            ),
+                        ),
                         structured_results=(
                             self._get_structured_results_for_agent_output(
                                 agent_input, tool_results
@@ -493,6 +517,12 @@ class MCPTaskAgent(MCPBaseAgent):
             response_message=(
                 "I've completed my research but couldn't provide a final answer within"
                 "the allowed steps."
+            ),
+            events=cast(
+                List[Event],
+                self._get_slot_set_events_for_changed_slots(
+                    agent_input, _initial_slot_values, _slot_values
+                ),
             ),
             structured_results=self._get_structured_results_for_agent_output(
                 agent_input, tool_results

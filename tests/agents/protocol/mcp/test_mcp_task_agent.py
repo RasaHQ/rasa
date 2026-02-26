@@ -26,6 +26,7 @@ from rasa.shared.constants import (
     DEFAULT_TIMEZONE,
     OPENAI_API_KEY_ENV_VAR,
 )
+from rasa.shared.core.events import SlotSet
 from rasa.shared.exceptions import (
     LLMToolResponseDecodeError,
     ProviderClientAPIException,
@@ -435,6 +436,77 @@ class TestMCPTaskAgent:
 
         assert result == {"test_slot": expected_result}
 
+    @pytest.mark.parametrize(
+        "initial_slot_values, current_slot_values, metadata, expected_events",
+        [
+            # Exit-condition slot changed -> one SlotSet event
+            (
+                {"user_name": "John", "user_age": 25},
+                {"user_name": "Jane", "user_age": 25},
+                {"exit_if": ["slots.user_name == 'Jane'"]},
+                [SlotSet("user_name", "Jane")],
+            ),
+            # No change -> empty list
+            (
+                {"user_name": "John"},
+                {"user_name": "John"},
+                {"exit_if": ["slots.user_name == 'John'"]},
+                [],
+            ),
+            # No exit conditions -> empty list
+            (
+                {"user_name": "John"},
+                {"user_name": "Jane"},
+                {},
+                [],
+            ),
+            # Multiple exit-condition slots, only one changed
+            (
+                {"user_name": "John", "user_age": 25},
+                {"user_name": "Jane", "user_age": 25},
+                {
+                    "exit_if": [
+                        "slots.user_name == 'Jane'",
+                        "slots.user_age > 20",
+                    ]
+                },
+                [SlotSet("user_name", "Jane")],
+            ),
+            # Both exit-condition slots changed
+            (
+                {"user_name": "John", "user_age": 25},
+                {"user_name": "Jane", "user_age": 30},
+                {
+                    "exit_if": [
+                        "slots.user_name == 'Jane'",
+                        "slots.user_age > 25",
+                    ]
+                },
+                [SlotSet("user_name", "Jane"), SlotSet("user_age", 30)],
+            ),
+        ],
+    )
+    def test_get_slot_set_events_for_changed_slots(
+        self,
+        mcp_task_agent: MCPTaskAgent,
+        mock_agent_input: AgentInput,
+        initial_slot_values: Dict[str, Any],
+        current_slot_values: Dict[str, Any],
+        metadata: Dict[str, Any],
+        expected_events: List[SlotSet],
+    ):
+        """Test that only exit-condition slots that changed produce SlotSet events."""
+        mock_agent_input.metadata = metadata
+        result = mcp_task_agent._get_slot_set_events_for_changed_slots(
+            mock_agent_input, initial_slot_values, current_slot_values
+        )
+        assert len(result) == len(expected_events)
+        result_keys = {e.key for e in result}
+        result_values = {e.key: e.value for e in result}
+        for expected in expected_events:
+            assert expected.key in result_keys
+            assert result_values[expected.key] == expected.value
+
     def test_generate_agent_task_completed_output(
         self, mcp_task_agent, mock_agent_input
     ):
@@ -813,7 +885,10 @@ class TestMCPTaskAgent:
         After setting a slot, the loop continues to the next iteration.
         Exit conditions are no longer checked in send_message — they are
         evaluated after process_output via evaluate_exit_conditions.
+        Slot changes are included in the output even when status is
+        INPUT_REQUIRED.
         """
+        mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
         mock_tool_call = LLMToolCall(
             id="call_123",
             type="function",
@@ -852,6 +927,11 @@ class TestMCPTaskAgent:
             assert result.id == mock_agent_input.id
             assert result.status.name == "INPUT_REQUIRED"
             assert result.response_message == "Done!"
+            # Changed slot must be forwarded in output so process_output can apply it
+            assert result.events is not None
+            assert len(result.events) == 1
+            assert result.events[0].key == "user_name"
+            assert result.events[0].value == "Jane"
 
     @pytest.mark.asyncio
     async def test_send_message_set_slot_tool_slot_not_found(
@@ -998,6 +1078,71 @@ class TestMCPTaskAgent:
             assert "couldn't provide a final answer" in result.response_message
 
     @pytest.mark.asyncio
+    async def test_send_message_max_iterations_includes_changed_slot_events(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Test that when max iterations is reached, output includes slot changes."""
+        mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
+        set_slot_call = LLMToolCall(
+            id="call_set_slot",
+            type="function",
+            tool_name="set_slot_user_name",
+            tool_args={"slot_value": "Jane"},
+        )
+        other_tool_call = LLMToolCall(
+            id="call_other",
+            type="function",
+            tool_name="other_tool",
+            tool_args={"arg": "value"},
+        )
+        first_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Setting slot"],
+            tool_calls=[set_slot_call],
+        )
+        second_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Calling other tool"],
+            tool_calls=[other_tool_call],
+        )
+        mock_tool_output = AgentToolResult(
+            tool_name="other_tool",
+            result="ok",
+            is_error=False,
+        )
+
+        with (
+            patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
+            patch.object(
+                mcp_task_agent, "_execute_tool_call", new_callable=AsyncMock
+            ) as mock_execute_tool,
+        ):
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=[first_response, second_response]
+            )
+            set_slot_tool = MagicMock()
+            set_slot_tool.name = "set_slot_user_name"
+            other_tool = MagicMock()
+            other_tool.name = "other_tool"
+            mock_get_tools.return_value = [set_slot_tool, other_tool]
+            mock_execute_tool.return_value = mock_tool_output
+
+            mcp_task_agent.MAX_ITERATIONS = 2
+            result = await mcp_task_agent.send_message(mock_agent_input)
+
+            assert result.id == mock_agent_input.id
+            assert result.status.name == "COMPLETED"
+            assert "couldn't provide a final answer" in result.response_message
+            # Slot set in first iteration must be in output
+            assert result.events is not None
+            assert len(result.events) == 1
+            assert result.events[0].key == "user_name"
+            assert result.events[0].value == "Jane"
+
+    @pytest.mark.asyncio
     async def test_send_message_passes_metadata_to_llm(
         self, mcp_task_agent: MCPTaskAgent
     ):
@@ -1055,8 +1200,6 @@ class TestMCPTaskAgent:
         """Test that evaluate_exit_conditions returns COMPLETED when
         SlotSet events in the output satisfy exit conditions.
         """
-        from rasa.shared.core.events import SlotSet
-
         mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
 
         output = AgentOutput(
@@ -1098,8 +1241,6 @@ class TestMCPTaskAgent:
         """Test that evaluate_exit_conditions merges slot values from
         agent_input.slots with SlotSet events in output.events.
         """
-        from rasa.shared.core.events import SlotSet
-
         agent_input = AgentInput(
             id="test_id",
             user_message="test",
