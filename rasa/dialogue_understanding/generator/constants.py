@@ -32,6 +32,7 @@ COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 LLM_BASED_COMMAND_GENERATOR_CONFIG_FILE = "config.json"
 
 MODEL_NAME_GPT_4O_2024_11_20 = "gpt-4o-2024-11-20"
+MODEL_NAME_GPT_5_1_2025_11_13 = "gpt-5.1-2025-11-13"
 MODEL_NAME_GPT_5_2_2025_12_11 = "gpt-5.2-2025-12-11"
 MODEL_NAME_CLAUDE_3_5_SONNET_20240620 = "claude-3-5-sonnet-20240620"
 # Anthropic started to use a different naming convention

@@ -116,6 +116,9 @@ command_prompt_v2_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_file(
 command_prompt_v2_gpt_5_2_2025_12_11_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_gpt_5_2_2025_12_11_template.jinja2"
 )
+command_prompt_v2_gpt_5_1_2025_11_13_template = rasa.shared.utils.io.read_file(
+    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2"
+)
 # Agent versions of the prompt templates
 agent_command_prompt_v2_fallback_other_models_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
@@ -127,6 +130,10 @@ agent_command_prompt_v2_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_f
 agent_command_prompt_v2_gpt_5_2_2025_12_11_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/"
     "agent_command_prompt_v2_gpt_5_2_2025_12_11_template.jinja2"
+)
+agent_command_prompt_v2_gpt_5_1_2025_11_13_template = rasa.shared.utils.io.read_file(
+    f"{TEST_PROMPT_TEMPLATE_DIR}/"
+    "agent_command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2"
 )
 agent_command_prompt_v2_claude_3_5_sonnet_20240620_template = (
     rasa.shared.utils.io.read_file(
@@ -1967,6 +1974,39 @@ class TestCompactLLMCommandGenerator:
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
     )
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    @pytest.mark.parametrize(
+        "agents_present,expected_prompt_template",
+        [
+            (False, command_prompt_v2_gpt_5_1_2025_11_13_template),
+            (True, agent_command_prompt_v2_gpt_5_1_2025_11_13_template),
+        ],
+    )
+    def test_load_default_prompt_based_on_model_name_gpt_5_1(
+        self,
+        mock_flow_retrieval_load: Mock,
+        mock_flow_retrieval_populate: Mock,
+        model_storage: ModelStorage,
+        set_agents_presence: Callable[[bool], None],
+        agents_present: bool,
+        expected_prompt_template: Any,
+    ):
+        # Given
+        set_agents_presence(agents_present)
+        resource = Resource("llmcmdgen")
+        config = {"llm": {"provider": "openai", "model": "gpt-5.1-2025-11-13"}}
+        generator = CompactLLMCommandGenerator(config, model_storage, resource)
+        resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+
+        # When
+        loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
+
+        # Then
+        assert loaded.prompt_template == expected_prompt_template
+
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
     @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
     @pytest.mark.parametrize(
         "agents_present,expected_prompt_template",
@@ -2489,6 +2529,11 @@ class TestCompactLLMCommandGenerator:
                 "agent_command_prompt_v2_gpt_5_2_2025_12_11_template.jinja2",
             ),
             (
+                "openai/gpt-5.1-2025-11-13",
+                "command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2",
+                "agent_command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2",
+            ),
+            (
                 "azure/gpt-4o-2024-11-20",
                 "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2",
                 "agent_command_prompt_v2_gpt_4o_2024_11_20_template.jinja2",
@@ -2497,6 +2542,11 @@ class TestCompactLLMCommandGenerator:
                 "azure/gpt-5.2-2025-12-11",
                 "command_prompt_v2_gpt_5_2_2025_12_11_template.jinja2",
                 "agent_command_prompt_v2_gpt_5_2_2025_12_11_template.jinja2",
+            ),
+            (
+                "azure/gpt-5.1-2025-11-13",
+                "command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2",
+                "agent_command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2",
             ),
             (
                 "anthropic/claude-3-5-sonnet-20240620",

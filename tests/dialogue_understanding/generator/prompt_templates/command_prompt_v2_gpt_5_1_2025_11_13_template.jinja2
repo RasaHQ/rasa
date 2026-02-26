@@ -1,0 +1,68 @@
+## Task
+Analyze the conversation and output a list of actions (one per line). Below are examples of correct behaviour for slot extraction and for knowledge vs chitchat.
+{% if current_datetime %}
+### Date & Time Context
+- Current date: {{ current_datetime.strftime("%d %B, %Y") }}   (DD Month, YYYY)
+- Current time: {{ current_datetime.strftime("%H:%M:%S") }} ({{ current_datetime.tzname() }})  (HH:MM:SS, 24-hour format with timezone)
+- Current day: {{ current_datetime.strftime("%A") }}     (Day of week)
+{% endif %}
+---
+
+## Examples (slot extraction and knowledge/chitchat)
+
+**Slot extraction — extract every mentioned value:**
+- User: "send money to John" → output must include a set slot for the recipient (e.g. `set slot recipient_account John`) and for transfer type if applicable, plus `start flow transfer_money`. Do not output only start flow when the user mentions a name or amount.
+- User: "set up a recurrent payment" → output `start flow transfer_money`, `set slot transfer_type third party`, `set slot transfer_timing_type recurring` (all mentioned concepts must get a set slot).
+
+**Knowledge vs chitchat:**
+- User: "How do I change my PIN?" → `provide info` (concrete how-to question).
+- User: "I'm not sure how secure digitalization is." → `offtopic reply` (opinion/reflection, not a request for a factual answer).
+
+---
+
+## Available Flows and Slots
+Use the following structured data:
+```json
+{"flows":[{% for flow in available_flows %}{"name":"{{ flow.name }}","description":{{ flow.description | to_json_escaped_string }}{% if flow.slots %},"slots":[{% for slot in flow.slots %}{"name":"{{ slot.name }}"{% if slot.description %},"description":{{ slot.description | to_json_escaped_string }}{% endif %}{% if slot.allowed_values %},"allowed_values":{{ slot.allowed_values }}{% endif %}}{% if not loop.last %},{% endif %}{% endfor %}]{% endif %}}{% if not loop.last %},{% endif %}{% endfor %}]}
+```
+
+---
+
+## Available Actions
+* `start flow flow_name`: Start a flow. E.g. `start flow transfer_money`, `start flow list_contacts`.
+* `set slot slot_name slot_value`: Set a slot. E.g. `set slot transfer_money_recipient Freddy`. Output one set slot for every slot value the user mentions (names, amounts, types, etc.).
+* `cancel flow`: Cancel the current flow when the user explicitly requests it.
+* `disambiguate flows flow_name1 flow_name2 ...`: When user input is ambiguous, list possible flows. E.g. "contacts" → `disambiguate flows list_contacts add_contact remove_contact`.
+* `provide info`: Answer FAQs, policies, service questions when no flow fits. Do not use for opinions or small talk.
+* `offtopic reply`: Casual or social messages, opinions, general reflections.
+* `hand over`: Hand over to a human when requested or when the user seems frustrated.
+* `repeat message`: Repeat the last bot message.
+
+---
+
+## General instructions
+* **Slot values:** Do not fill slots with placeholders or abstract values. For categorical slots, match the user message to allowed values or use "other". For boolean slots, map positive → `True`, negative → `False`. Extract text exactly as the user provided it.
+* **Format:** Strictly adhere to the action format above. Focus on the last message; take it one step at a time. Use conversation history only to aid understanding.
+* **Cancel / flows:** Do not cancel unless the user explicitly requests it. Multiple flows can be started without cancelling the previous one if the user pursues several things.
+* Only use information provided by the user.
+
+---
+
+## Current State
+{% if current_flow != None %}Use the following structured data:
+```json
+{"active_flow":"{{ current_flow }}","current_step":{"requested_slot":"{{ current_slot }}","requested_slot_description":{{ current_slot_description | to_json_escaped_string }}},"slots":[{% for slot in flow_slots %}{"name":"{{ slot.name }}","value":"{{ slot.value }}","type":"{{ slot.type }}"{% if slot.description %},"description":{{ slot.description | to_json_escaped_string }}{% endif %}{% if slot.allowed_values %},"allowed_values":"{{ slot.allowed_values }}"{% endif %}}{% if not loop.last %},{% endif %}{% endfor %}]}
+```{% else %}
+You are currently not inside any flow.{% endif %}
+
+---
+
+## Conversation History
+{{ current_conversation }}
+
+---
+
+## Task
+Create an action list with one action per line in response to the user's last message: """{{ user_message }}""".
+
+Your action list:

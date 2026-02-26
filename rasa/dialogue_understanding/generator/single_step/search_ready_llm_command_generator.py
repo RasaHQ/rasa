@@ -13,6 +13,7 @@ from rasa.dialogue_understanding.generator.constants import (
     MODEL_NAME_CLAUDE_3_5_SONNET_20240620,
     MODEL_NAME_CLAUDE_SONNET_4_5_20250929,
     MODEL_NAME_GPT_4O_2024_11_20,
+    MODEL_NAME_GPT_5_1_2025_11_13,
     MODEL_NAME_GPT_5_2_2025_12_11,
     OPENAI_PROVIDER,
     PROVIDER_CONFIG_KEY,
@@ -69,6 +70,13 @@ MODEL_PROMPT_MAPPER = {
     f"{AZURE_OPENAI_PROVIDER}/{MODEL_NAME_GPT_5_2_2025_12_11}": (
         "command_prompt_v3_gpt_5_2_2025_12_11_template.jinja2"
     ),
+    # GPT-5.1
+    f"{OPENAI_PROVIDER}/{MODEL_NAME_GPT_5_1_2025_11_13}": (
+        "command_prompt_v3_gpt_5_1_2025_11_13_template.jinja2"
+    ),
+    f"{AZURE_OPENAI_PROVIDER}/{MODEL_NAME_GPT_5_1_2025_11_13}": (
+        "command_prompt_v3_gpt_5_1_2025_11_13_template.jinja2"
+    ),
     # Claude Sonnet 3.5
     f"{AWS_BEDROCK_PROVIDER}/anthropic.{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}-v1:0": (
         "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
@@ -106,6 +114,13 @@ AGENT_MODEL_PROMPT_MAPPER = {
     ),
     f"{AZURE_OPENAI_PROVIDER}/{MODEL_NAME_GPT_5_2_2025_12_11}": (
         "agent_command_prompt_v3_gpt_5_2_2025_12_11_template.jinja2"
+    ),
+    # GPT-5.1
+    f"{OPENAI_PROVIDER}/{MODEL_NAME_GPT_5_1_2025_11_13}": (
+        "agent_command_prompt_v3_gpt_5_1_2025_11_13_template.jinja2"
+    ),
+    f"{AZURE_OPENAI_PROVIDER}/{MODEL_NAME_GPT_5_1_2025_11_13}": (
+        "agent_command_prompt_v3_gpt_5_1_2025_11_13_template.jinja2"
     ),
     # Claude 3.5 Sonnet
     f"{AWS_BEDROCK_PROVIDER}/anthropic.{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}-v1:0": (
