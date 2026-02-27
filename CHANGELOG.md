@@ -10,6 +10,15 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.13] - 2026-02-25
+                         
+Rasa Pro 3.15.13 (2026-02-25)                              
+### Bugfixes
+- [#2642](https://github.com/rasahq/rasa-private/issues/2642): Upgraded `litellm` to 1.81.15 so that `strict: True` can be passed to Bedrock and tool calling has the same guarantees as with OpenAI. Upgraded `openai` to >=2.8.0 to satisfy litellm's dependency.
+- [#4676](https://github.com/rasahq/rasa-private/issues/4676): Unquoted environment variable references for MCP and A2A OAuth credentials (`client_id`, `client_secret`) in `endpoints.yml` are now accepted. Previously, training failed unless these values were wrapped in double quotes (e.g. `"${MCP_CLIENT_SECRET}"`).
+- [#4690](https://github.com/rasahq/rasa-private/issues/4690): Move MCP task agent exit condition evaluation to after `process_output`, so that `SlotSet` events added by custom `process_output` implementations are considered when checking `exit_if` conditions.
+
+
 ## [3.15.12] - 2026-02-23
                          
 Rasa Pro 3.15.12 (2026-02-23)                              
