@@ -10,9 +10,16 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.14] - 2026-02-26
+
+Rasa Pro 3.15.14 (2026-02-26)
+### Bugfixes
+- [#4718](https://github.com/rasahq/rasa-private/issues/4718): The MCP task agent now includes slot changes in the agent output when the state is `INPUT_REQUIRED` or when max iterations is reached. Previously, slots set via set_slot tools were updated in memory but not forwarded in the output, so they were not persisted until exit conditions were met.
+
+
 ## [3.15.13] - 2026-02-25
-                         
-Rasa Pro 3.15.13 (2026-02-25)                              
+
+Rasa Pro 3.15.13 (2026-02-25)
 ### Bugfixes
 - [#2642](https://github.com/rasahq/rasa-private/issues/2642): Upgraded `litellm` to 1.81.15 so that `strict: True` can be passed to Bedrock and tool calling has the same guarantees as with OpenAI. Upgraded `openai` to >=2.8.0 to satisfy litellm's dependency.
 - [#4676](https://github.com/rasahq/rasa-private/issues/4676): Unquoted environment variable references for MCP and A2A OAuth credentials (`client_id`, `client_secret`) in `endpoints.yml` are now accepted. Previously, training failed unless these values were wrapped in double quotes (e.g. `"${MCP_CLIENT_SECRET}"`).
