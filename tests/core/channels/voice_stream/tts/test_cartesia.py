@@ -71,3 +71,32 @@ async def test_configuration_format(format):
         config={}, rasa_language="en", format=format
     )
     assert tts_engine.audio_format == format
+
+
+@pytest.mark.parametrize(
+    "format, expected_encoding",
+    [
+        (MULAW_8KHZ, "pcm_mulaw"),
+        (L16_24KHZ, "pcm_s16le"),
+        (L16_48KHZ, "pcm_s16le"),
+    ],
+)
+async def test_send_text_chunk_payload(format, expected_encoding):
+    tts_engine = CartesiaTTS.from_config_dict(
+        config={}, rasa_language="en", format=format
+    )
+
+    # Mock the WebSocket and ensure it's not closed
+    mock_ws = mock.AsyncMock()
+    mock_ws.closed = False
+    tts_engine.ws = mock_ws
+
+    text = "Hello, Cartesia!"
+    await tts_engine.send_text_chunk(text)
+
+    tts_engine.ws.send_json.assert_called_once()
+    payload = tts_engine.ws.send_json.call_args[0][0]
+
+    assert payload["output_format"]["encoding"] == expected_encoding
+    assert payload["output_format"]["sample_rate"] == format.sample_rate
+    assert payload["transcript"] == text

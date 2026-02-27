@@ -18,10 +18,22 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
     NewTranscript,
     UserIsSpeaking,
 )
-from rasa.core.channels.voice_stream.audio_bytes import AudioFormat, RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import (
+    L16_24KHZ,
+    L16_48KHZ,
+    MULAW_8KHZ,
+    AudioFormat,
+    RasaAudioBytes,
+)
 from rasa.shared.constants import DEEPGRAM_API_KEY_ENV_VAR
 
 logger = structlog.get_logger(__name__)
+
+"""
+Deepgram STT engine implementation.
+Docs: https://developers.deepgram.com/reference/speech-to-text/listen-streaming
+Media Input Settings: https://developers.deepgram.com/docs/media-input-settings
+"""
 
 
 class DeepgramASRConfig(ASREngineConfig):
@@ -86,8 +98,16 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
 
     def _get_query_params(self) -> str:
         """Get the configured query parameters for the api."""
+        if self.audio_format in (L16_24KHZ, L16_48KHZ):
+            encoding = "linear16"
+        elif self.audio_format == MULAW_8KHZ:
+            encoding = "mulaw"
+        else:
+            raise ValueError(
+                f"Unsupported audio format {self.audio_format} for Deepgram ASR"
+            )
         query_params = {
-            "encoding": "mulaw",
+            "encoding": encoding,
             "sample_rate": self.audio_format.sample_rate,
             "endpointing": self.config.endpointing,
             "vad_events": "true",

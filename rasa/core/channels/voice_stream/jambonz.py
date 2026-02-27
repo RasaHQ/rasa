@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import audioop
 import json
 import uuid
 from typing import Any, Awaitable, Callable, Dict, Optional, Text, Tuple
@@ -19,7 +18,7 @@ from rasa.core.channels.voice_ready.utils import (
     CallParameters,
     validate_username_password_credentials,
 )
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import L16_24KHZ, RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import call_state
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
 from rasa.core.channels.voice_stream.util import repack_voice_credentials
@@ -34,6 +33,14 @@ from rasa.core.channels.voice_stream.voice_channel import (
 )
 
 logger = structlog.get_logger()
+
+"""
+Jambonz Streams Integration.
+The integration uses Jambonz verbs. It initially accepts accepts on a /webhook endpoint,
+which responds with a "listen" verb to start the audio stream.
+
+Docs: https://docs.jambonz.org/verbs/verbs/listen
+"""
 
 JAMBONZ_STREAMS_WEBSOCKET_PATH = "webhooks/jambonz_stream/websocket"
 
@@ -59,12 +66,8 @@ class JambonzStreamOutputChannel(VoiceOutputChannel):
     async def send_audio_bytes(
         self, recipient_id: str, audio_bytes: RasaAudioBytes
     ) -> None:
-        """Overridden to send binary websocket messages for Jambonz.
-
-        Converts 8kHz μ-law to 8kHz L16 PCM for Jambonz streaming.
-        """
-        pcm = audioop.ulaw2lin(audio_bytes.data, 2)
-        await self.voice_websocket.send(pcm)
+        """Jambonz needs L16 24kHz"""
+        await self.voice_websocket.send(audio_bytes.data)
 
     def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
         """Create a marker message to track audio stream position."""
@@ -95,6 +98,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         super().__init__(server_url, asr_config, tts_config, interruptions)
         self.username = username
         self.password = password
+        self.audio_format = L16_24KHZ
 
     @classmethod
     def from_credentials(
@@ -137,9 +141,8 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         return f"{base_url}/{JAMBONZ_STREAMS_WEBSOCKET_PATH}"
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
-        """Convert Jambonz audio bytes (L16 PCM) to Rasa audio bytes (μ-law)."""
-        ulaw = audioop.lin2ulaw(input_bytes, 2)
-        return RasaAudioBytes(ulaw, format=self.audio_format)
+        """Jambonz is sending L16 PCM 24kHz"""
+        return RasaAudioBytes(input_bytes, format=self.audio_format)
 
     async def collect_call_parameters(
         self, channel_websocket: Websocket
@@ -225,12 +228,12 @@ class JambonzStreamInputChannel(VoiceInputChannel):
                     {
                         "verb": "listen",
                         "url": self._websocket_stream_url(),
-                        "sampleRate": 8000,
+                        "sampleRate": self.audio_format.sample_rate,
                         "passDtmf": True,
                         "bidirectionalAudio": {
                             "enabled": True,
                             "streaming": True,
-                            "sampleRate": 8000,
+                            "sampleRate": self.audio_format.sample_rate,
                         },
                     }
                 ]

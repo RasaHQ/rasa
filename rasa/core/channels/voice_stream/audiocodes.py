@@ -18,7 +18,7 @@ from sanic import (  # type: ignore[attr-defined]
 from rasa.core.channels import UserMessage
 from rasa.core.channels.voice_ready.audiocodes import map_call_params
 from rasa.core.channels.voice_ready.utils import CallParameters
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import L16_24KHZ, RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import (
     call_state,
 )
@@ -36,7 +36,13 @@ from rasa.core.channels.voice_stream.voice_channel import (
 from rasa.shared.utils.common import mark_as_beta_feature
 
 logger = structlog.get_logger(__name__)
-PREFERRED_AUDIO_FORMAT = "raw/mulaw"
+PREFERRED_AUDIO_FORMAT = "raw/lpcm16_24"
+RASA_AUDIO_FORMAT = L16_24KHZ
+
+"""
+This module implements a Voice Channel for Audiocodes Bot API, Websocket Mode.
+Documentation: https://techdocs.audiocodes.com/livehub/#Bot-API/ac-bot-api-mode-websocket.htm?Highlight=session.initiate
+"""
 
 
 class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
@@ -128,6 +134,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
             tts_config=tts_config,
             interruptions=interruptions,
         )
+        self.audio_format = RASA_AUDIO_FORMAT
         self.token = token
 
     @classmethod

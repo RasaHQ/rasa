@@ -7,6 +7,9 @@ import structlog
 from aiohttp import ClientConnectorError, ClientTimeout
 
 from rasa.core.channels.voice_stream.audio_bytes import (
+    L16_24KHZ,
+    L16_48KHZ,
+    MULAW_8KHZ,
     AudioFormat,
     CurrentLanguageConfig,
     RasaAudioBytes,
@@ -101,13 +104,22 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
         except TimeoutError as e:
             raise TTSError(e)
 
-    @staticmethod
-    def get_request_headers() -> dict[str, str]:
+    def get_request_headers(self) -> dict[str, str]:
+        _AZURE_OUTPUT_FORMATS: dict[AudioFormat, str] = {
+            MULAW_8KHZ: "raw-8khz-8bit-mono-mulaw",
+            L16_24KHZ: "raw-24khz-16bit-mono-pcm",
+            L16_48KHZ: "raw-48khz-16bit-mono-pcm",
+        }
+        azure_output_format = _AZURE_OUTPUT_FORMATS.get(self.audio_format)
+        if not azure_output_format:
+            raise TTSError(
+                f"Audio format {self.audio_format} is not supported by Azure TTS."
+            )
         azure_speech_api_key = os.environ[AZURE_SPEECH_API_KEY_ENV_VAR]
         return {
             "Ocp-Apim-Subscription-Key": azure_speech_api_key,
             "Content-Type": "application/ssml+xml",
-            "X-Microsoft-OutputFormat": "raw-8khz-8bit-mono-mulaw",
+            "X-Microsoft-OutputFormat": azure_output_format,
         }
 
     @staticmethod

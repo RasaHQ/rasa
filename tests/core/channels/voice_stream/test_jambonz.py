@@ -102,12 +102,10 @@ async def test_collect_call_parameters(input_channel, mock_websocket):
 
 
 def test_channel_bytes_conversion(input_channel, sample_audio_bytes):
-    """Test audio format conversion."""
-    # Convert L16 PCM 16kHz to μ-law 8kHz
+    """Test that there's no audio format conversion"""
     result = input_channel.channel_bytes_to_rasa_audio_bytes(sample_audio_bytes)
     assert isinstance(result, RasaAudioBytes)
-    # L16 PCM is 2 bytes per sample, μ-law is 1 byte per sample
-    assert len(result) == len(sample_audio_bytes) // 2
+    assert len(result) == len(result)
 
 
 def test_map_input_message_bytes(input_channel, sample_audio_bytes, mock_websocket):
@@ -137,10 +135,9 @@ async def test_output_channel_audio_sending(jambonz_output_channel, mock_websock
     await jambonz_output_channel.send_audio_bytes("test_recipient", audio_bytes)
     assert mock_websocket.send.called
 
-    # Output is L16 PCM (2 bytes per sample)
-    # Input is μ-law (1 byte per sample)
+    # Both input and output are same format
     sent_bytes = mock_websocket.send.call_args[0][0]
-    assert len(sent_bytes) == len(audio_bytes) * 2
+    assert len(sent_bytes) == len(audio_bytes)
 
 
 def test_create_marker_message(jambonz_output_channel):

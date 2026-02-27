@@ -53,3 +53,22 @@ async def test_configuration_format(format):
         config={}, rasa_language="en", format=format
     )
     assert tts_engine.audio_format == format
+
+
+@pytest.mark.parametrize(
+    "format, expected_encoding",
+    [
+        (MULAW_8KHZ, "mulaw"),
+        (L16_24KHZ, "linear16"),
+        (L16_48KHZ, "linear16"),
+    ],
+)
+async def test_get_websocket_url(format, expected_encoding):
+    tts_engine = DeepgramTTS.from_config_dict(
+        config={}, rasa_language="en", format=format
+    )
+    config = tts_engine.get_default_config()
+    url = tts_engine.get_websocket_url(config)
+
+    assert f"encoding={expected_encoding}" in url
+    assert f"sample_rate={format.sample_rate}" in url

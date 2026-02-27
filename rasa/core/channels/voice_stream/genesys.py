@@ -36,6 +36,9 @@ from rasa.core.channels.voice_stream.voice_channel import (
 from rasa.shared.exceptions import InvalidConfigException
 
 """
+Genesys AudioHook (AudioConnector) Integration.
+Docs: https://developer.genesys.cloud/devapps/audiohook/
+
 Genesys throws a rate limit error with too many audio messages.
 To avoid this, we buffer the audio messages and send them in chunks.
 

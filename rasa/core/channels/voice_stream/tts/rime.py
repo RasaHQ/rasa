@@ -10,6 +10,8 @@ import structlog
 from aiohttp import ClientTimeout
 
 from rasa.core.channels.voice_stream.audio_bytes import (
+    L16_24KHZ,
+    MULAW_8KHZ,
     AudioFormat,
     RasaAudioBytes,
 )
@@ -24,13 +26,15 @@ from rasa.shared.exceptions import ConnectionException
 
 structlogger = structlog.get_logger()
 
+"""
+Rime TTS engine implementation.
+Docs: https://docs.rime.ai/api-reference/endpoint/websockets-json#variable-parameters
+"""
+
 
 @dataclass
 class RimeTTSConfig(TTSEngineConfig):
     """Rime TTS variable parameters:
-
-    Docs: https://docs.rime.ai/api-reference/endpoint/websockets-json#variable-parameters
-
     See get_default_config() for default values.
     """
 
@@ -92,14 +96,22 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         """Build WebSocket URL with query parameters for Rime TTS."""
         base_url = self.config.endpoint
 
-        # Build query parameters with required audio format for RasaAudioBytes
-        # Audio format and sample rate are fixed to match RasaAudioBytes spec:
-        # raw wave, 8khz, 8bit, mono channel, mulaw encoding
+        if self.audio_format is L16_24KHZ:
+            encoding = "pcm"
+        elif self.audio_format is MULAW_8KHZ:
+            encoding = "mulaw"
+        else:
+            # TODO: log a warning and transcode instead.
+            raise TTSError(
+                f"Unsupported audio format: {self.audio_format}. Rime does not "
+                "support sample rates above 44.1kHz."
+            )
+
         query_params = {
             "speaker": self.current_language_config.voice,
             "modelId": self.config.model_id,
             "lang": self.current_language_config.engine_language_key,
-            "audioFormat": "mulaw",  # Fixed: required for RasaAudioBytes
+            "audioFormat": encoding,
             "samplingRate": self.audio_format.sample_rate,
         }
 

@@ -9,6 +9,9 @@ import structlog
 from aiohttp import ClientTimeout, WSMsgType
 
 from rasa.core.channels.voice_stream.audio_bytes import (
+    L16_24KHZ,
+    L16_48KHZ,
+    MULAW_8KHZ,
     AudioFormat,
     RasaAudioBytes,
 )
@@ -22,6 +25,12 @@ from rasa.shared.constants import DEEPGRAM_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
 
 structlogger = structlog.get_logger()
+
+"""
+Deepgram TTS engine implementation.
+Docs: https://developers.deepgram.com/reference/text-to-speech/speak-streaming
+Media Input Settings: https://developers.deepgram.com/docs/tts-media-output-settings#audio-format-combinations
+"""
 
 
 @dataclass
@@ -83,10 +92,18 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
 
     def get_websocket_url(self, config: DeepgramTTSConfig) -> str:
         """Build WebSocket URL with query parameters."""
+        if self.audio_format in (L16_24KHZ, L16_48KHZ):
+            encoding = "linear16"
+        elif self.audio_format == MULAW_8KHZ:
+            encoding = "mulaw"
+        else:
+            raise TTSError(
+                f"Unsupported audio format {self.audio_format} for Deepgram TTS"
+            )
         base_url = config.endpoint
         query_params = {
             "model": self.current_language_config.model,
-            "encoding": "mulaw",
+            "encoding": encoding,
             "sample_rate": self.audio_format.sample_rate,
         }
         return f"{base_url}?{urlencode(query_params)}"

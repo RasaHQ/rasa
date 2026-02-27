@@ -90,12 +90,25 @@ def test_tts_request_body(mulaw_format):
     assert tts_engine.current_language_config.engine_language_key in request_body
 
 
-def test_tts_headers():
-    headers = AzureTTS.get_request_headers()
+async def test_tts_headers(mulaw_format):
+    tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
+    headers = tts_engine.get_request_headers()
     assert "Ocp-Apim-Subscription-Key" in headers
     assert "Content-Type" in headers
     assert "X-Microsoft-OutputFormat" in headers
     assert headers["X-Microsoft-OutputFormat"] == "raw-8khz-8bit-mono-mulaw"
+
+
+async def test_tts_headers_l16_24khz():
+    tts_engine = AzureTTS(rasa_language="en", format=L16_24KHZ)
+    headers = tts_engine.get_request_headers()
+    assert headers["X-Microsoft-OutputFormat"] == "raw-24khz-16bit-mono-pcm"
+
+
+async def test_tts_headers_l16_48khz():
+    tts_engine = AzureTTS(rasa_language="en", format=L16_48KHZ)
+    headers = tts_engine.get_request_headers()
+    assert headers["X-Microsoft-OutputFormat"] == "raw-48khz-16bit-mono-pcm"
 
 
 @pytest.mark.asyncio

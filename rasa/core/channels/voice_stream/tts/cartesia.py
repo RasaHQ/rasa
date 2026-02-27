@@ -2,12 +2,16 @@ import base64
 import os
 from dataclasses import dataclass
 from typing import Any, AsyncIterator, Dict, List, Optional
+from uuid import uuid4
 
 import aiohttp
 import structlog
 from aiohttp import ClientTimeout
 
 from rasa.core.channels.voice_stream.audio_bytes import (
+    L16_24KHZ,
+    L16_48KHZ,
+    MULAW_8KHZ,
     AudioFormat,
     RasaAudioBytes,
 )
@@ -22,6 +26,12 @@ from rasa.shared.exceptions import ConnectionException
 
 structlogger = structlog.get_logger()
 
+"""
+Cartesia TTS engine implementation.
+Docs: https://docs.cartesia.ai/api-reference/tts/websocket
+Audio Format: https://docs.cartesia.ai/build-with-cartesia/capability-guides/choosing-tts-parameters#reference
+"""
+
 
 @dataclass
 class CartesiaTTSConfig(TTSEngineConfig):
@@ -35,6 +45,10 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
     required_env_vars = (CARTESIA_API_KEY_ENV_VAR,)
     ws: Optional[aiohttp.ClientWebSocketResponse] = None
     streaming_input: bool = True
+
+    # Each synthesis context has a unique ID
+    # gets reset in signal_text_done()
+    context_id = uuid4().hex
 
     @classmethod
     def name(cls) -> str:
@@ -92,6 +106,13 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
         if not self.ws or self.ws.closed:
             raise TTSError("WebSocket connection not established")
 
+        if self.audio_format in (L16_24KHZ, L16_48KHZ):
+            encoding = "pcm_s16le"
+        elif self.audio_format == MULAW_8KHZ:
+            encoding = "pcm_mulaw"
+        else:
+            raise TTSError(f"Unsupported audio format: {self.audio_format}")
+
         message: Dict[str, object] = {
             "model_id": self.config.model_id,
             "voice": {
@@ -101,10 +122,10 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
             "language": self.current_language_config.engine_language_key,
             "output_format": {
                 "container": "raw",
-                "encoding": "pcm_mulaw",
+                "encoding": encoding,
                 "sample_rate": self.audio_format.sample_rate,
             },
-            "context_id": "rasa-voice-stream",
+            "context_id": self.context_id,
         }
 
         if flush:
@@ -129,6 +150,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
         This tells Cartesia that all text has been sent and to finish processing.
         """
         await self._send_tts_request("", flush=True)
+        self.context_id = uuid4().hex  # Reset context ID for next synthesis
 
     async def stream_audio(self) -> AsyncIterator[RasaAudioBytes]:
         """Stream audio output from the TTS engine.

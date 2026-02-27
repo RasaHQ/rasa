@@ -15,6 +15,9 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
     UserIsSpeaking,
 )
 from rasa.core.channels.voice_stream.audio_bytes import (
+    L16_24KHZ,
+    L16_48KHZ,
+    MULAW_8KHZ,
     AudioFormat,
     RasaAudioBytes,
 )
@@ -87,6 +90,7 @@ class AzureASR(ASREngine[AzureASRConfig]):
 
     async def connect(self) -> None:
         """Connect to Azure ASR service and set up callbacks."""
+        import azure.cognitiveservices.speech as speechsdk
 
         # Validate that at least one of the connection parameters is set
         if not (
@@ -101,8 +105,17 @@ class AzureASR(ASREngine[AzureASRConfig]):
                 f"or speech_endpoint ({self.config.speech_endpoint}) to be set."
             )
 
-        # Set up Azure Speech SDK configuration
-        import azure.cognitiveservices.speech as speechsdk
+        _FORMAT_MAP = {
+            MULAW_8KHZ: speechsdk.audio.AudioStreamWaveFormat.MULAW,
+            L16_24KHZ: speechsdk.audio.AudioStreamWaveFormat.PCM,
+            L16_48KHZ: speechsdk.audio.AudioStreamWaveFormat.PCM,
+        }
+
+        wave_format = _FORMAT_MAP.get(self.audio_format)
+        if wave_format is None:
+            raise TTSConfigError(
+                f"Audio format {self.audio_format} is not supported by Azure ASR."
+            )
 
         speech_config = speechsdk.SpeechConfig(
             subscription=os.environ[AZURE_SPEECH_API_KEY_ENV_VAR],
@@ -114,7 +127,7 @@ class AzureASR(ASREngine[AzureASRConfig]):
             samples_per_second=self.audio_format.sample_rate,
             bits_per_sample=self.audio_format.bit_depth,
             channels=self.audio_format.channels,
-            wave_stream_format=speechsdk.AudioStreamWaveFormat.MULAW,
+            wave_stream_format=wave_format,
         )
         self.stream = speechsdk.audio.PushAudioInputStream(stream_format=audio_format)
         audio_config = speechsdk.audio.AudioConfig(stream=self.stream)

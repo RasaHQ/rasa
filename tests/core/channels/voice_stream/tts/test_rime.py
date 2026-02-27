@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest import MonkeyPatch
 
-from rasa.core.channels.voice_stream.audio_bytes import L16_24KHZ, MULAW_8KHZ
+from rasa.core.channels.voice_stream.audio_bytes import L16_24KHZ, L16_48KHZ, MULAW_8KHZ
 from rasa.core.channels.voice_stream.tts.rime import RimeTTS, RimeTTSConfig
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSError
 from rasa.shared.exceptions import ProviderClientValidationError
@@ -51,7 +51,9 @@ async def test_websocket_url_creation(monkeypatch: MonkeyPatch, mulaw_format):
     assert f"samplingRate={mulaw_format.sample_rate}" in ws_url
 
 
-def test_websocket_url_with_optional_params(monkeypatch: MonkeyPatch, mulaw_format):
+async def test_websocket_url_with_optional_params(
+    monkeypatch: MonkeyPatch, mulaw_format
+):
     monkeypatch.setenv("RIME_API_KEY", "test_key")
     config = RimeTTSConfig(
         model_id="mistv2",
@@ -172,3 +174,30 @@ async def test_configuration_format(format, monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RIME_API_KEY", "test_key")
     tts_engine = RimeTTS.from_config_dict(config={}, rasa_language="en", format=format)
     assert tts_engine.audio_format == format
+
+
+@pytest.mark.parametrize(
+    "format, expected_encoding",
+    [
+        (MULAW_8KHZ, "mulaw"),
+        (L16_24KHZ, "pcm"),
+    ],
+)
+async def test_get_websocket_url(format, expected_encoding, monkeypatch: MonkeyPatch):
+    monkeypatch.setenv("RIME_API_KEY", "test_key")
+    tts_engine = RimeTTS.from_config_dict(config={}, rasa_language="en", format=format)
+    ws_url = tts_engine.get_websocket_url()
+
+    assert f"audioFormat={expected_encoding}" in ws_url
+    assert f"samplingRate={format.sample_rate}" in ws_url
+
+
+async def test_unsupported_format_raises_error(monkeypatch: MonkeyPatch):
+    """Test that using an unsupported format (48kHz) raises a TTSError."""
+    monkeypatch.setenv("RIME_API_KEY", "test_key")
+
+    with pytest.raises(TTSError, match="Unsupported audio format"):
+        tts_engine = RimeTTS.from_config_dict(
+            config={}, rasa_language="en", format=L16_48KHZ
+        )
+        tts_engine.get_websocket_url()
