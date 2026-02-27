@@ -45,16 +45,25 @@ jobs:
       matrix:
         model:
           - openai
-          - claude-3-5-sonnet-20240620 # Accessed via AWS Bedrock
+          - claude-sonnet-4-5-20250929 # Accessed via AWS Bedrock
         command-generator:
           - compact
           - search-ready
         test-type:
-          - tool-calling
+          - tool-calling-structured-content
+          - tool-calling-unstructured-content
+          - tool-calling-meta-param-support
           - open-agent
           - task-agent
         exclude:
-          - model: claude-3-5-sonnet-20240620
+          - model: claude-sonnet-4-5-20250929
+            command-generator: search-ready
+
+            # Only a single MCP meta-param-support e2e test is required, so exclude from running with
+            # combinations involving different models and command-generators.
+          - model: claude-sonnet-4-5-20250929
+            test-type: tool-calling-meta-param-support
+          - test-type: tool-calling-meta-param-support
             command-generator: search-ready
     name: MCP-${{ matrix.test-type }} ${{ matrix.model }} ${{ matrix.command-generator }}-CMD-gen
     steps:
@@ -78,7 +87,7 @@ jobs:
       - name: Verify mock MCP server is up and healthy
         run: curl -v --retry 7 --retry-all-errors http://127.0.0.1:8000/mcp/
       - name: Configure AWS credentials
-        if: ${{ matrix.model == 'claude-3-5-sonnet-20240620' }}
+        if: ${{ matrix.model == 'claude-sonnet-4-5-20250929' }}
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
         with:
           role-to-assume: arn:aws:iam::307946638045:role/GitHubAction-BedrockAndSagemakerAccess
@@ -93,6 +102,7 @@ jobs:
         uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
         env:
           MOCK_MCP_ENDPOINTS_FILE: ${{ github.workspace }}/data/test_e2e_mcp_config/${{ matrix.model }}-endpoints.yml
+          MOCK_MCP_META_ENDPOINTS_FILE: ${{ github.workspace }}/data/test_e2e_mcp_config/endpoints-with-meta-param-support.yml
           TEST_TYPE: ${{ matrix.test-type }}
           AGENT_CLIENT_ID: google-id-123
           AGENT_CLIENT_SECRET: dummy-google-secret
@@ -106,7 +116,9 @@ jobs:
             if [[ ! -d tests ]]; then
               mkdir tests;
             fi
-            make e2e-test-mock-mcp-"${TEST_TYPE}" || (grep APITimeoutError tests/e2e_results_failed.yml && echo "::warning::E2E test failed due to APITimeoutError (non-blocking)")
+            (make e2e-test-mock-mcp-"${TEST_TYPE}" 2>&1 | tee e2e-logs) \
+            || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' e2e-logs \
+              && echo "::warning::E2E tests failed due to external/3rd-party service issues (non-blocking)")
       - name: Save E2E test results
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
@@ -127,7 +139,7 @@ jobs:
       matrix:
         model:
           - openai
-          - claude-3-5-sonnet-20240620 # Accessed via AWS Bedrock
+          - claude-sonnet-4-5-20250929 # Accessed via AWS Bedrock
         command-generator:
           - compact
           - search-ready
@@ -136,7 +148,7 @@ jobs:
           - digressions
           - cancellations
         exclude:
-          - model: claude-3-5-sonnet-20240620
+          - model: claude-sonnet-4-5-20250929
             command-generator: search-ready
     name: A2A ${{ matrix.test-type }} ${{ matrix.model }} ${{ matrix.command-generator }}-CMD-gen
     steps:
@@ -195,7 +207,9 @@ jobs:
             if [[ ! -d tests ]]; then
               mkdir tests;
             fi
-            make e2e-test-mock-a2a-agent-"${TEST_TYPE}"
+            (make e2e-test-mock-a2a-agent-"${TEST_TYPE}" 2>&1 | tee e2e-logs) \
+            || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' e2e-logs \
+              && echo "::warning::E2E tests failed due to external/3rd-party service issues (non-blocking)")
           # Restart mock A2A agent to clear conversation history, before re-running test(s)
           on_retry_command: |
             set -Eeuxv
@@ -205,15 +219,17 @@ jobs:
             make run-crypto-ramp-mock-a2a-server >> a2a-server-logs.txt 2>&1 &
             curl -v --retry 7 --retry-all-errors http://localhost:9000/.well-known/agent-card.json
           new_command_on_retry: |
-            set -Eeuxv
+            set -Eeuxv pipefail
             cd "${GITHUB_WORKSPACE}"/calm-benchmarking-bot
             for failed_test in $(yq '.test_results[].error_path' tests/e2e_results_failed.yml);
             do
-              rasa test e2e "${failed_test%:*}" \
+              (rasa test e2e "${failed_test%:*}" \
                 --e2e-results \
                 --endpoints "${MOCK_A2A_ENDPOINTS_FILE}" \
                 --sub-agents test_e2e_a2a_sub_agents \
-                --debug
+                --debug \
+                2>&1 | tee e2e-logs) || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' e2e-logs \
+              && echo "::warning::E2E tests failed due to external/3rd-party service issues (non-blocking)")
             done
       - name: Save E2E test results
         if: failure()
@@ -278,25 +294,25 @@ jobs:
       - name: Configure Azure credentials
         if: ${{ matrix.agent_llm_provider == 'azure' }}
         env:
-          AZURE_DEPLOYMENT_GPT4o_CA: "test-gpt-4o"
-          AZURE_API_BASE_GPT4o_CA: "https://devtribe-testing-canada-east.openai.azure.com/"
-          AZURE_API_VERSION_GPT4o_CA: "2024-02-01"
-          AZURE_API_KEY_CA: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}
-          AZURE_DEPLOYMENT_GPT4o_FR: "test-gpt-4o"
-          AZURE_API_BASE_GPT4o_FR: "https://devtribe-testing.openai.azure.com/"
-          AZURE_API_VERSION_GPT4o_FR: "2024-02-01"
-          AZURE_API_KEY_FR: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING }}
+          AZURE_DEPLOYMENT_GPT5_2_CSE: "gpt-5.2"
+          AZURE_API_BASE_GPT5_2_CSE: "https://ai-csetestingeastus2046236386455.cognitiveservices.azure.com/"
+          AZURE_API_VERSION_GPT5_2_CSE: "2024-12-01-preview"
+          AZURE_API_KEY_ENGINE: ${{ secrets.AZURE_API_KEY_ENGINE }}
+          AZURE_DEPLOYMENT_GPT5_2_ENGINE: "gpt-5.2"
+          AZURE_API_BASE_GPT5_2_ENGINE: "https://engine-squad-testing.openai.azure.com/"
+          AZURE_API_VERSION_GPT5_2_ENGINE: "2024-12-01-preview"
+          AZURE_API_KEY_CSE: ${{ secrets.AZURE_API_KEY_CSE }}
           REDIS_HOST: localhost
           REDIS_PORT: 6379
         run: |
-          echo "AZURE_DEPLOYMENT_GPT4o_CA=${AZURE_DEPLOYMENT_GPT4o_CA}" >> "${GITHUB_ENV}"
-          echo "AZURE_API_BASE_GPT4o_CA=${AZURE_API_BASE_GPT4o_CA}" >> "${GITHUB_ENV}"
-          echo "AZURE_API_VERSION_GPT4o_CA=${AZURE_API_VERSION_GPT4o_CA}" >> "${GITHUB_ENV}"
-          echo "AZURE_API_KEY_CA=${AZURE_API_KEY_CA}" >> "${GITHUB_ENV}"
-          echo "AZURE_DEPLOYMENT_GPT4o_FR=${AZURE_DEPLOYMENT_GPT4o_FR}" >> "${GITHUB_ENV}"
-          echo "AZURE_API_BASE_GPT4o_FR=${AZURE_API_BASE_GPT4o_FR}" >> "${GITHUB_ENV}"
-          echo "AZURE_API_VERSION_GPT4o_FR=${AZURE_API_VERSION_GPT4o_FR}" >> "${GITHUB_ENV}"
-          echo "AZURE_API_KEY_FR=${AZURE_API_KEY_FR}" >> "${GITHUB_ENV}"
+          echo "AZURE_DEPLOYMENT_GPT5_2_CSE=${AZURE_DEPLOYMENT_GPT5_2_CSE}" >> "${GITHUB_ENV}"
+          echo "AZURE_API_BASE_GPT5_2_CSE=${AZURE_API_BASE_GPT5_2_CSE}" >> "${GITHUB_ENV}"
+          echo "AZURE_API_VERSION_GPT5_2_CSE=${AZURE_API_VERSION_GPT5_2_CSE}" >> "${GITHUB_ENV}"
+          echo "AZURE_API_KEY_ENGINE=${AZURE_API_KEY_ENGINE}" >> "${GITHUB_ENV}"
+          echo "AZURE_DEPLOYMENT_GPT5_2_ENGINE=${AZURE_DEPLOYMENT_GPT5_2_ENGINE}" >> "${GITHUB_ENV}"
+          echo "AZURE_API_BASE_GPT5_2_ENGINE=${AZURE_API_BASE_GPT5_2_ENGINE}" >> "${GITHUB_ENV}"
+          echo "AZURE_API_VERSION_GPT5_2_ENGINE=${AZURE_API_VERSION_GPT5_2_ENGINE}" >> "${GITHUB_ENV}"
+          echo "AZURE_API_KEY_CSE=${AZURE_API_KEY_CSE}" >> "${GITHUB_ENV}"
           echo "REDIS_HOST=${REDIS_HOST}" >> "${GITHUB_ENV}"
           echo "REDIS_PORT=${REDIS_PORT}" >> "${GITHUB_ENV}"
       - name: Train model
@@ -326,7 +342,11 @@ jobs:
             rasa test e2e e2e/e2e_tests_with_assertions/mock_mcp/agents/open_ended/happy_path/conduct_company_finance_research.yml \
               --e2e-results --endpoints "${MOCK_MCP_ENDPOINTS_FILE}" \
               --sub-agents "${MOCK_MCP_SUB_AGENTS_DIRECTORY}" \
-              --debug  || (grep APITimeoutError tests/e2e_results_failed.yml && echo "::warning::E2E test failed due to APITimeoutError (non-blocking)")
+              --debug \
+              2>&1 \
+              | tee e2e-log \
+              || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' e2e-log \
+              && echo "::warning::E2E test failed due to external/3rd-party service issues (non-blocking)")
       - name: Save E2E test results
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
@@ -347,12 +367,12 @@ jobs:
       matrix:
         model:
           - openai
-          - claude-3-5-sonnet-20240620 # Accessed via AWS Bedrock
+          - claude-sonnet-4-5-20250929 # Accessed via AWS Bedrock
         command-generator:
           - compact
           - search-ready
         exclude:
-          - model: claude-3-5-sonnet-20240620
+          - model: claude-sonnet-4-5-20250929
             command-generator: search-ready
     steps:
       - name: Checkout `rasa-private` git repository 🕝
@@ -375,7 +395,7 @@ jobs:
       - name: Verify mock MCP server is up and healthy
         run: curl -v --retry 7 --retry-all-errors http://127.0.0.1:8000/mcp/
       - name: Configure AWS credentials
-        if: ${{ matrix.model == 'claude-3-5-sonnet-20240620' }}
+        if: ${{ matrix.model == 'claude-sonnet-4-5-20250929' }}
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
         with:
           role-to-assume: arn:aws:iam::307946638045:role/GitHubAction-BedrockAndSagemakerAccess
@@ -421,12 +441,12 @@ jobs:
       matrix:
         model:
           - openai
-          - claude-3-5-sonnet-20240620 # Accessed via AWS Bedrock
+          - claude-sonnet-4-5-20250929 # Accessed via AWS Bedrock
         command-generator:
           - compact
           - search-ready
         exclude:
-          - model: claude-3-5-sonnet-20240620
+          - model: claude-sonnet-4-5-20250929
             command-generator: search-ready
     steps:
       - name: Checkout `rasa-private` git repository 🕝

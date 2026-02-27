@@ -16,17 +16,17 @@ model_groups:
     models:
     # Same LLM models across multiple deployments
       - provider: azure
-        deployment: ${AZURE_DEPLOYMENT_GPT4o_CA}
-        api_base: ${AZURE_API_BASE_GPT4o_CA}
-        api_key: ${AZURE_API_KEY_CA}
-        api_version: ${AZURE_API_VERSION_GPT4o_CA}
+        deployment: ${AZURE_DEPLOYMENT_GPT5_2_CSE}
+        api_base: ${AZURE_API_BASE_GPT5_2_CSE}
+        api_key: ${AZURE_API_KEY_CSE}
+        api_version: ${AZURE_API_VERSION_GPT5_2_CSE}
         timeout: 30
         num_retries: 5
       - provider: azure
-        deployment: ${AZURE_DEPLOYMENT_GPT4o_FR}
-        api_base: ${AZURE_API_BASE_GPT4o_FR}
-        api_key: ${AZURE_API_KEY_FR}
-        api_version: ${AZURE_API_VERSION_GPT4o_FR}
+        deployment: ${AZURE_DEPLOYMENT_GPT5_2_ENGINE}
+        api_base: ${AZURE_API_BASE_GPT5_2_ENGINE}
+        api_key: ${AZURE_API_KEY_ENGINE}
+        api_version: ${AZURE_API_VERSION_GPT5_2_ENGINE}
         timeout: 30
         num_retries: 5
     router:
@@ -44,9 +44,8 @@ model_groups:
   - id: llm-model
     models:
       - provider: openai
-        model: gpt-4o-2024-11-20
+        model: openai/responses/gpt-5.2-2025-12-11
         timeout: 30
-        temperature: 0.0
-        top_p: 0.0
-        cache:
-          no-cache: true
+        temperature: 1.0
+        reasoning_effort: "xhigh"
+        max_completion_tokens: 5096

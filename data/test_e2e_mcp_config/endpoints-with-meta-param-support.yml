@@ -1,0 +1,39 @@
+action_endpoint:
+  actions_module: "actions"
+  
+mcp_servers:
+  - name: finnhub_mock_mcp_server
+    url: http://127.0.0.1:8000/mcp/
+    type: http
+    oauth:
+        client_id: "${AGENT_CLIENT_ID}"
+        client_secret: "${AGENT_CLIENT_SECRET}"
+        token_url: https://oauth-mock.mock.beeceptor.com/oauth/token/google # Using free online mock Oauth2.0 server (mocking Google provider) from Beeceptor
+        scope: "read:users"
+    meta_map:
+      static:
+        api_version: "v2"
+        source: "rasa_agent"
+      from_slots:
+        - slot: meta_param_text_data
+          param: meta_param_text_data
+        - slot: meta_param_float_data
+          param: meta_param_float_data
+        - slot: meta_param_bool_data
+          param: meta_param_bool_data
+        - slot: meta_param_any_data
+          param: meta_param_any_data
+
+model_groups:
+  - id: llm-model
+    models:
+      - provider: openai
+        model: openai/responses/gpt-5.2-2025-12-11
+        timeout: 30
+        temperature: 1.0
+        reasoning_effort: "xhigh"
+        max_completion_tokens: 5096
+  - id: embeddings-model
+    models:
+      - provider: openai
+        model: text-embedding-3-small
