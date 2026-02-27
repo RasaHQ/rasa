@@ -372,7 +372,9 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
         """Voice method to convert channel bytes to RasaAudioBytes."""
-        return RasaAudioBytes(audioop.lin2ulaw(input_bytes, 4))
+        return RasaAudioBytes(
+            audioop.lin2ulaw(input_bytes, 4), format=self.audio_format
+        )
 
     async def collect_call_parameters(
         self, channel_websocket: "Websocket"
@@ -409,9 +411,10 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
     ) -> VoiceOutputChannel:
         """Create a voice output channel. This is used by VoiceInputChannel."""
         return StudioVoiceOutputChannel(
-            voice_websocket,
-            tts_engine,
-            self.tts_cache,
+            voice_websocket=voice_websocket,
+            tts_engine=tts_engine,
+            tts_cache=self.tts_cache,
+            audio_format=self.audio_format,
         )
 
     async def interrupt_playback(
@@ -574,7 +577,7 @@ class StudioVoiceOutputChannel(VoiceOutputChannel):
     def rasa_audio_bytes_to_channel_bytes(
         self, rasa_audio_bytes: RasaAudioBytes
     ) -> bytes:
-        return audioop.ulaw2lin(rasa_audio_bytes, 4)
+        return audioop.ulaw2lin(rasa_audio_bytes.data, 4)
 
     def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
         return json.dumps({"audio": base64.b64encode(channel_bytes).decode("utf-8")})

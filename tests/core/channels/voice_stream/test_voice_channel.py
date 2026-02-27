@@ -32,9 +32,9 @@ class StubVoiceInputChannel(VoiceInputChannel):
     pass
 
 
-async def test_azure_tts_engine_from_config():
+async def test_azure_tts_engine_from_config(mulaw_format):
     config = {"name": "azure"}
-    tts_engine = tts_engine_from_config(config, language="en")
+    tts_engine = tts_engine_from_config(config, language="en", format=mulaw_format)
     assert isinstance(tts_engine, AzureTTS)
     default_config = AzureTTS.get_default_config()
     assert tts_engine.config.speech_region == default_config.speech_region
@@ -42,13 +42,13 @@ async def test_azure_tts_engine_from_config():
         await tts_engine.session.close()
 
 
-def test_tts_engine_from_config_fails_for_not_implemented_engine():
+def test_tts_engine_from_config_fails_for_not_implemented_engine(mulaw_format):
     config = {"name": "XY_non_existent"}
     with pytest.raises(ImportError):
-        tts_engine_from_config(config, language="en")
+        tts_engine_from_config(config, language="en", format=mulaw_format)
 
 
-def test_custom_asr_service() -> None:
+def test_custom_asr_service(mulaw_format) -> None:
     # Given a custom ASR engine
     config = {
         "name": "data.test_voice_channel.custom_asr_engine.CustomASREngine",
@@ -56,13 +56,13 @@ def test_custom_asr_service() -> None:
     }
 
     # When the ASR engine is created from the config
-    asr_engine = asr_engine_from_config(config, language="en")
+    asr_engine = asr_engine_from_config(config, language="en", format=mulaw_format)
 
     # Then the ASR engine should be an instance of the custom ASR engine
     assert isinstance(asr_engine, CustomASREngine)
 
 
-def test_custom_tts_service() -> None:
+def test_custom_tts_service(mulaw_format) -> None:
     # Given a custom TTS engine
     config = {
         "name": "data.test_voice_channel.custom_tts_engine.CustomTTSEngine",
@@ -70,7 +70,7 @@ def test_custom_tts_service() -> None:
     }
 
     # When the TTS engine is created from the config
-    tts_engine = tts_engine_from_config(config, language="en")
+    tts_engine = tts_engine_from_config(config, language="en", format=mulaw_format)
 
     # Then the ASR engine should be an instance of the custom ASR engine
     assert isinstance(tts_engine, CustomTTSEngine)
@@ -87,10 +87,10 @@ def test_custom_tts_service() -> None:
         (None, "ASR configuration dictionary cannot be empty"),
     ],
 )
-def test_asr_engine_config_validation(config, expected_error):
+def test_asr_engine_config_validation(config, expected_error, mulaw_format):
     """Test validation of ASR engine configuration."""
     with pytest.raises(ValueError, match=expected_error):
-        asr_engine_from_config(config, language="en")
+        asr_engine_from_config(config, language="en", format=mulaw_format)
 
 
 @pytest.mark.parametrize(
@@ -104,10 +104,10 @@ def test_asr_engine_config_validation(config, expected_error):
         (None, "TTS configuration dictionary cannot be empty"),
     ],
 )
-def test_tts_engine_config_validation(config, expected_error):
+def test_tts_engine_config_validation(config, expected_error, mulaw_format):
     """Test validation of TTS engine configuration."""
     with pytest.raises(ValueError, match=expected_error):
-        tts_engine_from_config(config, language="en")
+        tts_engine_from_config(config, language="en", format=mulaw_format)
 
 
 @pytest.mark.parametrize(

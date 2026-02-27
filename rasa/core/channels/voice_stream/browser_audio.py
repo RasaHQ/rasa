@@ -43,7 +43,7 @@ class BrowserAudioOutputChannel(VoiceOutputChannel):
     def rasa_audio_bytes_to_channel_bytes(
         self, rasa_audio_bytes: RasaAudioBytes
     ) -> bytes:
-        return audioop.ulaw2lin(rasa_audio_bytes, 4)
+        return audioop.ulaw2lin(rasa_audio_bytes.data, 4)
 
     def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
         return json.dumps({"audio": base64.b64encode(channel_bytes).decode("utf-8")})
@@ -119,7 +119,9 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         return "browser_audio"
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
-        return RasaAudioBytes(audioop.lin2ulaw(input_bytes, 4))
+        return RasaAudioBytes(
+            audioop.lin2ulaw(input_bytes, 4), format=self.audio_format
+        )
 
     async def collect_call_parameters(
         self, channel_websocket: Websocket
@@ -171,9 +173,10 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         self, voice_websocket: Websocket, tts_engine: TTSEngine
     ) -> VoiceOutputChannel:
         return BrowserAudioOutputChannel(
-            voice_websocket,
-            tts_engine,
-            self.tts_cache,
+            voice_websocket=voice_websocket,
+            audio_format=self.audio_format,
+            tts_engine=tts_engine,
+            tts_cache=self.tts_cache,
         )
 
     def blueprint(

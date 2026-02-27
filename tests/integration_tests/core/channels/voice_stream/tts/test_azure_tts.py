@@ -3,6 +3,7 @@
 
 import pytest
 
+from rasa.core.channels.voice_stream.audio_bytes import MULAW_8KHZ, RasaAudioBytes
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS, AzureTTSConfig
 
 
@@ -14,11 +15,12 @@ async def test_azure_tts(tmp_path):
         config=AzureTTSConfig(
             speech_region="germanywestcentral",
         ),
+        format=MULAW_8KHZ,
     )
     text = "hello my name is Edgar"
-    audio_bytes = b""
+    audio_bytes = RasaAudioBytes(b"", format=MULAW_8KHZ)
     async for chunk in tts_engine.synthesize(text):
         audio_bytes += chunk
-    output_path.write_bytes(audio_bytes)
+    output_path.write_bytes(audio_bytes.data)
     assert output_path.exists()
     assert output_path.stat().st_size > 0

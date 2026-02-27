@@ -8,7 +8,7 @@ import structlog
 from aiohttp import ClientTimeout
 
 from rasa.core.channels.voice_stream.audio_bytes import (
-    HERTZ,
+    AudioFormat,
     RasaAudioBytes,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import (
@@ -44,10 +44,11 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
     def __init__(
         self,
         rasa_language: str,
+        format: AudioFormat,
         config: Optional[CartesiaTTSConfig] = None,
         additional_languages: Optional[List[str]] = None,
     ):
-        super().__init__(rasa_language, config, additional_languages or [])
+        super().__init__(rasa_language, format, config, additional_languages or [])
         timeout = ClientTimeout(total=self.config.timeout)
         # Have to create this class-shared session lazily at run time otherwise
         # the async event loop doesn't work
@@ -101,7 +102,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
             "output_format": {
                 "container": "raw",
                 "encoding": "pcm_mulaw",
-                "sample_rate": HERTZ,
+                "sample_rate": self.audio_format.sample_rate,
             },
             "context_id": "rasa-voice-stream",
         }
@@ -180,7 +181,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
 
     def engine_bytes_to_rasa_audio_bytes(self, chunk: bytes) -> RasaAudioBytes:
         """Convert the generated tts audio bytes into rasa audio bytes."""
-        return RasaAudioBytes(chunk)
+        return RasaAudioBytes(chunk, format=self.audio_format)
 
     @staticmethod
     def get_default_config() -> CartesiaTTSConfig:
@@ -201,6 +202,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
     def from_config_dict(
         cls,
         config: Any,
+        format: AudioFormat,
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
     ) -> "CartesiaTTS":
@@ -210,15 +212,8 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
             else CartesiaTTSConfig.from_dict(config)
         )
         return cls(
-            rasa_language,
-            cfg,
-            additional_languages,
+            config=cfg,
+            format=format,
+            rasa_language=rasa_language,
+            additional_languages=additional_languages,
         )
-
-    async def set_language(self, rasa_language: str) -> None:
-        """Update the TTS language for next synthesis"""
-        await super().set_language(rasa_language)
-
-        # need to reconnect to apply new language
-        await self.close_connection()
-        await self.connect()

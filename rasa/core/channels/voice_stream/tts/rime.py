@@ -10,7 +10,7 @@ import structlog
 from aiohttp import ClientTimeout
 
 from rasa.core.channels.voice_stream.audio_bytes import (
-    HERTZ,
+    AudioFormat,
     RasaAudioBytes,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import (
@@ -77,10 +77,11 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
     def __init__(
         self,
         rasa_language: str,
+        format: AudioFormat,
         config: Optional[RimeTTSConfig] = None,
         additional_languages: Optional[List[str]] = None,
     ):
-        super().__init__(rasa_language, config, additional_languages or [])
+        super().__init__(rasa_language, format, config, additional_languages or [])
         timeout = ClientTimeout(total=self.config.timeout)
         # Have to create this class-shared session lazily at run time otherwise
         # the async event loop doesn't work
@@ -99,7 +100,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
             "modelId": self.config.model_id,
             "lang": self.current_language_config.engine_language_key,
             "audioFormat": "mulaw",  # Fixed: required for RasaAudioBytes
-            "samplingRate": str(HERTZ),  # Fixed: 8000 Hz required for RasaAudioBytes
+            "samplingRate": self.audio_format.sample_rate,
         }
 
         # Add optional parameters
@@ -235,7 +236,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
 
     def engine_bytes_to_rasa_audio_bytes(self, chunk: bytes) -> RasaAudioBytes:
         """Convert the generated TTS audio bytes into rasa audio bytes."""
-        return RasaAudioBytes(chunk)
+        return RasaAudioBytes(chunk, format=self.audio_format)
 
     @staticmethod
     def get_default_config() -> RimeTTSConfig:
@@ -258,6 +259,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
     def from_config_dict(
         cls,
         config: Any,
+        format: AudioFormat,
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
     ) -> "RimeTTS":
@@ -267,9 +269,10 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
             else RimeTTSConfig.from_dict(config)
         )
         return cls(
-            rasa_language,
-            cfg,
-            additional_languages,
+            rasa_language=rasa_language,
+            format=format,
+            config=cfg,
+            additional_languages=additional_languages,
         )
 
     async def set_language(self, rasa_language: str) -> None:

@@ -261,8 +261,9 @@ def create_twilio_media_streams_media_messages(
     chunk_size = 1024
     i = 0
     offset = 0
+    assert audio_bytes is not None
     while offset < len(audio_bytes):
-        payload = base64.b64encode(audio_bytes[offset : offset + chunk_size])
+        payload = base64.b64encode(audio_bytes[offset : offset + chunk_size].data)
         payload = payload.decode("utf-8")
         messages.append(
             json.dumps(
@@ -318,11 +319,11 @@ def test_channel_creation(input_channel: TwilioMediaStreamsInputChannel):
 
 
 async def test_fitting_output_channel_creation(
-    input_channel: TwilioMediaStreamsInputChannel,
+    input_channel: TwilioMediaStreamsInputChannel, mulaw_format
 ):
     tts_config = {"name": "azure"}
     websocket = AsyncMock()
-    tts_engine = tts_engine_from_config(tts_config, language="en")
+    tts_engine = tts_engine_from_config(tts_config, language="en", format=mulaw_format)
     output_channel = input_channel.create_output_channel(websocket, tts_engine)
     assert isinstance(output_channel, TwilioMediaStreamsOutputChannel)
     assert output_channel.tts_cache == input_channel.tts_cache

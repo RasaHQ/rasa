@@ -16,6 +16,7 @@ from websockets.legacy.client import WebSocketClientProtocol
 
 from rasa.core.channels.voice_stream.asr.asr_event import ASREvent
 from rasa.core.channels.voice_stream.audio_bytes import (
+    AudioFormat,
     CurrentLanguageConfig,
     RasaAudioBytes,
 )
@@ -148,9 +149,11 @@ class ASREngine(Generic[T]):
     def __init__(
         self,
         rasa_language: str,
+        format: AudioFormat,
         config: Optional[T] = None,
         additional_languages: Optional[List[str]] = None,
     ):
+        self.audio_format = format
         self.config = self.get_default_config().merge(config)
         self.config.validate_language_map_keys(rasa_language, additional_languages)
         self.asr_socket: Optional[WebSocketClientProtocol] = None
@@ -172,6 +175,7 @@ class ASREngine(Generic[T]):
     def from_config_dict(
         cls: Type[E],
         config: Dict,
+        format: AudioFormat,
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
     ) -> E:

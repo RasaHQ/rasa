@@ -1,4 +1,5 @@
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
+from rasa.core.channels.voice_stream.audio_bytes import MULAW_8KHZ
 from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
 from tests.core.channels.voice_stream.tts.test_tts import (
     run_single_utterance_through_tts_and_asr,
@@ -6,8 +7,8 @@ from tests.core.channels.voice_stream.tts.test_tts import (
 
 
 async def test_synthesis_with_asr():
-    tts_engine = CartesiaTTS(rasa_language="en")
+    tts_engine = CartesiaTTS(rasa_language="en", format=MULAW_8KHZ)
     text = "hello my name is Edgar"
-    asr_engine = DeepgramASR(rasa_language="en")
+    asr_engine = DeepgramASR(rasa_language="en", format=MULAW_8KHZ)
 
     await run_single_utterance_through_tts_and_asr(text, asr_engine, tts_engine)

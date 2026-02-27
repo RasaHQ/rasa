@@ -440,7 +440,7 @@ def generate_sample_log(
     rasa_audio = read_wav_to_rasa_audio_bytes(wav_path)
     if rasa_audio is None:
         raise ValueError(f"Could not read WAV as Rasa audio bytes: {wav_path}")
-    audio_bytes = bytes(rasa_audio)
+    audio_bytes = bytes(rasa_audio.data)
 
     start_msg = _create_start_message(
         stream_sid, call_id, user_phone, bot_phone, direction

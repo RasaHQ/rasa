@@ -80,7 +80,7 @@ class GenesysOutputChannel(VoiceOutputChannel):
     async def send_audio_bytes(
         self, recipient_id: str, audio_bytes: RasaAudioBytes
     ) -> None:
-        await self.voice_websocket.send(audio_bytes)
+        await self.voice_websocket.send(audio_bytes.data)
 
     async def send_marker_message(self, recipient_id: str) -> None:
         """
@@ -182,7 +182,7 @@ class GenesysInputChannel(VoiceInputChannel):
         call_state.channel_data["client_sequence_number"] = seq
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
-        return RasaAudioBytes(input_bytes)
+        return RasaAudioBytes(input_bytes, format=self.audio_format)
 
     async def collect_call_parameters(
         self, channel_websocket: Websocket
@@ -243,9 +243,10 @@ class GenesysInputChannel(VoiceInputChannel):
         self, voice_websocket: Websocket, tts_engine: TTSEngine
     ) -> VoiceOutputChannel:
         return GenesysOutputChannel(
-            voice_websocket,
-            tts_engine,
-            self.tts_cache,
+            voice_websocket=voice_websocket,
+            tts_engine=tts_engine,
+            tts_cache=self.tts_cache,
+            audio_format=self.audio_format,
             min_buffer_size=MAXIMUM_BINARY_MESSAGE_SIZE // 2,
         )
 

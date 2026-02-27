@@ -1,4 +1,5 @@
 from rasa.core.channels.voice_stream.asr.azure import AzureASR, AzureASRConfig
+from rasa.core.channels.voice_stream.audio_bytes import MULAW_8KHZ
 from tests.core.channels.voice_stream.asr import (
     run_single_utterance_transcription,
 )
@@ -7,6 +8,7 @@ from tests.core.channels.voice_stream.asr import (
 def get_azure_asr():
     return AzureASR(
         rasa_language="en",
+        format=MULAW_8KHZ,
         config=AzureASRConfig(
             speech_region="germanywestcentral",
         ),

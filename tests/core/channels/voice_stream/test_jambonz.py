@@ -80,6 +80,11 @@ def sample_audio_bytes():
     return bytes([0xFF] * 8000)
 
 
+@pytest.fixture
+def jambonz_output_channel(mock_websocket, mock_tts_engine, mulaw_format):
+    return JambonzStreamOutputChannel(mock_websocket, mock_tts_engine, {}, mulaw_format)
+
+
 def test_map_call_params(call_metadata):
     """Test mapping of call parameters from metadata."""
     params = map_call_params(call_metadata)
@@ -100,7 +105,7 @@ def test_channel_bytes_conversion(input_channel, sample_audio_bytes):
     """Test audio format conversion."""
     # Convert L16 PCM 16kHz to μ-law 8kHz
     result = input_channel.channel_bytes_to_rasa_audio_bytes(sample_audio_bytes)
-    assert isinstance(result, bytes)
+    assert isinstance(result, RasaAudioBytes)
     # L16 PCM is 2 bytes per sample, μ-law is 1 byte per sample
     assert len(result) == len(sample_audio_bytes) // 2
 
@@ -124,12 +129,12 @@ def test_map_input_message_mark(input_channel, mock_websocket, setup_call_state)
     assert isinstance(action, EndConversationAction)
 
 
-async def test_output_channel_audio_sending(mock_websocket, mock_tts_engine):
+async def test_output_channel_audio_sending(jambonz_output_channel, mock_websocket):
     """Test audio sending through output channel."""
-    output_channel = JambonzStreamOutputChannel(mock_websocket, mock_tts_engine, {})
-    audio_bytes = RasaAudioBytes(b"test_audio")
+    format = jambonz_output_channel.audio_format
+    audio_bytes = RasaAudioBytes(b"test_audio", format=format)
 
-    await output_channel.send_audio_bytes("test_recipient", audio_bytes)
+    await jambonz_output_channel.send_audio_bytes("test_recipient", audio_bytes)
     assert mock_websocket.send.called
 
     # Output is L16 PCM (2 bytes per sample)
@@ -138,10 +143,9 @@ async def test_output_channel_audio_sending(mock_websocket, mock_tts_engine):
     assert len(sent_bytes) == len(audio_bytes) * 2
 
 
-def test_create_marker_message(mock_websocket, mock_tts_engine):
+def test_create_marker_message(jambonz_output_channel):
     """Test marker message creation."""
-    output_channel = JambonzStreamOutputChannel(mock_websocket, mock_tts_engine, {})
-    message, marker_id = output_channel.create_marker_message("test_recipient")
+    message, marker_id = jambonz_output_channel.create_marker_message("test_recipient")
 
     assert isinstance(message, str)
     parsed = json.loads(message)

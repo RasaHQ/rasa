@@ -5,6 +5,7 @@ import pytest
 from pytest import MonkeyPatch
 
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
+from rasa.core.channels.voice_stream.audio_bytes import L16_24KHZ, L16_48KHZ, MULAW_8KHZ
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS, AzureTTSConfig
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSError
 from rasa.shared.exceptions import ProviderClientValidationError
@@ -13,27 +14,31 @@ from tests.core.channels.voice_stream.tts.test_tts import (
 )
 
 
-async def test_environment_validation():
+@pytest.mark.asyncio
+async def test_environment_validation(mulaw_format):
     # no api key set
     with mock.patch.dict("os.environ", {}, clear=True):
         with pytest.raises(ProviderClientValidationError) as e:
-            AzureTTS(rasa_language="en")
+            AzureTTS(rasa_language="en", format=mulaw_format)
         assert e.match(AzureTTS.required_env_vars[0])
         assert e.match("TTS Engine AzureTTS")
 
 
-async def test_synthesis_with_asr():
+@pytest.mark.asyncio
+async def test_synthesis_with_asr(mulaw_format):
     tts_engine = AzureTTS(
         rasa_language="en",
+        format=mulaw_format,
         config=AzureTTSConfig(
             speech_region="germanywestcentral",
         ),
     )
     text = "hello my name is Edgar"
-    asr_engine = DeepgramASR(rasa_language="en")
+    asr_engine = DeepgramASR(rasa_language="en", format=mulaw_format)
     await run_single_utterance_through_tts_and_asr(text, asr_engine, tts_engine)
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "bad_config",
     [
@@ -41,17 +46,18 @@ async def test_synthesis_with_asr():
         AzureTTSConfig.from_dict({"voice": "non_existent_voice"}),
     ],
 )
-async def test_synthesis_error(bad_config):
-    tts_engine = AzureTTS(rasa_language="en")
+async def test_synthesis_error(bad_config, mulaw_format):
+    tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
     text = "Hello there!"
     with pytest.raises(TTSError):
         async for chunk in tts_engine.synthesize(text, bad_config):
             pass
 
 
-async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch):
+@pytest.mark.asyncio
+async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch, mulaw_format):
     monkeypatch.setenv("AZURE_SPEECH_API_KEY", "bad key")
-    tts_engine = AzureTTS(rasa_language="en")
+    tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
     text = "Hello there!"
     with pytest.raises(TTSError):
         async for chunk in tts_engine.synthesize(text):
@@ -73,8 +79,8 @@ def test_tts_url_creation():
     assert azure_tts_endpoint.startswith("https://")
 
 
-def test_tts_request_body():
-    tts_engine = AzureTTS(rasa_language="en")
+def test_tts_request_body(mulaw_format):
+    tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
     text = "Hi there, how can I help you today?"
     request_body = AzureTTS.create_request_body(
         text, tts_engine.current_language_config
@@ -92,15 +98,17 @@ def test_tts_headers():
     assert headers["X-Microsoft-OutputFormat"] == "raw-8khz-8bit-mono-mulaw"
 
 
-async def test_tts_session_sharing():
-    tts_engine = AzureTTS(rasa_language="en")
-    tts_engine_2 = AzureTTS(rasa_language="en")
+@pytest.mark.asyncio
+async def test_tts_session_sharing(mulaw_format):
+    tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
+    tts_engine_2 = AzureTTS(rasa_language="en", format=mulaw_format)
     assert tts_engine_2.session is tts_engine.session
 
 
-async def test_synthesize_timeout(monkeypatch: MonkeyPatch):
+@pytest.mark.asyncio
+async def test_synthesize_timeout(monkeypatch: MonkeyPatch, mulaw_format):
     monkeypatch.setenv("AZURE_SPEECH_API_KEY", "my key")
-    tts_engine = AzureTTS(rasa_language="en")
+    tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
     text = "Test timeout"
     assert tts_engine.session is not None
 
@@ -116,3 +124,19 @@ async def test_synthesize_timeout(monkeypatch: MonkeyPatch):
                 pass
 
         assert "Request timed out" in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "format",
+    [
+        MULAW_8KHZ,
+        L16_24KHZ,
+        L16_48KHZ,
+    ],
+)
+async def test_configuration_format(format):
+    config = {"speech_region": "eastus"}
+    tts_engine = AzureTTS.from_config_dict(
+        config=config, rasa_language="en", format=format
+    )
+    assert tts_engine.audio_format == format

@@ -60,7 +60,7 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
     def rasa_audio_bytes_to_channel_bytes(
         self, rasa_audio_bytes: RasaAudioBytes
     ) -> bytes:
-        return base64.b64encode(rasa_audio_bytes)
+        return base64.b64encode(rasa_audio_bytes.data)
 
     def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
         media_message = json.dumps(
@@ -140,7 +140,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         return cls(**new_creds)
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
-        return RasaAudioBytes(base64.b64decode(input_bytes))
+        return RasaAudioBytes(base64.b64decode(input_bytes), format=self.audio_format)
 
     async def collect_call_parameters(
         self, channel_websocket: Websocket
@@ -281,9 +281,10 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         self, voice_websocket: Websocket, tts_engine: TTSEngine
     ) -> VoiceOutputChannel:
         return AudiocodesVoiceOutputChannel(
-            voice_websocket,
-            tts_engine,
-            self.tts_cache,
+            voice_websocket=voice_websocket,
+            tts_engine=tts_engine,
+            tts_cache=self.tts_cache,
+            audio_format=self.audio_format,
         )
 
     def _is_token_valid(self, token: Optional[Text]) -> bool:

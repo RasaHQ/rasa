@@ -4,16 +4,17 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest import MonkeyPatch
 
+from rasa.core.channels.voice_stream.audio_bytes import L16_24KHZ, MULAW_8KHZ
 from rasa.core.channels.voice_stream.tts.rime import RimeTTS, RimeTTSConfig
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSError
 from rasa.shared.exceptions import ProviderClientValidationError
 
 
-async def test_environment_validation():
+async def test_environment_validation(mulaw_format):
     # no api key set
     with mock.patch.dict("os.environ", {}, clear=True):
         with pytest.raises(ProviderClientValidationError) as e:
-            RimeTTS(rasa_language="en")
+            RimeTTS(rasa_language="en", format=mulaw_format)
         assert e.match(RimeTTS.required_env_vars[0])
         assert e.match("TTS Engine RimeTTS")
 
@@ -31,26 +32,26 @@ def test_default_config():
     assert config.no_text_normalization is False
 
 
-async def test_tts_session_sharing(monkeypatch: MonkeyPatch):
+async def test_tts_session_sharing(monkeypatch: MonkeyPatch, mulaw_format):
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS(rasa_language="en")
-    tts_engine_2 = RimeTTS(rasa_language="en")
+    tts_engine = RimeTTS(rasa_language="en", format=mulaw_format)
+    tts_engine_2 = RimeTTS(rasa_language="en", format=mulaw_format)
     assert tts_engine_2.session is tts_engine.session
 
 
-async def test_websocket_url_creation(monkeypatch: MonkeyPatch):
+async def test_websocket_url_creation(monkeypatch: MonkeyPatch, mulaw_format):
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS(rasa_language="en")
+    tts_engine = RimeTTS(rasa_language="en", format=mulaw_format)
     ws_url = tts_engine.get_websocket_url()
     assert "wss://users.rime.ai/ws2" in ws_url
     assert "speaker=cove" in ws_url
     assert "modelId=mistv2" in ws_url
     assert "lang=eng" in ws_url
     assert "audioFormat=mulaw" in ws_url
-    assert "samplingRate=8000" in ws_url
+    assert f"samplingRate={mulaw_format.sample_rate}" in ws_url
 
 
-def test_websocket_url_with_optional_params(monkeypatch: MonkeyPatch):
+def test_websocket_url_with_optional_params(monkeypatch: MonkeyPatch, mulaw_format):
     monkeypatch.setenv("RIME_API_KEY", "test_key")
     config = RimeTTSConfig(
         model_id="mistv2",
@@ -60,7 +61,7 @@ def test_websocket_url_with_optional_params(monkeypatch: MonkeyPatch):
             "en": {"language": "eng", "voice": "aria"},
         },
     )
-    tts_engine = RimeTTS(rasa_language="en", config=config)
+    tts_engine = RimeTTS(rasa_language="en", config=config, format=mulaw_format)
     ws_url = tts_engine.get_websocket_url()
     assert "speedAlpha=1.5" in ws_url
     assert "segment=sentence" in ws_url
@@ -73,10 +74,12 @@ def test_request_headers(monkeypatch: MonkeyPatch):
     assert headers["Authorization"] == "Bearer test_api_key"
 
 
-async def test_signal_text_done_resets_context_id(monkeypatch: MonkeyPatch):
+async def test_signal_text_done_resets_context_id(
+    monkeypatch: MonkeyPatch, mulaw_format
+):
     """Test that context_id gets reset every time signal_text_done is called."""
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS(rasa_language="en")
+    tts_engine = RimeTTS(rasa_language="en", format=mulaw_format)
 
     # Mock the websocket
     mock_ws = AsyncMock()
@@ -103,11 +106,11 @@ async def test_signal_text_done_resets_context_id(monkeypatch: MonkeyPatch):
 
 
 async def test_signal_text_done_raises_error_when_ws_not_connected(
-    monkeypatch: MonkeyPatch,
+    monkeypatch: MonkeyPatch, mulaw_format
 ):
     """Test that signal_text_done raises TTSError when WebSocket is not connected."""
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS(rasa_language="en")
+    tts_engine = RimeTTS(rasa_language="en", format=mulaw_format)
 
     # WebSocket is None (not connected)
     tts_engine.ws = None
@@ -117,11 +120,11 @@ async def test_signal_text_done_raises_error_when_ws_not_connected(
 
 
 async def test_signal_text_done_raises_error_when_ws_closed(
-    monkeypatch: MonkeyPatch,
+    monkeypatch: MonkeyPatch, mulaw_format
 ):
     """Test that signal_text_done raises TTSError when WebSocket is closed."""
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS(rasa_language="en")
+    tts_engine = RimeTTS(rasa_language="en", format=mulaw_format)
 
     # Mock a closed websocket
     mock_ws = AsyncMock()
@@ -132,10 +135,12 @@ async def test_signal_text_done_raises_error_when_ws_closed(
         await tts_engine.signal_text_done()
 
 
-async def test_send_text_chunk_includes_context_id(monkeypatch: MonkeyPatch):
+async def test_send_text_chunk_includes_context_id(
+    monkeypatch: MonkeyPatch, mulaw_format
+):
     """Test that send_text_chunk sends text with the current context_id."""
     monkeypatch.setenv("RIME_API_KEY", "test_key")
-    tts_engine = RimeTTS(rasa_language="en")
+    tts_engine = RimeTTS(rasa_language="en", format=mulaw_format)
 
     # Mock the websocket
     mock_ws = AsyncMock()
@@ -153,3 +158,17 @@ async def test_send_text_chunk_includes_context_id(monkeypatch: MonkeyPatch):
             "contextId": current_context_id,
         }
     )
+
+
+@pytest.mark.parametrize(
+    "format",
+    [
+        MULAW_8KHZ,
+        L16_24KHZ,
+        # L16_48KHZ, Rime doesn't support 48KHz
+    ],
+)
+async def test_configuration_format(format, monkeypatch: MonkeyPatch):
+    monkeypatch.setenv("RIME_API_KEY", "test_key")
+    tts_engine = RimeTTS.from_config_dict(config={}, rasa_language="en", format=format)
+    assert tts_engine.audio_format == format

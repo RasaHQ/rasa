@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import math
 import string
 import time
 from dataclasses import asdict, dataclass
@@ -41,7 +42,11 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
 )
 from rasa.core.channels.voice_stream.asr.azure import AzureASR
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
-from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import (
+    MULAW_8KHZ,
+    AudioFormat,
+    RasaAudioBytes,
+)
 from rasa.core.channels.voice_stream.call_state import (
     CallState,
     _call_state,
@@ -106,6 +111,7 @@ class DTMFInputAction(VoiceChannelAction):
 
 def asr_engine_from_config(
     asr_config: Dict,
+    format: AudioFormat,
     language: str,
     additional_languages: Optional[List[str]] = None,
 ) -> ASREngine:
@@ -121,15 +127,19 @@ def asr_engine_from_config(
     asr_config = copy.copy(asr_config)
     asr_config.pop("name")
     if name.lower() == "deepgram":
-        return DeepgramASR.from_config_dict(asr_config, language, additional_languages)
+        return DeepgramASR.from_config_dict(
+            asr_config, format, language, additional_languages
+        )
     if name == "azure":
-        return AzureASR.from_config_dict(asr_config, language, additional_languages)
+        return AzureASR.from_config_dict(
+            asr_config, format, language, additional_languages
+        )
     else:
         mark_as_beta_feature("Custom ASR Engine")
         try:
             asr_engine_class = class_from_module_path(name)
             return asr_engine_class.from_config_dict(
-                asr_config, language, additional_languages
+                asr_config, format, language, additional_languages
             )
         except NameError:
             raise InvalidConfigException(
@@ -146,6 +156,7 @@ def asr_engine_from_config(
 
 def tts_engine_from_config(
     tts_config: Dict,
+    format: AudioFormat,
     language: str,
     additional_languages: Optional[List[str]] = None,
 ) -> TTSEngine:
@@ -161,19 +172,27 @@ def tts_engine_from_config(
     tts_config = copy.copy(tts_config)
     tts_config.pop("name")
     if name.lower() == "azure":
-        return AzureTTS.from_config_dict(tts_config, language, additional_languages)
+        return AzureTTS.from_config_dict(
+            tts_config, format, language, additional_languages
+        )
     elif name.lower() == "cartesia":
-        return CartesiaTTS.from_config_dict(tts_config, language, additional_languages)
+        return CartesiaTTS.from_config_dict(
+            tts_config, format, language, additional_languages
+        )
     elif name.lower() == "deepgram":
-        return DeepgramTTS.from_config_dict(tts_config, language, additional_languages)
+        return DeepgramTTS.from_config_dict(
+            tts_config, format, language, additional_languages
+        )
     elif name.lower() == "rime":
-        return RimeTTS.from_config_dict(tts_config, language, additional_languages)
+        return RimeTTS.from_config_dict(
+            tts_config, format, language, additional_languages
+        )
     else:
         mark_as_beta_feature("Custom TTS Engine")
         try:
             tts_engine_class = class_from_module_path(name)
             return tts_engine_class.from_config_dict(
-                tts_config, language, additional_languages
+                tts_config, format, language, additional_languages
             )
         except NameError:
             raise InvalidConfigException(
@@ -194,6 +213,7 @@ class VoiceOutputChannel(OutputChannel):
         voice_websocket: Websocket,
         tts_engine: TTSEngine,
         tts_cache: TTSCache,
+        audio_format: AudioFormat,
         min_buffer_size: int = 0,
     ):
         super().__init__()
@@ -202,6 +222,7 @@ class VoiceOutputChannel(OutputChannel):
         self.tts_cache = tts_cache
         self.latest_message_id: Optional[str] = None
         self.min_buffer_size = min_buffer_size
+        self.audio_format = audio_format
 
         # the response can be sent by Streaming or non-streaming methods
         self.streaming_response_sent = False
@@ -339,7 +360,7 @@ class VoiceOutputChannel(OutputChannel):
 
         Returns the collected audio bytes for caching.
         """
-        collected_audio = RasaAudioBytes(b"")
+        collected_audio = RasaAudioBytes(b"", format=self.audio_format)
 
         try:
             audio_stream = self.tts_engine.synthesize(text)
@@ -365,12 +386,12 @@ class VoiceOutputChannel(OutputChannel):
         self, recipient_id: str, audio_stream: AsyncIterator[RasaAudioBytes]
     ) -> RasaAudioBytes:
         """Send audio from an async iterator to the channel."""
-        collected_audio = RasaAudioBytes(b"")
+        collected_audio = RasaAudioBytes(b"", format=self.audio_format)
         last_sent_offset = 0
         first_byte_received = False
         seconds_marker = -1
         async for audio_chunk in audio_stream:
-            collected_audio = RasaAudioBytes(collected_audio + audio_chunk)
+            collected_audio = collected_audio + audio_chunk
 
             # Track TTS first byte time
             if not first_byte_received:
@@ -384,13 +405,13 @@ class VoiceOutputChannel(OutputChannel):
             if should_send:
                 try:
                     # send only the new bytes since last sent offset
-                    new_bytes = RasaAudioBytes(collected_audio[last_sent_offset:])
+                    new_bytes = collected_audio[last_sent_offset:]
                     await self.send_audio_bytes(recipient_id, new_bytes)
                     last_sent_offset = len(collected_audio)
 
                     # seconds of audio rounded down to floor number
                     # e.g 7 // 2 = 3
-                    full_seconds_of_audio = len(collected_audio) // HERTZ
+                    full_seconds_of_audio = math.floor(collected_audio.full_seconds())
                     if full_seconds_of_audio > seconds_marker:
                         await self.send_intermediate_marker(recipient_id)
                         seconds_marker = full_seconds_of_audio
@@ -402,7 +423,7 @@ class VoiceOutputChannel(OutputChannel):
         remaining_bytes = len(collected_audio) - last_sent_offset
         if remaining_bytes > 0:
             try:
-                new_bytes = RasaAudioBytes(collected_audio[last_sent_offset:])
+                new_bytes = collected_audio[last_sent_offset:]
                 await self.send_audio_bytes(recipient_id, new_bytes)
             except WebsocketClosed:
                 # ignore sending error
@@ -491,7 +512,7 @@ class VoiceOutputChannel(OutputChannel):
         self.update_silence_timeout()
 
         # Check cache first
-        cached_audio_bytes = self.tts_cache.get(text)
+        cached_audio_bytes = self.tts_cache.get(text, self.audio_format)
         logger.debug(
             "voice_channel.sending_audio", text=text, cached=bool(cached_audio_bytes)
         )
@@ -530,7 +551,7 @@ class VoiceOutputChannel(OutputChannel):
         while offset < len(audio_bytes):
             chunk = audio_bytes[offset : offset + chunk_size]
             if len(chunk):
-                yield RasaAudioBytes(chunk)
+                yield chunk
             offset += chunk_size
         return
 
@@ -550,9 +571,6 @@ class VoiceInputChannel(InputChannel):
     # All children of this class require a voice license to be used.
     requires_voice_license = True
 
-    language: Optional[str] = None
-    additional_languages: Optional[List[str]] = None
-
     def __init__(
         self,
         server_url: str,
@@ -564,11 +582,12 @@ class VoiceInputChannel(InputChannel):
             validate_voice_license_scope()
 
         self.agent: Optional[Agent] = None
+        self.audio_format = MULAW_8KHZ
         self.server_url = server_url
         self.asr_config = asr_config
         self.tts_config = tts_config
         self.language = "en"
-        self.additional_languages = None
+        self.additional_languages: Optional[List[str]] = None
         self.tts_cache = TTSCache(tts_config.get("cache_size", 1000))
         self.interruption_config = (
             InterruptionConfig(**interruptions)
@@ -755,17 +774,42 @@ class VoiceInputChannel(InputChannel):
 
     def _initialize_call_state(self) -> None:
         _call_state.set(CallState())
-        if self.agent and self.agent.processor and self.agent.processor.model_metadata:
+        if (
+            self.agent
+            and self.agent.processor
+            and self.agent.processor.model_metadata
+            and self.agent.processor.model_metadata.language
+        ):
             self.language = self.agent.processor.model_metadata.language
             self.additional_languages = (
                 self.agent.processor.model_metadata.additional_languages
             )
-            logger.debug(
+            logger.info(
                 "voice_channel.set_initial_language_from_model_metadata",
                 language=self.language,
                 additional_languages=self.additional_languages,
             )
+        else:
+            logger.error(
+                "voice_channel.no_language_in_model_metadata",
+                default_language=self.language,
+            )
         call_state.current_language = self.language
+
+    def _get_asr_and_tts_engines(self) -> Tuple[ASREngine, TTSEngine]:
+        asr_engine = asr_engine_from_config(
+            asr_config=self.asr_config,
+            format=self.audio_format,
+            language=self.language,
+            additional_languages=self.additional_languages,
+        )
+        tts_engine = tts_engine_from_config(
+            tts_config=self.tts_config,
+            format=self.audio_format,
+            language=self.language,
+            additional_languages=self.additional_languages,
+        )
+        return asr_engine, tts_engine
 
     async def run_audio_streaming(
         self,
@@ -777,12 +821,7 @@ class VoiceInputChannel(InputChannel):
         asr_event_queue: asyncio.Queue = asyncio.Queue()
 
         # Initialize ASR and TTS based on config
-        asr_engine = asr_engine_from_config(
-            self.asr_config, self.language, self.additional_languages
-        )
-        tts_engine = tts_engine_from_config(
-            self.tts_config, self.language, self.additional_languages
-        )
+        asr_engine, tts_engine = self._get_asr_and_tts_engines()
 
         # Connect both ASR and TTS at the beginning
         await asr_engine.connect()
@@ -872,7 +911,9 @@ class VoiceInputChannel(InputChannel):
             self._cancel_silence_timeout_watcher()
 
     def create_output_channel(
-        self, voice_websocket: Websocket, tts_engine: TTSEngine
+        self,
+        voice_websocket: Websocket,
+        tts_engine: TTSEngine,
     ) -> VoiceOutputChannel:
         """Create a matching voice output channel for this voice input channel."""
         raise NotImplementedError

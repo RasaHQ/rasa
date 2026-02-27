@@ -15,7 +15,7 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
     UserIsSpeaking,
 )
 from rasa.core.channels.voice_stream.audio_bytes import (
-    HERTZ,
+    AudioFormat,
     RasaAudioBytes,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSConfigError
@@ -57,10 +57,11 @@ class AzureASR(ASREngine[AzureASRConfig]):
     def __init__(
         self,
         rasa_language: str,
+        format: AudioFormat,
         config: Optional[AzureASRConfig] = None,
         additional_languages: Optional[List[str]] = None,
     ):
-        super().__init__(rasa_language, config, additional_languages)
+        super().__init__(rasa_language, format, config, additional_languages)
 
         import azure.cognitiveservices.speech as speechsdk
 
@@ -110,9 +111,9 @@ class AzureASR(ASREngine[AzureASRConfig]):
             host=self.config.speech_host,
         )
         audio_format = speechsdk.audio.AudioStreamFormat(
-            samples_per_second=HERTZ,
-            bits_per_sample=8,
-            channels=1,
+            samples_per_second=self.audio_format.sample_rate,
+            bits_per_sample=self.audio_format.bit_depth,
+            channels=self.audio_format.channels,
             wave_stream_format=speechsdk.AudioStreamWaveFormat.MULAW,
         )
         self.stream = speechsdk.audio.PushAudioInputStream(stream_format=audio_format)
@@ -138,7 +139,7 @@ class AzureASR(ASREngine[AzureASRConfig]):
 
     def rasa_audio_bytes_to_engine_bytes(self, chunk: RasaAudioBytes) -> bytes:
         """Convert RasaAudioBytes to bytes usable by this engine."""
-        return chunk
+        return chunk.data
 
     async def send_audio_chunks(self, chunk: RasaAudioBytes) -> None:
         """Send audio chunks to the ASR system via the websocket."""
@@ -188,11 +189,13 @@ class AzureASR(ASREngine[AzureASRConfig]):
     def from_config_dict(
         cls,
         config: Dict,
+        format: AudioFormat,
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
     ) -> "AzureASR":
         return cls(
-            rasa_language,
-            AzureASRConfig(**config),
-            additional_languages,
+            rasa_language=rasa_language,
+            format=format,
+            config=AzureASRConfig(**config),
+            additional_languages=additional_languages,
         )

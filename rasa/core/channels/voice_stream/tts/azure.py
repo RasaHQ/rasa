@@ -7,6 +7,7 @@ import structlog
 from aiohttp import ClientConnectorError, ClientTimeout
 
 from rasa.core.channels.voice_stream.audio_bytes import (
+    AudioFormat,
     CurrentLanguageConfig,
     RasaAudioBytes,
 )
@@ -50,10 +51,11 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
     def __init__(
         self,
         rasa_language: str,
+        format: AudioFormat,
         config: Optional[AzureTTSConfig] = None,
         additional_languages: Optional[List[str]] = None,
     ):
-        super().__init__(rasa_language, config, additional_languages)
+        super().__init__(rasa_language, format, config, additional_languages)
         timeout = ClientTimeout(total=self.config.timeout)
         # Have to create this class-shared session lazily at run time otherwise
         # the async event loop doesn't work
@@ -135,7 +137,7 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
 
     def engine_bytes_to_rasa_audio_bytes(self, chunk: bytes) -> RasaAudioBytes:
         """Convert the generated tts audio bytes into rasa audio bytes."""
-        return RasaAudioBytes(chunk)
+        return RasaAudioBytes(chunk, format=self.audio_format)
 
     @staticmethod
     def get_default_config() -> AzureTTSConfig:
@@ -152,11 +154,13 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
     def from_config_dict(
         cls,
         config: Dict,
+        format: AudioFormat,
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
     ) -> "AzureTTS":
         return cls(
-            rasa_language,
-            AzureTTSConfig.from_dict(config),
-            additional_languages,
+            rasa_language=rasa_language,
+            format=format,
+            config=AzureTTSConfig.from_dict(config),
+            additional_languages=additional_languages,
         )

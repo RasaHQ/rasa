@@ -63,7 +63,7 @@ class JambonzStreamOutputChannel(VoiceOutputChannel):
 
         Converts 8kHz μ-law to 8kHz L16 PCM for Jambonz streaming.
         """
-        pcm = audioop.ulaw2lin(audio_bytes, 2)
+        pcm = audioop.ulaw2lin(audio_bytes.data, 2)
         await self.voice_websocket.send(pcm)
 
     def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
@@ -139,7 +139,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
         """Convert Jambonz audio bytes (L16 PCM) to Rasa audio bytes (μ-law)."""
         ulaw = audioop.lin2ulaw(input_bytes, 2)
-        return RasaAudioBytes(ulaw)
+        return RasaAudioBytes(ulaw, format=self.audio_format)
 
     async def collect_call_parameters(
         self, channel_websocket: Websocket
@@ -183,9 +183,10 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         self, voice_websocket: Websocket, tts_engine: TTSEngine
     ) -> VoiceOutputChannel:
         return JambonzStreamOutputChannel(
-            voice_websocket,
-            tts_engine,
-            self.tts_cache,
+            voice_websocket=voice_websocket,
+            tts_engine=tts_engine,
+            tts_cache=self.tts_cache,
+            audio_format=self.audio_format,
         )
 
     async def interrupt_playback(

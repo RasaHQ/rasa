@@ -4,6 +4,7 @@ from typing import AsyncIterator, Dict, Generic, List, Optional, Tuple, Type, Ty
 import structlog
 
 from rasa.core.channels.voice_stream.audio_bytes import (
+    AudioFormat,
     CurrentLanguageConfig,
     RasaAudioBytes,
 )
@@ -144,9 +145,11 @@ class TTSEngine(Generic[T]):
     def __init__(
         self,
         rasa_language: str,
+        format: AudioFormat,
         config: Optional[T] = None,
         additional_languages: Optional[List[str]] = None,
     ):
+        self.audio_format = format
         self.config = self.get_default_config().merge(config)
         self.config.validate_language_map_keys(rasa_language, additional_languages)
         validate_environment(
@@ -191,13 +194,13 @@ class TTSEngine(Generic[T]):
         This continuously yields audio chunks as they are produced by the engine.
         Used in conjunction with send_text_chunk() for streaming responses.
         """
-        yield RasaAudioBytes(b"")
+        yield RasaAudioBytes(b"", format=self.audio_format)
 
     async def synthesize(
         self, text: str, config: Optional[T] = None
     ) -> AsyncIterator[RasaAudioBytes]:
         """Generate speech from text using a remote TTS system."""
-        yield RasaAudioBytes(b"")
+        yield RasaAudioBytes(b"", format=self.audio_format)
 
     def engine_bytes_to_rasa_audio_bytes(self, chunk: bytes) -> RasaAudioBytes:
         """Convert the generated TTS audio bytes into rasa audio bytes."""
@@ -212,6 +215,7 @@ class TTSEngine(Generic[T]):
     def from_config_dict(
         cls: Type[E],
         config: Dict,
+        format: AudioFormat,
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
     ) -> E:

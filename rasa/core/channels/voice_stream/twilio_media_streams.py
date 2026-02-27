@@ -77,7 +77,7 @@ class TwilioMediaStreamsOutputChannel(VoiceOutputChannel):
     def rasa_audio_bytes_to_channel_bytes(
         self, rasa_audio_bytes: RasaAudioBytes
     ) -> bytes:
-        return base64.b64encode(rasa_audio_bytes)
+        return base64.b64encode(rasa_audio_bytes.data)
 
     def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
         message_id = uuid.uuid4().hex
@@ -154,7 +154,7 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         return call_parameters.stream_id  # type: ignore[return-value]
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
-        return RasaAudioBytes(base64.b64decode(input_bytes))
+        return RasaAudioBytes(base64.b64decode(input_bytes), format=self.audio_format)
 
     async def collect_call_parameters(
         self, channel_websocket: Websocket
@@ -199,9 +199,10 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         self, voice_websocket: Websocket, tts_engine: TTSEngine
     ) -> VoiceOutputChannel:
         return TwilioMediaStreamsOutputChannel(
-            voice_websocket,
-            tts_engine,
-            self.tts_cache,
+            voice_websocket=voice_websocket,
+            tts_engine=tts_engine,
+            tts_cache=self.tts_cache,
+            audio_format=self.audio_format,
         )
 
     async def interrupt_playback(

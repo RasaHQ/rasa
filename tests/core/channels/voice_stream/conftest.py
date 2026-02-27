@@ -2,6 +2,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from rasa.core.channels.voice_stream.audio_bytes import (
+    MULAW_8KHZ,
+    AudioFormat,
+)
 from rasa.core.channels.voice_stream.call_state import CallState, _call_state
 
 
@@ -32,3 +36,8 @@ def setup_call_state():
     except Exception:
         # Best-effort cleanup; if this fails, ignore to not mask test failures
         pass
+
+
+@pytest.fixture
+def mulaw_format() -> AudioFormat:
+    return MULAW_8KHZ

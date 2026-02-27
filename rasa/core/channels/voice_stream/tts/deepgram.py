@@ -9,6 +9,7 @@ import structlog
 from aiohttp import ClientTimeout, WSMsgType
 
 from rasa.core.channels.voice_stream.audio_bytes import (
+    AudioFormat,
     RasaAudioBytes,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import (
@@ -43,10 +44,11 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
     def __init__(
         self,
         rasa_language: str,
+        format: AudioFormat,
         config: Optional[DeepgramTTSConfig] = None,
         additional_languages: Optional[List[str]] = None,
     ):
-        super().__init__(rasa_language, config, additional_languages)
+        super().__init__(rasa_language, format, config, additional_languages)
         timeout = ClientTimeout(total=self.config.timeout)
         # Have to create this class-shared session lazily at run time otherwise
         # the async event loop doesn't work
@@ -85,7 +87,7 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
         query_params = {
             "model": self.current_language_config.model,
             "encoding": "mulaw",
-            "sample_rate": "8000",
+            "sample_rate": self.audio_format.sample_rate,
         }
         return f"{base_url}?{urlencode(query_params)}"
 
@@ -172,7 +174,7 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
     def engine_bytes_to_rasa_audio_bytes(self, chunk: bytes) -> RasaAudioBytes:
         """Convert the generated tts audio bytes into rasa audio bytes."""
         # WebSocket returns raw audio bytes directly
-        return RasaAudioBytes(chunk)
+        return RasaAudioBytes(chunk, format=self.audio_format)
 
     @staticmethod
     def get_default_config() -> DeepgramTTSConfig:
@@ -190,13 +192,15 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
     def from_config_dict(
         cls,
         config: Dict,
+        format: AudioFormat,
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
     ) -> "DeepgramTTS":
         return cls(
-            rasa_language,
-            DeepgramTTSConfig.from_dict(config),
-            additional_languages,
+            rasa_language=rasa_language,
+            format=format,
+            config=DeepgramTTSConfig.from_dict(config),
+            additional_languages=additional_languages,
         )
 
     async def set_language(self, rasa_language: str) -> None:

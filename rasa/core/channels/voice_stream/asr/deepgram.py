@@ -18,7 +18,7 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
     NewTranscript,
     UserIsSpeaking,
 )
-from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import AudioFormat, RasaAudioBytes
 from rasa.shared.constants import DEEPGRAM_API_KEY_ENV_VAR
 
 logger = structlog.get_logger(__name__)
@@ -46,10 +46,11 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
     def __init__(
         self,
         rasa_language: str,
+        format: AudioFormat,
         config: Optional[DeepgramASRConfig] = None,
         additional_languages: Optional[List[str]] = None,
     ):
-        super().__init__(rasa_language, config, additional_languages)
+        super().__init__(rasa_language, format, config, additional_languages)
         self.accumulated_transcript = ""
 
     async def open_websocket_connection(self) -> WebSocketClientProtocol:
@@ -87,7 +88,7 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
         """Get the configured query parameters for the api."""
         query_params = {
             "encoding": "mulaw",
-            "sample_rate": HERTZ,
+            "sample_rate": self.audio_format.sample_rate,
             "endpointing": self.config.endpointing,
             "vad_events": "true",
             "language": self.current_language_config.engine_language_key,
@@ -108,7 +109,7 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
 
     def rasa_audio_bytes_to_engine_bytes(self, chunk: RasaAudioBytes) -> bytes:
         """Convert RasaAudioBytes to bytes usable by this engine."""
-        return chunk
+        return chunk.data
 
     def engine_event_to_asr_event(self, e: Any) -> Optional[ASREvent]:
         """Translate an engine event to a common ASREvent."""
@@ -158,6 +159,7 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
     def from_config_dict(
         cls,
         config: Any,
+        format: AudioFormat,
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
     ) -> "DeepgramASR":
@@ -167,9 +169,10 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
             else DeepgramASRConfig(**config)
         )
         return cls(
-            rasa_language,
-            cfg,
-            additional_languages,
+            rasa_language=rasa_language,
+            format=format,
+            config=cfg,
+            additional_languages=additional_languages,
         )
 
     @staticmethod
