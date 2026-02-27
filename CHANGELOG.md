@@ -20,10 +20,10 @@ Rasa Pro 3.15.13 (2026-02-25)
 
 
 ## [3.15.12] - 2026-02-23
-                         
-Rasa Pro 3.15.12 (2026-02-23)                              
+
+Rasa Pro 3.15.12 (2026-02-23)
 ### Bugfixes
-- [#4634](https://github.com/rasahq/rasa-private/issues/4634): **E2E fixture resolution and conftest hierarchy:** 
+- [#4634](https://github.com/rasahq/rasa-private/issues/4634): **E2E fixture resolution and conftest hierarchy:**
 
   Fixture resolution now uses a conftest-style hierarchy, with local overrides taking precedence over global fixtures.
   This is a change from the previous behavior where all fixtures were merged into a single list, which could lead to silent data loss if duplicate fixture names were used. Now, every test case has its own resolved set of fixtures, and duplicate fixture names are allowed when the intent is "override".
@@ -40,8 +40,8 @@ Rasa Pro 3.15.12 (2026-02-23)
 
 
 ## [3.15.11] - 2026-02-18
-                         
-Rasa Pro 3.15.11 (2026-02-18)                              
+
+Rasa Pro 3.15.11 (2026-02-18)
 ### Bugfixes
 - [#4519](https://github.com/rasahq/rasa-private/issues/4519): Upgrade `litellm` to 1.80.0.
 - [#4622](https://github.com/rasahq/rasa-private/issues/4622): Remove config file content from endpoint read success logs to prevent sensitive data exposure.
@@ -50,8 +50,8 @@ Rasa Pro 3.15.11 (2026-02-18)
 
 
 ## [3.15.10] - 2026-02-10
-                         
-Rasa Pro 3.15.10 (2026-02-10)                              
+
+Rasa Pro 3.15.10 (2026-02-10)
 ### Improvements
 - [#4554](https://github.com/rasahq/rasa-private/issues/4554): Flows can now link to `pattern_search` (e.g. to trigger RAG or branch on knowledge-based search).
 
@@ -61,8 +61,8 @@ Rasa Pro 3.15.10 (2026-02-10)
 
 
 ## [3.15.9] - 2026-02-05
-                        
-Rasa Pro 3.15.9 (2026-02-05)                             
+
+Rasa Pro 3.15.9 (2026-02-05)
 ### Bugfixes
 - [#4489](https://github.com/rasahq/rasa-private/issues/4489): Upgrade Keras to 3.12.1 to address CVE-2026-0897.
 - [#4125](https://github.com/rasahq/rasa-private/issues/4125): Fixed `language` parameter in RimeTTS configuration to be passed correctly to the Rime API.
@@ -70,15 +70,15 @@ Rasa Pro 3.15.9 (2026-02-05)
 
 
 ## [3.15.8] - 2026-01-26
-                        
-Rasa Pro 3.15.8 (2026-01-26)                             
+
+Rasa Pro 3.15.8 (2026-01-26)
 ### Bugfixes
 - [#4438](https://github.com/rasahq/rasa-private/issues/4438): Update azure-core to 1.38.0 to address CVE-2026-21226.
 
 
 ## [3.15.7] - 2026-01-21
-                        
-Rasa Pro 3.15.7 (2026-01-21)                             
+
+Rasa Pro 3.15.7 (2026-01-21)
 ### Bugfixes
 - [#4268](https://github.com/rasahq/rasa-private/issues/4268): Fixed e2e test coverage report to correctly track coverage per flow. Each flow now appears as a separate entry with accurate coverage percentages. Additionally, `call`/`link` steps and `collect` steps with prefilled slots are now properly marked as visited.
 - [#4421](https://github.com/rasahq/rasa-private/issues/4421): Fix OAuth2AuthStrategy to use URL-encoded parameters with Basic Authentication to fetch access token
@@ -86,7 +86,7 @@ Rasa Pro 3.15.7 (2026-01-21)
 
 ## [3.15.6] - 2026-01-15
 
-Rasa Pro 3.15.6 (2026-01-15)                             
+Rasa Pro 3.15.6 (2026-01-15)
 ### Bugfixes
 - [#4261](https://github.com/rasahq/rasa-private/issues/4261): Fixed an issue where storing documents in FAISS individually could hit the token limit.
   Now, documents are stored in batches to avoid exceeding the token limit.
@@ -99,8 +99,8 @@ Rasa Pro 3.15.6 (2026-01-15)
 
 
 ## [3.15.5] - 2025-12-29
-                        
-Rasa Pro 3.15.5 (2025-12-29)                             
+
+Rasa Pro 3.15.5 (2025-12-29)
 ### Bugfixes
 - [#4189](https://github.com/rasahq/rasa-private/issues/4189): Include response button titles in conversation history in prompts of LLM based components.
 - [#4284](https://github.com/rasahq/rasa-private/issues/4284): Fix OpenTelemetry exporter `Invalid type <class 'NoneType'> of value None` error when recording the request duration metric
@@ -112,7 +112,7 @@ Rasa Pro 3.15.5 (2025-12-29)
 
 ## [3.15.4] - 2025-12-19
 
-Rasa Pro 3.15.4 (2025-12-19)                             
+Rasa Pro 3.15.4 (2025-12-19)
 ### Bugfixes
 - [#4257](https://github.com/rasahq/rasa-private/issues/4257): Fixed token expiration validation failing on servers running in non-UTC timezones.
   Token expiration checks now use timezone-aware UTC datetimes consistently, preventing premature "access token expired" errors on systems in timezones like UTC+8.
@@ -120,7 +120,7 @@ Rasa Pro 3.15.4 (2025-12-19)
 
 ## [3.15.3] - 2025-12-11
 
-Rasa Pro 3.15.3 (2025-12-11)                             
+Rasa Pro 3.15.3 (2025-12-11)
 ### Bugfixes
 - [#4064](https://github.com/rasahq/rasa-private/issues/4064): Fix potential Tensor shape mismatch error in `TEDPolicy` and `DIETClassifier`.
 - [#4165](https://github.com/rasahq/rasa-private/issues/4165): Update `mcp` version to `~1.23.0` to address security vulnerability CVE-2025-66416.
@@ -139,8 +139,8 @@ Rasa Pro 3.15.3 (2025-12-11)
 
 
 ## [3.15.2] - 2025-12-04
-                        
-Rasa Pro 3.15.2 (2025-12-04)                             
+
+Rasa Pro 3.15.2 (2025-12-04)
 ### Bugfixes
 - [#4067](https://github.com/rasahq/rasa-private/issues/4067): Fix agentic prompt template to access slots directly.
 - [#4077](https://github.com/rasahq/rasa-private/issues/4077): Disable LLM health check for Enterprise Search Policy when generative search is disabled (i.e. use_generative_llm is False).
@@ -150,8 +150,8 @@ Rasa Pro 3.15.2 (2025-12-04)
 
 
 ## [3.15.1] - 2025-12-02
-                        
-Rasa Pro 3.15.1 (2025-12-02)                             
+
+Rasa Pro 3.15.1 (2025-12-02)
 ### Bugfixes
 - [#4010](https://github.com/rasahq/rasa-private/issues/4010): Raise validation error when duplicate slot definitions are found across domains.
 - [#4020](https://github.com/rasahq/rasa-private/issues/4020): Raise validation error when a slot with an initial value set is collected by a flow collect step
@@ -164,8 +164,8 @@ Rasa Pro 3.15.1 (2025-12-02)
 
 
 ## [3.15.0] - 2025-11-26
-                        
-Rasa Pro 3.15.0 (2025-11-26)                             
+
+Rasa Pro 3.15.0 (2025-11-26)
 ### Features
 - [#2480](https://github.com/rasahq/rasa-private/issues/2480): Added Langfuse integration for tracing LLM and embedding calls.
   All LLM-based components (Command Generators, Rephraser, Enterprise Search Policy, ReAct Sub Agent) and embedding operations are automatically traced when Langfuse is configured.
@@ -183,7 +183,7 @@ Rasa Pro 3.15.0 (2025-11-26)
   ```
 
   Custom components can override `get_llm_tracing_metadata()` to customize metadata.
-- [#3601](https://github.com/rasahq/rasa-private/issues/3601): Added support for triggering clarification when multiple `StartFlow` commands are generated with no active flow. 
+- [#3601](https://github.com/rasahq/rasa-private/issues/3601): Added support for triggering clarification when multiple `StartFlow` commands are generated with no active flow.
   To enable this feature, set the `CLARIFY_ON_MULTIPLE_START_FLOWS` environment variable to `True`.
 - [#3603](https://github.com/rasahq/rasa-private/issues/3603): Adds DTMF (Dual-Tone Multi-Frequency) input support for collect steps in flows. Voice channels can now configure DTMF collection with options for digit length, finish key, and audio input control. The feature gracefully handles non-voice channels by skipping DTMF configuration when call_state is not initialized.
 - [#3634](https://github.com/rasahq/rasa-private/issues/3634): Added new CLI option `-f, --e2e-failed-tests` to export failed e2e tests to a file that can be directly used to re-run only those tests.
@@ -279,7 +279,7 @@ Rasa Pro 3.15.0 (2025-11-26)
 ### Bugfixes
 - [#3952](https://github.com/rasahq/rasa-private/issues/3952): Run action_session_start if tracker ends with SessionEnded event.
 - [#3958](https://github.com/rasahq/rasa-private/issues/3958): Fixed PostgreSQL `UniqueViolation` error when running an assistant with multiple Sanic workers.
-- [#3966](https://github.com/rasahq/rasa-private/issues/3966): Fix Kafka producer creation failing when SASL mechanism is specified in lowercase. 
+- [#3966](https://github.com/rasahq/rasa-private/issues/3966): Fix Kafka producer creation failing when SASL mechanism is specified in lowercase.
   The SASL mechanism is now case-insensitive in the Kafka producer configuration.
 - [#3975](https://github.com/rasahq/rasa-private/issues/3975): Fix issue where the validation of the assistant files continued even when the provided domain was invalid and was being loaded as empty.
   The training or validation command didn't exit because the final merged domain contained only the default implementations
@@ -293,14 +293,25 @@ Rasa Pro 3.15.0 (2025-11-26)
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
 
 
+
+## [3.14.16] - 2026-02-26
+
+Rasa Pro 3.14.16 (2026-02-26)
+### Bugfixes
+- [#2642](https://github.com/rasahq/rasa-private/issues/2642): Upgraded `litellm` to 1.81.15 so that `strict: True` can be passed to Bedrock and tool calling has the same guarantees as with OpenAI. Upgraded `openai` to >=2.8.0 to satisfy litellm's dependency.
+- [#4676](https://github.com/rasahq/rasa-private/issues/4676): Unquoted environment variable references for MCP and A2A OAuth credentials (`client_id`, `client_secret`) in `endpoints.yml` are now accepted. Previously, training failed unless these values were wrapped in double quotes (e.g. `"${MCP_CLIENT_SECRET}"`).
+- [#4690](https://github.com/rasahq/rasa-private/issues/4690): Move MCP task agent exit condition evaluation to after `process_output`, so that `SlotSet` events added by custom `process_output` implementations are considered when checking `exit_if` conditions.
+- [#4719](https://github.com/rasahq/rasa-private/issues/4719): The MCP task agent now includes slot changes in the agent output when the state is `INPUT_REQUIRED` or when max iterations is reached. Previously, slots set via set_slot tools were updated in memory but not forwarded in the output, so they were not persisted until exit conditions were met.
+
+
 ## [3.14.15] - 2026-02-23
-                         
-Rasa Pro 3.14.15 (2026-02-23)                              
+
+Rasa Pro 3.14.15 (2026-02-23)
 ### Bugfixes
 - [#4623](https://github.com/rasahq/rasa-private/issues/4623): Remove config file content from endpoint read success logs to prevent sensitive data exposure.
 - [#4627](https://github.com/rasahq/rasa-private/issues/4627): Update `protobuf` to v5.29.6 to address CVE-2026-0994.
   Update `wheel` to v0.46.3 to address CVE-2026-24049.
-- [#4634](https://github.com/rasahq/rasa-private/issues/4634): **E2E fixture resolution and conftest hierarchy:** 
+- [#4634](https://github.com/rasahq/rasa-private/issues/4634): **E2E fixture resolution and conftest hierarchy:**
 
   Fixture resolution now uses a conftest-style hierarchy, with local overrides taking precedence over global fixtures.
   This is a change from the previous behavior where all fixtures were merged into a single list, which could lead to silent data loss if duplicate fixture names were used. Now, every test case has its own resolved set of fixtures, and duplicate fixture names are allowed when the intent is "override".
@@ -313,15 +324,15 @@ Rasa Pro 3.14.15 (2026-02-23)
 
 
 ## [3.14.14] - 2026-02-12
-                         
-Rasa Pro 3.14.14 (2026-02-12)              
+
+Rasa Pro 3.14.14 (2026-02-12)
 
 - [#4519](https://github.com/rasahq/rasa-private/issues/4519): Upgrade `litellm` to 1.80.0.
 - [#4531](https://github.com/rasahq/rasa-private/issues/4531): Fix Enterprise Search Policy triggering `utter_ask_rephrase` instead of `utter_no_relevant_answer_found` when the vector store search returns no matching documents. The `pattern_cannot_handle` now correctly receives the `cannot_handle_no_relevant_answer` as a `context.reason` in all cases where no relevant answer is found, not only when the optional relevancy check rejects the answer.
 
 
 ## [3.14.13] - 2026-02-05
-                         
+
 Rasa Pro 3.14.13 (2026-02-05)
 ### Bugfixes
 - [#4489](https://github.com/rasahq/rasa-private/issues/4489): Upgrade Keras to 3.12.1 to address CVE-2026-0897.
@@ -330,15 +341,15 @@ Rasa Pro 3.14.13 (2026-02-05)
 
 
 ## [3.14.12] - 2026-01-26
-                         
-Rasa Pro 3.14.12 (2026-01-26)                              
+
+Rasa Pro 3.14.12 (2026-01-26)
 ### Bugfixes
 - [#4455](https://github.com/rasahq/rasa-private/issues/4455): Update azure-core to 1.38.0 to address CVE-2026-21226.
 
 
 ## [3.14.11] - 2026-01-21
-                         
-Rasa Pro 3.14.11 (2026-01-21)                              
+
+Rasa Pro 3.14.11 (2026-01-21)
 ### Bugfixes
 - [#4268](https://github.com/rasahq/rasa-private/issues/4268): Fixed e2e test coverage report to correctly track coverage per flow. Each flow now appears as a separate entry with accurate coverage percentages. Additionally, `call`/`link` steps and `collect` steps with prefilled slots are now properly marked as visited.
 - [#4326](https://github.com/rasahq/rasa-private/issues/4326): Throw error when duplicate fixtures are found in the same file or across files.
@@ -346,8 +357,8 @@ Rasa Pro 3.14.11 (2026-01-21)
 
 
 ## [3.14.10] - 2026-01-15
-                         
-Rasa Pro 3.14.10 (2026-01-15)                              
+
+Rasa Pro 3.14.10 (2026-01-15)
 ### Bugfixes
 - [#4261](https://github.com/rasahq/rasa-private/issues/4261): Fixed an issue where storing documents in FAISS individually could hit the token limit.
   Now, documents are stored in batches to avoid exceeding the token limit.
@@ -359,8 +370,8 @@ Rasa Pro 3.14.10 (2026-01-15)
 
 
 ## [3.14.9] - 2025-12-29
-                        
-Rasa Pro 3.14.9 (2025-12-29)                             
+
+Rasa Pro 3.14.9 (2025-12-29)
 ### Bugfixes
 - [#4189](https://github.com/rasahq/rasa-private/issues/4189): Include response button titles in conversation history in prompts of LLM based components.
 - [#4284](https://github.com/rasahq/rasa-private/issues/4284): Fix OpenTelemetry exporter `Invalid type <class 'NoneType'> of value None` error when recording the request duration metric
@@ -371,15 +382,15 @@ Rasa Pro 3.14.9 (2025-12-29)
 
 ## [3.14.8] - 2025-12-19
 
-Rasa Pro 3.14.8 (2025-12-19)                             
+Rasa Pro 3.14.8 (2025-12-19)
 ### Bugfixes
 - [#4257](https://github.com/rasahq/rasa-private/issues/4257): Fixed token expiration validation failing on servers running in non-UTC timezones.
   Token expiration checks now use timezone-aware UTC datetimes consistently, preventing premature "access token expired" errors on systems in timezones like UTC+8.
 
 
 ## [3.14.7] - 2025-12-11
-                        
-Rasa Pro 3.14.7 (2025-12-11)                             
+
+Rasa Pro 3.14.7 (2025-12-11)
 ### Bugfixes
 - [#4064](https://github.com/rasahq/rasa-private/issues/4064): Fix potential Tensor shape mismatch error in `TEDPolicy` and `DIETClassifier`.
 - [#4165](https://github.com/rasahq/rasa-private/issues/4165): Update `mcp` version to `~1.23.0` to address security vulnerability CVE-2025-66416.
@@ -409,16 +420,16 @@ Rasa Pro 3.14.6 (2025-12-05)
 
 
 ## [3.14.5] - 2025-12-02
-                        
-Rasa Pro 3.14.5 (2025-12-02)                             
+
+Rasa Pro 3.14.5 (2025-12-02)
 ### Bugfixes
 - [#4051](https://github.com/rasahq/rasa-private/issues/4051): Update `pip` to fix security vulnerability.
 - [#4053](https://github.com/rasahq/rasa-private/issues/4053): Fix  AgentToolSchema._ensure_property_types() correctly preserves structural keywords ($ref, anyOf, oneOf, etc.)
 
 
 ## [3.14.4] - 2025-11-27
-                        
-Rasa Pro 3.14.4 (2025-11-27)                             
+
+Rasa Pro 3.14.4 (2025-11-27)
 ### Bugfixes
 - [#3864](https://github.com/rasahq/rasa-private/issues/3864): Fixed `patten-continue-interrupted` running out of order before linked flows.
 - [#3933](https://github.com/rasahq/rasa-private/issues/3933): Fix `rasa studio upload` timeouts by enabling TCP keep-alive with platform-specific socket options to maintain stable connections.
@@ -427,7 +438,7 @@ Rasa Pro 3.14.4 (2025-11-27)
   `EnterpriseSearchPolicy` spans for debugging purposes. By default, this variable is set to `false` to ensure PII is not logged
   in production environments.
 - [#3958](https://github.com/rasahq/rasa-private/issues/3958): Fixed PostgreSQL `UniqueViolation` error when running an assistant with multiple Sanic workers.
-- [#3966](https://github.com/rasahq/rasa-private/issues/3966): Fix Kafka producer creation failing when SASL mechanism is specified in lowercase. 
+- [#3966](https://github.com/rasahq/rasa-private/issues/3966): Fix Kafka producer creation failing when SASL mechanism is specified in lowercase.
   The SASL mechanism is now case-insensitive in the Kafka producer configuration.
 - [#3975](https://github.com/rasahq/rasa-private/issues/3975): Fix issue where the validation of the assistant files continued even when the provided domain was invalid and was being loaded as empty.
   The training or validation command didn't exit because the final merged domain contained only the default implementations
@@ -445,8 +456,8 @@ Rasa Pro 3.14.4 (2025-11-27)
 
 
 ## [3.14.3] - 2025-11-13
-                        
-Rasa Pro 3.14.3 (2025-11-13)                             
+
+Rasa Pro 3.14.3 (2025-11-13)
 ### Miscellaneous internal changes
 - [#2466](https://github.com/rasahq/rasa-private/issues/2466), [#3550](https://github.com/rasahq/rasa-private/issues/3550), [#3752](https://github.com/rasahq/rasa-private/issues/3752)
 
@@ -850,10 +861,10 @@ Rasa Pro 3.14.0 (2025-10-09)
 
 
 ## [3.13.24] - 2026-02-23
-                         
-Rasa Pro 3.13.24 (2026-02-23)                              
+
+Rasa Pro 3.13.24 (2026-02-23)
 ### Bugfixes
-- [#4634](https://github.com/rasahq/rasa-private/issues/4634): **E2E fixture resolution and conftest hierarchy:** 
+- [#4634](https://github.com/rasahq/rasa-private/issues/4634): **E2E fixture resolution and conftest hierarchy:**
 
   Fixture resolution now uses a conftest-style hierarchy, with local overrides taking precedence over global fixtures.
   This is a change from the previous behavior where all fixtures were merged into a single list, which could lead to silent data loss if duplicate fixture names were used. Now, every test case has its own resolved set of fixtures, and duplicate fixture names are allowed when the intent is "override".
@@ -866,8 +877,8 @@ Rasa Pro 3.13.24 (2026-02-23)
 
 
 ## [3.13.23] - 2026-02-12
-                         
-Rasa Pro 3.13.23 (2026-02-12)                              
+
+Rasa Pro 3.13.23 (2026-02-12)
 ### Improvements
 - [#4554](https://github.com/rasahq/rasa-private/issues/4554): Flows can now link to `pattern_search` (e.g. to trigger RAG or branch on knowledge-based search).
 
@@ -878,8 +889,8 @@ Rasa Pro 3.13.23 (2026-02-12)
 
 
 ## [3.13.22] - 2026-01-15
-                         
-Rasa Pro 3.13.22 (2026-01-15)                              
+
+Rasa Pro 3.13.22 (2026-01-15)
 ### Bugfixes
 - [#4261](https://github.com/rasahq/rasa-private/issues/4261): Fixed an issue where storing documents in FAISS individually could hit the token limit.
   Now, documents are stored in batches to avoid exceeding the token limit.
@@ -892,8 +903,8 @@ Rasa Pro 3.13.22 (2026-01-15)
 
 
 ## [3.13.21] - 2025-12-29
-                         
-Rasa Pro 3.13.21 (2025-12-29)                              
+
+Rasa Pro 3.13.21 (2025-12-29)
 ### Bugfixes
 - [#4189](https://github.com/rasahq/rasa-private/issues/4189): Include response button titles in conversation history in prompts of LLM based components.
 - [#4284](https://github.com/rasahq/rasa-private/issues/4284): Fix OpenTelemetry exporter `Invalid type <class 'NoneType'> of value None` error when recording the request duration metric
@@ -904,8 +915,8 @@ Rasa Pro 3.13.21 (2025-12-29)
 
 
 ## [3.13.20] - 2025-12-19
-                  
-Rasa Pro 3.13.20 (2025-12-19)                              
+
+Rasa Pro 3.13.20 (2025-12-19)
 ### Bugfixes
 - [#4257](https://github.com/rasahq/rasa-private/issues/4257): Fixed token expiration validation failing on servers running in non-UTC timezones.
   Token expiration checks now use timezone-aware UTC datetimes consistently, preventing premature "access token expired" errors on systems in timezones like UTC+8.
@@ -913,7 +924,7 @@ Rasa Pro 3.13.20 (2025-12-19)
 
 ## [3.13.19] - 2025-12-11
 
-Rasa Pro 3.13.19 (2025-12-11)                              
+Rasa Pro 3.13.19 (2025-12-11)
 ### Bugfixes
 - [#4168](https://github.com/rasahq/rasa-private/issues/4168): Fix bug in `CommandPayloadReader` where regex matching did not account for list slots, leading to incorrect parsing of slot keys and values. Now, slot names and values are correctly extracted even if a list is provided.
 - [#4169](https://github.com/rasahq/rasa-private/issues/4169): Previously, `DialogueStateTracker.has_coexistence_routing_slot` could incorrectly return `True` when the tracker was created without domain slots (i.e., using `AnySlotDict`), because `AnySlotDict` pretends all slots exist. Now, the property returns False in that case, so the routing slot is only considered present if it is actually defined in the domain.
@@ -926,12 +937,12 @@ Rasa Pro 3.13.19 (2025-12-11)
   Update license validation error messages to reference the actual environment variable used.
 
 ### Miscellaneous internal changes
-- [#4206](https://github.com/rasahq/rasa-private/issues/4206) 
+- [#4206](https://github.com/rasahq/rasa-private/issues/4206)
 
 
 ## [3.13.18] - 2025-12-04
-                         
-Rasa Pro 3.13.18 (2025-12-04)                              
+
+Rasa Pro 3.13.18 (2025-12-04)
 ### Bugfixes
 - [#4051](https://github.com/rasahq/rasa-private/issues/4051): Update `pip` to fix security vulnerability.
 - [#4077](https://github.com/rasahq/rasa-private/issues/4077): Disable LLM health check for Enterprise Search Policy when generative search is disabled (i.e. use_generative_llm is False).
@@ -941,11 +952,11 @@ Rasa Pro 3.13.18 (2025-12-04)
 
 
 ## [3.13.17] - 2025-11-27
-                         
-Rasa Pro 3.13.17 (2025-11-27)                              
+
+Rasa Pro 3.13.17 (2025-11-27)
 ### Bugfixes
 - [#3958](https://github.com/rasahq/rasa-private/issues/3958): Fixed PostgreSQL `UniqueViolation` error when running an assistant with multiple Sanic workers.
-- [#3966](https://github.com/rasahq/rasa-private/issues/3966): Fix Kafka producer creation failing when SASL mechanism is specified in lowercase. 
+- [#3966](https://github.com/rasahq/rasa-private/issues/3966): Fix Kafka producer creation failing when SASL mechanism is specified in lowercase.
   The SASL mechanism is now case-insensitive in the Kafka producer configuration.
 - [#3975](https://github.com/rasahq/rasa-private/issues/3975): Fix issue where the validation of the assistant files continued even when the provided domain was invalid and was being loaded as empty.
   The training or validation command didn't exit because the final merged domain contained only the default implementations
@@ -960,8 +971,8 @@ Rasa Pro 3.13.17 (2025-11-27)
 
 
 ## [3.13.16] - 2025-11-21
-                         
-Rasa Pro 3.13.16 (2025-11-21)                              
+
+Rasa Pro 3.13.16 (2025-11-21)
 ### Bugfixes
 - [#3864](https://github.com/rasahq/rasa-private/issues/3864): Fixed `patten-continue-interrupted` running out of order before linked flows.
 - [#3933](https://github.com/rasahq/rasa-private/issues/3933): Fix `rasa studio upload` timeouts by enabling TCP keep-alive with platform-specific socket options to maintain stable connections.
@@ -1349,7 +1360,7 @@ Rasa Pro 3.13.0 (2025-07-07)
 
 ## [3.12.42] - 2025-12-11
 
-Rasa Pro 3.12.42 (2025-12-11)                              
+Rasa Pro 3.12.42 (2025-12-11)
 ### Bugfixes
 - [#4168](https://github.com/rasahq/rasa-private/issues/4168): Fix bug in `CommandPayloadReader` where regex matching did not account for list slots, leading to incorrect parsing of slot keys and values. Now, slot names and values are correctly extracted even if a list is provided.
 - [#4169](https://github.com/rasahq/rasa-private/issues/4169): Previously, `DialogueStateTracker.has_coexistence_routing_slot` could incorrectly return `True` when the tracker was created without domain slots (i.e., using `AnySlotDict`), because `AnySlotDict` pretends all slots exist. Now, the property returns False in that case, so the routing slot is only considered present if it is actually defined in the domain.
@@ -1364,8 +1375,8 @@ Rasa Pro 3.12.42 (2025-12-11)
 
 
 ## [3.12.41] - 2025-12-04
-                         
-Rasa Pro 3.12.41 (2025-12-04)                              
+
+Rasa Pro 3.12.41 (2025-12-04)
 ### Bugfixes
 - [#4051](https://github.com/rasahq/rasa-private/issues/4051): Update `pip` to fix security vulnerability.
 - [#4077](https://github.com/rasahq/rasa-private/issues/4077): Disable LLM health check for Enterprise Search Policy when generative search is disabled (i.e. use_generative_llm is False).
@@ -1375,8 +1386,8 @@ Rasa Pro 3.12.41 (2025-12-04)
 
 
 ## [3.12.40] - 2025-11-27
-                         
-Rasa Pro 3.12.40 (2025-11-27)                              
+
+Rasa Pro 3.12.40 (2025-11-27)
 ### Bugfixes
 - [#3958](https://github.com/rasahq/rasa-private/issues/3958): Fixed PostgreSQL `UniqueViolation` error when running an assistant with multiple Sanic workers.
 - [#3975](https://github.com/rasahq/rasa-private/issues/3975): Fix issue where the validation of the assistant files continued even when the provided domain was invalid and was being loaded as empty.
@@ -1390,15 +1401,15 @@ Rasa Pro 3.12.40 (2025-11-27)
 
 
 ## [3.12.39] - 2025-11-21
-                         
-Rasa Pro 3.12.39 (2025-11-21)                              
+
+Rasa Pro 3.12.39 (2025-11-21)
 ### Bugfixes
 - [#3864](https://github.com/rasahq/rasa-private/issues/3864): Fixed `patten-continue-interrupted` running out of order before linked flows.
 - [#3948](https://github.com/rasahq/rasa-private/issues/3948): Remove `action_metadata` tracing span attribute from `EnterpriseSearchPolicy` instrumentation to prevent PII leakages.
   Add new environment variable `RASA_TRACING_DEBUGGING_ENABLED` to enable adding `action_metadata` to
   `EnterpriseSearchPolicy` spans for debugging purposes. By default, this variable is set to `false` to ensure PII is not logged
   in production environments.
-- [#3966](https://github.com/rasahq/rasa-private/issues/3966): Fix Kafka producer creation failing when SASL mechanism is specified in lowercase. 
+- [#3966](https://github.com/rasahq/rasa-private/issues/3966): Fix Kafka producer creation failing when SASL mechanism is specified in lowercase.
   The SASL mechanism is now case-insensitive in the Kafka producer configuration.
 
 
