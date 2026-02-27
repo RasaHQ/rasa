@@ -955,6 +955,11 @@ def create_app(
                     conversation_id, processor, app.ctx.agent.domain, events
                 )
 
+                # Always handle session timer events (e.g. cancel timer on
+                # SessionEnded) regardless of whether execute_side_effects is
+                # requested.
+                await processor._handle_session_timer_events(events, tracker)
+
                 output_channel = _get_output_channel(request, tracker)
 
                 if rasa.utils.endpoints.bool_arg(

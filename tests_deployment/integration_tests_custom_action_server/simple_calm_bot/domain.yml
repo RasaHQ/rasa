@@ -2,6 +2,8 @@ version: "3.1"
 
 actions:
   - action_list_contacts
+  - action_list_reminders
+  - action_end_session
 
 slots:
   transfer_money_recipient:

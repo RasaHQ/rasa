@@ -2072,6 +2072,19 @@ def test_session_id_concurrent_session_operations():
     assert len(set(results)) == 10
 
 
+@pytest.mark.parametrize("event", [ConversationInactive(), SessionEnded()])
+def test_termination_event_gets_current_session_id_stamped(event: Event):
+    """ConversationInactive and SessionEnded are stamped with the current session_id."""
+    tracker = DialogueStateTracker("test", [])
+    tracker.update(SessionStarted())
+    tracker.update(ActionExecuted(action_name="action_listen"))
+    tracker.update(event)
+
+    session_id = tracker.current_session_id
+    assert event.metadata[METADATA_SESSION_ID] == session_id
+    assert all(e.metadata[METADATA_SESSION_ID] == session_id for e in tracker.events)
+
+
 def test_update_stack_event_applies():
     patch = (
         '[{"op": "add", "path": "/0", "value": '

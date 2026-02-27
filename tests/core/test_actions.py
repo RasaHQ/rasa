@@ -3,7 +3,7 @@ import textwrap
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Text
-from unittest.mock import MagicMock, Mock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import aiohttp
 import freezegun
@@ -36,6 +36,7 @@ from rasa.core.actions.action import (
     default_actions,
 )
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
+from rasa.core.actions.action_hangup import ActionHangup
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.constants import (
@@ -104,6 +105,7 @@ from rasa.shared.core.events import (
     ReminderScheduled,
     Restarted,
     RoutingSessionEnded,
+    SessionEnded,
     SessionStarted,
     SlotSet,
     StoryExported,
@@ -1329,6 +1331,19 @@ async def test_applied_events_after_action_session_start(
     )
 
     assert applied == expected_applied
+
+
+async def test_action_hangup_returns_session_ended_event(
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    domain: Domain,
+):
+    """ActionHangup.run() returns a single SessionEnded event with hangup reason."""
+    channel = AsyncMock()
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+
+    events = await ActionHangup().run(channel, template_nlg, tracker, domain)
+
+    assert events == [SessionEnded(metadata={"_reason": "hangup"})]
 
 
 async def test_action_default_fallback(

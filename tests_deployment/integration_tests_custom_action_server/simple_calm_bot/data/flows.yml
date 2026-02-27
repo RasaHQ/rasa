@@ -14,3 +14,10 @@ flows:
     name: list contacts
     steps:
       - action: action_list_contacts
+
+  list_reminders:
+    description: This flow lists the user's reminders.
+    name: list reminders
+    steps:
+      - action: action_list_reminders
+      - action: action_end_session

@@ -5,8 +5,10 @@ import pytest
 import structlog
 from pytest import CaptureFixture, MonkeyPatch
 
+from rasa.core.actions.action import RemoteAction
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.dialogue_understanding.commands import (
     CorrectedSlot,
@@ -1070,3 +1072,44 @@ async def test_session_id_replay_does_not_inject_into_old_events(
     for i in range(4, 7):
         assert events[i].metadata[METADATA_SESSION_ID] == new_session_id
     assert retrieved.current_session_id == new_session_id
+
+
+async def test_custom_action_returning_session_ended_cancels_timer(
+    default_agent: Agent,
+):
+    """Custom action returning SessionEnded cancels the inactivity timer.
+
+    Verifies the full pipeline:
+    _run_action → execute_side_effects → _handle_session_timer_events → cancel_timer.
+    """
+    processor = default_agent.processor
+    channel = CollectingOutputChannel()
+
+    action_endpoint = EndpointConfig(
+        actions_module=(
+            "tests_deployment.integration_tests_custom_action_server"
+            ".simple_calm_bot.actions.action_end_session"
+        )
+    )
+    remote_action = RemoteAction("action_end_session", action_endpoint)
+
+    tracker = await processor.tracker_store.get_or_create_tracker(DEFAULT_SENDER_ID)
+    await processor.timer_manager.schedule_timer(
+        sender_id=DEFAULT_SENDER_ID,
+        session_id=tracker.current_session_id,
+        timeout_seconds=300.0,
+        callback=processor.handle_session_timeout,
+    )
+    assert await processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is not None
+
+    prediction = PolicyPrediction(probabilities=[], policy_name="some_policy")
+    await processor._run_action(
+        action=remote_action,
+        tracker=tracker,
+        output_channel=channel,
+        nlg=processor.nlg,
+        prediction=prediction,
+    )
+
+    assert tracker.terminated is True
+    assert await processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is None

@@ -2454,6 +2454,42 @@ async def test_update_conversation_with_events_ignores_terminated_tracker(
     )
 
 
+@pytest.mark.parametrize(
+    "query_string",
+    ["", "?execute_side_effects=true"],
+)
+async def test_append_session_ended_cancels_timer(
+    rasa_app: SanicASGITestClient,
+    query_string: str,
+):
+    """Appending SessionEnded via the API cancels any active session timer.
+
+    The timer must be cancelled unconditionally regardless of whether
+    execute_side_effects is passed, so that timer store resources are freed
+    immediately upon session termination.
+    """
+    conversation_id = uuid.uuid4().hex
+    agent = rasa_app.sanic_app.ctx.agent
+    timer_manager = agent.processor.timer_manager
+
+    # Schedule a timer to simulate an active session
+    await timer_manager.schedule_timer(
+        sender_id=conversation_id,
+        session_id="test-session-id",
+        timeout_seconds=300.0,
+        callback=AsyncMock(),
+    )
+    assert await timer_manager.get_timer(conversation_id) is not None
+
+    _, response = await rasa_app.post(
+        f"/conversations/{conversation_id}/tracker/events{query_string}",
+        json=[{"event": "session_ended"}],
+    )
+
+    assert response.status == HTTPStatus.OK
+    assert await timer_manager.get_timer(conversation_id) is None
+
+
 async def test_append_events_does_not_repeat_session_start(
     rasa_app: SanicASGITestClient,
     mock_session_id: str,

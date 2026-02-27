@@ -33,6 +33,7 @@ from rasa.core.actions.action import (
     RemoteAction,
 )
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
+from rasa.core.actions.action_hangup import ActionHangup
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
@@ -3978,3 +3979,100 @@ async def test_timer_not_scheduled_when_sessions_disabled(
 
     # Verify no timer was scheduled
     assert await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is None
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_session_timer_cancelled_via_hangup_action_pipeline(
+    default_processor: MessageProcessor,
+):
+    """Timer is cancelled when ActionHangup.run() produces a SessionEnded event."""
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+
+    await default_processor.timer_manager.schedule_timer(
+        sender_id=DEFAULT_SENDER_ID,
+        session_id=tracker.current_session_id,
+        timeout_seconds=300.0,
+        callback=default_processor.handle_session_timeout,
+    )
+    assert (
+        await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is not None
+    )
+
+    channel = AsyncMock()
+    events = await ActionHangup().run(
+        channel, default_processor.nlg, tracker, default_processor.domain
+    )
+    await default_processor._handle_session_timer_events(events, tracker)
+
+    assert await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is None
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_multiple_session_ended_events_are_idempotent(
+    default_processor: MessageProcessor,
+):
+    """Processing SessionEnded twice does not raise and timer stays cancelled.
+
+    Verifies that cancel_timer is safe to call when no timer exists (returns False
+    without error), so double-termination (e.g. API append after action hangup) is
+    safe.
+    """
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+    events = [SessionEnded()]
+
+    # First call: no timer scheduled; cancel_timer is a no-op
+    await default_processor._handle_session_timer_events(events, tracker)
+    assert await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is None
+
+    # Second call: must not raise even though timer was already absent
+    await default_processor._handle_session_timer_events(events, tracker)
+    assert await default_processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is None
+
+
+@pytest.mark.timeout(180, func_only=True)
+async def test_race_condition_timer_fires_during_termination(
+    default_processor: MessageProcessor,
+):
+    """Timer callback is a no-op when session is terminated concurrently.
+
+    Schedules a short timer and concurrently applies SessionEnded (simulating a
+    hangup or API termination). Regardless of which completes first, the final
+    state must be: session terminated and no ConversationInactive event added.
+    """
+    tracker = await default_processor.tracker_store.get_or_create_tracker(
+        DEFAULT_SENDER_ID
+    )
+    tracker.update(UserUttered("hello"), default_processor.domain)
+    await default_processor.tracker_store.save(tracker)
+    session_id = tracker.current_session_id
+
+    await default_processor.timer_manager.schedule_timer(
+        sender_id=DEFAULT_SENDER_ID,
+        session_id=session_id,
+        timeout_seconds=0.05,
+        callback=default_processor.handle_session_timeout,
+    )
+
+    async def terminate_session() -> None:
+        # Small delay so termination races the timer callback
+        await asyncio.sleep(0.02)
+        t = await default_processor.tracker_store.get_or_create_tracker(
+            DEFAULT_SENDER_ID
+        )
+        t.update(SessionEnded(), default_processor.domain)
+        await default_processor.tracker_store.save(t)
+        await default_processor.timer_manager.cancel_timer(DEFAULT_SENDER_ID)
+
+    await asyncio.gather(
+        asyncio.sleep(0.15),  # Wait long enough for both tasks to complete
+        terminate_session(),
+    )
+
+    updated = await default_processor.tracker_store.retrieve(DEFAULT_SENDER_ID)
+    assert updated.terminated is True
+    inactive_events = [e for e in updated.events if isinstance(e, ConversationInactive)]
+    assert len(inactive_events) == 0
