@@ -21,4 +21,4 @@ async def test_synthesis_with_asr(format):
     text = "hello my name is Edgar"
     asr_engine = DeepgramASR(rasa_language="en", format=format)
 
-    await run_single_utterance_through_tts_and_asr(text, asr_engine, tts_engine)
+    await run_single_utterance_through_tts_and_asr(text, asr_engine, tts_engine, format)

@@ -5,7 +5,11 @@ from typing import Dict, Optional, Type, TypeVar
 
 import structlog
 
-from rasa.core.channels.voice_stream.audio_bytes import MULAW_8KHZ, RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import (
+    MULAW_8KHZ,
+    AudioFormat,
+    RasaAudioBytes,
+)
 from rasa.shared.exceptions import RasaException
 
 structlogger = structlog.get_logger()
@@ -31,9 +35,11 @@ def read_wav_to_rasa_audio_bytes(file_name: str) -> Optional[RasaAudioBytes]:
     return RasaAudioBytes(wave_data, format=MULAW_8KHZ)
 
 
-def generate_silence(length_in_seconds: float = 1.0) -> RasaAudioBytes:
+def generate_silence(
+    format: AudioFormat, length_in_seconds: float = 1.0
+) -> RasaAudioBytes:
     return RasaAudioBytes(
-        b"\00" * int(length_in_seconds * MULAW_8KHZ.sample_rate), format=MULAW_8KHZ
+        b"\00" * int(length_in_seconds * format.sample_rate), format=format
     )
 
 

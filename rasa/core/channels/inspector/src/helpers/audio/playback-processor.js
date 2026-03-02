@@ -5,7 +5,11 @@ class PlaybackProcessor extends AudioWorkletProcessor {
 
     // Set up message handling from the main thread
     this.port.onmessage = (event) => {
-      this.audioBuffer = event.data
+      const newData = event.data
+      const newBuffer = new Float32Array(this.audioBuffer.length + newData.length)
+      newBuffer.set(this.audioBuffer, 0)
+      newBuffer.set(newData, this.audioBuffer.length)
+      this.audioBuffer = newBuffer
     }
 
     // Request initial audio data

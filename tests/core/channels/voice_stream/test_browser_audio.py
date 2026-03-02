@@ -5,7 +5,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from rasa.core.channels.voice_ready.utils import CallParameters
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import (
+    L16_24KHZ,
+    L16_48KHZ,
+    MULAW_8KHZ,
+    RasaAudioBytes,
+)
 from rasa.core.channels.voice_stream.browser_audio import (
     BrowserAudioInputChannel,
     BrowserAudioOutputChannel,
@@ -42,14 +47,34 @@ def mock_websocket():
 
 @pytest.fixture
 def sample_audio_bytes():
-    # 1 second of silence, 32-bit (4 bytes/sample), 8kHz
-    return bytes([0x00] * 32000)
+    # 1 second of silence, 16-bit (2 bytes/sample)
+    return bytes([0x00] * 16000)
 
 
-def test_channel_bytes_to_rasa_audio_bytes(input_channel, sample_audio_bytes):
+def test_channel_bytes_to_rasa_audio_bytes_mulaw_8khz(
+    input_channel, sample_audio_bytes
+):
+    input_channel.audio_format = MULAW_8KHZ
     rasa_audio = input_channel.channel_bytes_to_rasa_audio_bytes(sample_audio_bytes)
     assert isinstance(rasa_audio, RasaAudioBytes)
-    assert len(rasa_audio) == len(sample_audio_bytes) // 4
+    # Mulaw 8kHz should result in half the number of samples when converted to L16
+    assert len(rasa_audio) == len(sample_audio_bytes) // 2
+
+
+def test_channel_bytes_to_rasa_audio_bytes_l16_24khz(input_channel, sample_audio_bytes):
+    input_channel.audio_format = L16_24KHZ
+    rasa_audio = input_channel.channel_bytes_to_rasa_audio_bytes(sample_audio_bytes)
+    assert isinstance(rasa_audio, RasaAudioBytes)
+    # L16 24kHz should have the same number of bytes as the input
+    assert len(rasa_audio) == len(sample_audio_bytes)
+
+
+def test_channel_bytes_to_rasa_audio_bytes_l16_48khz(input_channel, sample_audio_bytes):
+    input_channel.audio_format = L16_48KHZ
+    rasa_audio = input_channel.channel_bytes_to_rasa_audio_bytes(sample_audio_bytes)
+    assert isinstance(rasa_audio, RasaAudioBytes)
+    # L16 48kHz should have the same number of bytes as the input
+    assert len(rasa_audio) == len(sample_audio_bytes)
 
 
 def test_rasa_audio_bytes_to_channel_bytes(

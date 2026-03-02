@@ -372,7 +372,7 @@ class VoiceOutputChannel(OutputChannel):
         except TTSError as e:
             logger.error("voice_channel.tts_synthesis_error", error=str(e))
             # TODO: add message that works without tts, e.g. loading from disc
-            audio_stream = self.chunk_audio(generate_silence())
+            audio_stream = self.chunk_audio(generate_silence(self.audio_format))
 
         collected_audio = await self._stream_audio_to_channel(
             recipient_id, audio_stream
@@ -433,6 +433,12 @@ class VoiceOutputChannel(OutputChannel):
             except WebsocketClosed:
                 # ignore sending error
                 call_state.connection_failed = True
+
+        # # Debug: save TTS audio to WAV file
+        # from ..<path>.audio_debugging import _save_rasa_bytes_to_wav
+        # if len(collected_audio) > 0:
+        #
+        #     _save_rasa_bytes_to_wav(collected_audio, "tts_debug_audio")
 
         return collected_audio
 

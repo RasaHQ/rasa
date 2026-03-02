@@ -52,7 +52,7 @@ env:
   RASA_PRO_HELM_REPO: oci://europe-west3-docker.pkg.dev/rasa-releases/helm-charts/rasa
   RASA_PRO_HELM_VERSION: 1.2.0
   DEFAULT_PYTHON_VERSION: "3.10"
-  NODE_VERSION_INSPECTOR_BUILD: 20
+  NODE_VERSION_INSPECTOR_BUILD: 24
   SONAR_ORGANIZATION: rasahq
   SONAR_PROJECT_KEY: RasaHQ_rasa-private
   TEMPLATES: "telco finance basic"

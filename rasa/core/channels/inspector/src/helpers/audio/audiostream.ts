@@ -1,11 +1,20 @@
 const bufferSize = 128
-const sampleRate = 8000
 const audioOptions = {
   audio: {
     echoCancellation: true,
     noiseSuppression: true,
     autoGainControl: true,
   },
+}
+const waitForHandshake = (socket: WebSocket): Promise<number> => {
+  return new Promise((resolve) => {
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      if (data.type === 'handshake') {
+        resolve(data.sample_rate)
+      }
+    }
+  })
 }
 
 const arrayBufferToBase64 = (buffer: ArrayBufferLike): string => {
@@ -28,13 +37,18 @@ const base64ToArrayBuffer = (s: string): ArrayBuffer => {
   return bytes.buffer
 }
 
-const floatToIntArray = (arr: Float32Array): Int32Array => {
+const floatToIntArray = (arr: Float32Array): Int16Array => {
   // Convert Float Array [-1, 1] to full range int array
-  return Int32Array.from(arr, (x) => x * 0x7fffffff)
+  // Full range of Int16 is -0x8000 to 0x7fff
+  // so we multiply by 0x7fff to scale the float to the int range
+  return Int16Array.from(arr, (x) => x * 0x7fff)
 }
 
-const intToFloatArray = (arr: Int32Array): Float32Array => {
-  return Float32Array.from(arr, (x) => x / 0x7fffffff)
+const intToFloatArray = (arr: Int16Array): Float32Array => {
+  // Convert full range int array to Float Array [-1, 1]
+  // Full range of Int16 is -0x8000 to 0x7fff
+  // so we divide by 0x7fff to scale the int to the float range
+  return Float32Array.from(arr, (x) => x / 0x7fff)
 }
 
 interface Mark {
@@ -120,7 +134,8 @@ const createAudioQueue = (socket: WebSocket): AudioQueue => {
   }
 }
 
-const streamMicrophoneToServer = async (socket: WebSocket) => {
+const streamMicrophoneToServer = async (socket: WebSocket, sampleRate: number) => {
+  console.log("Setting up microphone stream with sample rate:", sampleRate)
   const audioContext = new AudioContext({ sampleRate })
 
   try {
@@ -149,8 +164,9 @@ const streamMicrophoneToServer = async (socket: WebSocket) => {
   }
 }
 
-const setupAudioPlayback = async (socket: WebSocket): Promise<AudioQueue> => {
+const setupAudioPlayback = async (socket: WebSocket, sampleRate: number): Promise<AudioQueue> => {
   const audioQueue = createAudioQueue(socket)
+  console.log("Setting up audio playback with sample rate:", sampleRate)
   const audioOutputContext = new AudioContext({ sampleRate })
 
   // Resume the audio context (browsers often start it in suspended state)
@@ -205,8 +221,7 @@ const addDataToAudioQueue =
       }
       if (data['audio']) {
         const audioBytes = base64ToArrayBuffer(data['audio'])
-        const int32Data = new Int32Array(audioBytes)
-        const audioData = intToFloatArray(int32Data)
+        const audioData = intToFloatArray(new Int16Array(audioBytes))
         audioQueue.write(audioData)
       } else if (data['marker']) {
         if (data['latency'] && onLatencyUpdate) {
@@ -258,10 +273,11 @@ export async function createAudioConnection(
   const websocketURL = getWebSocketUrl(baseUrl)
   const socket = new WebSocket(websocketURL)
 
-  socket.onopen = async () => {
-    await streamMicrophoneToServer(socket)
-  }
+  // Wait for handshake, reply with preferred sample rate, then set up audio
+  // Audio Format: Linear PCM, 16-bit, Mono, with the sample rate determined by the handshake
+  const sampleRate = await waitForHandshake(socket)
 
-  const audioQueue = await setupAudioPlayback(socket)
+  await streamMicrophoneToServer(socket, sampleRate)
+  const audioQueue = await setupAudioPlayback(socket, sampleRate)
   socket.onmessage = addDataToAudioQueue(audioQueue, onLatencyUpdate)
 }
