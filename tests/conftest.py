@@ -111,7 +111,11 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
-from rasa.shared.nlu.constants import METADATA_MODEL_ID, METADATA_SESSION_ID
+from rasa.shared.nlu.constants import (
+    METADATA_MODEL_ID,
+    METADATA_MODEL_NAME,
+    METADATA_SESSION_ID,
+)
 from rasa.shared.providers.embedding._base_litellm_embedding_client import (
     _BaseLiteLLMEmbeddingClient,
 )
@@ -1245,6 +1249,16 @@ def with_model_id(event: Event, model_id: Text) -> Event:
     new_event = copy.deepcopy(event)
     new_event.metadata[METADATA_MODEL_ID] = model_id
     return new_event
+
+
+def with_model_name(event: Event, model_name: Text) -> Event:
+    new_event = copy.deepcopy(event)
+    new_event.metadata[METADATA_MODEL_NAME] = model_name
+    return new_event
+
+
+def with_model_names(events: List[Event], model_name: Text) -> List[Event]:
+    return [with_model_name(event, model_name) for event in events]
 
 
 def with_assistant_id(event: Event, assistant_id: Text) -> Event:

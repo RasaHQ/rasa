@@ -136,6 +136,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_NAME_KEY,
     METADATA_MODEL_ID,
+    METADATA_MODEL_NAME,
     METADATA_SESSION_ID,
 )
 from rasa.shared.nlu.training_data.message import Message
@@ -145,6 +146,7 @@ from tests.conftest import (
     TrainedAsync,
     with_assistant_ids,
     with_model_ids,
+    with_model_names,
     with_session_id,
     with_session_ids,
 )
@@ -908,6 +910,7 @@ async def test_update_tracker_session_with_metadata(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
     model_id = default_processor.model_metadata.model_id
+    model_name = default_processor.model_filename
     assistant_id = default_processor.model_metadata.assistant_id
     sender_id = uuid.uuid4().hex
     message_metadata = {"metadataTestKey": "metadataTestValue"}
@@ -934,13 +937,17 @@ async def test_update_tracker_session_with_metadata(
         ],
         model_id,
     )
-    with_assistant_expected = with_assistant_ids(with_model_ids_expected, assistant_id)
+    with_model_names_expected = with_model_names(with_model_ids_expected, model_name)
+    with_assistant_expected = with_assistant_ids(
+        with_model_names_expected, assistant_id
+    )
     final_expected = with_session_ids(with_assistant_expected, session_id)
 
     assert events[0:5] == final_expected[0:5]
     assert tracker.slots[SESSION_START_METADATA_SLOT].value == message_metadata
     assert events[2].metadata == {
         ASSISTANT_ID_KEY: assistant_id,
+        METADATA_MODEL_NAME: model_name,
         METADATA_MODEL_ID: model_id,
         METADATA_SESSION_ID: session_id,
     }
@@ -955,6 +962,7 @@ async def test_custom_action_session_start_with_metadata(
     domain = Domain.from_dict({KEY_ACTIONS: [ACTION_SESSION_START_NAME]})
     default_processor.domain = domain
     model_id = default_processor.model_metadata.model_id
+    model_name = default_processor.model_filename
     action_server_url = "http://some-url"
     default_processor.action_endpoint = EndpointConfig(action_server_url)
 
@@ -985,8 +993,9 @@ async def test_custom_action_session_start_with_metadata(
             "value": metadata,
             "metadata": {
                 "assistant_id": "placeholder_default",
-                "model_id": model_id,
-                "session_id": session_id,
+                METADATA_MODEL_NAME: model_name,
+                METADATA_MODEL_ID: model_id,
+                METADATA_SESSION_ID: session_id,
             },
             "filled_by": None,
             "anonymized_at": None,
@@ -1123,6 +1132,7 @@ async def test_fetch_tracker_and_update_session(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     model_id = default_processor.model_metadata.model_id
+    model_name = default_processor.model_filename
     assistant_id = default_processor.model_metadata.assistant_id
     sender_id = uuid.uuid4().hex
     tracker = await default_processor.fetch_tracker_and_update_session(
@@ -1133,13 +1143,16 @@ async def test_fetch_tracker_and_update_session(
     # ensure session start sequence is present
     assert list(tracker.events) == with_session_ids(
         with_assistant_ids(
-            with_model_ids(
-                [
-                    ActionExecuted(ACTION_SESSION_START_NAME),
-                    SessionStarted(),
-                    ActionExecuted(ACTION_LISTEN_NAME),
-                ],
-                model_id,
+            with_model_names(
+                with_model_ids(
+                    [
+                        ActionExecuted(ACTION_SESSION_START_NAME),
+                        SessionStarted(),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                    model_id,
+                ),
+                model_name,
             ),
             assistant_id,
         ),
@@ -1242,6 +1255,7 @@ async def test_handle_message_with_session_start_expiry_starts_new_session(
 ):
     sender_id = uuid.uuid4().hex
     model_id = default_processor.model_metadata.model_id
+    model_name = default_processor.model_filename
     assistant_id = default_processor.model_metadata.assistant_id
 
     entity = "name"
@@ -1346,8 +1360,9 @@ async def test_handle_message_with_session_start_expiry_starts_new_session(
 
     assert session_id_1 != session_id_2
 
-    # Apply assistant_ids to all events
-    with_assistant = with_assistant_ids(with_model_ids_expected, assistant_id)
+    # Apply model_names and assistant_ids to all events
+    with_model_names_expected = with_model_names(with_model_ids_expected, model_name)
+    with_assistant = with_assistant_ids(with_model_names_expected, assistant_id)
 
     # Apply session_ids separately for each session
     # First session: events 0-8, Second session: events 9 onwards
@@ -1364,6 +1379,7 @@ async def test_handle_message_with_session_start_expiry_continues_same_session(
 ):
     sender_id = uuid.uuid4().hex
     model_id = default_processor.model_metadata.model_id
+    model_name = default_processor.model_filename
     assistant_id = default_processor.model_metadata.assistant_id
 
     entity = "name"
@@ -1459,7 +1475,10 @@ async def test_handle_message_with_session_start_expiry_continues_same_session(
     )
     session_id = tracker.current_session_id
     expected = with_session_ids(
-        with_assistant_ids(with_model_ids_expected, assistant_id=assistant_id),
+        with_assistant_ids(
+            with_model_names(with_model_ids_expected, model_name),
+            assistant_id=assistant_id,
+        ),
         session_id,
     )
     assert list(tracker.events) == expected
@@ -1568,6 +1587,7 @@ async def test_restart_triggers_session_start(
 ):
     sender_id = uuid.uuid4().hex
     model_id = default_processor.model_metadata.model_id
+    model_name = default_processor.model_filename
     assistant_id = default_processor.model_metadata.assistant_id
 
     entity = "name"
@@ -1624,7 +1644,10 @@ async def test_restart_triggers_session_start(
     )
     session_id = tracker.current_session_id
     expected = with_session_ids(
-        with_assistant_ids(with_model_ids_expected, assistant_id), session_id
+        with_assistant_ids(
+            with_model_names(with_model_ids_expected, model_name), assistant_id
+        ),
+        session_id,
     )
     for actual, expected in zip(tracker.events, expected):
         assert actual == expected
@@ -1660,6 +1683,7 @@ async def test_policy_events_are_applied_to_tracker(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
     model_id = default_processor.model_metadata.model_id
+    model_name = default_processor.model_filename
     assistant_id = default_processor.model_metadata.assistant_id
     expected_action = ACTION_LISTEN_NAME
     policy_events = [LoopInterrupted(True)]
@@ -1676,7 +1700,10 @@ async def test_policy_events_are_applied_to_tracker(
         ],
         model_id,
     )
-    expected_events = with_assistant_ids(with_model_ids_expected_events, assistant_id)
+    expected_events = with_assistant_ids(
+        with_model_names(with_model_ids_expected_events, model_name),
+        assistant_id,
+    )
 
     def combine_predictions(
         self,
@@ -1731,7 +1758,11 @@ async def test_policy_events_are_applied_to_tracker(
 
     # The action was logged on the tracker as well
     expected_events = with_session_ids(
-        with_assistant_ids(with_model_ids_expected_events, assistant_id), session_id
+        with_assistant_ids(
+            with_model_names(with_model_ids_expected_events, model_name),
+            assistant_id,
+        ),
+        session_id,
     )
 
     for event, expected in zip(tracker.events, expected_events):
@@ -1752,6 +1783,7 @@ async def test_policy_events_not_applied_if_rejected(
     reject_fn: Callable[[], List[Event]],
 ):
     model_id = default_processor.model_metadata.model_id
+    model_name = default_processor.model_filename
     assistant_id = default_processor.model_metadata.assistant_id
     expected_action = ACTION_LISTEN_NAME
     expected_events = [LoopInterrupted(True)]
@@ -1787,15 +1819,18 @@ async def test_policy_events_not_applied_if_rejected(
 
     tracker = await default_processor.get_tracker(conversation_id)
     session_id = tracker.current_session_id
-    events = with_model_ids(
-        [
-            ActionExecuted(ACTION_SESSION_START_NAME),
-            SessionStarted(),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(user_message, intent={"name": "greet"}),
-            ActionExecutionRejected(ACTION_LISTEN_NAME),
-        ],
-        model_id,
+    events = with_model_names(
+        with_model_ids(
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(user_message, intent={"name": "greet"}),
+                ActionExecutionRejected(ACTION_LISTEN_NAME),
+            ],
+            model_id,
+        ),
+        model_name,
     )
     expected_events = with_session_ids(
         with_assistant_ids(events, assistant_id), session_id
@@ -1808,6 +1843,7 @@ async def test_logging_of_end_to_end_action(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
     model_id = default_processor.model_metadata.model_id
+    model_name = default_processor.model_filename
     assistant_id = default_processor.model_metadata.assistant_id
     end_to_end_action = "hi, how are you?"
     new_domain = Domain(
@@ -1856,17 +1892,20 @@ async def test_logging_of_end_to_end_action(
 
     tracker = await default_processor.tracker_store.retrieve(conversation_id)
     session_id = tracker.current_session_id
-    events = with_model_ids(
-        [
-            ActionExecuted(ACTION_SESSION_START_NAME),
-            SessionStarted(),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(user_message, intent={"name": "greet"}),
-            ActionExecuted(action_text=end_to_end_action),
-            BotUttered("hi, how are you?", {}, {}, 123),
-            ActionExecuted(ACTION_LISTEN_NAME),
-        ],
-        model_id=model_id,
+    events = with_model_names(
+        with_model_ids(
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(user_message, intent={"name": "greet"}),
+                ActionExecuted(action_text=end_to_end_action),
+                BotUttered("hi, how are you?", {}, {}, 123),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+            model_id=model_id,
+        ),
+        model_name,
     )
     expected_events = with_session_ids(
         with_assistant_ids(events, assistant_id), session_id
@@ -2223,6 +2262,12 @@ async def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
     assert tracker.model_id == model_id
 
 
+async def test_get_tracker_adds_model_name(default_processor: MessageProcessor):
+    model_name = default_processor.model_filename
+    tracker = await default_processor.get_tracker("bloop")
+    assert tracker.model_name == model_name
+
+
 # FIXME: these tests take too long to run in the CI, disabling them for now
 @pytest.mark.skip_on_ci
 async def _test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
@@ -2244,6 +2289,26 @@ async def test_model_name_is_available(trained_rasa_model: Text):
     processor = Agent.load(model_path=trained_rasa_model).processor
     assert len(processor.model_filename) > 0
     assert "/" not in processor.model_filename
+
+
+async def test_custom_model_name_propagates_to_event_metadata(
+    trained_rasa_model: Text, tmp_path: Path
+):
+    custom_name = "v2.1-intent-fix.tar.gz"
+    renamed_model = tmp_path / custom_name
+    shutil.copy(trained_rasa_model, renamed_model)
+
+    processor = Agent.load(model_path=str(renamed_model)).processor
+    sender_id = uuid.uuid4().hex
+    await processor.handle_message(
+        UserMessage("hello", CollectingOutputChannel(), sender_id)
+    )
+
+    tracker = await processor.get_tracker(sender_id)
+    assert all(
+        event.metadata.get(METADATA_MODEL_NAME) == custom_name
+        for event in tracker.events
+    )
 
 
 async def test_loads_correct_model_from_path(

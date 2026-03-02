@@ -81,6 +81,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
     METADATA_MODEL_ID,
+    METADATA_MODEL_NAME,
     METADATA_SESSION_ID,
 )
 
@@ -294,8 +295,9 @@ class DialogueStateTracker:
         self._reset()
         self.active_loop: Optional[TrackerActiveLoop] = None
 
-        # Optional model_id to add to all events.
+        # Optional model_id and model_name to add to all events.
         self.model_id: Optional[Text] = None
+        self.model_name: Optional[Text] = None
         self.assistant_id: Optional[Text] = None
 
         # Optional user_id to add to the tracker.
@@ -981,6 +983,11 @@ class DialogueStateTracker:
         self._generate_session_id(event, is_replay)
         if self.model_id and METADATA_MODEL_ID not in event.metadata:
             event.metadata = {**event.metadata, METADATA_MODEL_ID: self.model_id}
+        if self.model_name and METADATA_MODEL_NAME not in event.metadata:
+            event.metadata = {
+                **event.metadata,
+                METADATA_MODEL_NAME: self.model_name,
+            }
 
         if self.assistant_id and ASSISTANT_ID_KEY not in event.metadata:
             event.metadata = {**event.metadata, ASSISTANT_ID_KEY: self.assistant_id}

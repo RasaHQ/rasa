@@ -40,6 +40,7 @@ from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import (
     with_assistant_ids,
     with_model_ids,
+    with_model_names,
     with_session_ids,
 )
 
@@ -253,38 +254,42 @@ async def test_agent_load_on_invalid_model_path(model_path: Optional[Text]):
 
 async def test_agent_handle_message_full_model(default_agent: Agent):
     model_id = default_agent.model_id
+    model_name = default_agent.processor.model_filename
     assistant_id = default_agent.processor.model_metadata.assistant_id
     sender_id = uuid.uuid4().hex
     message = UserMessage("hello", sender_id=sender_id)
     await default_agent.handle_message(message)
     tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
     session_id = tracker.current_session_id
-    events = with_model_ids(
-        [
-            ActionExecuted(action_name="action_session_start"),
-            SessionStarted(),
-            ActionExecuted(action_name="action_listen"),
-            UserUttered(text="hello", intent={"name": "greet"}),
-            DefinePrevUserUtteredFeaturization(False),
-            ActionExecuted(action_name="utter_greet"),
-            BotUttered(
-                "hey there None!",
-                {
-                    "elements": None,
-                    "quick_replies": None,
-                    "buttons": None,
-                    "attachment": None,
-                    "image": None,
-                    "custom": None,
-                },
-                {
-                    "utter_action": "utter_greet",
-                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
-                },
-            ),
-            ActionExecuted(action_name="action_listen"),
-        ],
-        model_id,
+    events = with_model_names(
+        with_model_ids(
+            [
+                ActionExecuted(action_name="action_session_start"),
+                SessionStarted(),
+                ActionExecuted(action_name="action_listen"),
+                UserUttered(text="hello", intent={"name": "greet"}),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted(action_name="utter_greet"),
+                BotUttered(
+                    "hey there None!",
+                    {
+                        "elements": None,
+                        "quick_replies": None,
+                        "buttons": None,
+                        "attachment": None,
+                        "image": None,
+                        "custom": None,
+                    },
+                    {
+                        "utter_action": "utter_greet",
+                        UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                    },
+                ),
+                ActionExecuted(action_name="action_listen"),
+            ],
+            model_id,
+        ),
+        model_name,
     )
     expected_events = with_session_ids(
         with_assistant_ids(events, assistant_id), session_id
@@ -297,20 +302,24 @@ async def test_agent_handle_message_full_model(default_agent: Agent):
 async def test_agent_handle_message_only_nlu(trained_nlu_model: Text):
     agent = await load_agent(model_path=trained_nlu_model)
     model_id = agent.model_id
+    model_name = agent.processor.model_filename
     assistant_id = agent.processor.model_metadata.assistant_id
     sender_id = uuid.uuid4().hex
     message = UserMessage("hello", sender_id=sender_id)
     await agent.handle_message(message)
     tracker = await agent.tracker_store.get_or_create_tracker(sender_id)
     session_id = tracker.current_session_id
-    events = with_model_ids(
-        [
-            ActionExecuted(action_name="action_session_start"),
-            SessionStarted(),
-            ActionExecuted(action_name="action_listen"),
-            UserUttered(text="hello", intent={"name": "greet"}),
-        ],
-        model_id,
+    events = with_model_names(
+        with_model_ids(
+            [
+                ActionExecuted(action_name="action_session_start"),
+                SessionStarted(),
+                ActionExecuted(action_name="action_listen"),
+                UserUttered(text="hello", intent={"name": "greet"}),
+            ],
+            model_id,
+        ),
+        model_name,
     )
     expected_events = with_session_ids(
         with_assistant_ids(events, assistant_id), session_id
@@ -323,38 +332,42 @@ async def test_agent_handle_message_only_nlu(trained_nlu_model: Text):
 async def test_agent_handle_message_only_core(trained_core_model: Text):
     agent = await load_agent(model_path=trained_core_model)
     model_id = agent.model_id
+    model_name = agent.processor.model_filename
     assistant_id = agent.processor.model_metadata.assistant_id
     sender_id = uuid.uuid4().hex
     message = UserMessage("/greet", sender_id=sender_id)
     await agent.handle_message(message)
     tracker = await agent.tracker_store.get_or_create_tracker(sender_id)
     session_id = tracker.current_session_id
-    events = with_model_ids(
-        [
-            ActionExecuted(action_name="action_session_start"),
-            SessionStarted(),
-            ActionExecuted(action_name="action_listen"),
-            UserUttered(text="/greet", intent={"name": "greet"}),
-            DefinePrevUserUtteredFeaturization(False),
-            ActionExecuted(action_name="utter_greet"),
-            BotUttered(
-                "hey there None!",
-                {
-                    "elements": None,
-                    "quick_replies": None,
-                    "buttons": None,
-                    "attachment": None,
-                    "image": None,
-                    "custom": None,
-                },
-                {
-                    "utter_action": "utter_greet",
-                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
-                },
-            ),
-            ActionExecuted(action_name="action_listen"),
-        ],
-        model_id,
+    events = with_model_names(
+        with_model_ids(
+            [
+                ActionExecuted(action_name="action_session_start"),
+                SessionStarted(),
+                ActionExecuted(action_name="action_listen"),
+                UserUttered(text="/greet", intent={"name": "greet"}),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted(action_name="utter_greet"),
+                BotUttered(
+                    "hey there None!",
+                    {
+                        "elements": None,
+                        "quick_replies": None,
+                        "buttons": None,
+                        "attachment": None,
+                        "image": None,
+                        "custom": None,
+                    },
+                    {
+                        "utter_action": "utter_greet",
+                        UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                    },
+                ),
+                ActionExecuted(action_name="action_listen"),
+            ],
+            model_id,
+        ),
+        model_name,
     )
     expected_events = with_session_ids(
         with_assistant_ids(events, assistant_id), session_id

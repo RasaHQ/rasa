@@ -493,6 +493,7 @@ class MessageProcessor:
             conversation_id, append_action_listen=False, user_id=user_id
         )
         tracker.model_id = self.model_metadata.model_id
+        tracker.model_name = self.model_filename
         if tracker.assistant_id is None:
             tracker.assistant_id = self.model_metadata.assistant_id
         if tracker.user_id is None and user_id is not None:
@@ -524,6 +525,7 @@ class MessageProcessor:
             conversation_id, False
         )
         tracker.model_id = self.model_metadata.model_id
+        tracker.model_name = self.model_filename
 
         if tracker.assistant_id is None:
             tracker.assistant_id = self.model_metadata.assistant_id
