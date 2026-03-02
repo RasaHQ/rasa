@@ -45,6 +45,7 @@ ALLOWED_KEYS = {
         "auth",
         "include_date_time",
         "timezone",
+        "enable_filler_messages",
     },
     "connections": {"mcp_servers"},
 }

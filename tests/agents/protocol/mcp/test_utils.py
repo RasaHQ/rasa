@@ -24,6 +24,7 @@ class MockMCPBaseAgentImpl(MCPBaseAgent):
         max_retries: Optional[int] = None,
         include_date_time: Optional[bool] = None,
         timezone: Optional[str] = None,
+        enable_filler_messages: Optional[bool] = None,
     ):
         super().__init__(
             name,
@@ -36,6 +37,7 @@ class MockMCPBaseAgentImpl(MCPBaseAgent):
             max_retries,
             include_date_time,
             timezone,
+            enable_filler_messages,
         )
 
     @classmethod

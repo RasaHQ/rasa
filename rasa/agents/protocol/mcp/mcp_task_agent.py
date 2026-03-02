@@ -56,6 +56,7 @@ class MCPTaskAgent(MCPBaseAgent):
         max_retries: Optional[int] = None,
         include_date_time: Optional[bool] = None,
         timezone: Optional[str] = None,
+        enable_filler_messages: Optional[bool] = None,
     ):
         super().__init__(
             name,
@@ -68,6 +69,7 @@ class MCPTaskAgent(MCPBaseAgent):
             max_retries,
             include_date_time,
             timezone,
+            enable_filler_messages,
         )
 
     @property
@@ -243,24 +245,61 @@ class MCPTaskAgent(MCPBaseAgent):
             and current_slot_values[slot_name] != initial_slot_values.get(slot_name)
         ]
 
+    def get_events_for_agent_output(
+        self,
+        agent_input: AgentInput,
+        initial_slot_values: Dict[str, Any],
+        current_slot_values: Dict[str, Any],
+        generated_events: List[Event],
+    ) -> List[Event]:
+        """Return the full event list to attach to an AgentOutput.
+
+        Combines SlotSet events for exit-condition slots that changed value
+        during the agent loop with any ``BotUttered`` (or other) events
+        accumulated in ``generated_events``.
+
+        Args:
+            agent_input: The original agent input for this turn.
+            initial_slot_values: Slot values at the start of the agent loop.
+            current_slot_values: Slot values after tool execution.
+            generated_events: Events accumulated during the agent loop
+                (e.g. BotUttered events for streamed content).
+
+        Returns:
+            A combined list of generated events followed by SlotSet events,
+            preserving the chronological order of events and cast to
+            ``List[Event]``.
+        """
+        slot_events = self._get_slot_set_events_for_changed_slots(
+            agent_input, initial_slot_values, current_slot_values
+        )
+        return cast(
+            List[Event],
+            generated_events + slot_events,
+        )
+
     def _generate_agent_task_completed_output(
         self,
         agent_input: AgentInput,
         slots: Dict[str, Any],
         tool_results: Dict[str, AgentToolResult],
+        additional_events: Optional[List[Event]] = None,
     ) -> AgentOutput:
         """Generate an agent task completed output."""
         _slot_names_to_be_filled = self._get_slot_names_from_exit_conditions(
             agent_input
         )
+        slot_events: List[Event] = [
+            SlotSet(slot_name, slot_value)
+            for slot_name, slot_value in slots.items()
+            if slot_name in _slot_names_to_be_filled
+        ]
+        # Combine additional events (like filler messages) with slot events
+        all_events = (additional_events or []) + slot_events
         return AgentOutput(
             id=agent_input.id,
             status=AgentStatus.COMPLETED,
-            events=[
-                SlotSet(slot_name, slot_value)
-                for slot_name, slot_value in slots.items()
-                if slot_name in _slot_names_to_be_filled
-            ],
+            events=all_events,
             structured_results=self._get_structured_results_for_agent_output(
                 agent_input, tool_results
             ),
@@ -280,6 +319,7 @@ class MCPTaskAgent(MCPBaseAgent):
         """Send a message to the LLM and return the response."""
         messages = self.build_messages_for_llm_request(agent_input)
         tool_results: Dict[str, AgentToolResult] = {}
+        generated_events: List[Event] = []
 
         _slot_values = {slot.name: slot.value for slot in agent_input.slots}
         _initial_slot_values = dict(_slot_values)
@@ -348,13 +388,11 @@ class MCPTaskAgent(MCPBaseAgent):
                         id=agent_input.id,
                         status=AgentStatus.INPUT_REQUIRED,
                         response_message=llm_response.choices[0],
-                        events=cast(
-                            List[Event],
-                            self._get_slot_set_events_for_changed_slots(
-                                agent_input,
-                                _initial_slot_values,
-                                _slot_values,
-                            ),
+                        events=self.get_events_for_agent_output(
+                            agent_input,
+                            _initial_slot_values,
+                            _slot_values,
+                            generated_events,
                         ),
                         structured_results=(
                             self._get_structured_results_for_agent_output(
@@ -362,6 +400,19 @@ class MCPTaskAgent(MCPBaseAgent):
                             )
                         ),
                     )
+
+                # Stream filler message before tool execution if enabled
+                if llm_response.tool_calls and self._enable_filler_messages:
+                    filler_message_text = self._extract_filler_message_from_response(
+                        llm_response
+                    )
+                    if filler_message_text:
+                        await self._send_filler_message(
+                            agent_input=agent_input,
+                            filler_message_text=filler_message_text,
+                            output_channel=output_channel,
+                            generated_events=generated_events,
+                        )
 
                 # If there are tool calls, process them.
                 if llm_response.tool_calls:
@@ -394,6 +445,12 @@ class MCPTaskAgent(MCPBaseAgent):
                             return AgentOutput(
                                 id=agent_input.id,
                                 status=AgentStatus.FATAL_ERROR,
+                                events=self.get_events_for_agent_output(
+                                    agent_input,
+                                    _initial_slot_values,
+                                    _slot_values,
+                                    generated_events,
+                                ),
                                 error_message=event_info,
                             )
 
@@ -424,6 +481,12 @@ class MCPTaskAgent(MCPBaseAgent):
                                 return AgentOutput(
                                     id=agent_input.id,
                                     status=AgentStatus.FATAL_ERROR,
+                                    events=self.get_events_for_agent_output(
+                                        agent_input,
+                                        _initial_slot_values,
+                                        _slot_values,
+                                        generated_events,
+                                    ),
                                     error_message=(
                                         f"The slot `{slot_name}` that the tool "
                                         f"`{tool_call.tool_name}` is trying to set "
@@ -506,6 +569,12 @@ class MCPTaskAgent(MCPBaseAgent):
                     id=agent_input.id,
                     status=AgentStatus.FATAL_ERROR,
                     response_message=f"I encountered an error: {e!s}",
+                    events=self.get_events_for_agent_output(
+                        agent_input,
+                        _initial_slot_values,
+                        _slot_values,
+                        generated_events,
+                    ),
                     structured_results=self._get_structured_results_for_agent_output(
                         agent_input, tool_results
                     ),
@@ -518,11 +587,8 @@ class MCPTaskAgent(MCPBaseAgent):
                 "I've completed my research but couldn't provide a final answer within"
                 "the allowed steps."
             ),
-            events=cast(
-                List[Event],
-                self._get_slot_set_events_for_changed_slots(
-                    agent_input, _initial_slot_values, _slot_values
-                ),
+            events=self.get_events_for_agent_output(
+                agent_input, _initial_slot_values, _slot_values, generated_events
             ),
             structured_results=self._get_structured_results_for_agent_output(
                 agent_input, tool_results
@@ -561,8 +627,13 @@ class MCPTaskAgent(MCPBaseAgent):
             )
 
         if exit_met:
+            additional_events = [
+                event
+                for event in (output.events or [])
+                if not isinstance(event, SlotSet)
+            ]
             completed_output = self._generate_agent_task_completed_output(
-                agent_input, slot_values, {}
+                agent_input, slot_values, {}, additional_events=additional_events
             )
             completed_output.structured_results = output.structured_results
             completed_output.response_message = None

@@ -11,6 +11,7 @@ from rasa.agents.constants import (
     AGENT_METADATA_AGENT_ID_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
     AGENT_METADATA_SENDER_ID_KEY,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE,
 )
 from rasa.agents.protocol.mcp.mcp_open_agent import MCPOpenAgent
 from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentToolResult
@@ -25,6 +26,7 @@ from rasa.shared.constants import (
     DEFAULT_TIMEZONE,
     OPENAI_API_KEY_ENV_VAR,
 )
+from rasa.shared.core.events import BotUttered
 from rasa.shared.exceptions import (
     LLMToolResponseDecodeError,
     ProviderClientAPIException,
@@ -324,6 +326,64 @@ class TestMCPOpenAgent:
             assert result.id == mock_agent_input.id
             assert result.status.name == "COMPLETED"
             assert result.response_message == "Task completed successfully"
+
+    @pytest.mark.asyncio
+    async def test_send_message_filler_message_in_agent_output_events(
+        self, mcp_open_agent, mock_agent_input
+    ):
+        """Agent output events include BotUttered for filler message before tools.
+
+        When send_message runs with an output_channel and the LLM returns
+        tool_calls with content (filler), the filler is sent and a BotUttered
+        event is appended to generated_events. The final AgentOutput.events
+        must include that filler event (e.g. when returning from task_completed).
+        """
+        mock_agent_input.recipient_id = "user_1"
+        mock_agent_input.metadata = {
+            AGENT_METADATA_AGENT_ID_KEY: "agent_1",
+            AGENT_METADATA_MODEL_ID_KEY: "gpt-4o",
+        }
+        mock_channel = MagicMock()
+        mock_channel.supports_streaming = False
+        mock_channel.send_text_message = AsyncMock()
+
+        filler_text = "Let me complete that for you."
+        mock_tool_call = LLMToolCall(
+            id="call_123",
+            type="function",
+            tool_name="task_completed",
+            tool_args={"message": "Task completed successfully"},
+        )
+        mock_llm_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=[filler_text],
+            tool_calls=[mock_tool_call],
+        )
+
+        with (
+            patch.object(mcp_open_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_open_agent, "get_available_tools") as mock_get_tools,
+        ):
+            mock_llm_client.acompletion = AsyncMock(return_value=mock_llm_response)
+            mock_tool = MagicMock()
+            mock_tool.name = "task_completed"
+            mock_get_tools.return_value = [mock_tool]
+
+            result = await mcp_open_agent.send_message(
+                mock_agent_input, output_channel=mock_channel
+            )
+
+        assert result.id == mock_agent_input.id
+        assert result.status.name == "COMPLETED"
+        assert result.events is not None
+        filler_events = [e for e in result.events if isinstance(e, BotUttered)]
+        assert len(filler_events) == 1
+        assert filler_events[0].text == filler_text
+        assert (
+            filler_events[0].metadata["message_type"]
+            == BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE
+        )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(

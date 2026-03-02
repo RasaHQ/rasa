@@ -249,6 +249,11 @@ class OutputChannel:
         self.tracker_state = tracker.current_state(EventVerbosity.AFTER_RESTART)
         self._tracker = tracker
 
+    @property
+    def supports_streaming(self) -> bool:
+        """Whether this channel supports streaming responses."""
+        return False
+
     async def send_response_chunk_start(
         self,
         recipient_id: Text,

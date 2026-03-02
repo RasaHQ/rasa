@@ -45,3 +45,10 @@ AGENT_METADATA_MODEL_ID_KEY = "model_id"
 # A2A-specific constants
 A2A_AGENT_CONTEXT_ID_KEY = "context_id"
 A2A_AGENT_TASK_ID_KEY = "task_id"
+
+# Streaming filler message configuration defaults
+AGENT_FILLER_MESSAGES_ENABLED_DEFAULT = True
+AGENT_FILLER_MESSAGE_STREAM_DEFAULT_CHUNK_SIZE = 5
+
+# Bot utterance metadata for filler messages
+BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE = "filler_message"

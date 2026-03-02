@@ -32,6 +32,7 @@ from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.constants import (
     ROLE_TOOL,
 )
+from rasa.shared.core.events import Event
 from rasa.shared.exceptions import (
     LLMToolResponseDecodeError,
     ProviderClientAPIException,
@@ -85,6 +86,7 @@ class MCPOpenAgent(MCPBaseAgent):
         max_retries: Optional[int] = None,
         include_date_time: Optional[bool] = None,
         timezone: Optional[str] = None,
+        enable_filler_messages: Optional[bool] = None,
     ):
         super().__init__(
             name,
@@ -97,6 +99,7 @@ class MCPOpenAgent(MCPBaseAgent):
             max_retries,
             include_date_time,
             timezone,
+            enable_filler_messages,
         )
 
     @property
@@ -124,6 +127,7 @@ class MCPOpenAgent(MCPBaseAgent):
         tool_call: LLMToolCall,
         agent_input: AgentInput,
         tool_results: Dict[str, AgentToolResult],
+        generated_events: Optional[List[Event]] = None,
     ) -> AgentOutput:
         """Run the task completed tool."""
         # Create the agent tool result for the task completed tool.
@@ -139,6 +143,7 @@ class MCPOpenAgent(MCPBaseAgent):
             id=agent_input.id,
             status=AgentStatus.COMPLETED,
             response_message=tool_result.result,
+            events=generated_events if generated_events else None,
             structured_results=self._get_structured_results_for_agent_output(
                 agent_input, tool_results
             ),
@@ -150,6 +155,7 @@ class MCPOpenAgent(MCPBaseAgent):
         """Send a message to the LLM and return the response."""
         messages = self.build_messages_for_llm_request(agent_input)
         tool_results: Dict[str, AgentToolResult] = {}
+        generated_events: List[Event] = []
         # Convert available tools to OpenAI JSON format
         tools_in_openai_format = [
             tool.to_litellm_json_format()
@@ -212,12 +218,26 @@ class MCPOpenAgent(MCPBaseAgent):
                         id=agent_input.id,
                         status=AgentStatus.INPUT_REQUIRED,
                         response_message=llm_response.choices[0],
+                        events=generated_events if generated_events else None,
                         structured_results=(
                             self._get_structured_results_for_agent_output(
                                 agent_input, tool_results
                             )
                         ),
                     )
+
+                # Stream filler message before tool execution if enabled
+                if llm_response.tool_calls and self._enable_filler_messages:
+                    filler_message_text = self._extract_filler_message_from_response(
+                        llm_response
+                    )
+                    if filler_message_text:
+                        await self._send_filler_message(
+                            agent_input=agent_input,
+                            filler_message_text=filler_message_text,
+                            output_channel=output_channel,
+                            generated_events=generated_events,
+                        )
 
                 # If there are tool calls, process them.
                 if llm_response.tool_calls:
@@ -241,7 +261,10 @@ class MCPOpenAgent(MCPBaseAgent):
                         # Agent signals task completion.
                         if tool_call.tool_name == KEY_TASK_COMPLETED:
                             return self._run_task_completed_tool(
-                                tool_call, agent_input, tool_results
+                                tool_call,
+                                agent_input,
+                                tool_results,
+                                generated_events,
                             )
 
                         else:
@@ -319,6 +342,7 @@ class MCPOpenAgent(MCPBaseAgent):
                     id=agent_input.id,
                     status=AgentStatus.FATAL_ERROR,
                     response_message=f"I encountered an error: {e!s}",
+                    events=generated_events if generated_events else None,
                     structured_results=self._get_structured_results_for_agent_output(
                         agent_input, tool_results
                     ),
@@ -331,6 +355,7 @@ class MCPOpenAgent(MCPBaseAgent):
                 "I've completed my research but couldn't provide a final answer within"
                 "the allowed steps."
             ),
+            events=generated_events if generated_events else None,
             structured_results=self._get_structured_results_for_agent_output(
                 agent_input, tool_results
             ),

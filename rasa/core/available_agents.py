@@ -70,6 +70,7 @@ class AgentConfiguration(BaseModel):
     auth: Optional[Dict[str, Any]] = None
     include_date_time: Optional[bool] = None
     timezone: Optional[str] = None
+    enable_filler_messages: Optional[bool] = None
 
 
 class AgentConnections(BaseModel):

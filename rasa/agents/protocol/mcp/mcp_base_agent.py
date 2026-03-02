@@ -12,12 +12,15 @@ from mcp import ListToolsResult
 from rasa.agents.constants import (
     AGENT_DEFAULT_MAX_RETRIES,
     AGENT_DEFAULT_TIMEOUT_SECONDS,
+    AGENT_FILLER_MESSAGE_STREAM_DEFAULT_CHUNK_SIZE,
+    AGENT_FILLER_MESSAGES_ENABLED_DEFAULT,
     AGENT_METADATA_AGENT_ID_KEY,
     AGENT_METADATA_AGENT_RESPONSE_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
     AGENT_METADATA_RESUMED_AFTER_INTERRUPTION,
     AGENT_METADATA_SENDER_ID_KEY,
     AGENT_METADATA_STRUCTURED_RESULTS_KEY,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE,
     KEY_ARGUMENTS,
     KEY_CONTENT,
     KEY_FUNCTION,
@@ -56,7 +59,7 @@ from rasa.shared.constants import (
     TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
-from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.core.events import BotUttered, Event, UserUttered
 from rasa.shared.exceptions import AgentInitializationException, AuthenticationError
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
 from rasa.shared.utils.constants import (
@@ -121,6 +124,7 @@ class MCPBaseAgent(AgentProtocol):
         max_retries: Optional[int] = None,
         include_date_time: Optional[bool] = None,
         timezone: Optional[str] = None,
+        enable_filler_messages: Optional[bool] = None,
     ):
         self._name = name
 
@@ -151,6 +155,12 @@ class MCPBaseAgent(AgentProtocol):
             else DEFAULT_INCLUDE_DATE_TIME
         )
         self._timezone = timezone or DEFAULT_TIMEZONE
+
+        self._enable_filler_messages = (
+            enable_filler_messages
+            if enable_filler_messages is not None
+            else AGENT_FILLER_MESSAGES_ENABLED_DEFAULT
+        )
 
         self._server_configs = server_configs or []
 
@@ -233,6 +243,9 @@ class MCPBaseAgent(AgentProtocol):
             else None,
             include_date_time=include_date_time,
             timezone=timezone,
+            enable_filler_messages=config.configuration.enable_filler_messages
+            if config.configuration
+            else None,
         )
 
     # ============================================================================
@@ -613,6 +626,7 @@ class MCPBaseAgent(AgentProtocol):
         return {
             **context_dict,
             "description": self._description,
+            "enable_filler_messages": self._enable_filler_messages,
         }
 
     def _get_current_datetime_for_prompt(self, context: AgentInput) -> datetime:
@@ -668,10 +682,14 @@ class MCPBaseAgent(AgentProtocol):
         # Reverse to restore chronological order (oldest first).
         utterance_events.reverse()
 
+        # Track the last user text seen while building messages so we can
+        # decide whether to append context.user_message without a second pass.
+        last_user_content: Optional[str] = None
         for event in utterance_events:
             if isinstance(event, UserUttered):
                 if not event.text:
                     continue
+                last_user_content = event.text
                 messages.append({KEY_ROLE: ROLE_USER, KEY_CONTENT: event.text})
             elif isinstance(event, BotUttered):
                 bot_response = serialize_bot_response_for_prompt(event)
@@ -679,8 +697,16 @@ class MCPBaseAgent(AgentProtocol):
                     continue
                 messages.append({KEY_ROLE: ROLE_ASSISTANT, KEY_CONTENT: bot_response})
 
-        if context.user_message != messages[-1][KEY_CONTENT]:
+        # Append context.user_message if it is not already the most recent
+        # user-role message built from events.
+        #
+        # Two cases require the append:
+        #   1. context.events is empty (first turn — no tracker history yet).
+        #   2. The turns limit cut off the window before reaching the current
+        #      UserUttered, so it was never added by the loop above.
+        if last_user_content != context.user_message:
             messages.append({KEY_ROLE: ROLE_USER, KEY_CONTENT: context.user_message})
+
         return messages
 
     def _get_assistant_message_with_tool_calls(
@@ -916,6 +942,175 @@ class MCPBaseAgent(AgentProtocol):
         previous_structured_results.append(structured_results_of_current_iteration)
 
         return previous_structured_results
+
+    # ============================================================================
+    # Streaming Filler Message Methods
+    # ============================================================================
+
+    async def _send_filler_message(
+        self,
+        agent_input: AgentInput,
+        filler_message_text: str,
+        output_channel: Optional[OutputChannel],
+        generated_events: List[Event],
+    ) -> None:
+        """Send a filler message to the user before tool execution.
+
+        This method sends a brief filler message to the user via the output channel
+        to reduce perceived latency while tools are being executed.
+
+        Args:
+            agent_input: The agent input containing user information.
+            filler_message_text: The filler message text to send.
+            output_channel: The output channel for sending messages.
+            generated_events: List of events to append BotUttered event to.
+        """
+        if not output_channel:
+            structlogger.debug(
+                "mcp_agent.send_filler_message.no_output_channel",
+                event_info="No output channel provided, skipping filler message",
+                agent_name=self._name,
+            )
+            return
+
+        if not filler_message_text or not filler_message_text.strip():
+            structlogger.debug(
+                "mcp_agent.send_filler_message.empty_message",
+                event_info="Empty filler message text, skipping",
+                agent_name=self._name,
+            )
+            return
+
+        recipient_id = self._get_recipient_id(agent_input)
+        if not recipient_id:
+            structlogger.debug(
+                "mcp_agent.send_filler_message.no_recipient_id",
+                event_info="No recipient ID found, skipping filler message",
+                agent_name=self._name,
+            )
+            return
+
+        try:
+            # Use streaming if the channel supports it, otherwise fall back
+            # to send_text_message for reliability.
+            if output_channel.supports_streaming:
+                await self._stream_filler_message_chunks(
+                    output_channel, recipient_id, filler_message_text
+                )
+            else:
+                await output_channel.send_text_message(
+                    recipient_id=recipient_id,
+                    text=filler_message_text,
+                )
+
+            # Create BotUttered event for the filler message
+            generated_events.append(
+                BotUttered(
+                    text=filler_message_text,
+                    metadata=self._create_filler_message_metadata(agent_input),
+                )
+            )
+
+            structlogger.debug(
+                "mcp_agent.send_filler_message.sent",
+                event_info="Filler message sent successfully",
+                agent_name=self._name,
+                recipient_id=recipient_id,
+                filler_message_text=filler_message_text,
+            )
+        except Exception as e:
+            structlogger.error(
+                "mcp_agent.send_filler_message.error",
+                event_info="Error sending filler message",
+                agent_name=self._name,
+                error=str(e),
+            )
+
+    async def _stream_filler_message_chunks(
+        self,
+        output_channel: OutputChannel,
+        recipient_id: str,
+        text: str,
+    ) -> None:
+        """Stream filler message text chunk by chunk.
+
+        Args:
+            output_channel: The output channel to stream to.
+            recipient_id: The recipient ID.
+            text: The text to stream.
+        """
+        await output_channel.send_response_chunk_start(recipient_id)
+
+        for i in range(0, len(text), AGENT_FILLER_MESSAGE_STREAM_DEFAULT_CHUNK_SIZE):
+            chunk = text[i : i + AGENT_FILLER_MESSAGE_STREAM_DEFAULT_CHUNK_SIZE]
+            await output_channel.send_response_chunk(
+                recipient_id=recipient_id,
+                chunk=chunk,
+            )
+
+        await output_channel.send_response_chunk_end(recipient_id, is_intermediate=True)
+
+    def _get_recipient_id(self, agent_input: AgentInput) -> Optional[str]:
+        """Extract recipient ID from agent input.
+
+        Args:
+            agent_input: The agent input.
+
+        Returns:
+            The recipient ID or None if not found.
+        """
+        # First try the recipient_id from the agent input
+        # If not found, try the sender_id from the metadata
+        # If not found, return None
+        return agent_input.recipient_id or agent_input.metadata.get(
+            AGENT_METADATA_SENDER_ID_KEY
+        )
+
+    def _create_filler_message_metadata(
+        self, agent_input: AgentInput
+    ) -> Dict[str, Any]:
+        """Create metadata for filler message BotUttered events.
+
+        Args:
+            agent_input: The agent input.
+
+        Returns:
+            Metadata dictionary for the BotUttered event.
+        """
+        return {
+            "utter_source": self.__class__.__name__,
+            "agent_name": self._name,
+            "message_type": BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE,
+            AGENT_METADATA_AGENT_ID_KEY: agent_input.metadata.get(
+                AGENT_METADATA_AGENT_ID_KEY
+            ),
+            AGENT_METADATA_MODEL_ID_KEY: agent_input.metadata.get(
+                AGENT_METADATA_MODEL_ID_KEY
+            ),
+        }
+
+    def _extract_filler_message_from_response(
+        self, llm_response: LLMResponse
+    ) -> Optional[str]:
+        """Extract filler message text from LLM response.
+
+        When the LLM returns both content and tool_calls, the content
+        is typically the filler message.
+
+        Args:
+            llm_response: The LLM response.
+
+        Returns:
+            The filler message text or None if not present.
+        """
+        if not llm_response.choices:
+            return None
+
+        content = llm_response.choices[0]
+        if content and content.strip():
+            return content.strip()
+
+        return None
 
     # ============================================================================
     # Core Protocol Methods
