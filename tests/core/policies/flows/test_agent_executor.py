@@ -40,7 +40,6 @@ from rasa.core.policies.flows.agent_executor import (
     _handle_agent_fatal_error,
     _handle_agent_input_required,
     _handle_agent_unknown_status,
-    _handle_resume_interrupted_agent,
     _prepare_agent_input,
     _prepare_slots_for_agent,
     _reset_slots_covered_by_exit_if,
@@ -231,6 +230,7 @@ async def test_run_agent_continue_interrupted_agent(
     monkeypatch: MonkeyPatch,
     mock_available_agents: MagicMock,
 ) -> None:
+    """When agent is INTERRUPTED, we reinvoke the agent with resume metadata."""
     flows = flows_from_str(
         """
         flows:
@@ -259,6 +259,13 @@ async def test_run_agent_continue_interrupted_agent(
     flow = flows.flow_by_id("my_flow")
     step = flow.step_by_id("my-call-step")
 
+    # Reinvoked agent returns INPUT_REQUIRED with the same (or new) message
+    mock_run_agent.return_value = AgentOutput(
+        id="car-research",
+        status=AgentStatus.INPUT_REQUIRED,
+        response_message=agent_message,
+    )
+
     flow_step_result = await run_agent(
         initial_events=[],
         stack=stack,
@@ -268,9 +275,19 @@ async def test_run_agent_continue_interrupted_agent(
         flows=flows,
     )
 
-    # Assertions
-    # we expect a PauseFlowReturnPrediction here because the agent was in interrupted
-    # state, and we need to re-request user input with the corresponding action
+    # Agent was reinvoked; AgentResumed in events (no AgentStarted when resuming)
+    assert any(
+        isinstance(e, AgentResumed) and e.agent_id == "car-research"
+        for e in flow_step_result.events
+    )
+    assert not any(isinstance(e, AgentStarted) for e in flow_step_result.events)
+    assert mock_run_agent.call_count == 1
+    # Verify that the agent was called with the correct resume metadata
+    context = mock_run_agent.call_args.kwargs["context"]
+    metadata = context.metadata
+    assert metadata.get("resumed_after_interruption") is True
+    assert metadata.get(AGENT_METADATA_AGENT_RESPONSE_KEY) == agent_message
+    # Agent returned INPUT_REQUIRED, so we pause for user input
     assert isinstance(flow_step_result, PauseFlowReturnPrediction)
     assert (
         flow_step_result.action_prediction.action_name
@@ -282,17 +299,8 @@ async def test_run_agent_continue_interrupted_agent(
         ]
         == agent_message
     )
-    # no actual calls to the agent expected
-    assert mock_run_agent.call_count == 0
-    # AgentStackFrame should be now in WAITING_FOR_INPUT state
     assert isinstance(stack.frames[-1], AgentStackFrame)
     assert cast(AgentStackFrame, stack.frames[-1]).state == AgentState.WAITING_FOR_INPUT
-    assert (
-        cast(AgentStackFrame, stack.frames[-1]).metadata[
-            AGENT_METADATA_AGENT_RESPONSE_KEY
-        ]
-        == agent_message
-    )
 
 
 @pytest.mark.asyncio
@@ -339,9 +347,11 @@ async def test_run_agent_started(
 @pytest.mark.asyncio
 @patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
 async def test_run_agent_resumed(
+    mock_run_agent: AsyncMock,
     monkeypatch: MonkeyPatch,
     mock_available_agents: MagicMock,
 ) -> None:
+    """Resuming an interrupted agent reinvokes it; AgentResumed is in events."""
     flows = flows_from_str(
         """
         flows:
@@ -355,7 +365,6 @@ async def test_run_agent_resumed(
     user_stack_frame = UserFlowStackFrame(
         flow_id="my_flow", step_id="START", frame_id="some-frame-id"
     )
-    # Add an AgentStackFrame simulating an interrupted agent
     agent_stack_frame = AgentStackFrame(
         flow_id="my_flow",
         agent_id="car-research",
@@ -367,6 +376,12 @@ async def test_run_agent_resumed(
     tracker.update_stack(stack)
     flow = flows.flow_by_id("my_flow")
     step = flow.step_by_id("my-call-step")
+
+    mock_run_agent.return_value = AgentOutput(
+        id="car-research",
+        status=AgentStatus.INPUT_REQUIRED,
+        response_message="Please provide more info",
+    )
 
     flow_step_result = await run_agent(
         initial_events=[],
@@ -381,6 +396,14 @@ async def test_run_agent_resumed(
         isinstance(e, AgentResumed) and e.agent_id == "car-research"
         for e in flow_step_result.events
     )
+    # AgentStarted is only emitted when starting the agent, not when resuming
+    assert not any(isinstance(e, AgentStarted) for e in flow_step_result.events)
+    assert mock_run_agent.call_count == 1
+
+    # Ensure the resumed agent is called with the expected resume metadata.
+    metadata = mock_run_agent.call_args.kwargs["context"].metadata
+    assert metadata.get("resumed_after_interruption") is True
+    assert metadata.get(AGENT_METADATA_AGENT_RESPONSE_KEY) == "Please provide more info"
     assert isinstance(stack.frames[-1], AgentStackFrame)
     assert isinstance(flow_step_result, PauseFlowReturnPrediction)
 
@@ -1740,48 +1763,6 @@ def test_update_agent_input_metadata_with_events() -> None:
 # ============================================================================
 # Tests for agent status handler functions
 # ============================================================================
-
-
-@pytest.mark.asyncio
-async def test_handle_resume_interrupted_agent() -> None:
-    """Test _handle_resume_interrupted_agent function."""
-    # Create mock objects
-    agent_stack_frame = AgentStackFrame(
-        frame_id="test_frame",
-        flow_id="test_flow",
-        agent_id="test_agent",
-        state=AgentState.INTERRUPTED,
-        metadata={AGENT_METADATA_AGENT_RESPONSE_KEY: "Please provide more info"},
-    )
-
-    final_events = []
-    stack = DialogueStack(frames=[agent_stack_frame])
-    step = CallFlowStep(
-        custom_id="test_call",
-        idx=0,
-        description="Test call step",
-        call="test_agent",
-        next=FlowStepLinks(links=[]),
-        flow_id="test_flow",
-        metadata={},
-    )
-    tracker = DialogueStateTracker.from_events("test", [])
-
-    result = _handle_resume_interrupted_agent(
-        agent_stack_frame, final_events, stack, step, tracker
-    )
-
-    # Verify the result
-    assert isinstance(result, PauseFlowReturnPrediction)
-    assert result.action_prediction.action_name == ACTION_AGENT_REQUEST_USER_INPUT_NAME
-    assert (
-        result.action_prediction.metadata[ACTION_METADATA_MESSAGE_KEY][
-            ACTION_METADATA_TEXT_KEY
-        ]
-        == "Please provide more info"
-    )
-    assert isinstance(stack.frames[-1], AgentStackFrame)
-    assert cast(AgentStackFrame, stack.frames[-1]).state == AgentState.WAITING_FOR_INPUT
 
 
 def test_handle_agent_input_required() -> None:

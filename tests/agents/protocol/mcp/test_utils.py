@@ -43,7 +43,9 @@ class MockMCPBaseAgentImpl(MCPBaseAgent):
         """Return a simple test template."""
         return (
             "Test template: {{user_message}}\nPrevious conversation: "
-            "{{conversation_history}}{% if current_datetime %}"
+            "{{conversation_history}}"
+            "{% if resumed_after_interruption %}\nResume: {{ resumed_last_request }}"
+            "{% endif %}{% if current_datetime %}"
             "- Current date: {{ current_datetime.strftime('%d %B, %Y') }}"
             "- Current time: {{ current_datetime.strftime('%H:%M:%S') }} "
             "({{ current_datetime.tzname() }})"

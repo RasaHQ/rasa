@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple
 
 import structlog
 
@@ -12,6 +12,7 @@ from rasa.agents.constants import (
     AGENT_METADATA_AGENT_RESPONSE_KEY,
     AGENT_METADATA_EXIT_IF_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_RESUMED_AFTER_INTERRUPTION,
     AGENT_METADATA_SENDER_ID_KEY,
     AGENT_METADATA_STRUCTURED_RESULTS_KEY,
     MAX_AGENT_RETRY_DELAY_SECONDS,
@@ -125,25 +126,39 @@ async def run_agent(
         and agent_stack_frame == stack.top()
         and agent_stack_frame.state == AgentState.INTERRUPTED
     ):
-        # if an agent is interrupted, repeat the last message from the
-        # agent and wait for user input
-        return _handle_resume_interrupted_agent(
-            agent_stack_frame, final_events, stack, step, tracker
+        # Reinvoke the agent with resume context; events are still submitted.
+        final_events.append(AgentResumed(agent_id=step.call, flow_id=step.flow_id))
+        agent_input = _prepare_agent_input(agent_stack_frame, step, tracker, slots)
+        last_request = (agent_stack_frame.metadata or {}).get(
+            AGENT_METADATA_AGENT_RESPONSE_KEY, ""
+        ) or ""
+        agent_input = agent_input.model_copy(
+            update={
+                "metadata": {
+                    **agent_input.metadata,
+                    AGENT_METADATA_RESUMED_AFTER_INTERRUPTION: True,
+                    AGENT_METADATA_AGENT_RESPONSE_KEY: last_request,
+                }
+            }
         )
+    else:
+        # Reset the slots covered by the exit_if
+        # Code smell: this is a temporary fix and will be addressed in ENG-2148
+        if (
+            step.exit_if
+            and agent_stack_frame
+            and agent_stack_frame.frame_id == f"restart_agent_{step.call}"
+        ):
+            # when restarting an agent, we need to reset the slots covered by the
+            # exit_if condition so that the agent can run again.
+            _reset_slots_covered_by_exit_if(step.exit_if, tracker)
 
-    # Reset the slots covered by the exit_if
-    # Code smell: this is a temporary fix and will be addressed in ENG-2148
-    if (
-        step.exit_if
-        and agent_stack_frame
-        and agent_stack_frame.frame_id == f"restart_agent_{step.call}"
-    ):
-        # when restarting an agent, we need to reset the slots covered by the
-        # exit_if condition so that the agent can run again.
-        _reset_slots_covered_by_exit_if(step.exit_if, tracker)
+        # generate the agent input
+        agent_input = _prepare_agent_input(agent_stack_frame, step, tracker, slots)
 
-    # generate the agent input
-    agent_input = _prepare_agent_input(agent_stack_frame, step, tracker, slots)
+        # add the AgentStarted event to the list of final events
+        final_events.append(AgentStarted(step.call, step.flow_id))
+
     structlogger.debug(
         "flow.step.run_agent.agent_input",
         agent_name=step.call,
@@ -152,9 +167,6 @@ async def run_agent(
         agent_input=agent_input.model_dump(),
         json_formatting=["agent_input"],
     )
-
-    # add the AgentStarted event to the list of final events
-    final_events.append(AgentStarted(step.call, step.flow_id))
 
     # send the input to the agent and wait for a response
     protocol_type = get_protocol_type(
@@ -273,54 +285,6 @@ async def _call_agent_with_retry(
         id=agent_name,
         status=AgentStatus.FATAL_ERROR,
         error_message="Exhausted all retries for agent call.",
-    )
-
-
-################################################################################
-# Handle resume interrupted agent
-################################################################################
-
-
-def _handle_resume_interrupted_agent(
-    agent_stack_frame: AgentStackFrame,
-    final_events: List[Event],
-    stack: DialogueStack,
-    step: CallFlowStep,
-    tracker: DialogueStateTracker,
-) -> FlowStepResult:
-    """Handle resuming an interrupted agent.
-
-    Args:
-        agent_stack_frame: The interrupted agent stack frame
-        final_events: List of events to be added to the final result
-        stack: The dialogue stack
-        step: The flow step that called the agent
-        tracker: The dialogue state tracker
-
-    Returns:
-        FlowStepResult indicating to pause for user input
-    """
-    structlogger.debug(
-        "flow.step.run_agent.resume_interrupted_agent",
-        agent_id=step.call,
-        step_id=step.id,
-        flow_id=step.flow_id,
-    )
-    # The agent was previously interrupted when waiting for user input.
-    # Now we're back to the agent execution step and need to output the last message
-    # from the agent (user input request) again and wait for user input
-    cast(AgentStackFrame, stack.top()).state = AgentState.WAITING_FOR_INPUT
-    tracker.update_stack(stack)
-    utterance = (
-        agent_stack_frame.metadata.get(AGENT_METADATA_AGENT_RESPONSE_KEY, "")
-        if agent_stack_frame.metadata
-        else ""
-    )
-    final_events.append(AgentResumed(agent_id=step.call, flow_id=step.flow_id))
-    return PauseFlowReturnPrediction(
-        _create_agent_request_user_input_prediction(
-            utterance, final_events, agent_stack_frame.metadata
-        )
     )
 
 

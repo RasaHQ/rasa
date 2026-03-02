@@ -13,7 +13,9 @@ from rasa.agents.constants import (
     AGENT_DEFAULT_MAX_RETRIES,
     AGENT_DEFAULT_TIMEOUT_SECONDS,
     AGENT_METADATA_AGENT_ID_KEY,
+    AGENT_METADATA_AGENT_RESPONSE_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_RESUMED_AFTER_INTERRUPTION,
     AGENT_METADATA_SENDER_ID_KEY,
     AGENT_METADATA_STRUCTURED_RESULTS_KEY,
     KEY_ARGUMENTS,
@@ -598,6 +600,15 @@ class MCPBaseAgent(AgentProtocol):
             context_dict["current_datetime"] = self._get_current_datetime_for_prompt(
                 context
             )
+
+        # Expose resume-after-interruption for Jinja prompt template.
+        metadata = context.metadata or {}
+        context_dict["resumed_after_interruption"] = bool(
+            metadata.get(AGENT_METADATA_RESUMED_AFTER_INTERRUPTION)
+        )
+        context_dict["resumed_last_request"] = (
+            metadata.get(AGENT_METADATA_AGENT_RESPONSE_KEY, "") or ""
+        )
 
         return {
             **context_dict,

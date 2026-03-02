@@ -36,6 +36,7 @@ KEY_TOOL_CALLS = "tool_calls"
 
 # Agent output metadata related constants
 AGENT_METADATA_AGENT_RESPONSE_KEY = "agent_response"
+AGENT_METADATA_RESUMED_AFTER_INTERRUPTION = "resumed_after_interruption"
 AGENT_METADATA_STRUCTURED_RESULTS_KEY = "structured_results"
 AGENT_METADATA_EXIT_IF_KEY = "exit_if"
 AGENT_METADATA_SENDER_ID_KEY = "sender_id"

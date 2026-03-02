@@ -11,7 +11,9 @@ from pytest import MonkeyPatch
 
 from rasa.agents.constants import (
     AGENT_METADATA_AGENT_ID_KEY,
+    AGENT_METADATA_AGENT_RESPONSE_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_RESUMED_AFTER_INTERRUPTION,
     AGENT_METADATA_SENDER_ID_KEY,
 )
 from rasa.agents.core.types import AgentStatus
@@ -563,6 +565,33 @@ class TestMCPBaseAgent:
             assert "- Current date: 15 January, 2024" in result
             assert "- Current time: 14:30:45 (UTC)" in result
             assert "- Current day: Monday" in result
+
+    def test_render_prompt_template_includes_resume_instruction_when_resumed(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        """Prompt includes resume block when metadata has resumed_after_interruption."""
+        last_request = "What is your budget for the car?"
+        agent_input = AgentInput(
+            id="test_id",
+            user_message="50k",
+            slots=[],
+            conversation_history="...",
+            events=[],
+            metadata={
+                AGENT_METADATA_RESUMED_AFTER_INTERRUPTION: True,
+                AGENT_METADATA_AGENT_RESPONSE_KEY: last_request,
+            },
+        )
+        result = mock_mcp_base_agent.render_prompt_template(agent_input)
+        assert "Resume:" in result
+        assert last_request in result
+
+    def test_render_prompt_template_omits_resume_instruction_when_not_resumed(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """When metadata does not have resumed_after_interruption, no resume block."""
+        result = mock_mcp_base_agent.render_prompt_template(mock_agent_input)
+        assert "Resume:" not in result
 
     @pytest.mark.parametrize(
         "slots, expected_assertions",
