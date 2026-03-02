@@ -269,11 +269,14 @@ def trigger_pattern_continue_interrupted(
     tracker: DialogueStateTracker,
 ) -> None:
     """Trigger the pattern to continue an interrupted flow if needed."""
-    # only trigger the pattern if the current frame is a user flow frame
-    # with a frame type of interrupt
-    if (
-        not isinstance(current_frame, UserFlowStackFrame)
-        or current_frame.frame_type != FlowStackFrameType.INTERRUPT
+    # Trigger the pattern if the current frame is a user flow frame with
+    # frame type interrupt, or a search pattern frame (e.g. after knowledge answer).
+    is_user_interrupt = (
+        isinstance(current_frame, UserFlowStackFrame)
+        and current_frame.frame_type == FlowStackFrameType.INTERRUPT
+    )
+    if not (
+        is_user_interrupt or isinstance(current_frame, SearchPatternFlowStackFrame)
     ):
         return None
 

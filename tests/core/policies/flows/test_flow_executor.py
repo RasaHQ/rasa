@@ -689,6 +689,93 @@ def test_trigger_pattern_continue_interrupted_does_not_trigger_if_not_user_frame
     assert len(stack.frames) == 1
 
 
+def test_trigger_pattern_continue_interrupted_triggers_after_search_pattern():
+    """Trigger continue_interrupted when current frame is SearchPatternFlowStackFrame.
+
+    This covers the case after a knowledge/EnterpriseSearch answer: the search
+    pattern frame is popped and we should offer to continue interrupted flows.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            description: flow foo
+            steps:
+            - id: "1"
+              collect: foo
+          bar_flow:
+            description: flow bar
+            name: bar flow
+            steps:
+            - id: "2"
+              collect: bar
+        """
+    )
+
+    stack = DialogueStack(
+        frames=[UserFlowStackFrame(flow_id="bar_flow", step_id="2", frame_id="some-id")]
+    )
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+
+    current_frame = SearchPatternFlowStackFrame()
+
+    flow_executor.trigger_pattern_continue_interrupted(
+        current_frame, stack, flows, tracker
+    )
+
+    top = stack.top()
+    assert top is not None
+    assert isinstance(top, ContinueInterruptedPatternFlowStackFrame)
+    assert top.interrupted_flow_names == ["bar flow"]
+    assert top.interrupted_flow_ids == ["bar_flow"]
+
+
+def test_trigger_pattern_continue_interrupted_after_search_no_continuable():
+    """Do not trigger continue_interrupted after search pattern if no flows to continue.
+
+    When the current frame is SearchPatternFlowStackFrame but all user flows on
+    the stack are at the end (nothing to continue), we should not push the
+    pattern.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            description: flow foo
+            steps:
+            - id: "1"
+              collect: foo
+          bar_flow:
+            description: flow bar
+            name: bar flow
+            steps:
+            - id: "2"
+              collect: bar
+        """
+    )
+
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(
+                flow_id="bar_flow",
+                step_id=END_STEP,
+                frame_id="some-id",
+            )
+        ]
+    )
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+
+    current_frame = SearchPatternFlowStackFrame()
+
+    flow_executor.trigger_pattern_continue_interrupted(
+        current_frame, stack, flows, tracker
+    )
+
+    assert len(stack.frames) == 1
+
+
 def test_trigger_pattern_continue_interrupted_triggers_correctly_with_link_step():
     """Test if pattern_continue_interrupted triggers correctly with link step.
 
