@@ -27,7 +27,7 @@ from rasa.core.available_agents import (
 )
 from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
-from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
 from rasa.shared.utils.constants import (
     LANGFUSE_METADATA_AGENT_ID,
@@ -740,6 +740,77 @@ class TestMCPBaseAgent:
             assert "Please choose an option:" in assistant_content
             assert 'button 1: "Transfer Money"' in assistant_content
             assert 'button 2: "Check Balance"' in assistant_content
+
+    def test_build_messages_for_llm_request_filters_non_utterance_events(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Test that only UserUttered and BotUttered events are used for messages."""
+        mock_agent_input.events = [
+            UserUttered(text="Hello"),
+            SlotSet("some_slot", "value"),
+            BotUttered(text="Hi"),
+            UserUttered(text="Bye"),
+        ]
+
+        with patch.object(mock_mcp_base_agent, "render_prompt_template") as mock_render:
+            mock_render.return_value = "System prompt"
+
+            messages = mock_mcp_base_agent.build_messages_for_llm_request(
+                mock_agent_input
+            )
+
+        # System + 3 utterance messages (Hello, Hi, Bye) + current user_message
+        assert messages[0]["role"] == "system"
+        assert messages[1]["role"] == "user"
+        assert messages[1]["content"] == "Hello"
+        assert messages[2]["role"] == "assistant"
+        assert messages[2]["content"] == "Hi"
+        assert messages[3]["role"] == "user"
+        assert messages[3]["content"] == "Bye"
+        assert messages[4]["role"] == "user"
+        assert messages[4]["content"] == mock_agent_input.user_message
+
+    def test_build_messages_for_llm_request_limits_to_last_n_turns(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Test that only the last N utterance events (turns param) are included."""
+        # Build 15 utterance events (more than default turns=10)
+        mock_agent_input.events = []
+        for i in range(15):
+            mock_agent_input.events.append(UserUttered(text=f"User {i}"))
+            mock_agent_input.events.append(BotUttered(text=f"Bot {i}"))
+
+        with patch.object(mock_mcp_base_agent, "render_prompt_template") as mock_render:
+            mock_render.return_value = "System prompt"
+
+            messages = mock_mcp_base_agent.build_messages_for_llm_request(
+                mock_agent_input
+            )
+
+        # System + last 10 utterance events + current user_message
+        # Last 10 utterance events are: User 10, Bot 10, ..., User 14, Bot 14
+        assert messages[0]["role"] == "system"
+        user_and_assistant = [
+            m for m in messages[1:] if m["role"] in ("user", "assistant")
+        ]
+        assert len(user_and_assistant) == 11  # 10 from history + current user_message
+        assert user_and_assistant[0]["content"] == "User 10"
+        assert user_and_assistant[1]["content"] == "Bot 10"
+        assert user_and_assistant[8]["content"] == "User 14"
+        assert user_and_assistant[9]["content"] == "Bot 14"
+
+        # Explicit turns=3 keeps only last 3 utterance events
+        messages_3 = mock_mcp_base_agent.build_messages_for_llm_request(
+            mock_agent_input, turns=3
+        )
+        user_and_assistant_3 = [
+            m for m in messages_3[1:] if m["role"] in ("user", "assistant")
+        ]
+        assert len(user_and_assistant_3) == 4  # 3 from history + current user_message
+        assert user_and_assistant_3[0]["content"] == "Bot 13"
+        assert user_and_assistant_3[1]["content"] == "User 14"
+        assert user_and_assistant_3[2]["content"] == "Bot 14"
+        assert user_and_assistant_3[3]["content"] == mock_agent_input.user_message
 
     @pytest.mark.parametrize(
         "tool_calls, expected_result_keys",

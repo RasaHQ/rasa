@@ -621,15 +621,43 @@ class MCPBaseAgent(AgentProtocol):
         return Template(self.prompt_template).render(**template_vars)
 
     def build_messages_for_llm_request(
-        self, context: AgentInput, turns: int = 20
+        self, context: AgentInput, turns: int = 10
     ) -> List[Dict[str, str]]:
-        """Build messages for the LLM request."""
+        """Build messages for the LLM request from conversation history.
+
+        Filters to user and bot utterance events only, then limits to the most
+        recent `turns` events. Note: here "turns" counts individual user/bot
+        messages (utterance events), not full conversation turns (user+assistant
+        exchanges).
+
+        Args:
+            context: Agent input with events and current user message.
+            turns: Maximum number of user and bot utterance events to include
+                in the context (default 10). Applied after filtering to
+                utterance events only.
+
+        Returns:
+            List of message dicts with "role" and "content" for the LLM.
+        """
         messages = [
             {KEY_ROLE: ROLE_SYSTEM, KEY_CONTENT: self.render_prompt_template(context)}
         ]
 
-        # Limit to last N events - set by `turns`.
-        for event in context.events[-turns:]:
+        # Collect up to `turns` most recent user and bot utterance events.
+        utterance_events: List[Any] = []
+        collected = 0
+        for event in reversed(context.events):
+            if not isinstance(event, (UserUttered, BotUttered)):
+                continue
+            utterance_events.append(event)
+            collected += 1
+            if collected >= turns:
+                break
+
+        # Reverse to restore chronological order (oldest first).
+        utterance_events.reverse()
+
+        for event in utterance_events:
             if isinstance(event, UserUttered):
                 if not event.text:
                     continue
