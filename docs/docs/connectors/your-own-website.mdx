@@ -171,16 +171,33 @@ as a JSON object under the key `token`:
 
 ### Chat Widget
 
-Once you've set up your SocketIO channel, you can use the official Rasa Chat Widget on any webpage.
-Just paste the following into your site HTML and paste the URL of your Rasa instance into
-the `data-websocket-url` attribute
+Once you've set up your SocketIO channel, you can use the [official Rasa Chat Widget](https://github.com/RasaHQ/chat-widget) on any webpage. Use the example HTML below and paste the URL of your Rasa instance into the `server-url` attribute:
 
 ```html
-<div id="rasa-chat-widget" data-websocket-url="https://your-rasa-url-here/"></div>
-<script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"></script>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTML Example</title>
+    <script
+      type="module"
+      src="https://unpkg.com/@rasahq/chat-widget-ui/dist/rasa-chatwidget/rasa-chatwidget.esm.js"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@rasahq/chat-widget-ui/dist/rasa-chatwidget/rasa-chatwidget.css"
+    />
+  </head>
+  <body>
+    <rasa-chatbot-widget server-url="https://example.com"></rasa-chatbot-widget>
+  </body>
+</html>
 ```
 
-For more information, including how to fully customize the widget for your website, you can check out the [full documentation](https://chat-widget-docs.rasa.com/).
+For more information, including how to fully customize the widget for your website, you can check out the [full documentation](https://chatwidget.rasa.com/).
 
-Alternatively, if you want to embed the widget in a React app, there is
-[a library in the NPM package repository](https://www.npmjs.com/package/@rasahq/rasa-chat).
+Alternatively, if you want to embed the widget in a React app, there is [a library in the NPM package repository](https://www.npmjs.com/package/@rasahq/chat-widget-react).
+
+:::note Deprecated Chat Widget
+For information on the deprecated chat widget, [rasa-chat](https://www.npmjs.com/package/@rasahq/rasa-chat), documentation can be found [here](https://chat-widget-docs.rasa.com/).:::
