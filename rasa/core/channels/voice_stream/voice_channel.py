@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import copy
-import math
 import string
 import time
 from dataclasses import asdict, dataclass
@@ -390,11 +389,22 @@ class VoiceOutputChannel(OutputChannel):
     async def _stream_audio_to_channel(
         self, recipient_id: str, audio_stream: AsyncIterator[RasaAudioBytes]
     ) -> RasaAudioBytes:
-        """Send audio from an async iterator to the channel."""
+        """Send audio from an async iterator to the channel.
+
+        This function does a lot of things,
+        - Tracks TTS first byte latency
+        - Sends intermediate marker messages every second of audio
+        - Collects audio bytes to return for caching
+        - Buffer audio to send in chunks of min_buffer_size for efficiency
+        - Track leftover byte for L16 format to ensure we always send
+          complete samples (2 bytes per sample)
+        """
         collected_audio = RasaAudioBytes(b"", format=self.audio_format)
         last_sent_offset = 0
         first_byte_received = False
         seconds_marker = -1
+        leftover_byte: bytes = b""
+
         async for audio_chunk in audio_stream:
             collected_audio = collected_audio + audio_chunk
 
@@ -405,42 +415,69 @@ class VoiceOutputChannel(OutputChannel):
 
             # Check if we have enough new bytes to send
             current_buffer_size = len(collected_audio) - last_sent_offset
-            should_send = current_buffer_size >= self.min_buffer_size
+            if current_buffer_size < self.min_buffer_size:
+                # Not enough new audio to send yet, continue accumulating
+                continue
 
-            if should_send:
-                try:
-                    # send only the new bytes since last sent offset
-                    new_bytes = collected_audio[last_sent_offset:]
-                    await self.send_audio_bytes(recipient_id, new_bytes)
-                    last_sent_offset = len(collected_audio)
-
-                    # seconds of audio rounded down to floor number
-                    # e.g 7 // 2 = 3
-                    full_seconds_of_audio = math.floor(collected_audio.full_seconds())
-                    if full_seconds_of_audio > seconds_marker:
-                        await self.send_intermediate_marker(recipient_id)
-                        seconds_marker = full_seconds_of_audio
-                except WebsocketClosed:
-                    call_state.connection_failed = True
-                    # Continue collecting for cache even if send fails
-
-        # send any remaining bytes
-        remaining_bytes = len(collected_audio) - last_sent_offset
-        if remaining_bytes > 0:
             try:
-                new_bytes = collected_audio[last_sent_offset:]
-                await self.send_audio_bytes(recipient_id, new_bytes)
-            except WebsocketClosed:
-                # ignore sending error
-                call_state.connection_failed = True
+                # send only the new bytes since last sent offset
+                new_bytes = leftover_byte + collected_audio.data[last_sent_offset:]
+                leftover_byte = b""
 
-        # # Debug: save TTS audio to WAV file
-        # from ..<path>.audio_debugging import _save_rasa_bytes_to_wav
-        # if len(collected_audio) > 0:
-        #
-        #     _save_rasa_bytes_to_wav(collected_audio, "tts_debug_audio")
+                # Ensure even byte length for L16 audio (2 bytes per sample)
+                if len(new_bytes) % 2 != 0:
+                    leftover_byte = new_bytes[-1:]
+                    new_bytes = new_bytes[:-1]
+
+                # Send if there are new bytes
+                if len(new_bytes) > 0:
+                    await self.send_audio_bytes(
+                        recipient_id,
+                        RasaAudioBytes(new_bytes, format=self.audio_format),
+                    )
+                last_sent_offset = len(collected_audio)
+
+                # send intermediate marker every second of audio
+                full_seconds_of_audio = int(collected_audio.full_seconds())
+                if full_seconds_of_audio > seconds_marker:
+                    await self.send_intermediate_marker(recipient_id)
+                    seconds_marker = full_seconds_of_audio
+            except WebsocketClosed:
+                call_state.connection_failed = True
+                # Continue collecting for cache even if send fails
+
+        # send any remaining bytes (including leftover)
+        await self._send_remaining_bytes(
+            recipient_id, collected_audio, last_sent_offset, leftover_byte
+        )
 
         return collected_audio
+
+    async def _send_remaining_bytes(
+        self,
+        recipient_id: str,
+        collected_audio: RasaAudioBytes,
+        last_sent_offset: int,
+        leftover_byte: bytes,
+    ) -> None:
+        """Send any remaining bytes after audio stream is complete."""
+        remaining_bytes = len(collected_audio) - last_sent_offset
+        if remaining_bytes == 0 and len(leftover_byte) == 0:
+            return
+
+        try:
+            new_bytes = leftover_byte + collected_audio.data[last_sent_offset:]
+            # Pad with zero byte if odd length (final chunk)
+            if len(new_bytes) % 2 != 0:
+                new_bytes = new_bytes + b"\x00"
+            if len(new_bytes) > 0:
+                await self.send_audio_bytes(
+                    recipient_id,
+                    RasaAudioBytes(new_bytes, format=self.audio_format),
+                )
+        except WebsocketClosed:
+            # ignore sending error
+            call_state.connection_failed = True
 
     async def send_response_chunk_start(
         self, recipient_id: Text, **kwargs: Any
