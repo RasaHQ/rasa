@@ -10,6 +10,29 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.15] - 2026-03-03
+                         
+Rasa Pro 3.15.15 (2026-03-03)                              
+### Bugfixes
+- [#4680](https://github.com/rasahq/rasa-private/issues/4680): - **Kafka event broker background polling thread caused test hangs and didn't allow the process to exit:** The background poll thread is now a daemon thread, so the process can terminate when the broker is not closed explicitly (e.g. in tests or after an abrupt exit). The `close()` method uses a 5-second join timeout so it does not block forever if the poll thread is stuck (e.g. when the broker is unreachable).
+  - **Background polling:** The poll loop now runs for the whole lifetime of the broker, even before the producer is created. When the producer is not ready, the loop sleeps briefly instead of exiting. This allows the IAM OAuth callback to be triggered when using SASL_SSL with AWS IAM (MSK), so tokens can be refreshed as the library calls `poll()`.
+  - **Connection keepalive (optional):** New broker options `socket_keepalive_enable`, `reconnect_backoff_ms`, `reconnect_backoff_max_ms`, and `topic_metadata_refresh_interval_ms` let you reduce idle connection drops. When `socket_keepalive_enable` is true, these are passed to the underlying producer.
+- [#4721](https://github.com/rasahq/rasa-private/issues/4721): Fixes race conditions in PII cron jobs by requiring a LockStore for BackgroundPrivacyManager and acquiring a per-sender_id
+  lock while anonymization/deletion jobs read-modify-write trackers.
+
+  Implemented measures to defend against JSON patch issues and ensure correct event order.
+
+  - **Deletion cron job:** When reconstructing the tracker from retained events after deleting old sessions, the deletion
+  job now catches `JsonPatchException` and `JsonPointerException` (e.g. from invalid or inconsistent dialogue stack updates).
+  On failure, the tracker is left unchanged and an error is logged instead of overwriting or deleting data, so no data loss occurs.
+  Users can resolve stack-related issues by appending a `Restarted` event to the tracker if needed.
+  - **Anonymization cron job:** Events from already-anonymized, processed, and ineligible sessions are now sorted by timestamp
+  before rebuilding the tracker, with original index used as a tie-breaker when timestamps are identical. This keeps
+  replay order chronologically consistent and ensures dialogue stack updates and other order-dependent events are applied
+  in the correct sequence.
+- [#4740](https://github.com/rasahq/rasa-private/issues/4740): ReAct agents now filter conversation events to user and bot utterances before building assistant and user role messages, and the default context limit is 10 utterance messages. Previously, the last 20 events were taken first and then filtered, so fewer user and assistant messages were included in the context.
+
+
 ## [3.15.14] - 2026-02-26
 
 Rasa Pro 3.15.14 (2026-02-26)
