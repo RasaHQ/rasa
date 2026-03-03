@@ -18,9 +18,7 @@ from rasa.builder.copilot.mcp_server.server import (
     health_check,
     run_server,
     search_rasa_documentation,
-    system_prompt,
     talk_to_assistant,
-    training_error_analysis,
     validate_project,
 )
 from rasa.shared.exceptions import RasaException
@@ -233,40 +231,6 @@ class TestMCPServerBotInteraction:
             await talk_to_assistant(mock_ctx, ["Hello"])
 
             mock_talk.assert_called_once_with(["Hello"])
-
-
-class TestMCPServerPrompts:
-    """Test MCP server prompts."""
-
-    @pytest.mark.asyncio
-    async def test_system_prompt(self):
-        """Test system_prompt returns valid prompt structure."""
-        with patch(
-            "rasa.builder.copilot.mcp_server.prompts.prompt_loader.get_copilot_system_prompt"
-        ) as mock_get_prompt:
-            mock_get_prompt.return_value = "Test system prompt content"
-
-            result = await system_prompt()
-
-            assert isinstance(result, list)
-            assert len(result) == 1
-            assert result[0]["role"] == "user"
-            assert result[0]["content"]["type"] == "text"
-            assert result[0]["content"]["text"] == "Test system prompt content"
-
-    @pytest.mark.asyncio
-    async def test_training_error_analysis_prompt(self):
-        """Test training_error_analysis returns valid prompt structure."""
-        with patch(
-            "rasa.builder.copilot.mcp_server.prompts.prompt_loader.get_training_error_handler_prompt"
-        ) as mock_get_prompt:
-            mock_get_prompt.return_value = "Test training error prompt"
-
-            result = await training_error_analysis()
-
-            assert isinstance(result, list)
-            assert len(result) == 1
-            assert result[0]["role"] == "user"
 
 
 class TestRunServer:

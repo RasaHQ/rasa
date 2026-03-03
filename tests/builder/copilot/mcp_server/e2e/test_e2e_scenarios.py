@@ -116,24 +116,6 @@ class TestE2EDocumentationSearch:
         assert len(doc["content"]) > 0, "Content should not be empty"
 
 
-class TestE2EPrompts:
-    """End-to-end tests for MCP prompts."""
-
-    @pytest.mark.asyncio
-    async def test_system_prompt(self, mcp_client: ClientSession):
-        """Test retrieving system prompt."""
-        prompts = await mcp_client.list_prompts()
-        system_prompt = next(
-            (p for p in prompts.prompts if p.name == "system_prompt"), None
-        )
-        assert system_prompt is not None
-
-        result = await mcp_client.get_prompt(system_prompt.name, {})
-        assert result.messages is not None
-        assert len(result.messages) > 0
-        assert result.messages[0].role == "user"
-
-
 class TestE2EProjectContext:
     """End-to-end tests for project context list tools."""
 

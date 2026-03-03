@@ -1,6 +1,6 @@
 """Main MCP server implementation for Rasa Copilot.
 
-This server exposes Rasa-specific tools, resources, and prompts for external
+This server exposes Rasa-specific tools and resources for external
 MCP clients to use via SSE/HTTP.
 
 It follows the FastMCP pattern from the official MCP documentation:
@@ -807,74 +807,6 @@ async def get_e2e_schema() -> SchemaResponse:
 
 # Note: Dynamic resource templates (uri_template) are not
 # supported in mcp.server.fastmcp
-
-
-# ============================================================================
-# PROMPTS - Pre-written templates that help accomplish specific tasks
-# ============================================================================
-
-
-@mcp.prompt(
-    name="system_prompt",
-    title="Rasa Copilot System Prompt",
-    description=(
-        "Main system prompt for the Rasa copilot assistant with comprehensive "
-        "instructions and guidelines"
-    ),
-)
-async def system_prompt() -> list:
-    """Main system prompt for the Rasa copilot assistant.
-
-    Provides the complete system prompt including tool usage patterns,
-    conversation guidelines, and best practices for building Rasa assistants.
-    """
-    from rasa.builder.copilot.mcp_server.prompts.prompt_loader import (
-        get_copilot_system_prompt,
-    )
-
-    content = await get_copilot_system_prompt()
-    return [{"role": "user", "content": {"type": "text", "text": content}}]
-
-
-@mcp.prompt(
-    name="user_message_context",
-    title="User Message Context",
-    description=(
-        "Template for enriching user messages with additional context about the "
-        "current session"
-    ),
-)
-async def user_message_context() -> list:
-    """Template for adding context to user messages.
-
-    Provides a prompt template that helps contextualize user messages
-    with information about the current project state and conversation history.
-    """
-    from rasa.builder.copilot.mcp_server.prompts.prompt_loader import (
-        get_last_user_message_context_prompt,
-    )
-
-    content = await get_last_user_message_context_prompt()
-    return [{"role": "user", "content": {"type": "text", "text": content}}]
-
-
-@mcp.prompt(
-    name="training_error_analysis",
-    title="Training Error Analysis",
-    description="Template for analyzing and fixing training errors in Rasa projects",
-)
-async def training_error_analysis() -> list:
-    """Template for analyzing training errors.
-
-    Provides a structured approach for analyzing validation and training errors,
-    helping to identify root causes and suggest fixes.
-    """
-    from rasa.builder.copilot.mcp_server.prompts.prompt_loader import (
-        get_training_error_handler_prompt,
-    )
-
-    content = await get_training_error_handler_prompt()
-    return [{"role": "user", "content": {"type": "text", "text": content}}]
 
 
 # ============================================================================
