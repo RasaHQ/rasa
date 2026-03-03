@@ -71,6 +71,9 @@ class AgentConfiguration(BaseModel):
     include_date_time: Optional[bool] = None
     timezone: Optional[str] = None
     enable_filler_messages: Optional[bool] = None
+    tool_timeout: Optional[float] = Field(
+        default=None, gt=0, allow_inf_nan=False
+    )  # timeout for tool calls in seconds
 
 
 class AgentConnections(BaseModel):

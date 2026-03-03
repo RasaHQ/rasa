@@ -534,6 +534,61 @@ def test_datetime_keys_in_allowed_keys() -> None:
     assert "timezone" in ALLOWED_KEYS["configuration"]
 
 
+def test_tool_timeout_key_in_allowed_keys() -> None:
+    from rasa.agents.validation import ALLOWED_KEYS
+
+    assert "tool_timeout" in ALLOWED_KEYS["configuration"]
+
+
+def test_validate_agent_with_tool_timeout_configuration() -> None:
+    """Test validation succeeds for MCP agent with tool_timeout in configuration."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config_content = dedent("""
+            agent:
+              name: "agent_with_tool_timeout"
+              protocol: "RASA"
+              description: "An agent with tool timeout configuration"
+            configuration:
+              tool_timeout: 45
+            connections:
+              mcp_servers:
+                - name: "test_mcp_server"
+        """)
+
+        mock_instance = MagicMock()
+        mock_instance.endpoints.mcp_servers = [
+            type("MCPServerConfig", (), {"name": "test_mcp_server"})()
+        ]
+        mock_instance.endpoints.model_groups = []
+        # Ensure endpoints are not treated as coming from a config file,
+        # so endpoint reference validation is skipped in this test.
+        mock_instance.endpoints.config_file_path = None
+
+        with patch.object(Configuration, "get_instance", return_value=mock_instance):
+            create_agent_config(temp_dir, "agent_with_tool_timeout", config_content)
+            validate_agent_folder(temp_dir)
+
+
+def test_validate_agent_with_invalid_tool_timeout_configuration() -> None:
+    """Test validation fails for non-positive tool_timeout in configuration."""
+    Configuration.initialise_empty()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config_content = dedent("""
+            agent:
+              name: "agent_with_invalid_tool_timeout"
+              protocol: "RASA"
+              description: "An agent with invalid tool timeout configuration"
+            configuration:
+              tool_timeout: 0
+            connections:
+              mcp_servers:
+                - name: "test_mcp_server"
+        """)
+        create_agent_config(temp_dir, "agent_with_invalid_tool_timeout", config_content)
+        result = _validate_sub_agents(temp_dir)
+        assert result is False
+
+
 def test_validate_agent_with_valid_auth_configuration() -> None:
     """Test validation succeeds for agent configuration with auth key."""
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -849,8 +904,10 @@ def test_validate_optional_keys_with_prompt_template(
 
 
 def test_validate_prompt_template_file_not_found_fallback() -> None:
-    """Test that validation succeeds when prompt template file is not found
-    and falls back to default template."""
+    """Test that validation succeeds when prompt template file is not found.
+
+    Falls back to default template.
+    """
     from rasa.agents.validation import _validate_optional_keys
     from rasa.core.available_agents import (
         AgentConfig,

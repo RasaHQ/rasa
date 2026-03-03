@@ -553,7 +553,6 @@ class TestMCPBaseAgent:
         self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
     ) -> None:
         """Test rendering prompt template with context."""
-
         mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo("UTC"))
         with patch(
             "rasa.shared.utils.datetime_utils.get_current_datetime"
@@ -854,7 +853,8 @@ class TestMCPBaseAgent:
     def test_build_messages_for_llm_request_no_duplicate_when_filler_message_follows(
         self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
     ) -> None:
-        """Regression: user message must not be duplicated when a filler message
+        """Regression: user message must not be duplicated when a filler message.
+
         BotUttered trails the current UserUttered in events.
 
         The agent streams an intermediate filler message ("Sure, verifying...")
@@ -1249,7 +1249,7 @@ class TestMCPBaseAgent:
         mock_custom_tool.tool_name = "timeout_tool"
 
         # Set short timeout for test
-        mock_mcp_base_agent.TOOL_CALL_DEFAULT_TIMEOUT = 0.1
+        mock_mcp_base_agent._tool_timeout = 0.1
 
         # Mock tool executor that sleeps longer than timeout
         async def slow_tool_executor(args):
@@ -1277,7 +1277,7 @@ class TestMCPBaseAgent:
         # Assert error message format
         expected_message = (
             "Built-in tool `timeout_tool` timed out after "
-            f"{mock_mcp_base_agent.TOOL_CALL_DEFAULT_TIMEOUT} seconds."
+            f"{mock_mcp_base_agent._tool_timeout} seconds."
         )
         assert result.error_message == expected_message
 
@@ -1431,8 +1431,9 @@ class TestMCPBaseAgent:
         model_id: Optional[str],
         expected_metadata: Dict[str, Any],
     ) -> None:
-        """Test that get_llm_tracing_metadata returns correct metadata from
-        agent_input.
+        """Test that get_llm_tracing_metadata returns correct metadata.
+
+        Metadata is derived from agent_input.
         """
         # Build metadata dict
         metadata = {}
@@ -1481,7 +1482,6 @@ class TestMCPBaseAgent:
         expected_tzname: str,
     ) -> None:
         """render_prompt_template uses mocked_datetime when present in slots."""
-
         agent_input = AgentInput(
             id="test_id",
             user_message="Test message",
@@ -1985,3 +1985,200 @@ class TestMCPBaseAgent:
             filler_event.metadata["message_type"]
             == BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE
         )
+
+    # ============================================================================
+    # Tool Timeout Configuration Tests
+    # ============================================================================
+
+    def test_init_with_default_tool_timeout(self, monkeypatch: MonkeyPatch) -> None:
+        """Test that default tool timeout is used when not specified."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        agent = MockMCPBaseAgentImpl(
+            name="test_agent",
+            description="Test description",
+            protocol_type=ProtocolConfig.RASA,
+            server_configs=[],
+        )
+
+        assert agent._tool_timeout == MCPBaseAgent.TOOL_CALL_DEFAULT_TIMEOUT
+        assert agent._tool_timeout == 10
+
+    def test_init_with_custom_tool_timeout(self, monkeypatch: MonkeyPatch) -> None:
+        """Test that custom tool timeout is used when specified."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        agent = MockMCPBaseAgentImpl(
+            name="test_agent",
+            description="Test description",
+            protocol_type=ProtocolConfig.RASA,
+            server_configs=[],
+            tool_timeout=30,
+        )
+
+        assert agent._tool_timeout == 30
+
+    def test_init_with_zero_tool_timeout_raises(self, monkeypatch: MonkeyPatch) -> None:
+        """Test that zero tool timeout is rejected."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        with pytest.raises(ValueError, match="tool_timeout"):
+            MockMCPBaseAgentImpl(
+                name="test_agent",
+                description="Test description",
+                protocol_type=ProtocolConfig.RASA,
+                server_configs=[],
+                tool_timeout=0,
+            )
+
+    def test_init_with_negative_tool_timeout_raises(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test that negative tool timeout is rejected."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        with pytest.raises(ValueError, match="tool_timeout"):
+            MockMCPBaseAgentImpl(
+                name="test_agent",
+                description="Test description",
+                protocol_type=ProtocolConfig.RASA,
+                server_configs=[],
+                tool_timeout=-1,
+            )
+
+    @pytest.mark.parametrize(
+        "tool_timeout", [float("nan"), float("inf"), float("-inf")]
+    )
+    def test_init_with_non_finite_tool_timeout_raises(
+        self, monkeypatch: MonkeyPatch, tool_timeout: float
+    ) -> None:
+        """Test that NaN and infinities are rejected for tool timeout."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        with pytest.raises(ValueError, match="finite number"):
+            MockMCPBaseAgentImpl(
+                name="test_agent",
+                description="Test description",
+                protocol_type=ProtocolConfig.RASA,
+                server_configs=[],
+                tool_timeout=tool_timeout,
+            )
+
+    def test_from_config_with_tool_timeout(self, monkeypatch: MonkeyPatch) -> None:
+        """Test from_config uses tool_timeout from configuration."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        agent_config = AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="Test agent",
+                protocol=ProtocolConfig.RASA,
+            ),
+            configuration=AgentConfiguration(
+                llm={"provider": "openai", "model": "gpt-4"},
+                tool_timeout=45,
+            ),
+            connections=AgentConnections(),
+        )
+
+        agent = MockMCPBaseAgentImpl.from_config(agent_config)
+
+        assert agent._tool_timeout == 45
+
+    def test_from_config_without_tool_timeout(self, monkeypatch: MonkeyPatch) -> None:
+        """Test from_config uses default tool timeout when not in configuration."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        agent_config = AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="Test agent",
+                protocol=ProtocolConfig.RASA,
+            ),
+            configuration=AgentConfiguration(
+                llm={"provider": "openai", "model": "gpt-4"},
+            ),
+            connections=AgentConnections(),
+        )
+
+        agent = MockMCPBaseAgentImpl.from_config(agent_config)
+
+        assert agent._tool_timeout == MCPBaseAgent.TOOL_CALL_DEFAULT_TIMEOUT
+        assert agent._tool_timeout == 10
+
+    @pytest.mark.asyncio
+    async def test_execute_mcp_tool_uses_configured_timeout(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test that _execute_mcp_tool uses the configured tool_timeout."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        agent = MockMCPBaseAgentImpl(
+            name="test_agent",
+            description="Test description",
+            protocol_type=ProtocolConfig.RASA,
+            server_configs=[],
+            tool_timeout=25,
+        )
+
+        mock_connection = MagicMock()
+        mock_session = MagicMock()
+        mock_session.call_tool = AsyncMock(return_value={"result": "success"})
+        mock_connection.ensure_active_session = AsyncMock(return_value=mock_session)
+        mock_connection.server_url = "http://localhost:8000"
+
+        agent._tool_to_server_mapper["test_tool"] = "test_server"
+        agent._server_connections["test_server"] = mock_connection
+
+        with patch(
+            "rasa.agents.schemas.AgentToolResult.from_mcp_tool_result"
+        ) as mock_from_mcp:
+            mock_from_mcp.return_value = AgentToolResult(
+                tool_name="test_tool",
+                result='{"result": "success"}',
+                is_error=False,
+            )
+
+            await agent._execute_mcp_tool("test_tool", {"arg": "value"})
+
+            mock_session.call_tool.assert_called_once_with(
+                "test_tool",
+                {"arg": "value"},
+                read_timeout_seconds=timedelta(seconds=25),
+            )
+
+    @pytest.mark.asyncio
+    async def test_custom_tool_uses_configured_timeout(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test that custom tools use the configured tool_timeout."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        agent = MockMCPBaseAgentImpl(
+            name="test_agent",
+            description="Test description",
+            protocol_type=ProtocolConfig.RASA,
+            server_configs=[],
+            tool_timeout=0.2,
+        )
+
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.tool_name = "slow_tool"
+
+        async def slow_tool_executor(args):
+            await anyio.sleep(0.3)
+            return AgentToolResult(
+                tool_name="slow_tool",
+                result="result",
+                is_error=False,
+            )
+
+        mock_custom_tool.tool_executor = slow_tool_executor
+        agent._custom_tools = [mock_custom_tool]
+
+        result = await agent._execute_tool_call("slow_tool", {"arg": "value"})
+
+        assert result.tool_name == "slow_tool"
+        assert result.is_error is True
+        assert "timed out after" in result.error_message
+        assert "0.2 seconds" in result.error_message

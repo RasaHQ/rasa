@@ -639,3 +639,26 @@ class TestAgentConfigurationAuthField:
         # Test with integer instead of dict
         with pytest.raises(PydanticValidationError):
             AgentConfiguration(auth=123)
+
+
+def test_tool_timeout_field_optional_and_defaults_to_none() -> None:
+    config = AgentConfiguration()
+    assert config.tool_timeout is None
+
+
+def test_tool_timeout_field_accepts_positive_int() -> None:
+    config = AgentConfiguration(tool_timeout=30)
+    assert config.tool_timeout == 30
+
+
+def test_tool_timeout_field_accepts_positive_float() -> None:
+    config = AgentConfiguration(tool_timeout=0.5)
+    assert config.tool_timeout == 0.5
+
+
+@pytest.mark.parametrize(
+    "tool_timeout", [0, -1, -0.1, float("nan"), float("inf"), float("-inf")]
+)
+def test_tool_timeout_field_rejects_non_positive_values(tool_timeout: float) -> None:
+    with pytest.raises(PydanticValidationError):
+        AgentConfiguration(tool_timeout=tool_timeout)

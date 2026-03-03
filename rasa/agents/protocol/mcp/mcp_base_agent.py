@@ -1,4 +1,5 @@
 import json
+import math
 from abc import abstractmethod
 from datetime import datetime, timedelta
 from inspect import isawaitable
@@ -125,6 +126,7 @@ class MCPBaseAgent(AgentProtocol):
         include_date_time: Optional[bool] = None,
         timezone: Optional[str] = None,
         enable_filler_messages: Optional[bool] = None,
+        tool_timeout: Optional[float] = None,
     ):
         self._name = name
 
@@ -160,6 +162,15 @@ class MCPBaseAgent(AgentProtocol):
             enable_filler_messages
             if enable_filler_messages is not None
             else AGENT_FILLER_MESSAGES_ENABLED_DEFAULT
+        )
+
+        if tool_timeout is not None and (
+            not math.isfinite(tool_timeout) or tool_timeout <= 0
+        ):
+            raise ValueError("`tool_timeout` must be a finite number greater than 0.")
+
+        self._tool_timeout = (
+            tool_timeout if tool_timeout is not None else self.TOOL_CALL_DEFAULT_TIMEOUT
         )
 
         self._server_configs = server_configs or []
@@ -244,6 +255,9 @@ class MCPBaseAgent(AgentProtocol):
             include_date_time=include_date_time,
             timezone=timezone,
             enable_filler_messages=config.configuration.enable_filler_messages
+            if config.configuration
+            else None,
+            tool_timeout=config.configuration.tool_timeout
             if config.configuration
             else None,
         )
@@ -820,7 +834,7 @@ class MCPBaseAgent(AgentProtocol):
                 session,
                 tool_name,
                 arguments,
-                timedelta(seconds=self.TOOL_CALL_DEFAULT_TIMEOUT),
+                timedelta(seconds=self._tool_timeout),
                 meta,
             )
             return AgentToolResult.from_mcp_tool_result(tool_name, result)
@@ -873,7 +887,7 @@ class MCPBaseAgent(AgentProtocol):
             for custom_tool in self._custom_tools:
                 if custom_tool.tool_name == tool_name:
                     try:
-                        with anyio.fail_after(self.TOOL_CALL_DEFAULT_TIMEOUT):
+                        with anyio.fail_after(self._tool_timeout):
                             return await self._run_custom_tool(custom_tool, arguments)
 
                     except TimeoutError:
@@ -883,7 +897,7 @@ class MCPBaseAgent(AgentProtocol):
                             is_error=True,
                             error_message=(
                                 f"Built-in tool `{tool_name}` timed out after "
-                                f"{self.TOOL_CALL_DEFAULT_TIMEOUT} seconds."
+                                f"{self._tool_timeout} seconds."
                             ),
                         )
         except Exception as e:

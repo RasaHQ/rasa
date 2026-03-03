@@ -40,6 +40,7 @@ ALLOWED_KEYS = {
         "prompt_template",
         "module",
         "timeout",
+        "tool_timeout",
         "max_retries",
         "agent_card",
         "auth",

@@ -42,7 +42,7 @@ structlogger = structlog.get_logger()
 
 
 class MCPTaskAgent(MCPBaseAgent):
-    """MCPTaskAgent client implementation"""
+    """MCPTaskAgent client implementation."""
 
     def __init__(
         self,
@@ -57,6 +57,7 @@ class MCPTaskAgent(MCPBaseAgent):
         include_date_time: Optional[bool] = None,
         timezone: Optional[str] = None,
         enable_filler_messages: Optional[bool] = None,
+        tool_timeout: Optional[float] = None,
     ):
         super().__init__(
             name,
@@ -70,6 +71,7 @@ class MCPTaskAgent(MCPBaseAgent):
             include_date_time,
             timezone,
             enable_filler_messages,
+            tool_timeout,
         )
 
     @property

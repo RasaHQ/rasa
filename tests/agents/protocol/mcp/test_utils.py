@@ -25,6 +25,7 @@ class MockMCPBaseAgentImpl(MCPBaseAgent):
         include_date_time: Optional[bool] = None,
         timezone: Optional[str] = None,
         enable_filler_messages: Optional[bool] = None,
+        tool_timeout: Optional[float] = None,
     ):
         super().__init__(
             name,
@@ -38,6 +39,7 @@ class MockMCPBaseAgentImpl(MCPBaseAgent):
             include_date_time,
             timezone,
             enable_filler_messages,
+            tool_timeout,
         )
 
     @classmethod
