@@ -134,7 +134,7 @@ class AWSMSKafkaIAMCredentialsProvider(IAMCredentialsProvider):
                     auth_token, expiry_ms = MSKAuthTokenProvider.generate_auth_token(
                         self.region
                     )
-                    structlogger.debug(
+                    structlogger.info(
                         "rasa.core.aws_msk_iam_credentials_provider.get_credentials",
                         event_info="Successfully generated AWS IAM token for "
                         "Kafka authentication.",
@@ -151,7 +151,7 @@ class AWSMSKafkaIAMCredentialsProvider(IAMCredentialsProvider):
                         f"for MSK authentication. Original exception: {exc}"
                     ) from exc
             else:
-                structlogger.debug(
+                structlogger.info(
                     "rasa.core.aws_msk_iam_credentials_provider.get_credentials",
                     event_info="Using cached AWS IAM token for Kafka authentication.",
                 )

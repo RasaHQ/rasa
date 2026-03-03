@@ -114,8 +114,18 @@ class KafkaEventBroker(EventBroker):
         # https://github.com/confluentinc/confluent-kafka-python/blob/master/examples/asyncio_example.py#L88  # noqa: E501
         self._loop = asyncio.get_event_loop()
         self._cancelled = False
-        self._poll_thread = threading.Thread(target=self._poll_loop)
+        # running as daemon prevents the process from hanging
+        # (in tests or server crashes/restarts)
+        self._poll_thread = threading.Thread(target=self._poll_loop, daemon=True)
         self._poll_thread.start()
+
+        # Keepalive settings to prevent idle connections from being closed by brokers
+        self.socket_keepalive_enable = kwargs.get("socket_keepalive_enable", False)
+        self.reconnect_backoff_ms = kwargs.get("reconnect_backoff_ms", 1000)
+        self.reconnect_backoff_max_ms = kwargs.get("reconnect_backoff_max_ms", 10000)
+        self.topic_metadata_refresh_interval_ms = kwargs.get(
+            "topic_metadata_refresh_interval_ms", 300000
+        )
 
     @classmethod
     async def from_endpoint_config(
@@ -149,22 +159,13 @@ class KafkaEventBroker(EventBroker):
             except KafkaException as exc:
                 logger.debug(f"Failed to connect to kafka: {exc}")
                 return
+
         while retries:
             try:
                 self._publish(event)
                 return
-            except BufferError as e:
-                logger.error(
-                    f"Could not publish message to kafka url '{self.url}'. "
-                    f"Failed with error: {e}"
-                )
-                self.producer.poll(1)
-                retries -= 1
-            except Exception as exc:
-                if (
-                    isinstance(exc, KafkaException)
-                    and exc.args[0].code() == KafkaError.MSG_SIZE_TOO_LARGE
-                ):
+            except KafkaException as exc:
+                if exc.args[0].code() == KafkaError.MSG_SIZE_TOO_LARGE:
                     logger.warning(
                         "Message size is too large for the Kafka broker. "
                         "Please check the message.max.bytes configuration. "
@@ -183,21 +184,40 @@ class KafkaEventBroker(EventBroker):
                         },
                     ).as_dict()
                     event.update({"sender_id": sender_id})
+                    self._retry_connection(retry_delay_in_seconds)
+                elif exc.args[0].code() == KafkaError._QUEUE_FULL:
+                    # Queue full: poll to allow delivery, then retry; do not call
+                    # _retry_publish (that is for connection recovery and sleeps 5s).
+                    logger.error(
+                        f"Could not publish message to kafka url '{self.url}'. "
+                        f"Failed with error: {exc}"
+                    )
+                    self.producer.poll(1)
                 else:
                     logger.error(
                         f"Could not publish message to kafka url '{self.url}'. "
                         f"Failed with error: {exc}"
                     )
-                self._retry_publish(event, retries, retry_delay_in_seconds)
+                    self._retry_connection(retry_delay_in_seconds)
+                retries -= 1
+            except BufferError as exc:
+                logger.error(
+                    f"Local producer queue is full when publishing message to "
+                    f"kafka url '{self.url}': {exc}"
+                )
+                self.producer.poll(1)
+                retries -= 1
+            except Exception as exc:
+                logger.error(
+                    f"An unexpected error occurred when publishing message to "
+                    f"kafka url '{self.url}': {exc}"
+                )
+                self._retry_connection(retry_delay_in_seconds)
+                retries -= 1
 
         logger.error("Failed to publish Kafka event.")
 
-    def _retry_publish(
-        self,
-        event: Dict[Text, Any],
-        retries: int,
-        retry_delay_in_seconds: float,
-    ) -> None:
+    def _retry_connection(self, retry_delay_in_seconds: float) -> None:
         """Retries publishing if the producer is not connected.
 
         Args:
@@ -213,12 +233,10 @@ class KafkaEventBroker(EventBroker):
             try:
                 self._check_kafka_connection()
                 logger.debug("Reconnection to kafka successful")
-                self._publish(event)
                 return
             except KafkaException:
                 pass
-        retries -= 1
-        time.sleep(retry_delay_in_seconds)
+            time.sleep(retry_delay_in_seconds)
 
     def _check_kafka_connection(self) -> None:
         """Verifies connection with Kafka.
@@ -259,6 +277,17 @@ class KafkaEventBroker(EventBroker):
             "bootstrap.servers": self.url,
             "error_cb": kafka_error_callback,
         }
+
+        if self.socket_keepalive_enable:
+            config.update(
+                {
+                    "socket.keepalive.enable": self.socket_keepalive_enable,
+                    "reconnect.backoff.ms": self.reconnect_backoff_ms,
+                    "reconnect.backoff.max.ms": self.reconnect_backoff_max_ms,
+                    "topic.metadata.refresh.interval.ms": self.topic_metadata_refresh_interval_ms,  # noqa: E501
+                }
+            )
+
         if self.queue_size:
             config["queue.buffering.max.messages"] = self.queue_size
 
@@ -360,7 +389,15 @@ class KafkaEventBroker(EventBroker):
     async def close(self) -> None:
         """Flush the producer."""
         self._cancelled = True
-        self._poll_thread.join()
+        # Use a timeout so close() doesn't block forever when the poll thread is
+        # stuck in producer.poll() (e.g. no broker available).
+        self._poll_thread.join(timeout=5.0)
+        if self._poll_thread.is_alive():
+            structlogger.warning(
+                "rasa.core.brokers.kafka.KafkaEventBroker.close",
+                event_info="Kafka event broker poll thread did not stop within 5s; "
+                "proceeding with close (thread may still be running).",
+            )
         if self.producer:
             self.producer.flush()
 
@@ -374,9 +411,12 @@ class KafkaEventBroker(EventBroker):
 
         Required to trigger the on_delivery callback passed to produce method.
         """
-        if self.producer is not None:
-            while not self._cancelled:
+        while not self._cancelled:
+            if self.producer is not None:
                 self.producer.poll(0.1)
+            else:
+                # producer not ready yet, wait and retry
+                time.sleep(0.1)
 
 
 def kafka_error_callback(err: "KafkaError") -> None:
