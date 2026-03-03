@@ -3,6 +3,7 @@ import importlib_resources
 from rasa.constants import PACKAGE_NAME
 
 INKEEP_API_KEY_ENV_VAR = "INKEEP_API_KEY"
+INKEEP_BASE_URL_ENV_VAR = "INKEEP_BASE_URL"
 
 INKEEP_RAG_RESPONSE_SCHEMA_PATH = str(
     importlib_resources.files(PACKAGE_NAME)

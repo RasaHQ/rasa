@@ -13,6 +13,7 @@ from rasa.builder import config
 from rasa.builder.copilot.constants import ROLE_USER
 from rasa.builder.document_retrieval.constants import (
     INKEEP_API_KEY_ENV_VAR,
+    INKEEP_BASE_URL_ENV_VAR,
     INKEEP_DOCUMENT_RETRIEVAL_MODEL,
     INKEEP_RAG_RESPONSE_SCHEMA_PATH,
 )
@@ -37,9 +38,11 @@ class InKeepDocumentRetrieval:
     def __init__(
         self,
         api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
     ):
         self._rag_schema = _read_rag_schema()
         self._api_key = api_key or os.getenv(INKEEP_API_KEY_ENV_VAR)
+        self._base_url = base_url or os.getenv(INKEEP_BASE_URL_ENV_VAR)
 
     @property
     def api_key(self) -> str:
@@ -59,6 +62,11 @@ class InKeepDocumentRetrieval:
                 "or pass api_key= to InKeepDocumentRetrieval."
             )
         return self._api_key
+
+    @property
+    def base_url(self) -> str:
+        """Resolve the correct base URL based on proxy usage."""
+        return self._base_url or config.INKEEP_BASE_URL
 
     async def retrieve_documents(
         self, query: str, temperature: float = 0.0, timeout: float = 30.0
@@ -172,7 +180,7 @@ class InKeepDocumentRetrieval:
     async def _get_client(self) -> AsyncGenerator[openai.AsyncOpenAI, None]:
         """Get or create client that handles the API calls to InKeep AI."""
         # Ensure trailing slash to match client expectations/tests
-        base_url = f"{config.INKEEP_BASE_URL.rstrip('/')}/"
+        base_url = f"{self.base_url.rstrip('/')}/"
         client = openai.AsyncOpenAI(
             base_url=base_url,
             api_key=self.api_key,

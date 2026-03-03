@@ -15,7 +15,10 @@ from openai.types.chat import (
 from openai.types.chat.chat_completion import Choice
 
 from rasa.builder import config
-from rasa.builder.document_retrieval.constants import INKEEP_API_KEY_ENV_VAR
+from rasa.builder.document_retrieval.constants import (
+    INKEEP_API_KEY_ENV_VAR,
+    INKEEP_BASE_URL_ENV_VAR,
+)
 from rasa.builder.document_retrieval.inkeep_document_retrieval import (
     Document,
     InKeepDocumentRetrieval,
@@ -126,6 +129,67 @@ class TestInKeepDocumentRetrieval:
 
         # Then
         assert retrieval._api_key == expected_key
+
+    @pytest.mark.parametrize(
+        "base_url_arg, env_url, config_url, expected_base_url",
+        [
+            (
+                "https://custom.inkeep.com/v1",
+                None,
+                "https://api.inkeep.com/v1",
+                "https://custom.inkeep.com/v1",
+            ),
+            (
+                None,
+                "https://env.inkeep.com/v1",
+                "https://api.inkeep.com/v1",
+                "https://env.inkeep.com/v1",
+            ),
+            (
+                None,
+                None,
+                "https://config.inkeep.com/v1",
+                "https://config.inkeep.com/v1",
+            ),
+        ],
+    )
+    def test_base_url_resolution(
+        self,
+        base_url_arg: Optional[str],
+        env_url: Optional[str],
+        config_url: str,
+        expected_base_url: str,
+        mock_api_key: str,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        """Test that base_url is resolved from constructor, env, or config."""
+        if env_url is not None:
+            monkeypatch.setenv(INKEEP_BASE_URL_ENV_VAR, env_url)
+        else:
+            monkeypatch.delenv(INKEEP_BASE_URL_ENV_VAR, raising=False)
+
+        with patch.object(config, "INKEEP_BASE_URL", config_url):
+            retrieval = InKeepDocumentRetrieval(
+                api_key=mock_api_key,
+                base_url=base_url_arg,
+            )
+            assert retrieval.base_url == expected_base_url
+
+    def test_base_url_resolution_with_proxy(
+        self,
+        mock_api_key: str,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        monkeypatch.delenv(INKEEP_BASE_URL_ENV_VAR, raising=False)
+        proxy_base = "https://llm-proxy.example.com"
+        proxy_documentation_url = f"{proxy_base}/documentation"
+
+        with (
+            patch.object(config, "HELLO_LLM_PROXY_BASE_URL", proxy_base),
+            patch.object(config, "INKEEP_BASE_URL", proxy_documentation_url),
+        ):
+            retrieval = InKeepDocumentRetrieval(api_key=mock_api_key, base_url=None)
+            assert retrieval.base_url == proxy_documentation_url
 
     @pytest.mark.asyncio
     @patch("openai.AsyncOpenAI")

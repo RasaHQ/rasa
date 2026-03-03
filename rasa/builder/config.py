@@ -3,6 +3,7 @@
 import os
 from typing import Any, Dict
 
+from rasa.builder.document_retrieval.constants import INKEEP_BASE_URL_ENV_VAR
 from rasa.shared.utils.yaml import read_yaml
 
 # OpenAI Configuration
@@ -101,7 +102,9 @@ AUTH0_ISSUER = f"https://{AUTH0_DOMAIN}/"
 JWKS_URL = f"{AUTH0_ISSUER}.well-known/jwks.json"
 
 # Inkeep Configuration
-INKEEP_BASE_URL = os.getenv("INKEEP_BASE_URL", "https://api.inkeep.com/v1").rstrip("/")
+INKEEP_BASE_URL = os.getenv(
+    INKEEP_BASE_URL_ENV_VAR, "https://api.inkeep.com/v1"
+).rstrip("/")
 
 # LLM Proxy Configuration
 HELLO_LLM_PROXY_BASE_URL = os.getenv("HELLO_LLM_PROXY_BASE_URL")
@@ -115,12 +118,14 @@ LANGFUSE_DEFAULT_ENVIRONMENT = "default"
 DEPLOYMENT_STACK = os.getenv("DEPLOYMENT_STACK", "local")
 DEPLOYMENT_STACK_HEADER_NAME = "deployment-stack"
 
-# Compute proxy-aware base URLs
+# Compute proxy-aware base URLs and credentials
 if HELLO_LLM_PROXY_BASE_URL:
     _proxy = HELLO_LLM_PROXY_BASE_URL.rstrip("/")
     INKEEP_BASE_URL = f"{_proxy}/documentation"
     LAKERA_BASE_URL = f"{_proxy}/guardrails"
     LANGFUSE_HOST = f"{_proxy}/langfuse"
+    LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY or RASA_PRO_LICENSE
+    LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY or RASA_PRO_LICENSE
 
 
 # Number of minutes after FIRST_USED when authentication becomes required
