@@ -64,7 +64,7 @@ runs:
       uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
       with:
         path: ${{ github.workspace }}/.venv
-        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock', 'data/test_config/providers/**/requirements.txt') }}
+        key: venv-${{ inputs.RASA_DEFAULT_INSTALLATION_ONLY == 'true' && 'default' || inputs.OPTIONAL_GROUP_TO_INSTALL }}-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock', 'data/test_config/providers/**/requirements.txt') }}
 
     - name: Install Dependencies via poetry (Linux) 📦
       working-directory: ${{ inputs.WORKING_DIRECTORY }}

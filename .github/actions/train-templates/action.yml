@@ -46,19 +46,23 @@ runs:
         virtualenvs-in-project: true
         installer-parallel: true
 
+    - name: Dry-run and capture output for hashing
+      run: make install-channels --dry-run > dry-run
+      shell: bash
+
     # Restore cached venv if available
     - name: Load cached venv
       id: cached-rasa
       uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
       with:
         path: ${{ github.workspace }}/.venv
-        key: rasa-full-install-${{ runner.os }}-${{ inputs.python_version }}-${{ hashFiles('poetry.lock') }}
+        key: rasa-full-install-${{ runner.os }}-${{ inputs.python_version }}-${{ hashFiles('poetry.lock', 'dry-run') }}
 
     - name: Build and install Rasa Pro package
       if: ${{ steps.cached-rasa.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
-        poetry install
+        make install-channels
 
     - name: Activate virtualenv
       shell: bash

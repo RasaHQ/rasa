@@ -125,11 +125,34 @@ jobs:
           - default
           - nlu
           - full
+          - channels
           - anonymisation
           - full-with-spacy-mitie-and-transformer-models
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Dry-run and capture output for hashing
+        if: ${{ matrix.installation == 'default' }}
+        run: make install --dry-run > dry-run
+
+      - name: Dry-run and capture output for hashing
+        if: ${{ matrix.installation == 'nlu' }}
+        run: make install-nlu --dry-run > dry-run
+
+      - name: Dry-run and capture output for hashing
+        if: ${{ matrix.installation == 'full' || matrix.installation == 'full-with-spacy-mitie-and-transformer-models' }}
+        run: make install-full --dry-run > dry-run
+
+      - name: Dry-run and capture output for hashing
+        if: ${{ matrix.installation == 'channels' }}
+        run: make install-channels --dry-run > dry-run
+
+      - name: Dry-run and capture output for hashing
+        if: ${{ matrix.installation == 'anonymisation' }}
+        run: |
+          make install-nlu-pii-channels --dry-run > dry-run
+          make install-monitoring --dry-run >> dry-run
 
       # Check if cached Rasa exists
       - name: Check Rasa cache
@@ -138,7 +161,7 @@ jobs:
         uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: ${{ github.workspace }}/.venv
-          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'dry-run') }}
           lookup-only: true
           fail-on-cache-miss: true
         continue-on-error: true
@@ -150,7 +173,7 @@ jobs:
         uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: ${{ github.workspace }}/.venv
-          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile', 'data/test/hf_transformers_models.txt') }}
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile', 'data/test/hf_transformers_models.txt', 'dry-run') }}
           lookup-only: true
           fail-on-cache-miss: true
         continue-on-error: true
@@ -166,21 +189,28 @@ jobs:
       - name: Install Rasa with default installation
         if: ${{ steps.cached-rasa.outcome == 'failure' && matrix.installation == 'default' }}
         run: |
-          make install
+          make install | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
 
       # Install if no cache hits
       - name: Install Rasa with nlu installation
         if: ${{ steps.cached-rasa.outcome == 'failure' && matrix.installation == 'nlu' }}
         run: |
-          make install-nlu
+          make install-nlu | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
 
       # Install if no cache hits
       - name: Install Rasa with full installation
         if: ${{ steps.cached-rasa.outcome == 'failure' && matrix.installation == 'full' }}
         run: |
-          make install-full
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+
+       # Install if no cache hits
+      - name: Install Rasa with Channels installation
+        if: ${{ steps.cached-rasa.outcome == 'failure' && matrix.installation == 'channels' }}
+        run: |
+          make install-channels | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
 
       # Install if no cache hits
@@ -213,7 +243,7 @@ jobs:
         if: ${{ matrix.installation != 'full-with-spacy-mitie-and-transformer-models' && steps.cached-rasa.outcome == 'failure' }}
         uses: WarpBuilds/cache/save@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
-          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'dry-run') }}
           path: ${{ github.workspace }}/.venv
 
       # Save new Cache if no existing cache hits
@@ -221,7 +251,7 @@ jobs:
         if: ${{ matrix.installation == 'full-with-spacy-mitie-and-transformer-models' && steps.cached-rasa-with-spacy-mitie-and-transformer-models.outcome == 'failure' }}
         uses: WarpBuilds/cache/save@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
-          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile', 'data/test/hf_transformers_models.txt') }}
+          key: rasa-${{ matrix.installation }}-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile', 'data/test/hf_transformers_models.txt', 'dry-run') }}
           path: ${{ github.workspace }}/.venv
 
   quality:
@@ -938,13 +968,16 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
+      - name: Dry-run and capture output for hashing
+        run: make install-full --dry-run > dry-run
+
       # Load cached Rasa if cache exists
       - name: Load cached Rasa
         id: cached-rasa
         uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: ${{ github.workspace }}/.venv
-          key: rasa-default-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+          key: rasa-full-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'dry-run') }}
 
       - name: Install Dependencies (Linux) 📦
         # without this step the additional dependency installations with pip install
@@ -952,7 +985,7 @@ jobs:
         if: ${{ steps.cached-rasa.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
-          make install
+          make install-full
 
       - name: Load Docker image
         run: |
@@ -1094,7 +1127,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "default"
+          RASA_INSTALL_GROUP: "channels"
 
       # these integration tests need to be run in a sequential fashion,
       # due to environment constraints, so we're running them in a single process.
@@ -1146,7 +1179,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "nlu"
+          RASA_INSTALL_GROUP: "full"
 
       - name: Run container for non-sequential integration testing
         run: |
@@ -1224,7 +1257,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "default"
+          RASA_INSTALL_GROUP: "channels"
 
       - name: Run containers for tracker store integration testing
         run: |
@@ -1300,7 +1333,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "default"
+          RASA_INSTALL_GROUP: "channels"
 
       - name: Run containers for tracker store integration testing
         run: |
@@ -1375,7 +1408,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "default"
+          RASA_INSTALL_GROUP: "channels"
 
       - name: Run Redis containers for timer store integration testing
         run: |
@@ -1428,7 +1461,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "full"
+          RASA_INSTALL_GROUP: "channels"
 
       - name: Run container for concurrent lock store integration testing
         run: |
@@ -1492,7 +1525,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "full"
+          RASA_INSTALL_GROUP: "channels"
 
       - name: Load Docker image
         run: |
@@ -2520,6 +2553,11 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          OPTIONAL_GROUP_TO_INSTALL: channels
+          RASA_DEFAULT_INSTALLATION_ONLY: false
+      
+      - name: Dry-run and capture output for hashing
+        run: make install-channels --dry-run > dry-run
 
         # Load cached Rasa if cache exists
       - name: Load cached Rasa
@@ -2527,11 +2565,11 @@ jobs:
         uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: ${{ github.workspace }}/.venv
-          key: rasa-default-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+          key: rasa-channels-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'dry-run') }}
 
       - name: Install Rasa
         if: ${{ steps.cached-rasa.outputs.cache-hit != 'true' }}
-        run: make install
+        run: make install-channels
 
       - name: Create tmp directory
         run: |

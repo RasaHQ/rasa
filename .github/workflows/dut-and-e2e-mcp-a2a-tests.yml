@@ -80,7 +80,8 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_DEFAULT_INSTALLATION_ONLY: "true"
+          RASA_DEFAULT_INSTALLATION_ONLY: false
+          OPTIONAL_GROUP_TO_INSTALL: channels
       - name: Run mock MCP finance server
         working-directory: calm-benchmarking-bot
         run: make run-finnhub-mock-mcp-server > mcp-server-logs.txt 2>&1 &
@@ -165,7 +166,8 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_DEFAULT_INSTALLATION_ONLY: "true"
+          RASA_DEFAULT_INSTALLATION_ONLY: false
+          OPTIONAL_GROUP_TO_INSTALL: channels
       - name: Install UV
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Configure AWS credentials
@@ -279,7 +281,8 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_DEFAULT_INSTALLATION_ONLY: "true"
+          RASA_DEFAULT_INSTALLATION_ONLY: false
+          OPTIONAL_GROUP_TO_INSTALL: channels
       - name: Run mock MCP finance server
         working-directory: calm-benchmarking-bot
         run: make run-finnhub-mock-mcp-server > mcp-server-logs.txt 2>&1 &
@@ -388,7 +391,8 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_DEFAULT_INSTALLATION_ONLY: "true"
+          RASA_DEFAULT_INSTALLATION_ONLY: false
+          OPTIONAL_GROUP_TO_INSTALL: channels
       - name: Run mock MCP finance server
         working-directory: calm-benchmarking-bot
         run: make run-finnhub-mock-mcp-server > mcp-server-logs.txt 2>&1 &
@@ -462,7 +466,8 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_DEFAULT_INSTALLATION_ONLY: "true"
+          RASA_DEFAULT_INSTALLATION_ONLY: false
+          OPTIONAL_GROUP_TO_INSTALL: channels
       - name: Install UV
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Configure AWS credentials
