@@ -21,6 +21,21 @@ on:
       - "rasa/shared/engine/**"
       - "rasa/shared/utils/mcp/**"
 
+  push:
+    branches:
+      - main
+    paths:
+      - "rasa/agents/**"
+      - "rasa/dialogue_understanding/**"
+      - "rasa/engine/**"
+      - "rasa/core/**/*agent*.py"
+      - "rasa/cli/**/train.py"
+      - "rasa/core/policies/flows/**"
+      - "rasa/shared/agents/**"
+      - "rasa/shared/core/**"
+      - "rasa/shared/engine/**"
+      - "rasa/shared/utils/mcp/**"
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -102,7 +117,7 @@ jobs:
       - name: E2E tests
         uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
         env:
-          MOCK_MCP_ENDPOINTS_FILE: ${{ github.workspace }}/data/test_e2e_mcp_config/${{ matrix.model }}-endpoints.yml
+          MOCK_MCP_ENDPOINTS_FILE: ${{ contains(matrix.test-type, 'meta-param-support') && format('{0}/data/test_e2e_mcp_config/endpoints-with-meta-param-support.yml', github.workspace) || format('{0}/data/test_e2e_mcp_config/{1}-endpoints.yml', github.workspace, matrix.model) }}
           MOCK_MCP_META_ENDPOINTS_FILE: ${{ github.workspace }}/data/test_e2e_mcp_config/endpoints-with-meta-param-support.yml
           TEST_TYPE: ${{ matrix.test-type }}
           AGENT_CLIENT_ID: google-id-123
@@ -112,7 +127,7 @@ jobs:
           max_attempts: 2
           shell: bash
           command: |
-            set -Eeuxov pipefail
+            set -Eeuxvo pipefail
             cd calm-benchmarking-bot
             if [[ ! -d tests ]]; then
               mkdir tests;
@@ -120,6 +135,26 @@ jobs:
             (make e2e-test-mock-mcp-"${TEST_TYPE}" 2>&1 | tee e2e-logs) \
             || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' e2e-logs \
               && echo "::warning::E2E tests failed due to external/3rd-party service issues (non-blocking)")
+          new_command_on_retry: |
+            set -Eeuxvo pipefail
+            cd "${GITHUB_WORKSPACE}"/calm-benchmarking-bot
+            if ! [[ -f tests/e2e_results_failed.yml ]]; then
+              (make e2e-test-mock-mcp-"${TEST_TYPE}" 2>&1 | tee e2e-logs) \
+              || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' e2e-logs \
+                && echo "::warning::E2E tests failed due to external/3rd-party service issues (non-blocking)")
+              exit $?
+            fi
+            rm -rf .rasa
+            for failed_test in $(yq '.test_results[].error_path' tests/e2e_results_failed.yml);
+            do
+              (rasa test e2e "${failed_test%:*}" \
+                --e2e-results \
+                --endpoints "${MOCK_MCP_ENDPOINTS_FILE}" \
+                --sub-agents test_e2e_mcp_sub_agents \
+                --debug \
+                2>&1 | tee e2e-logs) || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' e2e-logs \
+              && echo "::warning::E2E tests failed due to external/3rd-party service issues (non-blocking)")
+            done
       - name: Save E2E test results
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
@@ -204,7 +239,7 @@ jobs:
           max_attempts: 2
           shell: bash
           command: |
-            set -Eeuxov pipefail
+            set -Eeuxvo pipefail
             cd "${GITHUB_WORKSPACE}"/calm-benchmarking-bot
             if [[ ! -d tests ]]; then
               mkdir tests;
@@ -221,8 +256,15 @@ jobs:
             make run-crypto-ramp-mock-a2a-server >> a2a-server-logs.txt 2>&1 &
             curl -v --retry 7 --retry-all-errors http://localhost:9000/.well-known/agent-card.json
           new_command_on_retry: |
-            set -Eeuxv pipefail
+            set -Eeuxvo pipefail
             cd "${GITHUB_WORKSPACE}"/calm-benchmarking-bot
+            if ! [[ -f tests/e2e_results_failed.yml ]]; then
+              (make e2e-test-mock-a2a-agent-"${TEST_TYPE}" 2>&1 | tee e2e-logs) \
+              || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' e2e-logs \
+                && echo "::warning::E2E tests failed due to external/3rd-party service issues (non-blocking)")
+              exit $?
+            fi
+            rm -rf .rasa
             for failed_test in $(yq '.test_results[].error_path' tests/e2e_results_failed.yml);
             do
               (rasa test e2e "${failed_test%:*}" \
@@ -337,11 +379,12 @@ jobs:
           max_attempts: 2
           shell: bash
           command: |
-            set -Eeuxov pipefail
+            set -Eeuxvo pipefail
             cd calm-benchmarking-bot
             if [[ ! -d tests ]]; then
               mkdir tests;
             fi
+            rm -rf .rasa
             rasa test e2e e2e/e2e_tests_with_assertions/mock_mcp/agents/open_ended/happy_path/conduct_company_finance_research.yml \
               --e2e-results --endpoints "${MOCK_MCP_ENDPOINTS_FILE}" \
               --sub-agents "${MOCK_MCP_SUB_AGENTS_DIRECTORY}" \
@@ -422,9 +465,11 @@ jobs:
           max_attempts: 2
           shell: bash
           command: |
-            set -Eeuxov pipefail
+            set -Eeuxvo pipefail
             cd "${GITHUB_WORKSPACE}"/calm-benchmarking-bot
-            make dut-mcp
+            rm -rf .rasa
+            make dut-mcp | tee dut-mcp-log
+            grep -iE '\b0 failed test cases' dut-mcp-log
       - name: Save DUT results
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
@@ -504,9 +549,11 @@ jobs:
           max_attempts: 2
           shell: bash
           command: |
-            set -Eeuxov pipefail
+            set -Eeuxvo pipefail
             cd "${GITHUB_WORKSPACE}"/calm-benchmarking-bot
-            make dut-a2a
+            rm -rf .rasa
+            make dut-a2a | tee dut-a2a-log
+            grep -iE '\b0 failed test cases' dut-a2a-log
           # Restart mock A2A agent to clear conversation history, before re-running test(s)
           on_retry_command: |
             set -Eeuxv

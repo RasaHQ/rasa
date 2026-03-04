@@ -1,6 +1,10 @@
 agent:
   name: mock_finnhub_mcp_agent
-  description: Conduct financial research via mock Finnhub Stock API
+  description: |
+    Conduct financial research via mock Finnhub Stock API.
+    MANDATORY: Do not exit until the user has indicated that
+    they are done. Until then, continue to offer your help and
+    services.
 
 connections:
   mcp_servers:
@@ -15,3 +19,4 @@ connections:
 configuration:
   llm:
     model_group: llm-model
+  tool_timeout: 30
