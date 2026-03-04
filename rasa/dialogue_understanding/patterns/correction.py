@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 import structlog
 
@@ -20,6 +20,8 @@ from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
     DialogueStackFrame,
 )
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentStackFrame,
+    AgentState,
     FlowStackFrameType,
     UserFlowStackFrame,
 )
@@ -27,7 +29,7 @@ from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import ACTION_CORRECT_FLOW_SLOT
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import AgentInterrupted, Event, SlotSet
 from rasa.shared.core.flows.flow import END_STEP, START_STEP, ContinueFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -124,6 +126,8 @@ class ActionCorrectFlowSlot(action.Action):
             updated_stack = reset_stack_on_tracker_to_prior_state(
                 top.reset_flow_id, top.reset_step_id or START_STEP, tracker
             )
+            for agent_id, flow_id in get_suspended_agent_ids_from_stack(updated_stack):
+                events.append(AgentInterrupted(agent_id=agent_id, flow_id=flow_id))
             events.extend(tracker.create_stack_updated_events(updated_stack))
 
         events.extend(
@@ -193,14 +197,20 @@ def set_topmost_flow_frame_to_continue(stack_frames: List[DialogueStackFrame]) -
 
 
 def create_termination_frames_for_missing_frames(
-    new_stack_frames: List[DialogueStackFrame], previous_stack: DialogueStack
+    new_stack_frames: List[DialogueStackFrame],
+    previous_stack: DialogueStack,
+    target_user_flow_frame: Optional[UserFlowStackFrame] = None,
+    exclude_agent_id: Optional[str] = None,
 ) -> List[DialogueStackFrame]:
     """Terminate frames that are part in the previous stack but not in the new stack.
 
     The frames are terminated by setting them to the END_STEP. This allows
     them to be properly wrapped up.
-    """
 
+    When target_user_flow_frame is given, missing AgentStackFrames (except
+    exclude_agent_id) are stored in target_user_flow_frame.suspended_agent_frames
+    so they can be restored and resumed later, instead of being terminated.
+    """
     reused_frame_ids = {frame.frame_id for frame in new_stack_frames}
 
     frames_to_terminate: List[DialogueStackFrame] = []
@@ -208,6 +218,17 @@ def create_termination_frames_for_missing_frames(
         if frame.frame_id in reused_frame_ids:
             # this frame already exists in the replacement stack, skip it
             # shouldn't be terminated
+            continue
+        if (
+            target_user_flow_frame is not None
+            and isinstance(frame, AgentStackFrame)
+            and (exclude_agent_id is None or frame.agent_id != exclude_agent_id)
+        ):
+            if target_user_flow_frame.suspended_agent_frames is None:
+                target_user_flow_frame.suspended_agent_frames = []
+            entry = frame.as_dict()
+            entry["state"] = AgentState.INTERRUPTED.value
+            target_user_flow_frame.suspended_agent_frames.append(entry)
             continue
         if (
             isinstance(frame, UserFlowStackFrame)
@@ -220,10 +241,36 @@ def create_termination_frames_for_missing_frames(
     return frames_to_terminate
 
 
+def get_suspended_agent_ids_from_stack(
+    stack: DialogueStack,
+) -> List[Tuple[str, str]]:
+    """Return (agent_id, flow_id) for every agent in any frame's suspended list."""
+    result: List[Tuple[str, str]] = []
+    for frame in stack.frames:
+        if not isinstance(frame, UserFlowStackFrame):
+            continue
+        suspended = frame.suspended_agent_frames
+        if not suspended:
+            continue
+        for entry in suspended:
+            agent_id = entry.get("agent_id")
+            flow_id = entry.get("flow_id")
+            if agent_id is not None and flow_id is not None:
+                result.append((agent_id, flow_id))
+    return result
+
+
 def reset_stack_on_tracker_to_prior_state(
-    reset_flow_id: str, reset_step_id: str, tracker: DialogueStateTracker
+    reset_flow_id: str,
+    reset_step_id: str,
+    tracker: DialogueStateTracker,
+    exclude_agent_id: Optional[str] = None,
 ) -> DialogueStack:
-    """Reset the stack on the tracker to the prior state."""
+    """Reset the stack on the tracker to the prior state.
+
+    When exclude_agent_id is set (e.g. when restarting that agent), that
+    agent's stack frame is not added to suspended_agent_frames.
+    """
     # assumption is that we have already been at the reset step id in the reset flow
     # at some point before in the tracker. we'll search for that point in time and
     # update the current stack to be as close to that time as possible,
@@ -283,10 +330,14 @@ def reset_stack_on_tracker_to_prior_state(
     set_topmost_flow_frame_to_continue(replacement_stack)
 
     # terminate all the frames from the original stack that are not part of the
-    # replacement stack. this will add these frames to the replacement stack,
-    # but with their step set to END_STEP. this allows them to be properly
-    # wrapped up before we head into the correction.
+    # replacement stack. AgentStackFrames are preserved in the target UserFlow's
+    # suspended_agent_frames so they can be resumed later.
     replacement_stack.extend(
-        create_termination_frames_for_missing_frames(replacement_stack, current_stack)
+        create_termination_frames_for_missing_frames(
+            replacement_stack,
+            current_stack,
+            target_user_flow_frame=target_frame,
+            exclude_agent_id=exclude_agent_id,
+        )
     )
     return DialogueStack(frames=replacement_stack)

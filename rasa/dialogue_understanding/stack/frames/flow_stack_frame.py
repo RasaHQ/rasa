@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
     DialogueStackFrame,
@@ -161,11 +161,24 @@ class BaseFlowStackFrame(DialogueStackFrame):
 class UserFlowStackFrame(BaseFlowStackFrame):
     frame_type: FlowStackFrameType = FlowStackFrameType.REGULAR
     """The type of the frame. Defaults to `StackFrameType.REGULAR`."""
+    suspended_agent_frames: Optional[List[Dict[str, Any]]] = None
+    """Agent stack frames (as dicts) to restore when reaching that agent's step.
+
+    Used when rewinding the stack (e.g. slot correction or agent restart) so
+    interrupted agents can be resumed. Old trackers may have no key; treat as None.
+    """
 
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
         return "flow"
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Serialize to dict; omit suspended_agent_frames when None to avoid bloat."""
+        data = super().as_dict()
+        if data.get("suspended_agent_frames") is None:
+            data.pop("suspended_agent_frames", None)
+        return data
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> UserFlowStackFrame:
@@ -177,11 +190,15 @@ class UserFlowStackFrame(BaseFlowStackFrame):
         Returns:
             The created `DialogueStackFrame`.
         """
+        suspended = data.get("suspended_agent_frames")
+        if suspended is not None and not isinstance(suspended, list):
+            suspended = None
         return UserFlowStackFrame(
             frame_id=data["frame_id"],
             flow_id=data["flow_id"],
             step_id=data["step_id"],
             frame_type=FlowStackFrameType.from_str(data.get("frame_type")),
+            suspended_agent_frames=suspended,
         )
 
 

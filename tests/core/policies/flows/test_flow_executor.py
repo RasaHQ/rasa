@@ -18,6 +18,8 @@ from rasa.core.policies.flows.flow_exceptions import (
     NoNextStepInFlowException,
 )
 from rasa.core.policies.flows.flow_executor import (
+    _restore_suspended_agent_frame_if_any,
+    get_next_step_id_after_agent,
     select_next_step,
     select_next_step_id,
     validate_collect_step,
@@ -83,7 +85,7 @@ from rasa.shared.core.flows.flow import (
     ContinueFlowStep,
     EndFlowStep,
 )
-from rasa.shared.core.flows.flow_step_links import FlowStepLinks
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks, StaticFlowStepLink
 from rasa.shared.core.flows.steps import SetSlotsFlowStep
 from rasa.shared.core.flows.steps.collect import (
     CollectInformationFlowStep,
@@ -506,6 +508,154 @@ def test_select_next_step_id_returns_current_id_when_agent_stack_frame_on_top(
 
     result = select_next_step_id(step, stack.current_context(), tracker)
     assert result == "my_step_id"
+
+
+def test_select_next_step_id_ignore_agent_on_stack_returns_next_step():
+    """ENG-2669: With ignore_agent_on_stack=True, returns next step not current."""
+    agent_frame = AgentStackFrame(
+        flow_id="my_flow",
+        step_id="call_agent_a",
+        agent_id="agent_a",
+        state=AgentState.INTERRUPTED,
+        frame_id="agent-frame",
+    )
+    stack = DialogueStack(frames=[agent_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    step = FlowStep(
+        custom_id="call_agent_a",
+        idx=0,
+        description=None,
+        metadata={},
+        next=FlowStepLinks(links=[StaticFlowStepLink(target_step_id="step_between")]),
+        flow_id="my_flow",
+    )
+    result = select_next_step_id(
+        step, stack.current_context(), tracker, ignore_agent_on_stack=True
+    )
+    assert result == "step_between"
+
+
+def test_get_next_step_id_after_agent_returns_next_step():
+    """ENG-2669: Returns the step id after the agent in the flow."""
+    all_flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: test flow
+            steps:
+            - id: call_agent_a
+              call: agent_a
+            - id: step_between
+              collect: slot_x
+            - id: call_agent_b
+              call: agent_b
+          agent_a:
+            description: agent a
+            steps:
+            - id: step_a
+              action: action_listen
+          agent_b:
+            description: agent b
+            steps:
+            - id: step_b
+              action: action_listen
+        """
+    )
+    tracker = DialogueStateTracker.from_events("test", [])
+    result = get_next_step_id_after_agent(
+        "my_flow", "agent_a", all_flows, tracker, step_id="call_agent_a"
+    )
+    assert result == "step_between"
+    # agent_b is last in flow; next step is END
+    result_after_b = get_next_step_id_after_agent(
+        "my_flow", "agent_b", all_flows, tracker, step_id="call_agent_b"
+    )
+    assert result_after_b == END_STEP
+
+
+def test_get_next_step_id_after_agent_matches_step_id_when_agent_called_twice():
+    """Same agent called twice in a flow; step_id selects the correct next step."""
+    all_flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: test flow
+            steps:
+            - id: call_agent_x
+              call: agent_x
+            - id: step_one
+              action: action_listen
+            - id: call_agent_x_again
+              call: agent_x
+            - id: step_two
+              action: action_listen
+          agent_x:
+            description: agent x
+            steps:
+            - id: step_x
+              action: action_listen
+        """
+    )
+    tracker = DialogueStateTracker.from_events("test", [])
+    # First call to agent_x -> next is step_one
+    result_first = get_next_step_id_after_agent(
+        "my_flow", "agent_x", all_flows, tracker, step_id="call_agent_x"
+    )
+    assert result_first == "step_one"
+    # Second call to agent_x -> next is step_two
+    result_second = get_next_step_id_after_agent(
+        "my_flow", "agent_x", all_flows, tracker, step_id="call_agent_x_again"
+    )
+    assert result_second == "step_two"
+
+
+def test_restore_suspended_agent_frame_if_any_pushes_and_removes_from_list():
+    """ENG-2669: Restoring a suspended agent frame pushes it and removes from list."""
+    agent_b_frame = AgentStackFrame(
+        flow_id="my_flow",
+        step_id="call_b",
+        agent_id="agent_b",
+        state=AgentState.INTERRUPTED,
+        frame_id="agent-b-frame",
+    )
+    user_flow = UserFlowStackFrame(
+        flow_id="my_flow",
+        step_id="step_between",
+        frame_id="user-flow-id",
+        suspended_agent_frames=[agent_b_frame.as_dict()],
+    )
+    stack = DialogueStack(frames=[user_flow])
+    _restore_suspended_agent_frame_if_any(stack, "my_flow", "call_b", "agent_b")
+    assert len(stack.frames) == 2
+    top = stack.top()
+    assert isinstance(top, AgentStackFrame)
+    assert top.agent_id == "agent_b"
+    assert top.state == AgentState.INTERRUPTED
+    assert user_flow.suspended_agent_frames == []
+
+
+def test_restore_suspended_agent_frame_if_any_matches_step_id():
+    """Restore only when flow_id, step_id and agent_id match."""
+    agent_b_at_call_b = AgentStackFrame(
+        flow_id="my_flow",
+        step_id="call_b",
+        agent_id="agent_b",
+        state=AgentState.INTERRUPTED,
+        frame_id="agent-b-frame",
+    )
+    user_flow = UserFlowStackFrame(
+        flow_id="my_flow",
+        step_id="step_between",
+        frame_id="user-flow-id",
+        suspended_agent_frames=[agent_b_at_call_b.as_dict()],
+    )
+    stack = DialogueStack(frames=[user_flow])
+    # Different step_id (e.g. second call to agent_b in same flow) -> do not restore
+    _restore_suspended_agent_frame_if_any(stack, "my_flow", "call_b_again", "agent_b")
+    assert len(stack.frames) == 1
+    assert len(user_flow.suspended_agent_frames) == 1
+    assert user_flow.suspended_agent_frames[0].get("step_id") == "call_b"
 
 
 def test_advance_top_flow_on_stack_handles_empty_stack():

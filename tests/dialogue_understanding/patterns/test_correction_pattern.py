@@ -12,6 +12,7 @@ from rasa.dialogue_understanding.patterns.correction import (
     CorrectionPatternFlowStackFrame,
     create_termination_frames_for_missing_frames,
     find_previous_state_to_reset_to,
+    get_suspended_agent_ids_from_stack,
     reset_stack_on_tracker_to_prior_state,
     set_topmost_flow_frame_to_continue,
     slice_of_stack_below_target,
@@ -21,10 +22,14 @@ from rasa.dialogue_understanding.stack.dialogue_stack import (
     DialogueStack,
 )
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentStackFrame,
+    AgentState,
+    FlowStackFrameType,
+)
 from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import DialogueStackUpdated, SlotSet
+from rasa.shared.core.events import AgentInterrupted, DialogueStackUpdated, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import (
     advance_top_tracker_flow,
@@ -869,6 +874,129 @@ def test_create_termination_frames_for_missing_collect_frames():
             step_id="NEXT:END", collect="foo", frame_id="some-other-id-2"
         ),
     ]
+
+
+def test_create_termination_frames_for_missing_frames_preserves_agent_in_suspended():
+    """ENG-2669: Missing AgentStackFrames go to suspended_agent_frames,
+    not termination."""
+    target_user_flow = UserFlowStackFrame(
+        flow_id="foo_flow", step_id="collect_foo", frame_id="target-frame-id"
+    )
+    new_stack_frames = [target_user_flow]
+    previous_stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(
+                flow_id="foo_flow", step_id="collect_foo", frame_id="target-frame-id"
+            ),
+            AgentStackFrame(
+                flow_id="foo_flow",
+                step_id="call_agent_b",
+                agent_id="agent_b",
+                state=AgentState.INTERRUPTED,
+                frame_id="agent-b-frame",
+            ),
+        ]
+    )
+    termination_frames = create_termination_frames_for_missing_frames(
+        new_stack_frames=new_stack_frames,
+        previous_stack=previous_stack,
+        target_user_flow_frame=target_user_flow,
+    )
+    assert len(termination_frames) == 0
+    assert target_user_flow.suspended_agent_frames is not None
+    assert len(target_user_flow.suspended_agent_frames) == 1
+    assert target_user_flow.suspended_agent_frames[0]["agent_id"] == "agent_b"
+    assert target_user_flow.suspended_agent_frames[0]["state"] == "interrupted"
+
+
+def test_suspended_agent_frame_stored_with_state_interrupted():
+    """ENG-2669: Suspended agent frames are stored with state interrupted."""
+    target_user_flow = UserFlowStackFrame(
+        flow_id="foo_flow", step_id="collect_foo", frame_id="target-frame-id"
+    )
+    new_stack_frames = [target_user_flow]
+    previous_stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(
+                flow_id="foo_flow", step_id="collect_foo", frame_id="target-frame-id"
+            ),
+            AgentStackFrame(
+                flow_id="foo_flow",
+                step_id="call_agent_b",
+                agent_id="agent_b",
+                state=AgentState.WAITING_FOR_INPUT,
+                frame_id="agent-b-frame",
+            ),
+        ]
+    )
+    create_termination_frames_for_missing_frames(
+        new_stack_frames=new_stack_frames,
+        previous_stack=previous_stack,
+        target_user_flow_frame=target_user_flow,
+    )
+    assert target_user_flow.suspended_agent_frames is not None
+    assert len(target_user_flow.suspended_agent_frames) == 1
+    assert target_user_flow.suspended_agent_frames[0]["state"] == "interrupted"
+
+
+def test_get_suspended_agent_ids_from_stack():
+    """ENG-2669: Helper returns (agent_id, flow_id) for each suspended agent."""
+    user_flow = UserFlowStackFrame(
+        flow_id="flow_1",
+        step_id="step_1",
+        frame_id="uf-1",
+        suspended_agent_frames=[
+            {"agent_id": "agent_a", "flow_id": "flow_1"},
+            {"agent_id": "agent_b", "flow_id": "flow_1"},
+        ],
+    )
+    other_flow = UserFlowStackFrame(flow_id="flow_2", step_id="step_2", frame_id="uf-2")
+    stack = DialogueStack(frames=[other_flow, user_flow])
+    result = get_suspended_agent_ids_from_stack(stack)
+    assert result == [("agent_a", "flow_1"), ("agent_b", "flow_1")]
+
+    empty_stack = DialogueStack(frames=[other_flow])
+    assert get_suspended_agent_ids_from_stack(empty_stack) == []
+
+
+async def test_correction_action_emits_agent_interrupted_for_suspended_agents() -> None:
+    """ENG-2669: Correction reset that suspends agents emits AgentInterrupted."""
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    update_tracker_with_path_through_flow(
+        tracker,
+        "foo",
+        ["collect_foo", "collect_bar", "collect_baz"],
+        frame_id="some-frame-id",
+    )
+    stack = tracker.stack
+    agent_frame = AgentStackFrame(
+        flow_id="foo",
+        step_id="call_agent_b",
+        agent_id="agent_b",
+        state=AgentState.INTERRUPTED,
+        frame_id="agent-b-frame",
+    )
+    correction_frame = CorrectionPatternFlowStackFrame(
+        frame_id="corr-1",
+        step_id="1",
+        corrected_slots={},
+        reset_flow_id="foo",
+        reset_step_id="collect_bar",
+    )
+    tracker.update_stack(
+        DialogueStack(frames=list(stack.frames) + [agent_frame, correction_frame])
+    )
+    action = ActionCorrectFlowSlot()
+    events = await action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator({}),
+        tracker,
+        Domain.empty(),
+    )
+    interrupted_events = [e for e in events if isinstance(e, AgentInterrupted)]
+    assert len(interrupted_events) == 1
+    assert interrupted_events[0].agent_id == "agent_b"
+    assert interrupted_events[0].flow_id == "foo"
 
 
 def test_reset_stack_on_tracker_to_prior_state_no_frame_found():

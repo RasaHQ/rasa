@@ -126,6 +126,12 @@ async def run_agent(
         and agent_stack_frame == stack.top()
         and agent_stack_frame.state == AgentState.INTERRUPTED
     ):
+        structlogger.debug(
+            "flow.step.run_agent.resuming_interrupted_agent",
+            agent_id=step.call,
+            flow_id=step.flow_id,
+        )
+
         # Reinvoke the agent with resume context; events are still submitted.
         final_events.append(AgentResumed(agent_id=step.call, flow_id=step.flow_id))
         agent_input = _prepare_agent_input(agent_stack_frame, step, tracker, slots)

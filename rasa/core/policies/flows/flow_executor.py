@@ -149,16 +149,39 @@ def select_next_step_id(
     current: FlowStep,
     condition_evaluation_context: Dict[str, Any],
     tracker: DialogueStateTracker,
+    ignore_agent_on_stack: bool = False,
 ) -> Optional[Text]:
-    """Selects the next step id based on the current step."""
-    # if the current step is a call step to an agent, and we already have an
-    # AgentStackFrame on top of the stack, we need to return the current
-    # step id again in order to loop back to the agent.
-    top_stack_frame = tracker.stack.top()
-    if top_stack_frame and isinstance(top_stack_frame, AgentStackFrame):
-        return current.id
+    """Selects the next step id based on the current step.
+
+    Args:
+        current: The current flow step.
+        condition_evaluation_context: Context for evaluating conditions.
+        tracker: The dialogue state tracker.
+        ignore_agent_on_stack: If True, do not return current step when top
+            is an AgentStackFrame (used when rewinding so we get the real next
+            step in the flow, e.g. for correction or agent restart).
+
+    Returns:
+        The id of the next step, or None if there is no next step.
+    """
+    if not ignore_agent_on_stack:
+        # if the current step is a call step to an agent, and we already have an
+        # AgentStackFrame on top of the stack, we need to return the current
+        # step id again in order to loop back to the agent.
+        top_stack_frame = tracker.stack.top()
+        if top_stack_frame and isinstance(top_stack_frame, AgentStackFrame):
+            return current.id
 
     next_step = current.next
+    if next_step is None:
+        return None
+    if not next_step.links:
+        # e.g. LinkFlowStep has no links; handle below
+        if current.id == END_STEP:
+            return None
+        if isinstance(current, LinkFlowStep):
+            return END_STEP
+        return None
     if len(next_step.links) == 1 and isinstance(next_step.links[0], StaticFlowStepLink):
         return next_step.links[0].target
 
@@ -227,11 +250,78 @@ def select_next_step(
     return step
 
 
+def get_next_step_id_after_agent(
+    flow_id: str,
+    agent_id: str,
+    flows: FlowsList,
+    tracker: DialogueStateTracker,
+    step_id: Optional[Text] = None,
+) -> Optional[Text]:
+    """Returns the next step id in the flow after the given agent's call step.
+
+    Uses the flow graph only (ignore_agent_on_stack=True) so the result is
+    the real next step after the agent, not looping back to the agent.
+    Used when rewinding the stack (e.g. agent restart or slot correction).
+
+    When step_id is provided, matches the specific call step (same agent can
+    be called multiple times in one flow). When step_id is None, uses the
+    first matching call step.
+
+    Args:
+        flow_id: The flow containing the agent.
+        agent_id: The agent id (call step's call target).
+        flows: All flows.
+        tracker: The dialogue state tracker.
+        step_id: Optional id of the call step; when set, only that step is matched.
+
+    Returns:
+        The next step id, or None if there is no next step (e.g. agent at end).
+    """
+    flow = flows.flow_by_id(flow_id)
+    if not flow:
+        return None
+    for step in flow.steps:
+        if not (isinstance(step, CallFlowStep) and step.call == agent_id):
+            continue
+        if step_id is not None and step.id != step_id:
+            continue
+        context = tracker.stack.current_context()
+        return select_next_step_id(step, context, tracker, ignore_agent_on_stack=True)
+    return None
+
+
 def update_top_flow_step_id(updated_id: str, stack: DialogueStack) -> DialogueStack:
     """Update the top flow on the stack."""
     if (top := stack.top()) and isinstance(top, BaseFlowStackFrame):
         top.step_id = updated_id
     return stack
+
+
+def _restore_suspended_agent_frame_if_any(
+    stack: DialogueStack, flow_id: str, step_id: str, agent_id: str
+) -> None:
+    """If a suspended agent frame exists for this flow, step and agent, push it.
+
+    Used after rewinding (correction or restart) so run_agent can resume the
+    interrupted agent. Matches on (flow_id, step_id, agent_id) so the same agent
+    called from different flows or multiple times in one flow restores the correct
+    frame. Mutates stack and the frame's suspended_agent_frames list.
+    """
+    for frame in stack.frames:
+        if not isinstance(frame, UserFlowStackFrame):
+            continue
+        suspended = frame.suspended_agent_frames
+        if not suspended:
+            continue
+        for i, entry in enumerate(suspended):
+            if (
+                entry.get("flow_id") == flow_id
+                and entry.get("step_id") == step_id
+                and entry.get("agent_id") == agent_id
+            ):
+                suspended.pop(i)
+                stack.push(AgentStackFrame.from_dict(entry))
+                return
 
 
 def _get_parent_user_flow_frame(stack: DialogueStack) -> Optional[UserFlowStackFrame]:
@@ -536,7 +626,6 @@ async def advance_flows_until_next_action(
             next_step = select_next_step(
                 active_frame.step(flows), current_flow, tracker.stack, tracker
             )
-
             if not next_step:
                 raise NoNextStepInFlowException(tracker.stack)
 
@@ -544,6 +633,18 @@ async def advance_flows_until_next_action(
 
             with bound_contextvars(step_id=next_step.id):
                 step_stack = tracker.stack
+                if isinstance(next_step, CallFlowStep) and next_step.is_calling_agent():
+                    # Restore a previously suspended agent frame (e.g. after restart of
+                    # another agent) so we resume this agent instead of starting fresh.
+                    _restore_suspended_agent_frame_if_any(
+                        step_stack,
+                        next_step.flow_id,
+                        next_step.id,
+                        next_step.call,
+                    )
+                    tracker.update_stack(step_stack)
+                    step_stack = tracker.stack
+
                 step_result = await run_step(
                     next_step,
                     current_flow,
