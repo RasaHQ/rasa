@@ -2292,7 +2292,7 @@ jobs:
         # runner to be available, becoming a bottleneck and slowing down
         # overall CI completion time.
         # test-other-unit-tests uses runners 1-20, test-flaky uses runners 1-9
-        runner: [1, 2, 3]
+        runner: [1, 2, 3, 4]
     needs: [install-and-cache-rasa]
 
     steps:
@@ -2326,10 +2326,12 @@ jobs:
 
       - name: Test Code 🔍 (multi-process)
         env:
-          JOBS: logical
+          JOBS: 6
           PYTHONUTF8: 1
+          PYTHONUNBUFFERED: 1
+          ARGS: "-v"
           RUNNER_ID: ${{ matrix.runner }}
-          NUMBER_OF_RUNNERS: 3
+          NUMBER_OF_RUNNERS: 4
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
           CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
