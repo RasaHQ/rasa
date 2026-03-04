@@ -66,7 +66,7 @@ class JambonzStreamOutputChannel(VoiceOutputChannel):
     async def send_audio_bytes(
         self, recipient_id: str, audio_bytes: RasaAudioBytes
     ) -> None:
-        """Jambonz needs L16 24kHz"""
+        """Jambonz needs L16 24kHz."""
         await self.voice_websocket.send(audio_bytes.data)
 
     def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
@@ -92,8 +92,12 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         """Initialize the channel.
 
         Args:
-            username: Optional username for basic auth
-            password: Optional password for basic auth
+            server_url: URL where the server is hosted.
+            asr_config: ASR engine configuration.
+            tts_config: TTS engine configuration.
+            interruptions: Optional interruption config.
+            username: Optional username for basic auth.
+            password: Optional password for basic auth.
         """
         super().__init__(server_url, asr_config, tts_config, interruptions)
         self.username = username
@@ -131,7 +135,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         validate_username_password_credentials(username, password, "Jambonz Stream")
 
     def _websocket_stream_url(self) -> str:
-        """Returns the websocket stream URL."""
+        """Return the websocket stream URL."""
         # depending on the config value, the url might contain http as a
         # protocol or not - we'll make sure both work
         if self.server_url.startswith("http"):
@@ -141,11 +145,13 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         return f"{base_url}/{JAMBONZ_STREAMS_WEBSOCKET_PATH}"
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
-        """Jambonz is sending L16 PCM 24kHz"""
+        """Jambonz is sending L16 PCM 24kHz."""
         return RasaAudioBytes(input_bytes, format=self.audio_format)
 
     async def collect_call_parameters(
-        self, channel_websocket: Websocket
+        self,
+        channel_websocket: Websocket,
+        request: Optional[Any] = None,
     ) -> Optional[CallParameters]:
         # Wait for initial metadata message
         message = await channel_websocket.recv()

@@ -86,8 +86,8 @@ class GenesysOutputChannel(VoiceOutputChannel):
         await self.voice_websocket.send(audio_bytes.data)
 
     async def send_marker_message(self, recipient_id: str) -> None:
-        """
-        Send a message that marks positions in the audio stream.
+        """Send a message that marks positions in the audio stream.
+
         Genesys does not support this feature, so we do nothing here.
         """
         pass
@@ -155,11 +155,9 @@ class GenesysInputChannel(VoiceInputChannel):
             call_state.channel_data["client_sequence_number"] = 0
 
     def _get_next_sequence(self) -> int:
-        """
-        Get the next message sequence number
-        Rasa == Server
-        Genesys == Client
+        """Get the next message sequence number.
 
+        Rasa == Server, Genesys == Client.
         Genesys requires the server and client each maintain a
         monotonically increasing message sequence number.
         """
@@ -188,7 +186,9 @@ class GenesysInputChannel(VoiceInputChannel):
         return RasaAudioBytes(input_bytes, format=self.audio_format)
 
     async def collect_call_parameters(
-        self, channel_websocket: Websocket
+        self,
+        channel_websocket: Websocket,
+        request: Optional[Any] = None,
     ) -> Optional[CallParameters]:
         """Call Parameters are collected during the open event."""
         async for message in channel_websocket:
@@ -306,8 +306,7 @@ class GenesysInputChannel(VoiceInputChannel):
         _schedule_ws_task(ws.send(json.dumps(response)))
 
     def disconnect(self, ws: Websocket, data: dict) -> None:
-        """
-        Send disconnect message to Genesys.
+        """Send disconnect message to Genesys.
 
         https://developer.genesys.cloud/devapps/audiohook/protocol-reference#disconnect
         It should be used to hangup the call.

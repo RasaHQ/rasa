@@ -57,3 +57,4 @@ class CallParameters:
     bot_host: Optional[str] = None
     direction: Optional[str] = None
     stream_id: Optional[str] = None
+    language: Optional[str] = None

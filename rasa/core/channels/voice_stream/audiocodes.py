@@ -150,7 +150,9 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         return RasaAudioBytes(base64.b64decode(input_bytes), format=self.audio_format)
 
     async def collect_call_parameters(
-        self, channel_websocket: Websocket
+        self,
+        channel_websocket: Websocket,
+        request: Optional[Any] = None,
     ) -> Optional[CallParameters]:
         async for message in channel_websocket:
             data = json.loads(message)
@@ -254,18 +256,16 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         _schedule_async_task(ws.send(json.dumps(payload)))
 
     def _send_hypothesis(self, ws: Websocket, data: Dict[Text, Any]) -> None:
-        """
-        TODO: The hypothesis message is sent by the bot to provide partial
-        recognition results. Using this message is recommended,
-        as VAIC relies on it for performing barge-in.
+        """TODO: Hypothesis message for partial recognition results.
+
+        Using this message is recommended, as VAIC relies on it for barge-in.
         """
         pass
 
     def _send_recognition(self, ws: Websocket, data: Dict[Text, Any]) -> None:
-        """
-        TODO: The recognition message is sent by the bot to provide
-        the final recognition result. Using this message is recommended
-        mainly for logging purposes.
+        """TODO: Recognition message sent by the bot to provide the final result.
+
+        Using this message is recommended mainly for logging purposes.
         """
         pass
 
@@ -308,7 +308,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
-        """Defines a Sanic blueprint"""
+        """Defines a Sanic blueprint."""
         blueprint = Blueprint("audiocodes_stream", __name__)
         self._register_listeners(blueprint)
 

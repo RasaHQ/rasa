@@ -1,37 +1,140 @@
+/**
+ * Dynamic ring buffer for audio sample storage.
+ * Uses efficient ring buffer operations but grows when needed to avoid data loss.
+ */
+class RingBuffer {
+  constructor(initialCapacity) {
+    this.buffer = new Float32Array(initialCapacity)
+    this.capacity = initialCapacity
+    this.readIndex = 0
+    this.writeIndex = 0
+    this.length = 0
+  }
+
+  /**
+   * Grow the buffer to accommodate more samples.
+   * Linearizes existing data in the process.
+   */
+  grow(minCapacity) {
+    const newCapacity = Math.max(minCapacity, this.capacity * 2)
+    const newBuffer = new Float32Array(newCapacity)
+
+    // Copy existing data in order (linearize the ring)
+    if (this.length > 0) {
+      if (this.readIndex < this.writeIndex) {
+        // Data is contiguous
+        newBuffer.set(this.buffer.subarray(this.readIndex, this.writeIndex))
+      } else {
+        // Data wraps around
+        const firstPart = this.buffer.subarray(this.readIndex, this.capacity)
+        const secondPart = this.buffer.subarray(0, this.writeIndex)
+        newBuffer.set(firstPart)
+        newBuffer.set(secondPart, firstPart.length)
+      }
+    }
+
+    this.buffer = newBuffer
+    this.capacity = newCapacity
+    this.readIndex = 0
+    this.writeIndex = this.length
+  }
+
+  /**
+   * Write samples into the ring buffer.
+   * Buffer grows if needed - no samples are ever discarded.
+   */
+  write(samples) {
+    const samplesToWrite = samples.length
+
+    // Grow buffer if needed
+    const requiredCapacity = this.length + samplesToWrite
+    if (requiredCapacity > this.capacity) {
+      this.grow(requiredCapacity)
+    }
+
+    // Write samples, handling wrap-around
+    const firstChunk = Math.min(samplesToWrite, this.capacity - this.writeIndex)
+    this.buffer.set(samples.subarray(0, firstChunk), this.writeIndex)
+
+    if (firstChunk < samplesToWrite) {
+      // Wrap around to beginning
+      this.buffer.set(samples.subarray(firstChunk), 0)
+    }
+
+    this.writeIndex = (this.writeIndex + samplesToWrite) % this.capacity
+    this.length += samplesToWrite
+  }
+
+  /**
+   * Read samples from the ring buffer into the destination array.
+   * Returns the number of samples actually read.
+   */
+  read(destination) {
+    const samplesToRead = Math.min(destination.length, this.length)
+
+    if (samplesToRead === 0) {
+      return 0
+    }
+
+    // Read samples, handling wrap-around
+    const firstChunk = Math.min(samplesToRead, this.capacity - this.readIndex)
+    destination.set(this.buffer.subarray(this.readIndex, this.readIndex + firstChunk))
+
+    if (firstChunk < samplesToRead) {
+      // Wrap around to beginning
+      destination.set(this.buffer.subarray(0, samplesToRead - firstChunk), firstChunk)
+    }
+
+    this.readIndex = (this.readIndex + samplesToRead) % this.capacity
+    this.length -= samplesToRead
+
+    return samplesToRead
+  }
+
+  /**
+   * Clear all buffered samples.
+   */
+  clear() {
+    this.readIndex = 0
+    this.writeIndex = 0
+    this.length = 0
+  }
+}
+
+// Default buffer capacity: ~10 seconds at 48kHz sample rate
+const DEFAULT_BUFFER_CAPACITY = 48000 * 10
+
 class PlaybackProcessor extends AudioWorkletProcessor {
   constructor() {
     super()
-    this.audioBuffer = new Float32Array(0)
+    this.ringBuffer = new RingBuffer(DEFAULT_BUFFER_CAPACITY)
 
-    // Set up message handling from the main thread
+    // Push-based audio feed from main thread.
     this.port.onmessage = (event) => {
-      const newData = event.data
-      const newBuffer = new Float32Array(this.audioBuffer.length + newData.length)
-      newBuffer.set(this.audioBuffer, 0)
-      newBuffer.set(newData, this.audioBuffer.length)
-      this.audioBuffer = newBuffer
+      const message = event.data
+      if (message?.type === 'clear') {
+        this.ringBuffer.clear()
+        return
+      }
+      if (message?.type === 'audio' && message.data) {
+        this.ringBuffer.write(message.data)
+      }
     }
-
-    // Request initial audio data
-    this.port.postMessage('need-more-data')
   }
 
   process(_, outputs) {
     const output = outputs[0]
     const channelData = output[0]
 
-    const availableSamples = this.audioBuffer.length
-    const requestedSamples = channelData.length
-    const samplesToCopy = Math.min(availableSamples, requestedSamples)
+    const samplesRead = this.ringBuffer.read(channelData)
 
-    if (samplesToCopy > 0) {
-      channelData.set(this.audioBuffer.subarray(0, samplesToCopy))
-      this.audioBuffer = this.audioBuffer.subarray(samplesToCopy)
-    } else {
-      channelData.fill(0)
+    // Fill remaining samples with silence if buffer didn't have enough
+    if (samplesRead < channelData.length) {
+      channelData.fill(0, samplesRead)
     }
 
-    this.port.postMessage('need-more-data')
+    // Tell main thread how much queued audio was actually consumed.
+    this.port.postMessage({ type: 'played-samples', samples: samplesRead })
 
     return true
   }

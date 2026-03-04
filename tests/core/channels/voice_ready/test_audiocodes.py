@@ -201,6 +201,7 @@ async def test_handle_startup() -> None:
         "bot_phone": "+493040739365",
         "call_id": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
         "direction": None,
+        "language": None,
         "stream_id": None,
         "user_host": "sip.telnyx.eu",
         "user_name": "+491604697810",

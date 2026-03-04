@@ -653,8 +653,6 @@ class VoiceInputChannel(InputChannel):
         self.server_url = server_url
         self.asr_config = asr_config
         self.tts_config = tts_config
-        self.language = "en"
-        self.additional_languages: Optional[List[str]] = None
         self.tts_cache = TTSCache(tts_config.get("cache_size", 1000))
         self.interruption_config = (
             InterruptionConfig(**interruptions)
@@ -732,7 +730,9 @@ class VoiceInputChannel(InputChannel):
         raise NotImplementedError
 
     async def collect_call_parameters(
-        self, channel_websocket: Websocket
+        self,
+        channel_websocket: Websocket,
+        request: Optional[Any] = None,
     ) -> Optional[CallParameters]:
         raise NotImplementedError
 
@@ -765,8 +765,9 @@ class VoiceInputChannel(InputChannel):
 
     def should_interrupt(self, e: ASREvent) -> bool:
         """Determine if the current ASR event should interrupt playback.
+
         Returns True if the bot response is interruptible
-        And if the user spoke more than 3 words.
+        and if the user spoke more than 3 words.
 
         Arguments:
             e: The ASR event to evaluate.
@@ -797,7 +798,8 @@ class VoiceInputChannel(InputChannel):
 
         This function is used for interruption handling.
         As not all channels support flushing bot audio buffer,
-        if a channel does not implement it. It has no effect."""
+        if a channel does not implement it. It has no effect.
+        """
         pass
 
     async def receive_asr_events(
@@ -839,28 +841,30 @@ class VoiceInputChannel(InputChannel):
             await asyncio.sleep(interval)
             await asr_engine.send_keep_alive()
 
-    def _initialize_call_state(self) -> None:
-        _call_state.set(CallState())
+    @property
+    def additional_languages(self) -> List[str]:
+        if (
+            self.agent
+            and self.agent.processor
+            and self.agent.processor.model_metadata
+            and self.agent.processor.model_metadata.additional_languages
+        ):
+            return self.agent.processor.model_metadata.additional_languages or []
+        return []
+
+    @property
+    def language(self) -> str:
         if (
             self.agent
             and self.agent.processor
             and self.agent.processor.model_metadata
             and self.agent.processor.model_metadata.language
         ):
-            self.language = self.agent.processor.model_metadata.language
-            self.additional_languages = (
-                self.agent.processor.model_metadata.additional_languages
-            )
-            logger.info(
-                "voice_channel.set_initial_language_from_model_metadata",
-                language=self.language,
-                additional_languages=self.additional_languages,
-            )
-        else:
-            logger.error(
-                "voice_channel.no_language_in_model_metadata",
-                default_language=self.language,
-            )
+            return self.agent.processor.model_metadata.language
+        return "en"
+
+    def _initialize_call_state(self) -> None:
+        _call_state.set(CallState())
         call_state.current_language = self.language
 
     def _get_asr_and_tts_engines(self) -> Tuple[ASREngine, TTSEngine]:
@@ -882,6 +886,7 @@ class VoiceInputChannel(InputChannel):
         self,
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
         channel_websocket: Websocket,
+        request: Optional[Any] = None,
     ) -> None:
         """Pipe input audio to ASR and consume ASR events simultaneously."""
         self._initialize_call_state()
@@ -894,9 +899,10 @@ class VoiceInputChannel(InputChannel):
         await asr_engine.connect()
         await tts_engine.connect()
 
-        call_parameters = await self.collect_call_parameters(channel_websocket)
+        call_parameters = await self.collect_call_parameters(channel_websocket, request)
         if call_parameters is None:
             raise ValueError("Failed to extract call parameters for call.")
+
         await self.start_session(
             channel_websocket, on_new_message, tts_engine, call_parameters
         )

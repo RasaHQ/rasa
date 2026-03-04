@@ -145,10 +145,16 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         return RasaAudioBytes(transcoded_bytes, format=self.audio_format)
 
     async def collect_call_parameters(
-        self, channel_websocket: Websocket
+        self,
+        channel_websocket: Websocket,
+        request: Optional[Request] = None,
     ) -> Optional[CallParameters]:
         call_id = f"inspect-{uuid.uuid4()}"
         self._start_recording()
+
+        language: Optional[str] = None
+        if request is not None:
+            language = request.args.get("language") or None
 
         # Channel sends/receives L16 Audio at different sample rates
         # Even Mulaw is sent as L16 8kHz
@@ -166,7 +172,9 @@ class BrowserAudioInputChannel(VoiceInputChannel):
             sample_rate=self.audio_format.sample_rate,
             audio_format=self.audio_format,
         )
-        return CallParameters(call_id, "local", "local", stream_id=call_id)
+        return CallParameters(
+            call_id, "local", "local", stream_id=call_id, language=language
+        )
 
     @classmethod
     def from_credentials(
@@ -229,7 +237,7 @@ class BrowserAudioInputChannel(VoiceInputChannel):
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
-        """Defines a Sanic blueprint"""
+        """Defines a Sanic blueprint."""
         blueprint = Blueprint("browser_audio", __name__)
         self._register_listeners(blueprint)
 
@@ -237,10 +245,16 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
+        @blueprint.route("/supported_languages", methods=["GET"])
+        async def supported_languages(_: Request) -> HTTPResponse:
+            """Return supported languages from the loaded model for voice UI."""
+            languages = [self.language] + self.additional_languages
+            return response.json({"languages": languages})
+
         @blueprint.websocket("/websocket")  # type: ignore
         async def handle_message(request: Request, ws: Websocket) -> None:
             try:
-                await self.run_audio_streaming(on_new_message, ws)
+                await self.run_audio_streaming(on_new_message, ws, request=request)
             except Exception as e:
                 logger.error(
                     "browser_audio.handle_message.error", error=e, exc_info=True

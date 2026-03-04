@@ -377,7 +377,9 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         )
 
     async def collect_call_parameters(
-        self, channel_websocket: "Websocket"
+        self,
+        channel_websocket: "Websocket",
+        request: Optional[Any] = None,
     ) -> Optional[CallParameters]:
         """Voice method to collect call parameters."""
         session_id = channel_websocket.session_id

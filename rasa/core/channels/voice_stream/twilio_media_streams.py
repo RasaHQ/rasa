@@ -157,7 +157,9 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         return RasaAudioBytes(base64.b64decode(input_bytes), format=self.audio_format)
 
     async def collect_call_parameters(
-        self, channel_websocket: Websocket
+        self,
+        channel_websocket: Websocket,
+        request: Optional[Any] = None,
     ) -> Optional[CallParameters]:
         async for message in channel_websocket:
             data = json.loads(message)

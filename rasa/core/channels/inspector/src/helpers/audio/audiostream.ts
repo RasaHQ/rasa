@@ -1,4 +1,3 @@
-const bufferSize = 128
 const audioOptions = {
   audio: {
     echoCancellation: true,
@@ -6,15 +5,73 @@ const audioOptions = {
     autoGainControl: true,
   },
 }
-const waitForHandshake = (socket: WebSocket): Promise<number> => {
-  return new Promise((resolve) => {
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      if (data.type === 'handshake') {
-        resolve(data.sample_rate)
-      }
+interface SocketMessageRouter {
+  waitForHandshake: () => Promise<number>
+  setHandler: (handler: (event: MessageEvent<any>) => void) => void
+  dispose: () => void
+}
+
+const createSocketMessageRouter = (socket: WebSocket): SocketMessageRouter => {
+  let handshakeSampleRate: number | null = null
+  let resolveHandshake: ((sampleRate: number) => void) | null = null
+  let messageHandler: ((event: MessageEvent<any>) => void) | null = null
+  const bufferedMessages: MessageEvent<any>[] = []
+
+  const onMessage = (event: MessageEvent<any>) => {
+    let data: any = null
+    try {
+      data = JSON.parse(event.data)
+    } catch {
+      // Ignore parse errors here; handler will do full validation later.
     }
-  })
+
+    if (data?.type === 'handshake') {
+      const sampleRate = Number(data.sample_rate)
+      if (Number.isFinite(sampleRate) && sampleRate > 0) {
+        handshakeSampleRate = sampleRate
+        if (resolveHandshake) {
+          resolveHandshake(sampleRate)
+          resolveHandshake = null
+        }
+      }
+      return
+    }
+
+    if (messageHandler) {
+      messageHandler(event)
+      return
+    }
+
+    bufferedMessages.push(event)
+  }
+
+  socket.addEventListener('message', onMessage)
+
+  return {
+    waitForHandshake: () =>
+      new Promise<number>((resolve) => {
+        if (handshakeSampleRate !== null) {
+          resolve(handshakeSampleRate)
+          return
+        }
+        resolveHandshake = resolve
+      }),
+    setHandler: (handler: (event: MessageEvent<any>) => void) => {
+      messageHandler = handler
+      while (bufferedMessages.length) {
+        const event = bufferedMessages.shift()
+        if (event) {
+          messageHandler(event)
+        }
+      }
+    },
+    dispose: () => {
+      socket.removeEventListener('message', onMessage)
+      bufferedMessages.length = 0
+      messageHandler = null
+      resolveHandshake = null
+    },
+  }
 }
 
 const arrayBufferToBase64 = (buffer: ArrayBufferLike): string => {
@@ -57,51 +114,50 @@ interface Mark {
 }
 
 interface AudioQueue {
-  buffer: Float32Array
   marks: Array<Mark>
+  queuedSamples: number
   socket: WebSocket
-  write: (newAudio: Float32Array) => void
-  read: (nSamples: number) => Float32Array
-  length: () => number
+  enqueue: (newAudio: Float32Array) => void
+  onSamplesPlayed: (samplesPlayed: number) => void
   addMarker: (id: string) => void
-  reduceMarkers: (bytesRead: number) => void
+  reduceMarkers: (samplesPlayed: number) => void
   popMarkers: () => void
   clear: () => void
 }
 
-const createAudioQueue = (socket: WebSocket): AudioQueue => {
+const createAudioQueue = (
+  socket: WebSocket,
+  playbackNode: AudioWorkletNode,
+): AudioQueue => {
   return {
-    buffer: new Float32Array(0),
     marks: new Array<Mark>(),
+    queuedSamples: 0,
     socket,
 
-    write: function (newAudio: Float32Array) {
-      const currentQLength = this.buffer.length
-      const newBuffer = new Float32Array(currentQLength + newAudio.length)
-      newBuffer.set(this.buffer, 0)
-      newBuffer.set(newAudio, currentQLength)
-      this.buffer = newBuffer
-    },
-
-    read: function (nSamples: number) {
-      const samplesToPlay = this.buffer.subarray(0, nSamples)
-      this.buffer = this.buffer.subarray(nSamples, this.buffer.length)
-      this.reduceMarkers(samplesToPlay.length)
-      this.popMarkers()
-      return samplesToPlay
-    },
-
-    length: function () {
-      return this.buffer.length
+    enqueue: function (newAudio: Float32Array) {
+      this.queuedSamples += newAudio.length
+      playbackNode.port.postMessage(
+        { type: 'audio', data: newAudio },
+        [newAudio.buffer],
+      )
     },
 
     addMarker: function (id: string) {
-      this.marks.push({ id, bytesToGo: this.length() })
+      this.marks.push({ id, bytesToGo: this.queuedSamples })
     },
 
-    reduceMarkers: function (bytesRead: number) {
+    onSamplesPlayed: function (samplesPlayed: number) {
+      if (samplesPlayed <= 0) {
+        return
+      }
+      this.queuedSamples = Math.max(0, this.queuedSamples - samplesPlayed)
+      this.reduceMarkers(samplesPlayed)
+      this.popMarkers()
+    },
+
+    reduceMarkers: function (samplesPlayed: number) {
       this.marks = this.marks.map((m) => {
-        return { id: m.id, bytesToGo: m.bytesToGo - bytesRead }
+        return { id: m.id, bytesToGo: m.bytesToGo - samplesPlayed }
       })
     },
 
@@ -128,8 +184,9 @@ const createAudioQueue = (socket: WebSocket): AudioQueue => {
      * Clears the audio queue, removing all buffered audio and markers.
      */
     clear: function () {
-      this.buffer = new Float32Array(0)
+      this.queuedSamples = 0
       this.marks = []
+      playbackNode.port.postMessage({ type: 'clear' })
     },
   }
 }
@@ -165,7 +222,6 @@ const streamMicrophoneToServer = async (socket: WebSocket, sampleRate: number) =
 }
 
 const setupAudioPlayback = async (socket: WebSocket, sampleRate: number): Promise<AudioQueue> => {
-  const audioQueue = createAudioQueue(socket)
   console.log("Setting up audio playback with sample rate:", sampleRate)
   const audioOutputContext = new AudioContext({ sampleRate })
 
@@ -182,27 +238,12 @@ const setupAudioPlayback = async (socket: WebSocket, sampleRate: number): Promis
     audioOutputContext,
     'playback-processor',
   )
+  const audioQueue = createAudioQueue(socket, playbackNode)
 
   playbackNode.port.onmessage = (event: MessageEvent) => {
-    if (event.data === 'need-more-data') {
-      // Request more audio data from the queue
-      const audioData = audioQueue.length()
-        ? audioQueue.read(bufferSize)
-        : new Float32Array(bufferSize)
-
-      if (!(audioData instanceof Float32Array)) {
-        console.error('audioData is invalid, sending silence.')
-        playbackNode.port.postMessage(new Float32Array(bufferSize))
-      } else if (audioData.length !== bufferSize) {
-        console.warn(
-          `audioData is too short (${audioData.length} samples), padding with silence`,
-        )
-        const padded = new Float32Array(bufferSize)
-        padded.set(audioData)
-        playbackNode.port.postMessage(padded)
-      } else {
-        playbackNode.port.postMessage(audioData)
-      }
+    if (event.data?.type === 'played-samples') {
+      const samplesPlayed = Number(event.data.samples) || 0
+      audioQueue.onSamplesPlayed(samplesPlayed)
     }
   }
 
@@ -222,12 +263,11 @@ const addDataToAudioQueue =
       if (data['audio']) {
         const audioBytes = base64ToArrayBuffer(data['audio'])
         const audioData = intToFloatArray(new Int16Array(audioBytes))
-        audioQueue.write(audioData)
+        audioQueue.enqueue(audioData)
       } else if (data['marker']) {
         if (data['latency'] && onLatencyUpdate) {
           onLatencyUpdate(data['latency'])
         }
-        console.log('Voice Latency Metrics:', data['latency'])
         audioQueue.addMarker(data['marker'])
       } else if (data['interruptPlayback']) {
         // User interrupted the bot, immediately clear the audio queue
@@ -243,21 +283,31 @@ const addDataToAudioQueue =
  * Constructs a WebSocket URL for browser audio from a base HTTP/HTTPS URL
  *
  * @param baseUrl - The base URL (e.g., "https://example.com" or "http://localhost:5005")
+ * @param params - Optional query params (e.g. { language: "de" })
  * @returns WebSocket URL for browser audio endpoint
- *
- * @example
- * getWebSocketUrl("https://example.com")
- * // Returns: "wss://example.com/webhooks/browser_audio/websocket"
- *
- * getWebSocketUrl("http://localhost:5005")
- * // Returns: "ws://localhost:5005/webhooks/browser_audio/websocket"
- *
- * @throws {TypeError} If baseUrl is not a valid URL
  */
-function getWebSocketUrl(baseUrl: string) {
+function getWebSocketUrl(baseUrl: string, params?: { language?: string }) {
   const url = new URL(baseUrl)
   const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${wsProtocol}//${url.host}/webhooks/browser_audio/websocket`
+  let path = `${wsProtocol}//${url.host}/webhooks/browser_audio/websocket`
+  if (params?.language) {
+    path += `?language=${encodeURIComponent(params.language)}`
+  }
+  return path
+}
+
+/**
+ * Fetches supported languages for voice from the running agent.
+ *
+ * @param baseUrl - The base URL (e.g., "https://example.com" or "http://localhost:5005")
+ * @returns List of language codes supported by the model
+ */
+export async function fetchSupportedLanguages(baseUrl: string): Promise<string[]> {
+  const url = new URL('/webhooks/browser_audio/supported_languages', baseUrl).href
+  const res = await fetch(url)
+  if (!res.ok) return []
+  const data = await res.json()
+  return Array.isArray(data?.languages) ? data.languages : []
 }
 
 /**
@@ -265,19 +315,26 @@ function getWebSocketUrl(baseUrl: string) {
  *
  * @param baseUrl - The base URL (e.g., "https://example.com" or "http://localhost:5005")
  * @param onLatencyUpdate - Optional callback function to receive latency updates
+ * @param language - Optional language code (passed as query param to the WebSocket URL)
  */
 export async function createAudioConnection(
   baseUrl: string,
   onLatencyUpdate?: (latency: any) => void,
+  language?: string,
 ) {
-  const websocketURL = getWebSocketUrl(baseUrl)
+  const websocketURL = getWebSocketUrl(baseUrl, language ? { language } : undefined)
   const socket = new WebSocket(websocketURL)
+  const messageRouter = createSocketMessageRouter(socket)
 
   // Wait for handshake, reply with preferred sample rate, then set up audio
   // Audio Format: Linear PCM, 16-bit, Mono, with the sample rate determined by the handshake
-  const sampleRate = await waitForHandshake(socket)
+  const sampleRate = await messageRouter.waitForHandshake()
 
   await streamMicrophoneToServer(socket, sampleRate)
   const audioQueue = await setupAudioPlayback(socket, sampleRate)
-  socket.onmessage = addDataToAudioQueue(audioQueue, onLatencyUpdate)
+  messageRouter.setHandler(addDataToAudioQueue(audioQueue, onLatencyUpdate))
+
+  socket.addEventListener('close', () => {
+    messageRouter.dispose()
+  })
 }
