@@ -295,6 +295,9 @@ class VoiceOutputChannel(OutputChannel):
             The new language if changed, None otherwise.
         """
         language = self.get_current_language()
+        if not language:
+            # avoids changing the call state language to None
+            return None
         if language != call_state.current_language:
             logger.info(
                 "voice_channel.language_slot_changed",
@@ -935,6 +938,10 @@ class VoiceInputChannel(InputChannel):
             channel_websocket, on_new_message, tts_engine, call_parameters
         )
 
+        await self.update_asr_language(
+            channel_websocket, tts_engine, call_parameters, asr_engine
+        )
+
         async def consume_audio_bytes() -> None:
             async for message in channel_websocket:
                 was_bot_speaking_before = call_state.is_bot_speaking
@@ -1014,6 +1021,35 @@ class VoiceInputChannel(InputChannel):
             await tts_engine.close_connection()
             await channel_websocket.close()
             self._cancel_silence_timeout_watcher()
+
+    async def update_asr_language(
+        self,
+        channel_websocket: Websocket,
+        tts_engine: TTSEngine,
+        call_parameters: CallParameters,
+        asr_engine: ASREngine,
+    ) -> None:
+        # Sync ASR language before consuming caller audio.
+        # `start_session` may trigger actions that update the language slot.
+        output_channel = self.create_output_channel(channel_websocket, tts_engine)
+        # update language from session start
+        new_language = output_channel.check_language_change()
+
+        if (
+            not new_language
+            and call_parameters.language
+            and call_parameters.language != call_state.current_language
+        ):
+            # update language from incoming call state parameters
+            logger.info(
+                "voice_channel.language_bootstrap_from_call_parameters",
+                old_language=call_state.current_language,
+                new_language=call_parameters.language,
+            )
+            call_state.current_language = call_parameters.language
+            new_language = call_parameters.language
+        if new_language:
+            await asr_engine.set_language(new_language)
 
     def create_output_channel(
         self,
