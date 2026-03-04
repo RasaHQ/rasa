@@ -50,6 +50,7 @@ from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
     USER,
     LLMInput,
+    StreamingConfig,
     acompletion_with_streaming,
     check_prompt_config_keys_and_warn_if_deprecated,
     combine_custom_and_default_config,
@@ -58,6 +59,7 @@ from rasa.shared.utils.llm import (
     resolve_model_client_config,
     tracker_as_readable_transcript,
 )
+from rasa.shared.utils.text import contains_ssml_tags
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.log_utils import log_llm
 
@@ -250,6 +252,7 @@ class ContextualResponseRephraser(
         llm_input: LLMInput,
         output_channel: OutputChannel,
         recipient_id: str,
+        streaming_config: Optional[StreamingConfig] = None,
     ) -> Optional[LLMResponse]:
         """Generate LLM response with streaming support.
 
@@ -257,6 +260,7 @@ class ContextualResponseRephraser(
             llm_input: LLMInput object with prompt and metadata.
             output_channel: Output channel to send streaming chunks to.
             recipient_id: Recipient ID for the output channel.
+            streaming_config: Optional StreamingConfig.
 
         Returns:
             The LLM response.
@@ -268,6 +272,7 @@ class ContextualResponseRephraser(
             metadata=llm_input.metadata,
             output_channel=output_channel,
             recipient_id=recipient_id,
+            streaming_config=streaming_config,
         )
         return llm_response
 
@@ -390,6 +395,9 @@ class ContextualResponseRephraser(
             LLMInput(prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker)),
             output_channel=output_channel,
             recipient_id=tracker.sender_id,
+            streaming_config=StreamingConfig(
+                response_text_contains_ssml=contains_ssml_tags(response_text)
+            ),
         )
         llm_response = LLMResponse.ensure_llm_response(llm_response)
 

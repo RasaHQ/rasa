@@ -30,6 +30,7 @@ import rasa.cli.telemetry
 import rasa.cli.utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
+from rasa.core.channels.voice_stream.tts.config import StreamingConfig
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import (
@@ -248,6 +249,7 @@ async def acompletion_with_streaming(
     messages: Union[List[dict], List[str], str],
     output_channel: Optional[Any] = None,
     recipient_id: Optional[str] = None,
+    streaming_config: Optional[StreamingConfig] = None,
     **kwargs: Any,
 ) -> "LLMResponse":
     """Execute LLM completion with streaming support and output channel integration.
@@ -267,6 +269,7 @@ async def acompletion_with_streaming(
             If None, streaming chunks won't be sent anywhere.
         recipient_id: Optional recipient ID for the output channel.
             Required if output_channel is provided.
+        streaming_config: Optional StreamingConfig.
         **kwargs: Additional parameters to pass to the LLM completion call.
 
     Returns:
@@ -293,7 +296,9 @@ async def acompletion_with_streaming(
 
         # Store metadata from the first chunk
         if llm_response_metadata.get("id") == "":
-            await output_channel.send_response_chunk_start(recipient_id)
+            await output_channel.send_response_chunk_start(
+                recipient_id, streaming_config=streaming_config
+            )
             llm_response_metadata = {
                 "id": chunk_response.id,
                 "created": chunk_response.created,

@@ -42,6 +42,10 @@ jobs:
           PYTHON_VERSION: ${{ matrix.python_version }}
           RASA_DEFAULT_INSTALLATION_ONLY: "true"
 
+      - name: Install channel dependencies
+        run: |
+          make install-channels
+
       - name: Train Rasa model
         run: |
           echo "Training Rasa model..."

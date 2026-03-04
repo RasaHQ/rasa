@@ -15,6 +15,7 @@ from rasa.shared.core.flows.steps.collect import DTMFConfig
 class CallState:
     is_user_speaking: bool = False
     is_bot_speaking: bool = False
+    stop_streaming_output_audio_chunks: bool = False
     silence_timeout_watcher: Optional[asyncio.Task] = None
     silence_timeout: Optional[float] = None
     latest_bot_audio_id: Optional[str] = None

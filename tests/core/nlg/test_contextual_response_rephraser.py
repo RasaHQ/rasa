@@ -9,6 +9,7 @@ from pytest import MonkeyPatch
 
 from rasa.core.actions.action import ActionBotResponse
 from rasa.core.channels.channel import OutputChannel
+from rasa.core.channels.voice_stream.tts.config import StreamingConfig
 from rasa.core.nlg.contextual_response_rephraser import (
     ContextualResponseRephraser,
 )
@@ -219,6 +220,7 @@ class MockedContextualResponseRephraser(ContextualResponseRephraser):
         llm_input: LLMInput,
         output_channel: OutputChannel,
         recipient_id: str,
+        streaming_config: Optional[StreamingConfig] = None,
     ) -> Optional[LLMResponse]:
         return LLMResponse(
             id="mock-id",
@@ -296,7 +298,10 @@ async def test_rephraser_handles_failure_in_generation(
     create_output_channel: Callable[[str], OutputChannel],
 ) -> None:
     async def none_no_op(
-        prompt: str, output_channel: OutputChannel, recipient_id: str
+        prompt: str,
+        output_channel: OutputChannel,
+        recipient_id: str,
+        streaming_config: Optional[StreamingConfig] = None,
     ) -> None:
         return None
 
@@ -331,7 +336,11 @@ async def test_rephraser_uses_template_from_response(
             return "User said hello"
 
         async def _generate_llm_response(
-            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
+            self,
+            llm_input: LLMInput,
+            output_channel: OutputChannel,
+            recipient_id: str,
+            streaming_config: Optional[StreamingConfig] = None,
         ) -> Optional[LLMResponse]:
             llm_response_object.choices = ["hello foobar"]
             return llm_response_object
@@ -365,7 +374,11 @@ async def test_rephraser_default_template(
             return "User said hello"
 
         async def _generate_llm_response(
-            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
+            self,
+            llm_input: LLMInput,
+            output_channel: OutputChannel,
+            recipient_id: str,
+            streaming_config: Optional[StreamingConfig] = None,
         ) -> Optional[LLMResponse]:
             assert llm_input.prompt == (
                 "The following is a conversation with\n"
@@ -519,7 +532,11 @@ async def test_rephraser_template_summarisation(
             return "User said hello"
 
         async def _generate_llm_response(
-            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
+            self,
+            llm_input: LLMInput,
+            output_channel: OutputChannel,
+            recipient_id: str,
+            streaming_config: Optional[StreamingConfig] = None,
         ) -> Optional[LLMResponse]:
             assert llm_input.prompt == expected_prompt
             return LLMResponse(
@@ -756,7 +773,11 @@ async def test_rephraser_prompt_conv_history_amended_by_turn_wrapper(
     # MockedContextualResponseRephraser to mock LLM response, but not to set history
     class MockedContextualResponseRephraser(ContextualResponseRephraser):
         async def _generate_llm_response(
-            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
+            self,
+            llm_input: LLMInput,
+            output_channel: OutputChannel,
+            recipient_id: str,
+            streaming_config: Optional[StreamingConfig] = None,
         ) -> Optional[LLMResponse]:
             llm_response_object.choices = ["hello foobar"]
             return llm_response_object
@@ -1036,7 +1057,11 @@ async def test_generate_llm_response_receives_llm_input_with_metadata(
             return "User said hello"
 
         async def _generate_llm_response(
-            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
+            self,
+            llm_input: LLMInput,
+            output_channel: OutputChannel,
+            recipient_id: str,
+            streaming_config: Optional[StreamingConfig] = None,
         ) -> Optional[LLMResponse]:
             nonlocal captured_llm_input
             captured_llm_input = llm_input
@@ -1114,7 +1139,11 @@ async def test_generate_llm_response_receives_llm_input_with_none_metadata(
             return "User said hello"
 
         async def _generate_llm_response(
-            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
+            self,
+            llm_input: LLMInput,
+            output_channel: OutputChannel,
+            recipient_id: str,
+            streaming_config: Optional[StreamingConfig] = None,
         ) -> Optional[LLMResponse]:
             nonlocal captured_llm_input
             captured_llm_input = llm_input

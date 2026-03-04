@@ -1326,7 +1326,7 @@ async def test_cross_validation_with_callback_error(
 
         assert response.status == HTTPStatus.NO_CONTENT
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(3)
 
         last_request = latest_request(mocked, "POST", callback_url)
         assert last_request

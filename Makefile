@@ -75,7 +75,7 @@ install-mitie:  ## Install mitie.
 	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
 
 install-full: install-mitie  ## Install rasa with all extras (transformers, tensorflow_text, spacy, jieba, agents, ...).
-	poetry install -E full
+	poetry install -E full -E channels
 
 install-pii:  ## Install rasa-pro with PII optional dependencies.
 	poetry run python -m pip install -U pip

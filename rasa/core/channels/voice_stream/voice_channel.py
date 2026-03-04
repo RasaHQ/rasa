@@ -16,6 +16,7 @@ from typing import (
     Optional,
     Text,
     Tuple,
+    cast,
 )
 
 import structlog
@@ -359,13 +360,11 @@ class VoiceOutputChannel(OutputChannel):
 
     async def _synthesize_and_stream_tts(
         self, recipient_id: str, text: str
-    ) -> RasaAudioBytes:
+    ) -> Optional[RasaAudioBytes]:
         """Use producer/consumer pattern to send TTS audio and collect for caching.
 
         Returns the collected audio bytes for caching.
         """
-        collected_audio = RasaAudioBytes(b"", format=self.audio_format)
-
         try:
             audio_stream = self.tts_engine.synthesize(text)
         except TTSError as e:
@@ -388,7 +387,7 @@ class VoiceOutputChannel(OutputChannel):
 
     async def _stream_audio_to_channel(
         self, recipient_id: str, audio_stream: AsyncIterator[RasaAudioBytes]
-    ) -> RasaAudioBytes:
+    ) -> Optional[RasaAudioBytes]:
         """Send audio from an async iterator to the channel.
 
         This function does a lot of things,
@@ -405,8 +404,17 @@ class VoiceOutputChannel(OutputChannel):
         seconds_marker = -1
         leftover_byte: bytes = b""
 
+        # Set stop_streaming_output_audio_chunks to match if user is speaking.
+        # We are fixing this for A1, when Azure TTS is using HTTP mode
+        # to synthesize audio.
+        if cast(AzureTTS, self.tts_engine):
+            call_state.stop_streaming_output_audio_chunks = call_state.is_user_speaking
+
         async for audio_chunk in audio_stream:
             collected_audio = collected_audio + audio_chunk
+
+            if call_state.stop_streaming_output_audio_chunks:
+                return None
 
             # Track TTS first byte time
             if not first_byte_received:
@@ -488,6 +496,11 @@ class VoiceOutputChannel(OutputChannel):
         """
         await super().send_response_chunk_start(recipient_id, **kwargs)
 
+        # Let TTS engine prepare for this response (e.g., mode selection)
+        await self.tts_engine.prepare_response(
+            streaming_config=kwargs.get("streaming_config")
+        )
+
         if not self.tts_engine.streaming_input:
             # Engine does not support streaming input
             # fallback to non-streaming synthesis
@@ -543,6 +556,7 @@ class VoiceOutputChannel(OutputChannel):
         if self.audio_sender_task:
             await self.audio_sender_task
         await self.send_end_marker(recipient_id)
+        call_state.latest_bot_audio_id = self.latest_message_id
         logger.debug(
             "voice_channel.end_streaming_response", is_intermediate=is_intermediate
         )
@@ -595,7 +609,8 @@ class VoiceOutputChannel(OutputChannel):
             await self._send_cached_audio(recipient_id, cached_audio_bytes)
         else:
             collected_audio = await self._synthesize_and_stream_tts(recipient_id, text)
-            self.tts_cache.put(text, collected_audio)
+            if collected_audio:
+                self.tts_cache.put(text, collected_audio)
 
         # Track TTS completion time
         self._track_tts_complete_latency()
@@ -788,7 +803,14 @@ class VoiceInputChannel(InputChannel):
         if isinstance(e, (NewTranscript, UserIsSpeaking)):
             translator = str.maketrans("", "", string.punctuation)
             words = e.text.translate(translator).split()
-            return len(words) >= min_words
+            can_interrupt = len(words) >= min_words and call_state.is_bot_speaking
+            logger.debug(
+                "voice_input_channel.should_interrupt",
+                words_count=len(words),
+                min_words=min_words,
+                should_interrupt=can_interrupt,
+            )
+            return can_interrupt
         return False
 
     async def interrupt_playback(
@@ -805,6 +827,7 @@ class VoiceInputChannel(InputChannel):
     async def receive_asr_events(
         self,
         asr_engine: ASREngine,
+        tts_engine: TTSEngine,
         asr_event_queue: asyncio.Queue,
         ws: Websocket,
         call_parameters: CallParameters,
@@ -813,6 +836,11 @@ class VoiceInputChannel(InputChannel):
             await asr_event_queue.put(event)
             if self.should_interrupt(event):
                 logger.debug("voice_channel.asr_event_should_interrupt", ev=event)
+                await tts_engine.stop_streaming()
+                # We only stop sending audio bytes which came from Azure TTS in order
+                # not to break Deepgram, Cartesia and Rime
+                if cast(AzureTTS, tts_engine):
+                    call_state.stop_streaming_output_audio_chunks = True
                 await self.interrupt_playback(ws, call_parameters)
 
     async def handle_asr_events(
@@ -949,7 +977,11 @@ class VoiceInputChannel(InputChannel):
             asyncio.create_task(consume_audio_bytes()),
             asyncio.create_task(
                 self.receive_asr_events(
-                    asr_engine, asr_event_queue, channel_websocket, call_parameters
+                    asr_engine,
+                    tts_engine,
+                    asr_event_queue,
+                    channel_websocket,
+                    call_parameters,
                 )
             ),
             asyncio.create_task(

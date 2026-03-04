@@ -8,6 +8,7 @@ from rasa.core.channels.voice_stream.audio_bytes import (
     CurrentLanguageConfig,
     RasaAudioBytes,
 )
+from rasa.core.channels.voice_stream.tts.config import StreamingConfig
 from rasa.core.channels.voice_stream.util import MergeableConfig
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.common import validate_environment
@@ -159,6 +160,16 @@ class TTSEngine(Generic[T]):
         )
         self._set_current_language_config(rasa_language)
 
+    async def prepare_response(
+        self, streaming_config: Optional[StreamingConfig] = None
+    ) -> None:
+        """Called before a streaming response begins.
+
+        Engines can override to adjust per-response behavior
+        (e.g., switching between streaming and non-streaming modes).
+        """
+        pass
+
     async def connect(self, config: Optional[T] = None) -> None:
         """Establish connection to the TTS engine if necessary."""
         return
@@ -260,3 +271,7 @@ class TTSEngine(Generic[T]):
             voice=entry.voice,
             model=entry.model,
         )
+
+    async def stop_streaming(self) -> None:
+        """Clear the TTS engine buffer."""
+        pass

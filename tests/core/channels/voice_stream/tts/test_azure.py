@@ -1,31 +1,298 @@
-from unittest import mock
-from unittest.mock import AsyncMock, patch
+import asyncio
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest import MonkeyPatch
 
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
-from rasa.core.channels.voice_stream.audio_bytes import L16_24KHZ, L16_48KHZ, MULAW_8KHZ
-from rasa.core.channels.voice_stream.tts.azure import AzureTTS, AzureTTSConfig
-from rasa.core.channels.voice_stream.tts.tts_engine import TTSError
+from rasa.core.channels.voice_stream.audio_bytes import (
+    L16_24KHZ,
+    L16_48KHZ,
+    MULAW_8KHZ,
+    AudioFormat,
+    RasaAudioBytes,
+)
+from rasa.core.channels.voice_stream.tts.azure import (
+    AzureTTS,
+    AzureTTSConfig,
+    _AudioOutputCallback,
+)
+from rasa.core.channels.voice_stream.tts.config import StreamingConfig
+from rasa.core.channels.voice_stream.tts.tts_engine import (
+    TTSError,
+)
+from rasa.shared.constants import (
+    AZURE_AD_SCOPES_ENV_VAR,
+    AZURE_AD_TOKEN_ENV_VAR,
+    AZURE_API_BASE_ENV_VAR,
+    AZURE_API_KEY_ENV_VAR,
+    AZURE_API_TYPE_ENV_VAR,
+    AZURE_API_VERSION_ENV_VAR,
+    AZURE_SPEECH_API_KEY_ENV_VAR,
+)
 from rasa.shared.exceptions import ProviderClientValidationError
 from tests.core.channels.voice_stream.tts.test_tts import (
     run_single_utterance_through_tts_and_asr,
 )
 
 
+@pytest.fixture
+async def azure_tts(monkeypatch: MonkeyPatch) -> AzureTTS:
+    """Create an AzureTTS instance with mocked env var."""
+    monkeypatch.setenv("AZURE_SPEECH_API_KEY", "test-key")
+    return AzureTTS(rasa_language="en", format=L16_24KHZ)
+
+
+async def test_prepare_response_ssml_disables_streaming(azure_tts: AzureTTS):
+    """SSML content should disable streaming even when SDK is available."""
+    azure_tts._synthesizer = MagicMock()
+    await azure_tts.prepare_response(StreamingConfig(response_text_contains_ssml=True))
+    assert azure_tts._use_streaming is False
+
+
+async def test_prepare_response_no_ssml_enables_streaming(azure_tts: AzureTTS):
+    """No SSML + SDK available should enable streaming."""
+    azure_tts._synthesizer = MagicMock()
+    azure_tts._speech_config = MagicMock()
+    azure_tts._callback = MagicMock()
+    azure_tts._loop = asyncio.get_running_loop()
+    mock_request = MagicMock()
+    with patch("rasa.core.channels.voice_stream.tts.azure.speechsdk") as mock_sdk:
+        mock_sdk.SpeechSynthesisRequest.return_value = mock_request
+        await azure_tts.prepare_response(
+            StreamingConfig(response_text_contains_ssml=False)
+        )
+    assert azure_tts._use_streaming is True
+
+
+async def test_prepare_response_no_sdk_disables_streaming(azure_tts: AzureTTS):
+    """Without SDK synthesizer, streaming should be disabled."""
+    azure_tts._synthesizer = None
+    await azure_tts.prepare_response(StreamingConfig(response_text_contains_ssml=False))
+    assert azure_tts._use_streaming is False
+
+
+async def test_prepare_response_default_no_ssml(azure_tts: AzureTTS):
+    """No config passed should default to streaming."""
+    azure_tts._synthesizer = MagicMock()
+    azure_tts._speech_config = MagicMock()
+    azure_tts._callback = MagicMock()
+    azure_tts._loop = asyncio.get_running_loop()
+    mock_request = MagicMock()
+    with patch("rasa.core.channels.voice_stream.tts.azure.speechsdk") as mock_sdk:
+        mock_sdk.SpeechSynthesisRequest.return_value = mock_request
+        await azure_tts.prepare_response()
+    assert azure_tts._use_streaming is True
+
+
+async def test_send_text_chunk_buffers_in_rest_mode(azure_tts: AzureTTS):
+    """send_text_chunk buffers text when not streaming."""
+    azure_tts._use_streaming = False
+    azure_tts._text_buffer = []
+
+    await azure_tts.send_text_chunk("Hello")
+    await azure_tts.send_text_chunk(" world")
+    assert azure_tts._text_buffer == ["Hello", " world"]
+
+
+async def test_send_text_chunk_writes_to_sdk_when_streaming(azure_tts: AzureTTS):
+    """send_text_chunk writes directly to SDK input stream when streaming."""
+    azure_tts._use_streaming = True
+    mock_request = MagicMock()
+    mock_stream = MagicMock()
+    mock_request.input_stream = mock_stream
+    azure_tts._tts_request = mock_request
+
+    await azure_tts.send_text_chunk("Hello")
+    await azure_tts.send_text_chunk(" world")
+
+    assert mock_stream.write.call_count == 2
+    mock_stream.write.assert_any_call("Hello")
+    mock_stream.write.assert_any_call(" world")
+    # Should NOT buffer
+    assert azure_tts._text_buffer == []
+
+
+async def test_signal_text_done_when_not_streaming(
+    azure_tts: AzureTTS, mulaw_format: AudioFormat
+):
+    """Test signal_text_done when not streaming.
+
+    It should clear the text buffer and put audio chunks to the audio queue.
+    """
+    azure_tts._use_streaming = False
+    azure_tts._text_buffer = ["Hello", " world"]
+    azure_tts._audio_queue = asyncio.Queue()
+
+    audio_chunks = [
+        RasaAudioBytes(b"audio1", mulaw_format),
+        RasaAudioBytes(b"audio2", mulaw_format),
+    ]
+
+    async def mock_rest(text, config=None):
+        for chunk in audio_chunks:
+            yield chunk
+
+    with patch.object(azure_tts, "_synthesize_rest", side_effect=mock_rest):
+        await azure_tts.signal_text_done()
+
+    assert azure_tts._text_buffer == []
+
+    chunk1 = await azure_tts._audio_queue.get()
+    assert chunk1 == audio_chunks[0]
+    chunk2 = await azure_tts._audio_queue.get()
+    assert chunk2 == audio_chunks[1]
+
+    # assert that None is put on the audio queue to indicate end of stream
+    sentinel = await azure_tts._audio_queue.get()
+    assert sentinel is None
+
+
+async def test_signal_text_done_when_streaming(azure_tts: AzureTTS):
+    """Tests signal_text_done when streaming.
+
+    It should wait for the tts future and close the stream once it is done.
+    """
+    azure_tts._use_streaming = True
+    azure_tts._audio_queue = asyncio.Queue()
+    azure_tts._loop = asyncio.get_running_loop()
+
+    mock_request = MagicMock()
+    mock_stream = MagicMock()
+    mock_request.input_stream = mock_stream
+    azure_tts._tts_request = mock_request
+
+    mock_future = MagicMock()
+    mock_future.get = MagicMock(return_value=MagicMock())
+    azure_tts._tts_future = mock_future
+
+    await azure_tts.signal_text_done()
+
+    mock_stream.close.assert_called_once()
+
+    # assert that None is put on the audio queue to indicate end of stream
+    sentinel = await azure_tts._audio_queue.get()
+    assert sentinel is None
+
+
+async def test_stream_audio_reads_from_queue(
+    azure_tts: AzureTTS, mulaw_format: AudioFormat
+):
+    """stream_audio always reads from queue."""
+
+    async def populate_queue():
+        await asyncio.sleep(0.01)
+        await azure_tts._audio_queue.put(RasaAudioBytes(b"chunk1", mulaw_format))
+        await azure_tts._audio_queue.put(RasaAudioBytes(b"chunk2", mulaw_format))
+        await azure_tts._audio_queue.put(None)
+
+    task = asyncio.create_task(populate_queue())
+
+    chunks = []
+    async for chunk in azure_tts.stream_audio():
+        chunks.append(chunk)
+
+    await task
+    assert len(chunks) == 2
+    assert chunks[0] == RasaAudioBytes(b"chunk1", mulaw_format)
+    assert chunks[1] == RasaAudioBytes(b"chunk2", mulaw_format)
+
+
+def test_audio_callback_write_pushes_to_queue(mulaw_format: AudioFormat):
+    """Callback write() should push audio to the asyncio queue."""
+    loop = asyncio.new_event_loop()
+    queue = asyncio.Queue()
+    callback = _AudioOutputCallback(loop, queue, mulaw_format)
+    assert callback.queue is queue
+
+    audio_data = b"\xff\x00\x01\x02"
+    # Simulate SDK calling write from its thread
+    # We run it directly here for simplicity
+    result = callback.write(memoryview(audio_data))
+
+    assert result == len(audio_data)
+    # Since we called from same thread as loop owner, use loop to drain
+    loop.run_until_complete(asyncio.sleep(0))
+    assert not queue.empty()
+    chunk = loop.run_until_complete(queue.get())
+    assert chunk == RasaAudioBytes(audio_data, mulaw_format)
+    loop.close()
+
+
+def test_audio_callback_close_is_noop(mulaw_format: AudioFormat):
+    """Assert that closing the audio callback does not put anything on audio queue."""
+    loop = asyncio.new_event_loop()
+    queue = asyncio.Queue()
+    callback = _AudioOutputCallback(loop, queue, mulaw_format)
+
+    callback.close()
+
+    loop.run_until_complete(asyncio.sleep(0))
+    assert queue.empty()
+    loop.close()
+
+
+async def test_synthesize_always_uses_rest(
+    azure_tts: AzureTTS, mulaw_format: AudioFormat
+):
+    """synthesize() should always use REST (for template responses)."""
+    audio_chunks = [RasaAudioBytes(b"audio", mulaw_format)]
+
+    async def mock_rest(text: str, config=None):
+        for chunk in audio_chunks:
+            yield chunk
+
+    with patch.object(azure_tts, "_synthesize_rest", side_effect=mock_rest):
+        result = []
+        async for chunk in azure_tts.synthesize("Hello"):
+            result.append(chunk)
+
+    assert result == audio_chunks
+
+
+async def test_close_connection_clears_sdk(azure_tts: AzureTTS):
+    azure_tts._synthesizer = MagicMock()
+    azure_tts._speech_config = MagicMock()
+
+    await azure_tts.close_connection()
+    assert azure_tts._synthesizer is None
+    assert azure_tts._speech_config is None
+
+
+async def test_close_connection_noop_when_no_sdk(azure_tts: AzureTTS):
+    azure_tts._synthesizer = None
+    azure_tts._speech_config = None
+    # Should not raise
+    await azure_tts.close_connection()
+
+
+ALL_AZURE_ENV_VARS = [
+    AZURE_API_KEY_ENV_VAR,
+    AZURE_AD_TOKEN_ENV_VAR,
+    AZURE_API_BASE_ENV_VAR,
+    AZURE_API_VERSION_ENV_VAR,
+    AZURE_API_TYPE_ENV_VAR,
+    AZURE_AD_SCOPES_ENV_VAR,
+    AZURE_SPEECH_API_KEY_ENV_VAR,
+]
+
+
 @pytest.mark.asyncio
-async def test_environment_validation(mulaw_format):
+async def test_environment_validation(
+    monkeypatch: MonkeyPatch, mulaw_format: AudioFormat
+):
     # no api key set
-    with mock.patch.dict("os.environ", {}, clear=True):
-        with pytest.raises(ProviderClientValidationError) as e:
-            AzureTTS(rasa_language="en", format=mulaw_format)
-        assert e.match(AzureTTS.required_env_vars[0])
-        assert e.match("TTS Engine AzureTTS")
+    for env_Var in ALL_AZURE_ENV_VARS:
+        monkeypatch.delenv(env_Var, raising=False)
+
+    with pytest.raises(ProviderClientValidationError) as e:
+        AzureTTS(rasa_language="en", format=mulaw_format)
+    assert e.match(AzureTTS.required_env_vars[0])
+    assert e.match("TTS Engine AzureTTS")
 
 
 @pytest.mark.asyncio
-async def test_synthesis_with_asr(mulaw_format):
+async def test_synthesis_with_asr(mulaw_format: AudioFormat):
     tts_engine = AzureTTS(
         rasa_language="en",
         format=mulaw_format,
@@ -48,7 +315,7 @@ async def test_synthesis_with_asr(mulaw_format):
         AzureTTSConfig.from_dict({"voice": "non_existent_voice"}),
     ],
 )
-async def test_synthesis_error(bad_config, mulaw_format):
+async def test_synthesis_error(bad_config: AzureTTSConfig, mulaw_format: AudioFormat):
     tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
     text = "Hello there!"
     with pytest.raises(TTSError):
@@ -57,7 +324,9 @@ async def test_synthesis_error(bad_config, mulaw_format):
 
 
 @pytest.mark.asyncio
-async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch, mulaw_format):
+async def test_synthesis_bad_api_key(
+    monkeypatch: MonkeyPatch, mulaw_format: AudioFormat
+):
     monkeypatch.setenv("AZURE_SPEECH_API_KEY", "bad key")
     tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
     text = "Hello there!"
@@ -81,7 +350,7 @@ def test_tts_url_creation():
     assert azure_tts_endpoint.startswith("https://")
 
 
-def test_tts_request_body(mulaw_format):
+def test_tts_request_body(mulaw_format: AudioFormat):
     tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
     text = "Hi there, how can I help you today?"
     request_body = AzureTTS.create_request_body(
@@ -92,7 +361,7 @@ def test_tts_request_body(mulaw_format):
     assert tts_engine.current_language_config.engine_language_key in request_body
 
 
-async def test_tts_headers(mulaw_format):
+async def test_tts_headers(mulaw_format: AudioFormat):
     tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
     headers = tts_engine.get_request_headers()
     assert "Ocp-Apim-Subscription-Key" in headers
@@ -114,14 +383,14 @@ async def test_tts_headers_l16_48khz():
 
 
 @pytest.mark.asyncio
-async def test_tts_session_sharing(mulaw_format):
+async def test_tts_session_sharing(mulaw_format: AudioFormat):
     tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
     tts_engine_2 = AzureTTS(rasa_language="en", format=mulaw_format)
     assert tts_engine_2.session is tts_engine.session
 
 
 @pytest.mark.asyncio
-async def test_synthesize_timeout(monkeypatch: MonkeyPatch, mulaw_format):
+async def test_synthesize_timeout(monkeypatch: MonkeyPatch, mulaw_format: AudioFormat):
     monkeypatch.setenv("AZURE_SPEECH_API_KEY", "my key")
     tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
     text = "Test timeout"
@@ -141,17 +410,25 @@ async def test_synthesize_timeout(monkeypatch: MonkeyPatch, mulaw_format):
         assert "Request timed out" in str(exc_info.value)
 
 
+# ── streaming_input class attribute test ─────────────────────────────
+
+
+def test_streaming_input_is_true():
+    """AzureTTS should now have streaming_input=True."""
+    assert AzureTTS.streaming_input is True
+
+
 @pytest.mark.parametrize(
-    "format",
+    "output_format",
     [
         MULAW_8KHZ,
         L16_24KHZ,
         L16_48KHZ,
     ],
 )
-async def test_configuration_format(format):
+async def test_configuration_format(output_format: AudioFormat):
     config = {"speech_region": "eastus"}
     tts_engine = AzureTTS.from_config_dict(
-        config=config, rasa_language="en", format=format
+        config=config, rasa_language="en", format=output_format
     )
-    assert tts_engine.audio_format == format
+    assert tts_engine.audio_format == output_format

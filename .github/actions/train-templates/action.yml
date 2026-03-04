@@ -52,7 +52,7 @@ runs:
       uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
       with:
         path: ${{ github.workspace }}/.venv
-        key: rasa-default-install-${{ runner.os }}-${{ inputs.python_version }}-${{ hashFiles('poetry.lock') }}
+        key: rasa-full-install-${{ runner.os }}-${{ inputs.python_version }}-${{ hashFiles('poetry.lock') }}
 
     - name: Build and install Rasa Pro package
       if: ${{ steps.cached-rasa.outputs.cache-hit != 'true' }}

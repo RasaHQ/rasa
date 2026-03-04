@@ -252,6 +252,7 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
 
         @blueprint.websocket("/websocket")  # type: ignore
         async def handle_message(request: Request, ws: Websocket) -> None:
+            logger.debug("twilio_media_streams.handle_message")
             await self.run_audio_streaming(on_new_message, ws)
 
         return blueprint

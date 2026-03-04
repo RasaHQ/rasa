@@ -291,6 +291,7 @@ jobs:
   train-templates-dev:
     name: Train Project Templates for Dev
     runs-on: warp-ubuntu-latest-x64-2x
+    needs: install-and-cache-rasa
     timeout-minutes: 10
     outputs:
       tag_version: ${{ steps.set-tag.outputs.tag_version }}
@@ -1427,7 +1428,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "default"
+          RASA_INSTALL_GROUP: "full"
 
       - name: Run container for concurrent lock store integration testing
         run: |
@@ -1911,9 +1912,6 @@ jobs:
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
-      - name: Install additional dependencies
-        run: poetry add azure-cognitiveservices-speech
-
       - name: Configure Datadog Test Optimization
         uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
         with:
@@ -2210,20 +2208,32 @@ jobs:
 
       - name: Prepare the job for unit tests
         uses: ./.github/actions/test-prerequisites
+        id: prepare-job
         with:
           PYTHON_VERSION: ${{ matrix.python-version }}
+          RASA_INSTALL_GROUP: "full"
 
       - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
-        id: linux-dependencies
+        id: ubuntu-dependencies
         with:
           packages: libpq-dev graphviz graphviz-dev python3-tk
           version: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.runner }}
 
-      - name: Install Linux dependencies
-        if: ${{ steps.linux-dependencies.outputs.cache-hit != 'true' }}
+      - name: Install Dependencies (Linux) 📦
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
+        env:
+          UBUNTU_DEPENDENCIES_INSTALLED: ${{ steps.ubuntu-dependencies.outputs.cache-hit }}
+          RASA_INSTALLED: ${{ steps.prepare-job.outputs.CACHE_LOADED }}
         run: |
-          sudo apt-get -y install libpq-dev
-          make prepare-tests-ubuntu
+          if [[ "${RASA_INSTALLED}" == 'false' ]]; then
+            make install-nlu-pii-channels | tee .output
+            if grep 'The lock file is not up to date' .output; then exit 1; fi
+          fi
+          if [[ "${UBUNTU_DEPENDENCIES_INSTALLED}" == 'false' ]]; then
+            sudo apt-get -y install libpq-dev
+            make prepare-tests-ubuntu
+          fi
 
       - name: Configure Datadog Test Optimization
         uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
@@ -2305,7 +2315,7 @@ jobs:
         if: ${{ steps.linux-dependencies.outputs.cache-hit != 'true' }}
         run: |
           sudo apt-get -y install libpq-dev
-          make prepare-tests-ubuntu
+          make prepare-tests-ubuntu 
 
       - name: Configure Datadog Test Optimization
         uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
