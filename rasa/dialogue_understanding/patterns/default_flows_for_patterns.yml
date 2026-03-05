@@ -401,6 +401,14 @@ flows:
       - action: utter_no_knowledge_base
       # - action: action_trigger_search to use doc search policy if present
 
+  pattern_session_end:
+    description: Flow for ending the session
+    name: pattern session end
+    nlu_trigger:
+      - intent: session_end
+    steps:
+      - action: action_hangup
+
   pattern_session_start:
     description: Flow for starting the conversation
     name: pattern session start

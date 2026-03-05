@@ -943,42 +943,61 @@ class VoiceInputChannel(InputChannel):
         )
 
         async def consume_audio_bytes() -> None:
-            async for message in channel_websocket:
-                was_bot_speaking_before = call_state.is_bot_speaking
-                channel_action = self.map_input_message(message, channel_websocket)
-                is_bot_speaking_after = call_state.is_bot_speaking
+            is_disconnected = False
+            try:
+                async for message in channel_websocket:
+                    was_bot_speaking_before = call_state.is_bot_speaking
+                    channel_action = self.map_input_message(message, channel_websocket)
+                    is_bot_speaking_after = call_state.is_bot_speaking
 
-                if not was_bot_speaking_before and is_bot_speaking_after:
-                    logger.debug("voice_channel.bot_started_speaking")
-                    # relevant when the bot speaks multiple messages in one turn
-                    self._cancel_silence_timeout_watcher()
+                    if not was_bot_speaking_before and is_bot_speaking_after:
+                        logger.debug("voice_channel.bot_started_speaking")
+                        # relevant when the bot speaks multiple messages in one turn
+                        self._cancel_silence_timeout_watcher()
 
-                # we just stopped speaking, starting a watcher for silence timeout
-                if was_bot_speaking_before and not is_bot_speaking_after:
-                    logger.debug("voice_channel.bot_stopped_speaking")
-                    self._cancel_silence_timeout_watcher()
-                    call_state.silence_timeout_watcher = asyncio.create_task(
-                        self.monitor_silence_timeout(asr_event_queue)
-                    )
-                if isinstance(channel_action, NewAudioAction):
-                    await asr_engine.send_audio_chunks(channel_action.audio_bytes)
-                if isinstance(channel_action, DTMFInputAction):
-                    await self.gather_dtmf_input(
-                        channel_websocket,
-                        tts_engine,
-                        on_new_message,
-                        call_parameters,
-                        channel_action,
-                    )
-                elif isinstance(channel_action, EndConversationAction):
-                    # end stream event came from the other side
+                    # we just stopped speaking, starting a watcher for silence timeout
+                    if was_bot_speaking_before and not is_bot_speaking_after:
+                        logger.debug("voice_channel.bot_stopped_speaking")
+                        self._cancel_silence_timeout_watcher()
+                        call_state.silence_timeout_watcher = asyncio.create_task(
+                            self.monitor_silence_timeout(asr_event_queue)
+                        )
+                    if isinstance(channel_action, NewAudioAction):
+                        await asr_engine.send_audio_chunks(channel_action.audio_bytes)
+                    if isinstance(channel_action, DTMFInputAction):
+                        await self.gather_dtmf_input(
+                            channel_websocket,
+                            tts_engine,
+                            on_new_message,
+                            call_parameters,
+                            channel_action,
+                        )
+                    elif isinstance(channel_action, EndConversationAction):
+                        # end stream event came from the other side
+                        is_disconnected = True
+                        await self.handle_disconnect(
+                            channel_websocket,
+                            on_new_message,
+                            tts_engine,
+                            call_parameters,
+                        )
+                        break
+            finally:
+                # The websocket was closed cleanly by the remote end without sending
+                # an application-level disconnect message (e.g. Jambonz closes the
+                # websocket when the user hangs up without sending a "stop"-like event).
+                logger.info(
+                    "voice_channel.websocket_closed_by_remote",
+                    call_id=call_parameters.call_id,
+                )
+                if not is_disconnected:
+                    # Avoid double disconnect handling
                     await self.handle_disconnect(
                         channel_websocket,
                         on_new_message,
                         tts_engine,
                         call_parameters,
                     )
-                    break
 
         tasks = [
             asyncio.create_task(consume_audio_bytes()),

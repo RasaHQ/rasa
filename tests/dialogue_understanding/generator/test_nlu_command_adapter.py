@@ -14,6 +14,7 @@ from rasa.dialogue_understanding.commands import (
     CorrectSlotsCommand,
     KnowledgeAnswerCommand,
     RestartCommand,
+    SessionEndCommand,
     SessionStartCommand,
     SetSlotCommand,
     SkipQuestionCommand,
@@ -478,6 +479,32 @@ class TestNLUCommandAdapter:
 
         assert len(predicted_commands) == 1
         assert isinstance(predicted_commands[0], RestartCommand)
+
+    async def test_predict_session_end_command(
+        self, command_generator: NLUCommandAdapter
+    ):
+        """Test that sending /session_end triggers the pattern_session_end flow."""
+        sender_id = uuid.uuid4().hex
+        domain = FlowSyncImporter.load_default_pattern_flows_domain()
+        flows = FlowSyncImporter.load_default_pattern_flows()
+        tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+        predicted_commands = await command_generator.predict_commands(
+            Message(
+                data={
+                    TEXT: "/session_end",
+                    INTENT: {
+                        INTENT_NAME_KEY: "session_end",
+                        PREDICTED_CONFIDENCE_KEY: 1.0,
+                    },
+                }
+            ),
+            flows=flows,
+            tracker=tracker,
+            domain=domain,
+        )
+
+        assert len(predicted_commands) == 1
+        assert isinstance(predicted_commands[0], SessionEndCommand)
 
     @pytest.mark.parametrize(
         "pattern,expected_command_class",

@@ -8,6 +8,7 @@ from rasa.dialogue_understanding.commands import (
     CorrectSlotsCommand,
     KnowledgeAnswerCommand,
     RestartCommand,
+    SessionEndCommand,
     SessionStartCommand,
     SetSlotCommand,
     SkipQuestionCommand,
@@ -20,6 +21,9 @@ from rasa.dialogue_understanding.patterns.cannot_handle import (
 from rasa.dialogue_understanding.patterns.chitchat import ChitchatPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.restart import RestartPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFrame
+from rasa.dialogue_understanding.patterns.session_end import (
+    SessionEndPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.patterns.session_start import (
     SessionStartPatternFlowStackFrame,
 )
@@ -39,6 +43,7 @@ triggerable_pattern_to_command_class: Dict[str, Type[Command]] = {
     SkipQuestionPatternFlowStackFrame.flow_id: SkipQuestionCommand,
     CannotHandlePatternFlowStackFrame.flow_id: CannotHandleCommand,
     RestartPatternFlowStackFrame.flow_id: RestartCommand,
+    SessionEndPatternFlowStackFrame.flow_id: SessionEndCommand,
 }
 
 

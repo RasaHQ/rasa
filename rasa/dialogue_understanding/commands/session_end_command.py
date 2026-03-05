@@ -4,7 +4,10 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from rasa.dialogue_understanding.commands.command import Command
-from rasa.shared.core.events import Event, SessionEnded
+from rasa.dialogue_understanding.patterns.session_end import (
+    SessionEndPatternFlowStackFrame,
+)
+from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -43,14 +46,9 @@ class SessionEndCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        metadata = {"_reason": "user disconnected"}
-
-        # Add metadata sent by the channel connector, if available
-        if tracker.latest_message:
-            user_metadata = tracker.latest_message.metadata or {}
-            metadata.update(user_metadata)
-
-        return [SessionEnded(metadata=metadata)]
+        stack = tracker.stack
+        stack.push(SessionEndPatternFlowStackFrame())
+        return tracker.create_stack_updated_events(stack)
 
     def __hash__(self) -> int:
         return hash(self.command())
