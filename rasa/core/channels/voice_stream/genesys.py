@@ -5,7 +5,7 @@ import base64
 import hashlib
 import hmac
 import json
-from typing import Any, Awaitable, Callable, Dict, Optional, Text
+from typing import Any, Awaitable, Callable, Dict, Optional, Text, Union
 
 import structlog
 from sanic import (  # type: ignore[attr-defined]
@@ -104,12 +104,14 @@ class GenesysInputChannel(VoiceInputChannel):
         asr_config: Dict,
         tts_config: Dict,
         interruptions: Optional[Dict[str, int]] = None,
+        silence_timeout: Optional[Union[float, int]] = None,
         api_key: Optional[Text] = None,
         client_secret: Optional[Text] = None,
     ) -> None:
         super().__init__(server_url, asr_config, tts_config, interruptions)
         self.api_key = api_key
         self.client_secret = client_secret
+        self.silence_timeout = silence_timeout
 
     @classmethod
     def from_credentials(

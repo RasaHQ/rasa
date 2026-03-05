@@ -4,7 +4,7 @@ import asyncio
 import base64
 import hmac
 import json
-from typing import Any, Awaitable, Callable, Dict, Optional, Text
+from typing import Any, Awaitable, Callable, Dict, Optional, Text, Union
 
 import structlog
 from sanic import (  # type: ignore[attr-defined]
@@ -125,6 +125,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         asr_config: Dict,
         tts_config: Dict,
         interruptions: Optional[Dict[str, int]] = None,
+        silence_timeout: Optional[Union[float, int]] = None,
         token: Optional[Text] = None,
     ):
         mark_as_beta_feature("Audiocodes (audiocodes_stream) Channel")
@@ -136,6 +137,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         )
         self.audio_format = RASA_AUDIO_FORMAT
         self.token = token
+        self.silence_timeout = silence_timeout
 
     @classmethod
     def from_credentials(

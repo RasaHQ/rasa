@@ -1093,13 +1093,37 @@ def _append_global_silence_timeout_event(
     events: List[Event], tracker: DialogueStateTracker
 ) -> None:
     current_silence_timeout = tracker.get_slot(SILENCE_TIMEOUT_SLOT)
-    endpoints = Configuration.get_instance().endpoints
-    global_silence_timeout = endpoints.interaction_handling.global_silence_timeout
+    default_silence_timeout = _get_default_silence_timeout(tracker)
 
-    if current_silence_timeout != global_silence_timeout:
+    if current_silence_timeout != default_silence_timeout:
         events.append(
             SlotSet(
                 SILENCE_TIMEOUT_SLOT,
-                global_silence_timeout,
+                default_silence_timeout,
             )
         )
+
+
+def _get_default_silence_timeout(tracker: DialogueStateTracker) -> float:
+    """Get the default silence timeout for the tracker."""
+    input_channel_name = tracker.get_latest_input_channel()
+    credentials_config = Configuration.get_instance().credentials
+
+    if credentials_config:
+        channel_config = (
+            credentials_config.channels.get(input_channel_name)
+            if input_channel_name
+            else None
+        )
+
+        silence_timeout = (
+            channel_config.get(
+                SILENCE_TIMEOUT_CHANNEL_KEY, GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE
+            )
+            if channel_config
+            else GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE
+        )
+    else:
+        silence_timeout = GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE
+
+    return silence_timeout

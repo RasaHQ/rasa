@@ -166,6 +166,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         metadata_key: Optional[Text] = "metadata",
         enable_silence_timeout: bool = False,
         interruptions: Optional[Dict[str, Any]] = None,
+        silence_timeout: Optional[Union[float, int]] = None,
     ) -> None:
         """Creates a `StudioChatInput` object."""
         from rasa.core.agent import Agent
@@ -203,6 +204,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         self._turn_start_times: Dict[Text, float] = {}
 
         self._register_tracker_update_hook()
+        self.silence_timeout = silence_timeout
 
     @classmethod
     def from_credentials(
@@ -227,6 +229,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             jwt_method=credentials.get("jwt_method", "HS256"),
             metadata_key=credentials.get("metadata_key", "metadata"),
             enable_silence_timeout=credentials.get("enable_silence_timeout", False),
+            silence_timeout=credentials.get("silence_timeout"),
         )
 
     async def emit(self, event: str, data: Union[Dict, str], room: str) -> None:

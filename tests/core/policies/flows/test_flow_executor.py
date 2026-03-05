@@ -2908,6 +2908,205 @@ async def test_reset_silence_timeout_to_global_at_step_collect(
     assert isinstance(stack.frames[1], CollectInformationPatternFlowStackFrame)
 
 
+@pytest.mark.asyncio
+async def test_append_global_silence_timeout_uses_channel_specific_value(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that silence timeout is set to the channel-specific value at flow start.
+
+    When a flow starts with a non-collect step and the active channel has a
+    silence_timeout configured in credentials, the SlotSet event should use
+    the channel value rather than the global one.
+    """
+    channel_name = "test_channel"
+    channel_silence_timeout = 5.0
+    global_silence_timeout = 15.0
+
+    credentials = CredentialsConfig(
+        channels={channel_name: {SILENCE_TIMEOUT_CHANNEL_KEY: channel_silence_timeout}},
+        config_file_path=Path(),
+    )
+    monkeypatch.setattr(
+        Configuration.get_instance(),
+        "credentials",
+        credentials,
+    )
+    monkeypatch.setattr(
+        Configuration.get_instance().endpoints,
+        "interaction_handling",
+        InteractionHandlingConfig(global_silence_timeout=global_silence_timeout),
+    )
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: first_action
+              action: action_listen
+        """
+    )
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    monkeypatch.setattr(tracker, "get_latest_input_channel", lambda: channel_name)
+
+    flow = flows.flow_by_id("my_flow")
+    assert flow is not None
+    step = flow.step_by_id("first_action")
+
+    available_actions = ["action_listen"]
+
+    result = await flow_executor.run_step(
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
+        slots=[],
+    )
+
+    assert isinstance(result, PauseFlowReturnPrediction)
+    assert result.events == [
+        FlowStarted(flow_id="my_flow"),
+        SlotSet(SILENCE_TIMEOUT_SLOT, channel_silence_timeout),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_append_global_silence_timeout_when_channel_has_no_timeout(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test silence timeout is set to default when channel has no silence_timeout.
+
+    When the active channel exists in credentials but has no silence_timeout key,
+    the SlotSet event should use GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE.
+    """
+    channel_name = "test_channel"
+
+    credentials = CredentialsConfig(
+        channels={channel_name: {"some_other_key": "value"}},
+        config_file_path=Path(),
+    )
+    monkeypatch.setattr(
+        Configuration.get_instance(),
+        "credentials",
+        credentials,
+    )
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: first_action
+              action: action_listen
+        """
+    )
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    monkeypatch.setattr(tracker, "get_latest_input_channel", lambda: channel_name)
+
+    flow = flows.flow_by_id("my_flow")
+    assert flow is not None
+    step = flow.step_by_id("first_action")
+
+    available_actions = ["action_listen"]
+
+    result = await flow_executor.run_step(
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
+        slots=[],
+    )
+
+    assert isinstance(result, PauseFlowReturnPrediction)
+    assert result.events == [
+        FlowStarted(flow_id="my_flow"),
+        SlotSet(SILENCE_TIMEOUT_SLOT, GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_append_global_silence_timeout_when_channel_not_in_credentials(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test silence timeout is set to default when channel is not in credentials.
+
+    When the tracker's input channel is not present in credentials at all,
+    the function must not raise AttributeError and must fall back to
+    GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE.
+    """
+    credentials = CredentialsConfig(
+        channels={"some_other_channel": {SILENCE_TIMEOUT_CHANNEL_KEY: 5.0}},
+        config_file_path=Path(),
+    )
+    monkeypatch.setattr(
+        Configuration.get_instance(),
+        "credentials",
+        credentials,
+    )
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: first_action
+              action: action_listen
+        """
+    )
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    monkeypatch.setattr(tracker, "get_latest_input_channel", lambda: "unknown_channel")
+
+    flow = flows.flow_by_id("my_flow")
+    assert flow is not None
+    step = flow.step_by_id("first_action")
+
+    available_actions = ["action_listen"]
+
+    result = await flow_executor.run_step(
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
+        slots=[],
+    )
+
+    assert isinstance(result, PauseFlowReturnPrediction)
+    assert result.events == [
+        FlowStarted(flow_id="my_flow"),
+        SlotSet(SILENCE_TIMEOUT_SLOT, GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE),
+    ]
+
+
 def test_set_dtmf_state_if_available_without_call_state():
     """Test that _set_dtmf_state_if_available handles missing call_state gracefully.
 

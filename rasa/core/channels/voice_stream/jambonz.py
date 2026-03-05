@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Optional, Text, Tuple
+from typing import Any, Awaitable, Callable, Dict, Optional, Text, Tuple, Union
 
 import structlog
 from sanic import (  # type: ignore[attr-defined]
@@ -86,6 +86,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         asr_config: Dict,
         tts_config: Dict,
         interruptions: Optional[Dict[str, int]] = None,
+        silence_timeout: Optional[Union[float, int]] = None,
         username: Optional[Text] = None,
         password: Optional[Text] = None,
     ) -> None:
@@ -103,6 +104,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         self.username = username
         self.password = password
         self.audio_format = L16_24KHZ
+        self.silence_timeout = silence_timeout
 
     @classmethod
     def from_credentials(

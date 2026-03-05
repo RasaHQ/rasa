@@ -4,7 +4,7 @@ import audioop
 import base64
 import json
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union
 
 import structlog
 from sanic import (  # type: ignore[attr-defined]
@@ -96,6 +96,7 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         tts_config: Dict[str, Any],
         recording: bool = False,
         interruptions: Optional[Dict[str, int]] = None,
+        silence_timeout: Optional[Union[float, int]] = None,
         sample_rate: int = DEFAULT_SAMPLE_RATE,
     ) -> None:
         """Initializes the browser audio input channel.
@@ -110,6 +111,7 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         """
         super().__init__(server_url, asr_config, tts_config, interruptions)
         self.audio_format = _SAMPLE_RATE_TO_FORMAT[sample_rate]
+        self.silence_timeout = silence_timeout
 
         # For debugging, recording of user audio might be useful
         # to identify audio quality issues or transcription errors
