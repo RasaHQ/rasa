@@ -40,6 +40,8 @@ lastmile_ai/learn/plots/
 .coveralls.yml
 .idea/
 .venv/
+.venv-current
+.venv-name
 *.iml
 out/
 .vscode/
@@ -113,6 +115,7 @@ file_ids.json
 rasa_docs_md/**
 anonymization_db
 deletion_db
+scripts/use-venv.sh
 
 # Snyk Security Extension - AI Rules (auto-generated)
 .cursor/rules/snyk_rules.mdc

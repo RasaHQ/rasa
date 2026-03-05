@@ -217,17 +217,21 @@ def get_cron_trigger(cron_expression: str) -> CronTrigger:
 
 
 def validate_min_after_session_end(min_after_session_end: int) -> None:
-    """Validate the minimum time after session end."""
+    """Validate the minimum time after session end.
+
+    Only runs when USER_CHAT_INACTIVITY_IN_MINUTES is set; when unset,
+    event-based detection is used and this validation is skipped.
+    """
+    inactivity_env = os.getenv(USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME)
+    if inactivity_env is None:
+        return
     try:
-        inactivity_period = int(
-            os.getenv(USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME, "30")
-        )
+        inactivity_period = int(inactivity_env)
     except (ValueError, TypeError) as exc:
         raise RasaException(
             f"Invalid value for {USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME} "
             f"env var: {exc}."
         )
-
     if min_after_session_end < inactivity_period:
         raise RasaException(
             f"Minimum time in minutes after session end must be greater than "

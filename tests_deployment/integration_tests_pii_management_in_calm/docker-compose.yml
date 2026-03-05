@@ -4,6 +4,9 @@ x-license: &license
 x-pii-config: &pii-env-vars
   USER_CHAT_INACTIVITY_IN_MINUTES: 0
   GLINER_MODEL_PATH: "/app/gliner_model"
+# New trackers without env-set (event-only path); no USER_CHAT_INACTIVITY_IN_MINUTES
+x-pii-no-env: &pii-env-vars-no-inactivity
+  GLINER_MODEL_PATH: "/app/gliner_model"
 
 configs:
   endpoints-anonymization.yml:
@@ -76,6 +79,136 @@ configs:
             anonymization:
               type: redact
               keep_right: 4
+  endpoints-anonymization-no-env-expiry-false.yml:
+    content: |
+      action_endpoint:
+        actions_module: "actions"
+      tracker_store:
+        type: sql
+        db: "anonymization_no_env_expiry_false_db"
+      model_groups:
+      - id: openai-gpt-4o
+        models:
+        - provider: openai
+          model: gpt-4o-2024-11-20
+          request_timeout: 7
+          max_tokens: 256
+      privacy:
+        tracker_store_settings:
+          anonymization:
+            min_after_session_end: 2
+            cron: "*/1 * * * *"
+        rules:
+          - slot: full_name
+            anonymization:
+              type: mask
+          - slot: national_insurance_number
+            anonymization:
+               type: mask
+          - slot: credit_card_number
+            anonymization:
+              type: redact
+              keep_right: 4
+  endpoints-anonymization-no-env-expiry-true.yml:
+    content: |
+      action_endpoint:
+        actions_module: "actions"
+      tracker_store:
+        type: sql
+        db: "anonymization_no_env_expiry_true_db"
+      model_groups:
+      - id: openai-gpt-4o
+        models:
+        - provider: openai
+          model: gpt-4o-2024-11-20
+          request_timeout: 7
+          max_tokens: 256
+      privacy:
+        tracker_store_settings:
+          anonymization:
+            min_after_session_end: 1
+            cron: "*/1 * * * *"
+        rules:
+          - slot: full_name
+            anonymization:
+              type: mask
+          - slot: national_insurance_number
+            anonymization:
+               type: mask
+          - slot: credit_card_number
+            anonymization:
+              type: redact
+              keep_right: 4
+  endpoints-deletion-no-env-expiry-false.yml:
+    content: |
+      action_endpoint:
+        actions_module: "actions"
+      tracker_store:
+        type: sql
+        dialect: "postgresql"
+        url: postgres
+        port: 5432
+        username: "postgres"
+        password: "postgres"
+        db: "deletion_no_env_expiry_false_db"
+      model_groups:
+      - id: openai-gpt-4o
+        models:
+        - provider: openai
+          model: gpt-4o-2024-11-20
+          request_timeout: 7
+          max_tokens: 256
+      privacy:
+        tracker_store_settings:
+          deletion:
+            min_after_session_end: 1
+            cron: "*/1 * * * *"
+        rules:
+          - slot: full_name
+            anonymization:
+              type: mask
+          - slot: national_insurance_number
+            anonymization:
+               type: mask
+          - slot: credit_card_number
+            anonymization:
+              type: redact
+              keep_right: 4
+  endpoints-deletion-no-env-expiry-true.yml:
+    content: |
+      action_endpoint:
+        actions_module: "actions"
+      tracker_store:
+        type: sql
+        dialect: "postgresql"
+        url: postgres
+        port: 5432
+        db: "deletion_no_env_expiry_true_db"
+        username: "postgres"
+        password: "postgres"
+      model_groups:
+      - id: openai-gpt-4o
+        models:
+        - provider: openai
+          model: gpt-4o-2024-11-20
+          request_timeout: 7
+          max_tokens: 256
+      privacy:
+        tracker_store_settings:
+          deletion:
+            min_after_session_end: 2
+            cron: "*/1 * * * *"
+        rules:
+          - slot: full_name
+            anonymization:
+              type: mask
+          - slot: national_insurance_number
+            anonymization:
+               type: mask
+          - slot: credit_card_number
+            anonymization:
+              type: redact
+              keep_right: 4
 
 services:
   kafka_broker:
@@ -132,6 +265,26 @@ services:
       kafka-topics --bootstrap-server kafka_broker:29092 --list
       "
 
+  postgres:
+    image: postgres:18-alpine
+    container_name: pii_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: deletion_no_env_expiry_false_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+      start_period: 10s
+      timeout: 5s
+    networks:
+      - pii-integration-testing
+
   rasa-pro-http-anonymization:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
@@ -184,6 +337,108 @@ services:
       <<: [*license, *pii-env-vars]
     healthcheck:
       test: curl localhost:5006 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+
+  rasa-pro-http-deletion-no-env-expiry-false:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "${BOT_PATH}:/app/bot"
+    working_dir: /app/bot
+    configs:
+      - source: endpoints-deletion-no-env-expiry-false.yml
+        target: /endpoints-deletion-no-env.yml
+    entrypoint: ""
+    command: rasa run -p 5007 --enable-api --endpoints /endpoints-deletion-no-env.yml --debug -m models/${MODEL_NAME_EXPIRY_FALSE}.tar.gz
+    networks:
+      - pii-integration-testing
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5007:5007"
+    environment:
+      <<: [*license]
+    healthcheck:
+      test: curl localhost:5007 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+
+  rasa-pro-http-deletion-no-env-expiry-true:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "${BOT_PATH}:/app/bot"
+    working_dir: /app/bot
+    configs:
+      - source: endpoints-deletion-no-env-expiry-true.yml
+        target: /endpoints-deletion-no-env.yml
+    entrypoint: ""
+    command: rasa run -p 5008 --enable-api --endpoints /endpoints-deletion-no-env.yml --debug -m models/${MODEL_NAME_EXPIRY_TRUE}.tar.gz
+    networks:
+      - pii-integration-testing
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5008:5008"
+    environment:
+      <<: [*license]
+    healthcheck:
+      test: curl localhost:5008 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+
+  rasa-pro-http-anonymization-no-env-expiry-false:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "${BOT_PATH}:/app/bot"
+    working_dir: /app/bot
+    configs:
+      - source: endpoints-anonymization-no-env-expiry-false.yml
+        target: /endpoints-anonymization-no-env.yml
+    entrypoint: ""
+    command: rasa run -p 5009 --enable-api --endpoints /endpoints-anonymization-no-env.yml --debug -m models/${MODEL_NAME_EXPIRY_FALSE}.tar.gz
+    networks:
+      - pii-integration-testing
+    ports:
+      - "5009:5009"
+    environment:
+      <<: [*license, *pii-env-vars-no-inactivity]
+    healthcheck:
+      test: curl localhost:5009 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+
+  rasa-pro-http-anonymization-no-env-expiry-true:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "${BOT_PATH}:/app/bot"
+    working_dir: /app/bot
+    configs:
+      - source: endpoints-anonymization-no-env-expiry-true.yml
+        target: /endpoints-anonymization-no-env.yml
+    entrypoint: ""
+    command: rasa run -p 5010 --enable-api --endpoints /endpoints-anonymization-no-env.yml --debug -m models/${MODEL_NAME_EXPIRY_TRUE}.tar.gz
+    networks:
+      - pii-integration-testing
+    ports:
+      - "5010:5010"
+    environment:
+      <<: [*license, *pii-env-vars-no-inactivity]
+    healthcheck:
+      test: curl localhost:5010 || exit 1
       interval: 10s
       retries: 10
       start_period: 15s

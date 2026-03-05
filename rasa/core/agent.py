@@ -257,6 +257,7 @@ async def load_agent(
                 endpoints=endpoints,
                 event_loop=loop,
                 in_memory_tracker_store=in_memory_tracker_store,
+                lock_store=lock_store,
             )
             track_privacy_enabled(privacy_manager.config, broker)
 

@@ -6,14 +6,28 @@ import datetime
 import os
 import queue
 import time
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+)
 
 import structlog
 from apscheduler.schedulers.background import BackgroundScheduler
+from jsonpatch import JsonPatchException
+from jsonpointer import JsonPointerException
 
-import rasa.shared.core.trackers
 from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.privacy.constants import (
+    ANONYMIZATION_LOG_KEY,
+    DELETION_LOG_KEY,
+    LEGACY_DEFAULT_INACTIVITY_MINUTES,
+    NO_SESSION_ID_KEY,
     TEXT_KEY,
     USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME,
 )
@@ -24,18 +38,34 @@ from rasa.privacy.privacy_config import (
     validate_sensitive_slots,
 )
 from rasa.privacy.privacy_filter import PrivacyFilter
-from rasa.shared.core.events import Event, SlotSet, UserUttered, split_events
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
+from rasa.shared.core.events import (
+    ActionExecuted,
+    ConversationInactive,
+    Event,
+    SessionEnded,
+    SlotSet,
+    UserUttered,
+    split_events,
+)
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.constants import METADATA_SESSION_ID
+from rasa.shared.utils.io import raise_deprecation_warning
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
 
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.config.available_endpoints import AvailableEndpoints
+    from rasa.core.lock_store import LockStore
     from rasa.shared.core.domain import Domain
 
 
 structlogger = structlog.get_logger(__name__)
+
+# Session represented as (sender_id, events) when only event lists are needed.
+SessionEvents = Tuple[str, List[Event]]
 
 
 def wrap_async(func: Callable) -> Callable:
@@ -55,6 +85,35 @@ class BackgroundPrivacyManager:
     to event brokers. It uses background schedulers to periodically run these
     tasks and processes trackers from a queue to ensure that sensitive information
     is handled in a timely manner.
+
+    Tracker variants and how they are handled:
+    - Legacy trackers: No session_id in any event metadata. They can contain
+      multiple ActionExecuted(action_session_start) events (e.g. after session
+      expiry a new session starts). We split by action_session_start.
+      Eligibility is time-based using
+      LEGACY_DEFAULT_INACTIVITY_MINUTES + min_after_session_end.
+    - New trackers: Events have session_id in metadata. They have
+      ConversationInactive after session timeout; a subset also have
+      SessionEnded (not all). Some have multiple action_session_start at the
+      start of a session, some have only one. We group events by session_id
+      (we do not split by action_session_start). A session is eligible for
+      anonymization/deletion only if it contains ConversationInactive or
+      SessionEnded; retention uses min_after_session_end after that event.
+    - Hybrid (resumed): A tracker can have both legacy events (no session_id)
+      and new events (with session_id). We assume legacy events form a single
+      prefix: all events before a version upgrade have no session_id; after
+      the upgrade all new events have session_id. So the order is [legacy
+      prefix] then [session_id runs]. We take the event-only path (because at
+      least one event has session_id). The legacy prefix is expanded via
+      _get_legacy_session_events (split by action_session_start) and each sub-session
+      is evaluated individually for anonymization; session_id runs are processed
+      per run so reassembly preserves order.
+
+    When USER_CHAT_INACTIVITY_IN_MINUTES is set, eligibility is time-based
+    (env value + min_after_session_end). Session splitting still respects
+    new/hybrid trackers: if any event has session_id we group by session_id,
+    expand the NO_SESSION_ID_KEY segment via the legacy split, and apply the
+    env-set threshold to each resulting session.
     """
 
     TRACKER_QUEUE_PROCESSING_TIMEOUT_IN_SECONDS = 2.0
@@ -64,7 +123,14 @@ class BackgroundPrivacyManager:
         endpoints: Optional["AvailableEndpoints"],
         event_loop: Optional["AbstractEventLoop"] = None,
         in_memory_tracker_store: Optional[TrackerStore] = None,
+        lock_store: Optional["LockStore"] = None,
     ):
+        if lock_store is None:
+            raise RasaException(
+                "LockStore is required for BackgroundPrivacyManager. "
+                "Pass lock_store when creating the manager."
+            )
+        self.lock_store = lock_store
         self.config = (
             PrivacyConfig.from_dict(endpoints.privacy)
             if endpoints and endpoints.privacy
@@ -73,9 +139,31 @@ class BackgroundPrivacyManager:
         self.privacy_filter = (
             PrivacyFilter(self.config.anonymization_rules) if self.config else None
         )
-        self.user_chat_inactivity_in_minutes = int(
-            os.getenv(USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME, 30)
-        )
+        _inactivity_env = os.getenv(USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME)
+        if _inactivity_env is not None:
+            try:
+                self.user_chat_inactivity_in_minutes: Optional[int] = int(
+                    _inactivity_env
+                )
+                raise_deprecation_warning(
+                    f"Environment variable "
+                    f"'{USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME}' "
+                    "is deprecated for detecting inactive conversations "
+                    "in privacy jobs. Use ConversationInactive or "
+                    "SessionEnded events instead."
+                )
+            except (ValueError, TypeError):
+                structlogger.warning(
+                    "rasa.privacy_manager.invalid_env_value",
+                    env_var=USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME,
+                    value=_inactivity_env,
+                    event_info="USER_CHAT_INACTIVITY_IN_MINUTES must be an "
+                    "integer representing minutes. Falling back "
+                    "to event-based detection of inactive conversations.",
+                )
+                self.user_chat_inactivity_in_minutes = None
+        else:
+            self.user_chat_inactivity_in_minutes = None
 
         if in_memory_tracker_store is not None:
             # if an in-memory tracker store is provided,
@@ -139,9 +227,10 @@ class BackgroundPrivacyManager:
         endpoints: Optional["AvailableEndpoints"],
         event_loop: Optional["AbstractEventLoop"] = None,
         in_memory_tracker_store: Optional[TrackerStore] = None,
+        lock_store: Optional["LockStore"] = None,
     ) -> BackgroundPrivacyManager:
         """Create an instance of BackgroundPrivacyManager."""
-        instance = cls(endpoints, event_loop, in_memory_tracker_store)
+        instance = cls(endpoints, event_loop, in_memory_tracker_store, lock_store)
         return await instance.initialize(endpoints)
 
     def stop(self) -> None:
@@ -164,6 +253,24 @@ class BackgroundPrivacyManager:
         events = self.process_events(tracker, process_all=process_all)
         events_to_stream = events if events else tracker.events
         self.stream_events(events_to_stream, tracker.sender_id)
+
+    def process_events_from_segment(
+        self,
+        events: List[Event],
+        prior_sensitive_slot_events: Optional[List[Event]] = None,
+    ) -> List[Event]:
+        """Anonymize a segment of events without replaying into a tracker.
+
+        Use this when the segment may contain dialogue stack updates that
+        assume a different stack state (e.g. segments from the middle of a
+        run). Replaying such segments into a tracker can raise when applying
+        stack patches. Passing the events directly avoids that.
+        """
+        if not events:
+            return []
+        return self.privacy_filter.anonymize(  # type: ignore[union-attr]
+            events, prior_sensitive_slot_events or []
+        )
 
     def process_events(
         self, tracker: DialogueStateTracker, process_all: bool = False
@@ -190,17 +297,19 @@ class BackgroundPrivacyManager:
 
             processed_events = resulting_events[1]
             prior_events = resulting_events[0]
-            prior_tracker = DialogueStateTracker.from_events(
-                sender_id=tracker.sender_id, evts=prior_events, user_id=tracker.user_id
-            )
+            # Derive prior_sensitive_slot_events from raw prior_events instead of
+            # replaying into a tracker (DialogueStateTracker.from_events). Replaying
+            # can raise JsonPointerException when prior_events contain dialogue stack
+            # patches that assume a different stack state (e.g. segments spanning
+            # multiple sessions). Scanning events directly avoids that.
             prior_sensitive_slot_events = [
                 event
-                for event in prior_tracker.applied_events()
+                for event in prior_events
                 if isinstance(event, SlotSet)
                 and event.key in self.config.anonymization_rules  # type: ignore[union-attr]
             ]
 
-        return self.privacy_filter.anonymize(  # type: ignore[union-attr]
+        return self.process_events_from_segment(
             processed_events, prior_sensitive_slot_events
         )
 
@@ -298,6 +407,351 @@ class BackgroundPrivacyManager:
 
         return False
 
+    @staticmethod
+    def _tracker_has_any_session_id(tracker: DialogueStateTracker) -> bool:
+        """Return True if any event in the tracker has session_id in metadata."""
+        for event in tracker.events:
+            if event.metadata.get(METADATA_SESSION_ID):
+                return True
+        return False
+
+    @staticmethod
+    def _group_events_by_session_id(events: List[Event]) -> Dict[str, List[Event]]:
+        """Group events by session_id from event metadata.
+
+        Events with the same non-empty session_id are grouped together.
+        Events without session_id in metadata are grouped under NO_SESSION_ID_KEY.
+        Processor-emitted events (e.g. ConversationInactive) get session_id injected
+        when the tracker is updated (DialogueStateTracker._prepare_event_metadata),
+        so they do not create a separate NO_SESSION_ID_KEY group for live trackers.
+        """
+        grouped: Dict[str, List[Event]] = {}
+        for event in events:
+            session_id = event.metadata.get(METADATA_SESSION_ID)
+            if session_id and isinstance(session_id, str):
+                key = session_id.strip()
+            else:
+                key = NO_SESSION_ID_KEY
+            if key not in grouped:
+                grouped[key] = []
+            grouped[key].append(event)
+        return grouped
+
+    @staticmethod
+    def _event_session_key(event: Event) -> str:
+        """Return session key for event (NO_SESSION_ID_KEY or session_id string)."""
+        session_id = event.metadata.get(METADATA_SESSION_ID)
+        if session_id and isinstance(session_id, str):
+            return session_id.strip()
+        return NO_SESSION_ID_KEY
+
+    @staticmethod
+    def _group_events_into_runs(
+        events: List[Event],
+    ) -> List[Tuple[str, List[Event]]]:
+        """Group events into runs for hybrid trackers, preserving order.
+
+        Assumption: legacy events (no session_id in metadata) appear only as a
+        single prefix, from trackers created before a version upgrade. After the
+        upgrade, all new events have session_id. So the shape is [legacy prefix]
+        then [one or more session_id runs] (e.g. s1, then s2 after /restart).
+
+        We first take the legacy prefix (events with no session_id from the
+        start). The remainder is split into consecutive runs by session_id so
+        that reassembly preserves order and DialogueStateTracker.from_events
+        replays correctly.
+        """
+        if not events:
+            return []
+        # Legacy prefix: events with no session_id from the start
+        legacy_prefix: List[Event] = []
+        i = 0
+        while i < len(events) and (
+            BackgroundPrivacyManager._event_session_key(events[i]) == NO_SESSION_ID_KEY
+        ):
+            legacy_prefix.append(events[i])
+            i += 1
+        runs: List[Tuple[str, List[Event]]] = []
+        if legacy_prefix:
+            runs.append((NO_SESSION_ID_KEY, legacy_prefix))
+        if i >= len(events):
+            return runs
+        # Remainder: split into consecutive runs by session_id. Keep
+        # ConversationInactive/SessionEnded in the same run as the previous
+        # event when they have no session_id (processor emits them without
+        # metadata), so we can anonymize the run when that marker is past grace.
+        remainder = events[i:]
+        current_key = BackgroundPrivacyManager._event_session_key(remainder[0])
+        current_run: List[Event] = [remainder[0]]
+        for event in remainder[1:]:
+            key = BackgroundPrivacyManager._event_session_key(event)
+            if key == NO_SESSION_ID_KEY and isinstance(
+                event, (ConversationInactive, SessionEnded)
+            ):
+                key = current_key
+            if key != current_key:
+                runs.append((current_key, current_run))
+                current_key = key
+                current_run = [event]
+            else:
+                current_run.append(event)
+        runs.append((current_key, current_run))
+        return runs
+
+    @staticmethod
+    def _session_events_contain_inactive_or_ended(events: List[Event]) -> bool:
+        """Return True if the event list contains ConversationInactive or SessionEnded."""  # noqa: E501
+        return any(isinstance(e, (ConversationInactive, SessionEnded)) for e in events)
+
+    @staticmethod
+    def _split_events_by_inactive_or_ended(
+        events: List[Event],
+    ) -> List[List[Event]]:
+        """Split events into segments ending at ConversationInactive or SessionEnded.
+
+        Each segment is events from the previous split (or start) up to and
+        including the next ConversationInactive or SessionEnded. The last
+        segment may have no inactive/ended event at the end.
+        """
+        if not events:
+            return []
+        segments: List[List[Event]] = []
+        current: List[Event] = []
+        for event in events:
+            current.append(event)
+            if isinstance(event, (ConversationInactive, SessionEnded)):
+                segments.append(current)
+                current = []
+        if current:
+            segments.append(current)
+        return segments
+
+    @staticmethod
+    def _iter_segments_with_grace_status(
+        run_events: List[Event],
+        min_after_seconds: float,
+        current_time: float,
+    ) -> List[Tuple[List[Event], bool]]:
+        """Split run by inactive/ended; return (segment, past_grace) per segment.
+
+        past_grace is True when the segment ends with ConversationInactive or
+        SessionEnded and (current_time - segment_last_ts) > min_after_seconds.
+        Used by event-only anonymization (process past_grace segments) and
+        deletion (drop past_grace segments, retain the rest).
+        """
+        segments = BackgroundPrivacyManager._split_events_by_inactive_or_ended(
+            run_events
+        )
+        result: List[Tuple[List[Event], bool]] = []
+        for segment in segments:
+            if not segment:
+                continue
+            seg_last_ts = segment[-1].timestamp
+            seg_ends_with_inactive_or_ended = isinstance(
+                segment[-1], (ConversationInactive, SessionEnded)
+            )
+            past_grace = (
+                seg_ends_with_inactive_or_ended
+                and (current_time - seg_last_ts) > min_after_seconds
+            )
+            result.append((segment, past_grace))
+        return result
+
+    def _get_legacy_session_events(
+        self, sender_id: str, events: List[Event]
+    ) -> List[SessionEvents]:
+        """Return session (sender_id, events) lists without building trackers.
+
+        Splits by action_session_start; we don't split by
+        ConversationInactive/SessionEnded here because
+        these events are not present in a legacy tracker.
+        """
+        split_conversations = split_events(
+            events,
+            ActionExecuted,
+            {"action_name": ACTION_SESSION_START_NAME},
+            include_splitting_event=True,
+        )
+        return [(sender_id, evts) for evts in split_conversations]
+
+    def _get_legacy_threshold_seconds(
+        self, job_type: Literal["anonymization", "deletion"]
+    ) -> float:
+        """Return time threshold in seconds for legacy path.
+
+        LEGACY_DEFAULT_INACTIVITY_MINUTES + min_after_session_end.
+        """
+        if self.config is None or self.config.tracker_store_settings is None:
+            raise RasaException(
+                "Privacy config and tracker store settings are required "
+                "for legacy threshold calculation."
+            )
+        policy = (
+            self.config.tracker_store_settings.anonymization_policy
+            if job_type == "anonymization"
+            else self.config.tracker_store_settings.deletion_policy
+        )
+        return (
+            LEGACY_DEFAULT_INACTIVITY_MINUTES * 60 + policy.min_after_session_end * 60  # type: ignore[union-attr]
+        )
+
+    def _get_env_set_threshold_seconds(
+        self, job_type: Literal["anonymization", "deletion"]
+    ) -> float:
+        """Return time threshold when USER_CHAT_INACTIVITY_IN_MINUTES is set.
+
+        env * 60 + min_after_session_end (seconds).
+        """
+        if self.config is None or self.config.tracker_store_settings is None:
+            raise RasaException(
+                "Privacy config and tracker store settings are required "
+                "for env-set threshold calculation."
+            )
+        if self.user_chat_inactivity_in_minutes is None:
+            raise RasaException(
+                "USER_CHAT_INACTIVITY_IN_MINUTES must be set for env-set threshold."
+            )
+        policy = (
+            self.config.tracker_store_settings.anonymization_policy
+            if job_type == "anonymization"
+            else self.config.tracker_store_settings.deletion_policy
+        )
+        inactivity = self.user_chat_inactivity_in_minutes * 60
+        return inactivity + policy.min_after_session_end * 60  # type: ignore[union-attr]
+
+    def _get_env_set_session_trackers(
+        self, full_tracker: DialogueStateTracker
+    ) -> List[SessionEvents]:
+        """Return session (sender_id, events) when env is set; no trackers built.
+
+        New/hybrid: use runs (consecutive same session_id) to preserve event order;
+        NO_SESSION_ID_KEY runs split via _get_legacy_session_events.
+        """
+        if not self._tracker_has_any_session_id(full_tracker):
+            return self._get_legacy_session_events(
+                full_tracker.sender_id, list(full_tracker.events)
+            )
+        runs = self._group_events_into_runs(list(full_tracker.events))
+        sessions: List[SessionEvents] = []
+        for session_key, run_events in runs:
+            if not run_events:
+                continue
+            if session_key == NO_SESSION_ID_KEY:
+                sessions.extend(
+                    self._get_legacy_session_events(full_tracker.sender_id, run_events)
+                )
+            else:
+                sessions.append((full_tracker.sender_id, run_events))
+        return sessions
+
+    def _is_tracker_eligible_for_privacy_job(
+        self,
+        tracker: DialogueStateTracker,
+        job_type: Literal["anonymization", "deletion"],
+    ) -> bool:
+        """Return True if the tracker is eligible for the given privacy cron job.
+
+        Eligible when:
+        - Event-based: tracker.inactive or tracker.terminated, or
+        - Time-based (env set): last event older than
+            user_chat_inactivity + min_after_session_end, or
+        - Legacy (env unset, no session_id): last event older than
+            LEGACY_DEFAULT_INACTIVITY + min_after_session_end.
+        """
+        if tracker.terminated:
+            return True
+        if job_type == "anonymization" and tracker.inactive:
+            return True
+        if not tracker.events:
+            return False
+        if self.config is None or self.config.tracker_store_settings is None:
+            return False
+
+        last_event_timestamp = tracker.events[-1].timestamp
+        current_time = time.time()
+        threshold_seconds: Optional[float] = None
+
+        if self.user_chat_inactivity_in_minutes is not None:
+            threshold_seconds = self._get_env_set_threshold_seconds(job_type)
+        elif not self._tracker_has_any_session_id(tracker):
+            threshold_seconds = self._get_legacy_threshold_seconds(job_type)
+
+        # For deletion without env, we only actually delete when tracker is
+        # terminated; multi-session and time-threshold shortcuts would still
+        # retain all events (no-op) and block the lock every cron run.
+        deletion_no_env = (
+            job_type == "deletion" and self.user_chat_inactivity_in_minutes is None
+        )
+
+        if threshold_seconds is not None and self._tracker_has_multiple_sessions(
+            tracker
+        ):
+            return not deletion_no_env
+
+        if (
+            threshold_seconds is not None
+            and (current_time - last_event_timestamp) > threshold_seconds
+        ):
+            return not deletion_no_env
+
+        return False
+
+    def _tracker_has_multiple_sessions(self, tracker: DialogueStateTracker) -> bool:
+        """Return True if the tracker would be split into more than one session.
+
+        When True, per-session processing may still apply to some sessions even
+        if the full tracker fails _is_tracker_eligible_for_privacy_job (e.g.
+        latest session active but earlier sessions old or with inactive/ended).
+
+        For trackers with session_id: grouping is by event metadata. Events
+        without session_id in metadata are legacy (stored before injection);
+        live-added events get session_id from the tracker on update, so they
+        do not falsely create an extra group.
+        """
+        if not tracker.events:
+            return False
+        if self._tracker_has_any_session_id(tracker):
+            grouped = self._group_events_by_session_id(list(tracker.events))
+            return len(grouped) > 1
+        sessions = self._get_legacy_session_events(
+            tracker.sender_id, list(tracker.events)
+        )
+        return len(sessions) > 1
+
+    async def _process_one_key_anonymization(self, key: str) -> None:
+        """Process one tracker for anonymization (call under lock)."""
+        full_tracker = await self.tracker_store.retrieve_full_tracker(key)
+        if full_tracker is None:
+            structlogger.debug(
+                "rasa.privacy_manager.no_tracker_found_for_sender_id",
+                sender_id=key,
+            )
+            return
+        if not self._is_tracker_eligible_for_privacy_job(
+            full_tracker, "anonymization"
+        ) and not self._tracker_has_multiple_sessions(full_tracker):
+            return
+        all_events, num_processed = self._get_processed_events_after_anonymization(
+            full_tracker
+        )
+        if num_processed == 0:
+            structlogger.debug(
+                "rasa.privacy_manager.no_events_to_anonymize_for_tracker",
+                sender_id=key,
+            )
+            return
+        updated_tracker = DialogueStateTracker.from_events(
+            sender_id=key,
+            evts=all_events,
+            slots=full_tracker.slots.values(),
+            user_id=full_tracker.user_id,
+        )
+        await self.tracker_store.update(updated_tracker, apply_deletion_only=False)
+        structlogger.info(
+            "rasa.privacy_manager.saved_tracker_after_anonymization",
+            sender_id=key,
+        )
+
     async def _run_tracker_store_anonymization(self) -> None:
         """Anonymize eligible tracker sessions in the tracker store."""
         structlogger.info(
@@ -309,42 +763,75 @@ class BackgroundPrivacyManager:
         keys_copy = copy.deepcopy(list(keys))
 
         for key in keys_copy:
-            full_tracker = await self.tracker_store.retrieve_full_tracker(key)
+            async with self.lock_store.lock(key):
+                try:
+                    await self._process_one_key_anonymization(key)
+                except Exception as e:
+                    structlogger.error(
+                        "rasa.privacy_manager.error_anonymizing_tracker",
+                        sender_id=key,
+                        error=str(e),
+                    )
+                    continue
 
-            if not full_tracker:
-                structlogger.debug(
-                    "rasa.privacy_manager.no_tracker_found_for_sender_id",
-                    sender_id=key,
-                )
-                continue
-
-            processed_events, already_anonymized_events, uneligible_events = (
-                self._get_processed_events_after_anonymization(full_tracker)
-            )
-
-            if not processed_events:
-                structlogger.debug(
-                    "rasa.privacy_manager.no_events_to_anonymize_for_tracker",
-                    sender_id=key,
-                )
-                continue
-
-            all_events = (
-                already_anonymized_events + processed_events + uneligible_events
-            )
-            updated_tracker = DialogueStateTracker.from_events(
+    async def _process_one_key_deletion(self, key: str) -> None:
+        """Process one tracker for deletion (call under lock)."""
+        full_tracker = await self.tracker_store.retrieve_full_tracker(key)
+        if full_tracker is None:
+            structlogger.debug(
+                "rasa.privacy_manager.no_tracker_found_for_sender_id",
                 sender_id=key,
-                evts=all_events,
+            )
+            return None
+
+        if not self._is_tracker_eligible_for_privacy_job(full_tracker, "deletion"):
+            structlogger.debug(
+                "rasa.privacy_manager.tracker_not_eligible_for_deletion",
+                sender_id=full_tracker.sender_id,
+            )
+            return None
+
+        events_to_be_retained = self._get_events_to_be_retained_after_deletion(
+            full_tracker
+        )
+        if not events_to_be_retained:
+            await self.tracker_store.delete(sender_id=key)
+            structlogger.info(
+                "rasa.privacy_manager.tracker_session_deleted",
+                sender_id=full_tracker.sender_id,
+                triggered_by="deletion_cron_job",
+            )
+            return None
+        try:
+            tracker = DialogueStateTracker.from_events(
+                sender_id=key,
+                evts=events_to_be_retained,
                 slots=full_tracker.slots.values(),
                 user_id=full_tracker.user_id,
             )
-            await self.tracker_store.delete(sender_id=key)
-            await self.tracker_store.save(updated_tracker)
-
-            structlogger.info(
-                "rasa.privacy_manager.saved_tracker_after_anonymization",
+        except (JsonPatchException, JsonPointerException) as exception:
+            structlogger.error(
+                "rasa.privacy_manager.error_reconstructing_tracker_after_deletion",
                 sender_id=key,
+                error=str(exception),
+                event_info="Could not reconstruct tracker with events "
+                "to be retained after deletion. "
+                "To avoid data loss, the tracker will not be deleted. "
+                "To reset the tracker's dialogue stack and enable "
+                "deletion of sessions scheduled for deletion "
+                "you can append a Restarted Event to the tracker.",
             )
+            return None
+
+        await self.tracker_store.update(tracker)
+        structlogger.info(
+            "rasa.privacy_manager.overwritten_tracker",
+            sender_id=key,
+            event_info="Deleted eligible events and saved "
+            "tracker with events not scheduled "
+            "for deletion yet.",
+        )
+        return None
 
     async def _run_tracker_store_deletion(self) -> None:
         """Delete eligible tracker sessions from the tracker store."""
@@ -358,43 +845,16 @@ class BackgroundPrivacyManager:
         keys_copy = copy.deepcopy(list(keys))
 
         for key in keys_copy:
-            full_tracker = await self.tracker_store.retrieve_full_tracker(key)
-
-            if not full_tracker:
-                structlogger.debug(
-                    "rasa.privacy_manager.no_tracker_found_for_sender_id",
-                    sender_id=key,
-                )
-                continue
-
-            events_to_be_retained = self._get_events_to_be_retained_after_deletion(
-                full_tracker
-            )
-
-            if not events_to_be_retained:
-                await self.tracker_store.delete(sender_id=key)
-                structlogger.info(
-                    "rasa.privacy_manager.tracker_session_deleted",
-                    sender_id=full_tracker.sender_id,
-                    triggered_by="deletion_cron_job",
-                )
-                continue
-
-            tracker = DialogueStateTracker.from_events(
-                sender_id=key,
-                evts=events_to_be_retained,
-                slots=full_tracker.slots.values(),
-                user_id=full_tracker.user_id,
-            )
-            await self.tracker_store.update(tracker)
-
-            structlogger.info(
-                "rasa.privacy_manager.overwritten_tracker",
-                sender_id=key,
-                event_info="Deleted eligible events and saved "
-                "tracker with events not scheduled "
-                "for deletion yet.",
-            )
+            async with self.lock_store.lock(key):
+                try:
+                    await self._process_one_key_deletion(key)
+                except Exception as e:
+                    structlogger.error(
+                        "rasa.privacy_manager.error_deleting_tracker",
+                        sender_id=key,
+                        error=str(e),
+                    )
+                    continue
 
     async def _run_tracker_store_background_jobs_sequentially(self) -> None:
         """Run the tracker store background jobs.
@@ -500,100 +960,335 @@ class BackgroundPrivacyManager:
     def _get_processed_events_after_anonymization(
         self,
         full_tracker: DialogueStateTracker,
-    ) -> Tuple[List[Event], List[Event], List[Event]]:
-        """Get processed events after anonymization job."""
-        multiple_tracker_sessions = (
-            rasa.shared.core.trackers.get_trackers_for_conversation_sessions(
+    ) -> Tuple[List[Event], int]:
+        """Return (all_events in chronological order, count of events anonymized).
+
+        Order is preserved so that runs/sessions are not reordered (e.g. an
+        earlier uneligible run stays before a later processed run).
+        """
+        if self.user_chat_inactivity_in_minutes is None:
+            if not self._tracker_has_any_session_id(full_tracker):
+                return self._get_processed_events_after_anonymization_legacy(
+                    full_tracker.sender_id, list(full_tracker.events)
+                )
+            return self._get_processed_events_after_anonymization_event_only(
                 full_tracker
             )
-        )
+        return self._get_processed_events_after_anonymization_env_set(full_tracker)
 
-        processed_events = []
-        already_anonymized_events = []
-        uneligible_events = []
+    def _get_processed_events_after_anonymization_env_set(
+        self, full_tracker: DialogueStateTracker
+    ) -> Tuple[List[Event], int]:
+        """Env-set path: time-based anonymization. Returns (all_events in order,
+        count of events anonymized this run).
+        """
+        sessions = self._get_env_set_session_trackers(full_tracker)
+        all_events_ordered: List[Event] = []
+        num_processed = 0
+        threshold_seconds = self._get_env_set_threshold_seconds("anonymization")
+        current_time = time.time()
 
-        for session in multiple_tracker_sessions:
-            has_session_been_anonymized = self._has_session_been_anonymized(
-                list(session.events)
-            )
-
-            if has_session_been_anonymized:
+        for sender_id, session_events in sessions:
+            if self._has_session_been_anonymized(session_events):
                 structlogger.debug(
                     "rasa.privacy_manager.session_already_anonymized",
-                    session_id=session.sender_id,
+                    sender_id=sender_id,
+                    session_id=session_events[-1].metadata.get(
+                        METADATA_SESSION_ID, NO_SESSION_ID_KEY
+                    ),
                 )
-                already_anonymized_events.extend(list(session.events))
+                all_events_ordered.extend(session_events)
                 continue
-
-            current_time = time.time()
-
-            last_event_timestamp = (
-                str(datetime.datetime.fromtimestamp(session.events[-1].timestamp))
-                if session.events
-                else "N/A"
-            )
-
-            if session.events and current_time - session.events[-1].timestamp > (
-                self.user_chat_inactivity_in_minutes * 60
-                + self.config.tracker_store_settings.anonymization_policy.min_after_session_end  # type: ignore[union-attr] # noqa: E501
-                * 60
-            ):
+            if not session_events:
+                continue
+            last_ts = session_events[-1].timestamp
+            last_event_timestamp = str(datetime.datetime.fromtimestamp(last_ts))
+            if (current_time - last_ts) > threshold_seconds:
                 structlogger.info(
-                    "rasa.privacy_manager.anonymizing_tracker_session",
-                    sender_id=session.sender_id,
+                    ANONYMIZATION_LOG_KEY,
+                    sender_id=sender_id,
+                    session_id=session_events[-1].metadata.get(
+                        METADATA_SESSION_ID, NO_SESSION_ID_KEY
+                    ),
                     last_event_timestamp=last_event_timestamp,
                     triggered_by="anonymization_cron_job",
                 )
-                events = self.process_events(session, process_all=True)
-                processed_events.extend(events)
+                anonymized = self.process_events_from_segment(session_events)
+                all_events_ordered.extend(anonymized)
+                num_processed += len(anonymized)
             else:
-                # If the session is not valid for anonymization,
-                # we still want to write them back to the tracker store
-                events = list(session.events)
-                uneligible_events.extend(events)
+                all_events_ordered.extend(session_events)
                 structlogger.debug(
                     "rasa.privacy_manager.session_not_valid_for_anonymization",
-                    sender_id=session.sender_id,
-                    session_id=session.sender_id,
+                    sender_id=sender_id,
+                    session_id=session_events[-1].metadata.get(
+                        METADATA_SESSION_ID, NO_SESSION_ID_KEY
+                    ),
                     last_event_timestamp=last_event_timestamp,
                 )
-        return processed_events, already_anonymized_events, uneligible_events
+        return all_events_ordered, num_processed
+
+    def _get_processed_events_after_anonymization_legacy(
+        self, sender_id: str, events: List[Event]
+    ) -> Tuple[List[Event], int]:
+        """Legacy path: no session_id; split by action_session_start or
+        inactive/ended when only one; time-based with LEGACY_DEFAULT_INACTIVITY.
+        Returns (all_events in order, count of events anonymized this run).
+        """
+        sessions = self._get_legacy_session_events(sender_id, events)
+        all_events_ordered: List[Event] = []
+        num_processed = 0
+        threshold_seconds = self._get_legacy_threshold_seconds("anonymization")
+        current_time = time.time()
+
+        for seg_sender_id, session_events in sessions:
+            if self._has_session_been_anonymized(session_events):
+                all_events_ordered.extend(session_events)
+                continue
+            if not session_events:
+                continue
+            last_ts = session_events[-1].timestamp
+            if (current_time - last_ts) > threshold_seconds:
+                structlogger.info(
+                    ANONYMIZATION_LOG_KEY,
+                    sender_id=seg_sender_id,
+                    session_id=session_events[-1].metadata.get(
+                        METADATA_SESSION_ID, NO_SESSION_ID_KEY
+                    ),
+                    last_event_timestamp=str(datetime.datetime.fromtimestamp(last_ts)),
+                    triggered_by="anonymization_cron_job",
+                )
+                anonymized = self.process_events_from_segment(session_events)
+                all_events_ordered.extend(anonymized)
+                num_processed += len(anonymized)
+            else:
+                all_events_ordered.extend(session_events)
+        return all_events_ordered, num_processed
+
+    def _event_only_anonymize_run_with_inactive_segments(
+        self,
+        run_events: List[Event],
+        session_key: str,
+        sender_id: str,
+        min_after_seconds: float,
+        current_time: float,
+    ) -> Tuple[List[Event], int]:
+        """Anonymize segments of a run that end with inactive/ended and are past grace.
+
+        Returns (events for this run in order, count of events anonymized).
+        """
+        events_for_this_run: List[Event] = []
+        num_anonymized_this_run = 0
+        for segment, past_grace in self._iter_segments_with_grace_status(
+            run_events, min_after_seconds, current_time
+        ):
+            if past_grace:
+                structlogger.info(
+                    ANONYMIZATION_LOG_KEY,
+                    sender_id=sender_id,
+                    session_id=session_key,
+                    last_event_timestamp=str(
+                        datetime.datetime.fromtimestamp(segment[-1].timestamp)
+                    ),
+                    triggered_by="anonymization_cron_job",
+                )
+                anonymized = self.process_events_from_segment(segment)
+                events_for_this_run.extend(anonymized)
+                num_anonymized_this_run += len(anonymized)
+            else:
+                events_for_this_run.extend(segment)
+        return events_for_this_run, num_anonymized_this_run
+
+    def _event_only_process_one_run(
+        self,
+        session_key: str,
+        run_events: List[Event],
+        later_processed: bool,
+        min_after_seconds: float,
+        current_time: float,
+        sender_id: str,
+    ) -> Tuple[List[Event], int, bool]:
+        """Process one run in the event-only path (reverse chronological order).
+
+        Returns (events for tracker, num anonymized, new later_processed).
+        """
+        if self._has_session_been_anonymized(run_events):
+            return (
+                list(run_events),
+                0,
+                True,  # so earlier runs that lack inactive get anonymized too
+            )
+        lacks_inactive = not self._session_events_contain_inactive_or_ended(run_events)
+        if lacks_inactive and later_processed:
+            anonymized = self.process_events_from_segment(run_events)
+            return anonymized, len(anonymized), later_processed
+        # Legacy sub-sessions (NO_SESSION_ID_KEY) typically have no
+        # ConversationInactive; allow time-based eligibility.
+        if lacks_inactive and session_key == NO_SESSION_ID_KEY and run_events:
+            legacy_threshold = self._get_legacy_threshold_seconds("anonymization")
+            if (current_time - run_events[-1].timestamp) > legacy_threshold:
+                anonymized = self.process_events_from_segment(run_events)
+                return anonymized, len(anonymized), True
+        if lacks_inactive:
+            return list(run_events), 0, later_processed
+        events_for_run, num_anonymized = (
+            self._event_only_anonymize_run_with_inactive_segments(
+                run_events, session_key, sender_id, min_after_seconds, current_time
+            )
+        )
+        return (
+            events_for_run,
+            num_anonymized,
+            later_processed or (num_anonymized > 0),
+        )
+
+    def _event_only_process_legacy_run(
+        self,
+        run_events: List[Event],
+        sender_id: str,
+        later_processed: bool,
+        min_after_seconds: float,
+        current_time: float,
+    ) -> Tuple[List[Event], int, bool]:
+        """Process the NO_SESSION_ID_KEY run (hybrid legacy prefix).
+
+        Expands run_events via _get_legacy_session_events and processes each
+        sub-session individually so we don't anonymize the entire prefix when
+        only some sub-sessions are eligible. Returns (events, num_anonymized,
+        new_later_processed).
+        """
+        legacy_sessions = self._get_legacy_session_events(sender_id, run_events)
+        sub_outputs: List[Tuple[List[Event], int]] = []
+        for _sid, sub_events in reversed(legacy_sessions):
+            events_out, num_anonymized, later_processed = (
+                self._event_only_process_one_run(
+                    NO_SESSION_ID_KEY,
+                    sub_events,
+                    later_processed,
+                    min_after_seconds,
+                    current_time,
+                    sender_id,
+                )
+            )
+            sub_outputs.append((events_out, num_anonymized))
+        # Reassemble in chronological order (we processed reverse order)
+        events_out = []
+        num_anonymized = 0
+        for evts, n in reversed(sub_outputs):
+            events_out.extend(evts)
+            num_anonymized += n
+        return events_out, num_anonymized, later_processed
+
+    def _get_processed_events_after_anonymization_event_only(
+        self, full_tracker: DialogueStateTracker
+    ) -> Tuple[List[Event], int]:
+        """Event-only path (new/hybrid trackers): process by runs to preserve
+        chronological order; anonymize segments with ConversationInactive or
+        SessionEnded only after min_after_session_end has elapsed.
+        Hybrid trackers: the legacy prefix (NO_SESSION_ID_KEY run) is expanded
+        via _get_legacy_session_events and each sub-session is evaluated
+        individually (matching env-set path behavior).
+        If a later run is anonymized, earlier runs that lack inactive are also
+        anonymized (so we don't leave old PII before an anonymized run).
+        Returns (all_events in run order, count of events anonymized this run).
+        """
+        if self.config is None or self.config.tracker_store_settings is None:
+            raise RasaException(
+                "Privacy config and tracker store settings are required "
+                "for event-only anonymization."
+            )
+        runs = self._group_events_into_runs(list(full_tracker.events))
+        policy = self.config.tracker_store_settings.anonymization_policy
+        min_after_seconds = policy.min_after_session_end * 60  # type: ignore[union-attr]
+        current_time = time.time()
+
+        run_outputs: List[Tuple[List[Event], int]] = []
+        later_processed = False
+        for session_key, run_events in reversed(runs):
+            if not run_events:
+                continue
+            if session_key == NO_SESSION_ID_KEY:
+                events_out, num_anonymized, later_processed = (
+                    self._event_only_process_legacy_run(
+                        run_events,
+                        full_tracker.sender_id,
+                        later_processed,
+                        min_after_seconds,
+                        current_time,
+                    )
+                )
+                run_outputs.append((events_out, num_anonymized))
+            else:
+                events_out, num_anonymized, later_processed = (
+                    self._event_only_process_one_run(
+                        session_key,
+                        run_events,
+                        later_processed,
+                        min_after_seconds,
+                        current_time,
+                        full_tracker.sender_id,
+                    )
+                )
+                run_outputs.append((events_out, num_anonymized))
+
+        all_events_ordered = []
+        num_processed = 0
+        for run_events_out, num_anonymized in reversed(run_outputs):
+            all_events_ordered.extend(run_events_out)
+            num_processed += num_anonymized
+        return all_events_ordered, num_processed
 
     def _get_events_to_be_retained_after_deletion(
         self, full_tracker: DialogueStateTracker
     ) -> List[Event]:
         """Get the events to be retained after deletion."""
-        multiple_tracker_sessions = (
-            rasa.shared.core.trackers.get_trackers_for_conversation_sessions(
-                full_tracker
-            )
-        )
-        events_to_be_retained: List[Event] = []
-        for session in multiple_tracker_sessions:
-            current_time = time.time()
-            if session.events and (
-                current_time - session.events[-1].timestamp
-                <= (
-                    self.user_chat_inactivity_in_minutes * 60
-                    + self.config.tracker_store_settings.deletion_policy.min_after_session_end  # type: ignore[union-attr] # noqa: E501
-                    * 60
-                )
-            ):
-                events_to_be_retained.extend(session.events)
-            else:
-                last_event_timestamp = (
-                    str(datetime.datetime.fromtimestamp(session.events[-1].timestamp))
-                    if session.events
-                    else "N/A"
-                )
+        if self.user_chat_inactivity_in_minutes is not None:
+            return self._get_events_to_be_retained_after_deletion_env_set(full_tracker)
 
+        # Event-only path or legacy path without env var:
+        # if tracker is eligible for deletion, we delete all events
+        # except when the tracker is not terminated,
+        # in which case we retain all events until the tracker is terminated.
+        # This is to prevent deleting events that are still relevant
+        # for an active conversation.
+        if full_tracker.terminated:
+            return []
+        else:
+            structlogger.warning(
+                "rasa.privacy_manager.deletion_eligibility_without_env_warning",
+                sender_id=full_tracker.sender_id,
+                event_info="Tracker is eligible for deletion but will not be deleted "
+                "because tracker is not terminated. "
+                "To terminate a tracker, you can append a "
+                "SessionEnded Event to the tracker. ",
+            )
+            return list(full_tracker.events)
+
+    def _get_events_to_be_retained_after_deletion_env_set(
+        self, full_tracker: DialogueStateTracker
+    ) -> List[Event]:
+        """Env-set path: time-based retention; session splitting respects
+        new/hybrid (group by session_id; legacy segment split). Uses events only.
+        """
+        sessions = self._get_env_set_session_trackers(full_tracker)
+        events_to_be_retained: List[Event] = []
+        threshold_seconds = self._get_env_set_threshold_seconds("deletion")
+        current_time = time.time()
+
+        for _sender_id, session_events in sessions:
+            if not session_events:
+                continue
+            if (current_time - session_events[-1].timestamp) <= threshold_seconds:
+                events_to_be_retained.extend(session_events)
+            else:
                 structlogger.info(
-                    "rasa.privacy_manager.tracker_session_scheduled_for_deletion",
+                    DELETION_LOG_KEY,
                     sender_id=full_tracker.sender_id,
-                    last_event_timestamp=last_event_timestamp,
+                    last_event_timestamp=str(
+                        datetime.datetime.fromtimestamp(session_events[-1].timestamp)
+                    ),
                     triggered_by="deletion_cron_job",
                 )
-
         return events_to_be_retained
 
 

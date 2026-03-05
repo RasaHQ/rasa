@@ -238,7 +238,9 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         """Returns sender_ids of the Mongo Tracker Store."""
         return [c["sender_id"] for c in self.conversations.find()]
 
-    async def update(self, tracker: DialogueStateTracker) -> None:
+    async def update(
+        self, tracker: DialogueStateTracker, apply_deletion_only: bool = True
+    ) -> None:
         """Overwrites the tracker for the given sender_id."""
         # Ensure conversation_started_timestamp is set (for backward compatibility)
         tracker.ensure_conversation_started_timestamp()

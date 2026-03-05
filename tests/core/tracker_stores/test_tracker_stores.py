@@ -517,7 +517,9 @@ async def test_wrapper_tracker_stores_update(
         "test_update", [ActionExecuted("action_listen")]
     )
     await tracker_store.update(tracker)
-    mocked_inner_tracker_store.update.assert_called_once_with(tracker)
+    mocked_inner_tracker_store.update.assert_called_once_with(
+        tracker, apply_deletion_only=True
+    )
 
 
 @pytest.mark.asyncio

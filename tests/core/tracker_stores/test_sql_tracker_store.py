@@ -714,6 +714,178 @@ async def test_sql_tracker_store_update_tracker() -> None:
     ) == new_tracker.current_state(EventVerbosity.ALL)
 
 
+@pytest.mark.asyncio
+async def test_sql_tracker_store_update_in_place_when_no_rows_deleted_and_count_matches() -> (  # noqa: E501
+    None
+):
+    """When delete removes 0 rows and count matches, events are updated in place."""
+    sender_id = uuid.uuid4().hex
+    empty_domain = Domain.empty()
+    tracker_store = SQLTrackerStore(empty_domain, **{"host": "sqlite:///"})
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("secret message"),
+            BotUttered("ok"),
+        ],
+        domain=empty_domain,
+    )
+    await tracker_store.save(tracker)
+
+    # Build tracker with same events but one content change (e.g. anonymization).
+    stored = await tracker_store.retrieve_full_tracker(sender_id)
+    assert stored is not None
+    modified_events: List[Event] = []
+    for evt in stored.events:
+        if isinstance(evt, UserUttered) and evt.text == "secret message":
+            modified_events.append(UserUttered("REDACTED", timestamp=evt.timestamp))
+        else:
+            modified_events.append(evt)
+    modified_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        modified_events,
+        slots=empty_domain.slots,
+        domain=empty_domain,
+    )
+
+    await tracker_store.update(modified_tracker, apply_deletion_only=False)
+
+    updated = await tracker_store.retrieve_full_tracker(sender_id)
+    assert updated is not None
+    user_events = [e for e in updated.events if isinstance(e, UserUttered)]
+    assert len(user_events) == 1
+    assert user_events[0].text == "REDACTED"
+
+
+@pytest.mark.asyncio
+async def test_sql_tracker_store_update_full_replace_when_no_rows_deleted_and_count_differs() -> (  # noqa: E501
+    None
+):
+    """When delete removes 0 rows and count differs, full replace."""
+    sender_id = uuid.uuid4().hex
+    empty_domain = Domain.empty()
+    tracker_store = SQLTrackerStore(empty_domain, **{"host": "sqlite:///"})
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("one"),
+            UserUttered("two"),
+        ],
+        domain=empty_domain,
+    )
+    await tracker_store.save(tracker)
+
+    # Fewer events (count differs); same first-event timestamp so delete removes 0.
+    stored = await tracker_store.retrieve_full_tracker(sender_id)
+    assert stored is not None
+    first_ts = stored.events[0].timestamp
+    replacement_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=first_ts),
+        SessionStarted(timestamp=first_ts + 0.1),
+        UserUttered("only one", timestamp=first_ts + 0.2),
+    ]
+    replacement_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        replacement_events,
+        slots=empty_domain.slots,
+        domain=empty_domain,
+    )
+
+    await tracker_store.update(replacement_tracker, apply_deletion_only=False)
+
+    updated = await tracker_store.retrieve_full_tracker(sender_id)
+    assert updated is not None
+    assert len(updated.events) == 3
+    user_events = [e for e in updated.events if isinstance(e, UserUttered)]
+    assert len(user_events) == 1
+    assert user_events[0].text == "only one"
+
+
+@pytest.mark.asyncio
+async def test_sql_tracker_store_update_empty_events_no_crash() -> None:
+    """Update with no events does not crash; existing events are retained."""
+    sender_id = uuid.uuid4().hex
+    empty_domain = Domain.empty()
+    tracker_store = SQLTrackerStore(empty_domain, **{"host": "sqlite:///"})
+    tracker_with_events = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hello"),
+        ],
+        domain=empty_domain,
+    )
+    await tracker_store.save(tracker_with_events)
+
+    empty_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [],
+        domain=empty_domain,
+    )
+    await tracker_store.update(empty_tracker)
+
+    # No exception; log does not dereference events[0]; existing events are unchanged.
+    stored = await tracker_store.retrieve_full_tracker(sender_id)
+    assert stored is not None
+    assert len(stored.events) == 3
+    user_events = [e for e in stored.events if isinstance(e, UserUttered)]
+    assert len(user_events) == 1
+    assert user_events[0].text == "hello"
+
+
+@pytest.mark.asyncio
+async def test_sql_tracker_store_update_deletion_rowcount_zero_does_not_run_content_only() -> (  # noqa: E501
+    None
+):
+    """With apply_deletion_only=True (default), rowcount==0 must not run content-only.
+
+    When deletion cron calls update(tracker_subset) and no rows have timestamp <
+    first_ts (e.g. all events share the threshold timestamp), delete removes 0 rows.
+    We must not run in-place update or full replace, or we would corrupt the tracker.
+    """
+    sender_id = uuid.uuid4().hex
+    empty_domain = Domain.empty()
+    tracker_store = SQLTrackerStore(empty_domain, **{"host": "sqlite:///"})
+    # All events with same timestamp so delete WHERE timestamp < first_ts removes 0.
+    ts = 1000.0
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME, timestamp=ts),
+            SessionStarted(timestamp=ts + 0.1),
+            UserUttered("one", timestamp=ts + 0.2),
+            UserUttered("two", timestamp=ts + 0.3),
+        ],
+        domain=empty_domain,
+    )
+    await tracker_store.save(tracker)
+
+    # Subset with same first-event timestamp; delete will remove 0 rows.
+    subset_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME, timestamp=ts),
+            SessionStarted(timestamp=ts + 0.2),
+            UserUttered("three", timestamp=ts + 0.3),
+        ],
+        slots=empty_domain.slots,
+        domain=empty_domain,
+    )
+    await tracker_store.update(subset_tracker)  # default apply_deletion_only=True
+
+    # Content-only path must not have run: we must still have 4 events (no full replace)
+    stored = await tracker_store.retrieve_full_tracker(sender_id)
+    assert stored is not None
+    assert len(stored.events) == 4
+    user_texts = [e.text for e in stored.events if isinstance(e, UserUttered)]
+    assert "one" in user_texts and "two" in user_texts
+
+
 @set_initial_no_auth_action_count(1)
 @mock_aws
 def test_sql_tracker_store_creation_with_iam_enabled(

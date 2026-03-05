@@ -162,6 +162,7 @@ def test_aws_msk_iam_credentials_provider_get_credentials(
 
 # freeze time to ensure token refresh logic is tested
 @freezegun.freeze_time("2023-01-01 00:00:00")
+@pytest.mark.timeout(120, func_only=True)
 @set_initial_no_auth_action_count(1)
 @mock_aws
 def test_aws_msk_iam_credentials_provider_get_credentials_refresh_token(

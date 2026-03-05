@@ -277,11 +277,17 @@ class TrackerStore:
         """
         raise NotImplementedError()
 
-    async def update(self, tracker: DialogueStateTracker) -> None:
+    async def update(
+        self, tracker: DialogueStateTracker, apply_deletion_only: bool = True
+    ) -> None:
         """Replace an existing tracker with a new one.
 
         Args:
             tracker: The tracker to update.
+            apply_deletion_only: If True (default), only a trim/delete step is applied
+                (SQL: timestamp-based delete). If False, content-only updates may be
+                applied when no rows are deleted (e.g. anonymization). Other stores
+                ignore this; SQL uses it to avoid conflating deletion with content-only.
         """
         raise NotImplementedError()
 
@@ -602,11 +608,14 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         return multiple_tracker_sessions[-1]
 
-    async def update(self, tracker: DialogueStateTracker) -> None:
+    async def update(
+        self, tracker: DialogueStateTracker, apply_deletion_only: bool = True
+    ) -> None:
         """Replace an existing tracker with a new one.
 
         Args:
             tracker: The tracker to update.
+            apply_deletion_only: Ignored for in-memory store (full overwrite).
         """
         await self.save(tracker)
 
@@ -749,13 +758,19 @@ class FailSafeTrackerStore(TrackerStore):
             self.on_tracker_store_error(e)
             await self.fallback_tracker_store.delete(sender_id)
 
-    async def update(self, tracker: DialogueStateTracker) -> None:
+    async def update(
+        self, tracker: DialogueStateTracker, apply_deletion_only: bool = True
+    ) -> None:
         """Replace an existing tracker with a new one."""
         try:
-            await self._tracker_store.update(tracker)
+            await self._tracker_store.update(
+                tracker, apply_deletion_only=apply_deletion_only
+            )
         except Exception as e:
             self.on_tracker_store_error(e)
-            await self.fallback_tracker_store.update(tracker)
+            await self.fallback_tracker_store.update(
+                tracker, apply_deletion_only=apply_deletion_only
+            )
 
     async def retrieve_full_tracker(
         self, sender_id: Text
@@ -983,9 +998,13 @@ class AwaitableTrackerStore(TrackerStore):
         result = self._tracker_store.delete(sender_id)
         return await result if isawaitable(result) else result
 
-    async def update(self, tracker: DialogueStateTracker) -> None:
+    async def update(
+        self, tracker: DialogueStateTracker, apply_deletion_only: bool = True
+    ) -> None:
         """Replace an existing tracker with a new one."""
-        result = self._tracker_store.update(tracker)
+        result = self._tracker_store.update(
+            tracker, apply_deletion_only=apply_deletion_only
+        )
         return await result if isawaitable(result) else result
 
     async def retrieve_full_tracker(

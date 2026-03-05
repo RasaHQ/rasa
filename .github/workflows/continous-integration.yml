@@ -1716,8 +1716,8 @@ jobs:
           path: |
             integration-results-channel-connectors-with-calm-bot-results.xml
 
-  pii-management-in-calm-integration-tests:
-    name: PII Management in CALM Bot Integration Tests
+  pii-management-in-calm-integration-tests-env-set:
+    name: PII Integration 1 Anonymization + Deletion (env-set)
     needs:
       [
         rasa-private-dev-docker-image,
@@ -1768,9 +1768,8 @@ jobs:
                        --build-arg LATEST_RASA_PRO_VERSION=${{ env.LATEST_RASA_PRO_VERSION }} \
                        -t ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.RASA_IMAGE_TAG }}-pii .
 
-      - name: PII Integration Testing - Run docker containers
-        run: |
-          make run-pii-calm-containers
+      - name: Run containers (env-set)
+        run: make run-pii-calm-containers-env-set
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
@@ -1784,9 +1783,8 @@ jobs:
           api_key: ${{secrets.DD_API_KEY}}
           site: datadoghq.eu
 
-      - name: PII Management in CALM Testing -  Test Code with Services 🩺
-        run: |
-          make test-pii-integration-with-calm-bot
+      - name: PII Integration - Test (env-set + race conditions)
+        run: make test-pii-integration-with-calm-bot-env-set
         env:
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
@@ -1800,17 +1798,197 @@ jobs:
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}-pii
           BOT_PATH: "./tests_deployment/integration_tests_pii_management_in_calm/calm_demo_bot"
 
-      - name: PII Integration Testing - Stop docker containers
+      - name: PII Integration - Stop containers
         if: success() || failure()
-        run: |
-          make stop-pii-calm-containers
+        run: make stop-pii-calm-containers
 
       - name: Save Test Results
         if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: PII Management in CALM Bot Integration Tests
-          path: pii-management-in-calm-integration-results.xml
+          name: PII Integration (env-set) Test Results
+          path: pii-management-in-calm-integration-results-env-set.xml
+
+  pii-management-in-calm-integration-tests-deletion-no-env:
+    name: PII Integration 2 (deletion no-env)
+    needs:
+      [
+        rasa-private-dev-docker-image,
+        check-code-changes,
+        compute-docker-image-hash,
+      ]
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.pii-management == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
+    runs-on: warp-ubuntu-latest-x64-4x
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB_NAME_1: deletion_no_env_expiry_false_db
+      POSTGRES_DB_NAME_2: deletion_no_env_expiry_true_db
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Load cached Rasa Docker image
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: rasa-docker-image.tar.gz
+          key: rasa-docker-image-${{ needs.compute-docker-image-hash.outputs.hash }}.tar.gz
+          fail-on-cache-miss: true
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Get latest Rasa Pro version
+        run: |
+          chmod 755 scripts/get-latest-rasa-version.py
+          echo "LATEST_RASA_PRO_VERSION=$(python scripts/get-latest-rasa-version.py)" >> $GITHUB_ENV
+
+      - name: Load Docker image
+        run: gunzip -c rasa-docker-image.tar.gz | docker load
+
+      # Use cached Rasa dev image (no GLiNER/PII image needed for deletion no-env tests)
+      - name: PII Integration - Run containers (deletion no-env)
+        run: make run-pii-calm-containers-deletion-no-env
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
+
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
+      - name: PII Integration - Test (deletion no-env)
+        run: make test-pii-integration-with-calm-bot-deletion-no-env
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+          POSTGRES_DB_URL_EXPIRY_FALSE: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{env.POSTGRES_DB_NAME_1}}
+          POSTGRES_DB_URL_EXPIRY_TRUE: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{env.POSTGRES_DB_NAME_2}}
+
+      - name: Show container logs
+        if: success() || failure()
+        uses: ./.github/actions/debug-pii-management-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_pii_management_in_calm/docker-compose.yml
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
+          BOT_PATH: "./tests_deployment/integration_tests_pii_management_in_calm/calm_demo_bot"
+
+      - name: PII Integration - Stop containers
+        if: success() || failure()
+        run: make stop-pii-calm-containers
+
+      - name: Save Test Results
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: PII Integration (deletion no-env) Test Results
+          path: pii-management-in-calm-integration-results-deletion-no-env.xml
+
+  pii-management-in-calm-integration-tests-anonymization-no-env:
+    name: PII Integration 3 (anonymization no-env)
+    needs:
+      [
+        rasa-private-dev-docker-image,
+        check-code-changes,
+        compute-docker-image-hash,
+      ]
+    if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.pii-management == 'true' || needs.check-code-changes.outputs.poetry-dependency-updates == 'true') }}
+    runs-on: warp-ubuntu-latest-x64-4x
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Load cached Rasa Docker image
+        uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          path: rasa-docker-image.tar.gz
+          key: rasa-docker-image-${{ needs.compute-docker-image-hash.outputs.hash }}.tar.gz
+          fail-on-cache-miss: true
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Get latest Rasa Pro version
+        run: |
+          chmod 755 scripts/get-latest-rasa-version.py
+          echo "LATEST_RASA_PRO_VERSION=$(python scripts/get-latest-rasa-version.py)" >> $GITHUB_ENV
+
+      - name: Load Docker image
+        run: gunzip -c rasa-docker-image.tar.gz | docker load
+
+      - name: Build Rasa Pro PII image
+        env:
+          RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
+        working-directory: "./tests_deployment/integration_tests_pii_management_in_calm/calm_demo_bot"
+        run: |
+          docker build --build-arg RASA_REPOSITORY=${{ env.RASA_PRO_DEV_REPOSITORY }} \
+                       --build-arg RASA_IMAGE_TAG=${{ env.RASA_IMAGE_TAG }} \
+                       --build-arg LATEST_RASA_PRO_VERSION=${{ env.LATEST_RASA_PRO_VERSION }} \
+                       -t ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.RASA_IMAGE_TAG }}-pii .
+
+      - name: PII Integration - Run containers (anonymization no-env)
+        run: make run-pii-calm-containers-anonymization-no-env
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}-pii
+
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
+      - name: PII Integration - Test (anonymization no-env)
+        run: make test-pii-integration-with-calm-bot-anonymization-no-env
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+
+      - name: Show container logs
+        if: success() || failure()
+        uses: ./.github/actions/debug-pii-management-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_pii_management_in_calm/docker-compose.yml
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}-pii
+          BOT_PATH: "./tests_deployment/integration_tests_pii_management_in_calm/calm_demo_bot"
+
+      - name: PII Integration - Stop containers
+        if: success() || failure()
+        run: make stop-pii-calm-containers
+
+      - name: Save Test Results
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: PII Integration (anonymization no-env) Test Results
+          path: pii-management-in-calm-integration-results-anonymization-no-env.xml
 
   calm-kafka-restart-integration-tests:
     name: CALM Kafka Restart Integration Tests
@@ -2312,7 +2490,7 @@ jobs:
   unit-test:
     name: Run Unit Tests
     runs-on: warp-ubuntu-latest-x64-16x
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -2766,7 +2944,9 @@ jobs:
       - broker-integration-test
       - channel-connector-integration-tests
       # Temporarily disabled since these jobs are flaky
-      # - pii-management-in-calm-integration-tests
+      # - pii-management-in-calm-integration-tests-env-set
+      # - pii-management-in-calm-integration-tests-deletion-no-env
+      # - pii-management-in-calm-integration-tests-anonymization-no-env
       - voice-unit-tests
       - unit-test-policies
       - unit-test-agents

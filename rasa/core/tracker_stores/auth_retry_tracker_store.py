@@ -164,12 +164,16 @@ class AuthRetryTrackerStore(TrackerStore):
                 f"after {self.retries} retries."
             )
 
-    async def update(self, tracker: DialogueStateTracker) -> None:
+    async def update(
+        self, tracker: DialogueStateTracker, apply_deletion_only: bool = True
+    ) -> None:
         """Retries replacing the tracker if it fails."""
         # add + 1 to retries because the retries are additional to the first attempt
         for _ in range(self.retries + 1):
             try:
-                await self._tracker_store.update(tracker)
+                await self._tracker_store.update(
+                    tracker, apply_deletion_only=apply_deletion_only
+                )
                 break
             except Exception as e:
                 logger.warning(

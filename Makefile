@@ -730,27 +730,79 @@ train-pii-calm-bot: BOT_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(PII_CA
 train-pii-calm-bot: ## Train the CALM bot for PII integration tests.
 	$(TRAIN_PII_BOT_COMMAND)
 
-RUN_PII_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
+# Use := so these are expanded once and never trigger recursive expansion
+# when RUN_PII_CONTAINERS_BASE (which passes them to the shell) is expanded.
+MODEL_NAME_EXPIRY_TRUE := model_calm_bot_no_env_expiry_true
+MODEL_NAME_EXPIRY_FALSE := model_calm_bot_no_env_expiry_false
+
+RUN_PII_CONTAINERS_BASE = USER_ID=$(USER_ID) \
 	BOT_PATH=$(BOT_PATH) \
 	RASA_REPOSITORY=$(RASA_REPOSITORY) \
 	RASA_IMAGE_TAG=$(RASA_IMAGE_TAG) \
+	MODEL_NAME_EXPIRY_TRUE=$(MODEL_NAME_EXPIRY_TRUE) \
+	MODEL_NAME_EXPIRY_FALSE=$(MODEL_NAME_EXPIRY_FALSE) \
 	docker compose \
 		-f $(PII_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
-		up --wait
+		up
 
-run-pii-calm-containers: BOT_PATH = "./$(PII_CALM_BOT_DIRECTORY)" ## Run the PII integration test containers for CALM bot.
+RUN_PII_CONTAINERS_COMMAND = $(RUN_PII_CONTAINERS_BASE) --wait
+
+run-pii-calm-containers: BOT_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(PII_CALM_BOT_DIRECTORY) ## Run the PII integration test containers for CALM bot.
 run-pii-calm-containers: train-pii-calm-bot
 	$(RUN_PII_CONTAINERS_COMMAND)
+
+# Run only env-set services (5005, 5006 + Kafka) for PII integration job 1
+run-pii-calm-containers-env-set: BOT_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(PII_CALM_BOT_DIRECTORY)
+run-pii-calm-containers-env-set: train-pii-calm-bot
+	$(RUN_PII_CONTAINERS_BASE) kafka_broker init_kafka rasa-pro-http-anonymization rasa-pro-http-deletion --wait
+
+# Run only no-env services (5007, 5008) for PII integration job 2
+TRAIN_PII_BOT_NON_ENV_SET_COMMAND = docker run --rm \
+		-u $(USER_ID) \
+		--name $(CONTAINER_NAME) \
+		$(DOCKER_ENV_VARS) \
+		-v $(BOT_PATH)\:/app/bot \
+		-v ${DOMAIN_OVERRIDES_PATH}\:/app/bot/domain.yml\:ro \
+		-w /app/bot \
+		$(RASA_REPOSITORY):$(RASA_IMAGE_TAG) \
+		train --fixed-model-name $(MODEL_NAME)
+
+train-pii-non-env-expiry-true: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=$(RASA_PRO_LICENSE) -e OPENAI_API_KEY=$(OPENAI_API_KEY) -e HF_TOKEN=$(HF_TOKEN)
+train-pii-non-env-expiry-true: CONTAINER_NAME = rasa-pro-training-calm-bot-$(RASA_IMAGE_TAG)-expiry-true
+train-pii-non-env-expiry-true: BOT_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(PII_CALM_BOT_DIRECTORY)
+train-pii-non-env-expiry-true: DOMAIN_OVERRIDES_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/domain_overrides/domain_session_1min_expiry_true.yml
+train-pii-non-env-expiry-true: MODEL_NAME = $(MODEL_NAME_EXPIRY_TRUE)
+train-pii-non-env-expiry-true: ## Train the CALM bot for PII integration tests.
+	$(TRAIN_PII_BOT_NON_ENV_SET_COMMAND)
+
+train-pii-non-env-expiry-false: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=$(RASA_PRO_LICENSE) -e OPENAI_API_KEY=$(OPENAI_API_KEY) -e HF_TOKEN=$(HF_TOKEN)
+train-pii-non-env-expiry-false: CONTAINER_NAME = rasa-pro-training-calm-bot-$(RASA_IMAGE_TAG)-expiry-false
+train-pii-non-env-expiry-false: BOT_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(PII_CALM_BOT_DIRECTORY)
+train-pii-non-env-expiry-false: DOMAIN_OVERRIDES_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/domain_overrides/domain_session_1min_expiry_false.yml
+train-pii-non-env-expiry-false: MODEL_NAME = $(MODEL_NAME_EXPIRY_FALSE)
+train-pii-non-env-expiry-false: ## Train the CALM bot for PII integration tests.
+	$(TRAIN_PII_BOT_NON_ENV_SET_COMMAND)
+
+run-pii-calm-containers-deletion-no-env: BOT_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(PII_CALM_BOT_DIRECTORY)
+run-pii-calm-containers-deletion-no-env: train-pii-non-env-expiry-true train-pii-non-env-expiry-false
+	$(RUN_PII_CONTAINERS_BASE) postgres rasa-pro-http-deletion-no-env-expiry-false rasa-pro-http-deletion-no-env-expiry-true --wait
+
+# Run only anonymization no-env services (5009, 5010 + Kafka) for PII integration job 3
+run-pii-calm-containers-anonymization-no-env: BOT_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(PII_CALM_BOT_DIRECTORY)
+run-pii-calm-containers-anonymization-no-env: train-pii-non-env-expiry-true train-pii-non-env-expiry-false
+	$(RUN_PII_CONTAINERS_BASE) rasa-pro-http-anonymization-no-env-expiry-false rasa-pro-http-anonymization-no-env-expiry-true --wait
 
 STOP_PII_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
 	BOT_PATH=$(BOT_PATH) \
 	RASA_REPOSITORY=$(RASA_REPOSITORY) \
 	RASA_IMAGE_TAG=$(RASA_IMAGE_TAG) \
+	MODEL_NAME_EXPIRY_TRUE=$(MODEL_NAME_EXPIRY_TRUE) \
+	MODEL_NAME_EXPIRY_FALSE=$(MODEL_NAME_EXPIRY_FALSE) \
 	docker compose \
 		-f $(PII_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
 		down
 
-stop-pii-calm-containers: BOT_PATH = "./$(PII_CALM_BOT_DIRECTORY)" ## Stop the PII integration test containers.
+stop-pii-calm-containers: BOT_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(PII_CALM_BOT_DIRECTORY) ## Stop the PII integration test containers.
 stop-pii-calm-containers: ## Stop the PII integration test containers for CALM bot.
 	$(STOP_PII_CONTAINERS_COMMAND)
 
@@ -766,6 +818,25 @@ test-pii-integration-with-calm-bot: INTEGRATION_TEST_PATH = $(CALM_PII_INTEGRATI
 test-pii-integration-with-calm-bot: RESULTS_FILE = pii-management-in-calm-integration-results.xml
 test-pii-integration-with-calm-bot:  ## Run the pii integration tests with CALM bot.
 	$(TEST_PII_INTEGRATION_COMMAND)
+
+# PII integration test subsets (for 3 parallel CI jobs; each runs 2 containers)
+test-pii-integration-with-calm-bot-env-set:  ## PII job 1: anonymization, deletion, race tests (5005, 5006).
+	poetry run pytest $(CALM_PII_INTEGRATION_TEST_PATH) \
+		-k "test_pii_management_in_calm_bot_anonymization or test_pii_management_in_calm_bot_deletion or test_pii_management_race" \
+		-n $(JOBS) --reruns 3 --reruns-delay 1 \
+		--junitxml=pii-management-in-calm-integration-results-env-set.xml
+
+test-pii-integration-with-calm-bot-deletion-no-env:  ## PII job 2: deletion no-env tests (5007, 5008).
+	poetry run pytest $(CALM_PII_INTEGRATION_TEST_PATH) \
+		-k "test_pii_management_deletion_no_env" \
+		-n $(JOBS) --reruns 3 --reruns-delay 1 \
+		--junitxml=pii-management-in-calm-integration-results-deletion-no-env.xml
+
+test-pii-integration-with-calm-bot-anonymization-no-env:  ## PII job 3: anonymization no-env tests (5009, 5010).
+	poetry run pytest $(CALM_PII_INTEGRATION_TEST_PATH) \
+		-k "test_pii_management_anonymization_no_env" \
+		-n $(JOBS) --reruns 3 --reruns-delay 1 \
+		--junitxml=pii-management-in-calm-integration-results-anonymization-no-env.xml
 
 # Run the CALM Kafka restart integration test
 test-calm-kafka-restart: INTEGRATION_TEST_PATH = $(CALM_KAFKA_RESTART_INTEGRATION_TEST_PATH)

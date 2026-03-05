@@ -609,7 +609,9 @@ async def test_wrapper_tracker_stores_update(monkeypatch: MonkeyPatch) -> None:
         evts=[UserUttered("test message")],
     )
     await tracker_store.update(tracker)
-    mocked_inner_tracker_store.update.assert_called_once_with(tracker)
+    mocked_inner_tracker_store.update.assert_called_once_with(
+        tracker, apply_deletion_only=True
+    )
 
 
 async def test_auth_retry_tracker_store_update_successful_with_exception(
@@ -653,7 +655,7 @@ async def test_auth_retry_tracker_store_update_successful_with_exception(
         ]
     )
 
-    mock_tracker_store.update.assert_called_once_with(tracker)
+    mock_tracker_store.update.assert_called_once_with(tracker, apply_deletion_only=True)
 
     log_msg = f"Failed to replace tracker for {sender_id}. Retrying..."
     assert log_msg in caplog.text

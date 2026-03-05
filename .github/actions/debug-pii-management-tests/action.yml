@@ -23,47 +23,16 @@ runs:
     run: sudo docker ps -a
     shell: bash
 
-  - name: Check rasa-pro-http-anonymization container logs
+  - name: Check container logs (all services in PII docker compose)
     env:
       RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
       RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
       BOT_PATH: ${{ inputs.BOT_PATH }}
       COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f "$COMPOSE_FILE_PATH" \
-        logs rasa-pro-http-anonymization
-    shell: bash
-
-  - name: Check rasa-pro-http-deletion container logs
-    env:
-      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
-      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
-      BOT_PATH: ${{ inputs.BOT_PATH }}
-      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
-    run: |
-      docker compose -f "$COMPOSE_FILE_PATH" \
-        logs rasa-pro-http-deletion
-    shell: bash
-
-  - name: Check kafka_broker container logs
-    env:
-      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
-      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
-      BOT_PATH: ${{ inputs.BOT_PATH }}
-      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
-    run: |
-      docker compose -f "$COMPOSE_FILE_PATH" \
-        logs kafka_broker
-    shell: bash
-
-  - name: Check init_kafka container logs
-    env:
-      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
-      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
-      BOT_PATH: ${{ inputs.BOT_PATH }}
-      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
-    run: |
-      docker compose -f "$COMPOSE_FILE_PATH" \
-        logs init_kafka
+      for service in $(docker compose -f "$COMPOSE_FILE_PATH" config --services); do
+        echo "=== $service ==="
+        docker compose -f "$COMPOSE_FILE_PATH" logs "$service" 2>&1 || true
+      done
     shell: bash
 

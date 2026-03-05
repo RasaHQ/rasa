@@ -11,8 +11,15 @@ from pytest import MonkeyPatch
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core.tracker_stores.redis_tracker_store import RedisTrackerStore
 from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event, SessionStarted, UserUttered
+from rasa.shared.core.events import (
+    ActionExecuted,
+    BotUttered,
+    Event,
+    SessionStarted,
+    UserUttered,
+)
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from tests.integration_tests.core.conftest import (
     POSTGRES_HOST,
@@ -249,20 +256,20 @@ async def test_postgres_tracker_store_delete(
     tracker_store.engine.dispose()
 
 
-@pytest.mark.sequential
-@pytest.mark.timeout(10, func_only=True)
-async def test_postgres_tracker_store_update(
-    tracker_with_restarted_event: DialogueStateTracker,
-    events_after_restart: List[Event],
+@pytest.fixture
+def empty_domain() -> Domain:
+    return Domain.empty()
+
+
+@pytest.fixture
+def postgres_tracker_store(
     postgres_login_db_connection: sa.engine.Connection,
-    postgres_login_db_name: str,
     postgres_db_name: str,
-) -> None:
-    # Given
-    sender_id = uuid.uuid4().hex
+    postgres_login_db_name: str,
+    empty_domain: Domain,
+) -> Generator[SQLTrackerStore, None, None]:
     postgres_login_db_connection.execute(sa.text(f"CREATE DATABASE {postgres_db_name}"))
-    empty_domain = Domain.empty()
-    tracker_store = SQLTrackerStore(
+    sql_tracker_store = SQLTrackerStore(
         dialect="postgresql",
         host=POSTGRES_HOST,
         port=POSTGRES_PORT,
@@ -272,11 +279,25 @@ async def test_postgres_tracker_store_update(
         login_db=postgres_login_db_name,
         domain=empty_domain,
     )
+    yield sql_tracker_store
+    sql_tracker_store.engine.dispose()
+
+
+@pytest.mark.sequential
+@pytest.mark.timeout(10, func_only=True)
+async def test_postgres_tracker_store_update(
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+    postgres_tracker_store: SQLTrackerStore,
+    empty_domain: Domain,
+) -> None:
+    # Given
+    sender_id = uuid.uuid4().hex
     initial_tracker = DialogueStateTracker.from_events(
         sender_id=sender_id,
         evts=tracker_with_restarted_event.events,
     )
-    await tracker_store.save(initial_tracker)
+    await postgres_tracker_store.save(initial_tracker)
 
     new_tracker = DialogueStateTracker.from_events(
         sender_id=sender_id,
@@ -286,15 +307,143 @@ async def test_postgres_tracker_store_update(
     )
 
     # When
-    await tracker_store.update(new_tracker)
+    await postgres_tracker_store.update(new_tracker)
 
     # Then
-    updated_tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    updated_tracker = await postgres_tracker_store.retrieve_full_tracker(sender_id)
     assert updated_tracker.current_state(
         EventVerbosity.ALL
     ) == new_tracker.current_state(EventVerbosity.ALL)
 
-    tracker_store.engine.dispose()
+
+@pytest.mark.sequential
+@pytest.mark.timeout(10, func_only=True)
+async def test_postgres_tracker_store_update_in_place_no_rows_deleted_count_matches(
+    postgres_tracker_store: SQLTrackerStore,
+    empty_domain: Domain,
+) -> None:
+    """Delete removes 0 rows and count matches; events updated in place (Postgres)."""
+    sender_id = uuid.uuid4().hex
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("secret message"),
+            BotUttered("ok"),
+        ],
+        domain=empty_domain,
+    )
+    await postgres_tracker_store.save(tracker)
+
+    stored = await postgres_tracker_store.retrieve_full_tracker(sender_id)
+    assert stored is not None
+    modified_events: List[Event] = []
+    for evt in stored.events:
+        if isinstance(evt, UserUttered) and evt.text == "secret message":
+            modified_events.append(UserUttered("REDACTED", timestamp=evt.timestamp))
+        else:
+            modified_events.append(evt)
+    modified_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        modified_events,
+        slots=empty_domain.slots,
+        domain=empty_domain,
+    )
+
+    await postgres_tracker_store.update(modified_tracker, apply_deletion_only=False)
+
+    updated = await postgres_tracker_store.retrieve_full_tracker(sender_id)
+    assert updated is not None
+    user_events = [e for e in updated.events if isinstance(e, UserUttered)]
+    assert len(user_events) == 1
+    assert user_events[0].text == "REDACTED"
+
+
+@pytest.mark.sequential
+@pytest.mark.timeout(10, func_only=True)
+async def test_postgres_tracker_store_update_full_replace_no_rows_deleted_count_differs(
+    postgres_tracker_store: SQLTrackerStore,
+    empty_domain: Domain,
+) -> None:
+    """When delete removes 0 rows and count differs, full replace (Postgres)."""
+    sender_id = uuid.uuid4().hex
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("one"),
+            UserUttered("two"),
+        ],
+        domain=empty_domain,
+    )
+    await postgres_tracker_store.save(tracker)
+
+    stored = await postgres_tracker_store.retrieve_full_tracker(sender_id)
+    assert stored is not None
+    first_ts = stored.events[0].timestamp
+    replacement_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=first_ts),
+        SessionStarted(timestamp=first_ts + 0.1),
+        UserUttered("only one", timestamp=first_ts + 0.2),
+    ]
+    replacement_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        replacement_events,
+        slots=empty_domain.slots,
+        domain=empty_domain,
+    )
+
+    await postgres_tracker_store.update(replacement_tracker, apply_deletion_only=False)
+
+    updated = await postgres_tracker_store.retrieve_full_tracker(sender_id)
+    assert updated is not None
+    assert len(updated.events) == 3
+    user_events = [e for e in updated.events if isinstance(e, UserUttered)]
+    assert len(user_events) == 1
+    assert user_events[0].text == "only one"
+
+
+@pytest.mark.sequential
+@pytest.mark.timeout(10, func_only=True)
+@pytest.mark.parametrize("apply_deletion_only", [True, False])
+async def test_postgres_tracker_store_update_empty_events_no_crash(
+    postgres_tracker_store: SQLTrackerStore,
+    empty_domain: Domain,
+    apply_deletion_only: bool,
+) -> None:
+    """Update with no events does not crash; existing events retained (Postgres)."""
+    sender_id = uuid.uuid4().hex
+
+    tracker_with_events = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hello"),
+        ],
+        domain=empty_domain,
+    )
+    await postgres_tracker_store.save(tracker_with_events)
+
+    empty_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [],
+        domain=empty_domain,
+    )
+    await postgres_tracker_store.update(
+        empty_tracker, apply_deletion_only=apply_deletion_only
+    )
+
+    stored = await postgres_tracker_store.retrieve_full_tracker(sender_id)
+    assert stored is not None
+    assert len(stored.events) == 3
+    user_events = [e for e in stored.events if isinstance(e, UserUttered)]
+    assert len(user_events) == 1
+    assert user_events[0].text == "hello"
 
 
 @pytest.mark.sequential

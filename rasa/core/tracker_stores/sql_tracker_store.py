@@ -45,7 +45,7 @@ from rasa.core.tracker_stores.tracker_store import (
     validate_port,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SessionStarted
+from rasa.shared.core.events import Event, SessionStarted
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
@@ -686,6 +686,23 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         return event_query.order_by(self.SQLEvent.id)
 
+    def _event_to_sql_event_fields(self, event: Event) -> Dict[str, Any]:
+        """Build dict of SQLEvent fields from an event.
+
+        Keys: type_name, timestamp, intent_name, action_name, data.
+        """
+        data = event.as_dict()
+        intent = data.get("parse_data", {}).get("intent", {}).get(INTENT_NAME_KEY)
+        action = data.get("name")
+        timestamp = data.get("timestamp")
+        return {
+            "type_name": event.type_name,
+            "timestamp": timestamp,
+            "intent_name": intent,
+            "action_name": action,
+            "data": json.dumps(data),
+        }
+
     async def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
         await self.stream_events(tracker)
@@ -698,22 +715,13 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             events = self._additional_events(session, tracker)
 
             for event in events:
-                data = event.as_dict()
-                intent = (
-                    data.get("parse_data", {}).get("intent", {}).get(INTENT_NAME_KEY)
-                )
-                action = data.get("name")
-                timestamp = data.get("timestamp")
+                fields = self._event_to_sql_event_fields(event)
 
                 # noinspection PyArgumentList
                 session.add(
                     self.SQLEvent(
                         sender_id=tracker.sender_id,
-                        type_name=event.type_name,
-                        timestamp=timestamp,
-                        intent_name=intent,
-                        action_name=action,
-                        data=json.dumps(data),
+                        **fields,
                     )
                 )
 
@@ -808,19 +816,94 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                 conversation_started_timestamp,
             )
 
-    async def update(self, tracker_to_keep: DialogueStateTracker) -> None:
-        """Overwrite the tracker in the SQL tracker store."""
+    def _update_events_in_place(
+        self,
+        session: "Session",
+        existing_rows: List[Any],
+        tracker_to_keep: DialogueStateTracker,
+    ) -> int:
+        """Update stored event rows in place where content differs.
+
+        Returns count of rows updated.
+        """
+        updates_count = 0
+        for db_row, new_event in zip(existing_rows, tracker_to_keep.events):
+            new_fields = self._event_to_sql_event_fields(new_event)
+            if new_fields["data"] != db_row.data:
+                session.execute(
+                    sa.update(self.SQLEvent)
+                    .where(self.SQLEvent.id == db_row.id)
+                    .values(
+                        type_name=new_fields["type_name"],
+                        timestamp=new_fields["timestamp"],
+                        intent_name=new_fields["intent_name"],
+                        action_name=new_fields["action_name"],
+                        data=new_fields["data"],
+                    )
+                )
+                updates_count += 1
+        return updates_count
+
+    def _replace_all_tracker_events(
+        self,
+        session: "Session",
+        tracker_to_keep: DialogueStateTracker,
+    ) -> None:
+        """Delete all events for sender_id and insert events from tracker_to_keep."""
+        session.execute(
+            sa.delete(self.SQLEvent).where(
+                self.SQLEvent.sender_id == tracker_to_keep.sender_id
+            )
+        )
+        for event in tracker_to_keep.events:
+            fields = self._event_to_sql_event_fields(event)
+            # noinspection PyArgumentList
+            session.add(
+                self.SQLEvent(
+                    sender_id=tracker_to_keep.sender_id,
+                    **fields,
+                )
+            )
+
+    async def update(
+        self,
+        tracker_to_keep: DialogueStateTracker,
+        apply_deletion_only: bool = True,
+    ) -> None:
+        """Overwrite or trim the tracker in the SQL tracker store.
+
+        Two intended use cases, selected by apply_deletion_only:
+
+        1. **Trim (retention/deletion)** — apply_deletion_only=True (default): Only the
+           timestamp-based delete (and user mapping) is applied. Use for deletion cron.
+           When the delete removes no rows (e.g. events share the threshold timestamp),
+           we do not run the content-only path, avoiding incorrect in-place updates.
+
+        2. **Content-only (e.g. anonymization)** — apply_deletion_only=False: When the
+           delete removes no rows we also apply content-only updates (in-place or full
+           replace). Use for anonymization where the same event set has modified
+           content.
+
+        Args:
+            tracker_to_keep: The tracker to keep (trim older events or overwrite
+                content).
+            apply_deletion_only: If True (default), only the delete step runs. If False,
+                content-only path runs when rowcount == 0.
+        """
         # Ensure conversation_started_timestamp is set (for backward compatibility)
         tracker_to_keep.ensure_conversation_started_timestamp()
+
+        content_only_log: Optional[str] = None
 
         with self.session_scope() as session:
             # Delete events whose timestamp are older
             # than the first event of the tracker to keep.
+            first_ts = (
+                tracker_to_keep.events[0].timestamp if tracker_to_keep.events else 0.0
+            )
             statement = sa.delete(self.SQLEvent).where(
                 self.SQLEvent.sender_id == tracker_to_keep.sender_id,
-                self.SQLEvent.timestamp < tracker_to_keep.events[0].timestamp
-                if tracker_to_keep.events
-                else 0,
+                self.SQLEvent.timestamp < first_ts,
             )
 
             result = session.execute(statement)
@@ -837,17 +920,50 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                     tracker_to_keep.conversation_started_timestamp,
                 )
 
+            # Content-only path: only when caller opts in (e.g. anonymization) and
+            # delete removed no rows. When apply_deletion_only is True (deletion cron)
+            # we never run this, even if rowcount == 0 (e.g. events share threshold ts).
+            if (
+                result.rowcount == 0
+                and tracker_to_keep.events
+                and not apply_deletion_only
+            ):
+                existing_rows = self._event_query(
+                    session,
+                    tracker_to_keep.sender_id,
+                    fetch_events_from_all_sessions=True,
+                ).all()
+                if len(existing_rows) == len(tracker_to_keep.events):
+                    updates_count = self._update_events_in_place(
+                        session, existing_rows, tracker_to_keep
+                    )
+                    content_only_log = (
+                        f"0 rows removed; {updates_count} events updated in place."
+                    )
+                else:
+                    self._replace_all_tracker_events(session, tracker_to_keep)
+                    content_only_log = (
+                        "0 rows removed; tracker replaced (event count mismatch)."
+                    )
+
             session.commit()
 
-        first_event_timestamp = str(
-            datetime.fromtimestamp(tracker_to_keep.events[0].timestamp)
+        first_event_timestamp = ""
+        if tracker_to_keep.events:
+            first_event_timestamp = str(
+                datetime.fromtimestamp(tracker_to_keep.events[0].timestamp)
+            )
+        event_info = (
+            content_only_log
+            if content_only_log is not None
+            else f"{result.rowcount} rows removed from tracker."
         )
 
         structlogger.info(
             "sql_tracker_store.update.updated_tracker",
             sender_id=tracker_to_keep.sender_id,
             first_event_timestamp=first_event_timestamp,
-            event_info=f"{result.rowcount} rows removed from tracker.",
+            event_info=event_info,
         )
 
     async def get_trackers_by_user_id(

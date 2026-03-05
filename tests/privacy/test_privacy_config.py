@@ -125,6 +125,16 @@ def test_get_cron_trigger_invalid(cron_expression: str) -> None:
         assert log[0]["cron"] == cron_expression
 
 
+def test_validate_min_after_session_end_env_unset_skips_validation(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """When env var is unset, validation is skipped (event-based detection used)."""
+    monkeypatch.delenv(USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME, raising=False)
+    with does_not_raise():
+        assert validate_min_after_session_end(0) is None
+        assert validate_min_after_session_end(30) is None
+
+
 def test_validate_min_after_session_end_valid(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv(USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME, "45")
     with does_not_raise():

@@ -12,6 +12,11 @@ VALUE_KEY = "value"
 ENTITY_LABEL_KEY = "label"
 
 USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME = "USER_CHAT_INACTIVITY_IN_MINUTES"
+# Used only for legacy trackers (no session_id on events) when env var is unset
+LEGACY_DEFAULT_INACTIVITY_MINUTES = 30
+# Key used when grouping events by session_id for events
+# that have no session_id in metadata
+NO_SESSION_ID_KEY = "__no_session_id__"
 GLINER_MODEL_PATH_ENV_VAR_NAME = "GLINER_MODEL_PATH"
 HUGGINGFACE_CACHE_DIR_ENV_VAR_NAME = "HUGGINGFACE_HUB_CACHE_DIR"
 
@@ -81,3 +86,6 @@ GLINER_LABELS = [
     "tax number",
     "swift code",
 ]
+
+ANONYMIZATION_LOG_KEY = "rasa.privacy_manager.anonymizing_tracker_session"
+DELETION_LOG_KEY = "rasa.privacy_manager.tracker_session_scheduled_for_deletion"
