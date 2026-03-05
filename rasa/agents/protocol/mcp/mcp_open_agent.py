@@ -155,9 +155,14 @@ class MCPOpenAgent(MCPBaseAgent):
         self, agent_input: AgentInput, output_channel: Optional[OutputChannel] = None
     ) -> AgentOutput:
         """Send a message to the LLM and return the response."""
-        messages = self.build_messages_for_llm_request(agent_input)
+        message_build_cache: Dict[str, Any] = {}
+        tool_call_messages: List[Dict[str, Any]] = []
         tool_results: Dict[str, AgentToolResult] = {}
         generated_events: List[Event] = []
+        # Stores events returned by `process_tool_output`, accumulated across
+        # all completed iterations in this `send_message` run.
+        accumulated_tool_output_events: List[Event] = []
+
         # Convert available tools to OpenAI JSON format
         tools_in_openai_format = [
             tool.to_litellm_json_format()
@@ -166,8 +171,13 @@ class MCPOpenAgent(MCPBaseAgent):
 
         for iteration in range(self.MAX_ITERATIONS):
             try:
+                messages = self._build_messages_for_llm_request_with_cache(
+                    agent_input,
+                    message_build_cache,
+                )
+                messages.extend(tool_call_messages)
                 structlogger.debug(
-                    "mcp_task_agent.send_message.iteration",
+                    "mcp_open_agent.send_message.iteration",
                     event_info=(
                         f"Starting iteration {iteration + 1} for agent {self._name}"
                     ),
@@ -207,6 +217,8 @@ class MCPOpenAgent(MCPBaseAgent):
                         id=agent_input.id,
                         status=AgentStatus.RECOVERABLE_ERROR,
                         error_message=event_info,
+                        events=(generated_events + accumulated_tool_output_events)
+                        or None,
                         structured_results=(
                             self._get_structured_results_for_agent_output(
                                 agent_input, tool_results
@@ -220,7 +232,8 @@ class MCPOpenAgent(MCPBaseAgent):
                         id=agent_input.id,
                         status=AgentStatus.INPUT_REQUIRED,
                         response_message=llm_response.choices[0],
-                        events=generated_events if generated_events else None,
+                        events=(generated_events + accumulated_tool_output_events)
+                        or None,
                         structured_results=(
                             self._get_structured_results_for_agent_output(
                                 agent_input, tool_results
@@ -243,8 +256,9 @@ class MCPOpenAgent(MCPBaseAgent):
 
                 # If there are tool calls, process them.
                 if llm_response.tool_calls:
+                    current_iteration_tool_results: Dict[str, AgentToolResult] = {}
                     # Add the assistant message with tool calls to the messages.
-                    messages.append(
+                    tool_call_messages.append(
                         self._get_assistant_message_with_tool_calls(llm_response)
                     )
                     for tool_call in llm_response.tool_calls:
@@ -262,12 +276,37 @@ class MCPOpenAgent(MCPBaseAgent):
 
                         # Agent signals task completion.
                         if tool_call.tool_name == KEY_TASK_COMPLETED:
-                            return self._run_task_completed_tool(
+                            # A single response can include regular tools before
+                            # `task_completed`. Process those pending results first so
+                            # they still go through `process_tool_output` for this
+                            # iteration. `task_completed` itself is excluded.
+                            if current_iteration_tool_results:
+                                events_from_tool_results = (
+                                    await self._process_tool_output_or_raise(
+                                        current_iteration_tool_results,
+                                        tool_results,
+                                        output_channel,
+                                    )
+                                )
+                                if events_from_tool_results:
+                                    self._apply_slot_set_events_to_agent_input(
+                                        agent_input, events_from_tool_results
+                                    )
+                                    accumulated_tool_output_events.extend(
+                                        events_from_tool_results
+                                    )
+                                    agent_input.events.extend(events_from_tool_results)
+
+                            completed_output = self._run_task_completed_tool(
                                 tool_call,
                                 agent_input,
                                 tool_results,
                                 generated_events,
                             )
+                            completed_output.events = (
+                                generated_events + accumulated_tool_output_events
+                            ) or None
+                            return completed_output
 
                         else:
                             # Execute the tool call.
@@ -294,21 +333,43 @@ class MCPOpenAgent(MCPBaseAgent):
 
                             # If the tool call failed, generate an agent error output.
                             if tool_output.is_error or tool_output.result is None:
-                                return self._generate_agent_error_output(
+                                error_output = self._generate_agent_error_output(
                                     tool_output, agent_input, tool_call
                                 )
+                                error_output.events = (
+                                    generated_events + accumulated_tool_output_events
+                                ) or None
+                                error_output.structured_results = (
+                                    self._get_structured_results_for_agent_output(
+                                        agent_input, tool_results
+                                    )
+                                )
+                                return error_output
 
                             # Store the tool output in the tool_results.
                             tool_results[tool_call.id] = tool_output
+                            current_iteration_tool_results[tool_call.id] = tool_output
 
                             # Add the tool call message to the messages.
-                            messages.append(
+                            tool_call_messages.append(
                                 {
                                     KEY_ROLE: ROLE_TOOL,
                                     KEY_TOOL_CALL_ID: tool_call.id,
                                     KEY_CONTENT: tool_output.result,
                                 }
                             )
+
+                    events_from_tool_results = await self._process_tool_output_or_raise(
+                        current_iteration_tool_results,
+                        tool_results,
+                        output_channel,
+                    )
+                    if events_from_tool_results:
+                        self._apply_slot_set_events_to_agent_input(
+                            agent_input, events_from_tool_results
+                        )
+                        accumulated_tool_output_events.extend(events_from_tool_results)
+                        agent_input.events.extend(events_from_tool_results)
 
             except Exception as e:
                 if isinstance(e, ProviderClientAPIException) and isinstance(
@@ -329,7 +390,7 @@ class MCPOpenAgent(MCPBaseAgent):
                     )
                     # Continue to make another LLM call by breaking out of the current
                     # iteration and letting the loop continue with a fresh LLM request
-                    messages.append(
+                    tool_call_messages.append(
                         self._get_system_message_for_malformed_tool_response()
                     )
                     continue
@@ -344,7 +405,7 @@ class MCPOpenAgent(MCPBaseAgent):
                     id=agent_input.id,
                     status=AgentStatus.FATAL_ERROR,
                     response_message=f"I encountered an error: {e!s}",
-                    events=generated_events if generated_events else None,
+                    events=(generated_events + accumulated_tool_output_events) or None,
                     structured_results=self._get_structured_results_for_agent_output(
                         agent_input, tool_results
                     ),
@@ -357,7 +418,7 @@ class MCPOpenAgent(MCPBaseAgent):
                 "I've completed my research but couldn't provide a final answer within"
                 "the allowed steps."
             ),
-            events=generated_events if generated_events else None,
+            events=(generated_events + accumulated_tool_output_events) or None,
             structured_results=self._get_structured_results_for_agent_output(
                 agent_input, tool_results
             ),

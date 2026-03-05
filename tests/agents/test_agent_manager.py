@@ -6,12 +6,11 @@ import pytest
 
 from rasa.agents.agent_manager import AgentManager
 from rasa.agents.core.types import AgentIdentifier, AgentStatus, ProtocolType
-from rasa.agents.protocol.mcp.mcp_task_agent import MCPTaskAgent
+from rasa.agents.protocol.a2a.a2a_agent import A2AAgent
 from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentOutput
 from rasa.core.available_agents import AgentConfig, AgentInfo, ProtocolConfig
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.shared.agents.utils import make_agent_identifier
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.events import SlotSet
 from rasa.shared.exceptions import AgentInitializationException
 
@@ -34,7 +33,6 @@ def mock_agent_protocol() -> AsyncMock:
     mock_agent.disconnect = AsyncMock()
     mock_agent.process_input = AsyncMock()
     mock_agent.run = AsyncMock()
-    mock_agent.process_output = AsyncMock()
     return mock_agent
 
 
@@ -294,7 +292,6 @@ async def test_run_agent_success(
     processed_input = AgentInput(**mock_agent_input.dict())
     mock_agent_protocol.process_input.return_value = processed_input
     mock_agent_protocol.run.return_value = mock_agent_output
-    mock_agent_protocol.process_output.return_value = mock_agent_output
 
     result = await agent_manager.run_agent(
         "run_success_agent", ProtocolType.MCP_TASK, mock_agent_input
@@ -305,7 +302,6 @@ async def test_run_agent_success(
     mock_agent_protocol.run.assert_called_once_with(
         processed_input, output_channel=None
     )
-    mock_agent_protocol.process_output.assert_called_once_with(mock_agent_output)
 
     # Verify result
     assert result == mock_agent_output
@@ -371,96 +367,96 @@ async def test_run_agent_process_input_failure(
 
 async def test_run_agent_process_output_failure(
     agent_manager: AgentManager,
-    mock_agent_protocol: AsyncMock,
-    mock_agent_output: AgentOutput,
+    mock_agent_input: AgentInput,
 ) -> None:
-    """Test agent execution failure during process_output."""
-    agent_identifier = make_agent_identifier(
-        "run_process_output_fail_agent", ProtocolType.MCP_TASK
+    """Test agent execution failure during A2A process_agent_output."""
+    a2a_agent = A2AAgent(
+        name="a2a-agent",
+        description="test",
+        agent_card_path="unused",
+        timeout=1,
+        max_retries=1,
     )
-    agent_manager._add_agent(agent_identifier, mock_agent_protocol)
-
-    # Mock process_output to fail
-    mock_agent_protocol.process_output.side_effect = Exception("Process output error")
+    a2a_agent.process_input = AsyncMock(return_value=mock_agent_input)  # type: ignore[method-assign]
+    a2a_agent.run = AsyncMock(  # type: ignore[method-assign]
+        return_value=AgentOutput(id="test_id", status=AgentStatus.COMPLETED)
+    )
+    a2a_agent.process_agent_output = AsyncMock(  # type: ignore[method-assign]
+        side_effect=Exception("Process output error")
+    )
+    agent_identifier = make_agent_identifier(
+        "run_process_output_fail_agent", ProtocolType.A2A
+    )
+    agent_manager._add_agent(agent_identifier, a2a_agent)
 
     with pytest.raises(Exception, match="Process output error"):
         await agent_manager.run_agent(
-            "run_process_output_fail_agent", ProtocolType.MCP_TASK, mock_agent_output
+            "run_process_output_fail_agent", ProtocolType.A2A, mock_agent_input
         )
 
 
 @pytest.mark.asyncio
-async def test_run_agent_evaluate_exit_conditions_called_only_for_mcp_task_agent(
+async def test_run_agent_calls_process_output_for_a2a(
     agent_manager: AgentManager,
     mock_agent_input: AgentInput,
-    mock_agent_output: AgentOutput,
 ) -> None:
-    """Test that evaluate_exit_conditions is invoked only for MCPTaskAgent."""
-    processed_input = AgentInput(**mock_agent_input.dict())
-
-    # Non-task agent (e.g. MCP_OPEN): evaluate_exit_conditions must not be called
-    non_task_agent = AsyncMock()
-    non_task_agent.protocol_type = ProtocolType.MCP_OPEN
-    non_task_agent.process_input = AsyncMock(return_value=processed_input)
-    non_task_agent.run = AsyncMock(return_value=mock_agent_output)
-    non_task_agent.process_output = AsyncMock(return_value=mock_agent_output)
-    non_task_agent.evaluate_exit_conditions = AsyncMock(return_value=mock_agent_output)
+    """Test that AgentManager invokes process_agent_output for A2A only."""
+    a2a_agent = A2AAgent(
+        name="a2a-agent",
+        description="test",
+        agent_card_path="unused",
+        timeout=1,
+        max_retries=1,
+    )
+    run_output = AgentOutput(id="test_id", status=AgentStatus.COMPLETED)
+    processed_output = AgentOutput(
+        id="test_id",
+        status=AgentStatus.COMPLETED,
+        metadata={"processed": True},
+    )
+    a2a_agent.process_input = AsyncMock(return_value=mock_agent_input)  # type: ignore[method-assign]
+    a2a_agent.run = AsyncMock(return_value=run_output)  # type: ignore[method-assign]
+    a2a_agent.process_agent_output = AsyncMock(  # type: ignore[method-assign]
+        return_value=processed_output
+    )
 
     agent_manager._add_agent(
-        make_agent_identifier("open_agent", ProtocolType.MCP_OPEN),
-        non_task_agent,
+        make_agent_identifier("a2a_agent", ProtocolType.A2A), a2a_agent
     )
-    await agent_manager.run_agent("open_agent", ProtocolType.MCP_OPEN, mock_agent_input)
+    result = await agent_manager.run_agent(
+        "a2a_agent", ProtocolType.A2A, mock_agent_input
+    )
 
-    non_task_agent.evaluate_exit_conditions.assert_not_called()
+    a2a_agent.process_agent_output.assert_called_once_with(run_output)  # type: ignore[attr-defined]
+    assert result.metadata is not None
+    assert result.metadata.get("processed") is True
 
 
 @pytest.mark.asyncio
-async def test_run_agent_evaluate_exit_conditions_called_for_mcp_task_agent(
+async def test_run_agent_forwards_mcp_task_output_as_is(
     agent_manager: AgentManager,
     mock_agent_input: AgentInput,
     mock_agent_output: AgentOutput,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test that evaluate_exit_conditions is invoked when agent is MCPTaskAgent."""
-    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock-key-for-agent-manager-test")
-    task_agent = MCPTaskAgent.from_config(
-        AgentConfig(
-            agent=AgentInfo(
-                name="task_agent",
-                description="Test task agent",
-                protocol=ProtocolConfig.RASA,
-            )
-        )
-    )
+    """Test that manager forwards MCP_TASK output as-is."""
     processed_input = AgentInput(**mock_agent_input.dict())
+    task_agent = AsyncMock()
+    task_agent.protocol_type = ProtocolType.MCP_TASK
 
-    with (
-        patch.object(MCPTaskAgent, "process_input", new_callable=AsyncMock) as mock_pi,
-        patch.object(MCPTaskAgent, "run", new_callable=AsyncMock) as mock_run,
-        patch.object(MCPTaskAgent, "process_output", new_callable=AsyncMock) as mock_po,
-        patch.object(
-            MCPTaskAgent,
-            "evaluate_exit_conditions",
-            new_callable=AsyncMock,
-        ) as mock_evaluate_exit_conditions,
-    ):
-        mock_pi.return_value = processed_input
-        mock_run.return_value = mock_agent_output
-        mock_po.return_value = mock_agent_output
-        mock_evaluate_exit_conditions.return_value = mock_agent_output
+    task_agent.process_input = AsyncMock(return_value=processed_input)
+    task_agent.run = AsyncMock(return_value=mock_agent_output)
+    task_agent.process_agent_output = AsyncMock(return_value=mock_agent_output)
 
-        agent_manager._add_agent(
-            make_agent_identifier("task_agent", ProtocolType.MCP_TASK),
-            task_agent,
-        )
-        await agent_manager.run_agent(
-            "task_agent", ProtocolType.MCP_TASK, mock_agent_input
-        )
+    agent_manager._add_agent(
+        make_agent_identifier("task_agent", ProtocolType.MCP_TASK),
+        task_agent,
+    )
+    result = await agent_manager.run_agent(
+        "task_agent", ProtocolType.MCP_TASK, mock_agent_input
+    )
 
-        mock_evaluate_exit_conditions.assert_called_once_with(
-            processed_input, mock_agent_output
-        )
+    task_agent.process_agent_output.assert_not_called()
+    assert result == mock_agent_output
 
 
 @pytest.mark.asyncio

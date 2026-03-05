@@ -5,7 +5,7 @@ import structlog
 from rasa.agents.agent_factory import AgentFactory
 from rasa.agents.core.agent_protocol import AgentProtocol
 from rasa.agents.core.types import AgentIdentifier, ProtocolType
-from rasa.agents.protocol.mcp.mcp_task_agent import MCPTaskAgent
+from rasa.agents.protocol.a2a.a2a_agent import A2AAgent
 from rasa.agents.schemas import AgentInput, AgentOutput
 from rasa.core.available_agents import AgentConfig
 from rasa.core.channels.channel import OutputChannel
@@ -156,27 +156,24 @@ class AgentManager(metaclass=Singleton):
             protocol_type=protocol_type,
         )
 
-        # Process output before returning
-        try:
-            processed_output = await agent.process_output(output)
-        except Exception as e:
-            structlogger.error(
-                "agent_manager.run_agent.process_output_failed",
-                agent_name=agent_name,
-                protocol_type=protocol_type,
-                event_info=(
-                    f"Failed to process output for agent '{agent_name}'. "
-                    "Please check your custom implementation."
-                ),
-                error_message=str(e),
-            )
-            raise
+        processed_output = output
 
-        # Evaluate exit conditions after process_output (task-specific agents only)
-        if isinstance(agent, MCPTaskAgent):
-            processed_output = await agent.evaluate_exit_conditions(
-                processed_input, processed_output
-            )
+        # Process output for A2A agents before returning
+        if isinstance(agent, A2AAgent):
+            try:
+                processed_output = await agent.process_agent_output(output)
+            except Exception as e:
+                structlogger.error(
+                    "agent_manager.run_agent.process_agent_output_failed",
+                    agent_name=agent_name,
+                    protocol_type=protocol_type,
+                    event_info=(
+                        f"Failed to process output for agent '{agent_name}'. "
+                        "Please check your custom implementation."
+                    ),
+                    error_message=str(e),
+                )
+                raise
 
         # Ensure metadata contains the concrete agent class name
         processed_output.metadata = processed_output.metadata or {}

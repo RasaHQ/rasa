@@ -36,6 +36,7 @@ from rasa.agents.core.agent_protocol import AgentProtocol
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import (
     AgentInput,
+    AgentInputSlot,
     AgentOutput,
     AgentToolResult,
     AgentToolSchema,
@@ -60,7 +61,7 @@ from rasa.shared.constants import (
     TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
-from rasa.shared.core.events import BotUttered, Event, UserUttered
+from rasa.shared.core.events import BotUttered, Event, SlotSet, UserUttered
 from rasa.shared.exceptions import AgentInitializationException, AuthenticationError
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
 from rasa.shared.utils.constants import (
@@ -100,6 +101,9 @@ if TYPE_CHECKING:
     from rasa.core.config.available_endpoints import MCPMetaMapConfig
 
 structlogger = structlog.get_logger()
+
+_MESSAGE_CACHE_BASE_MESSAGES_KEY = "base_messages_key"
+_MESSAGE_CACHE_BASE_MESSAGES = "base_messages"
 
 
 class MCPBaseAgent(AgentProtocol):
@@ -659,28 +663,11 @@ class MCPBaseAgent(AgentProtocol):
         # Render the prompt template.
         return Template(self.prompt_template).render(**template_vars)
 
-    def build_messages_for_llm_request(
+    def _build_conversation_messages_for_llm_request(
         self, context: AgentInput, turns: int = 10
     ) -> List[Dict[str, str]]:
-        """Build messages for the LLM request from conversation history.
-
-        Filters to user and bot utterance events only, then limits to the most
-        recent `turns` events. Note: here "turns" counts individual user/bot
-        messages (utterance events), not full conversation turns (user+assistant
-        exchanges).
-
-        Args:
-            context: Agent input with events and current user message.
-            turns: Maximum number of user and bot utterance events to include
-                in the context (default 10). Applied after filtering to
-                utterance events only.
-
-        Returns:
-            List of message dicts with "role" and "content" for the LLM.
-        """
-        messages = [
-            {KEY_ROLE: ROLE_SYSTEM, KEY_CONTENT: self.render_prompt_template(context)}
-        ]
+        """Build user/assistant messages from utterance events and user message."""
+        messages: List[Dict[str, str]] = []
 
         # Collect up to `turns` most recent user and bot utterance events.
         utterance_events: List[Any] = []
@@ -723,6 +710,133 @@ class MCPBaseAgent(AgentProtocol):
 
         return messages
 
+    def _get_conversation_cache_key(
+        self, context: AgentInput, turns: int
+    ) -> Tuple[int, Tuple[Tuple[str, str], ...], str]:
+        """Return a cache key for conversation messages built from utterances."""
+        # Build a compact signature of the effective conversation context that
+        # actually reaches the LLM:
+        # - same event types (`UserUttered`, `BotUttered`),
+        # - same text serialization rules for bot messages,
+        # - same `turns` truncation behavior.
+        #
+        # This keeps cache behavior aligned with `build_messages_for_llm_request`:
+        # if the visible utterance window changes in content/order, or the
+        # fallback `context.user_message` changes, the key changes and we rebuild.
+        utterance_signature: List[Tuple[str, str]] = []
+        collected = 0
+        for event in reversed(context.events):
+            if not isinstance(event, (UserUttered, BotUttered)):
+                continue
+            if isinstance(event, UserUttered):
+                if event.text:
+                    utterance_signature.append((ROLE_USER, event.text))
+            else:
+                bot_response = serialize_bot_response_for_prompt(event)
+                if bot_response:
+                    utterance_signature.append((ROLE_ASSISTANT, bot_response))
+            collected += 1
+            if collected >= turns:
+                break
+
+        utterance_signature.reverse()
+        return turns, tuple(utterance_signature), context.user_message
+
+    def _build_system_prompt_cache_key(self, context: AgentInput) -> Optional[str]:
+        """Return cache key for system prompt content.
+
+        The base implementation always returns a JSON-serialized key built from
+        mutable `AgentInput` fields. Subclasses may override this and return
+        `None` to explicitly disable base-message cache reuse for scenarios where
+        prompt inputs are non-deterministic in a single run.
+        """
+        # Cache is per `send_message` run; use only mutable prompt inputs from
+        # `context` so key changes track in-loop state updates (e.g. SlotSet).
+        key_payload = {
+            "context": context.model_dump(exclude={"id", "timestamp", "events"}),
+        }
+        return json.dumps(key_payload, sort_keys=True, default=str)
+
+    def _get_base_messages_cache_key(
+        self, context: AgentInput, turns: int
+    ) -> Optional[str]:
+        """Return cache key for full base messages.
+
+        Returns `None` only when a subclass override of
+        `_build_system_prompt_cache_key` opts out of cache reuse.
+        """
+        # Cache the whole "base messages" payload (system + conversation) behind
+        # one combined key:
+        # - `system_key`: prompt/template context (slots/metadata/config/date-time),
+        # - `conversation_key`: utterance-derived dialogue context.
+        #
+        # Any change in either part invalidates the cached base message list.
+        # A subclass can return `None` from `_build_system_prompt_cache_key`
+        # to force per-iteration rebuilds.
+        system_key = self._build_system_prompt_cache_key(context)
+        if system_key is None:
+            return None
+
+        key_payload = {
+            "system_key": system_key,
+            "conversation_key": self._get_conversation_cache_key(context, turns),
+        }
+        return json.dumps(key_payload, sort_keys=True, default=str)
+
+    def _build_messages_for_llm_request_with_cache(
+        self,
+        context: AgentInput,
+        cache_state: Dict[str, Any],
+        turns: int = 10,
+    ) -> List[Dict[str, str]]:
+        """Build LLM messages with loop-scoped cache reuse."""
+        cache_key = self._get_base_messages_cache_key(context, turns)
+        cached_base_messages = cache_state.get(_MESSAGE_CACHE_BASE_MESSAGES)
+        if (
+            cache_key is not None
+            and cache_state.get(_MESSAGE_CACHE_BASE_MESSAGES_KEY) == cache_key
+            and cached_base_messages is not None
+        ):
+            return [dict(message) for message in cached_base_messages]
+
+        # Keep customer override behavior intact: cache wraps the public
+        # `build_messages_for_llm_request` hook instead of bypassing it.
+        # On cache miss, we call the override and store the returned list.
+        base_messages = self.build_messages_for_llm_request(context, turns)
+        if cache_key is not None:
+            cache_state[_MESSAGE_CACHE_BASE_MESSAGES_KEY] = cache_key
+            cache_state[_MESSAGE_CACHE_BASE_MESSAGES] = [
+                dict(message) for message in base_messages
+            ]
+        else:
+            cache_state.pop(_MESSAGE_CACHE_BASE_MESSAGES_KEY, None)
+            cache_state.pop(_MESSAGE_CACHE_BASE_MESSAGES, None)
+
+        return [dict(message) for message in base_messages]
+
+    def build_messages_for_llm_request(
+        self, context: AgentInput, turns: int = 10
+    ) -> List[Dict[str, str]]:
+        """Build messages for the LLM request from conversation history.
+
+        Filters to user and bot utterance events only, then limits to the most
+        recent `turns` events. Note: here "turns" counts individual user/bot
+        messages (utterance events), not full conversation turns (user+assistant
+        exchanges).
+
+        Args:
+            context: Agent input with events and current user message.
+            turns: Maximum number of user and bot utterance events to include
+                in the context (default 10). Applied after filtering to
+                utterance events only.
+
+        Returns:
+            List of message dicts with "role" and "content" for the LLM.
+        """
+        return [
+            {KEY_ROLE: ROLE_SYSTEM, KEY_CONTENT: self.render_prompt_template(context)}
+        ] + self._build_conversation_messages_for_llm_request(context, turns)
+
     def _get_assistant_message_with_tool_calls(
         self, llm_response: LLMResponse
     ) -> Dict[str, Any]:
@@ -744,6 +858,42 @@ class MCPBaseAgent(AgentProtocol):
                 for tool_call in llm_response.tool_calls
             ],
         }
+
+    def _apply_slot_set_events_to_agent_input(
+        self, agent_input: AgentInput, events: List[Event]
+    ) -> Dict[str, Any]:
+        """Apply SlotSet events to input slots and return changed values.
+
+        For each `SlotSet(key, value)` in `events`, this method updates the matching
+        slot in `agent_input.slots` by name, or appends a new slot when it does not
+        exist yet.
+        """
+        updated_slots: Dict[str, Any] = {}
+        if not events:
+            return updated_slots
+
+        slot_indices = {
+            slot.name: index for index, slot in enumerate(agent_input.slots)
+        }
+        for event in events:
+            if not isinstance(event, SlotSet):
+                continue
+
+            if event.key not in slot_indices:
+                agent_input.slots.append(
+                    AgentInputSlot(
+                        name=event.key,
+                        value=event.value,
+                        type="any",
+                        allowed_values=None,
+                    )
+                )
+                slot_indices[event.key] = len(agent_input.slots) - 1
+
+            updated_slots[event.key] = event.value
+            agent_input.slots[slot_indices[event.key]].value = event.value
+
+        return updated_slots
 
     def _get_tool_call_message(self, tool_response: AgentOutput) -> Dict[str, Any]:
         """Get the tool call message."""
@@ -1151,6 +1301,82 @@ class MCPBaseAgent(AgentProtocol):
         """Pre-process the input before sending it to the agent."""
         return input
 
-    async def process_output(self, output: AgentOutput) -> AgentOutput:
-        """Post-process the output before returning it to Rasa."""
-        return output
+    async def process_tool_output(
+        self,
+        current_iteration_tool_results: Dict[str, AgentToolResult],
+        cumulative_tool_results: Dict[str, AgentToolResult],
+        output_channel: Optional[OutputChannel] = None,
+    ) -> List[Event]:
+        """Post-process MCP tool results for the current LLM iteration.
+
+        This method is called after an LLM iteration where at least one external tool
+        call completed successfully.
+
+        Args:
+            current_iteration_tool_results: Mapping of tool call ID to tool result
+                (`tool_call.id -> AgentToolResult`) for tool calls completed in the
+                current iteration.
+            cumulative_tool_results: Mapping of tool call ID to tool result
+                (`tool_call.id -> AgentToolResult`) across all completed iterations in
+                this run.
+            output_channel: Channel that can be used by overrides to emit user-facing
+                messages while deriving events. If an override emits an intermediate
+                message through `output_channel`, it should also return a matching
+                `BotUttered` event so the same message can be included in subsequent
+                LLM-iteration context.
+
+        Returns:
+            A list of **new events for this iteration only**. The runtime appends these
+            to the accumulated `AgentOutput.events` and also exposes them to subsequent
+            LLM iterations.
+
+        Override this in custom MCP agents to emit additional events based on
+        tool execution.
+        """
+        return []
+
+    async def _process_tool_output_or_raise(
+        self,
+        current_iteration_tool_results: Dict[str, AgentToolResult],
+        cumulative_tool_results: Dict[str, AgentToolResult],
+        output_channel: Optional[OutputChannel],
+    ) -> List[Event]:
+        """Process tool results for this iteration into events.
+
+        Returns an empty list when no tool results are available.
+
+        Raises:
+            RuntimeError: If `process_tool_output` fails. Callers are expected
+                to handle this in the agent loop and map it to `FATAL_ERROR`
+                `AgentOutput`.
+        """
+        if not current_iteration_tool_results:
+            return []
+
+        structlogger.debug(
+            "mcp_base_agent.process_tool_output.start",
+            agent_name=self._name,
+            num_current_iteration_tool_results=len(current_iteration_tool_results),
+            num_cumulative_tool_results=len(cumulative_tool_results),
+        )
+        try:
+            new_events = await self.process_tool_output(
+                current_iteration_tool_results,
+                cumulative_tool_results,
+                output_channel,
+            )
+            structlogger.debug(
+                "mcp_base_agent.process_tool_output.completed",
+                agent_name=self._name,
+                num_events=len(new_events),
+            )
+            return new_events
+        except Exception as e:
+            structlogger.error(
+                "mcp_base_agent.process_tool_output.failed",
+                agent_name=self._name,
+                error=str(e),
+            )
+            raise RuntimeError(
+                f"Failed to process MCP tool output for agent `{self._name}`: {e!s}"
+            ) from e

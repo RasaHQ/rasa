@@ -13,9 +13,8 @@ from rasa.agents.constants import (
     AGENT_METADATA_SENDER_ID_KEY,
     BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE,
 )
-from rasa.agents.core.types import AgentStatus
 from rasa.agents.protocol.mcp.mcp_task_agent import MCPTaskAgent
-from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentOutput, AgentToolResult
+from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentToolResult
 from rasa.core.available_agents import (
     AgentConfig,
     AgentConfiguration,
@@ -561,6 +560,68 @@ class TestMCPTaskAgent:
             assert result.status.name == "COMPLETED"
             assert len(result.events) == 0  # No matching slots
 
+    def test_generate_agent_task_completed_output_deduplicates_slot_set_events(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Avoid duplicate SlotSet events when additional events already include one."""
+        slots = {"user_name": "John"}
+        tool_results = {}
+        mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'John'"]}
+        additional_events = [SlotSet("user_name", "John"), BotUttered(text="progress")]
+
+        with patch.object(
+            mcp_task_agent, "_get_structured_results_for_agent_output"
+        ) as mock_get_results:
+            mock_get_results.return_value = []
+
+            result = mcp_task_agent._generate_agent_task_completed_output(
+                mock_agent_input,
+                slots,
+                tool_results,
+                additional_events=additional_events,
+            )
+
+        assert result.status.name == "COMPLETED"
+        assert result.events is not None
+        slot_events = [event for event in result.events if isinstance(event, SlotSet)]
+        assert len(slot_events) == 1
+        assert slot_events[0].key == "user_name"
+        assert slot_events[0].value == "John"
+        assert any(
+            isinstance(event, BotUttered) and event.text == "progress"
+            for event in result.events
+        )
+
+    def test_check_exit_conditions_internal_error_sets_response_message(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Internal exit-condition errors should keep a user-facing response message."""
+        mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'John'"]}
+        initial_slot_values = {"user_name": "John", "user_age": 25}
+        current_slot_values = {"user_name": "John", "user_age": 25}
+
+        with patch.object(
+            mcp_task_agent,
+            "_is_exit_conditions_met",
+            return_value=(False, "mock exit-if eval error"),
+        ):
+            result = mcp_task_agent._check_exit_conditions_after_iteration(
+                agent_input=mock_agent_input,
+                initial_slot_values=initial_slot_values,
+                current_slot_values=current_slot_values,
+                tool_results={},
+                generated_events=[],
+                accumulated_tool_output_events=[],
+            )
+
+        assert result is not None
+        assert result.status.name == "FATAL_ERROR"
+        assert (
+            result.response_message
+            == "An internal error occurred while checking the exit conditions."
+        )
+        assert result.error_message == "mock exit-if eval error"
+
     def test_render_prompt_template_with_slot_names(
         self, mcp_task_agent, mock_agent_input
     ):
@@ -883,11 +944,8 @@ class TestMCPTaskAgent:
     ):
         """Test send_message with successful set slot tool call.
 
-        After setting a slot, the loop continues to the next iteration.
-        Exit conditions are no longer checked in send_message — they are
-        evaluated after process_output via evaluate_exit_conditions.
-        Slot changes are included in the output even when status is
-        INPUT_REQUIRED.
+        Exit conditions are evaluated in-loop and should complete immediately
+        once the slot-setting tool satisfies them, without an extra LLM turn.
         """
         mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
         mock_tool_call = LLMToolCall(
@@ -904,21 +962,11 @@ class TestMCPTaskAgent:
             tool_calls=[mock_tool_call],
         )
 
-        # After setting the slot, LLM responds with text on the next iteration
-        second_response = LLMResponse(
-            id="test_id",
-            created=1642248600,
-            choices=["Done!"],
-            tool_calls=[],
-        )
-
         with (
             patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
             patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
         ):
-            mock_llm_client.acompletion = AsyncMock(
-                side_effect=[first_response, second_response]
-            )
+            mock_llm_client.acompletion = AsyncMock(return_value=first_response)
             mock_tool = MagicMock()
             mock_tool.name = "set_slot_user_name"
             mock_get_tools.return_value = [mock_tool]
@@ -926,13 +974,13 @@ class TestMCPTaskAgent:
             result = await mcp_task_agent.send_message(mock_agent_input)
 
             assert result.id == mock_agent_input.id
-            assert result.status.name == "INPUT_REQUIRED"
-            assert result.response_message == "Done!"
-            # Changed slot must be forwarded in output so process_output can apply it
+            assert result.status.name == "COMPLETED"
+            assert result.response_message is None
             assert result.events is not None
             assert len(result.events) == 1
             assert result.events[0].key == "user_name"
             assert result.events[0].value == "Jane"
+            assert mock_llm_client.acompletion.call_count == 1
 
     @pytest.mark.asyncio
     async def test_send_message_filler_message_in_agent_output_events(
@@ -968,20 +1016,11 @@ class TestMCPTaskAgent:
             choices=[filler_text],
             tool_calls=[mock_tool_call],
         )
-        second_response = LLMResponse(
-            id="test_id",
-            created=1642248600,
-            choices=["Done!"],
-            tool_calls=[],
-        )
-
         with (
             patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
             patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
         ):
-            mock_llm_client.acompletion = AsyncMock(
-                side_effect=[first_response, second_response]
-            )
+            mock_llm_client.acompletion = AsyncMock(return_value=first_response)
             mock_tool = MagicMock()
             mock_tool.name = "set_slot_user_name"
             mock_get_tools.return_value = [mock_tool]
@@ -1004,6 +1043,7 @@ class TestMCPTaskAgent:
         assert len(slot_events) == 1
         assert slot_events[0].key == "user_name"
         assert slot_events[0].value == "Jane"
+        assert mock_llm_client.acompletion.call_count == 1
 
     @pytest.mark.asyncio
     async def test_send_message_set_slot_tool_slot_not_found(
@@ -1044,6 +1084,7 @@ class TestMCPTaskAgent:
         self, mcp_task_agent, mock_agent_input
     ):
         """Test send_message with malformed tool response that triggers retry."""
+        mcp_task_agent._include_date_time = False
         # Create a proper exception with original_exception attribute
         decode_error = LLMToolResponseDecodeError("Invalid JSON")
         provider_exception = ProviderClientAPIException("Decode error")
@@ -1063,7 +1104,14 @@ class TestMCPTaskAgent:
         )
         mcp_task_agent.llm_client = mock_llm_client
 
-        with patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools:
+        with (
+            patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
+            patch.object(
+                mcp_task_agent,
+                "build_messages_for_llm_request",
+                wraps=mcp_task_agent.build_messages_for_llm_request,
+            ) as mock_build_messages,
+        ):
             mock_get_tools.return_value = []
 
             result = await mcp_task_agent.send_message(mock_agent_input)
@@ -1094,6 +1142,7 @@ class TestMCPTaskAgent:
                 "corresponds exactly to the user's last request."
             )
             assert messages[2]["content"] == system_message
+            assert mock_build_messages.call_count == 1
 
     @pytest.mark.asyncio
     async def test_send_message_max_iterations_reached(
@@ -1150,10 +1199,10 @@ class TestMCPTaskAgent:
             assert "couldn't provide a final answer" in result.response_message
 
     @pytest.mark.asyncio
-    async def test_send_message_max_iterations_includes_changed_slot_events(
+    async def test_send_message_early_completion_preserves_slot_events(
         self, mcp_task_agent, mock_agent_input
     ):
-        """Test that when max iterations is reached, output includes slot changes."""
+        """Test that early completion keeps changed slot events in output."""
         mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
         set_slot_call = LLMToolCall(
             id="call_set_slot",
@@ -1207,19 +1256,19 @@ class TestMCPTaskAgent:
 
             assert result.id == mock_agent_input.id
             assert result.status.name == "COMPLETED"
-            assert "couldn't provide a final answer" in result.response_message
-            # Slot set in first iteration must be in output
+            assert result.response_message is None
+            # Slot set in first iteration must be preserved in output
             assert result.events is not None
             assert len(result.events) == 1
             assert result.events[0].key == "user_name"
             assert result.events[0].value == "Jane"
+            assert mock_llm_client.acompletion.call_count == 1
 
     @pytest.mark.asyncio
     async def test_send_message_passes_metadata_to_llm(
         self, mcp_task_agent: MCPTaskAgent
     ):
-        """Test that send_message correctly passes metadata to
-        llm_client.acompletion."""
+        """Test that send_message passes metadata to llm_client.acompletion."""
         # Create agent input with specific metadata
         agent_input = AgentInput(
             id="test_id",
@@ -1266,108 +1315,509 @@ class TestMCPTaskAgent:
             assert call_args.kwargs["metadata"] == expected_metadata
 
     @pytest.mark.asyncio
-    async def test_evaluate_exit_conditions_met_from_output_events(
+    async def test_send_message_calls_process_tool_output_each_iteration(
         self, mcp_task_agent, mock_agent_input
     ):
-        """Test that evaluate_exit_conditions returns COMPLETED when
-        SlotSet events in the output satisfy exit conditions.
-        """
-        mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
-
-        output = AgentOutput(
-            id=mock_agent_input.id,
-            status=AgentStatus.INPUT_REQUIRED,
-            response_message="Here is your answer!",
-            events=[SlotSet("user_name", "Jane")],
+        """process_tool_output is called after each LLM iteration."""
+        mock_tool_call = LLMToolCall(
+            id="call_123",
+            type="function",
+            tool_name="other_tool",
+            tool_args={"arg": "value"},
         )
-
-        result = await mcp_task_agent.evaluate_exit_conditions(mock_agent_input, output)
-
-        assert result.status == AgentStatus.COMPLETED
-        assert result.response_message is None
-
-    @pytest.mark.asyncio
-    async def test_evaluate_exit_conditions_not_met(
-        self, mcp_task_agent, mock_agent_input
-    ):
-        """Test that evaluate_exit_conditions returns output unchanged
-        when exit conditions are not met.
-        """
-        mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
-
-        output = AgentOutput(
-            id=mock_agent_input.id,
-            status=AgentStatus.INPUT_REQUIRED,
-            response_message="Need more info",
-        )
-
-        result = await mcp_task_agent.evaluate_exit_conditions(mock_agent_input, output)
-
-        assert result.status == AgentStatus.INPUT_REQUIRED
-        assert result.response_message == "Need more info"
-
-    @pytest.mark.asyncio
-    async def test_evaluate_exit_conditions_merges_input_slots_and_output_events(
-        self, mcp_task_agent
-    ):
-        """Test that evaluate_exit_conditions merges slot values from
-        agent_input.slots with SlotSet events in output.events.
-        """
-        agent_input = AgentInput(
+        first_response = LLMResponse(
             id="test_id",
-            user_message="test",
-            slots=[
-                AgentInputSlot(
-                    name="user_name", value="John", type="text", allowed_values=None
-                ),
-                AgentInputSlot(
-                    name="confirmed", value=None, type="text", allowed_values=None
-                ),
-            ],
-            conversation_history="",
-            events=[],
-            metadata={
-                "exit_if": ["slots.user_name == 'John' and slots.confirmed == 'yes'"]
-            },
+            created=1642248600,
+            choices=["Tool executed"],
+            tool_calls=[mock_tool_call],
         )
-
-        # process_output added the SlotSet event for "confirmed"
-        output = AgentOutput(
+        second_response = LLMResponse(
             id="test_id",
-            status=AgentStatus.INPUT_REQUIRED,
-            response_message="Confirmed!",
-            events=[SlotSet("confirmed", "yes")],
+            created=1642248600,
+            choices=["Done!"],
+            tool_calls=[],
         )
-
-        result = await mcp_task_agent.evaluate_exit_conditions(agent_input, output)
-
-        assert result.status == AgentStatus.COMPLETED
-        assert result.response_message is None
-
-    @pytest.mark.asyncio
-    async def test_evaluate_exit_conditions_internal_error(
-        self, mcp_task_agent, mock_agent_input
-    ):
-        """Test that evaluate_exit_conditions returns FATAL_ERROR
-        when exit condition evaluation encounters an internal error.
-        """
-        mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'John'"]}
-
-        output = AgentOutput(
-            id=mock_agent_input.id,
-            status=AgentStatus.INPUT_REQUIRED,
-            response_message="test",
-            events=[],
+        tool_output = AgentToolResult(
+            tool_name="other_tool",
+            result="Tool result",
+            is_error=False,
         )
+        seen_tool_result_sizes = []
 
-        with patch.object(
-            MCPTaskAgent,
-            "_is_exit_conditions_met",
-            return_value=(False, "predicate evaluation error"),
+        async def _capture_process_tool_output(
+            current_iteration_tool_results, cumulative_tool_results, output_channel
         ):
-            result = await mcp_task_agent.evaluate_exit_conditions(
-                mock_agent_input, output
+            seen_tool_result_sizes.append(
+                (
+                    len(current_iteration_tool_results),
+                    len(cumulative_tool_results),
+                )
             )
+            return []
 
-            assert result.status == AgentStatus.FATAL_ERROR
-            assert result.error_message is not None
+        with (
+            patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
+            patch.object(mcp_task_agent, "_execute_tool_call") as mock_execute_tool,
+            patch.object(
+                mcp_task_agent,
+                "process_tool_output",
+                new=AsyncMock(side_effect=_capture_process_tool_output),
+            ),
+        ):
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=[first_response, second_response]
+            )
+            mock_tool = MagicMock()
+            mock_tool.name = "other_tool"
+            mock_get_tools.return_value = [mock_tool]
+            mock_execute_tool.return_value = tool_output
+
+            result = await mcp_task_agent.send_message(mock_agent_input)
+
+        assert result.status.name == "INPUT_REQUIRED"
+        assert seen_tool_result_sizes == [(1, 1)]
+
+    @pytest.mark.asyncio
+    async def test_send_message_includes_process_tool_output_events(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Events from process_tool_output are attached to AgentOutput."""
+        mock_tool_call = LLMToolCall(
+            id="call_123",
+            type="function",
+            tool_name="other_tool",
+            tool_args={"arg": "value"},
+        )
+        first_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Tool executed"],
+            tool_calls=[mock_tool_call],
+        )
+        second_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Test response"],
+            tool_calls=[],
+        )
+        tool_output = AgentToolResult(
+            tool_name="other_tool",
+            result="Tool result",
+            is_error=False,
+        )
+        process_events = [BotUttered(text="processed")]
+
+        with (
+            patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
+            patch.object(mcp_task_agent, "_execute_tool_call") as mock_execute_tool,
+            patch.object(
+                mcp_task_agent,
+                "process_tool_output",
+                new=AsyncMock(return_value=process_events),
+            ),
+        ):
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=[first_response, second_response]
+            )
+            mock_tool = MagicMock()
+            mock_tool.name = "other_tool"
+            mock_get_tools.return_value = [mock_tool]
+            mock_execute_tool.return_value = tool_output
+
+            result = await mcp_task_agent.send_message(mock_agent_input)
+
+        assert result.status.name == "INPUT_REQUIRED"
+        assert result.events is not None
+        assert any(
+            isinstance(event, BotUttered) and event.text == "processed"
+            for event in result.events
+        )
+
+    @pytest.mark.asyncio
+    async def test_send_message_exposes_processed_events_to_next_llm_iteration(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Processed tool events are added to subsequent LLM iteration context."""
+        mock_tool_call = LLMToolCall(
+            id="call_123",
+            type="function",
+            tool_name="other_tool",
+            tool_args={"arg": "value"},
+        )
+        first_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Tool executed"],
+            tool_calls=[mock_tool_call],
+        )
+        second_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Final answer"],
+            tool_calls=[],
+        )
+        tool_output = AgentToolResult(
+            tool_name="other_tool",
+            result="Tool result",
+            is_error=False,
+        )
+        process_events = [BotUttered(text="processed context")]
+
+        with (
+            patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
+            patch.object(mcp_task_agent, "_execute_tool_call") as mock_execute_tool,
+            patch.object(
+                mcp_task_agent,
+                "process_tool_output",
+                new=AsyncMock(return_value=process_events),
+            ),
+        ):
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=[first_response, second_response]
+            )
+            mock_tool = MagicMock()
+            mock_tool.name = "other_tool"
+            mock_get_tools.return_value = [mock_tool]
+            mock_execute_tool.return_value = tool_output
+
+            result = await mcp_task_agent.send_message(mock_agent_input)
+
+        assert result.status.name == "INPUT_REQUIRED"
+        second_call_messages = mock_llm_client.acompletion.call_args_list[1].args[0]
+        assert any(
+            message.get("role") == "assistant"
+            and message.get("content") == "processed context"
+            for message in second_call_messages
+        )
+        assert any(
+            isinstance(event, BotUttered) and event.text == "processed context"
+            for event in mock_agent_input.events
+        )
+
+    @pytest.mark.asyncio
+    async def test_send_message_rebuilds_context_and_applies_slot_set_events(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Rebuilds per-iteration context and applies SlotSet updates to slots."""
+        mcp_task_agent._include_date_time = False
+        mock_tool_call = LLMToolCall(
+            id="call_123",
+            type="function",
+            tool_name="other_tool",
+            tool_args={"arg": "value"},
+        )
+        first_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Tool executed"],
+            tool_calls=[mock_tool_call],
+        )
+        second_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Final answer"],
+            tool_calls=[],
+        )
+        tool_output = AgentToolResult(
+            tool_name="other_tool",
+            result="Tool result",
+            is_error=False,
+        )
+        process_events = [SlotSet("user_name", "Alice")]
+        original_build_messages = mcp_task_agent.build_messages_for_llm_request
+        seen_user_names = []
+
+        def _capture_build_messages(context, turns=10):
+            slot_values = {slot.name: slot.value for slot in context.slots}
+            seen_user_names.append(slot_values.get("user_name"))
+            return original_build_messages(context, turns)
+
+        with (
+            patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
+            patch.object(mcp_task_agent, "_execute_tool_call") as mock_execute_tool,
+            patch.object(
+                mcp_task_agent,
+                "process_tool_output",
+                new=AsyncMock(return_value=process_events),
+            ),
+            patch.object(
+                mcp_task_agent,
+                "build_messages_for_llm_request",
+                side_effect=_capture_build_messages,
+            ) as mock_build_messages,
+        ):
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=[first_response, second_response]
+            )
+            mock_tool = MagicMock()
+            mock_tool.name = "other_tool"
+            mock_get_tools.return_value = [mock_tool]
+            mock_execute_tool.return_value = tool_output
+
+            result = await mcp_task_agent.send_message(mock_agent_input)
+
+        assert result.status.name == "INPUT_REQUIRED"
+        assert mock_build_messages.call_count == 2
+        assert seen_user_names == ["John", "Alice"]
+        assert any(
+            isinstance(event, SlotSet)
+            and event.key == "user_name"
+            and event.value == "Alice"
+            for event in mock_agent_input.events
+        )
+
+    @pytest.mark.asyncio
+    async def test_send_message_applies_slot_set_for_unknown_slot(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Unknown SlotSet from process_tool_output is applied in context/output."""
+        mock_tool_call = LLMToolCall(
+            id="call_123",
+            type="function",
+            tool_name="other_tool",
+            tool_args={"arg": "value"},
+        )
+        first_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Tool executed"],
+            tool_calls=[mock_tool_call],
+        )
+        second_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Final answer"],
+            tool_calls=[],
+        )
+        tool_output = AgentToolResult(
+            tool_name="other_tool",
+            result="Tool result",
+            is_error=False,
+        )
+        process_events = [SlotSet("unknown_slot", "value")]
+
+        with (
+            patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
+            patch.object(mcp_task_agent, "_execute_tool_call") as mock_execute_tool,
+            patch.object(
+                mcp_task_agent,
+                "process_tool_output",
+                new=AsyncMock(return_value=process_events),
+            ),
+        ):
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=[first_response, second_response]
+            )
+            mock_tool = MagicMock()
+            mock_tool.name = "other_tool"
+            mock_get_tools.return_value = [mock_tool]
+            mock_execute_tool.return_value = tool_output
+
+            result = await mcp_task_agent.send_message(mock_agent_input)
+
+        assert result.status.name == "INPUT_REQUIRED"
+        assert result.events is not None
+        assert any(
+            isinstance(event, SlotSet) and event.key == "unknown_slot"
+            for event in result.events
+        )
+        assert any(
+            isinstance(event, SlotSet) and event.key == "unknown_slot"
+            for event in mock_agent_input.events
+        )
+        assert any(
+            slot.name == "unknown_slot" and slot.type == "any"
+            for slot in mock_agent_input.slots
+        )
+
+    @pytest.mark.asyncio
+    async def test_send_message_tool_error_preserves_processed_events(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Processed tool events survive in output when a tool call fails."""
+        ok_call = LLMToolCall(
+            id="call_ok",
+            type="function",
+            tool_name="good_tool",
+            tool_args={"arg": "v"},
+        )
+        bad_call = LLMToolCall(
+            id="call_bad",
+            type="function",
+            tool_name="bad_tool",
+            tool_args={"arg": "v"},
+        )
+        first_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Running tools"],
+            tool_calls=[ok_call],
+        )
+        second_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["More tools"],
+            tool_calls=[bad_call],
+        )
+        ok_output = AgentToolResult(tool_name="good_tool", result="ok", is_error=False)
+        bad_output = AgentToolResult(
+            tool_name="bad_tool", result=None, is_error=True, error_message="boom"
+        )
+        process_events = [BotUttered(text="hook_event")]
+
+        with (
+            patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
+            patch.object(mcp_task_agent, "_execute_tool_call") as mock_execute_tool,
+            patch.object(
+                mcp_task_agent,
+                "process_tool_output",
+                new=AsyncMock(return_value=process_events),
+            ),
+        ):
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=[first_response, second_response]
+            )
+            mock_good = MagicMock()
+            mock_good.name = "good_tool"
+            mock_bad = MagicMock()
+            mock_bad.name = "bad_tool"
+            mock_get_tools.return_value = [mock_good, mock_bad]
+            mock_execute_tool.side_effect = [ok_output, bad_output]
+
+            result = await mcp_task_agent.send_message(mock_agent_input)
+
+        assert result.status.name == "FATAL_ERROR"
+        assert result.events is not None
+        assert any(
+            isinstance(e, BotUttered) and e.text == "hook_event" for e in result.events
+        )
+
+    @pytest.mark.asyncio
+    async def test_send_message_exit_condition_includes_process_tool_output_events(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Events from process_tool_output appear in exit-condition completed output.
+
+        A regular tool call populates tool_results so that process_tool_output
+        is invoked; on the next iteration the slot-setting tool triggers exit.
+        """
+        mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
+        regular_call = LLMToolCall(
+            id="call_tool",
+            type="function",
+            tool_name="lookup_tool",
+            tool_args={"q": "Jane"},
+        )
+        set_slot_call = LLMToolCall(
+            id="call_slot",
+            type="function",
+            tool_name="set_slot_user_name",
+            tool_args={"slot_value": "Jane"},
+        )
+        first_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Looking up"],
+            tool_calls=[regular_call],
+        )
+        second_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Setting slot"],
+            tool_calls=[set_slot_call],
+        )
+        tool_output = AgentToolResult(
+            tool_name="lookup_tool", result="found Jane", is_error=False
+        )
+        process_events = [BotUttered(text="hook_event")]
+
+        with (
+            patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
+            patch.object(mcp_task_agent, "_execute_tool_call") as mock_execute_tool,
+            patch.object(
+                mcp_task_agent,
+                "process_tool_output",
+                new=AsyncMock(return_value=process_events),
+            ),
+        ):
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=[first_response, second_response]
+            )
+            mock_lookup = MagicMock()
+            mock_lookup.name = "lookup_tool"
+            mock_slot = MagicMock()
+            mock_slot.name = "set_slot_user_name"
+            mock_get_tools.return_value = [mock_lookup, mock_slot]
+            mock_execute_tool.return_value = tool_output
+
+            result = await mcp_task_agent.send_message(mock_agent_input)
+
+        assert result.status.name == "COMPLETED"
+        assert result.events is not None
+        bot_events = [e for e in result.events if isinstance(e, BotUttered)]
+        slot_events = [e for e in result.events if isinstance(e, SlotSet)]
+        assert len(bot_events) == 1
+        assert bot_events[0].text == "hook_event"
+        assert len(slot_events) == 1
+        assert slot_events[0].key == "user_name"
+        assert slot_events[0].value == "Jane"
+
+    @pytest.mark.asyncio
+    async def test_send_message_process_tool_output_failure_returns_fatal_error(
+        self, mcp_task_agent, mock_agent_input
+    ):
+        """Failure in process_tool_output should return FATAL_ERROR."""
+        mock_tool_call = LLMToolCall(
+            id="call_123",
+            type="function",
+            tool_name="other_tool",
+            tool_args={"arg": "value"},
+        )
+        first_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Tool executed"],
+            tool_calls=[mock_tool_call],
+        )
+        second_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Test response"],
+            tool_calls=[],
+        )
+        tool_output = AgentToolResult(
+            tool_name="other_tool",
+            result="Tool result",
+            is_error=False,
+        )
+
+        with (
+            patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
+            patch.object(mcp_task_agent, "_execute_tool_call") as mock_execute_tool,
+            patch.object(
+                mcp_task_agent,
+                "process_tool_output",
+                new=AsyncMock(side_effect=Exception("hook failure")),
+            ),
+        ):
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=[first_response, second_response]
+            )
+            mock_tool = MagicMock()
+            mock_tool.name = "other_tool"
+            mock_get_tools.return_value = [mock_tool]
+            mock_execute_tool.return_value = tool_output
+
+            result = await mcp_task_agent.send_message(mock_agent_input)
+
+        assert result.status.name == "FATAL_ERROR"
+        assert result.error_message is not None
+        assert "Failed to process MCP tool output" in result.error_message

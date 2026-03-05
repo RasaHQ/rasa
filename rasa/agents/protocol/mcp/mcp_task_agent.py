@@ -7,6 +7,7 @@ import structlog
 from jinja2 import Template
 
 from rasa.agents.constants import (
+    AGENT_METADATA_EXIT_IF_KEY,
     KEY_CONTENT,
     KEY_ROLE,
     KEY_TOOL_CALL_ID,
@@ -102,7 +103,7 @@ class MCPTaskAgent(MCPBaseAgent):
     @classmethod
     def _get_slot_names_from_exit_conditions(cls, agent_input: AgentInput) -> List[str]:
         """Extract valid slot names from exit conditions."""
-        exit_conditions = agent_input.metadata.get("exit_if", [])
+        exit_conditions = agent_input.metadata.get(AGENT_METADATA_EXIT_IF_KEY, [])
 
         # Find all unique names matching "slots.<name>"
         extracted_slot_names = {
@@ -165,7 +166,7 @@ class MCPTaskAgent(MCPBaseAgent):
         if not slots:
             return False, None
 
-        exit_conditions = agent_input.metadata.get("exit_if", [])
+        exit_conditions = agent_input.metadata.get(AGENT_METADATA_EXIT_IF_KEY, [])
         current_context = {"slots": slots}
 
         internal_error = None
@@ -291,10 +292,18 @@ class MCPTaskAgent(MCPBaseAgent):
         _slot_names_to_be_filled = self._get_slot_names_from_exit_conditions(
             agent_input
         )
+        additional_slot_set_keys = {
+            event.key
+            for event in (additional_events or [])
+            if isinstance(event, SlotSet) and event.key in _slot_names_to_be_filled
+        }
         slot_events: List[Event] = [
             SlotSet(slot_name, slot_value)
             for slot_name, slot_value in slots.items()
-            if slot_name in _slot_names_to_be_filled
+            if (
+                slot_name in _slot_names_to_be_filled
+                and slot_name not in additional_slot_set_keys
+            )
         ]
         # Combine additional events (like filler messages) with slot events
         all_events = (additional_events or []) + slot_events
@@ -306,6 +315,66 @@ class MCPTaskAgent(MCPBaseAgent):
                 agent_input, tool_results
             ),
         )
+
+    def _check_exit_conditions_after_iteration(
+        self,
+        agent_input: AgentInput,
+        initial_slot_values: Dict[str, Any],
+        current_slot_values: Dict[str, Any],
+        tool_results: Dict[str, AgentToolResult],
+        generated_events: List[Event],
+        accumulated_tool_output_events: List[Event],
+    ) -> Optional[AgentOutput]:
+        """Evaluate task exit conditions using current slot values."""
+        if not agent_input.metadata.get(AGENT_METADATA_EXIT_IF_KEY):
+            return None
+
+        structlogger.debug(
+            "mcp_task_agent.exit_condition_check.start",
+            agent_name=self._name,
+            exit_conditions=agent_input.metadata[AGENT_METADATA_EXIT_IF_KEY],
+        )
+        exit_met, internal_error = self._is_exit_conditions_met(
+            agent_input, current_slot_values
+        )
+        if internal_error:
+            structlogger.error(
+                "mcp_task_agent.exit_condition_check.error",
+                agent_name=self._name,
+                error=internal_error,
+            )
+            return AgentOutput(
+                id=agent_input.id,
+                status=AgentStatus.FATAL_ERROR,
+                response_message=(
+                    "An internal error occurred while checking the exit conditions."
+                ),
+                events=self.get_events_for_agent_output(
+                    agent_input,
+                    initial_slot_values,
+                    current_slot_values,
+                    generated_events + accumulated_tool_output_events,
+                ),
+                structured_results=self._get_structured_results_for_agent_output(
+                    agent_input, tool_results
+                ),
+                error_message=internal_error,
+            )
+
+        structlogger.debug(
+            "mcp_task_agent.exit_condition_check.result",
+            agent_name=self._name,
+            exit_met=exit_met,
+        )
+        if exit_met:
+            return self._generate_agent_task_completed_output(
+                agent_input,
+                current_slot_values,
+                tool_results,
+                additional_events=generated_events + accumulated_tool_output_events,
+            )
+
+        return None
 
     def render_prompt_template(self, context: AgentInput) -> str:
         """Render the prompt template with the provided inputs."""
@@ -319,9 +388,13 @@ class MCPTaskAgent(MCPBaseAgent):
         self, agent_input: AgentInput, output_channel: Optional[OutputChannel] = None
     ) -> AgentOutput:
         """Send a message to the LLM and return the response."""
-        messages = self.build_messages_for_llm_request(agent_input)
+        message_build_cache: Dict[str, Any] = {}
+        tool_call_messages: List[Dict[str, Any]] = []
         tool_results: Dict[str, AgentToolResult] = {}
         generated_events: List[Event] = []
+        # Stores events returned by `process_tool_output`, accumulated across
+        # all completed iterations in this `send_message` run.
+        accumulated_tool_output_events: List[Event] = []
 
         _slot_values = {slot.name: slot.value for slot in agent_input.slots}
         _initial_slot_values = dict(_slot_values)
@@ -335,6 +408,11 @@ class MCPTaskAgent(MCPBaseAgent):
 
         for iteration in range(self.MAX_ITERATIONS):
             try:
+                messages = self._build_messages_for_llm_request_with_cache(
+                    agent_input,
+                    message_build_cache,
+                )
+                messages.extend(tool_call_messages)
                 structlogger.debug(
                     "mcp_task_agent.send_message.iteration",
                     event_info=(
@@ -377,6 +455,12 @@ class MCPTaskAgent(MCPBaseAgent):
                         id=agent_input.id,
                         status=AgentStatus.RECOVERABLE_ERROR,
                         error_message=event_info,
+                        events=self.get_events_for_agent_output(
+                            agent_input,
+                            _initial_slot_values,
+                            _slot_values,
+                            generated_events + accumulated_tool_output_events,
+                        ),
                         structured_results=(
                             self._get_structured_results_for_agent_output(
                                 agent_input, tool_results
@@ -386,6 +470,17 @@ class MCPTaskAgent(MCPBaseAgent):
 
                 # If no tool calls, return the response directly with input required.
                 if not llm_response.tool_calls and len(llm_response.choices) == 1:
+                    # Exit conditions can already be satisfied without new tool calls
+                    # (e.g. initial input).
+                    if exit_output := self._check_exit_conditions_after_iteration(
+                        agent_input=agent_input,
+                        initial_slot_values=_initial_slot_values,
+                        current_slot_values=_slot_values,
+                        tool_results=tool_results,
+                        generated_events=generated_events,
+                        accumulated_tool_output_events=accumulated_tool_output_events,
+                    ):
+                        return exit_output
                     return AgentOutput(
                         id=agent_input.id,
                         status=AgentStatus.INPUT_REQUIRED,
@@ -394,7 +489,7 @@ class MCPTaskAgent(MCPBaseAgent):
                             agent_input,
                             _initial_slot_values,
                             _slot_values,
-                            generated_events,
+                            generated_events + accumulated_tool_output_events,
                         ),
                         structured_results=(
                             self._get_structured_results_for_agent_output(
@@ -418,8 +513,9 @@ class MCPTaskAgent(MCPBaseAgent):
 
                 # If there are tool calls, process them.
                 if llm_response.tool_calls:
+                    current_iteration_tool_results: Dict[str, AgentToolResult] = {}
                     # Add the assistant message with tool calls to the messages.
-                    messages.append(
+                    tool_call_messages.append(
                         self._get_assistant_message_with_tool_calls(llm_response)
                     )
                     for tool_call in llm_response.tool_calls:
@@ -451,7 +547,7 @@ class MCPTaskAgent(MCPBaseAgent):
                                     agent_input,
                                     _initial_slot_values,
                                     _slot_values,
-                                    generated_events,
+                                    generated_events + accumulated_tool_output_events,
                                 ),
                                 error_message=event_info,
                             )
@@ -471,7 +567,7 @@ class MCPTaskAgent(MCPBaseAgent):
 
                                 # Add the tool call message to the messages for
                                 # slot-setting tools
-                                messages.append(
+                                tool_call_messages.append(
                                     {
                                         KEY_ROLE: ROLE_TOOL,
                                         KEY_TOOL_CALL_ID: tool_call.id,
@@ -487,7 +583,10 @@ class MCPTaskAgent(MCPBaseAgent):
                                         agent_input,
                                         _initial_slot_values,
                                         _slot_values,
-                                        generated_events,
+                                        (
+                                            generated_events
+                                            + accumulated_tool_output_events
+                                        ),
                                     ),
                                     error_message=(
                                         f"The slot `{slot_name}` that the tool "
@@ -521,21 +620,56 @@ class MCPTaskAgent(MCPBaseAgent):
 
                             # If the tool call failed, generate an agent error output.
                             if tool_output.is_error or tool_output.result is None:
-                                return self._generate_agent_error_output(
+                                error_output = self._generate_agent_error_output(
                                     tool_output, agent_input, tool_call
                                 )
+                                error_output.events = self.get_events_for_agent_output(
+                                    agent_input,
+                                    _initial_slot_values,
+                                    _slot_values,
+                                    generated_events + accumulated_tool_output_events,
+                                )
+                                error_output.structured_results = (
+                                    self._get_structured_results_for_agent_output(
+                                        agent_input, tool_results
+                                    )
+                                )
+                                return error_output
 
                             # Store the tool output in the tool_results.
                             tool_results[tool_call.id] = tool_output
+                            current_iteration_tool_results[tool_call.id] = tool_output
 
                             # Add the tool call message to the messages.
-                            messages.append(
+                            tool_call_messages.append(
                                 {
                                     KEY_ROLE: ROLE_TOOL,
                                     KEY_TOOL_CALL_ID: tool_call.id,
                                     KEY_CONTENT: tool_output.result,
                                 }
                             )
+
+                    events_from_tool_results = await self._process_tool_output_or_raise(
+                        current_iteration_tool_results,
+                        tool_results,
+                        output_channel,
+                    )
+                    if events_from_tool_results:
+                        slot_updates = self._apply_slot_set_events_to_agent_input(
+                            agent_input, events_from_tool_results
+                        )
+                        accumulated_tool_output_events.extend(events_from_tool_results)
+                        agent_input.events.extend(events_from_tool_results)
+                        _slot_values.update(slot_updates)
+                    if exit_output := self._check_exit_conditions_after_iteration(
+                        agent_input=agent_input,
+                        initial_slot_values=_initial_slot_values,
+                        current_slot_values=_slot_values,
+                        tool_results=tool_results,
+                        generated_events=generated_events,
+                        accumulated_tool_output_events=accumulated_tool_output_events,
+                    ):
+                        return exit_output
 
             except Exception as e:
                 if isinstance(e, ProviderClientAPIException) and isinstance(
@@ -556,7 +690,7 @@ class MCPTaskAgent(MCPBaseAgent):
                     )
                     # Continue to make another LLM call by breaking out of the current
                     # iteration and letting the loop continue with a fresh LLM request
-                    messages.append(
+                    tool_call_messages.append(
                         self._get_system_message_for_malformed_tool_response()
                     )
                     continue
@@ -575,7 +709,7 @@ class MCPTaskAgent(MCPBaseAgent):
                         agent_input,
                         _initial_slot_values,
                         _slot_values,
-                        generated_events,
+                        generated_events + accumulated_tool_output_events,
                     ),
                     structured_results=self._get_structured_results_for_agent_output(
                         agent_input, tool_results
@@ -590,55 +724,12 @@ class MCPTaskAgent(MCPBaseAgent):
                 "the allowed steps."
             ),
             events=self.get_events_for_agent_output(
-                agent_input, _initial_slot_values, _slot_values, generated_events
+                agent_input,
+                _initial_slot_values,
+                _slot_values,
+                generated_events + accumulated_tool_output_events,
             ),
             structured_results=self._get_structured_results_for_agent_output(
                 agent_input, tool_results
             ),
         )
-
-    async def evaluate_exit_conditions(
-        self, agent_input: AgentInput, output: AgentOutput
-    ) -> AgentOutput:
-        """Evaluate exit conditions after process_output.
-
-        Merges slot values from agent_input.slots with any SlotSet events
-        in the output, then checks exit conditions. If met, returns a
-        COMPLETED output with the response message discarded.
-        """
-        # Merge slot values: start with input slots, overlay with output events
-        slot_values = {slot.name: slot.value for slot in agent_input.slots}
-        if output.events:
-            for event in output.events:
-                if isinstance(event, SlotSet):
-                    slot_values[event.key] = event.value
-
-        exit_met, internal_error = self._is_exit_conditions_met(
-            agent_input, slot_values
-        )
-
-        if internal_error:
-            return AgentOutput(
-                id=agent_input.id,
-                status=AgentStatus.FATAL_ERROR,
-                response_message=(
-                    "An internal error occurred while checking the " "exit conditions."
-                ),
-                structured_results=output.structured_results,
-                error_message=internal_error,
-            )
-
-        if exit_met:
-            additional_events = [
-                event
-                for event in (output.events or [])
-                if not isinstance(event, SlotSet)
-            ]
-            completed_output = self._generate_agent_task_completed_output(
-                agent_input, slot_values, {}, additional_events=additional_events
-            )
-            completed_output.structured_results = output.structured_results
-            completed_output.response_message = None
-            return completed_output
-
-        return output

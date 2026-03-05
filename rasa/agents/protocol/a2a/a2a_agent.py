@@ -311,8 +311,19 @@ class A2AAgent(AgentProtocol):
             output_channel=output_channel,
         )
 
-    async def process_output(self, output: AgentOutput) -> AgentOutput:
-        """Post-process the output before returning it to Rasa."""
+    async def process_agent_output(self, output: AgentOutput) -> AgentOutput:
+        """Post-process the output before returning it to Rasa.
+
+        This method should be implemented to post-process the output before returning
+        it to Rasa. This can be used to add any necessary metadata or context to the
+        output, or to filter the output.
+
+        Args:
+            output: The output from the agent as an AgentOutput object.
+
+        Returns:
+            The processed output from the agent as an AgentOutput object.
+        """
         # A2A-specific output processing logic
         return output
 

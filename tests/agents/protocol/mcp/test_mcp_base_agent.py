@@ -891,6 +891,93 @@ class TestMCPBaseAgent:
         roles = [m["role"] for m in messages]
         assert roles == ["system", "user", "assistant", "user", "assistant"]
 
+    def test_build_messages_with_cache_reuses_messages_when_context_unchanged(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Cache should reuse base messages when context is unchanged."""
+        mock_mcp_base_agent._include_date_time = False
+        mock_agent_input.events = [
+            UserUttered(text="Hi"),
+            BotUttered(text="Hello"),
+        ]
+        cache_state: Dict[str, Any] = {}
+
+        with patch.object(
+            mock_mcp_base_agent,
+            "build_messages_for_llm_request",
+            wraps=mock_mcp_base_agent.build_messages_for_llm_request,
+        ) as mock_build_messages:
+            first = mock_mcp_base_agent._build_messages_for_llm_request_with_cache(
+                mock_agent_input,
+                cache_state,
+            )
+            second = mock_mcp_base_agent._build_messages_for_llm_request_with_cache(
+                mock_agent_input,
+                cache_state,
+            )
+
+        assert mock_build_messages.call_count == 1
+        assert first == second
+
+    def test_build_messages_with_cache_invalidates_when_slot_changes(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """SlotSet updates from process_tool_output should invalidate cache."""
+        mock_mcp_base_agent._include_date_time = False
+        mock_mcp_base_agent.prompt_template = "Current user_name: {{ slots.user_name }}"
+        mock_agent_input.events = [UserUttered(text="Hi"), BotUttered(text="Hello")]
+        cache_state: Dict[str, Any] = {}
+
+        with patch.object(
+            mock_mcp_base_agent,
+            "build_messages_for_llm_request",
+            wraps=mock_mcp_base_agent.build_messages_for_llm_request,
+        ) as mock_build_messages:
+            _ = mock_mcp_base_agent._build_messages_for_llm_request_with_cache(
+                mock_agent_input,
+                cache_state,
+            )
+            mock_mcp_base_agent._apply_slot_set_events_to_agent_input(
+                mock_agent_input, [SlotSet("user_name", "Alice")]
+            )
+            updated = mock_mcp_base_agent._build_messages_for_llm_request_with_cache(
+                mock_agent_input,
+                cache_state,
+            )
+
+        assert mock_build_messages.call_count == 2
+        assert updated[0]["role"] == "system"
+        assert "Alice" in updated[0]["content"]
+
+    def test_build_messages_with_cache_invalidates_when_bot_uttered_event_added(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """BotUttered from process_tool_output should invalidate conversation cache."""
+        mock_mcp_base_agent._include_date_time = False
+        mock_agent_input.events = [UserUttered(text="Hi")]
+        cache_state: Dict[str, Any] = {}
+
+        with patch.object(
+            mock_mcp_base_agent,
+            "build_messages_for_llm_request",
+            wraps=mock_mcp_base_agent.build_messages_for_llm_request,
+        ) as mock_build_messages:
+            _ = mock_mcp_base_agent._build_messages_for_llm_request_with_cache(
+                mock_agent_input,
+                cache_state,
+            )
+            mock_agent_input.events.append(BotUttered(text="Processing..."))
+            updated = mock_mcp_base_agent._build_messages_for_llm_request_with_cache(
+                mock_agent_input,
+                cache_state,
+            )
+
+        assert mock_build_messages.call_count == 2
+        assert any(
+            message["role"] == "assistant" and message["content"] == "Processing..."
+            for message in updated
+        )
+
     @pytest.mark.parametrize(
         "tool_calls, expected_result_keys",
         [
@@ -1226,16 +1313,69 @@ class TestMCPBaseAgent:
         assert result == mock_agent_input
 
     @pytest.mark.asyncio
-    async def test_process_output_returns_same_output(self, mock_mcp_base_agent):
-        """Test that process_output returns the same output."""
-        output = AgentOutput(
-            id="test_id",
-            status=AgentStatus.COMPLETED,
+    async def test_process_tool_output_returns_empty_list(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        """Test that default process_tool_output returns no events."""
+        result = await mock_mcp_base_agent.process_tool_output({}, {})
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_process_tool_output_can_be_overridden(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test custom override of process_tool_output."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        class _CustomMockMCPBaseAgentImpl(MockMCPBaseAgentImpl):
+            async def process_tool_output(
+                self,
+                current_iteration_tool_results: Dict[str, AgentToolResult],
+                cumulative_tool_results: Dict[str, AgentToolResult],
+                output_channel: Any = None,
+            ) -> List:
+                return [
+                    SlotSet(
+                        "tool_result_count",
+                        len(current_iteration_tool_results),
+                    )
+                ]
+
+        agent = _CustomMockMCPBaseAgentImpl(
+            name="test_agent",
+            description="A test agent",
+            protocol_type=ProtocolConfig.RASA,
+            server_configs=[],
+        )
+        result = await agent.process_tool_output(
+            {
+                "call_1": AgentToolResult(
+                    tool_name="test_tool", result="ok", is_error=False
+                )
+            },
+            {
+                "call_1": AgentToolResult(
+                    tool_name="test_tool", result="ok", is_error=False
+                )
+            },
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], SlotSet)
+        assert result[0].key == "tool_result_count"
+        assert result[0].value == 1
+
+    @pytest.mark.asyncio
+    async def test_process_tool_output_or_raise_short_circuits_on_empty_results(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        """Short-circuits and returns an empty event list when no results exist."""
+        result_events = await mock_mcp_base_agent._process_tool_output_or_raise(
+            current_iteration_tool_results={},
+            cumulative_tool_results={},
+            output_channel=None,
         )
 
-        result = await mock_mcp_base_agent.process_output(output)
-
-        assert result == output
+        assert result_events == []
 
     # ============================================================================
     # Timeout Tests

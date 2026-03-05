@@ -337,9 +337,6 @@ class MockSubAgent(AgentProtocol):
             response_message="Test response",
         )
 
-    async def process_output(self, output: AgentOutput) -> AgentOutput:
-        return output
-
     @property
     def model_id(self) -> Optional[Text]:
         return "model_id"
