@@ -2311,7 +2311,7 @@ jobs:
 
   unit-test:
     name: Run Unit Tests
-    runs-on: warp-ubuntu-latest-x64-8x
+    runs-on: warp-ubuntu-latest-x64-16x
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -2348,7 +2348,7 @@ jobs:
         if: ${{ steps.linux-dependencies.outputs.cache-hit != 'true' }}
         run: |
           sudo apt-get -y install libpq-dev
-          make prepare-tests-ubuntu 
+          make prepare-tests-ubuntu
 
       - name: Configure Datadog Test Optimization
         uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
@@ -2359,7 +2359,7 @@ jobs:
 
       - name: Test Code 🔍 (multi-process)
         env:
-          JOBS: 6
+          JOBS: 3
           PYTHONUTF8: 1
           PYTHONUNBUFFERED: 1
           ARGS: "-v"
@@ -2555,7 +2555,7 @@ jobs:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           OPTIONAL_GROUP_TO_INSTALL: channels
           RASA_DEFAULT_INSTALLATION_ONLY: false
-      
+
       - name: Dry-run and capture output for hashing
         run: make install-channels --dry-run > dry-run
 
