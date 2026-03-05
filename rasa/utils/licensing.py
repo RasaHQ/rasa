@@ -16,7 +16,6 @@ from sanic import Sanic
 
 from rasa import telemetry
 from rasa.shared.utils.cli import print_error_and_exit
-from rasa.shared.utils.io import raise_deprecation_warning
 
 if typing.TYPE_CHECKING:
     from rasa.core.tracker_stores.tracker_store import TrackerStore
@@ -274,7 +273,6 @@ def retrieve_license_from_env() -> Tuple[Text, Text]:
 
     legacy_license_value = os.environ.get(LICENSE_ENV_VAR_LEGACY)
     if legacy_license_value:
-        _warn_legacy_env_var()
         return legacy_license_value, LICENSE_ENV_VAR_LEGACY
 
     # Fall back to .env file
@@ -285,17 +283,8 @@ def retrieve_license_from_env() -> Tuple[Text, Text]:
 
     legacy_license_value = stored_env_values.get(LICENSE_ENV_VAR_LEGACY)
     if legacy_license_value:
-        _warn_legacy_env_var()
         return legacy_license_value, LICENSE_ENV_VAR_LEGACY
     raise LicenseNotFoundException()
-
-
-def _warn_legacy_env_var() -> None:
-    """Warn about deprecated legacy environment variable."""
-    raise_deprecation_warning(
-        f"The environment variable '{LICENSE_ENV_VAR_LEGACY}' is deprecated. "
-        f"Please use '{LICENSE_ENV_VAR}' instead."
-    )
 
 
 def is_license_expiring_soon(license: License) -> bool:

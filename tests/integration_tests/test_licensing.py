@@ -74,9 +74,6 @@ def test_missing_license_scope_legacy_var(
         f"variable `{LICENSE_ENV_VAR_LEGACY}`. Please ensure "
         f"`{LICENSE_ENV_VAR_LEGACY}` is set to a valid license string."
     ) in str(result.stderr)
-    assert f"The environment variable '{LICENSE_ENV_VAR_LEGACY}' is deprecated" in str(
-        result.stderr
-    )
 
 
 def test_license_scope_ok(
@@ -93,14 +90,11 @@ def test_license_scope_ok_legacy_var(
     monkeypatch: MonkeyPatch,
     run_in_simple_project: Callable[..., RunResult],
 ):
-    """Test that using legacy env var works but shows deprecation warning."""
+    """Test that using legacy env var works."""
     monkeypatch.setenv(LICENSE_ENV_VAR_LEGACY, LICENSE_PRO)
     result = run_in_simple_project("--help")
 
     assert result.ret == 0
-    assert f"The environment variable '{LICENSE_ENV_VAR_LEGACY}' is deprecated" in str(
-        result.stderr
-    )
 
 
 @pytest.mark.timeout(180)
