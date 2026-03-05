@@ -13,6 +13,64 @@ from rasa.cli.tools import (
 from rasa.shared.exceptions import RasaException
 
 
+class TestToolsInitArguments:
+    def test_default_init_arguments(
+        self, tools_parser: argparse.ArgumentParser
+    ) -> None:
+        args = tools_parser.parse_args(["tools", "init"])
+        assert args.yes is False
+        assert args.project_path is None
+        assert args.mode is None
+        assert args.port is None
+        assert args.docs is None
+        assert args.ides is None
+
+    def test_init_yes_flag(self, tools_parser: argparse.ArgumentParser) -> None:
+        args = tools_parser.parse_args(["tools", "init", "--yes"])
+        assert args.yes is True
+
+    def test_init_yes_short_flag(self, tools_parser: argparse.ArgumentParser) -> None:
+        args = tools_parser.parse_args(["tools", "init", "-y"])
+        assert args.yes is True
+
+    def test_init_all_flags(self, tools_parser: argparse.ArgumentParser) -> None:
+        args = tools_parser.parse_args(
+            [
+                "tools",
+                "init",
+                "--yes",
+                "--project-path",
+                "/my/bot",
+                "--mode",
+                "http",
+                "--port",
+                "9000",
+                "--docs",
+                "online",
+                "--ides",
+                "cursor,vscode",
+            ]
+        )
+        assert args.yes is True
+        assert args.project_path == "/my/bot"
+        assert args.mode == "http"
+        assert args.port == 9000
+        assert args.docs == "online"
+        assert args.ides == "cursor,vscode"
+
+    def test_init_invalid_mode_rejected(
+        self, tools_parser: argparse.ArgumentParser
+    ) -> None:
+        with pytest.raises(SystemExit):
+            tools_parser.parse_args(["tools", "init", "--mode", "grpc"])
+
+    def test_init_invalid_docs_rejected(
+        self, tools_parser: argparse.ArgumentParser
+    ) -> None:
+        with pytest.raises(SystemExit):
+            tools_parser.parse_args(["tools", "init", "--docs", "hybrid"])
+
+
 def test_default_tools_run_arguments(
     tools_parser: argparse.ArgumentParser,
 ) -> None:
@@ -23,7 +81,7 @@ def test_default_tools_run_arguments(
     """
     args = tools_parser.parse_args(["tools", "run"])
 
-    assert args.project is None
+    assert args.project_path is None
     assert args.mode is None
     assert args.port is None
     assert args.config is None
@@ -75,10 +133,10 @@ def test_tools_run_with_invalid_port(
 def test_tools_run_with_project(
     tools_parser: argparse.ArgumentParser,
 ) -> None:
-    """Tests `rasa tools run --project /some/path`."""
-    args = tools_parser.parse_args(["tools", "run", "--project", "/some/path"])
+    """Tests `rasa tools run --project-path /some/path`."""
+    args = tools_parser.parse_args(["tools", "run", "--project-path", "/some/path"])
 
-    assert args.project == "/some/path"
+    assert args.project_path == "/some/path"
 
 
 def test_tools_run_with_config(
@@ -101,7 +159,7 @@ def test_tools_run_with_config(
                 "http",
                 "--port",
                 "8080",
-                "--project",
+                "--project-path",
                 "/my/bot",
             ],
             "http",
@@ -109,7 +167,7 @@ def test_tools_run_with_config(
             "/my/bot",
         ),
         (
-            ["tools", "run", "--mode", "stdio", "--project", "."],
+            ["tools", "run", "--mode", "stdio", "--project-path", "."],
             "stdio",
             None,
             ".",
@@ -134,23 +192,23 @@ def test_tools_run_combined_arguments(
 
     assert args.mode == expected_mode
     assert args.port == expected_port
-    assert args.project == expected_project
+    assert args.project_path == expected_project
 
 
 def test_config_alone_is_valid() -> None:
     args = argparse.Namespace(
-        config="/some/config.yaml", mode=None, port=None, project=None
+        config="/some/config.yaml", mode=None, port=None, project_path=None
     )
     _validate_config_exclusivity(args)
 
 
 def test_no_config_allows_other_args() -> None:
-    args = argparse.Namespace(config=None, mode="http", port=8080, project="/p")
+    args = argparse.Namespace(config=None, mode="http", port=8080, project_path="/p")
     _validate_config_exclusivity(args)
 
 
 @pytest.mark.parametrize(
-    "mode, port, project",
+    "mode, port, project_path",
     [
         ("http", None, None),
         (None, 8080, None),
@@ -164,10 +222,10 @@ def test_no_config_allows_other_args() -> None:
 def test_config_with_other_args_raises(
     mode: Optional[str],
     port: Optional[int],
-    project: Optional[str],
+    project_path: Optional[str],
 ) -> None:
     args = argparse.Namespace(
-        config="/some/config.yaml", mode=mode, port=port, project=project
+        config="/some/config.yaml", mode=mode, port=port, project_path=project_path
     )
     with pytest.raises(RasaException, match="--config cannot be combined"):
         _validate_config_exclusivity(args)
@@ -189,6 +247,28 @@ class TestRunConfigPersistence:
         loaded = RunConfig.load(dest)
         assert loaded.mode == "http"
         assert loaded.port == 4567
+
+    def test_roundtrip_with_new_fields(self, tmp_path: Path) -> None:
+        cfg = RunConfig(
+            mode="stdio",
+            port=7331,
+            project_path="/my/bot",
+            docs_mode="online",
+            ide_integrations=["cursor", "vscode"],
+        )
+        dest = tmp_path / TOOLS_CONFIG_DIR / TOOLS_CONFIG_FILENAME
+        cfg.save(dest)
+
+        loaded = RunConfig.load(dest)
+        assert loaded.project_path == "/my/bot"
+        assert loaded.docs_mode == "online"
+        assert loaded.ide_integrations == ["cursor", "vscode"]
+
+    def test_new_fields_have_defaults(self) -> None:
+        cfg = RunConfig()
+        assert cfg.project_path == "."
+        assert cfg.docs_mode == "offline"
+        assert cfg.ide_integrations == []
 
     def test_load_raises_for_missing_file(self, tmp_path: Path) -> None:
         with pytest.raises(RasaException, match="does not exist"):

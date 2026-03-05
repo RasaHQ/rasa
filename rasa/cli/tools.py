@@ -5,10 +5,20 @@ import sys
 from pathlib import Path
 from typing import IO, Any, Dict, List, Literal, Optional, Tuple
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationError,
+    field_validator,
+    model_serializer,
+)
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.tools import (
+    DOCS_MODE_OFFLINE,
     MCP_TOOLS_DEFAULT_HOST,
     MCP_TOOLS_DEFAULT_PORT,
     MCP_TOOLS_HTTP_HEALTH_URL_PATTERN,
@@ -17,6 +27,8 @@ from rasa.cli.arguments.tools import (
     MCP_TOOLS_TRANSPORT_HTTP,
     MCP_TOOLS_TRANSPORT_STDIO,
     MCP_TOOLS_TRANSPORT_STREAMABLE_HTTP,
+    SUPPORTED_IDES,
+    set_tools_init_arguments,
     set_tools_run_arguments,
 )
 from rasa.shared.exceptions import RasaException
@@ -36,6 +48,38 @@ class RunConfig(BaseModel):
 
     mode: Literal["stdio", "http"] = Field(default=MCP_TOOLS_TRANSPORT_STDIO)
     port: int = Field(default=MCP_TOOLS_DEFAULT_PORT)
+    project_path: str = Field(default=".")
+    docs_mode: Literal["offline", "online"] = Field(default=DOCS_MODE_OFFLINE)
+    ide_integrations: List[str] = Field(default_factory=list)
+
+    @field_validator("ide_integrations", mode="before")
+    @classmethod
+    def _validate_ide_values(cls, value: Any) -> List[str]:
+        # A bare YAML scalar (e.g. `ide_integrations: cursor`) arrives as a
+        # string instead of a list.
+        if isinstance(value, str):
+            value = [value]
+
+        invalid = [v for v in value if v not in SUPPORTED_IDES]
+        if invalid:
+            raise ValueError(
+                f"Unsupported IDE(s): {', '.join(invalid)}. "
+                f"Accepted values: {', '.join(SUPPORTED_IDES)}"
+            )
+        return value
+
+    @model_serializer
+    def _serialize_model(self) -> Dict[str, Any]:
+        data: Dict[str, Any] = {
+            "mode": self.mode,
+            "project_path": self.project_path,
+            "docs_mode": self.docs_mode,
+        }
+        if self.mode == MCP_TOOLS_TRANSPORT_HTTP:
+            data["port"] = self.port
+        if self.ide_integrations:
+            data["ide_integrations"] = self.ide_integrations
+        return data
 
     @classmethod
     def load(cls, path: Path) -> "RunConfig":
@@ -90,6 +134,16 @@ def add_subparser(
 
     tools_subparsers = tools_parser.add_subparsers()
 
+    init_parser = tools_subparsers.add_parser(
+        "init",
+        conflict_handler="resolve",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Interactive setup wizard for Rasa Tools.",
+    )
+    init_parser.set_defaults(func=init_tools)
+    set_tools_init_arguments(init_parser)
+
     run_parser = tools_subparsers.add_parser(
         "run",
         conflict_handler="resolve",
@@ -101,7 +155,44 @@ def add_subparser(
     set_tools_run_arguments(run_parser)
 
 
-# Entrypoint ===========================================================================
+# Entrypoints ==========================================================================
+
+
+def _precheck(file: Optional[IO[str]] = None) -> None:
+    """Validate the Rasa license and display the beta banner.
+
+    Called at the start of every ``rasa tools`` subcommand. Exits with a
+    clear message if no valid license is present in the environment.
+
+    Args:
+        file: Output stream for the banner. Defaults to stdout.
+            Pass `sys.stderr` when stdout is reserved (e.g. stdio mode).
+    """
+    from rasa.utils.licensing import validate_license_from_env
+
+    validate_license_from_env()
+
+    banner = (
+        "[yellow bold]⚠ Rasa Tools is currently in beta.[/yellow bold]\n"
+        "Help us improve it by sending feedback or issues to "
+        "[bold]swift@rasa.com[/bold]."
+    )
+    console = Console(file=file)
+    console.print(Panel(banner, border_style="yellow", expand=False))
+    console.print()
+
+
+def init_tools(args: argparse.Namespace) -> None:
+    """Entrypoint for `rasa tools init`.
+
+    Args:
+        args: The CLI arguments.
+    """
+    _precheck()
+
+    from rasa.cli.tools_wizard import run_wizard
+
+    run_wizard(args)
 
 
 def run_tools(args: argparse.Namespace) -> None:
@@ -110,40 +201,60 @@ def run_tools(args: argparse.Namespace) -> None:
     Args:
         args: The CLI arguments.
     """
+    # Redirect logging to stderr before anything else — including the license
+    # check — so that log messages emitted during startup never reach stdout.
+    # In stdio mode stdout is reserved exclusively for JSON-RPC; in HTTP mode
+    # this is harmless.
+    _redirect_logging_to_stderr()
+
+    _precheck(file=sys.stderr)
     _validate_config_exclusivity(args)
 
-    project_path = _resolve_project_path(getattr(args, "project", None))
+    cli_project_path = getattr(args, "project_path", None)
 
     config, loaded_from_file = _resolve_tools_run_config(
         cli_mode=args.mode,
         cli_port=args.port,
         cli_config=args.config,
-        project_dir=project_path,
+        cli_project_path=cli_project_path,
     )
+
+    project_path = _resolve_project_dir(
+        cli_project_path,
+        config_project_path=config.project_path if loaded_from_file else None,
+        validate_exists=True,
+    )
+
+    has_explicit_cli_args = (
+        getattr(args, "mode", None) is not None
+        or getattr(args, "port", None) is not None
+    )
+    if not loaded_from_file and not has_explicit_cli_args:
+        raise RasaException(
+            "No configuration found.\n\n"
+            "Run `rasa tools init` to set up your environment,\n"
+            "or pass explicit flags (e.g. `rasa tools run --mode stdio`)."
+        )
 
     is_stdio = config.mode == MCP_TOOLS_TRANSPORT_STDIO
 
-    # In stdio mode, stdout/stdin carry JSON-RPC messages — redirect logging
-    # to stderr immediately, before anything else can write to stdout.
-    if is_stdio:
-        _redirect_logging_to_stderr()
-
-    output = sys.stderr if is_stdio else sys.stdout
+    # Rich console writes to stderr in stdio mode, stdout otherwise
+    console = Console(file=sys.stderr if is_stdio else sys.stdout)
 
     if loaded_from_file:
         try:
             file_contents = Path(loaded_from_file).read_text()
         except Exception:
             file_contents = "<could not read file>"
-        print(
-            f"--------------------------------\n"
-            f"Loaded run config from\n{loaded_from_file}:\n"
-            f"{file_contents}"
-            f"--------------------------------",
-            file=output,
+
+        console.print(
+            Panel(
+                f"[bold]Config loaded from:[/bold]\n"
+                f"{loaded_from_file}\n\n{file_contents}",
+                border_style="dim",
+                expand=False,
+            )
         )
-    else:
-        _auto_save_config(config, project_path, output)
 
     mode = config.mode
     port = config.port
@@ -151,12 +262,14 @@ def run_tools(args: argparse.Namespace) -> None:
     from rasa.builder.copilot.mcp_server.server import run_server
 
     if mode == MCP_TOOLS_TRANSPORT_STDIO:
-        print(
-            "--------------------------------\n"
-            "MCP server is running on:\n"
-            "stdio\n"
-            "--------------------------------",
-            file=output,
+        console.print(
+            Panel(
+                "[bold cyan]MCP Server Starting[/bold cyan]\n"
+                "Transport: [bold]stdio[/bold]\n"
+                f"Project:   [bold]{project_path}[/bold]",
+                border_style="cyan",
+                expand=False,
+            )
         )
         run_server(
             transport=MCP_TOOLS_TRANSPORT_STDIO,
@@ -169,15 +282,24 @@ def run_tools(args: argparse.Namespace) -> None:
         health_url = MCP_TOOLS_HTTP_HEALTH_URL_PATTERN.format(
             host=MCP_TOOLS_DEFAULT_HOST, port=port
         )
-        print(
-            f"--------------------------------\n"
-            f"MCP server is running on:\n"
-            f"{mcp_url}\n"
-            f"\n"
-            f"Health check:\n"
-            f"{health_url}\n"
-            f"--------------------------------",
-            file=output,
+
+        lines = Text()
+        lines.append("Transport:    ", style="bold")
+        lines.append("HTTP\n")
+        lines.append("MCP endpoint: ", style="bold")
+        lines.append(f"{mcp_url}\n")
+        lines.append("Health check: ", style="bold")
+        lines.append(f"{health_url}\n")
+        lines.append("Project:      ", style="bold")
+        lines.append(f"{project_path}")
+
+        console.print(
+            Panel(
+                lines,
+                title="[bold cyan]MCP Server Starting[/bold cyan]",
+                border_style="cyan",
+                expand=False,
+            )
         )
         run_server(
             host=MCP_TOOLS_DEFAULT_HOST,
@@ -193,15 +315,14 @@ def run_tools(args: argparse.Namespace) -> None:
 
 
 def _validate_config_exclusivity(args: argparse.Namespace) -> None:
-    """Raise if --config is combined with --mode, --port, or --project."""
+    """Raise if --config is combined with --mode, --port, or --project-path."""
     if getattr(args, "config", None) is None:
         return
 
-    conflicts = [
-        f"--{name}"
-        for name in ("mode", "port", "project")
-        if getattr(args, name, None) is not None
-    ]
+    conflicts = []
+    for name in ("mode", "port", "project_path"):
+        if getattr(args, name, None) is not None:
+            conflicts.append(f"--{name.replace('_', '-')}")
     if conflicts:
         raise RasaException(
             f"--config cannot be combined with {', '.join(conflicts)}. "
@@ -217,7 +338,7 @@ def _resolve_tools_run_config(
     cli_mode: Optional[str],
     cli_port: Optional[int],
     cli_config: Optional[str],
-    project_dir: Path,
+    cli_project_path: Optional[str],
 ) -> Tuple[RunConfig, Optional[Path]]:
     """Resolve the run configuration for `rasa tools run`.
 
@@ -241,7 +362,9 @@ def _resolve_tools_run_config(
             kwargs["port"] = cli_port
         return RunConfig(**kwargs), None
 
-    config_path = _resolve_config_path(cli_config, project_dir)
+    # Locate the config file using CLI > env > cwd as a candidate directory.
+    config_search_dir = _resolve_project_dir(cli_project_path)
+    config_path = _resolve_config_path(cli_config, config_search_dir)
 
     if config_path:
         return RunConfig.load(config_path), config_path
@@ -249,36 +372,44 @@ def _resolve_tools_run_config(
     return RunConfig(), None
 
 
-# Path resolutions helpers =============================================================
+def _resolve_project_dir(
+    cli_arg: Optional[str] = None,
+    config_project_path: Optional[str] = None,
+    validate_exists: bool = False,
+) -> Path:
+    """Resolve the project directory using the standard priority cascade.
 
-
-def _resolve_project_path(cli_arg: Optional[str]) -> Path:
-    """Resolve the project path using the priority cascade.
-
-    Priority: --project CLI arg > RASA_PROJECT_FOLDER env var > cwd
+    Priority:
+        --project-path CLI arg > RASA_PROJECT_FOLDER env var >
+        config file project_path > CWD
 
     Args:
-        cli_arg: Value of the --project CLI argument (may be None)
+        cli_arg: Value of the --project-path CLI argument (may be None).
+        config_project_path: Value of `project_path` from a loaded config
+            file. Only consulted when neither CLI arg nor env var is set.
+        validate_exists: When True, raise RasaException if the resolved
+            path is not an existing directory.
 
     Returns:
-        Resolved absolute path to the project folder
+        Resolved absolute path to the project directory.
 
     Raises:
-        RasaException: If the resolved path does not exist
+        RasaException: If validate_exists is True and the path doesn't exist.
     """
     if cli_arg:
-        path = Path(cli_arg)
+        path = Path(cli_arg).resolve()
     elif env_val := os.getenv(MCP_TOOLS_RASA_PROJECT_FOLDER_ENV_VAR):
-        path = Path(env_val)
+        path = Path(env_val).resolve()
+    elif config_project_path:
+        path = Path(config_project_path).resolve()
     else:
-        path = Path.cwd()
+        path = Path.cwd().resolve()
 
-    resolved = path.resolve()
-    if not resolved.is_dir():
+    if validate_exists and not path.is_dir():
         raise RasaException(
-            f"Project path does not exist or is not a directory: {resolved}"
+            f"Project path does not exist or is not a directory: {path}"
         )
-    return resolved
+    return path
 
 
 def _resolve_config_path(
@@ -322,40 +453,6 @@ def _resolve_config_path(
         return config_path.resolve()
 
     return None
-
-
-# Config persistence helpers ===========================================================
-
-
-def _auto_save_config(
-    config: RunConfig, project_dir: Path, output: IO[str]
-) -> Optional[Path]:
-    """Persist *config* to the default location.
-
-    Saving is best-effort: any exception (OSError, serialization, etc.) is
-    caught so that ``rasa tools run`` still starts the server.
-
-    Returns:
-        The path the config was saved to, or ``None`` on failure.
-    """
-    dest = project_dir / TOOLS_CONFIG_DIR / TOOLS_CONFIG_FILENAME
-    try:
-        config.save(dest)
-        print(
-            f"--------------------------------\n"
-            f"Saved run config to\n{dest}:\n"
-            f"{dest.read_text()}"
-            f"\n"
-            f"To edit settings, modify the config file directly "
-            f"or pass CLI flags (--mode, --port).\n"
-            f"--------------------------------",
-            file=output,
-        )
-    except Exception:
-        print(f"Could not auto-save run config: {dest}", file=output)
-        return None
-
-    return dest
 
 
 # Logging helpers ======================================================================
