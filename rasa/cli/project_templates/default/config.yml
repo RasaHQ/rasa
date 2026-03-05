@@ -9,13 +9,13 @@ language: en
 pipeline:
 - name: CompactLLMCommandGenerator
   llm:
-    model_group: openai-gpt-4o
+    model_group: openai-gpt-5-1
 
 # Configuration for Rasa Core.
 policies:
 - name: FlowPolicy
 - name: IntentlessPolicy
   llm:
-    model_group: openai-gpt-4o
+    model_group: openai-gpt-5-1
   embeddings:
     model_group: openai-embeddings

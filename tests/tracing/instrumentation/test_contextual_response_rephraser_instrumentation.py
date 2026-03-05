@@ -170,7 +170,7 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
     expected_attributes = {
         "class_name": component_class.__name__,
         # llm attributes
-        "llm_temperature": "0.3",
+        "llm_temperature": "1.0",
         "llm_request_timeout": "5",
         # deprecated
         "request_timeout": "5",
@@ -235,7 +235,7 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response_no_mo
     expected_attributes = {
         "class_name": component_class.__name__,
         # llm attributes
-        "llm_temperature": "0.3",
+        "llm_temperature": "1.0",
         "llm_request_timeout": "5",
         # deprecated
         "request_timeout": "5",
@@ -299,6 +299,12 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_tracing_rephraser")
+    monkeypatch.setattr(
+        "rasa.tracing.instrumentation.attribute_extractors.resolve_tiktoken_encode",
+        lambda model_name, fallback_encoding="cl100k_base": (
+            lambda prompt: [1, 2, 3, 4]
+        ),
+    )
     test_span_exported = TestSpanExporter(span_exporter)
     ignore_substrings = ["health_check"]
     component_class = MockContextualResponseRephraser
@@ -333,12 +339,12 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
     )
     expected_attributes = {
         "class_name": component_class.__name__,
-        "len_prompt_tokens": "6",
+        "len_prompt_tokens": "4",
         # llm attributes
         "llm_type": "openai",
         "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
         "llm_model_group_id": "None",
-        "llm_temperature": "0.3",
+        "llm_temperature": "1.0",
         "llm_request_timeout": "5",
         # deprecated
         "request_timeout": "5",
@@ -493,7 +499,7 @@ async def test_tracing_contextual_response_rephraser_create_history(
         "class_name": component_class.__name__,
         # llm attributes
         "llm_type": "openai",
-        "llm_temperature": "0.3",
+        "llm_temperature": "1.0",
         "llm_request_timeout": "5",
         # deprecated
         "request_timeout": "5",
@@ -557,7 +563,7 @@ async def test_tracing_contextual_response_rephraser_create_history_no_model_gro
         "class_name": component_class.__name__,
         # llm attributes
         "llm_type": "openai",
-        "llm_temperature": "0.3",
+        "llm_temperature": "1.0",
         "llm_request_timeout": "5",
         # deprecated
         "request_timeout": "5",

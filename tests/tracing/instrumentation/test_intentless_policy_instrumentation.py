@@ -332,6 +332,12 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
+    monkeypatch.setattr(
+        "rasa.tracing.instrumentation.attribute_extractors.resolve_tiktoken_encode",
+        lambda model_name, fallback_encoding="cl100k_base": (
+            lambda prompt: [1, 2, 3, 4]
+        ),
+    )
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -356,12 +362,12 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
 
     assert captured_span.attributes == {
         "class_name": "IntentlessPolicy",
-        "len_prompt_tokens": "6",
+        "len_prompt_tokens": "4",
         # llm attributes
         "llm_type": "openai",
-        "llm_model": "gpt-4o-2024-11-20",
+        "llm_model": "gpt-5-mini-2025-08-07",
         "llm_model_group_id": "None",
-        "llm_temperature": "0.0",
+        "llm_temperature": "1.0",
         "llm_request_timeout": "5",
         # embeddings attributes
         "embeddings_model": "text-embedding-3-large",

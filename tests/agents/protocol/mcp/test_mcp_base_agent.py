@@ -213,8 +213,9 @@ class TestMCPBaseAgent:
         config = MCPBaseAgent.get_default_llm_config()
 
         assert config["provider"] == "openai"
-        assert config["model"] == "gpt-4o-2024-11-20"
-        assert config["temperature"] == 0.0
+        assert config["model"] == "gpt-5.1-2025-11-13"
+        assert config["reasoning_effort"] == "none"
+        assert config["temperature"] == 1.0
         assert config["max_completion_tokens"] == 256
         assert config["timeout"] == 7
 

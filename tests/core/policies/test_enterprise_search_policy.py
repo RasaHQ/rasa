@@ -1934,7 +1934,7 @@ def test_enterprise_search_policy_persist_config(
                 {
                     "id": "openai_gpt",
                     "models": [
-                        {"provider": "openai", "model": "gpt-4.1-mini-2025-04-14"}
+                        {"provider": "openai", "model": "gpt-5-mini-2025-08-07"}
                     ],
                 },
             ],
@@ -1959,7 +1959,7 @@ def test_enterprise_search_policy_persist_config(
                 {
                     "id": "openai_gpt-2",
                     "models": [
-                        {"provider": "openai", "model": "gpt-4.1-mini-2025-04-14"}
+                        {"provider": "openai", "model": "gpt-5-mini-2025-08-07"}
                     ],
                 },
             ],

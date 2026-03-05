@@ -4,7 +4,7 @@ assistant_id: savage-magnification
 pipeline:
 - name: SearchReadyLLMCommandGenerator
   llm:
-    model_group: openai-gpt-4o
+    model_group: openai-gpt-5-1
   flow_retrieval:
     active: false
 policies:

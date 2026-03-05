@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from pytest import LogCaptureFixture
+from pytest import LogCaptureFixture, MonkeyPatch
 
 from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
@@ -57,7 +57,7 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
                 "llm": {
                     "model_name": "gpt-4-0613",
                     "request_timeout": 7,
-                    "temperature": 0.0,
+                    "temperature": 1.0,
                 },
             },
             {
@@ -75,17 +75,17 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
                 "llm_model": "gpt-4o",
             },
         ),
-        ({"prompt": TEST_PROMPT_DIRECTORY}, {"llm_model": "gpt-4-0613"}),
+        ({"prompt": TEST_PROMPT_DIRECTORY}, {"llm_model": "gpt-5.1-2025-11-13"}),
         (
             {
                 "prompt": TEST_PROMPT_DIRECTORY,
                 "llm": {
                     "request_timeout": 7,
-                    "temperature": 0.0,
+                    "temperature": 1.0,
                 },
             },
             {
-                "llm_model": "gpt-4-0613",
+                "llm_model": "gpt-5.1-2025-11-13",
             },
         ),
         (
@@ -152,7 +152,7 @@ async def test_tracing_multi_step_llm_command_generator_default_attrs(
         # llm attributes
         "llm_type": "openai",
         "llm_model_group_id": "None",
-        "llm_temperature": "0.0",
+        "llm_temperature": "1.0",
         "llm_request_timeout": "7",
         # embeddings attributes
         "embeddings_model": "text-embedding-3-large",
@@ -442,8 +442,15 @@ async def test_tracing_multi_step_llm_command_generator_prompt_tokens(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     component_class = MockMultiStepLLMCommandGenerator
+    monkeypatch.setattr(
+        "rasa.tracing.instrumentation.attribute_extractors.resolve_tiktoken_encode",
+        lambda model_name, fallback_encoding="cl100k_base": (
+            lambda prompt: [1, 2, 3, 4]
+        ),
+    )
 
     instrumentation.instrument(
         tracer_provider,
@@ -469,12 +476,12 @@ async def test_tracing_multi_step_llm_command_generator_prompt_tokens(
 
     expected_attributes = {
         "class_name": component_class.__name__,
-        "len_prompt_tokens": "6",
+        "len_prompt_tokens": "4",
         # llm attributes
         "llm_type": "openai",
-        "llm_model": "gpt-4-0613",
+        "llm_model": "gpt-5.1-2025-11-13",
         "llm_model_group_id": "None",
-        "llm_temperature": "0.0",
+        "llm_temperature": "1.0",
         "llm_request_timeout": "7",
         # embeddings attributes
         "embeddings_model": "text-embedding-3-large",

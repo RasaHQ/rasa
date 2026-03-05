@@ -22,7 +22,15 @@ from rasa.shared.constants import (
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.mappings import OPENAI_PROVIDER
 from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_INIT
-from rasa.shared.utils.llm import USER, get_prompt_template, llm_factory
+from rasa.shared.utils.llm import (
+    DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI,
+    DEFAULT_OPENAI_TEMPERATURE,
+    REASONING_EFFORT_CONFIG_KEY,
+    REASONING_EFFORT_MINIMAL,
+    USER,
+    get_prompt_template,
+    llm_factory,
+)
 
 SEPARATOR = "\n\n"
 BACKUP_SEPARATOR = "\nUSER:"
@@ -35,9 +43,10 @@ DEFAULT_REPHRASING_PROMPT_TEMPLATE = importlib.resources.read_text(
 
 DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
-    MODEL_CONFIG_KEY: "gpt-4.1-mini-2025-04-14",
+    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI,
+    REASONING_EFFORT_CONFIG_KEY: REASONING_EFFORT_MINIMAL,
     TIMEOUT_CONFIG_KEY: 7,
-    TEMPERATURE_CONFIG_KEY: 0.0,
+    TEMPERATURE_CONFIG_KEY: DEFAULT_OPENAI_TEMPERATURE,
     MAX_COMPLETION_TOKENS_CONFIG_KEY: 4096,
 }
 

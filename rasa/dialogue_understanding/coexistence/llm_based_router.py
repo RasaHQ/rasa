@@ -50,7 +50,10 @@ from rasa.shared.utils.constants import (
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
-    DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI,
+    DEFAULT_OPENAI_TEMPERATURE,
+    REASONING_EFFORT_CONFIG_KEY,
+    REASONING_EFFORT_MINIMAL,
     LLMInput,
     check_prompt_config_keys_and_warn_if_deprecated,
     get_prompt_template,
@@ -74,9 +77,10 @@ A_TO_C_TOKEN_IDS_CHATGPT = [
 
 DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
-    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI,
+    REASONING_EFFORT_CONFIG_KEY: REASONING_EFFORT_MINIMAL,
     TIMEOUT_CONFIG_KEY: 7,
-    TEMPERATURE_CONFIG_KEY: 0.0,
+    TEMPERATURE_CONFIG_KEY: DEFAULT_OPENAI_TEMPERATURE,
     MAX_COMPLETION_TOKENS_CONFIG_KEY: 1,
     LOGIT_BIAS_CONFIG_KEY: {
         str(token_id): 100 for token_id in A_TO_C_TOKEN_IDS_CHATGPT

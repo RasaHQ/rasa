@@ -79,6 +79,10 @@ from rasa.shared.utils.datetime_utils import (
     validate_datetime_configuration,
 )
 from rasa.shared.utils.llm import (
+    DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    DEFAULT_OPENAI_TEMPERATURE,
+    REASONING_EFFORT_CONFIG_KEY,
+    REASONING_EFFORT_NONE,
     get_prompt_template,
     llm_factory,
     resolve_model_client_config,
@@ -88,11 +92,11 @@ from rasa.shared.utils.mcp.server_connection import MCPServerConnection
 from rasa.shared.utils.mcp.utils import build_mcp_meta, call_tool_with_meta
 
 DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
-MODEL_NAME_GPT_4O_2024_11_20 = "gpt-4o-2024-11-20"
 DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
-    MODEL_CONFIG_KEY: MODEL_NAME_GPT_4O_2024_11_20,
-    TEMPERATURE_CONFIG_KEY: 0.0,
+    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    REASONING_EFFORT_CONFIG_KEY: REASONING_EFFORT_NONE,
+    TEMPERATURE_CONFIG_KEY: DEFAULT_OPENAI_TEMPERATURE,
     MAX_COMPLETION_TOKENS_CONFIG_KEY: DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
     TIMEOUT_CONFIG_KEY: 7,
 }

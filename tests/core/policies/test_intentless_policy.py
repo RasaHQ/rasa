@@ -1271,7 +1271,7 @@ def test_intentless_policy_persist_config(
             [
                 {
                     "id": "openai_gpt",
-                    "models": [{"provider": "openai", "model": "gpt-4o-2024-11-20"}],
+                    "models": [{"provider": "openai", "model": "gpt-5.1-2025-11-13"}],
                 },
             ],
             True,
@@ -1288,7 +1288,7 @@ def test_intentless_policy_persist_config(
             [
                 {
                     "id": "openai_gpt-2",
-                    "models": [{"provider": "openai", "model": "gpt-4o-2024-11-20"}],
+                    "models": [{"provider": "openai", "model": "gpt-5.1-2025-11-13"}],
                 },
             ],
             True,

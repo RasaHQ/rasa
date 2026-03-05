@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple
 
 import structlog
-import tiktoken
 from deprecated import deprecated  # type: ignore[import-untyped]
 from jinja2 import Template
 from langchain.docstore.document import Document
@@ -74,9 +73,12 @@ from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheck
 from rasa.shared.utils.io import deep_container_fingerprint, raise_deprecation_warning
 from rasa.shared.utils.llm import (
     AI,
-    DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI,
     DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
     DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
+    DEFAULT_OPENAI_TEMPERATURE,
+    REASONING_EFFORT_CONFIG_KEY,
+    REASONING_EFFORT_NONE,
     USER,
     LLMInput,
     check_prompt_config_keys_and_warn_if_deprecated,
@@ -88,6 +90,7 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
 )
+from rasa.shared.utils.tiktoken_utils import resolve_tiktoken_encode
 from rasa.utils.log_utils import log_llm
 from rasa.utils.ml_utils import (
     extract_ai_response_examples,
@@ -120,8 +123,9 @@ NLU_ABSTENTION_THRESHOLD = "nlu_abstention_threshold"
 
 DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
-    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
-    TEMPERATURE_CONFIG_KEY: 0.0,
+    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI,
+    REASONING_EFFORT_CONFIG_KEY: REASONING_EFFORT_NONE,
+    TEMPERATURE_CONFIG_KEY: DEFAULT_OPENAI_TEMPERATURE,
     MAX_COMPLETION_TOKENS_CONFIG_KEY: DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
     TIMEOUT_CONFIG_KEY: 5,
 }
@@ -282,7 +286,7 @@ def conversation_samples_from_trackers(
 def truncate_documents(
     docs: List[Document],
     max_number_of_tokens: int,
-    model_name: str = DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    model_name: str = DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI,
 ) -> List[Document]:
     """Takes first n documents that contains less then `max_number_of_tokens` tokens.
 
@@ -294,12 +298,12 @@ def truncate_documents(
     Returns:
         Sequence of documents that contains less then `max_number_of_tokens` tokens.
     """
-    enc = tiktoken.encoding_for_model(model_name)
+    encode = resolve_tiktoken_encode(model_name)
 
     truncated_docs = []
     docs_token_num = 0
     for doc in docs:
-        doc_token_num = len(enc.encode(doc.page_content))
+        doc_token_num = len(encode(doc.page_content))
         if docs_token_num + doc_token_num > max_number_of_tokens:
             break
 

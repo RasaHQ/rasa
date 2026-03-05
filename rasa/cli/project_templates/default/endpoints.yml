@@ -66,12 +66,12 @@ action_endpoint:
 #   type: rephrase
 
 model_groups:
-  - id: openai-gpt-4o
+  - id: openai-gpt-5-1
     models:
       - provider: openai
-        model: gpt-4o-2024-11-20
-        request_timeout: 7
-        max_tokens: 256
+        model: gpt-5.1-2025-11-13
+        reasoning_effort: "none"
+        timeout: 15
   - id: openai-embeddings
     models:
       - provider: openai

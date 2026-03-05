@@ -86,6 +86,7 @@ from rasa.shared.providers.router.router_client import RouterClient
 from rasa.shared.utils.common import all_subclasses
 from rasa.shared.utils.llm import (
     ERROR_PLACEHOLDER,
+    REASONING_EFFORT_CONFIG_KEY,
     SystemPrompts,
     _get_enterprise_search_prompt,
     _get_llm_command_generator_config,
@@ -2798,6 +2799,93 @@ def test_combine_custom_and_default_config_combining_model_group_configuration()
     assert combined_config == expected_model_group_config
 
 
+def test_combine_custom_and_default_config_keeps_reasoning_effort_for_gpt_5() -> None:
+    default_config = {
+        "provider": "openai",
+        "model": "gpt-5.1-2025-11-13",
+        REASONING_EFFORT_CONFIG_KEY: "none",
+        "temperature": 1.0,
+        "max_completion_tokens": 256,
+        "timeout": 7,
+    }
+    custom_config = {"model": "gpt-5.1-2025-11-13"}
+
+    combined_config = combine_custom_and_default_config(custom_config, default_config)
+
+    assert combined_config["reasoning_effort"] == "none"
+
+
+def test_combine_custom_and_default_config_drops_reasoning_effort_for_older_model() -> (
+    None
+):
+    default_config = {
+        "provider": "openai",
+        "model": "gpt-5.1-2025-11-13",
+        REASONING_EFFORT_CONFIG_KEY: "none",
+        "temperature": 1.0,
+        "max_completion_tokens": 256,
+        "timeout": 7,
+    }
+    custom_config = {"model": "gpt-4o-2024-11-20"}
+
+    combined_config = combine_custom_and_default_config(custom_config, default_config)
+
+    assert "reasoning_effort" not in combined_config
+
+
+def test_drops_reasoning_effort_for_model_name_alias_override() -> None:
+    default_config = {
+        "provider": "openai",
+        "model": "gpt-5.1-2025-11-13",
+        "reasoning_effort": "none",
+        "temperature": 1.0,
+        "max_completion_tokens": 256,
+        "timeout": 7,
+    }
+    custom_config = {"model_name": "gpt-4o-2024-11-20"}
+
+    combined_config = combine_custom_and_default_config(custom_config, default_config)
+
+    assert "reasoning_effort" not in combined_config
+
+
+def test_combine_custom_and_default_config_keeps_manual_reasoning_effort() -> None:
+    default_config = {
+        "provider": "openai",
+        "model": "gpt-5.1-2025-11-13",
+        "reasoning_effort": "none",
+        "temperature": 1.0,
+        "max_completion_tokens": 256,
+        "timeout": 7,
+    }
+    custom_config = {"model": "gpt-4o-2024-11-20", "reasoning_effort": "minimal"}
+
+    combined_config = combine_custom_and_default_config(custom_config, default_config)
+
+    assert combined_config["reasoning_effort"] == "minimal"
+
+
+def test_keeps_manual_reasoning_effort_on_provider_change() -> None:
+    default_config = {
+        "provider": "openai",
+        "model": "gpt-5.1-2025-11-13",
+        "reasoning_effort": "none",
+        "temperature": 1.0,
+        "max_completion_tokens": 256,
+        "timeout": 7,
+    }
+    custom_config = {
+        "provider": "self-hosted",
+        "model": "some_model",
+        "api_base": "http://localhost:8000",
+        "reasoning_effort": "minimal",
+    }
+
+    combined_config = combine_custom_and_default_config(custom_config, default_config)
+
+    assert combined_config["reasoning_effort"] == "minimal"
+
+
 def test_resolve_llm_config_with_invalid_model_group_id(
     mock_available_endpoints: MagicMock,
     mock_configuration: MagicMock,
@@ -2974,8 +3062,15 @@ def test_get_system_default_prompts_returns_expected_values():
 
     assert isinstance(prompts, SystemPrompts)
 
-    # Assert Command Generator prompt
-    llm_config = resolve_model_client_config(model_config={})
+    config_dict = read_yaml(config_yaml)
+    endpoints_dict = read_yaml(endpoints_yaml)
+
+    # Assert Command Generator prompt with the same model-group resolution
+    # path as production.
+    llm_config = resolve_model_client_config(
+        model_config=_get_llm_command_generator_config(config_dict),
+        model_groups=endpoints_dict["model_groups"],
+    )
     expected_cmd_prompt = get_default_prompt_template_based_on_model(
         llm_config=llm_config,
         model_prompt_mapping=MODEL_PROMPT_MAPPER,

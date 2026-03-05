@@ -101,9 +101,9 @@ async def test_tracing_enterprise_search_policy_invoke_llm_default_config(
         "class_name": "EnterpriseSearchPolicy",
         # llm attributes
         "llm_type": "openai",
-        "llm_model": "gpt-4.1-mini-2025-04-14",
+        "llm_model": "gpt-5-mini-2025-08-07",
         "llm_model_group_id": "None",
-        "llm_temperature": "0.0",
+        "llm_temperature": "1.0",
         "llm_request_timeout": "10",
         # embeddings attributes
         "embeddings_model": "text-embedding-3-large",
@@ -262,6 +262,12 @@ async def test_tracing_enterprise_search_policy_invoke_llm_len_prompt_tokens(
     # and set the environment variable to point to it.
     with tempfile.TemporaryDirectory(suffix=uuid.uuid4().__str__()) as temp_dir:
         monkeypatch.setenv("TIKTOKEN_CACHE_DIR", temp_dir)
+        monkeypatch.setattr(
+            "rasa.tracing.instrumentation.attribute_extractors.resolve_tiktoken_encode",
+            lambda model_name, fallback_encoding="cl100k_base": (
+                lambda prompt: [1, 2, 3, 4]
+            ),
+        )
         component_class = EnterpriseSearchPolicy
         vector_store = MockInformationRetrieval()
 
@@ -292,12 +298,12 @@ async def test_tracing_enterprise_search_policy_invoke_llm_len_prompt_tokens(
 
         assert captured_span.attributes == {
             "class_name": "EnterpriseSearchPolicy",
-            "len_prompt_tokens": "6",
+            "len_prompt_tokens": "4",
             # llm attributes
             "llm_type": "openai",
-            "llm_model": "gpt-4.1-mini-2025-04-14",
+            "llm_model": "gpt-5-mini-2025-08-07",
             "llm_model_group_id": "None",
-            "llm_temperature": "0.0",
+            "llm_temperature": "1.0",
             "llm_request_timeout": "10",
             # embeddings attributes
             "embeddings_model": "text-embedding-3-large",

@@ -45,6 +45,7 @@ from rasa.shared.constants import (
     MODEL_GROUP_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
     MODEL_GROUPS_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
     MODELS_CONFIG_KEY,
     PROMPT_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
@@ -107,19 +108,25 @@ USER = "USER"
 
 AI = "AI"
 
-DEFAULT_OPENAI_GENERATE_MODEL_NAME = "gpt-4o-2024-11-20"
+DEFAULT_OPENAI_GENERATE_MODEL_NAME = "gpt-5.1-2025-11-13"
 
-DEFAULT_OPENAI_CHAT_MODEL_NAME = "gpt-4o-2024-11-20"
+DEFAULT_OPENAI_CHAT_MODEL_NAME = "gpt-5.1-2025-11-13"
 
-DEFAULT_ENTERPRISE_SEARCH_POLICY_MODEL_NAME = "gpt-4.1-mini-2025-04-14"
+DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI = "gpt-5-mini-2025-08-07"
 
-DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED = "gpt-4-0613"
+DEFAULT_ENTERPRISE_SEARCH_POLICY_MODEL_NAME = DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI
 
 DEFAULT_OPENAI_EMBEDDING_MODEL_NAME = "text-embedding-3-large"
 
-DEFAULT_OPENAI_TEMPERATURE = 0.7
+DEFAULT_OPENAI_TEMPERATURE = 1.0
 
 DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
+
+REASONING_EFFORT_CONFIG_KEY = "reasoning_effort"
+
+REASONING_EFFORT_NONE = "none"
+
+REASONING_EFFORT_MINIMAL = "minimal"
 
 DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
 
@@ -572,7 +579,40 @@ def _combine_single_model_configs(
     default_config_clazz = get_client_config_class_from_provider(
         default_config_provider
     )
-    return default_config_clazz.from_dict(merged_config).to_dict()
+    resolved_merged_config = default_config_clazz.from_dict(merged_config).to_dict()
+    return _sanitize_default_reasoning_effort_override(
+        custom_config=custom_config,
+        default_config=default_config,
+        merged_config=resolved_merged_config,
+    )
+
+
+def _sanitize_default_reasoning_effort_override(
+    custom_config: Dict[str, Any],
+    default_config: Dict[str, Any],
+    merged_config: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Drop default `reasoning_effort` when model is changed by user.
+
+    If a user explicitly sets `reasoning_effort`, keep it for any model/provider.
+    """
+    if REASONING_EFFORT_CONFIG_KEY not in merged_config:
+        return merged_config
+
+    if REASONING_EFFORT_CONFIG_KEY in custom_config:
+        return merged_config
+
+    default_model = default_config.get(MODEL_CONFIG_KEY) or default_config.get(
+        MODEL_NAME_CONFIG_KEY
+    )
+    custom_model = custom_config.get(MODEL_CONFIG_KEY) or custom_config.get(
+        MODEL_NAME_CONFIG_KEY
+    )
+
+    if custom_model is not None and custom_model != default_model:
+        merged_config.pop(REASONING_EFFORT_CONFIG_KEY, None)
+
+    return merged_config
 
 
 def get_provider_from_config(config: dict) -> Optional[str]:

@@ -79,6 +79,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.utils.llm import REASONING_EFFORT_CONFIG_KEY
 from tests.utilities import flows_from_str, flows_from_str_including_defaults
 
 
@@ -201,10 +202,11 @@ class TestMultiStepLLMCommandGenerator:
         """Test predict_commands_for_handling_flows calls llm correctly."""
         # Given
         expected_llm_config = {
-            MODEL_CONFIG_KEY: "gpt-4-0613",
             PROVIDER_CONFIG_KEY: "openai",
+            MODEL_CONFIG_KEY: "gpt-5.1-2025-11-13",
+            REASONING_EFFORT_CONFIG_KEY: "none",
+            TEMPERATURE_CONFIG_KEY: 1.0,
             TIMEOUT_CONFIG_KEY: 7,
-            TEMPERATURE_CONFIG_KEY: 0.0,
             MAX_COMPLETION_TOKENS_CONFIG_KEY: 256,
         }
 

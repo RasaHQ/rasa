@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from rasa.core.agent import Agent
     from rasa.core.channels import OutputChannel
 
-import tiktoken
 from numpy import ndarray
 from rasa_sdk.grpc_py import action_webhook_pb2
 
@@ -92,6 +91,7 @@ from rasa.shared.utils.llm import (
     combine_custom_and_default_config,
     resolve_model_client_config,
 )
+from rasa.shared.utils.tiktoken_utils import resolve_tiktoken_encode
 from rasa.tracing.constants import (
     ENABLE_TRACING_DEBUGGING_ENV_VAR_NAME,
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
@@ -1041,17 +1041,10 @@ def compute_prompt_tokens_length(
         )
         model_name = f"{model_name}-0613"
 
-    try:
-        encoding = tiktoken.encoding_for_model(model_name)
-    except KeyError:
-        # Fallback for unknown models
-        logger.warning(
-            f"Unknown model name '{model_name}', "
-            f"using 'cl100k_base' encoding as fallback."
-        )
-        encoding = tiktoken.get_encoding("cl100k_base")
-
-    return len(encoding.encode(prompt))
+    encode = resolve_tiktoken_encode(
+        model_name=model_name, fallback_encoding="cl100k_base"
+    )
+    return len(encode(prompt))
 
 
 def extend_attributes_with_prompt_tokens_length(

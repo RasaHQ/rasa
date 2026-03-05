@@ -64,7 +64,7 @@ from rasa.shared.utils.constants import (
     LANGFUSE_METADATA_SESSION_ID,
     LANGFUSE_METADATA_TAGS,
 )
-from rasa.shared.utils.llm import LLMInput
+from rasa.shared.utils.llm import REASONING_EFFORT_CONFIG_KEY, LLMInput
 from tests.utilities import flows_from_str
 
 TEST_BASE_CLASSES: List[type] = [
@@ -835,10 +835,11 @@ class TestLLMBasedCommandGenerator:
 
         # Given
         expected_llm_config = {
-            MODEL_CONFIG_KEY: "gpt-4-0613",
+            MODEL_CONFIG_KEY: "gpt-5.1-2025-11-13",
             PROVIDER_CONFIG_KEY: "openai",
+            REASONING_EFFORT_CONFIG_KEY: "none",
             TIMEOUT_CONFIG_KEY: 7,
-            TEMPERATURE_CONFIG_KEY: 0.0,
+            TEMPERATURE_CONFIG_KEY: 1.0,
             MAX_COMPLETION_TOKENS_CONFIG_KEY: 256,
         }
 

@@ -399,7 +399,7 @@ class TestLLMBasedRouter:
                     {
                         "id": "openai_gpt",
                         "models": [
-                            {"provider": "openai", "model": "gpt-4o-2024-11-20"}
+                            {"provider": "openai", "model": "gpt-5-mini-2025-08-07"}
                         ],
                     },
                 ],
@@ -424,7 +424,7 @@ class TestLLMBasedRouter:
                     {
                         "id": "openai_gpt-2",
                         "models": [
-                            {"provider": "openai", "model": "gpt-4o-2024-11-20"}
+                            {"provider": "openai", "model": "gpt-5-mini-2025-08-07"}
                         ],
                     },
                 ],

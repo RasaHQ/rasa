@@ -1826,10 +1826,10 @@ def test_generative_response_mixin_calls_llm_factory_correctly(
     llm_judge_config = LLMJudgeConfig.from_dict(
         {
             "llm": {
-                "model": "gpt-4-0613",
+                "model": "gpt-5.1-2025-11-13",
                 "provider": "openai",
                 "timeout": 7,
-                "temperature": 0.0,
+                "temperature": 1.0,
                 "max_tokens": 256,
             }
         }
