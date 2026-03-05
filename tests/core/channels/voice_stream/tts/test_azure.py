@@ -1,6 +1,8 @@
 import asyncio
+from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import azure.cognitiveservices.speech as speechsdk
 import pytest
 from pytest import MonkeyPatch
 
@@ -416,6 +418,299 @@ async def test_synthesize_timeout(monkeypatch: MonkeyPatch, mulaw_format: AudioF
 def test_streaming_input_is_true():
     """AzureTTS should now have streaming_input=True."""
     assert AzureTTS.streaming_input is True
+
+
+# ── connect method tests ──────────────────────────────────────────────
+
+
+async def test_connect_initializes_sdk_objects(
+    azure_tts: AzureTTS, monkeypatch: MonkeyPatch
+):
+    """connect() should set up speech_config, synthesizer, and callback."""
+    monkeypatch.setenv(AZURE_SPEECH_API_KEY_ENV_VAR, "test-key")
+
+    mock_speech_config = MagicMock()
+    mock_synthesizer = MagicMock()
+    mock_push_stream = MagicMock()
+    mock_audio_config = MagicMock()
+    mock_callback = MagicMock()
+
+    mock_sdk = MagicMock()
+    monkeypatch.setattr("rasa.core.channels.voice_stream.tts.azure.speechsdk", mock_sdk)
+
+    mock_sdk.SpeechConfig.return_value = mock_speech_config
+    mock_sdk.SpeechSynthesizer.return_value = mock_synthesizer
+    mock_sdk.audio.PushAudioOutputStream.return_value = mock_push_stream
+    mock_sdk.audio.AudioOutputConfig.return_value = mock_audio_config
+    mock_sdk.audio.PushAudioOutputStreamCallback = (
+        speechsdk.audio.PushAudioOutputStreamCallback
+    )
+
+    monkeypatch.setattr(
+        "rasa.core.channels.voice_stream.tts.azure._AudioOutputCallback",
+        MagicMock(return_value=mock_callback),
+    )
+
+    await azure_tts.connect()
+
+    assert azure_tts._speech_config is mock_speech_config
+    assert azure_tts._synthesizer is mock_synthesizer
+    assert azure_tts._callback is mock_callback
+    assert azure_tts._loop is not None
+
+
+async def test_connect_sets_voice_name_on_speech_config(
+    azure_tts: AzureTTS, monkeypatch: MonkeyPatch
+):
+    """connect() should configure the voice name on the speech config."""
+    monkeypatch.setenv(AZURE_SPEECH_API_KEY_ENV_VAR, "test-key")
+
+    mock_speech_config = MagicMock()
+
+    mock_sdk = MagicMock()
+    monkeypatch.setattr("rasa.core.channels.voice_stream.tts.azure.speechsdk", mock_sdk)
+
+    mock_sdk.SpeechConfig.return_value = mock_speech_config
+    mock_sdk.SpeechSynthesizer.return_value = MagicMock()
+    mock_sdk.audio.PushAudioOutputStream.return_value = MagicMock()
+    mock_sdk.audio.AudioOutputConfig.return_value = MagicMock()
+    mock_sdk.audio.PushAudioOutputStreamCallback = (
+        speechsdk.audio.PushAudioOutputStreamCallback
+    )
+
+    mock_callback = MagicMock()
+    monkeypatch.setattr(
+        "rasa.core.channels.voice_stream.tts.azure._AudioOutputCallback",
+        MagicMock(return_value=mock_callback),
+    )
+
+    await azure_tts.connect()
+
+    assert (
+        mock_speech_config.speech_synthesis_voice_name
+        == azure_tts.current_language_config.voice
+    )
+
+
+async def test_connect_uses_default_ws_endpoint_when_not_configured(
+    azure_tts: AzureTTS, monkeypatch: MonkeyPatch
+):
+    """connect() should build the wss endpoint from speech_
+    region when ws_endpoint is None."""
+    monkeypatch.setenv(AZURE_SPEECH_API_KEY_ENV_VAR, "test-key")
+    azure_tts.config.ws_endpoint = None
+    azure_tts.config.speech_region = "westeurope"
+
+    mock_sdk = MagicMock()
+    monkeypatch.setattr("rasa.core.channels.voice_stream.tts.azure.speechsdk", mock_sdk)
+
+    mock_speech_config = MagicMock()
+
+    mock_sdk.SpeechConfig = mock_speech_config
+    mock_sdk.SpeechSynthesizer.return_value = MagicMock()
+    mock_sdk.audio.PushAudioOutputStream.return_value = MagicMock()
+    mock_sdk.audio.AudioOutputConfig.return_value = MagicMock()
+    mock_sdk.audio.PushAudioOutputStreamCallback = (
+        speechsdk.audio.PushAudioOutputStreamCallback
+    )
+
+    mock_callback = MagicMock()
+    monkeypatch.setattr(
+        "rasa.core.channels.voice_stream.tts.azure._AudioOutputCallback",
+        MagicMock(return_value=mock_callback),
+    )
+
+    await azure_tts.connect()
+
+    mock_sdk.SpeechConfig.assert_called_once_with(
+        subscription="test-key",
+        endpoint=f"wss://{azure_tts.config.speech_region}.tts.speech.microsoft.com/"
+        f"cognitiveservices/websocket/v2",
+    )
+
+
+async def test_connect_uses_custom_ws_endpoint_when_configured(
+    azure_tts: AzureTTS, monkeypatch: MonkeyPatch
+):
+    """connect() should use the custom ws_endpoint when provided."""
+    monkeypatch.setenv(AZURE_SPEECH_API_KEY_ENV_VAR, "test-key")
+    custom_endpoint = "wss://my.custom.endpoint/cognitiveservices/websocket/v2"
+    azure_tts.config.ws_endpoint = custom_endpoint
+
+    mock_sdk = MagicMock()
+    monkeypatch.setattr("rasa.core.channels.voice_stream.tts.azure.speechsdk", mock_sdk)
+
+    mock_speech_config = MagicMock()
+
+    mock_sdk.SpeechConfig = mock_speech_config
+    mock_sdk.SpeechSynthesizer.return_value = MagicMock()
+    mock_sdk.audio.PushAudioOutputStream.return_value = MagicMock()
+    mock_sdk.audio.AudioOutputConfig.return_value = MagicMock()
+    mock_sdk.audio.PushAudioOutputStreamCallback = (
+        speechsdk.audio.PushAudioOutputStreamCallback
+    )
+
+    mock_callback = MagicMock()
+    monkeypatch.setattr(
+        "rasa.core.channels.voice_stream.tts.azure._AudioOutputCallback",
+        MagicMock(return_value=mock_callback),
+    )
+
+    await azure_tts.connect()
+
+    mock_sdk.SpeechConfig.assert_called_once_with(
+        subscription="test-key",
+        endpoint=azure_tts.config.ws_endpoint,
+    )
+
+
+async def test_connect_skips_when_voice_is_missing(
+    azure_tts: AzureTTS, monkeypatch: MonkeyPatch
+):
+    """connect() should skip SDK init when no voice is configured."""
+    monkeypatch.setenv(AZURE_SPEECH_API_KEY_ENV_VAR, "test-key")
+    azure_tts.current_language_config.voice = None
+
+    mock_sdk = MagicMock()
+    monkeypatch.setattr("rasa.core.channels.voice_stream.tts.azure.speechsdk", mock_sdk)
+    await azure_tts.connect()
+    mock_sdk.SpeechConfig.assert_not_called()
+
+    assert azure_tts._synthesizer is None
+    assert azure_tts._speech_config is None
+
+
+async def test_connect_sets_synthesizer_to_none_on_exception(
+    azure_tts: AzureTTS, monkeypatch: MonkeyPatch
+):
+    """connect() should set _synthesizer to None when SDK raises an exception."""
+    monkeypatch.setenv(AZURE_SPEECH_API_KEY_ENV_VAR, "test-key")
+
+    mock_sdk = MagicMock()
+    monkeypatch.setattr("rasa.core.channels.voice_stream.tts.azure.speechsdk", mock_sdk)
+
+    mock_sdk.SpeechConfig.side_effect = RuntimeError("SDK init failed")
+
+    await azure_tts.connect()
+    assert azure_tts._synthesizer is None
+
+
+async def test_connect_sets_loop(azure_tts: AzureTTS, monkeypatch: MonkeyPatch):
+    """connect() should capture the running event loop."""
+    monkeypatch.setenv(AZURE_SPEECH_API_KEY_ENV_VAR, "test-key")
+
+    mock_sdk = MagicMock()
+    monkeypatch.setattr("rasa.core.channels.voice_stream.tts.azure.speechsdk", mock_sdk)
+
+    mock_sdk.SpeechConfig.return_value = MagicMock()
+    mock_sdk.SpeechSynthesizer.return_value = MagicMock()
+    mock_sdk.audio.PushAudioOutputStream.return_value = MagicMock()
+    mock_sdk.audio.AudioOutputConfig.return_value = MagicMock()
+    mock_sdk.audio.PushAudioOutputStreamCallback = (
+        speechsdk.audio.PushAudioOutputStreamCallback
+    )
+
+    mock_callback = MagicMock()
+    monkeypatch.setattr(
+        "rasa.core.channels.voice_stream.tts.azure._AudioOutputCallback",
+        MagicMock(return_value=mock_callback),
+    )
+
+    await azure_tts.connect()
+
+    assert azure_tts._loop is asyncio.get_event_loop()
+
+
+@pytest.mark.parametrize(
+    "audio_format",
+    [
+        {
+            "rasa_format": MULAW_8KHZ,
+            "expected_azure_format": speechsdk.SpeechSynthesisOutputFormat.Raw8Khz8BitMonoMULaw,  # noqa: E501
+        },
+        {
+            "rasa_format": L16_24KHZ,
+            "expected_azure_format": speechsdk.SpeechSynthesisOutputFormat.Raw24Khz16BitMonoPcm,  # noqa: E501
+        },
+        {
+            "rasa_format": L16_48KHZ,
+            "expected_azure_format": speechsdk.SpeechSynthesisOutputFormat.Raw48Khz16BitMonoPcm,  # noqa: E501
+        },
+    ],
+)
+async def test_connect_sets_audio_output_format(
+    monkeypatch: MonkeyPatch, audio_format: Dict[str, Any]
+):
+    """connect() should call set_speech_synthesis_output_format on speech_config."""
+    monkeypatch.setenv(AZURE_SPEECH_API_KEY_ENV_VAR, "test-key")
+    monkeypatch.setenv("AZURE_SPEECH_API_KEY", "test-key")
+    azure_tts = AzureTTS(rasa_language="en", format=audio_format.get("rasa_format"))
+
+    mock_speech_config = MagicMock()
+
+    mock_sdk = MagicMock()
+    monkeypatch.setattr("rasa.core.channels.voice_stream.tts.azure.speechsdk", mock_sdk)
+
+    mock_sdk.SpeechConfig.return_value = mock_speech_config
+    mock_sdk.SpeechSynthesizer.return_value = MagicMock()
+    mock_sdk.audio.PushAudioOutputStream.return_value = MagicMock()
+    mock_sdk.audio.AudioOutputConfig.return_value = MagicMock()
+    mock_sdk.audio.PushAudioOutputStreamCallback = (
+        speechsdk.audio.PushAudioOutputStreamCallback
+    )
+
+    mock_callback = MagicMock()
+    monkeypatch.setattr(
+        "rasa.core.channels.voice_stream.tts.azure._AudioOutputCallback",
+        MagicMock(return_value=mock_callback),
+    )
+
+    await azure_tts.connect()
+
+    mock_speech_config.set_speech_synthesis_output_format.assert_called_once_with(
+        audio_format.get("expected_azure_format")
+    )
+
+
+# ── _get_azure_audio_format tests ────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "rasa_format, expected_azure_format",
+    [
+        (MULAW_8KHZ, speechsdk.SpeechSynthesisOutputFormat.Raw8Khz8BitMonoMULaw),
+        (L16_24KHZ, speechsdk.SpeechSynthesisOutputFormat.Raw24Khz16BitMonoPcm),
+        (L16_48KHZ, speechsdk.SpeechSynthesisOutputFormat.Raw48Khz16BitMonoPcm),
+    ],
+)
+async def test_get_azure_audio_format_returns_correct_format(
+    rasa_format: AudioFormat,
+    expected_azure_format: speechsdk.SpeechSynthesisOutputFormat,
+    monkeypatch: MonkeyPatch,
+):
+    """_get_azure_audio_format should map each Rasa
+    AudioFormat to the correct Azure SDK enum."""
+    monkeypatch.setenv("AZURE_SPEECH_API_KEY", "test-key")
+    tts_engine = AzureTTS(rasa_language="en", format=rasa_format)
+    assert tts_engine._get_azure_audio_format() == expected_azure_format
+
+
+async def test_get_azure_audio_format_raises_for_unsupported_format(
+    monkeypatch: MonkeyPatch,
+):
+    """_get_azure_audio_format should raise ValueError for
+    an unsupported AudioFormat."""
+    from rasa.core.channels.voice_stream.audio_bytes import AudioEncoding, AudioFormat
+
+    monkeypatch.setenv("AZURE_SPEECH_API_KEY", "test-key")
+    unsupported_format = AudioFormat(
+        encoding=AudioEncoding.LINEAR,
+        sample_rate=44100,
+        bit_depth=16,
+    )
+    tts_engine = AzureTTS(rasa_language="en", format=unsupported_format)
+    with pytest.raises(ValueError, match="Azure TTS does not support audio format"):
+        tts_engine._get_azure_audio_format()
 
 
 @pytest.mark.parametrize(

@@ -25,6 +25,12 @@ class AudioFormat:
         """For uncompressed formats: usable for duration math and rate signalling."""
         return self.sample_rate * (self.bit_depth // 8)
 
+    def __repr__(self) -> str:
+        return (
+            f"AudioFormat(encoding={self.encoding}, bit_depth={self.bit_depth}, "
+            f"sample_rate={self.sample_rate}, channels={self.channels})"
+        )
+
 
 # Rasa supported Audio Formats
 # MULAW_8KHZ aka G.711 μ-law is raw wave, 8kHz, 8bit, mono channel, mulaw encoding

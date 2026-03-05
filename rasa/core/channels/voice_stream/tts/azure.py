@@ -7,6 +7,7 @@ import aiohttp
 import azure.cognitiveservices.speech as speechsdk
 import structlog
 from aiohttp import ClientConnectorError, ClientTimeout
+from azure.cognitiveservices.speech import SpeechSynthesisOutputFormat
 
 from rasa.core.channels.voice_stream.audio_bytes import (
     L16_24KHZ,
@@ -27,9 +28,6 @@ from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
 
 structlogger = structlog.get_logger()
-
-# REST output format header value
-_REST_OUTPUT_FORMAT = "raw-8khz-8bit-mono-mulaw"
 
 
 class _AudioOutputCallback(speechsdk.audio.PushAudioOutputStreamCallback):
@@ -179,7 +177,7 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
                 self.current_language_config.voice
             )
             self._speech_config.set_speech_synthesis_output_format(
-                speechsdk.SpeechSynthesisOutputFormat.Raw8Khz8BitMonoMULaw
+                self._get_azure_audio_format()
             )
 
             # Synthesizer is created once and reused across responses;
@@ -425,3 +423,13 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
                 "azure_tts.stop_streaming._synthesizer.stop_speaking_async",
             )
             self._synthesizer.stop_speaking_async()
+
+    def _get_azure_audio_format(self) -> speechsdk.SpeechSynthesisOutputFormat:
+        if self.audio_format == MULAW_8KHZ:
+            return SpeechSynthesisOutputFormat.Raw8Khz8BitMonoMULaw
+        elif self.audio_format == L16_24KHZ:
+            return SpeechSynthesisOutputFormat.Raw24Khz16BitMonoPcm
+        elif self.audio_format == L16_48KHZ:
+            return SpeechSynthesisOutputFormat.Raw48Khz16BitMonoPcm
+
+        raise ValueError(f"Azure TTS does not support audio format {self.audio_format}")
