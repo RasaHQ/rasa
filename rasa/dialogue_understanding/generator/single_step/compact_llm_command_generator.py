@@ -12,6 +12,7 @@ from rasa.dialogue_understanding.generator.constants import (
     MODEL_CONFIG_KEY,
     MODEL_NAME_CLAUDE_3_5_SONNET_20240620,
     MODEL_NAME_CLAUDE_SONNET_4_5_20250929,
+    MODEL_NAME_CLAUDE_SONNET_4_6,
     MODEL_NAME_GPT_4O_2024_11_20,
     MODEL_NAME_GPT_5_1_2025_11_13,
     MODEL_NAME_GPT_5_2_2025_12_11,
@@ -86,6 +87,13 @@ MODEL_PROMPT_MAPPER = {
     f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_SONNET_4_5_20250929}": (
         "command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
     ),
+    # Claude Sonnet 4.6 is using the same prompt as Claude Sonnet 4.5
+    f"{AWS_BEDROCK_PROVIDER}/anthropic.{MODEL_NAME_CLAUDE_SONNET_4_6}": (
+        "command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
+    ),
+    f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_SONNET_4_6}": (
+        "command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
+    ),
 }
 
 # Agentic prompt mapping (used only when agents are configured)
@@ -123,6 +131,13 @@ AGENT_MODEL_PROMPT_MAPPER = {
         "agent_command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
     ),
     f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_SONNET_4_5_20250929}": (
+        "agent_command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
+    ),
+    # Claude Sonnet 4.6 is using the same prompt as Claude Sonnet 4.5
+    f"{AWS_BEDROCK_PROVIDER}/anthropic.{MODEL_NAME_CLAUDE_SONNET_4_6}": (
+        "agent_command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
+    ),
+    f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_SONNET_4_6}": (
         "agent_command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
     ),
 }

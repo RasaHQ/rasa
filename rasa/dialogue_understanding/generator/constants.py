@@ -37,6 +37,7 @@ MODEL_NAME_GPT_5_2_2025_12_11 = "gpt-5.2-2025-12-11"
 MODEL_NAME_CLAUDE_3_5_SONNET_20240620 = "claude-3-5-sonnet-20240620"
 # Anthropic started to use a different naming convention
 MODEL_NAME_CLAUDE_SONNET_4_5_20250929 = "claude-sonnet-4-5-20250929"
+MODEL_NAME_CLAUDE_SONNET_4_6 = "claude-sonnet-4-6"
 
 # JINJA template filters
 TO_JSON_ESCAPED_STRING_JINJA_FILTER = "to_json_escaped_string"

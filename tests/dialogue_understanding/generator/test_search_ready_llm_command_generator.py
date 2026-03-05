@@ -1684,6 +1684,16 @@ class TestSearchReadyLLMCommandGenerator:
                 True,
                 agent_command_prompt_v3_claude_sonnet_4_5_20250929_template,
             ),
+            (
+                "claude-sonnet-4-6",
+                False,
+                command_prompt_v3_claude_sonnet_4_5_20250929_template,
+            ),
+            (
+                "claude-sonnet-4-6",
+                True,
+                agent_command_prompt_v3_claude_sonnet_4_5_20250929_template,
+            ),
         ],
     )
     def test_load_default_prompt_based_on_model_name_claude(
@@ -1751,6 +1761,16 @@ class TestSearchReadyLLMCommandGenerator:
             ),
             (
                 "claude-sonnet-4-5-20250929",
+                True,
+                agent_command_prompt_v3_claude_sonnet_4_5_20250929_template,
+            ),
+            (
+                "claude-sonnet-4-6",
+                False,
+                command_prompt_v3_claude_sonnet_4_5_20250929_template,
+            ),
+            (
+                "claude-sonnet-4-6",
                 True,
                 agent_command_prompt_v3_claude_sonnet_4_5_20250929_template,
             ),
@@ -2490,12 +2510,22 @@ class TestSearchReadyLLMCommandGenerator:
                 "agent_command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2",
             ),
             (
+                "anthropic/claude-sonnet-4-6",
+                "command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2",
+                "agent_command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2",
+            ),
+            (
                 "bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0",
                 "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2",
                 "agent_command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2",
             ),
             (
                 "bedrock/anthropic.claude-sonnet-4-5-20250929-v1:0",
+                "command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2",
+                "agent_command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2",
+            ),
+            (
+                "bedrock/anthropic.claude-sonnet-4-6",
                 "command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2",
                 "agent_command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2",
             ),
