@@ -338,13 +338,77 @@ class _BaseLiteLLMClient:
         return formatted_response
 
     def _format_response_stream(self, response: Any) -> LLMResponse:
-        """Parses the LiteLLM streaming response chunk to Rasa format."""
+        """Parses the LiteLLM streaming response chunk to Rasa format.
+
+        Content deltas go into `choices`.  Tool-call deltas are stored in
+        `additional_info["stream_tool_call_deltas"]` so callers can
+        accumulate and merge them into complete LLMToolCall objects.
+        """
+        tool_call_deltas = self._extract_stream_tool_call_deltas(response)
+        additional_info = (
+            {"stream_tool_call_deltas": tool_call_deltas} if tool_call_deltas else None
+        )
         return LLMResponse(
             id=response.id,
             created=response.created,
             choices=[choice.delta.content or "" for choice in response.choices],
             model=response.model,
+            additional_info=additional_info,
         )
+
+    def _extract_stream_tool_call_deltas(self, response: Any) -> List[Dict[str, Any]]:
+        """Extract tool-call deltas from a streaming chunk (choice.delta.tool_calls).
+
+        Args:
+            response: A raw LiteLLM streaming chunk.
+
+        Returns:
+            List of dicts, one per tool-call delta:
+            ``[{"index": int, "id": str|None,
+            "function": {"name": str|None, "arguments": str}}]``
+        """
+
+        def _get(obj: Any, key: str, default: Any = None) -> Any:
+            """Retrieve ``key`` from ``obj`` whether it is an object or a mapping.
+
+            Tries ``getattr`` first (for LiteLLM model objects), then falls back
+            to ``obj.get()`` (for plain dicts). Returns ``default`` if ``obj``
+            is ``None`` or the key is absent on both paths.
+            """
+            if obj is None:
+                return default
+            v = getattr(obj, key, None)
+            if v is not None:
+                return v
+            try:
+                return obj.get(key, default)
+            except (AttributeError, TypeError):
+                return default
+
+        deltas = []
+        for choice in response.choices:
+            delta = _get(choice, "delta")
+            if delta is None:
+                continue
+            raw_tool_calls = _get(delta, "tool_calls")
+            if not raw_tool_calls:
+                continue
+            for tc in raw_tool_calls:
+                index = _get(tc, "index")
+                if index is None:
+                    continue
+                func = _get(tc, "function")
+                deltas.append(
+                    {
+                        "index": index,
+                        "id": _get(tc, "id"),
+                        "function": {
+                            "name": _get(func, "name"),
+                            "arguments": _get(func, "arguments") or "",
+                        },
+                    }
+                )
+        return deltas
 
     def _extract_tool_calls(self, response: Any) -> List[LLMToolCall]:
         """Extract tool calls from response choices.

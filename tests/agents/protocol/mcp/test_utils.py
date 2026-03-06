@@ -68,7 +68,6 @@ class MockMCPBaseAgentImpl(MCPBaseAgent):
         self, agent_input: AgentInput, output_channel: Optional[OutputChannel] = None
     ) -> AgentOutput:
         """Test implementation of send_message."""
-        # Simple test implementation that returns a basic response
         return AgentOutput(
             id=agent_input.id,
             status=AgentStatus.COMPLETED,

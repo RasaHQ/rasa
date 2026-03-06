@@ -202,12 +202,12 @@ async def _empty_async_gen():
     yield  # make this an async generator
 
 
-async def test_send_response_chunk_end_default_sets_streaming_flag(
+async def test_send_response_chunk_end_sets_streaming_flag(
     tts_cache: TTSCache,
     mock_websocket: AsyncMock,
 ) -> None:
-    """send_response_chunk_end() with default is_intermediate=False sets
-    streaming_response_sent=True, causing a subsequent send_text_message to be skipped.
+    """send_response_chunk_end() sets streaming_response_sent=True, so a subsequent
+    send_text_message is skipped.
     """
     ensure_call_state_context()
     recipient_id = "test_id"
@@ -223,32 +223,6 @@ async def test_send_response_chunk_end_default_sets_streaming_flag(
     await output_channel.send_response_chunk_end(recipient_id)
 
     assert output_channel.streaming_response_sent is True
-
-
-async def test_send_response_chunk_end_intermediate_resets_streaming_flag(
-    tts_cache: TTSCache,
-    mock_websocket: AsyncMock,
-) -> None:
-    """send_response_chunk_end(is_intermediate=True) does not set
-    streaming_response_sent to True, so when the flag was False
-    (e.g. no prior full streaming response), it remains False and a subsequent
-    send_text_message is not skipped."""
-    ensure_call_state_context()
-    recipient_id = "test_id"
-    tts_engine = _make_streaming_tts_engine()
-
-    output_channel = TwilioMediaStreamsOutputChannel(
-        mock_websocket, tts_engine, tts_cache, MULAW_8KHZ
-    )
-    output_channel.audio_sender_task = None
-
-    # Flag is False (no prior full streaming response)
-    assert output_channel.streaming_response_sent is False
-
-    await output_channel.send_response_chunk_end(recipient_id, is_intermediate=True)
-
-    # Intermediate chunk end does not set the flag to True
-    assert output_channel.streaming_response_sent is False
 
 
 def _make_non_streaming_tts_engine() -> MagicMock:
@@ -269,12 +243,12 @@ async def _single_chunk_async_gen():
     yield RasaAudioBytes(b"\x00" * 160, format=MULAW_8KHZ)
 
 
-async def test_send_text_message_skipped_after_non_intermediate_chunk_end(
+async def test_send_text_message_skipped_after_chunk_end(
     tts_cache: TTSCache,
     mock_websocket: AsyncMock,
 ) -> None:
-    """After send_response_chunk_end() with default is_intermediate=False,
-    send_text_message() must be a no-op (no audio sent to websocket)."""
+    """After send_response_chunk_end(), send_text_message() is a no-op (no audio
+    sent to websocket) until the flag is consumed."""
     ensure_call_state_context()
     recipient_id = "test_id"
     tts_engine = _make_non_streaming_tts_engine()
@@ -292,32 +266,6 @@ async def test_send_text_message_skipped_after_non_intermediate_chunk_end(
     mock_websocket.send.assert_not_called()
     # Flag must be reset for the next response
     assert output_channel.streaming_response_sent is False
-
-
-async def test_send_text_message_not_skipped_after_intermediate_chunk_end(
-    tts_cache: TTSCache,
-    mock_websocket: AsyncMock,
-) -> None:
-    """When the only chunk end was intermediate (flag never set to True),
-    send_text_message() must proceed normally and send audio to the websocket."""
-    ensure_call_state_context()
-    recipient_id = "test_id"
-    # Use streaming engine so send_response_chunk_end runs the is_intermediate branch
-    tts_engine = _make_streaming_tts_engine()
-    tts_engine.synthesize = MagicMock(return_value=_single_chunk_async_gen())
-
-    output_channel = TwilioMediaStreamsOutputChannel(
-        mock_websocket, tts_engine, tts_cache, MULAW_8KHZ
-    )
-    output_channel.audio_sender_task = None
-
-    # No prior full streaming response — only an intermediate chunk end
-    await output_channel.send_response_chunk_end(recipient_id, is_intermediate=True)
-
-    await output_channel.send_text_message(recipient_id, "This should be sent.")
-
-    # At least a start marker and end marker should have been sent
-    assert mock_websocket.send.call_count >= 1
 
 
 async def test_send_text_message_flag_reset_allows_subsequent_messages(

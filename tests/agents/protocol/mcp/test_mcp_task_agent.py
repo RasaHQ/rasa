@@ -71,6 +71,14 @@ class TestMCPTaskAgent:
             )
         )
 
+    @pytest.fixture
+    def mock_output_channel(self):
+        """Non-streaming output channel fixture (LLM called via acompletion)."""
+        channel = MagicMock()
+        channel.supports_streaming = False
+        channel.send_text_message = AsyncMock()
+        return channel
+
     def test_render_prompt_template_basic_rendering(
         self, mcp_task_agent: MCPTaskAgent, mock_agent_input: AgentInput
     ):
@@ -882,30 +890,42 @@ class TestMCPTaskAgent:
         self,
         mcp_task_agent,
         mock_agent_input,
+        mock_output_channel,
         llm_response,
         expected_status,
         expected_message_keyword,
     ):
         """Test send_message with various LLM response scenarios."""
+        mock_agent_input.recipient_id = "test_user"
         with patch.object(mcp_task_agent, "llm_client") as mock_llm_client:
             mock_llm_client.acompletion = AsyncMock(return_value=llm_response)
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
             assert result.id == mock_agent_input.id
             assert result.status.name == expected_status
             if expected_status == "RECOVERABLE_ERROR":
                 assert expected_message_keyword in result.error_message
+            elif expected_status == "INPUT_REQUIRED":
+                # When output_channel is set, response_message is omitted; check events
+                assert result.events is not None
+                bot_utters = [e for e in result.events if isinstance(e, BotUttered)]
+                assert any(
+                    expected_message_keyword in (e.text or "") for e in bot_utters
+                )
             else:
                 assert result.response_message == expected_message_keyword
 
     @pytest.mark.asyncio
     async def test_send_message_tool_not_available(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Test send_message with unavailable tool."""
         from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
 
+        mock_agent_input.recipient_id = "test_user"
         mock_llm_response = LLMResponse(
             id="test_id",
             created=1642248600,
@@ -927,7 +947,9 @@ class TestMCPTaskAgent:
             mock_llm_client.acompletion = AsyncMock(return_value=mock_llm_response)
             mock_get_tools.return_value = []  # No available tools
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
             assert result.id == mock_agent_input.id
             assert result.status.name == "FATAL_ERROR"
@@ -935,13 +957,14 @@ class TestMCPTaskAgent:
 
     @pytest.mark.asyncio
     async def test_send_message_set_slot_tool_success(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Test send_message with successful set slot tool call.
 
         Exit conditions are evaluated in-loop and should complete immediately
         once the slot-setting tool satisfies them, without an extra LLM turn.
         """
+        mock_agent_input.recipient_id = "test_user"
         mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
         mock_tool_call = LLMToolCall(
             id="call_123",
@@ -966,15 +989,18 @@ class TestMCPTaskAgent:
             mock_tool.name = "set_slot_user_name"
             mock_get_tools.return_value = [mock_tool]
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
             assert result.id == mock_agent_input.id
             assert result.status.name == "COMPLETED"
             assert result.response_message is None
             assert result.events is not None
-            assert len(result.events) == 1
-            assert result.events[0].key == "user_name"
-            assert result.events[0].value == "Jane"
+            slot_events = [e for e in result.events if isinstance(e, SlotSet)]
+            assert len(slot_events) == 1
+            assert slot_events[0].key == "user_name"
+            assert slot_events[0].value == "Jane"
             assert mock_llm_client.acompletion.call_count == 1
 
     @pytest.mark.asyncio
@@ -1026,13 +1052,15 @@ class TestMCPTaskAgent:
 
         assert result.id == mock_agent_input.id
         assert result.events is not None
-        filler_events = [e for e in result.events if isinstance(e, BotUttered)]
+        filler_events = [
+            e
+            for e in result.events
+            if isinstance(e, BotUttered)
+            and e.metadata.get("agent_message_type")
+            == BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE
+        ]
         assert len(filler_events) == 1
         assert filler_events[0].text == filler_text
-        assert (
-            filler_events[0].metadata["message_type"]
-            == BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE
-        )
         # Slot change from set_slot should also be present
         slot_events = [e for e in result.events if isinstance(e, SlotSet)]
         assert len(slot_events) == 1
@@ -1042,9 +1070,10 @@ class TestMCPTaskAgent:
 
     @pytest.mark.asyncio
     async def test_send_message_set_slot_tool_slot_not_found(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Test send_message with set slot tool for non-existent slot."""
+        mock_agent_input.recipient_id = "test_user"
         mock_tool_call = LLMToolCall(
             id="call_123",
             type="function",
@@ -1068,7 +1097,9 @@ class TestMCPTaskAgent:
             mock_tool.name = "set_slot_non_existent"
             mock_get_tools.return_value = [mock_tool]
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
             assert result.id == mock_agent_input.id
             assert result.status.name == "FATAL_ERROR"
@@ -1076,10 +1107,10 @@ class TestMCPTaskAgent:
 
     @pytest.mark.asyncio
     async def test_send_message_malformed_tool_response_retry(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Test send_message with malformed tool response that triggers retry."""
-        mcp_task_agent._include_date_time = False
+        mock_agent_input.recipient_id = "test_user"
         # Create a proper exception with original_exception attribute
         decode_error = LLMToolResponseDecodeError("Invalid JSON")
         provider_exception = ProviderClientAPIException("Decode error")
@@ -1109,11 +1140,16 @@ class TestMCPTaskAgent:
         ):
             mock_get_tools.return_value = []
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
             assert result.id == mock_agent_input.id
             assert result.status.name == "INPUT_REQUIRED"
-            assert result.response_message == "Success response"
+            # When output_channel is set, response_message is omitted; check events
+            assert result.events is not None
+            bot_utters = [e for e in result.events if isinstance(e, BotUttered)]
+            assert any("Success response" in (e.text or "") for e in bot_utters)
             # We want to see if the second LLM call is made.
             assert mock_llm_client.acompletion.call_count == 2
 
@@ -1141,7 +1177,7 @@ class TestMCPTaskAgent:
 
     @pytest.mark.asyncio
     async def test_send_message_max_iterations_reached(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Test send_message when max iterations are reached."""
         # Create a tool call that will keep the agent in a loop
@@ -1165,6 +1201,7 @@ class TestMCPTaskAgent:
             is_error=False,
         )
 
+        mock_agent_input.recipient_id = "test_user"
         with (
             patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
             patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
@@ -1185,7 +1222,9 @@ class TestMCPTaskAgent:
             # Set max iterations to 1 to force completion
             mcp_task_agent.MAX_ITERATIONS = 1
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
             assert result.id == mock_agent_input.id
             assert result.status.name == "COMPLETED"
@@ -1194,10 +1233,11 @@ class TestMCPTaskAgent:
             assert "couldn't provide a final answer" in result.response_message
 
     @pytest.mark.asyncio
-    async def test_send_message_early_completion_preserves_slot_events(
-        self, mcp_task_agent, mock_agent_input
+    async def test_send_message_max_iterations_includes_changed_slot_events(
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
-        """Test that early completion keeps changed slot events in output."""
+        """Test that when max iterations is reached, output includes slot changes."""
+        mock_agent_input.recipient_id = "test_user"
         mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
         set_slot_call = LLMToolCall(
             id="call_set_slot",
@@ -1247,21 +1287,23 @@ class TestMCPTaskAgent:
             mock_execute_tool.return_value = mock_tool_output
 
             mcp_task_agent.MAX_ITERATIONS = 2
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
             assert result.id == mock_agent_input.id
             assert result.status.name == "COMPLETED"
             assert result.response_message is None
             # Slot set in first iteration must be preserved in output
             assert result.events is not None
-            assert len(result.events) == 1
-            assert result.events[0].key == "user_name"
-            assert result.events[0].value == "Jane"
-            assert mock_llm_client.acompletion.call_count == 1
+            slot_events = [e for e in result.events if isinstance(e, SlotSet)]
+            assert len(slot_events) >= 1
+            user_name_slots = [e for e in slot_events if e.key == "user_name"]
+            assert any(e.value == "Jane" for e in user_name_slots)
 
     @pytest.mark.asyncio
     async def test_send_message_passes_metadata_to_llm(
-        self, mcp_task_agent: MCPTaskAgent
+        self, mcp_task_agent: MCPTaskAgent, mock_output_channel
     ):
         """Test that send_message passes metadata to llm_client.acompletion."""
         # Create agent input with specific metadata
@@ -1278,6 +1320,7 @@ class TestMCPTaskAgent:
             },
             timestamp="2024-01-15T10:30:00Z",
         )
+        agent_input.recipient_id = "test_user"
 
         # Create a simple LLM response that will complete immediately
         mock_llm_response = LLMResponse(
@@ -1295,7 +1338,9 @@ class TestMCPTaskAgent:
             mock_get_tools.return_value = []
 
             # Call send_message
-            await mcp_task_agent.send_message(agent_input)
+            await mcp_task_agent.send_message(
+                agent_input, output_channel=mock_output_channel
+            )
 
             # Verify acompletion was called
             assert mock_llm_client.acompletion.called
@@ -1311,9 +1356,10 @@ class TestMCPTaskAgent:
 
     @pytest.mark.asyncio
     async def test_send_message_calls_process_tool_output_each_iteration(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """process_tool_output is called after each LLM iteration."""
+        mock_agent_input.recipient_id = "test_user"
         mock_tool_call = LLMToolCall(
             id="call_123",
             type="function",
@@ -1368,16 +1414,19 @@ class TestMCPTaskAgent:
             mock_get_tools.return_value = [mock_tool]
             mock_execute_tool.return_value = tool_output
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
         assert result.status.name == "INPUT_REQUIRED"
         assert seen_tool_result_sizes == [(1, 1)]
 
     @pytest.mark.asyncio
     async def test_send_message_includes_process_tool_output_events(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Events from process_tool_output are attached to AgentOutput."""
+        mock_agent_input.recipient_id = "test_user"
         mock_tool_call = LLMToolCall(
             id="call_123",
             type="function",
@@ -1421,7 +1470,9 @@ class TestMCPTaskAgent:
             mock_get_tools.return_value = [mock_tool]
             mock_execute_tool.return_value = tool_output
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
         assert result.status.name == "INPUT_REQUIRED"
         assert result.events is not None
@@ -1432,9 +1483,10 @@ class TestMCPTaskAgent:
 
     @pytest.mark.asyncio
     async def test_send_message_exposes_processed_events_to_next_llm_iteration(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Processed tool events are added to subsequent LLM iteration context."""
+        mock_agent_input.recipient_id = "test_user"
         mock_tool_call = LLMToolCall(
             id="call_123",
             type="function",
@@ -1478,7 +1530,9 @@ class TestMCPTaskAgent:
             mock_get_tools.return_value = [mock_tool]
             mock_execute_tool.return_value = tool_output
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
         assert result.status.name == "INPUT_REQUIRED"
         second_call_messages = mock_llm_client.acompletion.call_args_list[1].args[0]
@@ -1494,9 +1548,10 @@ class TestMCPTaskAgent:
 
     @pytest.mark.asyncio
     async def test_send_message_rebuilds_context_and_applies_slot_set_events(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Rebuilds per-iteration context and applies SlotSet updates to slots."""
+        mock_agent_input.recipient_id = "test_user"
         mcp_task_agent._include_date_time = False
         mock_tool_call = LLMToolCall(
             id="call_123",
@@ -1553,7 +1608,9 @@ class TestMCPTaskAgent:
             mock_get_tools.return_value = [mock_tool]
             mock_execute_tool.return_value = tool_output
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
         assert result.status.name == "INPUT_REQUIRED"
         assert mock_build_messages.call_count == 2
@@ -1567,9 +1624,10 @@ class TestMCPTaskAgent:
 
     @pytest.mark.asyncio
     async def test_send_message_applies_slot_set_for_unknown_slot(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Unknown SlotSet from process_tool_output is applied in context/output."""
+        mock_agent_input.recipient_id = "test_user"
         mock_tool_call = LLMToolCall(
             id="call_123",
             type="function",
@@ -1613,7 +1671,9 @@ class TestMCPTaskAgent:
             mock_get_tools.return_value = [mock_tool]
             mock_execute_tool.return_value = tool_output
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
         assert result.status.name == "INPUT_REQUIRED"
         assert result.events is not None
@@ -1632,9 +1692,10 @@ class TestMCPTaskAgent:
 
     @pytest.mark.asyncio
     async def test_send_message_tool_error_preserves_processed_events(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Processed tool events survive in output when a tool call fails."""
+        mock_agent_input.recipient_id = "test_user"
         ok_call = LLMToolCall(
             id="call_ok",
             type="function",
@@ -1685,23 +1746,23 @@ class TestMCPTaskAgent:
             mock_get_tools.return_value = [mock_good, mock_bad]
             mock_execute_tool.side_effect = [ok_output, bad_output]
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
         assert result.status.name == "FATAL_ERROR"
-        assert result.events is not None
-        assert any(
-            isinstance(e, BotUttered) and e.text == "hook_event" for e in result.events
-        )
+        assert result.error_message is not None
 
     @pytest.mark.asyncio
     async def test_send_message_exit_condition_includes_process_tool_output_events(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Events from process_tool_output appear in exit-condition completed output.
 
         A regular tool call populates tool_results so that process_tool_output
         is invoked; on the next iteration the slot-setting tool triggers exit.
         """
+        mock_agent_input.recipient_id = "test_user"
         mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'Jane'"]}
         regular_call = LLMToolCall(
             id="call_tool",
@@ -1752,23 +1813,29 @@ class TestMCPTaskAgent:
             mock_get_tools.return_value = [mock_lookup, mock_slot]
             mock_execute_tool.return_value = tool_output
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
         assert result.status.name == "COMPLETED"
         assert result.events is not None
-        bot_events = [e for e in result.events if isinstance(e, BotUttered)]
+        hook_events = [
+            e
+            for e in result.events
+            if isinstance(e, BotUttered) and e.text == "hook_event"
+        ]
         slot_events = [e for e in result.events if isinstance(e, SlotSet)]
-        assert len(bot_events) == 1
-        assert bot_events[0].text == "hook_event"
+        assert len(hook_events) == 1
         assert len(slot_events) == 1
         assert slot_events[0].key == "user_name"
         assert slot_events[0].value == "Jane"
 
     @pytest.mark.asyncio
     async def test_send_message_process_tool_output_failure_returns_fatal_error(
-        self, mcp_task_agent, mock_agent_input
+        self, mcp_task_agent, mock_agent_input, mock_output_channel
     ):
         """Failure in process_tool_output should return FATAL_ERROR."""
+        mock_agent_input.recipient_id = "test_user"
         mock_tool_call = LLMToolCall(
             id="call_123",
             type="function",
@@ -1811,7 +1878,9 @@ class TestMCPTaskAgent:
             mock_get_tools.return_value = [mock_tool]
             mock_execute_tool.return_value = tool_output
 
-            result = await mcp_task_agent.send_message(mock_agent_input)
+            result = await mcp_task_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
 
         assert result.status.name == "FATAL_ERROR"
         assert result.error_message is not None

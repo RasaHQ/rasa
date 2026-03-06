@@ -71,6 +71,7 @@ from rasa.shared.exceptions import (
     FileNotFoundException,
     InvalidConfigException,
     InvalidPromptTemplateException,
+    LLMToolResponseDecodeError,
 )
 from rasa.shared.providers._configs.azure_openai_client_config import (
     is_azure_openai_config,
@@ -84,7 +85,11 @@ from rasa.shared.providers._configs.self_hosted_llm_client_config import (
 )
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
-from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
+from rasa.shared.providers.llm.llm_response import (
+    LLMResponse,
+    LLMToolCall,
+    measure_llm_latency,
+)
 from rasa.shared.providers.mappings import (
     AZURE_OPENAI_PROVIDER,
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
@@ -99,6 +104,7 @@ from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_INIT
 
 if TYPE_CHECKING:
     from rasa.core.agent import Agent
+    from rasa.core.channels import OutputChannel
     from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -254,7 +260,7 @@ def _cache_combine_custom_and_default_configs(
 async def acompletion_with_streaming(
     llm_client: LLMClient,
     messages: Union[List[dict], List[str], str],
-    output_channel: Optional[Any] = None,
+    output_channel: Optional["OutputChannel"] = None,
     recipient_id: Optional[str] = None,
     streaming_config: Optional[StreamingConfig] = None,
     **kwargs: Any,
@@ -285,8 +291,10 @@ async def acompletion_with_streaming(
             - created: The creation timestamp
             - choices: List containing the complete accumulated text
             - model: The model name used
+            - tool_calls: Assembled tool calls from streamed deltas, or ``None``
     """
     accumulated_text = ""
+    accumulated_tool_call_deltas: List[Dict[str, Any]] = []
     llm_response_metadata = {
         "id": "",
         "created": 0,
@@ -312,23 +320,143 @@ async def acompletion_with_streaming(
                 "model": chunk_response.model,
             }
 
-        # Extract and accumulate chunk text
-        if chunk_response.choices and chunk_response.choices[0]:
-            chunk_text = chunk_response.choices[0]
-            accumulated_text += chunk_text
+        content_delta = chunk_response.choices[0] if chunk_response.choices else None
+        tool_deltas: List[Dict[str, Any]] = (
+            chunk_response.additional_info.get("stream_tool_call_deltas", [])
+            if chunk_response.additional_info
+            else []
+        )
+
+        if not content_delta and not tool_deltas:
+            continue
+
+        if content_delta:
+            accumulated_text += content_delta
             await output_channel.send_response_chunk(
                 recipient_id=recipient_id,
-                chunk=chunk_text,
+                chunk=content_delta,
             )
 
+        accumulated_tool_call_deltas.extend(tool_deltas)
+
     # Send end of stream signal to output channel if provided
-    await output_channel.send_response_chunk_end(recipient_id)
-    return LLMResponse(
+    if llm_response_metadata.get("id"):
+        await output_channel.send_response_chunk_end(recipient_id)
+
+    response = LLMResponse(
         id=llm_response_metadata.get("id", ""),
         created=llm_response_metadata.get("created", 0),
-        choices=[accumulated_text],
+        choices=[accumulated_text] if accumulated_text else [],
         model=llm_response_metadata.get("model", ""),
     )
+    response.tool_calls = assemble_tool_calls(accumulated_tool_call_deltas)
+    return response
+
+
+def assemble_tool_calls(
+    all_deltas: List[Dict[str, Any]],
+) -> Optional[List[LLMToolCall]]:
+    """Merge streamed tool-call deltas (keyed by index) into LLMToolCall objects.
+
+    Each delta must have an explicit "index": {"index": int, "id": str|None,
+    "function": {"name": str|None, "arguments": str}}. Deltas without "index"
+    are skipped to avoid merging unrelated tool calls into the same bucket.
+    Argument fragments are concatenated in arrival order per index, then parsed as JSON.
+
+    Args:
+        all_deltas: The list of tool-call deltas to assemble.
+
+    Returns:
+        The assembled list of LLMToolCall objects.
+
+    Raises:
+        LLMToolResponseDecodeError: If the arguments for a tool call are invalid.
+    """
+    if not all_deltas:
+        return None
+
+    by_index: Dict[int, Dict[str, Any]] = {}
+    for d in all_deltas:
+        if "index" not in d:
+            continue
+        idx = d["index"]
+        if idx not in by_index:
+            by_index[idx] = {"id": "", "name": "", "arguments": ""}
+        acc = by_index[idx]
+        if d.get("id"):
+            acc["id"] = d["id"]
+        func = d.get("function") or {}
+        if func.get("name"):
+            acc["name"] = func["name"]
+        acc["arguments"] += func.get("arguments") or ""
+
+    result = []
+    for idx in sorted(by_index.keys()):
+        acc = by_index[idx]
+        if not acc["name"]:
+            continue
+        try:
+            tool_args = json.loads(acc["arguments"]) if acc["arguments"] else {}
+        except json.JSONDecodeError as e:
+            structlogger.error(
+                "llm.assemble_tool_calls.invalid_args",
+                tool_name=acc["name"],
+                length_of_arguments=len(acc["arguments"]),
+            )
+            raise LLMToolResponseDecodeError(
+                original_exception=e,
+                message=f"Invalid arguments for tool call - `{acc['name']}`",
+            ) from e
+        result.append(
+            LLMToolCall(
+                id=acc["id"] or f"call_{idx}",
+                tool_name=acc["name"],
+                tool_args=tool_args,
+                type="function",
+            )
+        )
+    return result if result else None
+
+
+@measure_llm_latency
+async def invoke_llm_and_send_non_streaming_response(
+    llm_client: LLMClient,
+    output_channel: "OutputChannel",
+    recipient_id: str,
+    messages: List[Dict[str, Any]],
+    tools: List[Dict[str, Any]],
+    metadata: Dict[str, Any],
+    **kwargs: Any,
+) -> LLMResponse:
+    """Invoke the LLM and deliver the full response as a single text message.
+
+    Used when the output channel does not support streaming. Calls
+    ``acompletion`` directly to obtain the complete response in one shot,
+    then delivers the content via ``send_text_message``.
+
+    Args:
+        llm_client: The LLM client to use for completion.
+        output_channel: A channel that does not support streaming.
+        recipient_id: The recipient to send the full response to.
+        messages: The conversation messages to send to the LLM.
+        tools: Available tools in OpenAI JSON format.
+        metadata: Tracing / metadata dict passed through to the LLM client.
+        **kwargs: Additional parameters to pass to the LLM completion call.
+
+    Returns:
+        The ``LLMResponse`` returned by ``acompletion``.
+    """
+    llm_response = LLMResponse.ensure_llm_response(
+        await llm_client.acompletion(messages, tools=tools, metadata=metadata, **kwargs)
+    )
+
+    llm_content = (
+        llm_response.choices[0] if llm_response and llm_response.choices else None
+    )
+    if llm_content:
+        await output_channel.send_text_message(recipient_id, llm_content)
+
+    return llm_response
 
 
 def tracker_as_readable_transcript(

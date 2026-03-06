@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 from unittest import mock
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest import MonkeyPatch
@@ -59,6 +59,7 @@ from rasa.shared.engine.caching import CACHE_LOCATION_ENV
 from rasa.shared.exceptions import (
     InvalidConfigException,
     InvalidPromptTemplateException,
+    LLMToolResponseDecodeError,
     ProviderClientValidationError,
 )
 from rasa.shared.providers.embedding.azure_openai_embedding_client import (
@@ -81,6 +82,7 @@ from rasa.shared.providers.llm.azure_openai_llm_client import AzureOpenAILLMClie
 from rasa.shared.providers.llm.default_litellm_llm_client import DefaultLiteLLMClient
 from rasa.shared.providers.llm.litellm_router_llm_client import LiteLLMRouterLLMClient
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 from rasa.shared.providers.router.router_client import RouterClient
 from rasa.shared.utils.common import all_subclasses
@@ -90,7 +92,9 @@ from rasa.shared.utils.llm import (
     SystemPrompts,
     _get_enterprise_search_prompt,
     _get_llm_command_generator_config,
+    acompletion_with_streaming,
     allowed_values_for_slot,
+    assemble_tool_calls,
     combine_custom_and_default_config,
     create_tracker_for_user_step,
     embedder_client_factory,
@@ -407,6 +411,292 @@ def test_serialize_bot_response_for_prompt_with_empty_response():
     event = BotUttered(text=None, data={})
     result = serialize_bot_response_for_prompt(event)
     assert result == ""
+
+
+# --- assemble_tool_calls and streaming (acompletion_with_streaming) ---
+
+
+def test_assemble_tool_calls_returns_none_for_empty_deltas():
+    """Empty or no deltas should return None."""
+    assert assemble_tool_calls([]) is None
+
+
+def test_assemble_tool_calls_merges_multiple_streamed_deltas_per_index():
+    """Merge deltas per index: name/id from any delta, args concatenated in order."""
+    deltas: List[Dict[str, Any]] = [
+        {"index": 0, "id": "call_abc", "function": {"name": "get_weather"}},
+        {"index": 0, "function": {"arguments": '{"location": "'}},
+        {"index": 0, "function": {"arguments": "Berlin"}},
+        {"index": 0, "function": {"arguments": '"}'}},
+    ]
+    result = assemble_tool_calls(deltas)
+    assert result is not None
+    assert len(result) == 1
+    assert result[0].id == "call_abc"
+    assert result[0].tool_name == "get_weather"
+    assert result[0].tool_args == {"location": "Berlin"}
+    assert result[0].type == "function"
+
+
+def test_assemble_tool_calls_multiple_indices_sorted():
+    """Deltas for different indices are merged per index, returned in sorted order."""
+    deltas: List[Dict[str, Any]] = [
+        {"index": 1, "id": "call_2", "function": {"name": "bar", "arguments": "{}"}},
+        {"index": 0, "id": "call_1", "function": {"name": "foo", "arguments": "{}"}},
+    ]
+    result = assemble_tool_calls(deltas)
+    assert result is not None
+    assert len(result) == 2
+    assert result[0].tool_name == "foo" and result[0].id == "call_1"
+    assert result[1].tool_name == "bar" and result[1].id == "call_2"
+
+
+def test_assemble_tool_calls_skips_deltas_without_explicit_index():
+    """Deltas without an explicit 'index' are skipped to avoid merging into bucket 0."""
+    deltas: List[Dict[str, Any]] = [
+        {"index": 0, "id": "call_0", "function": {"name": "foo", "arguments": "{}"}},
+        {"id": "call_orphan", "function": {"name": "orphan", "arguments": "{}"}},
+    ]
+    result = assemble_tool_calls(deltas)
+    assert result is not None
+    assert len(result) == 1
+    assert result[0].tool_name == "foo"
+    assert result[0].id == "call_0"
+
+
+def test_assemble_tool_calls_skips_deltas_without_name():
+    """Deltas with no function name are skipped (no LLMToolCall for that index)."""
+    deltas: List[Dict[str, Any]] = [
+        {"index": 0, "function": {"arguments": "{}"}},
+    ]
+    result = assemble_tool_calls(deltas)
+    assert result is None
+
+
+def test_assemble_tool_calls_empty_arguments_becomes_empty_dict():
+    """When arguments string is empty, parsed args are {}."""
+    deltas: List[Dict[str, Any]] = [
+        {"index": 0, "id": "call_0", "function": {"name": "no_args", "arguments": ""}},
+    ]
+    result = assemble_tool_calls(deltas)
+    assert result is not None
+    assert len(result) == 1
+    assert result[0].tool_args == {}
+
+
+def test_assemble_tool_calls_raises_on_invalid_json_arguments():
+    """Invalid JSON in concatenated arguments raises LLMToolResponseDecodeError."""
+    deltas: List[Dict[str, Any]] = [
+        {
+            "index": 0,
+            "id": "call_0",
+            "function": {"name": "broken", "arguments": "not json"},
+        },
+    ]
+    with pytest.raises(LLMToolResponseDecodeError) as exc_info:
+        assemble_tool_calls(deltas)
+    assert "Invalid arguments for tool call" in str(exc_info.value)
+    assert "broken" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_acompletion_with_streaming_tool_call_only_response():
+    """Only tool-call deltas in stream yield empty choices and assembled tool_calls."""
+    tool_deltas: List[Dict[str, Any]] = [
+        {
+            "index": 0,
+            "id": "stream_call_0",
+            "function": {"name": "my_tool", "arguments": "{}"},
+        },
+    ]
+    chunk_with_tools_only = LLMResponse(
+        id="gen-123",
+        created=1234567890,
+        choices=[],
+        model="test-model",
+        additional_info={"stream_tool_call_deltas": tool_deltas},
+    )
+
+    async def stream_chunks():
+        yield chunk_with_tools_only
+
+    mock_client = MagicMock(spec=LLMClient)
+    mock_client.acompletion_stream = MagicMock(return_value=stream_chunks())
+    mock_channel = MagicMock()
+    mock_channel.send_response_chunk_start = AsyncMock(return_value=None)
+    mock_channel.send_response_chunk = AsyncMock(return_value=None)
+    mock_channel.send_response_chunk_end = AsyncMock(return_value=None)
+
+    response = await acompletion_with_streaming(
+        mock_client,
+        messages=[{"role": "user", "content": "Use my_tool."}],
+        output_channel=mock_channel,
+        recipient_id="user_1",
+    )
+
+    assert response.choices == []
+    assert response.tool_calls is not None
+    assert len(response.tool_calls) == 1
+    assert response.tool_calls[0].tool_name == "my_tool"
+    assert response.tool_calls[0].id == "stream_call_0"
+    assert response.tool_calls[0].tool_args == {}
+    # No content chunks should be sent
+    mock_channel.send_response_chunk.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_acompletion_with_streaming_raises_without_channel_or_recipient():
+    """Raises ValueError when output_channel or recipient_id is missing."""
+    mock_client = MagicMock(spec=LLMClient)
+    with pytest.raises(ValueError, match="Output channel and recipient ID"):
+        await acompletion_with_streaming(
+            mock_client,
+            messages="hello",
+            output_channel=None,
+            recipient_id="user_1",
+        )
+    with pytest.raises(ValueError, match="Output channel and recipient ID"):
+        await acompletion_with_streaming(
+            mock_client,
+            messages="hello",
+            output_channel=MagicMock(),
+            recipient_id=None,
+        )
+
+
+@pytest.mark.asyncio
+async def test_acompletion_with_streaming_content_only_accumulates_and_sends():
+    """Content-only stream: chunks sent to channel, final response has full text."""
+    chunks = [
+        LLMResponse(id="gen-1", created=1, choices=["Hello"], model="m"),
+        LLMResponse(id="", created=0, choices=[" "], model=""),
+        LLMResponse(id="", created=0, choices=["world"], model=""),
+    ]
+
+    async def stream_chunks():
+        for c in chunks:
+            yield c
+
+    mock_client = MagicMock(spec=LLMClient)
+    mock_client.acompletion_stream = MagicMock(return_value=stream_chunks())
+    mock_channel = MagicMock()
+    mock_channel.send_response_chunk_start = AsyncMock(return_value=None)
+    mock_channel.send_response_chunk = AsyncMock(return_value=None)
+    mock_channel.send_response_chunk_end = AsyncMock(return_value=None)
+
+    response = await acompletion_with_streaming(
+        mock_client,
+        messages=[{"role": "user", "content": "Hi"}],
+        output_channel=mock_channel,
+        recipient_id="user_1",
+    )
+
+    assert response.choices == ["Hello world"]
+    assert response.tool_calls is None
+    assert response.id == "gen-1"
+    assert response.model == "m"
+    mock_channel.send_response_chunk_start.assert_called_once_with(
+        "user_1", streaming_config=None
+    )
+    assert mock_channel.send_response_chunk.call_count == 3
+    mock_channel.send_response_chunk.assert_any_call(
+        recipient_id="user_1", chunk="Hello"
+    )
+    mock_channel.send_response_chunk.assert_any_call(recipient_id="user_1", chunk=" ")
+    mock_channel.send_response_chunk.assert_any_call(
+        recipient_id="user_1", chunk="world"
+    )
+    mock_channel.send_response_chunk_end.assert_called_once_with("user_1")
+
+
+@pytest.mark.asyncio
+async def test_acompletion_with_streaming_mixed_content_and_tool_calls():
+    """Stream with both content deltas and tool-call deltas returns both."""
+    chunk1 = LLMResponse(
+        id="gen-1",
+        created=1,
+        choices=["Here is "],
+        model="m",
+    )
+    chunk2 = LLMResponse(
+        id="",
+        created=0,
+        choices=[],
+        model="",
+        additional_info={
+            "stream_tool_call_deltas": [
+                {
+                    "index": 0,
+                    "id": "call_0",
+                    "function": {"name": "run_query", "arguments": '{"q":"x"}'},
+                },
+            ],
+        },
+    )
+    chunk3 = LLMResponse(id="", created=0, choices=[" done."], model="")
+
+    async def stream_chunks():
+        yield chunk1
+        yield chunk2
+        yield chunk3
+
+    mock_client = MagicMock(spec=LLMClient)
+    mock_client.acompletion_stream = MagicMock(return_value=stream_chunks())
+    mock_channel = MagicMock()
+    mock_channel.send_response_chunk_start = AsyncMock(return_value=None)
+    mock_channel.send_response_chunk = AsyncMock(return_value=None)
+    mock_channel.send_response_chunk_end = AsyncMock(return_value=None)
+
+    response = await acompletion_with_streaming(
+        mock_client,
+        messages=[{"role": "user", "content": "Run it"}],
+        output_channel=mock_channel,
+        recipient_id="user_1",
+    )
+
+    assert response.choices == ["Here is  done."]
+    assert response.tool_calls is not None
+    assert len(response.tool_calls) == 1
+    assert response.tool_calls[0].tool_name == "run_query"
+    assert response.tool_calls[0].tool_args == {"q": "x"}
+    mock_channel.send_response_chunk.assert_any_call(
+        recipient_id="user_1", chunk="Here is "
+    )
+    mock_channel.send_response_chunk.assert_any_call(
+        recipient_id="user_1", chunk=" done."
+    )
+
+
+@pytest.mark.asyncio
+async def test_acompletion_with_streaming_skips_chunks_with_no_content_or_tools():
+    """Chunks with empty choices and no tool_deltas are skipped (no send)."""
+    chunks = [
+        LLMResponse(id="gen-1", created=1, choices=["Hi"], model="m"),
+        LLMResponse(id="", created=0, choices=[], model=""),
+        LLMResponse(id="", created=0, choices=["!"], model=""),
+    ]
+
+    async def stream_chunks():
+        for c in chunks:
+            yield c
+
+    mock_client = MagicMock(spec=LLMClient)
+    mock_client.acompletion_stream = MagicMock(return_value=stream_chunks())
+    mock_channel = MagicMock()
+    mock_channel.send_response_chunk_start = AsyncMock(return_value=None)
+    mock_channel.send_response_chunk = AsyncMock(return_value=None)
+    mock_channel.send_response_chunk_end = AsyncMock(return_value=None)
+
+    response = await acompletion_with_streaming(
+        mock_client,
+        messages="hello",
+        output_channel=mock_channel,
+        recipient_id="user_1",
+    )
+
+    assert response.choices == ["Hi!"]
+    # Only 2 content chunks sent (empty one skipped)
+    assert mock_channel.send_response_chunk.call_count == 2
 
 
 def test_tracker_as_readable_transcript_with_buttons(domain: Domain):

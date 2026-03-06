@@ -13,7 +13,6 @@ from mcp import ListToolsResult
 from rasa.agents.constants import (
     AGENT_DEFAULT_MAX_RETRIES,
     AGENT_DEFAULT_TIMEOUT_SECONDS,
-    AGENT_FILLER_MESSAGE_STREAM_DEFAULT_CHUNK_SIZE,
     AGENT_FILLER_MESSAGES_ENABLED_DEFAULT,
     AGENT_METADATA_AGENT_ID_KEY,
     AGENT_METADATA_AGENT_RESPONSE_KEY,
@@ -46,6 +45,13 @@ from rasa.agents.schemas import (
 from rasa.agents.utils import get_slot_value_from_agent_input
 from rasa.core.available_agents import AgentConfig, AgentMCPServerConfig, ProtocolConfig
 from rasa.core.channels import OutputChannel
+from rasa.core.constants import (
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FINAL_RESPONSE,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_INPUT_REQUIRED,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY,
+    BOT_UTTERANCE_AGENT_NAME_KEY,
+    UTTER_SOURCE_METADATA_KEY,
+)
 from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.constants import (
     DEFAULT_INCLUDE_DATE_TIME,
@@ -70,7 +76,12 @@ from rasa.shared.core.events import (
     SlotSet,
     UserUttered,
 )
-from rasa.shared.exceptions import AgentInitializationException, AuthenticationError
+from rasa.shared.exceptions import (
+    AgentInitializationException,
+    AuthenticationError,
+    LLMToolResponseDecodeError,
+    ProviderClientAPIException,
+)
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
 from rasa.shared.utils.constants import (
     LANGFUSE_METADATA_AGENT_ID,
@@ -91,7 +102,9 @@ from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_TEMPERATURE,
     REASONING_EFFORT_CONFIG_KEY,
     REASONING_EFFORT_NONE,
+    acompletion_with_streaming,
     get_prompt_template,
+    invoke_llm_and_send_non_streaming_response,
     llm_factory,
     resolve_model_client_config,
     serialize_bot_response_for_prompt,
@@ -763,6 +776,40 @@ class MCPBaseAgent(AgentProtocol):
             messages.append({KEY_ROLE: ROLE_USER, KEY_CONTENT: context.user_message})
         return messages
 
+    def create_bot_uttered_for_streamed_content(
+        self,
+        text: str,
+        agent_input: AgentInput,
+        message_type: Optional[str] = BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FINAL_RESPONSE,
+    ) -> BotUttered:
+        """Create a BotUttered event for content streamed directly to the channel.
+
+        Attaches standard agent metadata so the event is correctly attributed
+        in the tracker and downstream analytics.
+
+        Args:
+            text: The streamed text content.
+            agent_input: The current agent input (used to read agent/model IDs).
+            message_type: The agent message type to set in the event metadata.
+
+        Returns:
+            A BotUttered event with agent attribution metadata.
+        """
+        return BotUttered(
+            text=text,
+            metadata={
+                UTTER_SOURCE_METADATA_KEY: self.__class__.__name__,
+                BOT_UTTERANCE_AGENT_NAME_KEY: self._name,
+                BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY: message_type,
+                AGENT_METADATA_AGENT_ID_KEY: agent_input.metadata.get(
+                    AGENT_METADATA_AGENT_ID_KEY
+                ),
+                AGENT_METADATA_MODEL_ID_KEY: agent_input.metadata.get(
+                    AGENT_METADATA_MODEL_ID_KEY
+                ),
+            },
+        )
+
     def _build_conversation_messages(
         self, context: AgentInput, turns: int
     ) -> Tuple[List[Dict[str, str]], Optional[str]]:
@@ -1000,9 +1047,14 @@ class MCPBaseAgent(AgentProtocol):
         """Get assistant message with tool calls."""
         if not llm_response.tool_calls:
             return {}
+        # When the LLM returns only tool calls (no content), choices can be empty
+        # (e.g. from streaming with no text deltas).
+        content = (
+            llm_response.choices[0] if llm_response and llm_response.choices else None
+        )
         return {
             KEY_ROLE: ROLE_ASSISTANT,
-            KEY_CONTENT: llm_response.choices[0],
+            KEY_CONTENT: content,
             KEY_TOOL_CALLS: [
                 {
                     KEY_ID: tool_call.id,
@@ -1090,6 +1142,87 @@ class MCPBaseAgent(AgentProtocol):
                 LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: self._name,
             },
         }
+
+    async def generate_and_send_response(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        metadata: Dict[str, Any],
+        agent_input: AgentInput,
+        output_channel: Optional[OutputChannel],
+    ) -> Tuple[Optional[LLMResponse], Optional[BotUttered]]:
+        """Obtain the LLM response and optionally deliver it to the output channel.
+
+        Routes to one of two paths:
+        - Streaming channel     → ``acompletion_with_streaming`` (real-time chunks)
+        - Non-streaming channel → ``invoke_llm_and_send_non_streaming_response``
+          (single message)
+
+        Args:
+            messages: The conversation messages to send to the LLM.
+            tools: Available tools in OpenAI JSON format.
+            metadata: Tracing / metadata dict passed through to the LLM client.
+            agent_input: The current agent input (used to read agent/model IDs).
+            output_channel: Channel to deliver content to.
+
+        Returns:
+            A single ``LLMResponse`` with:
+            - ``choices``: the fully accumulated content string (or ``[]`` if none).
+            - ``tool_calls``: the assembled tool calls (or ``None`` if none).
+            and a ``BotUttered`` event if the LLM response has content.
+
+        Raises:
+            ValueError: If no output channel or recipient ID is provided.
+        """
+        bot_uttered: Optional[BotUttered] = None
+        llm_response: Optional[LLMResponse] = None
+        recipient_id = self._get_recipient_id(agent_input)
+        if not output_channel or not recipient_id:
+            structlogger.debug(
+                "mcp_agent.generate_and_send_response.no_channel",
+                event_info=(
+                    "No output channel or recipient ID provided; "
+                    "calling LLM without channel delivery."
+                ),
+                agent_name=self._name,
+            )
+            raise ValueError("No output channel or recipient ID provided.")
+
+        if output_channel.supports_streaming:
+            structlogger.debug(
+                "mcp_base_agent.generate_and_send_response.streaming",
+                event_info="Sending message to LLM with streaming support.",
+                agent_name=self._name,
+                agent_id=str(make_agent_identifier(self._name, self.protocol_type)),
+            )
+            llm_response = await acompletion_with_streaming(
+                self.llm_client,
+                messages,
+                output_channel,
+                recipient_id,
+                tools=tools,
+                metadata=metadata,
+            )
+        else:
+            llm_response = await invoke_llm_and_send_non_streaming_response(
+                self.llm_client, output_channel, recipient_id, messages, tools, metadata
+            )
+
+        llm_content = (
+            llm_response.choices[0] if llm_response and llm_response.choices else None
+        )
+        if llm_content:
+            bot_uttered = self.create_bot_uttered_for_streamed_content(
+                llm_content, agent_input
+            )
+        structlogger.debug(
+            "mcp_base_agent.generate_and_send_response.response",
+            agent_name=self._name,
+            agent_id=str(make_agent_identifier(self._name, self.protocol_type)),
+            bot_uttered=bot_uttered,
+            llm_response=llm_response.to_dict() if llm_response else None,
+        )
+        return llm_response, bot_uttered
 
     # ============================================================================
     # Tool Execution
@@ -1216,34 +1349,284 @@ class MCPBaseAgent(AgentProtocol):
             )
         return await self._execute_mcp_tool(tool_name, arguments, agent_input)
 
-    def _generate_agent_error_output(
+    # ============================================================================
+    # Output Creation Helpers
+    # ============================================================================
+
+    def _record_input_required_bot_uttered(
         self,
-        tool_output: AgentToolResult,
+        bot_uttered: Optional[BotUttered],
+        generated_events: List[Event],
+    ) -> None:
+        """If bot_uttered is set, mark as input_required and append to
+        generated_events.
+        """
+        if bot_uttered:
+            bot_uttered.metadata[BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY] = (
+                BOT_UTTERANCE_AGENT_MESSAGE_TYPE_INPUT_REQUIRED
+            )
+            generated_events.append(bot_uttered)
+
+    def _record_filler_bot_uttered(
+        self,
+        bot_uttered: Optional[BotUttered],
+        generated_events: List[Event],
+    ) -> None:
+        """If filler enabled and bot_uttered set, mark as filler and append
+        to generated_events.
+        """
+        if bot_uttered and self._enable_filler_messages:
+            bot_uttered.metadata[BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY] = (
+                BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE
+            )
+            generated_events.append(bot_uttered)
+
+    def _create_recoverable_error_output(
+        self,
         agent_input: AgentInput,
-        tool_call: LLMToolCall,
+        error_message: str,
+        *,
+        generated_events: Optional[List[Event]] = None,
+        tool_results: Optional[Dict[str, AgentToolResult]] = None,
+        log_event_name: Optional[str] = None,
+        **log_kwargs: Any,
     ) -> AgentOutput:
-        """Generate an agent error output."""
-        structlogger.error(
-            "mcp_agent.send_message.tool_execution_error",
-            event_info=(
-                f"Tool `{tool_output.tool_name}` returned an error: "
-                f"{tool_output.error_message}"
-            ),
-            tool_name=tool_output.tool_name,
-            tool_args=json.dumps(tool_call.tool_args),
+        """Create an AgentOutput for a recoverable error (e.g. no LLM response).
+
+        Logs a warning with log_event_name, event_info=error_message, agent
+        context, and any extra log_kwargs before returning the output.
+        """
+        structlogger.warning(
+            log_event_name,
+            event_info=error_message,
+            agent_name=self._name,
+            agent_id=str(make_agent_identifier(self._name, self.protocol_type)),
+            **log_kwargs,
         )
-        if tool_output.is_error:
-            return AgentOutput(
-                id=agent_input.id,
-                status=AgentStatus.FATAL_ERROR,
-                error_message=tool_output.error_message,
+        return AgentOutput(
+            id=agent_input.id,
+            status=AgentStatus.RECOVERABLE_ERROR,
+            error_message=error_message,
+            events=generated_events if generated_events else None,
+            structured_results=self._get_structured_results_for_agent_output(
+                agent_input, tool_results or {}
+            ),
+        )
+
+    def _create_input_required_output(
+        self,
+        agent_input: AgentInput,
+        response_message: Optional[str],
+        output_channel: Optional[OutputChannel],
+        events: Optional[List[Event]],
+        tool_results: Optional[Dict[str, AgentToolResult]] = None,
+    ) -> AgentOutput:
+        """Create an AgentOutput for content-only response (INPUT_REQUIRED).
+
+        When output_channel is set, response_message is omitted to prevent the
+        downstream pipeline from re-sending the same message as a duplicate
+        (content was already sent directly to the output channel).
+        """
+        return AgentOutput(
+            id=agent_input.id,
+            status=AgentStatus.INPUT_REQUIRED,
+            response_message=None if output_channel else response_message,
+            events=events,
+            structured_results=self._get_structured_results_for_agent_output(
+                agent_input, tool_results or {}
+            ),
+        )
+
+    def _create_fatal_error_output(
+        self,
+        agent_input: AgentInput,
+        error_message: str,
+        log_event_name: Optional[str] = None,
+        *,
+        events: Optional[List[Event]] = None,
+        tool_results: Optional[Dict[str, AgentToolResult]] = None,
+        **log_kwargs: Any,
+    ) -> AgentOutput:
+        """Create an AgentOutput for a fatal error in the agent loop.
+
+        Logs a structlogger.error with log_event_name, event_info=error_message,
+        agent_name, agent_id, and any extra log_kwargs before returning the output.
+        """
+        structlogger.error(
+            log_event_name,
+            event_info=error_message,
+            agent_name=self._name,
+            agent_id=str(make_agent_identifier(self._name, self.protocol_type)),
+            **log_kwargs,
+        )
+        return AgentOutput(
+            id=agent_input.id,
+            status=AgentStatus.FATAL_ERROR,
+            response_message=f"I encountered an error: {error_message!s}",
+            events=events,
+            structured_results=self._get_structured_results_for_agent_output(
+                agent_input, tool_results or {}
+            ),
+            error_message=error_message,
+        )
+
+    def _create_max_iterations_reached_output(
+        self,
+        agent_input: AgentInput,
+        *,
+        events: Optional[List[Event]] = None,
+        tool_results: Optional[Dict[str, AgentToolResult]] = None,
+    ) -> AgentOutput:
+        """Create an AgentOutput when max iterations reached without completion."""
+        return AgentOutput(
+            id=agent_input.id,
+            status=AgentStatus.COMPLETED,
+            response_message=(
+                "I've completed my research but couldn't provide a final answer within"
+                "the allowed steps."
+            ),
+            events=events,
+            structured_results=self._get_structured_results_for_agent_output(
+                agent_input, tool_results or {}
+            ),
+        )
+
+    # ============================================================================
+    # Tool Output Handling
+    # ============================================================================
+
+    def _get_recipient_id(self, agent_input: AgentInput) -> Optional[str]:
+        """Extract recipient ID from agent input.
+
+        Args:
+            agent_input: The agent input.
+
+        Returns:
+            The recipient ID or None if not found.
+        """
+        # First try the recipient_id from the agent input
+        # If not found, try the sender_id from the metadata
+        # If not found, return None
+        return agent_input.recipient_id or agent_input.metadata.get(
+            AGENT_METADATA_SENDER_ID_KEY
+        )
+
+    def _append_tool_result_message(
+        self,
+        tool_call_messages: List[Dict[str, Any]],
+        tool_call_id: str,
+        content: str,
+    ) -> None:
+        """Append a tool result message to the conversation messages."""
+        tool_call_messages.append(
+            {
+                KEY_ROLE: ROLE_TOOL,
+                KEY_TOOL_CALL_ID: tool_call_id,
+                KEY_CONTENT: content,
+            }
+        )
+
+    async def _process_tool_call(
+        self,
+        tool_call: LLMToolCall,
+        agent_input: AgentInput,
+        tool_call_messages: List[Dict[str, Any]],
+        tool_results: Dict[str, AgentToolResult],
+        current_iteration_tool_results: Dict[str, AgentToolResult],
+        log_event_name: str,
+        *,
+        events: Optional[List[Event]] = None,
+    ) -> Optional[AgentOutput]:
+        """Execute a tool call, log output; on success record result and
+        append to messages.
+
+        Returns an AgentOutput on tool failure (caller should return it);
+        returns None to continue.
+        """
+        tool_output = await self._execute_tool_call(
+            tool_call.tool_name,
+            tool_call.tool_args,
+            agent_input=agent_input,
+        )
+
+        structlogger.debug(
+            log_event_name,
+            event_info=f"Tool output for tool call {tool_call.tool_name}",
+            tool_output=tool_output.model_dump(),
+            json_formatting=["tool_output"],
+            tool_name=tool_call.tool_name,
+            agent_name=self._name,
+            agent_id=str(make_agent_identifier(self._name, self.protocol_type)),
+        )
+
+        # If the tool call failed, generate an agent error output.
+        if tool_output.is_error or tool_output.result is None:
+            log_event_name = "mcp_agent.send_message.tool_execution_error"
+            log_kwargs = {
+                "tool_name": tool_output.tool_name,
+                "tool_args": json.dumps(tool_call.tool_args),
+            }
+            if tool_output.is_error:
+                return self._create_fatal_error_output(
+                    agent_input,
+                    tool_output.error_message,
+                    log_event_name=log_event_name,
+                    events=events,
+                    tool_results=tool_results,
+                    **log_kwargs,
+                )
+            return self._create_recoverable_error_output(
+                agent_input,
+                tool_output.error_message,
+                log_event_name=log_event_name,
+                generated_events=events,
+                tool_results=tool_results,
+                **log_kwargs,
             )
-        else:
-            return AgentOutput(
-                id=agent_input.id,
-                status=AgentStatus.RECOVERABLE_ERROR,
-                error_message=tool_output.error_message,
-            )
+
+        # Store the tool output in the tool_results.
+        tool_results[tool_call.id] = tool_output
+        current_iteration_tool_results[tool_call.id] = tool_output
+
+        # Add the tool call message to the messages.
+        self._append_tool_result_message(
+            tool_call_messages, tool_call.id, tool_output.result
+        )
+        return None
+
+    def _is_malformed_tool_response_exception(self, e: Exception) -> bool:
+        """Return True if the exception is a malformed tool response (retryable)."""
+        return (
+            isinstance(e, ProviderClientAPIException)
+            and isinstance(e.original_exception, LLMToolResponseDecodeError)
+        ) or isinstance(e, LLMToolResponseDecodeError)
+
+    def _append_malformed_tool_response_system_message(
+        self,
+        messages: List[Dict[str, Any]],
+        agent_input: AgentInput,
+        exception: Exception,
+        component_name: str,
+    ) -> None:
+        """Log the malformed tool response and append the system message for retry."""
+        log_event_name = f"{component_name}.send_message.malformed_tool_response_error"
+        original_exception_str = (
+            str(exception.original_exception)
+            if isinstance(exception, ProviderClientAPIException)
+            else str(exception)
+        )
+        structlogger.debug(
+            log_event_name,
+            event_info=(
+                "Malformed tool response received from LLM "
+                "(JSON decode error). Retrying the LLM call."
+            ),
+            user_message=agent_input.user_message,
+            agent_name=self._name,
+            agent_id=str(make_agent_identifier(self._name, self.protocol_type)),
+            original_exception=original_exception_str,
+        )
+        messages.append(self._get_system_message_for_malformed_tool_response())
 
     def _get_structured_results_for_agent_output(
         self,
@@ -1263,175 +1646,6 @@ class MCPBaseAgent(AgentProtocol):
         previous_structured_results.append(structured_results_of_current_iteration)
 
         return previous_structured_results
-
-    # ============================================================================
-    # Streaming Filler Message Methods
-    # ============================================================================
-
-    async def _send_filler_message(
-        self,
-        agent_input: AgentInput,
-        filler_message_text: str,
-        output_channel: Optional[OutputChannel],
-        generated_events: List[Event],
-    ) -> None:
-        """Send a filler message to the user before tool execution.
-
-        This method sends a brief filler message to the user via the output channel
-        to reduce perceived latency while tools are being executed.
-
-        Args:
-            agent_input: The agent input containing user information.
-            filler_message_text: The filler message text to send.
-            output_channel: The output channel for sending messages.
-            generated_events: List of events to append BotUttered event to.
-        """
-        if not output_channel:
-            structlogger.debug(
-                "mcp_agent.send_filler_message.no_output_channel",
-                event_info="No output channel provided, skipping filler message",
-                agent_name=self._name,
-            )
-            return
-
-        if not filler_message_text or not filler_message_text.strip():
-            structlogger.debug(
-                "mcp_agent.send_filler_message.empty_message",
-                event_info="Empty filler message text, skipping",
-                agent_name=self._name,
-            )
-            return
-
-        recipient_id = self._get_recipient_id(agent_input)
-        if not recipient_id:
-            structlogger.debug(
-                "mcp_agent.send_filler_message.no_recipient_id",
-                event_info="No recipient ID found, skipping filler message",
-                agent_name=self._name,
-            )
-            return
-
-        try:
-            # Use streaming if the channel supports it, otherwise fall back
-            # to send_text_message for reliability.
-            if output_channel.supports_streaming:
-                await self._stream_filler_message_chunks(
-                    output_channel, recipient_id, filler_message_text
-                )
-            else:
-                await output_channel.send_text_message(
-                    recipient_id=recipient_id,
-                    text=filler_message_text,
-                )
-
-            # Create BotUttered event for the filler message
-            generated_events.append(
-                BotUttered(
-                    text=filler_message_text,
-                    metadata=self._create_filler_message_metadata(agent_input),
-                )
-            )
-
-            structlogger.debug(
-                "mcp_agent.send_filler_message.sent",
-                event_info="Filler message sent successfully",
-                agent_name=self._name,
-                recipient_id=recipient_id,
-                filler_message_text=filler_message_text,
-            )
-        except Exception as e:
-            structlogger.error(
-                "mcp_agent.send_filler_message.error",
-                event_info="Error sending filler message",
-                agent_name=self._name,
-                error=str(e),
-            )
-
-    async def _stream_filler_message_chunks(
-        self,
-        output_channel: OutputChannel,
-        recipient_id: str,
-        text: str,
-    ) -> None:
-        """Stream filler message text chunk by chunk.
-
-        Args:
-            output_channel: The output channel to stream to.
-            recipient_id: The recipient ID.
-            text: The text to stream.
-        """
-        await output_channel.send_response_chunk_start(recipient_id)
-
-        for i in range(0, len(text), AGENT_FILLER_MESSAGE_STREAM_DEFAULT_CHUNK_SIZE):
-            chunk = text[i : i + AGENT_FILLER_MESSAGE_STREAM_DEFAULT_CHUNK_SIZE]
-            await output_channel.send_response_chunk(
-                recipient_id=recipient_id,
-                chunk=chunk,
-            )
-
-        await output_channel.send_response_chunk_end(recipient_id, is_intermediate=True)
-
-    def _get_recipient_id(self, agent_input: AgentInput) -> Optional[str]:
-        """Extract recipient ID from agent input.
-
-        Args:
-            agent_input: The agent input.
-
-        Returns:
-            The recipient ID or None if not found.
-        """
-        # First try the recipient_id from the agent input
-        # If not found, try the sender_id from the metadata
-        # If not found, return None
-        return agent_input.recipient_id or agent_input.metadata.get(
-            AGENT_METADATA_SENDER_ID_KEY
-        )
-
-    def _create_filler_message_metadata(
-        self, agent_input: AgentInput
-    ) -> Dict[str, Any]:
-        """Create metadata for filler message BotUttered events.
-
-        Args:
-            agent_input: The agent input.
-
-        Returns:
-            Metadata dictionary for the BotUttered event.
-        """
-        return {
-            "utter_source": self.__class__.__name__,
-            "agent_name": self._name,
-            "message_type": BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE,
-            AGENT_METADATA_AGENT_ID_KEY: agent_input.metadata.get(
-                AGENT_METADATA_AGENT_ID_KEY
-            ),
-            AGENT_METADATA_MODEL_ID_KEY: agent_input.metadata.get(
-                AGENT_METADATA_MODEL_ID_KEY
-            ),
-        }
-
-    def _extract_filler_message_from_response(
-        self, llm_response: LLMResponse
-    ) -> Optional[str]:
-        """Extract filler message text from LLM response.
-
-        When the LLM returns both content and tool_calls, the content
-        is typically the filler message.
-
-        Args:
-            llm_response: The LLM response.
-
-        Returns:
-            The filler message text or None if not present.
-        """
-        if not llm_response.choices:
-            return None
-
-        content = llm_response.choices[0]
-        if content and content.strip():
-            return content.strip()
-
-        return None
 
     # ============================================================================
     # Core Protocol Methods

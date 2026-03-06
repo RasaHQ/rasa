@@ -537,18 +537,12 @@ class VoiceOutputChannel(OutputChannel):
         1. Flush TTS engine (process any remaining text)
         2. Wait for background task to finish sending all audio
         3. Mark that streaming was used, to skip non-streaming responses
-           (unless is_intermediate=True, which indicates more messages will follow)
 
         Args:
             recipient_id: The recipient ID.
             **kwargs: Additional arguments.
-                is_intermediate: If True, this is an intermediate message (e.g.,
-                    filler message) and subsequent send_text_message calls should
-                    NOT be skipped. Defaults to False.
         """
         await super().send_response_chunk_end(recipient_id, **kwargs)
-
-        is_intermediate = kwargs.get("is_intermediate", False)
 
         if not self.tts_engine.streaming_input:
             self.streaming_response_sent = False
@@ -560,17 +554,8 @@ class VoiceOutputChannel(OutputChannel):
             await self.audio_sender_task
         await self.send_end_marker(recipient_id)
         call_state.latest_bot_audio_id = self.latest_message_id
-        logger.debug(
-            "voice_channel.end_streaming_response", is_intermediate=is_intermediate
-        )
-
-        # Only set the flag if this is NOT an intermediate message.
-        # Intermediate messages (like filler messages) should not cause
-        # subsequent send_text_message calls to be skipped.
-        if is_intermediate:
-            self.streaming_response_sent = False
-        else:
-            self.streaming_response_sent = True
+        logger.debug("voice_channel.end_streaming_response")
+        self.streaming_response_sent = True
 
     async def send_text_message(
         self, recipient_id: str, text: str, **kwargs: Any

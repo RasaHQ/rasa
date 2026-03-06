@@ -7,13 +7,11 @@ import structlog
 from rasa.agents.constants import (
     KEY_CONTENT,
     KEY_ROLE,
-    KEY_TOOL_CALL_ID,
     TOOL_ADDITIONAL_PROPERTIES_KEY,
     TOOL_DESCRIPTION_KEY,
     TOOL_NAME_KEY,
     TOOL_PARAMETERS_KEY,
     TOOL_PROPERTIES_KEY,
-    TOOL_REQUIRED_KEY,
     TOOL_STRICT_KEY,
     TOOL_TYPE_FUNCTION_KEY,
     TOOL_TYPE_KEY,
@@ -28,15 +26,15 @@ from rasa.agents.schemas import (
 )
 from rasa.core.available_agents import AgentMCPServerConfig, ProtocolConfig
 from rasa.core.channels import OutputChannel
+from rasa.core.constants import (
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FINAL_RESPONSE,
+    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY,
+)
 from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.constants import (
-    ROLE_TOOL,
+    ROLE_SYSTEM,
 )
-from rasa.shared.core.events import Event
-from rasa.shared.exceptions import (
-    LLMToolResponseDecodeError,
-    ProviderClientAPIException,
-)
+from rasa.shared.core.events import BotUttered, Event
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
 
 DEFAULT_OPEN_AGENT_PROMPT_TEMPLATE = importlib.resources.read_text(
@@ -49,19 +47,17 @@ TASK_COMPLETED_TOOL = {
     TOOL_TYPE_KEY: TOOL_TYPE_FUNCTION_KEY,
     TOOL_TYPE_FUNCTION_KEY: {
         TOOL_NAME_KEY: KEY_TASK_COMPLETED,
-        TOOL_DESCRIPTION_KEY: "Signal that the MCP agent has FULLY completed its "
-        "primary task. Once you have presented your findings, follow-up with "
-        "a message summarizing the completed task in a comprehensive and well-written "
-        "manner. Avoid repeating information already provided in the conversation.",
+        TOOL_DESCRIPTION_KEY: (
+            "Call this tool exactly once when your primary task is FULLY completed. "
+            "This tool accepts no arguments. You MUST also include text in the same "
+            "response: a natural, conversational follow-up to the user's last message "
+            "(e.g. acknowledge their choice, wish them well, close warmly). Do NOT "
+            "summarize what you did or what happened in the conversation. A response "
+            "with only the tool call and no text is invalid. Keep it short and natural."
+        ),
         TOOL_PARAMETERS_KEY: {
             TOOL_TYPE_KEY: "object",
-            TOOL_PROPERTIES_KEY: {
-                "message": {
-                    TOOL_TYPE_KEY: "string",
-                    TOOL_DESCRIPTION_KEY: "A message describing the completed task.",
-                }
-            },
-            TOOL_REQUIRED_KEY: ["message"],
+            TOOL_PROPERTIES_KEY: {},
             TOOL_ADDITIONAL_PROPERTIES_KEY: False,
         },
         TOOL_STRICT_KEY: True,
@@ -124,37 +120,119 @@ class MCPOpenAgent(MCPBaseAgent):
         """Get agentic specific built-in tools."""
         return [AgentToolSchema.from_litellm_json_format(cls.get_task_completed_tool())]
 
-    def _run_task_completed_tool(
+    @staticmethod
+    def get_system_message_for_empty_content_at_task_completion() -> Dict[str, str]:
+        """Get the system message for an empty content with task completed tool call."""
+        system_message = (
+            "The previous assistant message with tool calls contained empty content "
+            "with a task completed tool call. Please instead write a short, natural "
+            "follow-up that directly addresses the user's last message (do not "
+            "summarize the conversation) and then call the task completed tool."
+        )
+        return {
+            KEY_ROLE: ROLE_SYSTEM,
+            KEY_CONTENT: system_message,
+        }
+
+    def _append_empty_content_at_task_completion_system_message(
+        self, messages: List[Dict[str, Any]]
+    ) -> None:
+        """Log empty content at task completion and append the retry system message."""
+        structlogger.debug(
+            "mcp_open_agent.send_message.empty_content_at_task_completion",
+            event_info=(
+                "Empty content with task completed tool call "
+                "received from LLM. Retrying the LLM call."
+            ),
+            agent_name=self._name,
+            agent_id=str(make_agent_identifier(self._name, self.protocol_type)),
+        )
+        messages.append(self.get_system_message_for_empty_content_at_task_completion())
+
+    async def _run_task_completed_tool(
         self,
         tool_call: LLMToolCall,
         agent_input: AgentInput,
         tool_results: Dict[str, AgentToolResult],
+        current_iteration_tool_results: Dict[str, AgentToolResult],
         generated_events: Optional[List[Event]] = None,
+        accumulated_tool_output_events: Optional[List[Event]] = None,
+        output_channel: Optional[OutputChannel] = None,
+        bot_uttered: Optional[BotUttered] = None,
     ) -> AgentOutput:
         """Run the task completed tool."""
-        # Create the agent tool result for the task completed tool.
+        generated_events = generated_events or []
+        accumulated_tool_output_events = accumulated_tool_output_events or []
+        # A single response can include regular tools before
+        # `task_completed`. Process those pending results first so
+        # they still go through `process_tool_output` for this
+        # iteration. `task_completed` itself is excluded.
+        if current_iteration_tool_results:
+            events_from_tool_results = await self._process_tool_output_or_raise(
+                current_iteration_tool_results,
+                tool_results,
+                output_channel,
+            )
+            if events_from_tool_results:
+                self._apply_slot_set_events_to_agent_input(
+                    agent_input, events_from_tool_results
+                )
+                accumulated_tool_output_events.extend(events_from_tool_results)
+                agent_input.events.extend(events_from_tool_results)
 
         tool_result = AgentToolResult(
             tool_name=tool_call.tool_name,
-            result=tool_call.tool_args.get("message", "Task completed"),
+            result="Task completed",
         )
         tool_results[tool_call.id] = tool_result
+
+        # Record the final response as a BotUttered event.
+        if bot_uttered:
+            bot_uttered.metadata[BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY] = (
+                BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FINAL_RESPONSE
+            )
+            generated_events.append(bot_uttered)
 
         # Create the agent output for the task completed tool.
         return AgentOutput(
             id=agent_input.id,
             status=AgentStatus.COMPLETED,
-            response_message=tool_result.result,
-            events=generated_events if generated_events else None,
+            response_message=None,
+            events=generated_events + accumulated_tool_output_events,
             structured_results=self._get_structured_results_for_agent_output(
                 agent_input, tool_results
             ),
         )
 
+    def _is_task_completed_tool_call_present(self, llm_response: LLMResponse) -> bool:
+        """Check if the task completed tool call is present in the LLM response."""
+        if llm_response.tool_calls and any(
+            tool_call.tool_name == KEY_TASK_COMPLETED
+            for tool_call in llm_response.tool_calls
+        ):
+            return True
+        return False
+
     async def send_message(
         self, agent_input: AgentInput, output_channel: Optional[OutputChannel] = None
     ) -> AgentOutput:
-        """Send a message to the LLM and return the response."""
+        """Send a message to the LLM and return the response.
+
+        Each iteration generates and sends the LLM response via
+        ``generate_and_send_response`` and routes:
+        - no content and no tool calls              → RECOVERABLE_ERROR
+        - content only                              → content already streamed;
+                                                      return INPUT_REQUIRED
+        - task_completed with no content            → append retry system message
+                                                      and loop again
+        - task_completed with content / other tools → execute tools; task-exit tools
+                                                      break the loop
+
+        Any content streamed alongside tool calls is recorded as a BotUttered event
+        in ``generated_events`` so the conversation history stays consistent.
+        """
+        _available_tools = self.get_available_tools(agent_input)
+        _available_tools_names = [tool.name for tool in _available_tools]
         message_build_cache: Dict[str, Any] = {}
         tool_call_messages: List[Dict[str, Any]] = []
         tool_results: Dict[str, AgentToolResult] = {}
@@ -165,11 +243,11 @@ class MCPOpenAgent(MCPBaseAgent):
 
         # Convert available tools to OpenAI JSON format
         tools_in_openai_format = [
-            tool.to_litellm_json_format()
-            for tool in self.get_available_tools(agent_input)
+            tool.to_litellm_json_format() for tool in _available_tools
         ]
 
         for iteration in range(self.MAX_ITERATIONS):
+            current_iteration_tool_results: Dict[str, AgentToolResult] = {}
             try:
                 messages = self._build_messages_for_llm_request_with_cache(
                     agent_input,
@@ -188,238 +266,156 @@ class MCPOpenAgent(MCPBaseAgent):
                 structlogger.debug(
                     "mcp_open_agent.send_message.sending_message_to_llm",
                     messages=messages,
+                    json_formatting=["messages"],
                     event_info=f"Sending message to LLM (iteration {iteration + 1})",
                     agent_name=self._name,
                     agent_id=str(make_agent_identifier(self._name, self.protocol_type)),
                 )
-                llm_response = LLMResponse.ensure_llm_response(
-                    await self.llm_client.acompletion(
-                        messages,
-                        tools=tools_in_openai_format,
-                        metadata=self.get_llm_tracing_metadata(agent_input),
-                    )
+
+                llm_response, bot_uttered = await self.generate_and_send_response(
+                    messages=messages,
+                    tools=tools_in_openai_format,
+                    metadata=self.get_llm_tracing_metadata(agent_input),
+                    agent_input=agent_input,
+                    output_channel=output_channel,
                 )
 
+                llm_content = (
+                    llm_response.choices[0]
+                    if llm_response and llm_response.choices
+                    else None
+                )
                 # If no response from LLM, return an error output.
                 if llm_response is None or not (
                     llm_response.choices or llm_response.tool_calls
                 ):
-                    event_info = "No response from LLM."
-                    structlogger.warning(
-                        "mcp_open_agent.send_message.no_llm_response",
-                        event_info=event_info,
-                        agent_name=self._name,
-                        agent_id=str(
-                            make_agent_identifier(self._name, self.protocol_type)
-                        ),
-                    )
-                    return AgentOutput(
-                        id=agent_input.id,
-                        status=AgentStatus.RECOVERABLE_ERROR,
-                        error_message=event_info,
-                        events=(generated_events + accumulated_tool_output_events)
-                        or None,
-                        structured_results=(
-                            self._get_structured_results_for_agent_output(
-                                agent_input, tool_results
-                            )
-                        ),
+                    return self._create_recoverable_error_output(
+                        agent_input,
+                        "No response from LLM.",
+                        generated_events=generated_events
+                        + accumulated_tool_output_events,
+                        tool_results=tool_results,
+                        log_event_name="mcp_open_agent.send_message.no_llm_response",
                     )
 
-                # If no tool calls, return the response directly with input required.
-                if not llm_response.tool_calls and len(llm_response.choices) == 1:
-                    return AgentOutput(
-                        id=agent_input.id,
-                        status=AgentStatus.INPUT_REQUIRED,
-                        response_message=llm_response.choices[0],
-                        events=(generated_events + accumulated_tool_output_events)
-                        or None,
-                        structured_results=(
-                            self._get_structured_results_for_agent_output(
-                                agent_input, tool_results
-                            )
-                        ),
-                    )
-
-                # Stream filler message before tool execution if enabled
-                if llm_response.tool_calls and self._enable_filler_messages:
-                    filler_message_text = self._extract_filler_message_from_response(
-                        llm_response
-                    )
-                    if filler_message_text:
-                        await self._send_filler_message(
-                            agent_input=agent_input,
-                            filler_message_text=filler_message_text,
-                            output_channel=output_channel,
-                            generated_events=generated_events,
-                        )
-
-                # If there are tool calls, process them.
-                if llm_response.tool_calls:
-                    current_iteration_tool_results: Dict[str, AgentToolResult] = {}
-                    # Add the assistant message with tool calls to the messages.
-                    tool_call_messages.append(
-                        self._get_assistant_message_with_tool_calls(llm_response)
-                    )
-                    for tool_call in llm_response.tool_calls:
-                        structlogger.debug(
-                            "mcp_open_agent.send_message.tool_call",
-                            event_info=f"Processing tool call {tool_call.tool_name}",
-                            tool_name=tool_call.tool_name,
-                            tool_args=json.dumps(tool_call.tool_args),
-                            agent_name=self._name,
-                            agent_id=str(
-                                make_agent_identifier(self._name, self.protocol_type)
-                            ),
-                            json_formatting=["tool_args"],
-                        )
-
-                        # Agent signals task completion.
-                        if tool_call.tool_name == KEY_TASK_COMPLETED:
-                            # A single response can include regular tools before
-                            # `task_completed`. Process those pending results first so
-                            # they still go through `process_tool_output` for this
-                            # iteration. `task_completed` itself is excluded.
-                            if current_iteration_tool_results:
-                                events_from_tool_results = (
-                                    await self._process_tool_output_or_raise(
-                                        current_iteration_tool_results,
-                                        tool_results,
-                                        output_channel,
-                                    )
-                                )
-                                if events_from_tool_results:
-                                    self._apply_slot_set_events_to_agent_input(
-                                        agent_input, events_from_tool_results
-                                    )
-                                    accumulated_tool_output_events.extend(
-                                        events_from_tool_results
-                                    )
-                                    agent_input.events.extend(events_from_tool_results)
-
-                            completed_output = self._run_task_completed_tool(
-                                tool_call,
-                                agent_input,
-                                tool_results,
-                                generated_events,
-                            )
-                            completed_output.events = (
-                                generated_events + accumulated_tool_output_events
-                            ) or None
-                            return completed_output
-
-                        else:
-                            # Execute the tool call.
-                            tool_output = await self._execute_tool_call(
-                                tool_call.tool_name,
-                                tool_call.tool_args,
-                                agent_input=agent_input,
-                            )
-
-                            structlogger.debug(
-                                "mcp_open_agent.send_message.tool_output",
-                                event_info=(
-                                    f"Tool output for tool call {tool_call.tool_name}"
-                                ),
-                                tool_output=tool_output.model_dump(),
-                                json_formatting=["tool_output"],
-                                agent_name=self._name,
-                                agent_id=str(
-                                    make_agent_identifier(
-                                        self._name, self.protocol_type
-                                    )
-                                ),
-                            )
-
-                            # If the tool call failed, generate an agent error output.
-                            if tool_output.is_error or tool_output.result is None:
-                                error_output = self._generate_agent_error_output(
-                                    tool_output, agent_input, tool_call
-                                )
-                                error_output.events = (
-                                    generated_events + accumulated_tool_output_events
-                                ) or None
-                                error_output.structured_results = (
-                                    self._get_structured_results_for_agent_output(
-                                        agent_input, tool_results
-                                    )
-                                )
-                                return error_output
-
-                            # Store the tool output in the tool_results.
-                            tool_results[tool_call.id] = tool_output
-                            current_iteration_tool_results[tool_call.id] = tool_output
-
-                            # Add the tool call message to the messages.
-                            tool_call_messages.append(
-                                {
-                                    KEY_ROLE: ROLE_TOOL,
-                                    KEY_TOOL_CALL_ID: tool_call.id,
-                                    KEY_CONTENT: tool_output.result,
-                                }
-                            )
-
-                    events_from_tool_results = await self._process_tool_output_or_raise(
-                        current_iteration_tool_results,
-                        tool_results,
-                        output_channel,
-                    )
-                    if events_from_tool_results:
-                        self._apply_slot_set_events_to_agent_input(
-                            agent_input, events_from_tool_results
-                        )
-                        accumulated_tool_output_events.extend(events_from_tool_results)
-                        agent_input.events.extend(events_from_tool_results)
-
-            except Exception as e:
-                if isinstance(e, ProviderClientAPIException) and isinstance(
-                    e.original_exception, LLMToolResponseDecodeError
+                # Continue the loop if the LLM response is empty and the task completed
+                # tool call is present.
+                if (
+                    not llm_content
+                    and llm_response.tool_calls
+                    and self._is_task_completed_tool_call_present(llm_response)
                 ):
-                    structlogger.debug(
-                        "mcp_open_agent.send_message.malformed_tool_response_error",
-                        event_info=(
-                            "Malformed tool response received from LLM "
-                            "(JSON decode error). Retrying the LLM call."
-                        ),
-                        user_message=agent_input.user_message,
-                        agent_name=self._name,
-                        agent_id=str(
-                            make_agent_identifier(self._name, self.protocol_type)
-                        ),
-                        original_exception=str(e.original_exception),
-                    )
-                    # Continue to make another LLM call by breaking out of the current
-                    # iteration and letting the loop continue with a fresh LLM request
-                    tool_call_messages.append(
-                        self._get_system_message_for_malformed_tool_response()
+                    self._append_empty_content_at_task_completion_system_message(
+                        tool_call_messages
                     )
                     continue
-                structlogger.error(
+
+                # Content only (no tool calls) → content already streamed
+                # and return INPUT_REQUIRED
+                if not llm_response.tool_calls:
+                    # Record the content as a BotUttered event.
+                    self._record_input_required_bot_uttered(
+                        bot_uttered, generated_events
+                    )
+                    return self._create_input_required_output(
+                        agent_input,
+                        llm_content,
+                        output_channel,
+                        generated_events + accumulated_tool_output_events,
+                        tool_results,
+                    )
+
+                if (
+                    llm_response.tool_calls
+                    and bot_uttered
+                    and not self._is_task_completed_tool_call_present(llm_response)
+                ):
+                    # Record the acknowledgement response as a BotUttered event.
+                    self._record_filler_bot_uttered(bot_uttered, generated_events)
+
+                # Add the assistant message with tool calls to the messages.
+                tool_call_messages.append(
+                    self._get_assistant_message_with_tool_calls(llm_response)
+                )
+
+                for tool_call in llm_response.tool_calls:
+                    structlogger.debug(
+                        "mcp_open_agent.send_message.tool_call",
+                        event_info=f"Processing tool call {tool_call.tool_name}",
+                        tool_name=tool_call.tool_name,
+                        tool_args=json.dumps(tool_call.tool_args),
+                        agent_name=self._name,
+                        agent_id=str(
+                            make_agent_identifier(self._name, self.protocol_type)
+                        ),
+                        json_formatting=["tool_args"],
+                    )
+
+                    # If the tool is not available, return a fatal error output.
+                    if tool_call.tool_name not in _available_tools_names:
+                        return self._create_fatal_error_output(
+                            agent_input,
+                            f"Tool {tool_call.tool_name} is not available.",
+                            "mcp_open_agent.send_message.tool_not_available",
+                            events=generated_events + accumulated_tool_output_events,
+                            tool_results=tool_results,
+                            tool_name=tool_call.tool_name,
+                        )
+
+                    # task_completed → exit immediately
+                    if tool_call.tool_name == KEY_TASK_COMPLETED:
+                        return await self._run_task_completed_tool(
+                            tool_call,
+                            agent_input,
+                            tool_results,
+                            current_iteration_tool_results,
+                            generated_events=generated_events,
+                            accumulated_tool_output_events=accumulated_tool_output_events,
+                            output_channel=output_channel,
+                            bot_uttered=bot_uttered,
+                        )
+
+                    # All other tools → execute and continue the loop
+                    if error_output := await self._process_tool_call(
+                        tool_call,
+                        agent_input,
+                        tool_call_messages,
+                        tool_results,
+                        current_iteration_tool_results,
+                        "mcp_open_agent.send_message.tool_output",
+                        events=generated_events + accumulated_tool_output_events,
+                    ):
+                        return error_output
+
+                events_from_tool_results = await self._process_tool_output_or_raise(
+                    current_iteration_tool_results,
+                    tool_results,
+                    output_channel,
+                )
+                if events_from_tool_results:
+                    self._apply_slot_set_events_to_agent_input(
+                        agent_input, events_from_tool_results
+                    )
+                    accumulated_tool_output_events.extend(events_from_tool_results)
+                    agent_input.events.extend(events_from_tool_results)
+
+            except Exception as e:
+                if self._is_malformed_tool_response_exception(e):
+                    # Continue to make another LLM call by breaking out of the current
+                    # iteration and letting the loop continue with a fresh LLM request
+                    self._append_malformed_tool_response_system_message(
+                        tool_call_messages, agent_input, e, "mcp_open_agent"
+                    )
+                    continue
+                return self._create_fatal_error_output(
+                    agent_input,
+                    str(e),
                     "mcp_open_agent.send_message.error_in_agent_loop",
-                    event_info=f"Failed to send message: {e}",
-                    user_message=agent_input.user_message,
-                    agent_name=self._name,
-                    agent_id=str(make_agent_identifier(self._name, self.protocol_type)),
+                    events=generated_events + accumulated_tool_output_events,
+                    tool_results=tool_results,
                 )
-                return AgentOutput(
-                    id=agent_input.id,
-                    status=AgentStatus.FATAL_ERROR,
-                    response_message=f"I encountered an error: {e!s}",
-                    events=(generated_events + accumulated_tool_output_events) or None,
-                    structured_results=self._get_structured_results_for_agent_output(
-                        agent_input, tool_results
-                    ),
-                    error_message=str(e),
-                )
-        return AgentOutput(
-            id=agent_input.id,
-            status=AgentStatus.COMPLETED,
-            response_message=(
-                "I've completed my research but couldn't provide a final answer within"
-                "the allowed steps."
-            ),
-            events=(generated_events + accumulated_tool_output_events) or None,
-            structured_results=self._get_structured_results_for_agent_output(
-                agent_input, tool_results
-            ),
+        return self._create_max_iterations_reached_output(
+            agent_input,
+            events=generated_events + accumulated_tool_output_events,
+            tool_results=tool_results,
         )

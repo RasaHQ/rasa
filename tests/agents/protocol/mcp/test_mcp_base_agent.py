@@ -10,14 +10,12 @@ import pytest
 from pytest import MonkeyPatch
 
 from rasa.agents.constants import (
-    AGENT_FILLER_MESSAGE_STREAM_DEFAULT_CHUNK_SIZE,
     AGENT_METADATA_AGENT_ID_KEY,
     AGENT_METADATA_AGENT_RESPONSE_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
     AGENT_METADATA_RESTARTED_KEY,
     AGENT_METADATA_RESUMED_AFTER_INTERRUPTION,
     AGENT_METADATA_SENDER_ID_KEY,
-    BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE,
 )
 from rasa.agents.core.types import AgentStatus
 from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
@@ -1350,21 +1348,58 @@ class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
         else:
             assert result == {}
 
+    def test_get_assistant_message_with_tool_calls_empty_choices(
+        self,
+        mock_mcp_base_agent: MockMCPBaseAgentImpl,
+    ) -> None:
+        """When LLM returns only tool calls (no content), choices can be empty.
+
+        Regression test: streaming with no text deltas yields choices=[].
+        Must not raise IndexError and must set content to None.
+        """
+        llm_response = LLMResponse(
+            id="chatcmpl-test",
+            created=1772705847,
+            choices=[],  # Empty when model returns only tool calls
+            model="gpt-4o-2024-11-20",
+            tool_calls=[
+                LLMToolCall(
+                    id="call_DCensQfyl6K0IMzqBPerH3mW",
+                    type="function",
+                    tool_name="billing_get_bill_list",
+                    tool_args={"ban": 325738678, "ben": 1, "no_of_bills": 6},
+                )
+            ],
+        )
+
+        result = mock_mcp_base_agent._get_assistant_message_with_tool_calls(
+            llm_response
+        )
+
+        assert result["role"] == "assistant"
+        assert result["content"] is None
+        assert len(result["tool_calls"]) == 1
+        assert result["tool_calls"][0]["id"] == "call_DCensQfyl6K0IMzqBPerH3mW"
+        assert result["tool_calls"][0]["function"]["name"] == "billing_get_bill_list"
+        assert result["tool_calls"][0]["function"]["arguments"] == (
+            '{"ban": 325738678, "ben": 1, "no_of_bills": 6}'
+        )
+
     def test_get_tool_call_message(
         self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
-        """Test getting tool call message."""
-        tool_response = AgentOutput(
-            id="call_123",
-            status=AgentStatus.COMPLETED,
-            response_message="Tool result",
-        )
+        """Test appending tool result message to conversation messages."""
+        messages: List[Dict[str, Any]] = []
+        tool_call_id = "call_123"
+        content = "Tool result"
 
-        result = mock_mcp_base_agent._get_tool_call_message(tool_response)
+        mock_mcp_base_agent._append_tool_result_message(messages, tool_call_id, content)
 
+        assert len(messages) == 1
+        result = messages[0]
         assert result["role"] == "tool"
-        assert result["tool_call_id"] == "call_123"
-        assert result["content"] == "Tool result"
+        assert result["tool_call_id"] == tool_call_id
+        assert result["content"] == content
 
     def test_get_system_message_for_malformed_tool_response(
         self, mock_mcp_base_agent: MockMCPBaseAgentImpl
@@ -1540,38 +1575,28 @@ class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
             assert result.tool_name == "mcp_tool"
 
     @pytest.mark.parametrize(
-        "is_error, error_message, expected_status",
+        "error_message, expected_status",
         [
-            (True, "Fatal error", "FATAL_ERROR"),
-            (False, "Recoverable error", "RECOVERABLE_ERROR"),
+            ("Fatal error", "FATAL_ERROR"),
+            ("Recoverable error", "RECOVERABLE_ERROR"),
         ],
     )
-    def test_generate_agent_error_output(
+    def test_create_error_output_helpers(
         self,
         mock_mcp_base_agent: MockMCPBaseAgentImpl,
         mock_agent_input: AgentInput,
-        is_error,
-        error_message,
-        expected_status,
+        error_message: str,
+        expected_status: str,
     ) -> None:
-        """Test generating agent error output for different error types."""
-        tool_output = AgentToolResult(
-            tool_name="test_tool",
-            result=None,
-            is_error=is_error,
-            error_message=error_message,
-        )
-
-        tool_call = LLMToolCall(
-            id="call_123",
-            type="function",
-            tool_name="test_tool",
-            tool_args={"arg": "value"},
-        )
-
-        result = mock_mcp_base_agent._generate_agent_error_output(
-            tool_output, mock_agent_input, tool_call
-        )
+        """Test output creation helpers for fatal and recoverable errors."""
+        if expected_status == "FATAL_ERROR":
+            result = mock_mcp_base_agent._create_fatal_error_output(
+                mock_agent_input, error_message, tool_results={}
+            )
+        else:
+            result = mock_mcp_base_agent._create_recoverable_error_output(
+                mock_agent_input, error_message, tool_results={}
+            )
 
         assert result.id == mock_agent_input.id
         assert result.status.name == expected_status
@@ -2058,298 +2083,6 @@ class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
     # Streaming Filler Message Tests
     # ============================================================================
 
-    # ---- _extract_filler_message_from_response --------------------------------
-
-    @pytest.mark.parametrize(
-        "choices, tool_calls, expected_text",
-        [
-            # tool_calls + non-empty content → filler message extracted
-            (
-                ["I'll look that up for you."],
-                [
-                    LLMToolCall(
-                        id="call_1",
-                        type="function",
-                        tool_name="search",
-                        tool_args={},
-                    )
-                ],
-                "I'll look that up for you.",
-            ),
-            # tool_calls + whitespace-only content → None
-            (
-                ["   "],
-                [
-                    LLMToolCall(
-                        id="call_2",
-                        type="function",
-                        tool_name="search",
-                        tool_args={},
-                    )
-                ],
-                None,
-            ),
-            # tool_calls + empty choices list → None
-            (
-                [],
-                [
-                    LLMToolCall(
-                        id="call_3",
-                        type="function",
-                        tool_name="search",
-                        tool_args={},
-                    )
-                ],
-                None,
-            ),
-            # no tool_calls + content → still extracts
-            # (method is agnostic to tool_calls)
-            (["Just a plain reply."], [], "Just a plain reply."),
-        ],
-    )
-    def test_extract_filler_message_from_response(
-        self,
-        mock_mcp_base_agent: MockMCPBaseAgentImpl,
-        choices: List[str],
-        tool_calls: List[LLMToolCall],
-        expected_text: Optional[str],
-    ) -> None:
-        """_extract_filler_message_from_response returns content when present."""
-        llm_response = LLMResponse(
-            id="resp_1",
-            created=1700000000,
-            choices=choices,
-            tool_calls=tool_calls,
-        )
-
-        result = mock_mcp_base_agent._extract_filler_message_from_response(llm_response)
-
-        assert result == expected_text
-
-    # ---- _send_filler_message: guard conditions ----------------------
-
-    @pytest.mark.asyncio
-    async def test_send_filler_message_skips_when_no_output_channel(
-        self,
-        mock_mcp_base_agent: MockMCPBaseAgentImpl,
-        mock_agent_input: AgentInput,
-    ) -> None:
-        """No output channel → method returns early, no event appended."""
-        mock_agent_input.recipient_id = "user_123"
-        generated_events: List = []
-
-        await mock_mcp_base_agent._send_filler_message(
-            agent_input=mock_agent_input,
-            filler_message_text="On it!",
-            output_channel=None,
-            generated_events=generated_events,
-        )
-
-        assert generated_events == []
-
-    @pytest.mark.asyncio
-    async def test_send_filler_message_skips_when_empty_text(
-        self,
-        mock_mcp_base_agent: MockMCPBaseAgentImpl,
-        mock_agent_input: AgentInput,
-    ) -> None:
-        """Empty / whitespace filler message text → method returns early."""
-        mock_agent_input.recipient_id = "user_123"
-        mock_channel = MagicMock()
-        mock_channel.supports_streaming = False
-        mock_channel.send_text_message = AsyncMock()
-        generated_events: List = []
-
-        await mock_mcp_base_agent._send_filler_message(
-            agent_input=mock_agent_input,
-            filler_message_text="   ",
-            output_channel=mock_channel,
-            generated_events=generated_events,
-        )
-
-        mock_channel.send_text_message.assert_not_called()
-        assert generated_events == []
-
-    @pytest.mark.asyncio
-    async def test_send_filler_message_skips_when_no_recipient_id(
-        self,
-        mock_mcp_base_agent: MockMCPBaseAgentImpl,
-        mock_agent_input: AgentInput,
-    ) -> None:
-        """No recipient_id and no sender_id in metadata → method returns early."""
-        mock_agent_input.recipient_id = None
-        mock_agent_input.metadata = {}  # no AGENT_METADATA_SENDER_ID_KEY
-        mock_channel = MagicMock()
-        mock_channel.supports_streaming = False
-        mock_channel.send_text_message = AsyncMock()
-        generated_events: List = []
-
-        await mock_mcp_base_agent._send_filler_message(
-            agent_input=mock_agent_input,
-            filler_message_text="On it!",
-            output_channel=mock_channel,
-            generated_events=generated_events,
-        )
-
-        mock_channel.send_text_message.assert_not_called()
-        assert generated_events == []
-
-    # ---- _send_filler_message: fallback (non-streaming) path ---------
-
-    @pytest.mark.asyncio
-    async def test_send_filler_message_uses_send_text_message_when_no_streaming(
-        self,
-        mock_mcp_base_agent: MockMCPBaseAgentImpl,
-        mock_agent_input: AgentInput,
-    ) -> None:
-        """When supports_streaming is False, send_text_message is called."""
-        mock_agent_input.recipient_id = "user_abc"
-        mock_channel = MagicMock()
-        mock_channel.supports_streaming = False
-        mock_channel.send_text_message = AsyncMock()
-        generated_events: List = []
-
-        await mock_mcp_base_agent._send_filler_message(
-            agent_input=mock_agent_input,
-            filler_message_text="Sure, let me check!",
-            output_channel=mock_channel,
-            generated_events=generated_events,
-        )
-
-        mock_channel.send_text_message.assert_awaited_once_with(
-            recipient_id="user_abc",
-            text="Sure, let me check!",
-        )
-        # Streaming methods must NOT be called
-        mock_channel.send_response_chunk_start.assert_not_called()
-        mock_channel.send_response_chunk.assert_not_called()
-        mock_channel.send_response_chunk_end.assert_not_called()
-
-    # ---- _send_filler_message: streaming path ------------------------
-
-    @pytest.mark.asyncio
-    async def test_send_filler_message_uses_streaming_when_supported(
-        self,
-        mock_mcp_base_agent: MockMCPBaseAgentImpl,
-        mock_agent_input: AgentInput,
-    ) -> None:
-        """When supports_streaming is True, chunk streaming methods are called."""
-        mock_agent_input.recipient_id = "user_xyz"
-        mock_channel = MagicMock()
-        mock_channel.supports_streaming = True
-        mock_channel.send_response_chunk_start = AsyncMock()
-        mock_channel.send_response_chunk = AsyncMock()
-        mock_channel.send_response_chunk_end = AsyncMock()
-        generated_events: List = []
-
-        filler_text = "On it!"
-        await mock_mcp_base_agent._send_filler_message(
-            agent_input=mock_agent_input,
-            filler_message_text=filler_text,
-            output_channel=mock_channel,
-            generated_events=generated_events,
-        )
-
-        mock_channel.send_response_chunk_start.assert_awaited_once_with("user_xyz")
-        mock_channel.send_response_chunk_end.assert_awaited_once_with(
-            "user_xyz", is_intermediate=True
-        )
-        # send_text_message must NOT be called
-        mock_channel.send_text_message.assert_not_called()
-
-        # All chunks concatenated must equal the original text
-        sent_chunks = [
-            c.kwargs["chunk"] for c in mock_channel.send_response_chunk.await_args_list
-        ]
-        assert "".join(sent_chunks) == filler_text
-
-    @pytest.mark.asyncio
-    async def test_stream_filler_message_chunks_respects_chunk_size(
-        self,
-        mock_mcp_base_agent: MockMCPBaseAgentImpl,
-    ) -> None:
-        """_stream_filler_message_chunks splits text into CHUNK_SIZE-sized pieces."""
-        mock_channel = MagicMock()
-        mock_channel.send_response_chunk_start = AsyncMock()
-        mock_channel.send_response_chunk = AsyncMock()
-        mock_channel.send_response_chunk_end = AsyncMock()
-
-        # Text longer than one chunk
-        text = "A" * (AGENT_FILLER_MESSAGE_STREAM_DEFAULT_CHUNK_SIZE * 3 + 2)
-        await mock_mcp_base_agent._stream_filler_message_chunks(
-            mock_channel, "recipient_1", text
-        )
-
-        chunks = [
-            c.kwargs["chunk"] for c in mock_channel.send_response_chunk.await_args_list
-        ]
-        assert "".join(chunks) == text
-        # Every chunk except possibly the last must be exactly CHUNK_SIZE characters
-        for chunk in chunks[:-1]:
-            assert len(chunk) == AGENT_FILLER_MESSAGE_STREAM_DEFAULT_CHUNK_SIZE
-
-    # ---- BotUttered event appended to generated_events ----------------------
-
-    @pytest.mark.asyncio
-    async def test_send_filler_message_appends_bot_uttered_event(
-        self,
-        mock_mcp_base_agent: MockMCPBaseAgentImpl,
-        mock_agent_input: AgentInput,
-    ) -> None:
-        """A BotUttered event is appended to generated_events after sending."""
-        mock_agent_input.recipient_id = "user_evt"
-        mock_agent_input.metadata = {
-            AGENT_METADATA_AGENT_ID_KEY: "agent_42",
-            AGENT_METADATA_MODEL_ID_KEY: "gpt-4o",
-        }
-        mock_channel = MagicMock()
-        mock_channel.supports_streaming = False
-        mock_channel.send_text_message = AsyncMock()
-        generated_events: List = []
-
-        await mock_mcp_base_agent._send_filler_message(
-            agent_input=mock_agent_input,
-            filler_message_text="Working on it…",
-            output_channel=mock_channel,
-            generated_events=generated_events,
-        )
-
-        assert len(generated_events) == 1
-        event = generated_events[0]
-        assert isinstance(event, BotUttered)
-        assert event.text == "Working on it…"
-
-        meta = event.metadata
-        assert meta["message_type"] == BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE
-        assert meta[AGENT_METADATA_AGENT_ID_KEY] == "agent_42"
-        assert meta[AGENT_METADATA_MODEL_ID_KEY] == "gpt-4o"
-        assert meta["agent_name"] == mock_mcp_base_agent._name
-
-    @pytest.mark.asyncio
-    async def test_send_filler_message_no_event_on_channel_error(
-        self,
-        mock_mcp_base_agent: MockMCPBaseAgentImpl,
-        mock_agent_input: AgentInput,
-    ) -> None:
-        """If the channel raises an exception, no BotUttered event is appended."""
-        mock_agent_input.recipient_id = "user_err"
-        mock_channel = MagicMock()
-        mock_channel.supports_streaming = False
-        mock_channel.send_text_message = AsyncMock(
-            side_effect=RuntimeError("channel down")
-        )
-        generated_events: List = []
-
-        # Should not propagate the exception
-        await mock_mcp_base_agent._send_filler_message(
-            agent_input=mock_agent_input,
-            filler_message_text="Hang on!",
-            output_channel=mock_channel,
-            generated_events=generated_events,
-        )
-
-        assert generated_events == []
-
     # ---- recipient_id resolution ---------------------------------------------
 
     @pytest.mark.parametrize(
@@ -2375,81 +2108,6 @@ class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
         result = mock_mcp_base_agent._get_recipient_id(mock_agent_input)
 
         assert result == expected
-
-    # ---- _create_filler_message_metadata -------------------------------------
-
-    def test_create_filler_message_metadata_structure(
-        self,
-        mock_mcp_base_agent: MockMCPBaseAgentImpl,
-        mock_agent_input: AgentInput,
-    ) -> None:
-        """_create_filler_message_metadata returns expected keys and values."""
-        mock_agent_input.metadata = {
-            AGENT_METADATA_AGENT_ID_KEY: "agent_99",
-            AGENT_METADATA_MODEL_ID_KEY: "gpt-4o-mini",
-        }
-
-        meta = mock_mcp_base_agent._create_filler_message_metadata(mock_agent_input)
-
-        assert meta["message_type"] == BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE
-        assert meta["agent_name"] == mock_mcp_base_agent._name
-        assert meta["utter_source"] == mock_mcp_base_agent.__class__.__name__
-        assert meta[AGENT_METADATA_AGENT_ID_KEY] == "agent_99"
-        assert meta[AGENT_METADATA_MODEL_ID_KEY] == "gpt-4o-mini"
-
-    # ---- Integration: filler message events surface in AgentOutput -----------
-
-    @pytest.mark.asyncio
-    async def test_filler_message_events_included_in_agent_output_events(
-        self,
-        mock_mcp_base_agent: MockMCPBaseAgentImpl,
-        mock_agent_input: AgentInput,
-    ) -> None:
-        """BotUttered filler message events are included in AgentOutput.events.
-
-        This test simulates the pattern used by send_message implementations:
-        a generated_events list is populated by _send_filler_message and
-        then passed through to AgentOutput.events.
-        """
-        from rasa.agents.core.types import AgentStatus
-        from rasa.agents.schemas import AgentOutput
-
-        mock_agent_input.recipient_id = "user_out"
-        mock_agent_input.metadata = {
-            AGENT_METADATA_AGENT_ID_KEY: "agent_out",
-            AGENT_METADATA_MODEL_ID_KEY: "gpt-4o",
-        }
-        mock_channel = MagicMock()
-        mock_channel.supports_streaming = False
-        mock_channel.send_text_message = AsyncMock()
-
-        generated_events: List = []
-
-        # Simulate what send_message does: call _send_filler_message,
-        # then build AgentOutput with the accumulated events.
-        await mock_mcp_base_agent._send_filler_message(
-            agent_input=mock_agent_input,
-            filler_message_text="Let me check that for you.",
-            output_channel=mock_channel,
-            generated_events=generated_events,
-        )
-
-        agent_output = AgentOutput(
-            id=mock_agent_input.id,
-            status=AgentStatus.INPUT_REQUIRED,
-            response_message="Here is the answer.",
-            events=generated_events if generated_events else None,
-        )
-
-        assert agent_output.events is not None
-        assert len(agent_output.events) == 1
-        filler_event = agent_output.events[0]
-        assert isinstance(filler_event, BotUttered)
-        assert filler_event.text == "Let me check that for you."
-        assert (
-            filler_event.metadata["message_type"]
-            == BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE
-        )
 
     # ============================================================================
     # Tool Timeout Configuration Tests
