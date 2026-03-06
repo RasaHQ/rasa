@@ -19,7 +19,11 @@ import rasa.core.channels.channel
 import rasa.core.run
 from rasa.core import utils
 from rasa.core.channels import RasaChatInput, console
-from rasa.core.channels.channel import UserMessage, requires_basic_auth
+from rasa.core.channels.channel import (
+    CollectingOutputChannel,
+    UserMessage,
+    requires_basic_auth,
+)
 from rasa.core.channels.rasa_chat import (
     CONVERSATION_ID_KEY,
     INTERACTIVE_LEARNING_PERMISSION,
@@ -99,6 +103,20 @@ async def test_send_response(default_channel, default_tracker):
         "recipient_id": "my-sender",
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }
+
+
+async def test_collecting_output_channel_streaming_no_errors():
+    """Test that send_response_chunk_start/chunk/end work without errors
+    on a CollectingOutputChannel that has no tracker attached."""
+    channel = CollectingOutputChannel()
+
+    # None of these should raise AttributeError even though no tracker is attached
+    await channel.send_response_chunk_start(recipient_id="test-user")
+    await channel.send_response_chunk(recipient_id="test-user", chunk="Hello ")
+    await channel.send_response_chunk(recipient_id="test-user", chunk="world")
+    await channel.send_response_chunk_end(recipient_id="test-user")
+
+    assert channel._accumulated_streaming_text == ""
 
 
 async def test_console_input():

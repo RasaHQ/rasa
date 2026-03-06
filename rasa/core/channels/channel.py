@@ -293,7 +293,7 @@ class OutputChannel:
 
     def _notify_streaming_response(self) -> None:
         """Notify plugins about the streaming response progress."""
-        if self._tracker:
+        if getattr(self, "_tracker", None):
             from rasa.plugin import plugin_manager
 
             plugin_manager().hook.after_response_chunk(
@@ -457,6 +457,7 @@ class CollectingOutputChannel(OutputChannel):
 
     def __init__(self) -> None:
         """Initialise list to collect messages."""
+        super().__init__()
         self.messages: List[Dict[Text, Any]] = []
 
     @classmethod
