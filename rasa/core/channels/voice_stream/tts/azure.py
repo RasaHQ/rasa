@@ -433,3 +433,11 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
             return SpeechSynthesisOutputFormat.Raw48Khz16BitMonoPcm
 
         raise ValueError(f"Azure TTS does not support audio format {self.audio_format}")
+
+    async def set_language(self, rasa_language: str) -> None:
+        """Update the TTS language for next synthesis"""
+        await super().set_language(rasa_language)
+
+        # need to reconnect to apply new language
+        await self.close_connection()
+        await self.connect()
