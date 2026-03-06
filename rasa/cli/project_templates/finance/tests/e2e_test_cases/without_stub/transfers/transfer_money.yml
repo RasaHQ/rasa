@@ -1,7 +1,7 @@
 test_cases:
   - test_case: transfer money (happy path)
     steps:
-    - user: "Transfer $50 to Joe today."
+    - user: "Transfer $50 to Joe immediately."
       assertions:
         - slot_was_set:
           - name: "transfer_timing_type"
@@ -34,7 +34,7 @@ test_cases:
               utter_name: "utter_transfer_completed"
   - test_case: transfer money (unhappy path)
     steps:
-    - user: "Transfer $50 to Joe today."
+    - user: "Transfer $50 to Joe immediately."
       assertions:
         - slot_was_set:
           - name: "transfer_timing_type"
@@ -66,7 +66,7 @@ test_cases:
               utter_name: "utter_transfer_cancelled"
   - test_case: transfer money to invalid payee (should be blocked)
     steps:
-    - user: "Transfer $50 to Leonard today."
+    - user: "Transfer $50 to Leonard immediately."
       assertions:
         - slot_was_set:
           - name: "transfer_timing_type"
