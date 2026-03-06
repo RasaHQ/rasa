@@ -10,6 +10,14 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.16] - 2026-03-06
+                         
+Rasa Pro 3.15.16 (2026-03-06)                              
+### Bugfixes
+- [#2669](https://github.com/rasahq/rasa-private/issues/2669): When a flow had Agent A → flow steps → Agent B and the user restarted Agent A while Agent B was already started (then interrupted), execution after the restarted Agent A completed would jump back to Agent B and skip the flow steps between A and B. Flow steps between agents are now executed correctly, and the previously interrupted Agent B is resumed instead of started from scratch.
+- [#4770](https://github.com/rasahq/rasa-private/issues/4770): Channel specific silence_timeout can now be set in credentials file. Fixes the type error. If silence_timeout is not set the channel will use global value.
+
+
 ## [3.15.15] - 2026-03-03
                          
 Rasa Pro 3.15.15 (2026-03-03)                              
