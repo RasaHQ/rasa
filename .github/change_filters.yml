@@ -104,6 +104,9 @@ broker-files:
   - tests_deployment/docker-compose.broker.yml
   - tests/integration_tests/core/brokers/**
   - tests_deployment/integration_tests_channel_and_broker/**
+  # CALM Kafka Restart Integration Tests use run-pii-calm-containers and this stack:
+  - Makefile
+  - tests_deployment/integration_tests_pii_management_in_calm/**
 
 tracing-and-metrics-files: # files imported by tracing and metrics functionality are also added here
   - rasa/tracing/**

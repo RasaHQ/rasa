@@ -748,7 +748,7 @@ RUN_PII_CONTAINERS_BASE = USER_ID=$(USER_ID) \
 RUN_PII_CONTAINERS_COMMAND = $(RUN_PII_CONTAINERS_BASE) --wait
 
 run-pii-calm-containers: BOT_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(PII_CALM_BOT_DIRECTORY) ## Run the PII integration test containers for CALM bot.
-run-pii-calm-containers: train-pii-calm-bot
+run-pii-calm-containers: train-pii-calm-bot train-pii-non-env-expiry-true train-pii-non-env-expiry-false
 	$(RUN_PII_CONTAINERS_COMMAND)
 
 # Run only env-set services (5005, 5006 + Kafka) for PII integration job 1
