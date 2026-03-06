@@ -10,6 +10,7 @@ from rasa.agents.constants import (
     A2A_AGENT_TASK_ID_KEY,
     AGENT_METADATA_AGENT_ID_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_RESTARTED_KEY,
     AGENT_METADATA_SENDER_ID_KEY,
 )
 from rasa.agents.core.types import AgentStatus, ProtocolType
@@ -484,13 +485,14 @@ async def test_run_agent_restart_resets_exit_if_slots_before_agent_call(
     user_stack_frame = UserFlowStackFrame(
         flow_id="my_flow", step_id="START", frame_id="some-frame-id"
     )
-    # Create a restart agent stack frame with the specific frame_id pattern
+    # Restart frame: is_restart=True triggers slot reset and restart metadata
     restart_agent_stack_frame = AgentStackFrame(
         frame_id="restart_agent_car-research",
         flow_id="my_flow",
         step_id="my-call-step",
         agent_id="car-research",
         state=AgentState.WAITING_FOR_INPUT,
+        is_restart=True,
     )
     stack = DialogueStack(frames=[user_stack_frame, restart_agent_stack_frame])
     events = [
@@ -549,6 +551,8 @@ async def test_run_agent_restart_resets_exit_if_slots_before_agent_call(
         "slots.done is True",
         "slots.budget < 50000",
     ]
+    # Verify that restarted flag is set when agent is restarted
+    assert agent_input.metadata.get(AGENT_METADATA_RESTARTED_KEY) is True
 
 
 @pytest.mark.asyncio

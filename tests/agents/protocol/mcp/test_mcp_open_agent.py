@@ -90,13 +90,11 @@ class TestMCPOpenAgent:
 
             # Verify other context variables are included
             assert "A test open agent for unit testing" in result  # description
-            assert "Previous conversation..." in result  # conversation_history
 
             # Verify template structure is maintained (MCP Open Agent template)
             assert "### Date & Time Context" in result
             assert "### Primary Task" in result
             assert "### Instructions" in result
-            assert "### Conversation history" in result
 
     def test_render_prompt_template_excludes_specified_fields(
         self, mcp_open_agent: MCPOpenAgent, mock_agent_input: AgentInput

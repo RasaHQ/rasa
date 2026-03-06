@@ -221,6 +221,8 @@ class AgentStackFrame(BaseFlowStackFrame):
     agent_id: str = ""
     state: AgentState = AgentState.WAITING_FOR_INPUT
     metadata: Optional[Dict[str, Any]] = None
+    is_restart: bool = False
+    """True when this frame was created by RestartAgentCommand (agent restarted)."""
 
     @classmethod
     def type(cls) -> str:
@@ -237,6 +239,10 @@ class AgentStackFrame(BaseFlowStackFrame):
         Returns:
             The created `AgentStackFrame`.
         """
+        # Backward compat: old trackers may have restart frames without is_restart key
+        is_restart = data.get("is_restart")
+        if is_restart is None:
+            is_restart = (data.get("frame_id") or "").startswith("restart_agent_")
         return AgentStackFrame(
             frame_id=data["frame_id"],
             flow_id=data["flow_id"],
@@ -244,4 +250,5 @@ class AgentStackFrame(BaseFlowStackFrame):
             agent_id=data["agent_id"],
             state=AgentState.from_str(data["state"]),
             metadata=data.get("metadata"),
+            is_restart=bool(is_restart),
         )

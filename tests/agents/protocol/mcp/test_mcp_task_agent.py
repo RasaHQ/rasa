@@ -91,14 +91,12 @@ class TestMCPTaskAgent:
 
             # Verify other context variables are included
             assert "A test task agent for unit testing" in result  # description
-            assert "Previous conversation..." in result  # conversation_history
 
             # Verify template structure is maintained (MCP Task Agent template)
             assert "### Date & Time Context" in result
             assert "### Description of your capabilities" in result
             assert "### Task" in result
             assert "### Instructions" in result
-            assert "### Conversation history" in result
 
     def test_render_prompt_template_excludes_specified_fields(
         self, mcp_task_agent: MCPTaskAgent, mock_agent_input: AgentInput
@@ -638,9 +636,6 @@ class TestMCPTaskAgent:
             result = mcp_task_agent.render_prompt_template(mock_agent_input)
 
             assert "user_name" in result  # slot_names should be included
-            assert (
-                "Previous conversation..." in result
-            )  # conversation_history should be included
             assert "- Current date: 15 January, 2024" in result
             assert "- Current time: 14:30:45 (UTC)" in result
             assert "- Current day: Monday" in result

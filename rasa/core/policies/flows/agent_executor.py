@@ -12,6 +12,7 @@ from rasa.agents.constants import (
     AGENT_METADATA_AGENT_RESPONSE_KEY,
     AGENT_METADATA_EXIT_IF_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_RESTARTED_KEY,
     AGENT_METADATA_RESUMED_AFTER_INTERRUPTION,
     AGENT_METADATA_SENDER_ID_KEY,
     AGENT_METADATA_STRUCTURED_RESULTS_KEY,
@@ -150,11 +151,7 @@ async def run_agent(
     else:
         # Reset the slots covered by the exit_if
         # Code smell: this is a temporary fix and will be addressed in ENG-2148
-        if (
-            step.exit_if
-            and agent_stack_frame
-            and agent_stack_frame.frame_id == f"restart_agent_{step.call}"
-        ):
+        if step.exit_if and agent_stack_frame and agent_stack_frame.is_restart:
             # when restarting an agent, we need to reset the slots covered by the
             # exit_if condition so that the agent can run again.
             _reset_slots_covered_by_exit_if(step.exit_if, tracker)
@@ -620,6 +617,10 @@ def _prepare_agent_input(
 
     if step.exit_if:
         agent_input_metadata[AGENT_METADATA_EXIT_IF_KEY] = step.exit_if
+
+    is_restart = agent_stack_frame is not None and agent_stack_frame.is_restart
+    if is_restart:
+        agent_input_metadata[AGENT_METADATA_RESTARTED_KEY] = True
 
     agent_input_metadata[AGENT_METADATA_SENDER_ID_KEY] = tracker.sender_id
     agent_input_metadata[AGENT_METADATA_AGENT_ID_KEY] = tracker.assistant_id

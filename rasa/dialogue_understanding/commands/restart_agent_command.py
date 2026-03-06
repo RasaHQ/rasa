@@ -173,6 +173,7 @@ class RestartAgentCommand(Command):
                 step_id=step.id,
                 agent_id=self.agent_id,
                 state=AgentState.WAITING_FOR_INPUT,
+                is_restart=True,
             )
 
         raise ValueError(

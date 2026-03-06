@@ -14,6 +14,7 @@ from rasa.agents.constants import (
     AGENT_METADATA_AGENT_ID_KEY,
     AGENT_METADATA_AGENT_RESPONSE_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_RESTARTED_KEY,
     AGENT_METADATA_RESUMED_AFTER_INTERRUPTION,
     AGENT_METADATA_SENDER_ID_KEY,
     BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE,
@@ -31,7 +32,13 @@ from rasa.core.available_agents import (
 )
 from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
-from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
+from rasa.shared.core.events import (
+    AgentCompleted,
+    AgentStarted,
+    BotUttered,
+    SlotSet,
+    UserUttered,
+)
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
 from rasa.shared.utils.constants import (
     LANGFUSE_METADATA_AGENT_ID,
@@ -595,6 +602,212 @@ class TestMCPBaseAgent:
         result = mock_mcp_base_agent.render_prompt_template(mock_agent_input)
         assert "Resume:" not in result
 
+    def test_render_prompt_template_includes_restart_instruction_when_restarted(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        """When restarted=True, prompt includes restart instruction."""
+        agent_input = AgentInput(
+            id="my-agent",
+            user_message="Run again",
+            slots=[],
+            conversation_history="",
+            events=[],
+            metadata={AGENT_METADATA_RESTARTED_KEY: True},
+        )
+        result = mock_mcp_base_agent.render_prompt_template(agent_input)
+        assert "Agent restarted" in result
+        assert "Do not set slot values from them" in result or "fresh start" in result
+        assert "Conversation history" not in result
+
+    def test_build_messages_for_llm_request_adds_markers_when_restarted(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        """When restarted, messages in the completed run are prefixed with marker."""
+        from rasa.agents.protocol.mcp.mcp_base_agent import PREVIOUS_RUN_MARKER
+
+        agent_input = AgentInput(
+            id="my-agent",
+            user_message="New request after restart",
+            slots=[],
+            conversation_history="",
+            events=[
+                UserUttered(text="Prior user"),
+                BotUttered(text="Prior bot"),
+                AgentStarted(agent_id="my-agent", flow_id="test_flow"),
+                UserUttered(text="User in completed run"),
+                BotUttered(text="Bot in completed run"),
+                AgentCompleted(agent_id="my-agent", flow_id="test_flow"),
+                UserUttered(text="New request after restart"),
+            ],
+            metadata={AGENT_METADATA_RESTARTED_KEY: True},
+        )
+        with patch.object(mock_mcp_base_agent, "render_prompt_template") as mock_render:
+            mock_render.return_value = "System prompt"
+            messages = mock_mcp_base_agent.build_messages_for_llm_request(
+                agent_input, turns=20
+            )
+        # Marker in content of first message from completed run
+        all_content = " ".join(m.get("content", "") for m in messages)
+        assert PREVIOUS_RUN_MARKER in all_content
+        assert "User in completed run" in all_content
+        assert "Bot in completed run" in all_content
+
+    def test_build_messages_for_llm_request_restart_partial_run_in_window(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        """Last N turns only partly in completed run: markers still apply."""
+        from rasa.agents.protocol.mcp.mcp_base_agent import (
+            END_PREVIOUS_RUN_MARKER,
+            PREVIOUS_RUN_MARKER,
+        )
+
+        # turns=5 so window is last 5 utterances (tail of run plus new).
+        events = [
+            UserUttered(text="Old A"),
+            BotUttered(text="Old B"),
+            UserUttered(text="Old C"),
+            AgentStarted(agent_id="my-agent", flow_id="test_flow"),
+            UserUttered(text="Run 1"),
+            BotUttered(text="Run 2"),
+            UserUttered(text="Run 3"),
+            BotUttered(text="Run 4"),
+            UserUttered(text="Run 5"),
+            BotUttered(text="Run 6"),
+            AgentCompleted(agent_id="my-agent", flow_id="test_flow"),
+            UserUttered(text="After restart"),
+        ]
+        agent_input = AgentInput(
+            id="my-agent",
+            user_message="After restart",
+            slots=[],
+            conversation_history="",
+            events=events,
+            metadata={AGENT_METADATA_RESTARTED_KEY: True},
+        )
+        with patch.object(mock_mcp_base_agent, "render_prompt_template") as mock_render:
+            mock_render.return_value = "System prompt"
+            messages = mock_mcp_base_agent.build_messages_for_llm_request(
+                agent_input, turns=5
+            )
+        # Window: Run 4, Run 5, Run 6, After restart
+        all_content = " ".join(m.get("content", "") for m in messages)
+        assert PREVIOUS_RUN_MARKER in all_content
+        assert END_PREVIOUS_RUN_MARKER in all_content
+        assert "Run 4" in all_content
+        assert "Run 6" in all_content
+        assert "After restart" in all_content
+
+    def test_build_messages_for_llm_request_restart_run_outside_window(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        """Restarted but last N turns are all after the run: no markers in output."""
+        from rasa.agents.protocol.mcp.mcp_base_agent import (
+            END_PREVIOUS_RUN_MARKER,
+            PREVIOUS_RUN_MARKER,
+        )
+
+        # Completed run early, then 10+ turns of other interaction. turns=10.
+        events = [
+            UserUttered(text="Old"),
+            BotUttered(text="Old reply"),
+            AgentStarted(agent_id="my-agent", flow_id="test_flow"),
+            UserUttered(text="In run"),
+            BotUttered(text="In run reply"),
+            AgentCompleted(agent_id="my-agent", flow_id="test_flow"),
+        ]
+        for i in range(10):
+            events.append(UserUttered(text=f"Later {i}"))
+            events.append(BotUttered(text=f"Later reply {i}"))
+        events.append(UserUttered(text="Current"))
+        agent_input = AgentInput(
+            id="my-agent",
+            user_message="Current",
+            slots=[],
+            conversation_history="",
+            events=events,
+            metadata={AGENT_METADATA_RESTARTED_KEY: True},
+        )
+        with patch.object(mock_mcp_base_agent, "render_prompt_template") as mock_render:
+            mock_render.return_value = "System prompt"
+            messages = mock_mcp_base_agent.build_messages_for_llm_request(
+                agent_input, turns=10
+            )
+        all_content = " ".join(m.get("content", "") for m in messages)
+        assert PREVIOUS_RUN_MARKER not in all_content
+        assert END_PREVIOUS_RUN_MARKER not in all_content
+        assert "Later 5" in all_content or "Current" in all_content
+
+    def test_build_messages_for_llm_request_restart_no_agent_completed(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        """AgentStarted but no AgentCompleted: no markers, no crash."""
+        from rasa.agents.protocol.mcp.mcp_base_agent import (
+            END_PREVIOUS_RUN_MARKER,
+            PREVIOUS_RUN_MARKER,
+        )
+
+        events = [
+            UserUttered(text="Before"),
+            AgentStarted(agent_id="my-agent", flow_id="test_flow"),
+            UserUttered(text="In run"),
+            BotUttered(text="In run reply"),
+            UserUttered(text="Current"),
+        ]
+        agent_input = AgentInput(
+            id="my-agent",
+            user_message="Current",
+            slots=[],
+            conversation_history="",
+            events=events,
+            metadata={AGENT_METADATA_RESTARTED_KEY: True},
+        )
+        with patch.object(mock_mcp_base_agent, "render_prompt_template") as mock_render:
+            mock_render.return_value = "System prompt"
+            messages = mock_mcp_base_agent.build_messages_for_llm_request(
+                agent_input, turns=20
+            )
+        all_content = " ".join(m.get("content", "") for m in messages)
+        assert PREVIOUS_RUN_MARKER not in all_content
+        assert END_PREVIOUS_RUN_MARKER not in all_content
+        assert "In run" in all_content
+        assert "Current" in all_content
+
+    def test_build_messages_for_llm_request_no_markers_when_not_restarted(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        """Same events as restart case but restarted=False: no markers in output."""
+        from rasa.agents.protocol.mcp.mcp_base_agent import (
+            END_PREVIOUS_RUN_MARKER,
+            PREVIOUS_RUN_MARKER,
+        )
+
+        agent_input = AgentInput(
+            id="my-agent",
+            user_message="New request after restart",
+            slots=[],
+            conversation_history="",
+            events=[
+                UserUttered(text="Prior user"),
+                BotUttered(text="Prior bot"),
+                AgentStarted(agent_id="my-agent", flow_id="test_flow"),
+                UserUttered(text="User in completed run"),
+                BotUttered(text="Bot in completed run"),
+                AgentCompleted(agent_id="my-agent", flow_id="test_flow"),
+                UserUttered(text="New request after restart"),
+            ],
+            metadata={},  # No RESTARTED_KEY
+        )
+        with patch.object(mock_mcp_base_agent, "render_prompt_template") as mock_render:
+            mock_render.return_value = "System prompt"
+            messages = mock_mcp_base_agent.build_messages_for_llm_request(
+                agent_input, turns=20
+            )
+        all_content = " ".join(m.get("content", "") for m in messages)
+        assert PREVIOUS_RUN_MARKER not in all_content
+        assert END_PREVIOUS_RUN_MARKER not in all_content
+        assert "User in completed run" in all_content
+        assert "New request after restart" in all_content
+
     @pytest.mark.parametrize(
         "slots, expected_assertions",
         [
@@ -757,26 +970,137 @@ class TestMCPBaseAgent:
                     ]
                 },
             ),
-            UserUttered(text="I want to transfer"),
         ]
 
         with patch.object(mock_mcp_base_agent, "render_prompt_template") as mock_render:
             mock_render.return_value = "System prompt"
-
             messages = mock_mcp_base_agent.build_messages_for_llm_request(
                 mock_agent_input
             )
 
-        # system, user, assistant (with buttons), user — no extra append
         assert len(messages) == 4
+        assert messages[0] == {"role": "system", "content": "System prompt"}
         assert messages[1] == {"role": "user", "content": "What can I do?"}
+        assert "Please choose an option:" in messages[2]["content"]
+        assert "Transfer Money" in messages[2]["content"]
+        assert "Check Balance" in messages[2]["content"]
         assert messages[3] == {"role": "user", "content": "I want to transfer"}
 
-        # Verify buttons are included in the assistant message content
-        assistant_content = messages[2]["content"]
-        assert "Please choose an option:" in assistant_content
-        assert 'button 1: "Transfer Money"' in assistant_content
-        assert 'button 2: "Check Balance"' in assistant_content
+    def test_build_messages_for_llm_request_handles_empty_events(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Test building messages with empty events list."""
+        mock_agent_input.user_message = "Hello"
+        mock_agent_input.events = []
+
+        with patch.object(mock_mcp_base_agent, "render_prompt_template") as mock_render:
+            mock_render.return_value = "System prompt"
+            messages = mock_mcp_base_agent.build_messages_for_llm_request(
+                mock_agent_input
+            )
+
+        assert len(messages) == 2
+        assert messages[0] == {"role": "system", "content": "System prompt"}
+        assert messages[1] == {"role": "user", "content": "Hello"}
+
+    @pytest.mark.parametrize(
+        "events,agent_id,expected_start,expected_end",
+        [
+            ([], "my-agent", None, None),
+            (
+                [
+                    AgentStarted(agent_id="my-agent", flow_id="flow"),
+                    UserUttered(text="Hi"),
+                ],
+                "my-agent",
+                None,
+                None,
+            ),
+            (
+                [
+                    AgentStarted(agent_id="my-agent", flow_id="flow"),
+                    UserUttered(text="User"),
+                    BotUttered(text="Bot"),
+                    AgentCompleted(agent_id="my-agent", flow_id="flow"),
+                ],
+                "my-agent",
+                0,
+                3,
+            ),
+            (
+                [
+                    AgentStarted(agent_id="other", flow_id="flow"),
+                    AgentCompleted(agent_id="other", flow_id="flow"),
+                ],
+                "my-agent",
+                None,
+                None,
+            ),
+            (
+                [
+                    AgentStarted(agent_id="my-agent", flow_id="flow"),
+                    UserUttered(text="First"),
+                    AgentCompleted(agent_id="my-agent", flow_id="flow"),
+                    AgentStarted(agent_id="my-agent", flow_id="flow"),
+                    UserUttered(text="Second"),
+                    AgentCompleted(agent_id="my-agent", flow_id="flow"),
+                ],
+                "my-agent",
+                3,
+                5,
+            ),
+        ],
+        ids=[
+            "empty_events",
+            "no_agent_completed",
+            "single_run",
+            "different_agent_id",
+            "two_full_runs",
+        ],
+    )
+    def test_completed_run_region(
+        self,
+        events: List[Any],
+        agent_id: str,
+        expected_start: Optional[int],
+        expected_end: Optional[int],
+    ) -> None:
+        """_completed_run_region returns (start_idx, end_idx) for last completed run."""
+        start, end = MCPBaseAgent._completed_run_region(events, agent_id)
+        assert start == expected_start
+        assert end == expected_end
+        if expected_start is not None and expected_end is not None:
+            assert start is not None and end is not None
+            assert events[start].agent_id == agent_id
+            assert events[end].agent_id == agent_id
+
+    def test_completed_run_region_two_starts_before_one_completion_uses_earliest_start(
+        self,
+    ) -> None:
+        """Regression: two AgentStarted(agent_id) before one AgentCompleted.
+
+        Region must start at the *first* AgentStarted so the run includes
+        the conversation (user/bot utterances). If we used the last
+        AgentStarted before completion, the region would be empty of
+        utterances and markers would not appear.
+        """
+        events = [
+            AgentStarted(agent_id="my-agent", flow_id="flow"),
+            UserUttered(text="User in run"),
+            BotUttered(text="Bot in run"),
+            AgentStarted(agent_id="my-agent", flow_id="flow"),
+            SlotSet(key="x", value=1),
+            AgentCompleted(agent_id="my-agent", flow_id="flow"),
+        ]
+        start, end = MCPBaseAgent._completed_run_region(events, "my-agent")
+        assert start == 0
+        assert end == 5
+        assert events[1].text == "User in run"
+        assert events[2].text == "Bot in run"
+
+
+class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
+    """build_messages_for_llm_request tests (inherits TestMCPBaseAgent fixtures)."""
 
     def test_build_messages_for_llm_request_filters_non_utterance_events(
         self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput

@@ -18,6 +18,7 @@ from rasa.agents.constants import (
     AGENT_METADATA_AGENT_ID_KEY,
     AGENT_METADATA_AGENT_RESPONSE_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_RESTARTED_KEY,
     AGENT_METADATA_RESUMED_AFTER_INTERRUPTION,
     AGENT_METADATA_SENDER_ID_KEY,
     AGENT_METADATA_STRUCTURED_RESULTS_KEY,
@@ -61,7 +62,14 @@ from rasa.shared.constants import (
     TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
-from rasa.shared.core.events import BotUttered, Event, SlotSet, UserUttered
+from rasa.shared.core.events import (
+    AgentCompleted,
+    AgentStarted,
+    BotUttered,
+    Event,
+    SlotSet,
+    UserUttered,
+)
 from rasa.shared.exceptions import AgentInitializationException, AuthenticationError
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
 from rasa.shared.utils.constants import (
@@ -90,6 +98,11 @@ from rasa.shared.utils.llm import (
 )
 from rasa.shared.utils.mcp.server_connection import MCPServerConnection
 from rasa.shared.utils.mcp.utils import build_mcp_meta, call_tool_with_meta
+
+# Marker text for "previous run (completed)" in message content when agent restarted.
+# Must match the instruction text in MCP prompt templates.
+PREVIOUS_RUN_MARKER = "--- Previous run (completed). ---"
+END_PREVIOUS_RUN_MARKER = "--- End of previous run ---"
 
 DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
 DEFAULT_LLM_CONFIG = {
@@ -644,6 +657,7 @@ class MCPBaseAgent(AgentProtocol):
         context_dict["resumed_last_request"] = (
             metadata.get(AGENT_METADATA_AGENT_RESPONSE_KEY, "") or ""
         )
+        context_dict["restarted"] = bool(metadata.get(AGENT_METADATA_RESTARTED_KEY))
 
         return {
             **context_dict,
@@ -667,52 +681,214 @@ class MCPBaseAgent(AgentProtocol):
         # Render the prompt template.
         return Template(self.prompt_template).render(**template_vars)
 
-    def _build_conversation_messages_for_llm_request(
+    @staticmethod
+    def _completed_run_region(
+        events: List[Event], agent_id: str
+    ) -> Tuple[Optional[int], Optional[int]]:
+        """Return (start_idx, end_idx) for the last completed run of this agent.
+
+        The region is from the AgentStarted(agent_id) that started the run, up to
+        and including the AgentCompleted(agent_id) that ended it. We find the last
+        AgentCompleted, then the earliest AgentStarted(agent_id) with no
+        AgentCompleted(agent_id) between it and that end.
+        """
+        # Find end_idx: last AgentCompleted(agent_id) in the list.
+        end_idx: Optional[int] = None
+        for i in range(len(events) - 1, -1, -1):
+            ev = events[i]
+            if isinstance(ev, AgentCompleted) and ev.agent_id == agent_id:
+                end_idx = i
+                break
+        if end_idx is None:
+            return (None, None)
+        # Find start_idx: the earliest AgentStarted(agent_id) with no
+        # AgentCompleted(agent_id) between it and end_idx (the run that contains
+        # the conversation).
+        start_idx: Optional[int] = None
+        for j in range(0, end_idx):
+            ev = events[j]
+            if not (isinstance(ev, AgentStarted) and ev.agent_id == agent_id):
+                continue
+            if any(
+                isinstance(evk := events[k], AgentCompleted)
+                and evk.agent_id == agent_id
+                for k in range(j + 1, end_idx)
+            ):
+                continue
+            start_idx = j
+            break
+        return (start_idx, end_idx)
+
+    def build_messages_for_llm_request(
         self, context: AgentInput, turns: int = 10
     ) -> List[Dict[str, str]]:
-        """Build user/assistant messages from utterance events and user message."""
-        messages: List[Dict[str, str]] = []
+        """Build messages for the LLM request from conversation history.
 
-        # Collect up to `turns` most recent user and bot utterance events.
-        utterance_events: List[Any] = []
-        collected = 0
-        for event in reversed(context.events):
-            if not isinstance(event, (UserUttered, BotUttered)):
-                continue
-            utterance_events.append(event)
-            collected += 1
-            if collected >= turns:
-                break
+        Filters to user and bot utterance events only, then limits to the most
+        recent `turns` events. Note: here "turns" counts individual user/bot
+        messages (utterance events), not full conversation turns (user+assistant
+        exchanges).
 
-        # Reverse to restore chronological order (oldest first).
-        utterance_events.reverse()
+        When the agent was restarted, messages that fall in the last completed
+        run are prefixed/suffixed with markers so the model does not reuse them.
 
-        # Track the last user text seen while building messages so we can
-        # decide whether to append context.user_message without a second pass.
-        last_user_content: Optional[str] = None
-        for event in utterance_events:
-            if isinstance(event, UserUttered):
-                if not event.text:
-                    continue
-                last_user_content = event.text
-                messages.append({KEY_ROLE: ROLE_USER, KEY_CONTENT: event.text})
-            elif isinstance(event, BotUttered):
-                bot_response = serialize_bot_response_for_prompt(event)
-                if not bot_response:
-                    continue
-                messages.append({KEY_ROLE: ROLE_ASSISTANT, KEY_CONTENT: bot_response})
+        Args:
+            context: Agent input with events and current user message.
+            turns: Maximum number of user and bot utterance events to include
+                in the context (default 10). Applied after filtering to
+                utterance events only.
 
-        # Append context.user_message if it is not already the most recent
-        # user-role message built from events.
-        #
-        # Two cases require the append:
-        #   1. context.events is empty (first turn — no tracker history yet).
-        #   2. The turns limit cut off the window before reaching the current
-        #      UserUttered, so it was never added by the loop above.
+        Returns:
+            List of message dicts with "role" and "content" for the LLM.
+        """
+        system_content = self.render_prompt_template(context)
+        messages = [{KEY_ROLE: ROLE_SYSTEM, KEY_CONTENT: system_content}]
+
+        is_restarted = bool(
+            context.metadata.get(AGENT_METADATA_RESTARTED_KEY) and context.id
+        )
+        if is_restarted:
+            conversation, last_user_content = (
+                self._build_conversation_messages_after_restart(context, turns)
+            )
+        else:
+            conversation, last_user_content = self._build_conversation_messages(
+                context, turns
+            )
+
+        messages.extend(conversation)
+        # Append current user message if it was not already in the last N events
+        # (e.g. first turn or the turns window did not include the latest utterance).
         if last_user_content != context.user_message:
             messages.append({KEY_ROLE: ROLE_USER, KEY_CONTENT: context.user_message})
-
         return messages
+
+    def _build_conversation_messages(
+        self, context: AgentInput, turns: int
+    ) -> Tuple[List[Dict[str, str]], Optional[str]]:
+        """Build user/assistant messages from the last `turns` utterance events.
+
+        Returns:
+            (list of message dicts, last user message text or None).
+        """
+        utterance_events = [
+            e for e in context.events if isinstance(e, (UserUttered, BotUttered))
+        ]
+        utterance_events = utterance_events[-turns:] if utterance_events else []
+
+        messages: List[Dict[str, str]] = []
+        # Caller uses this to decide whether to append context.user_message.
+        last_user_content: Optional[str] = None
+        for event in utterance_events:
+            content = self._content_from_utterance_event(event)
+            if content is None:
+                continue
+            if isinstance(event, UserUttered):
+                last_user_content = event.text
+            messages.append(
+                {
+                    KEY_ROLE: ROLE_USER
+                    if isinstance(event, UserUttered)
+                    else ROLE_ASSISTANT,
+                    KEY_CONTENT: content,
+                }
+            )
+        return (messages, last_user_content)
+
+    def _build_conversation_messages_after_restart(
+        self, context: AgentInput, turns: int
+    ) -> Tuple[List[Dict[str, str]], Optional[str]]:
+        """Build user/assistant messages with restart markers around the last run.
+
+        Messages that fall in the last completed run (AgentStarted..AgentCompleted)
+        get PREVIOUS_RUN_MARKER / END_PREVIOUS_RUN_MARKER so the model does not
+        reuse them. Returns (list of message dicts, last user message text or None).
+        """
+        start_idx, end_idx = self._completed_run_region(context.events, context.id)
+        utterance_entries = self._utterance_entries_with_restart_flags(
+            context.events, start_idx, end_idx
+        )
+        utterance_entries = utterance_entries[-turns:] if utterance_entries else []
+
+        # Last message in the completed run gets END_PREVIOUS_RUN_MARKER.
+        last_completed_index = self._last_index_in_completed_run(utterance_entries)
+
+        messages: List[Dict[str, str]] = []
+        last_user_content: Optional[str] = None
+        for i, (event, in_completed_run) in enumerate(utterance_entries):
+            content = self._content_from_utterance_event(event)
+            if content is None:
+                continue
+            if isinstance(event, UserUttered):
+                last_user_content = event.text
+
+            if in_completed_run:
+                # First message in the window that belongs to the completed run.
+                is_first_in_run = not any(utterance_entries[j][1] for j in range(i))
+                if is_first_in_run:
+                    content = f"{PREVIOUS_RUN_MARKER}\n{content}"
+                if last_completed_index is not None and i == last_completed_index:
+                    content = f"{content}\n{END_PREVIOUS_RUN_MARKER}"
+
+            messages.append(
+                {
+                    KEY_ROLE: ROLE_USER
+                    if isinstance(event, UserUttered)
+                    else ROLE_ASSISTANT,
+                    KEY_CONTENT: content,
+                }
+            )
+        return (messages, last_user_content)
+
+    def _content_from_utterance_event(self, event: Event) -> Optional[str]:
+        """Return display content for an utterance event, or None to skip.
+
+        Returns None for empty user text or bot responses that serialize to empty,
+        so the caller omits them from the message list.
+        """
+        if isinstance(event, UserUttered):
+            return event.text or None
+        if isinstance(event, BotUttered):
+            return serialize_bot_response_for_prompt(event) or None
+        return None
+
+    def _utterance_entries_with_restart_flags(
+        self,
+        events: List[Event],
+        start_idx: Optional[int],
+        end_idx: Optional[int],
+    ) -> List[Tuple[Event, bool]]:
+        """Pair each utterance event with whether it lies in the completed run.
+
+        start_idx/end_idx are the last AgentStarted and next AgentCompleted
+        indices for this agent. The bool is True when the event index is in
+        [start_idx, end_idx], so we can add markers only around that run.
+        """
+        result: List[Tuple[Event, bool]] = []
+        for idx, event in enumerate(events):
+            if not isinstance(event, (UserUttered, BotUttered)):
+                continue
+            in_run = (
+                start_idx is not None
+                and end_idx is not None
+                and start_idx <= idx <= end_idx
+            )
+            result.append((event, in_run))
+        return result
+
+    def _last_index_in_completed_run(
+        self,
+        utterance_entries: List[Tuple[Any, bool]],
+    ) -> Optional[int]:
+        """Index of the last entry with in_completed_run=True, or None.
+
+        Used to append END_PREVIOUS_RUN_MARKER only to the final message of
+        the completed run, so the model sees a clear end to the marked section.
+        """
+        for i in range(len(utterance_entries) - 1, -1, -1):
+            if utterance_entries[i][1]:
+                return i
+        return None
 
     def _get_conversation_cache_key(
         self, context: AgentInput, turns: int
@@ -817,29 +993,6 @@ class MCPBaseAgent(AgentProtocol):
             cache_state.pop(_MESSAGE_CACHE_BASE_MESSAGES, None)
 
         return [dict(message) for message in base_messages]
-
-    def build_messages_for_llm_request(
-        self, context: AgentInput, turns: int = 10
-    ) -> List[Dict[str, str]]:
-        """Build messages for the LLM request from conversation history.
-
-        Filters to user and bot utterance events only, then limits to the most
-        recent `turns` events. Note: here "turns" counts individual user/bot
-        messages (utterance events), not full conversation turns (user+assistant
-        exchanges).
-
-        Args:
-            context: Agent input with events and current user message.
-            turns: Maximum number of user and bot utterance events to include
-                in the context (default 10). Applied after filtering to
-                utterance events only.
-
-        Returns:
-            List of message dicts with "role" and "content" for the LLM.
-        """
-        return [
-            {KEY_ROLE: ROLE_SYSTEM, KEY_CONTENT: self.render_prompt_template(context)}
-        ] + self._build_conversation_messages_for_llm_request(context, turns)
 
     def _get_assistant_message_with_tool_calls(
         self, llm_response: LLMResponse

@@ -123,6 +123,7 @@ def test_create_restart_agent_stack_frame(agent_id: str):
     assert frame.state == AgentState.WAITING_FOR_INPUT
     assert frame.flow_id == "flow_123"
     assert frame.step_id == "first_step"
+    assert frame.is_restart is True
 
 
 def test_create_restart_agent_stack_frame_uses_step_id_when_agent_called_twice():
@@ -148,6 +149,21 @@ def test_create_restart_agent_stack_frame_uses_step_id_when_agent_called_twice()
         all_flows, "flow_123", step_id="second_call_step"
     )
     assert frame.step_id == "second_call_step"
+    assert frame.is_restart is True
+
+
+def test_agent_stack_frame_from_dict_backward_compat_restart():
+    """Old trackers: frame_id starting with restart_agent_ yields is_restart=True."""
+    data = {
+        "frame_id": "restart_agent_my_agent",
+        "flow_id": "flow_123",
+        "step_id": "step_1",
+        "agent_id": "my_agent",
+        "state": AgentState.WAITING_FOR_INPUT.value,
+    }
+    frame = AgentStackFrame.from_dict(data)
+    assert frame.is_restart is True
+    assert frame.agent_id == "my_agent"
 
 
 def test_update_agent_stack_frames_on_stack(agent_id: str):

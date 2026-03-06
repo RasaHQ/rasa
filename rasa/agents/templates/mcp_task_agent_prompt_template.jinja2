@@ -31,12 +31,12 @@ When you send the message that delivers the tool result, NEVER repeat anything t
 {% if resumed_after_interruption %}### Resume after interruption
 Your execution was interrupted.{% if resumed_last_request %} You were asking about: {{ resumed_last_request }}.{% endif %} The context in between might help you to answer the request. If that is the case use that context. If not, ask again.{% endif %}
 
+{% if restarted %}### Agent restarted
+The following user/assistant messages may include a section marked **"Previous run (completed)."** Those messages are from a run that already finished. Do not set slot values from them. Treat the current interaction as a fresh start and collect the required information from the user again.{% endif %}
+
 {% if current_datetime %}
 ### Date & Time Context
 - Current date: {{ current_datetime.strftime("%d %B, %Y") }}   (YYYY-MM-DD)
 - Current time: {{ current_datetime.strftime("%H:%M:%S") }} ({{ current_datetime.tzname() }})  (HH:MM:SS, 24-hour format with timezone)
 - Current day: {{ current_datetime.strftime("%A") }}     (Day of week)
 {% endif %}
-
-### Conversation history
-{{ conversation_history }}
