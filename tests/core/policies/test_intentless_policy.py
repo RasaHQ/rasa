@@ -35,11 +35,17 @@ from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
     LLM_CONFIG_KEY,
+    MAX_COMPLETION_TOKENS_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
+    OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
     ROUTE_TO_CALM_SLOT,
+    TEMPERATURE_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.domain import ActionNotFoundException, Domain
 from rasa.shared.core.events import ActiveLoop, BotUttered, UserUttered
@@ -61,6 +67,11 @@ from rasa.shared.utils.constants import (
     LANGFUSE_METADATA_TAGS,
 )
 from rasa.shared.utils.llm import (
+    DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI,
+    DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
+    DEFAULT_OPENAI_TEMPERATURE,
+    REASONING_EFFORT_CONFIG_KEY,
+    REASONING_EFFORT_MINIMAL,
     LLMInput,
     combine_custom_and_default_config,
     tracker_as_readable_transcript,
@@ -172,6 +183,17 @@ def test_action_from_response() -> None:
     }
     text = "foobar"
     assert action_from_response(text, responses) == "utter_foobar"
+
+
+def test_default_llm_config_values() -> None:
+    assert DEFAULT_LLM_CONFIG == {
+        PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
+        MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI,
+        REASONING_EFFORT_CONFIG_KEY: REASONING_EFFORT_MINIMAL,
+        TEMPERATURE_CONFIG_KEY: DEFAULT_OPENAI_TEMPERATURE,
+        MAX_COMPLETION_TOKENS_CONFIG_KEY: DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
+        TIMEOUT_CONFIG_KEY: 5,
+    }
 
 
 def test_action_from_response_not_found() -> None:
