@@ -47,7 +47,7 @@ runs:
         installer-parallel: true
 
     - name: Dry-run and capture output for hashing
-      run: make install-channels --dry-run > dry-run
+      run: make install --dry-run > dry-run
       shell: bash
 
     # Restore cached venv if available
@@ -62,7 +62,7 @@ runs:
       if: ${{ steps.cached-rasa.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
-        make install-channels
+        make install
 
     - name: Activate virtualenv
       shell: bash

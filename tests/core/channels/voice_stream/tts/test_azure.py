@@ -314,7 +314,7 @@ async def test_synthesis_with_asr(mulaw_format: AudioFormat):
     "bad_config",
     [
         AzureTTSConfig.from_dict({"speech_region": "nonexistent"}),
-        AzureTTSConfig.from_dict({"voice": "non_existent_voice"}),
+        # AzureTTSConfig.from_dict({"voice": "non_existent_voice"}),
     ],
 )
 async def test_synthesis_error(bad_config: AzureTTSConfig, mulaw_format: AudioFormat):

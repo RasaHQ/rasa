@@ -1,4 +1,5 @@
 import json
+import time
 
 import psycopg2
 
@@ -20,14 +21,28 @@ def test_sql_broker_stores_events():
     cur = conn.cursor()
 
     try:
-        cur.execute(f"SELECT data FROM events WHERE sender_id = '{sender_id}'")
-        events = cur.fetchall()
+        # re-try test to give SQL broker some time to write to the table
+        last_error = None
+        for i in range(5):
+            cur.execute(f"SELECT data FROM events WHERE sender_id = '{sender_id}'")
+            events = cur.fetchall()
 
-        assert len(events) >= 2  # Should have UserUttered and BotUttered at minimum
-        # Parse JSON data to get event types
-        event_types = [json.loads(event[0])["event"] for event in events]
-        assert "user" in event_types
-        assert "bot" in event_types
+            try:
+                assert (
+                    len(events) >= 2
+                )  # Should have UserUttered and BotUttered at minimum
+                # Parse JSON data to get event types
+                event_types = [json.loads(event[0])["event"] for event in events]
+                assert "user" in event_types
+                assert "bot" in event_types
+                last_error = None
+                break
+            except AssertionError as e:
+                last_error = e
+                time.sleep(1)
+
+        if last_error is not None:
+            raise last_error
 
     finally:
         cur.close()

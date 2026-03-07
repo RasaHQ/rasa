@@ -75,7 +75,7 @@ install-mitie:  ## Install mitie.
 	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
 
 install-full: install-mitie  ## Install rasa with all extras (transformers, tensorflow_text, spacy, jieba, agents, ...).
-	poetry install -E full -E channels
+	poetry install -E full
 
 install-pii:  ## Install rasa-pro with PII optional dependencies.
 	poetry run python -m pip install -U pip
@@ -248,31 +248,31 @@ test-with-large-data: ## Run tests on large data set
 			-n $(JOBS)
 
 test-cli: PYTEST_MARKER=category_cli and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
-test-cli: test-marker  ## Run cli tests
+test-cli: test-marker-without-voice  ## Run cli tests
 
 test-policies: PYTEST_MARKER=category_policies and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
-test-policies: test-marker  ## Run policies tests
+test-policies: test-marker-without-voice  ## Run policies tests
 
 test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
-test-nlu-featurizers: test-marker  ## Run nlu featurizers tests
+test-nlu-featurizers: test-marker-without-voice  ## Run nlu featurizers tests
 
 test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
-test-nlu-predictors: test-marker  ## Run nlu predictors tests
+test-nlu-predictors: test-marker-without-voice  ## Run nlu predictors tests
 
 test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
-test-full-model-training: test-marker  ## Run full model training tests
+test-full-model-training: test-marker-without-voice  ## Run full model training tests
 
-test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not category_builder_tests)
-test-other-unit-tests: test-marker  ## Run other unit tests
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not category_builder_tests) and (not category_audio_manual)
+test-other-unit-tests: test-marker-without-voice  ## Run other unit tests
 
 test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
-test-performance: test-marker  ## Run performance tests
+test-performance: test-marker-without-voice  ## Run performance tests
 
-test-flaky: PYTEST_MARKER=flaky and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
-test-flaky: test-marker  ## Run flaky tests
+test-flaky: PYTEST_MARKER=flaky and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_audio_manual)
+test-flaky: test-marker-without-voice  ## Run flaky tests
 
 test-acceptance: PYTEST_MARKER=acceptance and (not flaky) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
-test-acceptance: prepare-spacy prepare-mitie test-marker ## Run acceptance tests
+test-acceptance: prepare-spacy prepare-mitie test-marker-without-voice ## Run acceptance tests
 
 test-audio-manual:  ## Run audio manual tests
 	poetry install --extras "channels"
@@ -288,6 +288,7 @@ test-audio-manual:  ## Run audio manual tests
 		--cov-branch \
 
 test-agents: PYTEST_MARKER=category_agents
+test-agents: ARGS=--ignore tests/core/channels/voice_stream/
 test-agents: test-marker
 
 test-voice-integration: ## Run voice integration tests
@@ -326,6 +327,10 @@ test-marker: clean ## Run marker tests
 			--cov-branch \
 			--ignore $(INTEGRATION_TEST_FOLDER)/ \
 			$(ARGS)
+
+test-marker-without-voice: ARGS=--ignore tests/core/channels/voice_stream/
+test-marker-without-voice: test-marker
+
 
 ## Note : running pytest with poetry run will set the PYTHONPATH to the root of the project automatically.
 ## Removing this will cause issues with imports in tests and `pytest not found` errors.

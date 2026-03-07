@@ -969,7 +969,7 @@ jobs:
           installer-parallel: true
 
       - name: Dry-run and capture output for hashing
-        run: make install-full --dry-run > dry-run
+        run: make install --dry-run > dry-run
 
       # Load cached Rasa if cache exists
       - name: Load cached Rasa
@@ -977,7 +977,7 @@ jobs:
         uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: ${{ github.workspace }}/.venv
-          key: rasa-full-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'dry-run') }}
+          key: rasa-default-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'dry-run') }}
 
       - name: Install Dependencies (Linux) 📦
         # without this step the additional dependency installations with pip install
@@ -985,7 +985,7 @@ jobs:
         if: ${{ steps.cached-rasa.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
-          make install-full
+          make install
 
       - name: Load Docker image
         run: |
@@ -1127,7 +1127,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "channels"
+          RASA_INSTALL_GROUP: "default"
 
       # these integration tests need to be run in a sequential fashion,
       # due to environment constraints, so we're running them in a single process.
@@ -1179,7 +1179,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "full"
+          RASA_INSTALL_GROUP: "nlu"
 
       - name: Run container for non-sequential integration testing
         run: |
@@ -1257,7 +1257,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "channels"
+          RASA_INSTALL_GROUP: "default"
 
       - name: Run containers for tracker store integration testing
         run: |
@@ -1333,7 +1333,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "channels"
+          RASA_INSTALL_GROUP: "default"
 
       - name: Run containers for tracker store integration testing
         run: |
@@ -1408,7 +1408,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "channels"
+          RASA_INSTALL_GROUP: "default"
 
       - name: Run Redis containers for timer store integration testing
         run: |
@@ -1461,7 +1461,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "channels"
+          RASA_INSTALL_GROUP: "full"
 
       - name: Run container for concurrent lock store integration testing
         run: |
@@ -1525,7 +1525,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          RASA_INSTALL_GROUP: "channels"
+          RASA_INSTALL_GROUP: "full"
 
       - name: Load Docker image
         run: |
@@ -2119,7 +2119,7 @@ jobs:
         if: ${{ steps.prepare-job.outputs.CACHE_LOADED != 'true' && steps.ubuntu-dependencies.outputs.cache-hit != 'true' }}
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full | tee .output
+          make install-channels | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
@@ -2731,11 +2731,9 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          OPTIONAL_GROUP_TO_INSTALL: channels
-          RASA_DEFAULT_INSTALLATION_ONLY: false
 
       - name: Dry-run and capture output for hashing
-        run: make install-channels --dry-run > dry-run
+        run: make install --dry-run > dry-run
 
         # Load cached Rasa if cache exists
       - name: Load cached Rasa
@@ -2743,11 +2741,11 @@ jobs:
         uses: WarpBuilds/cache/restore@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: ${{ github.workspace }}/.venv
-          key: rasa-channels-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'dry-run') }}
+          key: rasa-default-install-${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'dry-run') }}
 
       - name: Install Rasa
         if: ${{ steps.cached-rasa.outputs.cache-hit != 'true' }}
-        run: make install-channels
+        run: make install
 
       - name: Create tmp directory
         run: |

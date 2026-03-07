@@ -33,6 +33,7 @@ from rasa.core.channels.voice_ready.utils import (
     CallParameters,
     validate_voice_license_scope,
 )
+from rasa.core.channels.voice_stream.asr import BUILT_IN_ASR_ENGINES
 from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine
 from rasa.core.channels.voice_stream.asr.asr_event import (
     ASREvent,
@@ -40,8 +41,6 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
     UserIsSpeaking,
     UserSilence,
 )
-from rasa.core.channels.voice_stream.asr.azure import AzureASR
-from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
 from rasa.core.channels.voice_stream.audio_bytes import (
     MULAW_8KHZ,
     AudioFormat,
@@ -52,10 +51,7 @@ from rasa.core.channels.voice_stream.call_state import (
     _call_state,
     call_state,
 )
-from rasa.core.channels.voice_stream.tts.azure import AzureTTS
-from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
-from rasa.core.channels.voice_stream.tts.deepgram import DeepgramTTS
-from rasa.core.channels.voice_stream.tts.rime import RimeTTS
+from rasa.core.channels.voice_stream.tts import BUILT_IN_TTS_ENGINES
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
 from rasa.core.channels.voice_stream.util import (
@@ -126,12 +122,12 @@ def asr_engine_from_config(
     name = str(asr_config["name"])
     asr_config = copy.copy(asr_config)
     asr_config.pop("name")
-    if name.lower() == "deepgram":
-        return DeepgramASR.from_config_dict(
-            asr_config, format, language, additional_languages
-        )
-    if name == "azure":
-        return AzureASR.from_config_dict(
+
+    built_in_asr_engine_loader = BUILT_IN_ASR_ENGINES.get(name.lower())
+
+    if built_in_asr_engine_loader:
+        clazz = built_in_asr_engine_loader()
+        return clazz.from_config_dict(
             asr_config, format, language, additional_languages
         )
     else:
@@ -171,20 +167,11 @@ def tts_engine_from_config(
     name = str(tts_config["name"])
     tts_config = copy.copy(tts_config)
     tts_config.pop("name")
-    if name.lower() == "azure":
-        return AzureTTS.from_config_dict(
-            tts_config, format, language, additional_languages
-        )
-    elif name.lower() == "cartesia":
-        return CartesiaTTS.from_config_dict(
-            tts_config, format, language, additional_languages
-        )
-    elif name.lower() == "deepgram":
-        return DeepgramTTS.from_config_dict(
-            tts_config, format, language, additional_languages
-        )
-    elif name.lower() == "rime":
-        return RimeTTS.from_config_dict(
+
+    tts_engine_loader = BUILT_IN_TTS_ENGINES.get(name.lower())
+    if tts_engine_loader:
+        clazz = tts_engine_loader()
+        return clazz.from_config_dict(
             tts_config, format, language, additional_languages
         )
     else:
@@ -410,6 +397,8 @@ class VoiceOutputChannel(OutputChannel):
         # Set stop_streaming_output_audio_chunks to match if user is speaking.
         # We are fixing this for A1, when Azure TTS is using HTTP mode
         # to synthesize audio.
+        from rasa.core.channels.voice_stream.tts.azure import AzureTTS
+
         if cast(AzureTTS, self.tts_engine):
             call_state.stop_streaming_output_audio_chunks = call_state.is_user_speaking
 
@@ -827,6 +816,8 @@ class VoiceInputChannel(InputChannel):
                 await tts_engine.stop_streaming()
                 # We only stop sending audio bytes which came from Azure TTS in order
                 # not to break Deepgram, Cartesia and Rime
+                from rasa.core.channels.voice_stream.tts.azure import AzureTTS
+
                 if cast(AzureTTS, tts_engine):
                     call_state.stop_streaming_output_audio_chunks = True
                 await self.interrupt_playback(ws, call_parameters)

@@ -7,7 +7,6 @@ import aiohttp
 import azure.cognitiveservices.speech as speechsdk
 import structlog
 from aiohttp import ClientConnectorError, ClientTimeout
-from azure.cognitiveservices.speech import SpeechSynthesisOutputFormat
 
 from rasa.core.channels.voice_stream.audio_bytes import (
     L16_24KHZ,
@@ -31,12 +30,13 @@ structlogger = structlog.get_logger()
 
 
 class _AudioOutputCallback(speechsdk.audio.PushAudioOutputStreamCallback):
-    """Bridge Azure Speech SDK audio output (SDK thread) to an asyncio queue.
+    """Bridge Azure Speech SDK audio output (run in separate SDK thread)
+    to an asyncio queue.
 
     Azure Speech SDK uses a separate thread to handle audio streaming.
-    So in order to push audio bytes back to the async loop in which Azure TTS is running
-    we need to encapsulate that loop and queue into one object
-    for easier handling and maintenance.
+    So in order to push audio bytes back to the async loop in
+    which Azure TTS is running we need to encapsulate that loop and
+    queue into one object for easier handling and maintenance.
     """
 
     def __init__(
@@ -53,8 +53,9 @@ class _AudioOutputCallback(speechsdk.audio.PushAudioOutputStreamCallback):
     def write(self, audio_buffer: memoryview) -> int:
         """Write audio buffer to the audio queue.
 
-        Because audio queue is an asyncio.Queue, it must be used in the same async loop
-        it was created in.
+        Because audio queue is an asyncio.Queue,
+        it must be used in the same async loop it was created in.
+
         We use `call_soon_threadsafe` from the async loop
         (in which async queue was created in) to call
         `put_nowait` method from async queue to put data into the queue.
@@ -110,9 +111,10 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
         self._audio_queue: asyncio.Queue = asyncio.Queue()
 
         # SDK objects (initialized in connect())
+
         self._speech_config: Optional[speechsdk.SpeechConfig] = None
         self._synthesizer: Optional[speechsdk.SpeechSynthesizer] = None
-        self._callback: Optional[_AudioOutputCallback] = None
+        self._callback: Optional[speechsdk.audio.PushAudioOutputStreamCallback] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
 
         # Per-response streaming state
@@ -180,8 +182,6 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
                 self._get_azure_audio_format()
             )
 
-            # Synthesizer is created once and reused across responses;
-            # the callback's queue reference is swapped in prepare_response().
             self._callback = _AudioOutputCallback(
                 self._loop, self._audio_queue, self.audio_format
             )
@@ -424,7 +424,9 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
             )
             self._synthesizer.stop_speaking_async()
 
-    def _get_azure_audio_format(self) -> speechsdk.SpeechSynthesisOutputFormat:
+    def _get_azure_audio_format(self) -> "speechsdk.SpeechSynthesisOutputFormat":
+        from azure.cognitiveservices.speech import SpeechSynthesisOutputFormat
+
         if self.audio_format == MULAW_8KHZ:
             return SpeechSynthesisOutputFormat.Raw8Khz8BitMonoMULaw
         elif self.audio_format == L16_24KHZ:
