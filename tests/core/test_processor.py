@@ -1552,6 +1552,85 @@ async def test_action_send_text_metadata(default_processor: MessageProcessor):
     assert applied_events[1].metadata == metadata
 
 
+async def test_run_action_waits_for_after_action_executed_awaitables(
+    default_processor: MessageProcessor,
+) -> None:
+    tracker = DialogueStateTracker.from_events(
+        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
+    )
+    domain = Domain.empty()
+    metadata = {"message": {"text": "foobar"}}
+    hook_completed = asyncio.Event()
+
+    async def _delayed_hook_result() -> None:
+        await asyncio.sleep(0)
+        hook_completed.set()
+
+    fake_hook = MagicMock()
+    fake_hook.after_action_executed.return_value = [_delayed_hook_result()]
+
+    async def _side_effects(*_: Any) -> None:
+        assert hook_completed.is_set()
+
+    with (
+        patch("rasa.core.processor.plugin_manager") as plugin_manager_mock,
+        patch.object(
+            default_processor,
+            "execute_side_effects",
+            AsyncMock(side_effect=_side_effects),
+        ) as execute_side_effects_mock,
+    ):
+        plugin_manager_mock.return_value.hook = fake_hook
+        await default_processor._run_action(
+            ActionSendText(),
+            tracker,
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            PolicyPrediction([], "some policy", action_metadata=metadata),
+        )
+
+    fake_hook.after_action_executed.assert_called_once()
+    execute_side_effects_mock.assert_awaited_once()
+
+
+async def test_run_action_logs_after_action_executed_hook_exceptions(
+    default_processor: MessageProcessor,
+) -> None:
+    tracker = DialogueStateTracker.from_events(
+        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
+    )
+    domain = Domain.empty()
+    metadata = {"message": {"text": "foobar"}}
+
+    async def _failing_hook_result() -> None:
+        raise RuntimeError("language update failed")
+
+    fake_hook = MagicMock()
+    fake_hook.after_action_executed.return_value = [_failing_hook_result()]
+
+    with (
+        patch("rasa.core.processor.plugin_manager") as plugin_manager_mock,
+        patch.object(default_processor, "execute_side_effects", AsyncMock()),
+        capture_logs() as caplog,
+    ):
+        plugin_manager_mock.return_value.hook = fake_hook
+        await default_processor._run_action(
+            ActionSendText(),
+            tracker,
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            PolicyPrediction([], "some policy", action_metadata=metadata),
+        )
+
+    hook_error_logs = [
+        event
+        for event in caplog
+        if event["event"] == "rasa.core.processor.after_action_executed.exception"
+    ]
+    assert len(hook_error_logs) == 1
+    assert hook_error_logs[0]["action_name"] == ACTION_SEND_TEXT_NAME
+
+
 async def test_action_invalid_metadata(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
         "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]

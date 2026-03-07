@@ -1,6 +1,6 @@
 import asyncio
 from typing import Any, AsyncIterator, Dict
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
@@ -17,6 +17,7 @@ from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 from rasa.core.channels.voice_stream.voice_channel import (
     DTMFInputAction,
     VoiceInputChannel,
+    VoiceLanguageChangePlugin,
     asr_engine_from_config,
     tts_engine_from_config,
 )
@@ -183,8 +184,10 @@ def _make_channel_and_mocks(
     mock_validate_voice_license_scope: Any,
     interruption_config: Dict[str, Any],
 ) -> tuple:
-    """Create a StubVoiceInputChannel with mocked interrupt_playback
-    and a mock TTS engine."""
+    """Create channel test doubles.
+
+    Returns a stub channel with `interrupt_playback` mocked and a mocked TTS engine.
+    """
     channel = create_stub_voice_input_channel(interruption_config)
 
     channel.interrupt_playback = AsyncMock()
@@ -393,3 +396,122 @@ async def test_interruptions_not_firing_when_disabled(
 
     # But the events are still queued
     assert asr_event_queue.qsize() == 2
+
+
+async def test_language_change_hook_schedules_update(
+    setup_call_state,
+) -> None:
+    call_state.current_language = "en-US"
+    asr_engine = MagicMock()
+    tts_engine = MagicMock()
+    asr_engine.set_language = AsyncMock()
+    tts_engine.set_language = AsyncMock()
+
+    plugin = VoiceLanguageChangePlugin(
+        sender_id="sender-1", asr_engine=asr_engine, tts_engine=tts_engine
+    )
+    language_slot = MagicMock()
+    language_slot.value = "de-DE"
+    tracker = MagicMock(sender_id="sender-1", slots={"language": language_slot})
+
+    awaitable = plugin.after_action_executed(tracker)
+    assert awaitable is not None
+    await awaitable
+
+    asr_engine.set_language.assert_awaited_once_with("de-DE")
+    tts_engine.set_language.assert_awaited_once_with("de-DE")
+    assert call_state.current_language == "de-DE"
+
+
+async def test_language_change_hook_ignores_other_senders(
+    setup_call_state,
+) -> None:
+    call_state.current_language = "en-US"
+    asr_engine = MagicMock()
+    tts_engine = MagicMock()
+    asr_engine.set_language = AsyncMock()
+    tts_engine.set_language = AsyncMock()
+
+    plugin = VoiceLanguageChangePlugin(
+        sender_id="sender-1", asr_engine=asr_engine, tts_engine=tts_engine
+    )
+    language_slot = MagicMock()
+    language_slot.value = "de-DE"
+    tracker = MagicMock(sender_id="sender-2", slots={"language": language_slot})
+
+    awaitable = plugin.after_action_executed(tracker)
+    assert awaitable is None
+
+    asr_engine.set_language.assert_not_awaited()
+    tts_engine.set_language.assert_not_awaited()
+    assert call_state.current_language == "en-US"
+
+
+async def test_language_change_hook_without_call_state_context() -> None:
+    asr_engine = MagicMock()
+    tts_engine = MagicMock()
+    asr_engine.set_language = AsyncMock()
+    tts_engine.set_language = AsyncMock()
+
+    plugin = VoiceLanguageChangePlugin(
+        sender_id="sender-1", asr_engine=asr_engine, tts_engine=tts_engine
+    )
+    language_slot = MagicMock()
+    language_slot.value = "de-DE"
+    tracker = MagicMock(sender_id="sender-1", slots={"language": language_slot})
+
+    # Simulate non-voice channel execution where `_call_state` is unbound.
+    token = _call_state.set(None)
+    try:
+        awaitable = plugin.after_action_executed(tracker)
+        assert awaitable is not None
+        await awaitable
+    finally:
+        _call_state.reset(token)
+
+    asr_engine.set_language.assert_awaited_once_with("de-DE")
+    tts_engine.set_language.assert_awaited_once_with("de-DE")
+
+
+async def test_run_audio_streaming_unregisters_language_plugin_on_session_error(
+    mock_validate_voice_license_scope: Any,
+) -> None:
+    channel = create_stub_voice_input_channel(interruption_config={"enabled": True})
+    mock_websocket = MagicMock()
+    mock_websocket.close = AsyncMock()
+
+    call_params = CallParameters(
+        call_id="call_123",
+        user_phone="+123",
+        bot_phone="+456",
+        stream_id="stream_456",
+        direction="inbound",
+    )
+
+    asr_engine = MagicMock()
+    asr_engine.connect = AsyncMock()
+    asr_engine.close_connection = AsyncMock()
+    tts_engine = MagicMock()
+    tts_engine.connect = AsyncMock()
+    tts_engine.close_connection = AsyncMock()
+
+    channel.collect_call_parameters = AsyncMock(return_value=call_params)
+    channel._get_asr_and_tts_engines = MagicMock(return_value=(asr_engine, tts_engine))
+    channel.start_session = AsyncMock(side_effect=RuntimeError("start session failed"))
+
+    with patch(
+        "rasa.core.channels.voice_stream.voice_channel.VoiceLanguageChangePlugin"
+    ) as plugin_cls:
+        mock_plugin = MagicMock()
+        mock_plugin.register_hook = MagicMock()
+        mock_plugin.unregister_hook = AsyncMock()
+        plugin_cls.return_value = mock_plugin
+
+        with pytest.raises(RuntimeError, match="start session failed"):
+            await channel.run_audio_streaming(AsyncMock(), mock_websocket)
+
+    mock_plugin.register_hook.assert_called_once()
+    mock_plugin.unregister_hook.assert_awaited_once()
+    asr_engine.close_connection.assert_awaited_once()
+    tts_engine.close_connection.assert_awaited_once()
+    mock_websocket.close.assert_awaited_once()

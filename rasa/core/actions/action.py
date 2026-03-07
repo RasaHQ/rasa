@@ -69,7 +69,9 @@ from rasa.shared.core.constants import (
     ACTION_UNLIKELY_INTENT_NAME,
     DEFAULT_SLOT_NAMES,
     KNOWLEDGE_BASE_SLOT_NAMES,
+    LANGUAGE_SLOT,
     REQUESTED_SLOT,
+    SESSION_START_METADATA_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
     SetSlotExtractor,
 )
@@ -721,6 +723,10 @@ class ActionSessionStart(Action):
 
         if domain.session_config.carry_over_slots:
             _events.extend(self._slot_set_events_from_tracker(tracker))
+
+        session_metadata = tracker.get_slot(SESSION_START_METADATA_SLOT)
+        if session_metadata and session_metadata.get(LANGUAGE_SLOT):
+            _events.append(SlotSet(LANGUAGE_SLOT, session_metadata.get(LANGUAGE_SLOT)))
 
         _events.append(ActionExecuted(ACTION_LISTEN_NAME))
 

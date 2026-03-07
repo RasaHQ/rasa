@@ -279,12 +279,16 @@ def _issue_set_slot_commands(
             ):
                 available_slot_names.add(current_step.collect)
 
+    structlogger.debug(
+        "nlu_command_adapter.available_slot_names",
+        available_slot_names=available_slot_names,
+    )
+
     for _, slot in tracker.slots.items():
         # if a slot is not collected in available flows,
         # it means that it is not a slot that can be filled by CALM,
         # so we skip it
         if slot.name not in available_slot_names:
-            structlogger.debug("nlu_command_adapter.skip_slot", slot=slot.name)
             continue
 
         slot_value, is_extracted = extract_slot_value(slot, slot_filling_manager)

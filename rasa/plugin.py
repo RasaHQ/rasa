@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import functools
 import sys
-from typing import TYPE_CHECKING, List, Optional, Text, Union
+from typing import TYPE_CHECKING, Awaitable, List, Optional, Text, Union
 
 import pluggy
 
@@ -84,7 +84,7 @@ def after_new_user_message(tracker: "DialogueStateTracker") -> None:
 
 
 @hookspec
-def after_action_executed(tracker: "DialogueStateTracker") -> None:
+def after_action_executed(tracker: "DialogueStateTracker") -> Optional[Awaitable[None]]:
     """Hook specification for after an action is executed."""
 
 

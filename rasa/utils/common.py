@@ -36,6 +36,7 @@ from rasa.constants import (
     ENV_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_MATPLOTLIB,
     ENV_LOG_LEVEL_MCP,
+    ENV_LOG_LEVEL_OPENAI,
     ENV_LOG_LEVEL_PYMONGO,
     ENV_LOG_LEVEL_RABBITMQ,
     ENV_MCP_LOGGING_ENABLED,
@@ -314,6 +315,7 @@ def configure_library_logging() -> None:
     update_websockets_log_level(library_log_level)
     update_mcp_log_level()
     update_pymongo_log_level(library_log_level)
+    update_openai_log_level()
 
 
 def update_apscheduler_log_level() -> None:
@@ -503,6 +505,25 @@ def update_pymongo_log_level(library_log_level: str) -> None:
     log_level = os.environ.get(ENV_LOG_LEVEL_PYMONGO, library_log_level)
     logging.getLogger("pymongo").setLevel(log_level)
     logging.getLogger("pymongo").propagate = False
+
+
+def update_openai_log_level() -> None:
+    """Set log level for OpenAI SDK loggers.
+
+    This suppresses noisy debug logs from the OpenAI Python SDK (for example
+    `openai._base_client`) unless explicitly enabled.
+    """
+    # Keep OpenAI SDK logs quiet by default even when the app runs in debug mode.
+    log_level = os.environ.get(ENV_LOG_LEVEL_OPENAI, "WARNING")
+
+    openai_loggers = [
+        "openai",
+        "openai._base_client",
+    ]
+
+    for logger_name in openai_loggers:
+        logging.getLogger(logger_name).setLevel(log_level)
+        logging.getLogger(logger_name).propagate = False
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:

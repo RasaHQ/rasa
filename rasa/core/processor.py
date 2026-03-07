@@ -1,3 +1,4 @@
+import asyncio
 import copy
 import inspect
 import os
@@ -81,6 +82,7 @@ from rasa.shared.core.constants import (
     SESSION_START_METADATA_SLOT,
     SILENCE_TIMEOUT_SLOT,
     SLOT_CONSECUTIVE_SILENCE_TIMEOUTS,
+    SLOTS_EXCLUDED_FOR_AGENT,
     USER_INTENT_RESTART,
     USER_INTENT_SILENCE_TIMEOUT,
     SetSlotExtractor,
@@ -853,9 +855,13 @@ class MessageProcessor:
     @staticmethod
     def _log_slots(tracker: DialogueStateTracker) -> None:
         # Log currently set slots
-        slots = {s.name: s.value for s in tracker.slots.values() if s.value is not None}
+        slots = {
+            s.name: s.value
+            for s in tracker.slots.values()
+            if s.value is not None and s.name not in SLOTS_EXCLUDED_FOR_AGENT
+        }
 
-        structlogger.debug("processor.slots.log", slots=slots)
+        structlogger.debug("processor.slots.user_slots", slots=slots)
 
     def _check_for_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
         """Warns the user if the NLU parse data contains unrecognized features.
@@ -1678,8 +1684,23 @@ class MessageProcessor:
         ):
             self._log_slots(tracker)
 
+        hook_results = plugin_manager().hook.after_action_executed(tracker=tracker)
+        awaitables = [result for result in hook_results if inspect.isawaitable(result)]
+        if awaitables:
+            hook_errors = await asyncio.gather(*awaitables, return_exceptions=True)
+            for index, hook_error in enumerate(hook_errors):
+                if isinstance(hook_error, Exception):
+                    structlogger.exception(
+                        "rasa.core.processor.after_action_executed.exception",
+                        event_info=(
+                            "Encountered an exception while running an "
+                            "`after_action_executed` hook callback."
+                        ),
+                        action_name=action.name(),
+                        hook_result_index=index,
+                        error=hook_error,
+                    )
         await self.execute_side_effects(events, tracker, output_channel)
-        plugin_manager().hook.after_action_executed(tracker=tracker)
         return self.should_predict_another_action(action.name())
 
     def _get_events_from_action_execution_failure(
