@@ -516,7 +516,7 @@ class MCPTaskAgent(MCPBaseAgent):
 
                 # Content only (no tool calls) → content already streamed;
                 # return INPUT_REQUIRED
-                if not llm_response.tool_calls:
+                if not llm_response.tool_calls and len(llm_response.choices) == 1:
                     # Exit conditions can already be satisfied without new tool calls
                     # (e.g. initial input).
                     if exit_output := self._check_exit_conditions_after_iteration(
@@ -547,96 +547,97 @@ class MCPTaskAgent(MCPBaseAgent):
                 if llm_response.tool_calls and bot_uttered:
                     self._record_filler_bot_uttered(bot_uttered, generated_events)
 
-                # Add the assistant message with tool calls to the messages.
-                tool_call_messages.append(
-                    self._get_assistant_message_with_tool_calls(llm_response)
-                )
-
-                for tool_call in llm_response.tool_calls:
-                    structlogger.debug(
-                        "mcp_task_agent.send_message.tool_call",
-                        event_info=f"Processing tool call {tool_call.tool_name}",
-                        tool_name=tool_call.tool_name,
-                        tool_args=json.dumps(tool_call.tool_args),
-                        json_formatting=["tool_args"],
-                        agent_name=self._name,
-                        agent_id=str(
-                            make_agent_identifier(self._name, self.protocol_type)
-                        ),
+                if llm_response.tool_calls:
+                    # Add the assistant message with tool calls to the messages.
+                    tool_call_messages.append(
+                        self._get_assistant_message_with_tool_calls(llm_response)
                     )
 
-                    # If the tool is not available, return a fatal error output.
-                    if tool_call.tool_name not in _available_tools_names:
-                        return self._create_fatal_error_output(
-                            agent_input,
-                            f"Tool {tool_call.tool_name} is not available.",
-                            "mcp_task_agent.send_message.tool_not_available",
-                            events=self.get_events_for_agent_output(
-                                agent_input,
-                                _initial_slot_values,
-                                _current_slot_values,
-                                generated_events + accumulated_tool_output_events,
-                            ),
-                            tool_results=tool_results,
+                    for tool_call in llm_response.tool_calls:
+                        structlogger.debug(
+                            "mcp_task_agent.send_message.tool_call",
+                            event_info=f"Processing tool call {tool_call.tool_name}",
                             tool_name=tool_call.tool_name,
+                            tool_args=json.dumps(tool_call.tool_args),
+                            json_formatting=["tool_args"],
+                            agent_name=self._name,
+                            agent_id=str(
+                                make_agent_identifier(self._name, self.protocol_type)
+                            ),
                         )
 
-                    # If slot-setting tool, apply it and append the message to messages.
-                    if slot_name := self._get_slot_name_from_tool_name(
-                        tool_call.tool_name
-                    ):
-                        if error_output := self._handle_slot_setting_tool(
-                            agent_input,
-                            slot_name,
-                            tool_call,
-                            _current_slot_values,
-                            _initial_slot_values,
-                            tool_call_messages,
-                            generated_events,
-                            accumulated_tool_output_events,
-                            tool_results,
-                        ):
-                            return error_output
-                    else:
-                        # Execute the tool call.
-                        if error_output := await self._process_tool_call(
-                            tool_call,
-                            agent_input,
-                            tool_call_messages,
-                            tool_results,
-                            current_iteration_tool_results,
-                            "mcp_task_agent.send_message.tool_output",
-                            events=self.get_events_for_agent_output(
+                        # If the tool is not available, return a fatal error output.
+                        if tool_call.tool_name not in _available_tools_names:
+                            return self._create_fatal_error_output(
                                 agent_input,
-                                _initial_slot_values,
-                                _current_slot_values,
-                                generated_events + accumulated_tool_output_events,
-                            ),
+                                f"Tool {tool_call.tool_name} is not available.",
+                                "mcp_task_agent.send_message.tool_not_available",
+                                events=self.get_events_for_agent_output(
+                                    agent_input,
+                                    _initial_slot_values,
+                                    _current_slot_values,
+                                    generated_events + accumulated_tool_output_events,
+                                ),
+                                tool_results=tool_results,
+                                tool_name=tool_call.tool_name,
+                            )
+
+                        # If slot-setting tool, apply it and append the message.
+                        if slot_name := self._get_slot_name_from_tool_name(
+                            tool_call.tool_name
                         ):
-                            return error_output
+                            if error_output := self._handle_slot_setting_tool(
+                                agent_input,
+                                slot_name,
+                                tool_call,
+                                _current_slot_values,
+                                _initial_slot_values,
+                                tool_call_messages,
+                                generated_events,
+                                accumulated_tool_output_events,
+                                tool_results,
+                            ):
+                                return error_output
+                        else:
+                            # Execute the tool call.
+                            if error_output := await self._process_tool_call(
+                                tool_call,
+                                agent_input,
+                                tool_call_messages,
+                                tool_results,
+                                current_iteration_tool_results,
+                                "mcp_task_agent.send_message.tool_output",
+                                events=self.get_events_for_agent_output(
+                                    agent_input,
+                                    _initial_slot_values,
+                                    _current_slot_values,
+                                    generated_events + accumulated_tool_output_events,
+                                ),
+                            ):
+                                return error_output
 
-                events_from_tool_results = await self._process_tool_output_or_raise(
-                    current_iteration_tool_results,
-                    tool_results,
-                    output_channel,
-                )
-                if events_from_tool_results:
-                    slot_updates = self._apply_slot_set_events_to_agent_input(
-                        agent_input, events_from_tool_results
+                    events_from_tool_results = await self._process_tool_output_or_raise(
+                        current_iteration_tool_results,
+                        tool_results,
+                        output_channel,
                     )
-                    accumulated_tool_output_events.extend(events_from_tool_results)
-                    agent_input.events.extend(events_from_tool_results)
-                    _current_slot_values.update(slot_updates)
+                    if events_from_tool_results:
+                        slot_updates = self._apply_slot_set_events_to_agent_input(
+                            agent_input, events_from_tool_results
+                        )
+                        accumulated_tool_output_events.extend(events_from_tool_results)
+                        agent_input.events.extend(events_from_tool_results)
+                        _current_slot_values.update(slot_updates)
 
-                if exit_output := self._check_exit_conditions_after_iteration(
-                    agent_input=agent_input,
-                    initial_slot_values=_initial_slot_values,
-                    current_slot_values=_current_slot_values,
-                    tool_results=tool_results,
-                    generated_events=generated_events,
-                    accumulated_tool_output_events=accumulated_tool_output_events,
-                ):
-                    return exit_output
+                    if exit_output := self._check_exit_conditions_after_iteration(
+                        agent_input=agent_input,
+                        initial_slot_values=_initial_slot_values,
+                        current_slot_values=_current_slot_values,
+                        tool_results=tool_results,
+                        generated_events=generated_events,
+                        accumulated_tool_output_events=accumulated_tool_output_events,
+                    ):
+                        return exit_output
 
             except Exception as e:
                 if self._is_malformed_tool_response_exception(e):

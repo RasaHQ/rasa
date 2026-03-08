@@ -865,7 +865,7 @@ class TestMCPTaskAgent:
     @pytest.mark.parametrize(
         "llm_response, expected_status, expected_message_keyword",
         [
-            # No LLM response
+            # No/empty response (no choices, no tool_calls) → RECOVERABLE_ERROR
             (
                 LLMResponse(
                     id="test_id", created=1642248600, choices=[], tool_calls=None
@@ -873,7 +873,7 @@ class TestMCPTaskAgent:
                 "RECOVERABLE_ERROR",
                 "No response from LLM",
             ),
-            # No tool calls
+            # Content only with exactly one choice (len(choices)==1) → INPUT_REQUIRED
             (
                 LLMResponse(
                     id="test_id",
@@ -883,6 +883,27 @@ class TestMCPTaskAgent:
                 ),
                 "INPUT_REQUIRED",
                 "Test response",
+            ),
+            # Whitespace or empty string → INPUT_REQUIRED, no BotUttered
+            (
+                LLMResponse(
+                    id="test_id",
+                    created=1642248600,
+                    choices=[""],
+                    tool_calls=[],
+                ),
+                "INPUT_REQUIRED",
+                None,  # no bot utterance expected
+            ),
+            (
+                LLMResponse(
+                    id="test_id",
+                    created=1642248600,
+                    choices=["  "],
+                    tool_calls=[],
+                ),
+                "INPUT_REQUIRED",
+                None,  # no bot utterance expected
             ),
         ],
     )
@@ -895,7 +916,12 @@ class TestMCPTaskAgent:
         expected_status,
         expected_message_keyword,
     ):
-        """Test send_message with various LLM response scenarios."""
+        """Test send_message with various LLM response scenarios.
+
+        The content-only path (INPUT_REQUIRED) requires exactly one choice
+        (len(llm_response.choices) == 1) and no tool calls.
+        Whitespace or empty content yields INPUT_REQUIRED but no BotUttered.
+        """
         mock_agent_input.recipient_id = "test_user"
         with patch.object(mcp_task_agent, "llm_client") as mock_llm_client:
             mock_llm_client.acompletion = AsyncMock(return_value=llm_response)
@@ -909,12 +935,15 @@ class TestMCPTaskAgent:
             if expected_status == "RECOVERABLE_ERROR":
                 assert expected_message_keyword in result.error_message
             elif expected_status == "INPUT_REQUIRED":
-                # When output_channel is set, response_message is omitted; check events
                 assert result.events is not None
                 bot_utters = [e for e in result.events if isinstance(e, BotUttered)]
-                assert any(
-                    expected_message_keyword in (e.text or "") for e in bot_utters
-                )
+                if expected_message_keyword is None:
+                    # Whitespace/empty: no bot utterance
+                    assert len(bot_utters) == 0
+                else:
+                    assert any(
+                        expected_message_keyword in (e.text or "") for e in bot_utters
+                    )
             else:
                 assert result.response_message == expected_message_keyword
 

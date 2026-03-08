@@ -534,7 +534,8 @@ async def test_acompletion_with_streaming_tool_call_only_response():
         recipient_id="user_1",
     )
 
-    assert response.choices == []
+    # No content streamed → accumulated_text is ""; response always has one choice
+    assert response.choices == [""]
     assert response.tool_calls is not None
     assert len(response.tool_calls) == 1
     assert response.tool_calls[0].tool_name == "my_tool"

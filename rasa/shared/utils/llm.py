@@ -346,7 +346,7 @@ async def acompletion_with_streaming(
     response = LLMResponse(
         id=llm_response_metadata.get("id", ""),
         created=llm_response_metadata.get("created", 0),
-        choices=[accumulated_text] if accumulated_text else [],
+        choices=[accumulated_text],  # Always include at least one choice, even if empty
         model=llm_response_metadata.get("model", ""),
     )
     response.tool_calls = assemble_tool_calls(accumulated_tool_call_deltas)

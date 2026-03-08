@@ -1211,6 +1211,8 @@ class MCPBaseAgent(AgentProtocol):
         llm_content = (
             llm_response.choices[0] if llm_response and llm_response.choices else None
         )
+        if llm_content is not None and isinstance(llm_content, str):
+            llm_content = llm_content.strip()
         if llm_content:
             bot_uttered = self.create_bot_uttered_for_streamed_content(
                 llm_content, agent_input

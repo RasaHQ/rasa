@@ -312,7 +312,7 @@ class MCPOpenAgent(MCPBaseAgent):
 
                 # Content only (no tool calls) → content already streamed
                 # and return INPUT_REQUIRED
-                if not llm_response.tool_calls:
+                if not llm_response.tool_calls and len(llm_response.choices) == 1:
                     # Record the content as a BotUttered event.
                     self._record_input_required_bot_uttered(
                         bot_uttered, generated_events
@@ -333,71 +333,73 @@ class MCPOpenAgent(MCPBaseAgent):
                     # Record the acknowledgement response as a BotUttered event.
                     self._record_filler_bot_uttered(bot_uttered, generated_events)
 
-                # Add the assistant message with tool calls to the messages.
-                tool_call_messages.append(
-                    self._get_assistant_message_with_tool_calls(llm_response)
-                )
-
-                for tool_call in llm_response.tool_calls:
-                    structlogger.debug(
-                        "mcp_open_agent.send_message.tool_call",
-                        event_info=f"Processing tool call {tool_call.tool_name}",
-                        tool_name=tool_call.tool_name,
-                        tool_args=json.dumps(tool_call.tool_args),
-                        agent_name=self._name,
-                        agent_id=str(
-                            make_agent_identifier(self._name, self.protocol_type)
-                        ),
-                        json_formatting=["tool_args"],
+                if llm_response.tool_calls:
+                    # Add the assistant message with tool calls to the messages.
+                    tool_call_messages.append(
+                        self._get_assistant_message_with_tool_calls(llm_response)
                     )
 
-                    # If the tool is not available, return a fatal error output.
-                    if tool_call.tool_name not in _available_tools_names:
-                        return self._create_fatal_error_output(
-                            agent_input,
-                            f"Tool {tool_call.tool_name} is not available.",
-                            "mcp_open_agent.send_message.tool_not_available",
-                            events=generated_events + accumulated_tool_output_events,
-                            tool_results=tool_results,
+                    for tool_call in llm_response.tool_calls:
+                        structlogger.debug(
+                            "mcp_open_agent.send_message.tool_call",
+                            event_info=f"Processing tool call {tool_call.tool_name}",
                             tool_name=tool_call.tool_name,
+                            tool_args=json.dumps(tool_call.tool_args),
+                            agent_name=self._name,
+                            agent_id=str(
+                                make_agent_identifier(self._name, self.protocol_type)
+                            ),
+                            json_formatting=["tool_args"],
                         )
 
-                    # task_completed → exit immediately
-                    if tool_call.tool_name == KEY_TASK_COMPLETED:
-                        return await self._run_task_completed_tool(
+                        # If the tool is not available, return a fatal error output.
+                        if tool_call.tool_name not in _available_tools_names:
+                            return self._create_fatal_error_output(
+                                agent_input,
+                                f"Tool {tool_call.tool_name} is not available.",
+                                "mcp_open_agent.send_message.tool_not_available",
+                                events=generated_events
+                                + accumulated_tool_output_events,
+                                tool_results=tool_results,
+                                tool_name=tool_call.tool_name,
+                            )
+
+                        # task_completed → exit immediately
+                        if tool_call.tool_name == KEY_TASK_COMPLETED:
+                            return await self._run_task_completed_tool(
+                                tool_call,
+                                agent_input,
+                                tool_results,
+                                current_iteration_tool_results,
+                                generated_events=generated_events,
+                                accumulated_tool_output_events=accumulated_tool_output_events,
+                                output_channel=output_channel,
+                                bot_uttered=bot_uttered,
+                            )
+
+                        # All other tools → execute and continue the loop
+                        if error_output := await self._process_tool_call(
                             tool_call,
                             agent_input,
+                            tool_call_messages,
                             tool_results,
                             current_iteration_tool_results,
-                            generated_events=generated_events,
-                            accumulated_tool_output_events=accumulated_tool_output_events,
-                            output_channel=output_channel,
-                            bot_uttered=bot_uttered,
-                        )
+                            "mcp_open_agent.send_message.tool_output",
+                            events=generated_events + accumulated_tool_output_events,
+                        ):
+                            return error_output
 
-                    # All other tools → execute and continue the loop
-                    if error_output := await self._process_tool_call(
-                        tool_call,
-                        agent_input,
-                        tool_call_messages,
-                        tool_results,
+                    events_from_tool_results = await self._process_tool_output_or_raise(
                         current_iteration_tool_results,
-                        "mcp_open_agent.send_message.tool_output",
-                        events=generated_events + accumulated_tool_output_events,
-                    ):
-                        return error_output
-
-                events_from_tool_results = await self._process_tool_output_or_raise(
-                    current_iteration_tool_results,
-                    tool_results,
-                    output_channel,
-                )
-                if events_from_tool_results:
-                    self._apply_slot_set_events_to_agent_input(
-                        agent_input, events_from_tool_results
+                        tool_results,
+                        output_channel,
                     )
-                    accumulated_tool_output_events.extend(events_from_tool_results)
-                    agent_input.events.extend(events_from_tool_results)
+                    if events_from_tool_results:
+                        self._apply_slot_set_events_to_agent_input(
+                            agent_input, events_from_tool_results
+                        )
+                        accumulated_tool_output_events.extend(events_from_tool_results)
+                        agent_input.events.extend(events_from_tool_results)
 
             except Exception as e:
                 if self._is_malformed_tool_response_exception(e):
