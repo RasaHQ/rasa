@@ -865,7 +865,7 @@ class A2AAgent(AgentProtocol):
                         events=generated_events or None,
                     )
 
-                structlogger.error(
+                structlogger.info(
                     "a2a_agent.pool_task_until_terminal.waiting",
                     event_info="Task not in terminal state yet, waiting to poll again",
                     delay=delay,
