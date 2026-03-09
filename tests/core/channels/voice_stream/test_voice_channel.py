@@ -1,4 +1,5 @@
 import asyncio
+import time
 from dataclasses import asdict
 from typing import Any, AsyncIterator, Dict, Optional
 from unittest.mock import AsyncMock, MagicMock, call, patch
@@ -22,6 +23,7 @@ from rasa.core.channels.voice_stream.call_state import (
     RasaIsProcessing,
     UserStoppedSpeaking,
     _call_state,
+    call_state,
 )
 from rasa.core.channels.voice_stream.call_state import (
     UserIsSpeaking as UserIsSpeakingCallStateMessage,
@@ -269,7 +271,6 @@ async def test_stop_streaming_and_interrupt_playback_on_interruption(
 ) -> None:
     """Test that ASR event triggers interruption when its text is above threshold."""
     # Given a channel with interruptions enabled and the bot currently speaking
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     mock_web_socket = MagicMock()
 
@@ -318,7 +319,6 @@ async def test_receive_asr_events_does_not_interrupt_when_words_below_threshold(
 ) -> None:
     """Test that interruptions do not trigger when word count is below threshold."""
     # Given events with fewer words than the min_words threshold (3)
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     mock_web_socket = MagicMock()
     channel, mock_tts_engine = _make_channel_and_mocks(
@@ -366,7 +366,6 @@ async def test_interruptions_for_multiple_asr_events_in_sequence(
     call_parameters: CallParameters,
 ) -> None:
     """Tests that multiple consecutive ASR events triggers interruptions."""
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     mock_websocket = MagicMock()
     # Given events with fewer words than the min_words threshold (3)
@@ -416,7 +415,6 @@ async def test_interruptions_not_firing_when_disabled(
 ) -> None:
     """Test that interruptions are not firing if they are disabled."""
     # Given events with fewer words than the min_words threshold (3)
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     mock_web_socket = MagicMock()
     channel, mock_tts_engine = _make_channel_and_mocks(
@@ -452,8 +450,6 @@ async def test_interruptions_not_firing_when_disabled(
 
 @pytest.mark.usefixtures("setup_call_state")
 async def test_language_change_hook_schedules_update() -> None:
-    from rasa.core.channels.voice_stream.call_state import call_state
-
     call_state.current_language = "en-US"
     asr_engine = MagicMock()
     tts_engine = MagicMock()
@@ -478,8 +474,6 @@ async def test_language_change_hook_schedules_update() -> None:
 
 @pytest.mark.usefixtures("setup_call_state")
 async def test_language_change_hook_ignores_other_senders() -> None:
-    from rasa.core.channels.voice_stream.call_state import call_state
-
     call_state.current_language = "en-US"
     asr_engine = MagicMock()
     tts_engine = MagicMock()
@@ -572,6 +566,127 @@ async def test_run_audio_streaming_unregisters_language_plugin_on_session_error(
     mock_websocket.close.assert_awaited_once()
 
 
+# --- apply_pacing_delay and _apply_min_delay_between_messages ---
+
+
+@pytest.fixture
+def stub_output_channel(mulaw_format) -> StubVoiceOutputChannel:
+    """Create a stub VoiceOutputChannel for testing pacing delay methods."""
+    mock_ws = MagicMock()
+    mock_tts = MagicMock()
+    mock_tts.streaming_input = True
+    return StubVoiceOutputChannel(
+        voice_websocket=mock_ws,
+        tts_engine=mock_tts,
+        tts_cache={},
+        audio_format=mulaw_format,
+        min_delay_between_bot_messages_seconds=1.5,
+    )
+
+
+@pytest.mark.parametrize("seconds", [0, -0.1])
+async def test_apply_pacing_delay_does_nothing_when_seconds_non_positive(
+    stub_output_channel: StubVoiceOutputChannel,
+    seconds: float,
+) -> None:
+    """When seconds <= 0, apply_pacing_delay does not stream any audio."""
+    with patch.object(
+        stub_output_channel,
+        "_stream_audio_to_channel",
+        new_callable=AsyncMock,
+    ) as mock_stream:
+        await stub_output_channel.apply_pacing_delay("recipient_1", seconds)
+        mock_stream.assert_not_awaited()
+
+
+async def test_apply_pacing_delay_streams_silence_when_seconds_positive(
+    stub_output_channel: StubVoiceOutputChannel,
+    mulaw_format,
+) -> None:
+    """When seconds > 0, apply_pacing_delay streams silence to the channel."""
+    with patch.object(
+        stub_output_channel,
+        "_stream_audio_to_channel",
+        new_callable=AsyncMock,
+    ) as mock_stream:
+        await stub_output_channel.apply_pacing_delay("recipient_1", 2.0)
+        mock_stream.assert_awaited_once()
+        call_args = mock_stream.await_args
+        assert call_args[0][0] == "recipient_1"
+        # Second arg is async generator from chunk_audio(silence); consume it
+        stream = call_args[0][1]
+        chunks = []
+        async for ch in stream:
+            chunks.append(ch)
+        assert len(chunks) >= 1
+        total_bytes = sum(len(c.data) for c in chunks)
+        expected_bytes = int(2.0 * mulaw_format.bytes_per_second)
+        assert total_bytes == expected_bytes
+
+
+async def test_apply_min_delay_between_messages_does_nothing_when_min_delay_zero(
+    stub_output_channel: StubVoiceOutputChannel,
+) -> None:
+    """When min_delay_between_bot_messages_seconds <= 0, no pacing delay is applied."""
+    stub_output_channel.min_delay_between_bot_messages_seconds = 0
+    stub_output_channel._last_bot_message_end_time = time.monotonic()
+    with patch.object(
+        stub_output_channel,
+        "apply_pacing_delay",
+        new_callable=AsyncMock,
+    ) as mock_apply:
+        await stub_output_channel._apply_min_delay_between_messages("recipient_1")
+        mock_apply.assert_not_awaited()
+    assert stub_output_channel._last_bot_message_end_time is None
+
+
+async def test_apply_min_delay_between_messages_does_nothing_when_last_end_time_none(
+    stub_output_channel: StubVoiceOutputChannel,
+) -> None:
+    """When _last_bot_message_end_time is None, no pacing delay is applied."""
+    stub_output_channel._last_bot_message_end_time = None
+    with patch.object(
+        stub_output_channel,
+        "apply_pacing_delay",
+        new_callable=AsyncMock,
+    ) as mock_apply:
+        await stub_output_channel._apply_min_delay_between_messages("recipient_1")
+        mock_apply.assert_not_awaited()
+    assert stub_output_channel._last_bot_message_end_time is None
+
+
+async def test_apply_min_delay_between_messages_no_apply_when_elapsed_exceeds_min(
+    stub_output_channel: StubVoiceOutputChannel,
+) -> None:
+    """When enough time passed since last message, no extra silence is sent."""
+    stub_output_channel._last_bot_message_end_time = time.monotonic() - 5.0
+    with patch.object(
+        stub_output_channel,
+        "apply_pacing_delay",
+        new_callable=AsyncMock,
+    ) as mock_apply:
+        await stub_output_channel._apply_min_delay_between_messages("recipient_1")
+        mock_apply.assert_not_awaited()
+    assert stub_output_channel._last_bot_message_end_time is None
+
+
+async def test_apply_min_delay_between_messages_calls_apply_pacing_delay_and_resets(
+    stub_output_channel: StubVoiceOutputChannel,
+) -> None:
+    """apply_pacing_delay is called and _last_bot_message_end_time reset."""
+    stub_output_channel._last_bot_message_end_time = time.monotonic() - 0.5
+    with patch.object(
+        stub_output_channel,
+        "apply_pacing_delay",
+        new_callable=AsyncMock,
+    ) as mock_apply:
+        await stub_output_channel._apply_min_delay_between_messages("recipient_1")
+        mock_apply.assert_awaited_once()
+        awaited_seconds = mock_apply.await_args[0][1]
+        assert 0.9 <= awaited_seconds <= 1.1
+    assert stub_output_channel._last_bot_message_end_time is None
+
+
 @pytest.fixture
 def stub_voice_input_channel(
     mock_validate_voice_license_scope,
@@ -602,7 +717,6 @@ async def test_handle_asr_event_new_transcript_calls_on_new_message(
     """NewTranscript with non-empty text triggers on_new_message and
     send_turn_end_marker.
     """
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     mock_output_channel = _attach_mock_output_channel(stub_voice_input_channel)
 
@@ -640,7 +754,6 @@ async def test_handle_asr_event_new_transcript_empty_text_ignored(
     stub_voice_input_channel: StubVoiceInputChannel,
 ):
     """NewTranscript with empty text should not call on_new_message."""
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     _attach_mock_output_channel(stub_voice_input_channel)
 
@@ -670,7 +783,6 @@ async def test_handle_asr_event_new_transcript_ignored_during_dtmf_collection(
     """NewTranscript is silently ignored while collecting DTMF and
     allow_audio_input is False.
     """
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     _attach_mock_output_channel(stub_voice_input_channel)
 
@@ -705,7 +817,6 @@ async def test_handle_asr_event_new_transcript_allowed_when_dtmf_allows_audio(
     """NewTranscript is processed normally when allow_audio_input is True,
     even while collecting DTMF.
     """
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     _attach_mock_output_channel(stub_voice_input_channel)
 
@@ -738,7 +849,6 @@ async def test_handle_asr_event_user_silence_sends_silence_timeout_message(
     """UserSilence event calls on_new_message with USER_CONVERSATION_SILENCE_TIMEOUT
     and clears the DTMF buffer.
     """
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     mock_output_channel = _attach_mock_output_channel(stub_voice_input_channel)
 
@@ -772,7 +882,6 @@ async def test_handle_asr_event_new_transcript_puts_user_stopped_speaking_in_que
     """UserIsSpeaking puts UserIsSpeakingCallStateMessage into the
     internal queue.
     """
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     on_new_message = AsyncMock()
 
@@ -810,7 +919,6 @@ async def test_notify_message_processing_started_enqueues_rasa_is_processing(
     stub_voice_output_channel: StubVoiceOutputChannel,
 ):
     """notify_message_processing_started puts RasaIsProcessing on the internal queue."""
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     await stub_voice_output_channel.notify_message_processing_started()
 
@@ -826,7 +934,6 @@ async def test_notify_message_processing_completed_enqueues_rasa_is_listening(
     """notify_message_processing_completed puts RasaIsListening
     on the internal queue.
     """
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     await stub_voice_output_channel.notify_message_processing_completed()
 
@@ -840,7 +947,6 @@ async def test_notify_message_processing_started_then_completed_order(
     stub_voice_output_channel: StubVoiceOutputChannel,
 ):
     """Calling started then completed enqueues messages in FIFO order."""
-    from rasa.core.channels.voice_stream.call_state import call_state
 
     await stub_voice_output_channel.notify_message_processing_started()
     await stub_voice_output_channel.notify_message_processing_completed()

@@ -38,9 +38,9 @@ def read_wav_to_rasa_audio_bytes(file_name: str) -> Optional[RasaAudioBytes]:
 def generate_silence(
     format: AudioFormat, length_in_seconds: float = 1.0
 ) -> RasaAudioBytes:
-    return RasaAudioBytes(
-        b"\00" * int(length_in_seconds * format.sample_rate), format=format
-    )
+    """Generate silent audio for the given format and duration."""
+    num_bytes = int(length_in_seconds * format.bytes_per_second)
+    return RasaAudioBytes(b"\x00" * num_bytes, format=format)
 
 
 T = TypeVar("T", bound="MergeableConfig")

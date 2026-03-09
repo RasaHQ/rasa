@@ -60,9 +60,7 @@ from rasa.core.channels.voice_stream.call_state import (
 from rasa.core.channels.voice_stream.tts import BUILT_IN_TTS_ENGINES
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
-from rasa.core.channels.voice_stream.util import (
-    generate_silence,
-)
+from rasa.core.channels.voice_stream.util import generate_silence
 from rasa.hooks import hookimpl
 from rasa.plugin import plugin_manager
 from rasa.shared.core.constants import LANGUAGE_SLOT, SILENCE_TIMEOUT_SLOT
@@ -81,6 +79,7 @@ logger = structlog.get_logger(__name__)
 
 # define constants for the voice channel
 DEFAULT_INTERRUPTION_MIN_WORDS = 3
+DEFAULT_MIN_DELAY_BETWEEN_BOT_MESSAGES_SECONDS = 2
 
 
 @dataclass
@@ -211,6 +210,9 @@ class VoiceOutputChannel(OutputChannel):
         tts_cache: TTSCache,
         audio_format: AudioFormat,
         min_buffer_size: int = 0,
+        min_delay_between_bot_messages_seconds: float = (
+            DEFAULT_MIN_DELAY_BETWEEN_BOT_MESSAGES_SECONDS
+        ),
     ):
         super().__init__()
         self.voice_websocket = voice_websocket
@@ -218,10 +220,18 @@ class VoiceOutputChannel(OutputChannel):
         self.tts_cache = tts_cache
         self.min_buffer_size = min_buffer_size
         self.audio_format = audio_format
+        self.min_delay_between_bot_messages_seconds = (
+            min_delay_between_bot_messages_seconds
+        )
+
         self.latest_message_id: Optional[str] = None
 
         # For streaming responses - background task that sends TTS audio
         self.audio_sender_task: Optional[asyncio.Task] = None
+
+        # When the last bot message ended (streaming or non-streaming). Used to
+        # enforce a minimum pacing gap before the next bot message.
+        self._last_bot_message_end_time: Optional[float] = None
 
     @property
     def supports_streaming(self) -> bool:
@@ -438,6 +448,45 @@ class VoiceOutputChannel(OutputChannel):
 
         return collected_audio
 
+    async def apply_pacing_delay(self, recipient_id: str, seconds: float) -> None:
+        """Apply pacing delay by sending silence as audio (generic, all channels).
+
+        Sends N seconds of silence on the same audio path as TTS to enforce
+        a natural gap between consecutive bot utterances. No server sleep.
+        """
+        if seconds <= 0:
+            return
+        silence = generate_silence(self.audio_format, length_in_seconds=seconds)
+        await self._stream_audio_to_channel(recipient_id, self.chunk_audio(silence))
+
+    async def _apply_min_delay_between_messages(self, recipient_id: str) -> None:
+        """Enforce minimum delay between consecutive bot messages.
+
+        If the last bot message ended recently and
+        min_delay_between_bot_messages_seconds is set, sends silence for the
+        remainder of the gap. Works for any consecutive pair (filler or not).
+        Resets _last_bot_message_end_time.
+        """
+        if (
+            self.min_delay_between_bot_messages_seconds <= 0
+            or self._last_bot_message_end_time is None
+        ):
+            self._last_bot_message_end_time = None
+            return
+
+        elapsed = time.monotonic() - self._last_bot_message_end_time
+        wait_seconds = self.min_delay_between_bot_messages_seconds - elapsed
+        if wait_seconds > 0:
+            logger.debug(
+                "voice_channel.apply_min_delay_between_messages",
+                wait_seconds=wait_seconds,
+                min_delay_between_bot_messages_seconds=(
+                    self.min_delay_between_bot_messages_seconds
+                ),
+            )
+            await self.apply_pacing_delay(recipient_id, wait_seconds)
+        self._last_bot_message_end_time = None
+
     async def _send_remaining_bytes(
         self,
         recipient_id: str,
@@ -470,7 +519,9 @@ class VoiceOutputChannel(OutputChannel):
         """Start streaming response session.
 
         Starts background task (listens to TTS audio, sends to websocket).
+        Enforces min delay since last bot message (pacing silence if needed).
         """
+        await self._apply_min_delay_between_messages(recipient_id)
         await super().send_response_chunk_start(recipient_id, **kwargs)
 
         # Let TTS engine prepare for this response (e.g., mode selection)
@@ -526,6 +577,7 @@ class VoiceOutputChannel(OutputChannel):
             await self.audio_sender_task
         await self.send_end_marker(recipient_id)
         call_state.latest_bot_audio_id = self.latest_message_id
+        self._last_bot_message_end_time = time.monotonic()
         logger.debug("voice_channel.end_streaming_response")
 
     async def send_text_message(
@@ -535,6 +587,7 @@ class VoiceOutputChannel(OutputChannel):
             logger.debug("voice_channel.skip_non_streaming_response")
             return
 
+        await self._apply_min_delay_between_messages(recipient_id)
         self._track_rasa_processing_latency()
         call_state.tts_start_time = time.time()
 
@@ -566,6 +619,8 @@ class VoiceOutputChannel(OutputChannel):
         await self.send_end_marker(recipient_id)
 
         call_state.latest_bot_audio_id = self.latest_message_id
+
+        self._last_bot_message_end_time = time.monotonic()
 
     async def send_audio_bytes(
         self, recipient_id: str, audio_bytes: RasaAudioBytes
@@ -701,7 +756,6 @@ class VoiceInputChannel(InputChannel):
             if interruptions
             else InterruptionConfig()
         )
-
         if self.interruption_config.enabled:
             mark_as_beta_feature(f"Interruption Handling in {self.name()}")
 
