@@ -31,7 +31,7 @@ async def test_after_new_user_message(default_agent: Agent) -> None:
     assert hook_result[0].latest_message.text == message_text
 
 
-async def test_after_action_executed(default_agent: Agent) -> None:
+async def test_after_action_executed(agent_with_flows: Agent) -> None:
     hook_result = []
 
     class TestHookPlugin:
@@ -45,7 +45,7 @@ async def test_after_action_executed(default_agent: Agent) -> None:
     message_text = "hello"
     user_message = UserMessage(message_text, sender_id="some id")
 
-    await default_agent.handle_message(user_message)
+    await agent_with_flows.handle_message(user_message)
 
     assert len(hook_result) > 0
 

@@ -101,13 +101,13 @@ async def test_tracker_update_plugin_triggers_after_action_executed(
 async def test_studio_chat_handle_tracker_update(
     studio_input: StudioChatInput,
     default_tracker: DialogueStateTracker,
-    default_agent: Agent,
+    agent_with_flows: Agent,
 ) -> None:
     default_tracker.sender_id = "test_studio_chat_handle_tracker_update"
     default_tracker.update(UserUttered("foo bar"))
-    await default_agent.tracker_store.save(default_tracker)
+    await agent_with_flows.tracker_store.save(default_tracker)
 
-    studio_input.agent = default_agent
+    studio_input.agent = agent_with_flows
 
     data = {
         "sender_id": default_tracker.sender_id,
@@ -125,7 +125,7 @@ async def test_studio_chat_handle_tracker_update(
     assert "hello world" in json.dumps(call.args[1])
     assert "foo bar" not in json.dumps(call.args[1])
 
-    retrieved_tracker = await default_agent.tracker_store.retrieve(
+    retrieved_tracker = await agent_with_flows.tracker_store.retrieve(
         default_tracker.sender_id
     )
     assert retrieved_tracker is not None
@@ -142,13 +142,13 @@ async def test_studio_chat_handle_tracker_update(
 async def test_studio_chat_handle_partial_tracker_update(
     studio_input: StudioChatInput,
     default_tracker: DialogueStateTracker,
-    default_agent: Agent,
+    agent_with_flows: Agent,
 ) -> None:
     default_tracker.sender_id = "test_studio_chat_handle_partial_tracker_update"
     default_tracker.update(UserUttered("foo bar"))
-    await default_agent.tracker_store.save(default_tracker)
+    await agent_with_flows.tracker_store.save(default_tracker)
 
-    studio_input.agent = default_agent
+    studio_input.agent = agent_with_flows
 
     data = {
         "sender_id": default_tracker.sender_id,
@@ -158,7 +158,7 @@ async def test_studio_chat_handle_partial_tracker_update(
     }
     await studio_input.handle_tracker_update("some_sid", data)
 
-    retrieved_tracker = await default_agent.tracker_store.retrieve(
+    retrieved_tracker = await agent_with_flows.tracker_store.retrieve(
         default_tracker.sender_id
     )
     assert retrieved_tracker is not None

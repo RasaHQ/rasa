@@ -282,6 +282,8 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "utils", "test_mapper.py").absolute(),
         Path("tests", "utils", "test_ml_utils.py").absolute(),
         Path("tests", "utils", "test_plotting.py").absolute(),
+        Path("tests", "core", "test_test.py").absolute(),
+        Path("tests", "core", "actions", "test_forms.py").absolute(),
     ],
     "category_agents": [
         Path("tests", "agents").absolute(),
@@ -1127,6 +1129,30 @@ def pytest_runtest_setup(item: Function) -> None:
         pytest.skip("cannot run on CI")
 
 
+def pytest_runtest_teardown(item: Function) -> None:
+    """Record per-test memory on Datadog test span when DD_RECORD_TEST_MEMORY is set."""
+    if os.environ.get("DD_RECORD_TEST_MEMORY", "").lower() not in (
+        "true",
+        "1",
+        "yes",
+        "t",
+    ):
+        return
+    try:
+        from ddtrace import tracer  # type: ignore[import-untyped]
+
+        span = tracer.current_span()
+        if span is None:
+            return
+        import psutil
+
+        mem = psutil.Process().memory_info()
+        span.set_tag("test.memory.rss", mem.rss)
+        span.set_tag("test.memory.vms", mem.vms)
+    except (ImportError, AttributeError):
+        pass
+
+
 class MockExporter(Exporter):
     """Mocked `Exporter` class."""
 
@@ -1181,6 +1207,13 @@ def pytest_collection_modifyitems(items: List[Function]) -> None:
     for item in items:
         marker = _get_marker_for_ci_matrix(item)
         item.add_marker(marker)
+        # Tests using default_agent or trained_default_agent_model
+        # run only in unit-test-nlu CI job
+        if (
+            "default_agent" in item.fixturenames
+            or "trained_default_agent_model" in item.fixturenames
+        ):
+            item.add_marker("nlu")
 
 
 def create_test_file_with_size(directory: Path, size_in_mb: float) -> Path:

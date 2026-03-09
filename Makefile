@@ -247,28 +247,31 @@ test-with-large-data: ## Run tests on large data set
 		pytest tests/acceptance_tests/large_data_tests/test_training_time.py \
 			-n $(JOBS)
 
-test-cli: PYTEST_MARKER=category_cli and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
+test-cli: PYTEST_MARKER=category_cli and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not nlu)
 test-cli: test-marker-without-voice  ## Run cli tests
 
-test-policies: PYTEST_MARKER=category_policies and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
+test-policies: PYTEST_MARKER=category_policies and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not nlu)
 test-policies: test-marker-without-voice  ## Run policies tests
 
-test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
+test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not nlu)
 test-nlu-featurizers: test-marker-without-voice  ## Run nlu featurizers tests
 
-test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
+test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not nlu)
 test-nlu-predictors: test-marker-without-voice  ## Run nlu predictors tests
 
-test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
+test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not nlu)
 test-full-model-training: test-marker-without-voice  ## Run full model training tests
 
-test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not category_builder_tests) and (not category_audio_manual)
+test-nlu: PYTEST_MARKER=nlu and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
+test-nlu: test-marker  ## Run unit tests that use default_agent or trained_default_agent_model (NLU job only)
+
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not category_builder_tests) and (not nlu) and (not category_audio_manual)
 test-other-unit-tests: test-marker-without-voice  ## Run other unit tests
 
-test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
+test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not nlu)
 test-performance: test-marker-without-voice  ## Run performance tests
 
-test-flaky: PYTEST_MARKER=flaky and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_audio_manual)
+test-flaky: PYTEST_MARKER=flaky and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not nlu) and (not category_audio_manual)
 test-flaky: test-marker-without-voice  ## Run flaky tests
 
 test-acceptance: PYTEST_MARKER=acceptance and (not flaky) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
@@ -287,7 +290,7 @@ test-audio-manual:  ## Run audio manual tests
 		--cov-report=xml \
 		--cov-branch \
 
-test-agents: PYTEST_MARKER=category_agents
+test-agents: PYTEST_MARKER=category_agents and (not nlu)
 test-agents: ARGS=--ignore tests/core/channels/voice_stream/
 test-agents: test-marker
 
@@ -299,7 +302,7 @@ test-voice-integration: ## Run voice integration tests
 		--reruns 3 --reruns-delay 1 \
 		--junitxml=integration-test-results.xml
 
-test-dm1-tensorflow: PYTEST_MARKER=category_dm1_tensorflow
+test-dm1-tensorflow: PYTEST_MARKER=category_dm1_tensorflow and (not nlu)
 test-dm1-tensorflow: prepare-spacy prepare-mitie prepare-transformers test-marker
 
 test-gh-actions:  ## Run all tests for GitHub Actions

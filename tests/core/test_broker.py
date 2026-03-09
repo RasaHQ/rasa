@@ -45,6 +45,7 @@ TEST_EVENTS = [
 ]
 
 
+@pytest.mark.asyncio
 async def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
     # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
     monkeypatch.setattr(PikaEventBroker, "connect", AsyncMock())
@@ -63,6 +64,7 @@ async def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
     assert actual.anonymization_queues == []
 
 
+@pytest.mark.asyncio
 async def test_pika_broker_from_config_with_pii(monkeypatch: MonkeyPatch):
     # Mock RabbitMQ connection
     monkeypatch.setattr(PikaEventBroker, "connect", AsyncMock())
@@ -81,7 +83,8 @@ async def test_pika_broker_from_config_with_pii(monkeypatch: MonkeyPatch):
     assert actual.anonymization_queues == ["anonymized_queue_1"]
 
 
-def test_pika_message_property_app_id_without_env_set(monkeypatch: MonkeyPatch):
+@pytest.mark.asyncio
+async def test_pika_message_property_app_id_without_env_set(monkeypatch: MonkeyPatch):
     # unset RASA_ENVIRONMENT env var results in empty App ID
     monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
     pika_broker = PikaEventBroker("some host", "username", "password")
@@ -89,7 +92,8 @@ def test_pika_message_property_app_id_without_env_set(monkeypatch: MonkeyPatch):
     assert not pika_broker._message({}, None).app_id
 
 
-def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
+@pytest.mark.asyncio
+async def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
     # setting it to some value results in that value as the App ID
     rasa_environment = "some-test-environment"
     monkeypatch.setenv("RASA_ENVIRONMENT", rasa_environment)
@@ -109,7 +113,8 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
         (None, [DEFAULT_QUEUE_NAME], UserWarning),
     ],
 )
-def test_pika_queues_from_args(
+@pytest.mark.asyncio
+async def test_pika_queues_from_args(
     queues_arg: Union[Text, List[Text], None],
     expected: List[Text],
     warning: Optional[Type[Warning]],
@@ -126,6 +131,7 @@ def test_pika_queues_from_args(
     assert pika_processor.queues == expected
 
 
+@pytest.mark.asyncio
 async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(
         PikaEventBroker, "connect", AsyncMock(side_effect=ChannelNotFoundEntity())
@@ -150,6 +156,7 @@ async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
         pamqp.exceptions.AMQPInternalError,
     ),
 )
+@pytest.mark.asyncio
 async def test_aio_pika_exceptions_caught(
     exception: Exception, monkeypatch: MonkeyPatch
 ):
@@ -161,6 +168,7 @@ async def test_aio_pika_exceptions_caught(
         )
 
 
+@pytest.mark.asyncio
 async def test_no_broker_in_config(endpoints_path: Text):
     cfg = read_endpoint_config(endpoints_path, "event_broker")
 
@@ -169,6 +177,7 @@ async def test_no_broker_in_config(endpoints_path: Text):
     assert actual is None
 
 
+@pytest.mark.asyncio
 async def test_sql_broker_from_config():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/sql_endpoint.yml", "event_broker"
@@ -179,6 +188,7 @@ async def test_sql_broker_from_config():
     assert actual.engine.name == "sqlite"
 
 
+@pytest.mark.asyncio
 async def test_sql_broker_logs_to_sql_db():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/sql_endpoint.yml", "event_broker"
@@ -199,6 +209,7 @@ async def test_sql_broker_logs_to_sql_db():
     assert events_types == ["user", "slot", "restart"]
 
 
+@pytest.mark.asyncio
 async def test_file_broker_from_config(tmp_path: Path):
     # backslashes need to be encoded (windows...) otherwise we run into unicode issues
     path = str(tmp_path / "rasa_test_event.log").replace("\\", "\\\\")
@@ -218,6 +229,7 @@ async def test_file_broker_from_config(tmp_path: Path):
     assert actual.path.endswith("rasa_test_event.log")
 
 
+@pytest.mark.asyncio
 async def test_file_broker_logs_to_file(tmp_path: Path):
     log_file_path = str(tmp_path / "events.log")
 
@@ -237,6 +249,7 @@ async def test_file_broker_logs_to_file(tmp_path: Path):
     assert recovered == TEST_EVENTS
 
 
+@pytest.mark.asyncio
 async def test_file_broker_properly_logs_newlines(tmp_path: Path):
     log_file_path = str(tmp_path / "events.log")
 
@@ -257,6 +270,7 @@ async def test_file_broker_properly_logs_newlines(tmp_path: Path):
     assert recovered == [event_with_newline]
 
 
+@pytest.mark.asyncio
 async def test_load_custom_broker_name(tmp_path: Path):
     config = EndpointConfig(
         **{
@@ -268,11 +282,13 @@ async def test_load_custom_broker_name(tmp_path: Path):
     assert broker
 
 
+@pytest.mark.asyncio
 async def test_load_non_existent_custom_broker_name():
     config = EndpointConfig(**{"type": "rasa.core.brokers.my.MyProducer"})
     assert await EventBroker.create(config) is None
 
 
+@pytest.mark.asyncio
 async def test_kafka_broker_from_config():
     endpoints_path = (
         "data/test_endpoints/event_brokers/kafka_sasl_plaintext_endpoint.yml"
@@ -318,6 +334,7 @@ async def test_kafka_broker_from_config():
         ("kafka_invalid_sasl_mechanism.yml", KafkaProducerInitializationError),
     ],
 )
+@pytest.mark.asyncio
 async def test_kafka_broker_security_protocols(file: Text, exception: Exception):
     endpoints_path = f"data/test_endpoints/event_brokers/{file}"
     cfg = read_endpoint_config(endpoints_path, "event_broker")
@@ -334,6 +351,7 @@ async def test_kafka_broker_security_protocols(file: Text, exception: Exception)
 
 
 @pytest.mark.flaky
+@pytest.mark.asyncio
 async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
     """Tests that when you run rasa with logging set at INFO,
     the debugs from pika dependency are not going to be shown
@@ -359,6 +377,7 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
     )
 
 
+@pytest.mark.asyncio
 async def test_create_pika_invalid_port():
     cfg = EndpointConfig(
         username="username", password="password", type="pika", port="PORT"
@@ -368,7 +387,8 @@ async def test_create_pika_invalid_port():
         assert "Port could not be converted to integer." in str(e.value)
 
 
-def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):
+@pytest.mark.asyncio
+async def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RABBITMQ_SSL_KEY_PASSWORD", "test")
     monkeypatch.setenv("RABBITMQ_SSL_CA_FILE", "test")
 
@@ -376,6 +396,7 @@ def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):
         pika._create_rabbitmq_ssl_options()
 
 
+@pytest.mark.asyncio
 async def test_pika_connection_error(monkeypatch: MonkeyPatch):
     # patch PikaEventBroker to raise an AMQP connection error
     mock_connection = AsyncMock(
@@ -400,6 +421,7 @@ async def test_pika_connection_error(monkeypatch: MonkeyPatch):
     mock_connection.assert_called_once()
 
 
+@pytest.mark.asyncio
 async def test_sql_connection_error(monkeypatch: MonkeyPatch):
     cfg = EndpointConfig.from_dict(
         {
@@ -436,7 +458,8 @@ async def test_sql_connection_error(monkeypatch: MonkeyPatch):
         ),
     ],
 )
-def test_pika_event_broker_configure_url(
+@pytest.mark.asyncio
+async def test_pika_event_broker_configure_url(
     host: Text, expected_url: Optional[Text]
 ) -> None:
     # deepcode ignore NoHardcodedCredentials/test: Test credential
@@ -448,7 +471,8 @@ def test_pika_event_broker_configure_url(
     assert url == expected_url
 
 
-def test_kafka_event_broker_handle_message_size_too_large(
+@pytest.mark.asyncio
+async def test_kafka_event_broker_handle_message_size_too_large(
     monkeypatch: MonkeyPatch,
 ) -> None:
     # raise exception only first time when called
@@ -500,6 +524,7 @@ def test_kafka_event_broker_handle_message_size_too_large(
     )
 
 
+@pytest.mark.asyncio
 async def test_kafka_broker_from_config_with_pii_attributes():
     endpoints_path = "data/test_endpoints/event_brokers/kafka_pii_endpoint.yml"
     cfg = read_endpoint_config(endpoints_path, "event_broker")
@@ -528,7 +553,8 @@ async def test_kafka_broker_from_config_with_pii_attributes():
     assert actual.anonymization_topics == expected.anonymization_topics
 
 
-def test_kafka_event_broker_iam_config(monkeypatch: MonkeyPatch) -> None:
+@pytest.mark.asyncio
+async def test_kafka_event_broker_iam_config(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
     monkeypatch.setenv(KAFKA_MSK_AWS_IAM_ENABLED_ENV_VAR_NAME, "True")
     monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
@@ -563,7 +589,8 @@ def common_kafka_config() -> Dict[str, Any]:
     }
 
 
-def test_kafka_broker_keepalive_defaults(
+@pytest.mark.asyncio
+async def test_kafka_broker_keepalive_defaults(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """Keepalive attributes have defaults and are not in config when disabled."""
@@ -585,7 +612,8 @@ def test_kafka_broker_keepalive_defaults(
     assert "topic.metadata.refresh.interval.ms" not in config
 
 
-def test_kafka_broker_keepalive_config_when_enabled(
+@pytest.mark.asyncio
+async def test_kafka_broker_keepalive_config_when_enabled(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """When socket_keepalive_enable is True, producer config includes keepalive settings."""  # noqa: E501
@@ -603,7 +631,8 @@ def test_kafka_broker_keepalive_config_when_enabled(
     assert config["topic.metadata.refresh.interval.ms"] == 300000
 
 
-def test_kafka_broker_keepalive_custom_values(
+@pytest.mark.asyncio
+async def test_kafka_broker_keepalive_custom_values(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """Custom keepalive kwargs are stored and passed into producer config."""
@@ -629,6 +658,7 @@ def test_kafka_broker_keepalive_custom_values(
     assert config["topic.metadata.refresh.interval.ms"] == 60000
 
 
+@pytest.mark.asyncio
 async def test_kafka_broker_invalid_casing_for_sasl_mechanism():
     endpoints_path = (
         "data/test_endpoints/event_brokers/kafka_lower_case_sasl_mechanism.yml"
@@ -641,7 +671,8 @@ async def test_kafka_broker_invalid_casing_for_sasl_mechanism():
         assert isinstance(producer, Producer)
 
 
-def test_kafka_poll_loop_calls_producer_poll(
+@pytest.mark.asyncio
+async def test_kafka_poll_loop_calls_producer_poll(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """Background poll loop calls producer.poll(0.1) when producer is set."""
@@ -665,7 +696,10 @@ def test_kafka_poll_loop_calls_producer_poll(
     mock_producer.poll.assert_called_with(0.1)
 
 
-def test_kafka_poll_triggers_oauth_cb_for_iam_refresh(monkeypatch: MonkeyPatch) -> None:
+@pytest.mark.asyncio
+async def test_kafka_poll_triggers_oauth_cb_for_iam_refresh(
+    monkeypatch: MonkeyPatch,
+) -> None:
     """When poll runs in background with IAM config, oauth_cb is invoked for token refresh."""  # noqa: E501
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
     monkeypatch.setenv(KAFKA_MSK_AWS_IAM_ENABLED_ENV_VAR_NAME, "True")
@@ -720,7 +754,8 @@ def test_kafka_poll_triggers_oauth_cb_for_iam_refresh(monkeypatch: MonkeyPatch) 
     assert mock_provider.get_temporary_credentials.call_count == 5
 
 
-def test_kafka_publish_initial_connection_failure_returns_early(
+@pytest.mark.asyncio
+async def test_kafka_publish_initial_connection_failure_returns_early(
     monkeypatch: MonkeyPatch,
     common_kafka_config: Dict[str, Any],
 ) -> None:
@@ -755,7 +790,8 @@ def test_kafka_publish_initial_connection_failure_returns_early(
     mock_publish.assert_not_called()
 
 
-def test_kafka_publish_queue_full_kafka_exception_polls_and_decrements_retries(
+@pytest.mark.asyncio
+async def test_kafka_publish_queue_full_kafka_exception_polls_and_decrements_retries(
     monkeypatch: MonkeyPatch,
     common_kafka_config: Dict[str, Any],
 ) -> None:
@@ -804,7 +840,8 @@ def test_kafka_publish_queue_full_kafka_exception_polls_and_decrements_retries(
     mock_retry_connection.assert_not_called()
 
 
-def test_kafka_publish_buffer_error_decrements_retries(
+@pytest.mark.asyncio
+async def test_kafka_publish_buffer_error_decrements_retries(
     monkeypatch: MonkeyPatch,
     common_kafka_config: Dict[str, Any],
 ) -> None:
@@ -846,7 +883,8 @@ def test_kafka_publish_buffer_error_decrements_retries(
     mock_producer.poll.assert_called_with(1)
 
 
-def test_kafka_publish_exhausts_retries_logs_error(
+@pytest.mark.asyncio
+async def test_kafka_publish_exhausts_retries_logs_error(
     monkeypatch: MonkeyPatch,
     caplog: LogCaptureFixture,
     common_kafka_config: Dict[str, Any],
@@ -880,7 +918,8 @@ def test_kafka_publish_exhausts_retries_logs_error(
     assert "Failed to publish Kafka event." in caplog.text
 
 
-def test_kafka_publish_unexpected_exception_calls_retry_publish(
+@pytest.mark.asyncio
+async def test_kafka_publish_unexpected_exception_calls_retry_publish(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """publish calls _retry_publish and decrements retries on generic Exception."""
@@ -916,7 +955,8 @@ def test_kafka_publish_unexpected_exception_calls_retry_publish(
     assert mock_retry.call_count == 2
 
 
-def test_kafka_get_kafka_config_ssl(monkeypatch: MonkeyPatch) -> None:
+@pytest.mark.asyncio
+async def test_kafka_get_kafka_config_ssl(monkeypatch: MonkeyPatch) -> None:
     """_get_kafka_config returns SSL params when security_protocol is SSL."""
     monkeypatch.setattr(
         "rasa.core.brokers.kafka.threading.Thread.start", lambda self: None
@@ -936,7 +976,10 @@ def test_kafka_get_kafka_config_ssl(monkeypatch: MonkeyPatch) -> None:
     assert config["ssl.key.location"] == "/key.pem"
 
 
-def test_kafka_get_kafka_config_sasl_ssl_without_iam(monkeypatch: MonkeyPatch) -> None:
+@pytest.mark.asyncio
+async def test_kafka_get_kafka_config_sasl_ssl_without_iam(
+    monkeypatch: MonkeyPatch,
+) -> None:
     """_get_kafka_config with SASL_SSL and no IAM uses sasl username/password and ssl certs."""  # noqa: E501
     monkeypatch.setattr(
         "rasa.core.brokers.kafka.threading.Thread.start", lambda self: None
@@ -967,7 +1010,8 @@ def test_kafka_get_kafka_config_sasl_ssl_without_iam(monkeypatch: MonkeyPatch) -
     assert "oauth_cb" not in config
 
 
-def test_kafka_get_kafka_config_invalid_protocol_raises(
+@pytest.mark.asyncio
+async def test_kafka_get_kafka_config_invalid_protocol_raises(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """_get_kafka_config raises ValueError for invalid security_protocol."""
@@ -982,7 +1026,8 @@ def test_kafka_get_kafka_config_invalid_protocol_raises(
         broker._get_kafka_config()
 
 
-def test_kafka_get_kafka_config_queue_size(
+@pytest.mark.asyncio
+async def test_kafka_get_kafka_config_queue_size(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """_get_kafka_config includes queue.buffering.max.messages when queue_size set."""
@@ -1025,7 +1070,8 @@ async def test_kafka_publish_partition_key_none_when_not_by_sender(
         await broker.close()
 
 
-def test_kafka_get_aws_iam_token_returns_none_when_no_provider(
+@pytest.mark.asyncio
+async def test_kafka_get_aws_iam_token_returns_none_when_no_provider(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """get_aws_iam_token returns (None, None) when iam_credentials_provider is None."""
@@ -1039,7 +1085,8 @@ def test_kafka_get_aws_iam_token_returns_none_when_no_provider(
     assert broker.get_aws_iam_token(None) == (None, None)
 
 
-def test_kafka_get_aws_iam_token_returns_credentials_from_provider(
+@pytest.mark.asyncio
+async def test_kafka_get_aws_iam_token_returns_credentials_from_provider(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """get_aws_iam_token returns (token, expiration) from credentials provider."""
@@ -1061,7 +1108,8 @@ def test_kafka_get_aws_iam_token_returns_credentials_from_provider(
     mock_provider.get_temporary_credentials.assert_called_once()
 
 
-def test_kafka_rasa_environment_from_env(
+@pytest.mark.asyncio
+async def test_kafka_rasa_environment_from_env(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """rasa_environment cached property returns RASA_ENVIRONMENT env var."""
@@ -1075,6 +1123,7 @@ def test_kafka_rasa_environment_from_env(
     assert broker.rasa_environment == "my-env"
 
 
+@pytest.mark.asyncio
 async def test_kafka_close_flushes_producer(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
@@ -1097,7 +1146,8 @@ async def test_kafka_close_flushes_producer(
     mock_producer.flush.assert_called_once()
 
 
-def test_kafka_error_callback_raises_for_brokers_down(
+@pytest.mark.asyncio
+async def test_kafka_error_callback_raises_for_brokers_down(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """error_cb from broker config raises KafkaException for _ALL_BROKERS_DOWN."""
@@ -1119,7 +1169,8 @@ def test_kafka_error_callback_raises_for_brokers_down(
         error_cb(err)
 
 
-def test_kafka_error_callback_logs_for_other_errors(
+@pytest.mark.asyncio
+async def test_kafka_error_callback_logs_for_other_errors(
     monkeypatch: MonkeyPatch,
     caplog: LogCaptureFixture,
     common_kafka_config: Dict[str, Any],
@@ -1185,7 +1236,8 @@ async def test_kafka_error_callback_invoked_during_close_when_flush_reports_erro
         await broker.close()
 
 
-def test_kafka_delivery_report_invoked_during_publish_when_poll_simulates_delivery(
+@pytest.mark.asyncio
+async def test_kafka_delivery_report_invoked_during_publish_when_poll_simulates_delivery(  # noqa: E501
     monkeypatch: MonkeyPatch,
     caplog: LogCaptureFixture,
     common_kafka_config: Dict[str, Any],
@@ -1239,7 +1291,8 @@ def test_kafka_delivery_report_invoked_during_publish_when_poll_simulates_delive
     assert "successfully produced" in caplog.text
 
 
-def test_kafka_delivery_report_logs_error_when_err_set(
+@pytest.mark.asyncio
+async def test_kafka_delivery_report_logs_error_when_err_set(
     monkeypatch: MonkeyPatch,
     caplog: LogCaptureFixture,
     common_kafka_config: Dict[str, Any],
@@ -1272,7 +1325,8 @@ def test_kafka_delivery_report_logs_error_when_err_set(
     assert "Delivery failed" in caplog.text
 
 
-def test_kafka_delivery_report_logs_success_when_err_none(
+@pytest.mark.asyncio
+async def test_kafka_delivery_report_logs_success_when_err_none(
     monkeypatch: MonkeyPatch,
     caplog: LogCaptureFixture,
     common_kafka_config: Dict[str, Any],
@@ -1308,7 +1362,8 @@ def test_kafka_delivery_report_logs_success_when_err_none(
     assert "successfully produced" in caplog.text
 
 
-def test_kafka_retry_publish_reconnects_on_connection_failure(
+@pytest.mark.asyncio
+async def test_kafka_retry_publish_reconnects_on_connection_failure(
     monkeypatch: MonkeyPatch, common_kafka_config: Dict[str, Any]
 ) -> None:
     """_retry_publish recreates producer and retries when _check_kafka_connection fails."""  # noqa: E501

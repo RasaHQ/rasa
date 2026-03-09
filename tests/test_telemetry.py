@@ -1676,7 +1676,7 @@ def test_track_rasa_inspect_telemetry(
     monkeypatch: MonkeyPatch,
     inspect_parser: argparse.ArgumentParser,
     endpoints_path: Text,
-    trained_default_agent_model: Text,
+    trained_rasa_model_with_flows: Text,
 ) -> None:
     monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
 
@@ -1687,7 +1687,7 @@ def test_track_rasa_inspect_telemetry(
             "--endpoints",
             endpoints_path,
             "--model",
-            trained_default_agent_model,
+            trained_rasa_model_with_flows,
         ]
     )
     inspect(args)
@@ -1695,7 +1695,7 @@ def test_track_rasa_inspect_telemetry(
         TELEMETRY_INSPECT_STARTED_EVENT,
         {
             "type": "rasa.core.channels.socketio.SocketIOInput",
-            "assistant_id": "placeholder_default",
+            "assistant_id": "unique_stack_assistant_test_name",
         },
     )
     mock_run.assert_called_once()
@@ -1827,7 +1827,7 @@ def test_train_telemetry_failed_system_exit(
 @patch("rasa.telemetry._track")
 def test_track_server_started(
     mock_track: MagicMock,
-    trained_default_agent_model: Text,
+    trained_rasa_model_with_flows: Text,
     monkeypatch: MonkeyPatch,
 ):
     from rasa.core.channels import SlackInput
@@ -1835,7 +1835,7 @@ def test_track_server_started(
     monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
 
     telemetry.track_server_start(
-        [SlackInput], None, trained_default_agent_model, 4, True
+        [SlackInput], None, trained_rasa_model_with_flows, 4, True
     )
 
     assert mock_track.call_count == 1
@@ -1844,7 +1844,7 @@ def test_track_server_started(
     assert mock_call.args[1]["input_channels"] == ["slack"]
     assert mock_call.args[1]["api_enabled"] is True
     assert mock_call.args[1]["number_of_workers"] == 4
-    assert mock_call.args[1]["assistant_id"] == "placeholder_default"
+    assert mock_call.args[1]["assistant_id"] == "unique_stack_assistant_test_name"
     assert mock_call.args[1]["project"] is not None
 
 

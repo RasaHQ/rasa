@@ -206,13 +206,15 @@ def test_lock_expiration(lock_store: LockStore):
     assert lock.issue_ticket(10) == 1
 
 
-async def test_multiple_conversation_ids(default_agent: Agent):
+async def test_multiple_conversation_ids(agent_with_flows: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
 
     conversation_ids = [f"conversation {i}" for i in range(2)]
 
     # ensure conversations are processed in order
-    tasks = [default_agent.handle_text(text, sender_id=_id) for _id in conversation_ids]
+    tasks = [
+        agent_with_flows.handle_text(text, sender_id=_id) for _id in conversation_ids
+    ]
     results = await asyncio.gather(*tasks)
 
     assert results
@@ -224,7 +226,7 @@ async def test_multiple_conversation_ids(default_agent: Agent):
     sys.platform == "win32",
     reason="This test sometimes fails on Windows. We want to investigate it further",
 )
-async def test_message_order(tmp_path: Path, default_agent: Agent):
+async def test_message_order(tmp_path: Path, agent_with_flows: Agent):
     start_time = time.time()
     n_messages = 10
     lock_wait = 0.5
@@ -263,7 +265,7 @@ async def test_message_order(tmp_path: Path, default_agent: Agent):
         # does not acquire its lock immediately
         wait_times = np.linspace(0.1, 0.05, n_messages)
         tasks = [
-            default_agent.handle_message(
+            agent_with_flows.handle_message(
                 UserMessage(f"sender {i}", sender_id="some id"), wait=k
             )
             for i, k in enumerate(wait_times)
@@ -298,7 +300,7 @@ async def test_message_order(tmp_path: Path, default_agent: Agent):
     sys.platform == "win32",
     reason="This test sometimes fails on Windows. We want to investigate it further",
 )
-async def test_lock_error(default_agent: Agent):
+async def test_lock_error(agent_with_flows: Agent):
     lock_lifetime = 0.01
     wait_time_in_seconds = 0.01
     holdup = 0.5
@@ -320,7 +322,7 @@ async def test_lock_error(default_agent: Agent):
         # first message blocks the lock for `holdup`,
         # meaning the second message will not be able to acquire a lock
         tasks = [
-            default_agent.handle_message(
+            agent_with_flows.handle_message(
                 UserMessage(f"sender {i}", sender_id="some id")
             )
             for i in range(2)

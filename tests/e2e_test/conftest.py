@@ -158,5 +158,5 @@ def failed_assertion_results(test_cases: List[TestCase]) -> List[TestResult]:
 
 
 @pytest.fixture
-async def default_processor(default_agent: Agent) -> MessageProcessor:
-    return default_agent.processor
+async def default_processor(agent_with_flows: Agent) -> MessageProcessor:
+    return agent_with_flows.processor

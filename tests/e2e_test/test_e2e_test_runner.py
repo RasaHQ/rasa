@@ -203,12 +203,12 @@ def assertions_tracker_with_duplicate_user_msg() -> DialogueStateTracker:
 
 @pytest.fixture
 def assertions_e2e_test_runner(
-    default_agent: Agent,
+    agent_with_flows: Agent,
     assertions_tracker: DialogueStateTracker,
     monkeypatch: MonkeyPatch,
 ) -> E2ETestRunner:
     def mock_init(self, *args, **kwargs) -> None:
-        self.agent = default_agent
+        self.agent = agent_with_flows
         self.llm_judge_config = MagicMock()
 
     monkeypatch.setattr(
@@ -2076,10 +2076,10 @@ async def test_run_assertions_all_valid(
 
 
 async def test_assertion_run_multiple_slot_was_set_assertion_order_enabled(
-    default_agent: Agent, monkeypatch: MonkeyPatch
+    agent_with_flows: Agent, monkeypatch: MonkeyPatch
 ) -> None:
     def mock_init(self, *args, **kwargs) -> None:
-        self.agent = default_agent
+        self.agent = agent_with_flows
         self.llm_judge_config = MagicMock()
 
     monkeypatch.setattr(
@@ -2146,13 +2146,13 @@ async def test_assertion_run_multiple_slot_was_set_assertion_order_enabled(
 
 
 async def test_run_assertions_with_duplicate_user_messages(
-    default_agent: Agent,
+    agent_with_flows: Agent,
     monkeypatch: MonkeyPatch,
     assertions_tracker_with_duplicate_user_msg: DialogueStateTracker,
     test_case_with_duplicate_messages: TestCase,
 ) -> None:
     def mock_init(self, *args, **kwargs) -> None:
-        self.agent = default_agent
+        self.agent = agent_with_flows
         self.llm_judge_config = MagicMock()
 
     monkeypatch.setattr(
@@ -2182,12 +2182,12 @@ async def test_run_assertions_with_duplicate_user_messages(
 
 
 async def test_run_assertions_with_user_message_not_found(
-    default_agent: Agent,
+    agent_with_flows: Agent,
     monkeypatch: MonkeyPatch,
     capsys: CaptureFixture,
 ) -> None:
     def mock_init(self, *args, **kwargs) -> None:
-        self.agent = default_agent
+        self.agent = agent_with_flows
 
     monkeypatch.setattr(
         "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
@@ -2242,11 +2242,11 @@ async def test_run_assertions_with_user_message_not_found(
 
 def test_get_additional_splitting_conditions(
     assertions_tracker_with_duplicate_user_msg: DialogueStateTracker,
-    default_agent: Agent,
+    agent_with_flows: Agent,
     monkeypatch: MonkeyPatch,
 ) -> None:
     def mock_init(self, *args, **kwargs) -> None:
-        self.agent = default_agent
+        self.agent = agent_with_flows
 
     monkeypatch.setattr(
         "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
@@ -2793,7 +2793,7 @@ async def test_error_logging_with_partial_custom_action_stubbing(
 
 
 async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
-    default_agent: Agent,
+    agent_with_flows: Agent,
     monkeypatch: MonkeyPatch,
     assertions_tracker_with_duplicate_user_msg: DialogueStateTracker,
     test_case_with_duplicate_messages: TestCase,
@@ -2803,7 +2803,7 @@ async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
     """
 
     def mock_init(self, *args, **kwargs) -> None:
-        self.agent = default_agent
+        self.agent = agent_with_flows
         self.llm_judge_config = MagicMock()
 
     monkeypatch.setattr(

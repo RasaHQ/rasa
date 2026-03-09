@@ -307,10 +307,10 @@ async def test_in_memory_tracker_store_counts_conversations() -> None:
 
 
 def test_in_memory_tracker_store_with_token_serialisation(
-    domain: Domain, default_agent: Agent
+    domain: Domain, agent_with_flows: Agent
 ):
     tracker_store = InMemoryTrackerStore(domain)
-    prepare_token_serialisation(tracker_store, default_agent, "inmemory")
+    prepare_token_serialisation(tracker_store, agent_with_flows, "inmemory")
 
 
 def test_create_non_async_tracker_store(domain: Domain, monkeypatch: MonkeyPatch):

@@ -622,9 +622,9 @@ def _load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueState
 
 
 def test_dump_and_restore_as_json(
-    default_agent: Agent, tmp_path: Path, stories_path: Text
+    agent_with_flows: Agent, tmp_path: Path, stories_path: Text
 ):
-    trackers = load_data(stories_path, default_agent.domain)
+    trackers = load_data(stories_path, agent_with_flows.domain)
 
     for tracker in trackers:
         out_path = tmp_path / "dumped_tracker.json"
@@ -632,7 +632,9 @@ def test_dump_and_restore_as_json(
         dumped = tracker.current_state(EventVerbosity.AFTER_RESTART)
         rasa.shared.utils.io.dump_obj_as_json_to_file(str(out_path), dumped)
 
-        restored_tracker = _load_tracker_from_json(str(out_path), default_agent.domain)
+        restored_tracker = _load_tracker_from_json(
+            str(out_path), agent_with_flows.domain
+        )
 
         assert restored_tracker == tracker
 
@@ -653,7 +655,7 @@ def test_read_json_dump(default_agent: Agent) -> object:
     assert restored_state == tracker_json
 
 
-def test_current_state_after_restart(default_agent):
+def test_current_state_after_restart(agent_with_flows: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
 
@@ -662,7 +664,7 @@ def test_current_state_after_restart(default_agent):
     tracker = DialogueStateTracker.from_dict(
         tracker_json.get("sender_id"),
         tracker_json.get("events", []),
-        default_agent.domain.slots,
+        agent_with_flows.domain.slots,
     )
 
     events_after_restart = [e.as_dict() for e in list(tracker.events)[4:]]
