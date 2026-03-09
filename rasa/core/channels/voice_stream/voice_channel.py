@@ -214,9 +214,6 @@ class VoiceOutputChannel(OutputChannel):
         self.min_buffer_size = min_buffer_size
         self.audio_format = audio_format
 
-        # the response can be sent by Streaming or non-streaming methods
-        self.streaming_response_sent = False
-
         # For streaming responses - background task that sends TTS audio
         self.audio_sender_task: Optional[asyncio.Task] = None
 
@@ -507,7 +504,6 @@ class VoiceOutputChannel(OutputChannel):
 
         1. Flush TTS engine (process any remaining text)
         2. Wait for background task to finish sending all audio
-        3. Mark that streaming was used, to skip non-streaming responses
 
         Args:
             recipient_id: The recipient ID.
@@ -516,7 +512,6 @@ class VoiceOutputChannel(OutputChannel):
         await super().send_response_chunk_end(recipient_id, **kwargs)
 
         if not self.tts_engine.streaming_input:
-            self.streaming_response_sent = False
             # fallback to non-streaming synthesis
             return
 
@@ -526,15 +521,11 @@ class VoiceOutputChannel(OutputChannel):
         await self.send_end_marker(recipient_id)
         call_state.latest_bot_audio_id = self.latest_message_id
         logger.debug("voice_channel.end_streaming_response")
-        self.streaming_response_sent = True
 
     async def send_text_message(
         self, recipient_id: str, text: str, **kwargs: Any
     ) -> None:
-        if self.streaming_response_sent:
-            # skip non-streaming response if streaming was used
-            # reset flag for next response
-            self.streaming_response_sent = False
+        if self._is_duplicate_of_last_streamed_response(text):
             logger.debug("voice_channel.skip_non_streaming_response")
             return
 

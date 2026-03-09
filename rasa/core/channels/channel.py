@@ -314,7 +314,18 @@ class OutputChannel:
             recipient_id: The recipient ID.
             **kwargs: Additional arguments.
         """
-        self._accumulated_streaming_text = ""
+        pass
+
+    def _is_duplicate_of_last_streamed_response(self, text: str) -> bool:
+        """Return True if *text* matches the last streamed response.
+
+        Compares the stripped incoming text against the accumulated streaming
+        text from the most recent ``send_response_chunk`` sequence.  Used by
+        channels that stream content directly to the output (e.g. voice) to
+        avoid re-sending the same message delivered via the streaming path.
+        """
+        last = self._accumulated_streaming_text.strip()
+        return bool(last) and text.strip() == last
 
     async def send_response(
         self,

@@ -116,6 +116,11 @@ async def test_collecting_output_channel_streaming_no_errors():
     await channel.send_response_chunk(recipient_id="test-user", chunk="world")
     await channel.send_response_chunk_end(recipient_id="test-user")
 
+    # not reset yet
+    assert channel._accumulated_streaming_text is not None
+
+    # start a new session to reset accumulated text
+    await channel.send_response_chunk_start(recipient_id="test-user")
     assert channel._accumulated_streaming_text == ""
 
 
@@ -619,6 +624,63 @@ def test_int_message_id_in_user_message():
     message = UserMessage("B text", message_id=987654321)
 
     assert message.message_id == "987654321"
+
+
+async def test_duplication_returns_true_for_same_text():
+    """_is_duplicate_of_last_streamed_response returns True when the incoming
+    text exactly matches the accumulated streaming text (stripped)."""
+    from rasa.core.channels.channel import OutputChannel
+
+    channel = OutputChannel()
+    await channel.send_response_chunk_start("user")
+    await channel.send_response_chunk("user", "Hello ")
+    await channel.send_response_chunk("user", "world")
+    await channel.send_response_chunk_end("user")
+
+    assert channel._is_duplicate_of_last_streamed_response("Hello world") is True
+    # Whitespace differences must not cause a mismatch
+    assert channel._is_duplicate_of_last_streamed_response("  Hello world  ") is True
+
+
+async def test_duplication_returns_false_for_different_text():
+    """_is_duplicate_of_last_streamed_response returns
+    False when the incoming
+    text differs from the accumulated streaming text."""
+    from rasa.core.channels.channel import OutputChannel
+
+    channel = OutputChannel()
+    await channel.send_response_chunk_start("user")
+    await channel.send_response_chunk("user", "Hello world")
+    await channel.send_response_chunk_end("user")
+
+    assert channel._is_duplicate_of_last_streamed_response("Goodbye world") is False
+
+
+async def test_duplication_returns_false_with_no_prior_streaming():
+    """_is_duplicate_of_last_streamed_response returns
+    False when no streaming
+    session has occurred (accumulated text is empty)."""
+    from rasa.core.channels.channel import OutputChannel
+
+    channel = OutputChannel()
+
+    assert channel._is_duplicate_of_last_streamed_response("Any message") is False
+
+
+async def test_accumulated_text_is_cleared_on_next_chunk_start():
+    """send_response_chunk_start resets accumulated text so a
+    new streaming
+    session does not compare against a previous one."""
+    from rasa.core.channels.channel import OutputChannel
+
+    channel = OutputChannel()
+    await channel.send_response_chunk_start("user")
+    await channel.send_response_chunk("user", "First response")
+    await channel.send_response_chunk_end("user")
+
+    # Start a new session — accumulated text must be wiped
+    await channel.send_response_chunk_start("user")
+    assert channel._accumulated_streaming_text == ""
 
 
 async def test_send_elements_without_buttons():

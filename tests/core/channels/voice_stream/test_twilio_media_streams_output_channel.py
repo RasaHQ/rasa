@@ -186,12 +186,14 @@ def test_twilio_media_streams_output_channel_name() -> None:
     assert TwilioMediaStreamsOutputChannel.name() == "twilio_media_streams"
 
 
-def _make_streaming_tts_engine() -> MagicMock:
+def _make_streaming_tts_engine() -> AsyncMock:
     """Return a mock TTS engine that advertises streaming_input=True."""
-    engine = MagicMock()
+    engine = AsyncMock()
     engine.streaming_input = True
     engine.signal_text_done = AsyncMock()
-    engine.stream_audio = AsyncMock(return_value=_empty_async_gen())
+    # stream_audio() is called without `await` and must return an async iterator
+    # directly, so use MagicMock with side_effect (not AsyncMock).
+    engine.stream_audio = MagicMock(side_effect=_empty_async_gen)
     engine.set_language = AsyncMock()
     return engine
 
@@ -202,12 +204,13 @@ async def _empty_async_gen():
     yield  # make this an async generator
 
 
-async def test_send_response_chunk_end_sets_streaming_flag(
+async def test_send_response_chunk_end_retains_accumulated_text(
     tts_cache: TTSCache,
     mock_websocket: AsyncMock,
 ) -> None:
-    """send_response_chunk_end() sets streaming_response_sent=True, so a subsequent
-    send_text_message is skipped.
+    """send_response_chunk_end() does NOT clear accumulated streaming text, so
+    a subsequent send_text_message with identical content is detected as a
+    duplicate and skipped.
     """
     ensure_call_state_context()
     recipient_id = "test_id"
@@ -216,22 +219,23 @@ async def test_send_response_chunk_end_sets_streaming_flag(
     output_channel = TwilioMediaStreamsOutputChannel(
         mock_websocket, tts_engine, tts_cache, MULAW_8KHZ
     )
-
-    # Simulate a completed streaming session (no background task running)
     output_channel.audio_sender_task = None
 
+    await output_channel.send_response_chunk_start(recipient_id)
+    await output_channel.send_response_chunk(recipient_id, "Hello there")
     await output_channel.send_response_chunk_end(recipient_id)
 
-    assert output_channel.streaming_response_sent is True
+    # Accumulated text must still be available after chunk_end for dedup.
+    assert output_channel._accumulated_streaming_text == "Hello there"
 
 
-def _make_non_streaming_tts_engine() -> MagicMock:
+def _make_non_streaming_tts_engine() -> AsyncMock:
     """Return a mock TTS engine with streaming_input=False (non-streaming).
 
     Synthesize returns an async generator yielding a single audio chunk so
     that send_text_message can complete without hitting a real TTS service.
     """
-    engine = MagicMock()
+    engine = AsyncMock()
     engine.streaming_input = False
     engine.set_language = AsyncMock()
     engine.synthesize = MagicMock(return_value=_single_chunk_async_gen())
@@ -243,12 +247,12 @@ async def _single_chunk_async_gen():
     yield RasaAudioBytes(b"\x00" * 160, format=MULAW_8KHZ)
 
 
-async def test_send_text_message_skipped_after_chunk_end(
+async def test_send_text_message_skipped_when_duplicate_of_streamed_response(
     tts_cache: TTSCache,
     mock_websocket: AsyncMock,
 ) -> None:
-    """After send_response_chunk_end(), send_text_message() is a no-op (no audio
-    sent to websocket) until the flag is consumed."""
+    """send_text_message() is a no-op when its text matches the last streamed
+    response, preventing double delivery of the same content."""
     ensure_call_state_context()
     recipient_id = "test_id"
     tts_engine = _make_non_streaming_tts_engine()
@@ -257,23 +261,26 @@ async def test_send_text_message_skipped_after_chunk_end(
         mock_websocket, tts_engine, tts_cache, MULAW_8KHZ
     )
 
-    # Manually set the flag as send_response_chunk_end would in a streaming session
-    output_channel.streaming_response_sent = True
+    # Simulate a completed streaming session that delivered "Hello there"
+    await output_channel.send_response_chunk_start(recipient_id)
+    await output_channel.send_response_chunk(recipient_id, "Hello there")
+    await output_channel.send_response_chunk_end(recipient_id)
+    mock_websocket.reset_mock()
 
-    await output_channel.send_text_message(recipient_id, "This should be skipped.")
+    # The identical text arriving via send_text_message must be dropped
+    await output_channel.send_text_message(recipient_id, "Hello there")
 
-    # No audio or marker messages should have been sent
     mock_websocket.send.assert_not_called()
-    # Flag must be reset for the next response
-    assert output_channel.streaming_response_sent is False
 
 
-async def test_send_text_message_flag_reset_allows_subsequent_messages(
+async def test_send_text_message_different_text_is_not_skipped(
     tts_cache: TTSCache,
     mock_websocket: AsyncMock,
 ) -> None:
-    """Verify that streaming_response_sent is reset to False after being consumed
-    by send_text_message, so the next message is not inadvertently skipped."""
+    """send_text_message() is delivered normally when its text differs from the
+    last streamed response (e.g. the MCP agent case where send_text_message is
+    never called after streaming, so the next turn's distinct message must go
+    through)."""
     ensure_call_state_context()
     recipient_id = "test_id"
     tts_engine = _make_non_streaming_tts_engine()
@@ -282,12 +289,13 @@ async def test_send_text_message_flag_reset_allows_subsequent_messages(
         mock_websocket, tts_engine, tts_cache, MULAW_8KHZ
     )
 
-    # First call: flag is set — message should be skipped
-    output_channel.streaming_response_sent = True
-    await output_channel.send_text_message(recipient_id, "Skipped message.")
-    assert mock_websocket.send.call_count == 0
-    assert output_channel.streaming_response_sent is False
+    # Simulate a completed streaming session that delivered one response
+    await output_channel.send_response_chunk_start(recipient_id)
+    await output_channel.send_response_chunk(recipient_id, "First streamed response")
+    await output_channel.send_response_chunk_end(recipient_id)
+    mock_websocket.reset_mock()
 
-    # Second call: flag was reset — message should be sent normally
-    await output_channel.send_text_message(recipient_id, "Sent message.")
+    # A different message on the next turn must NOT be suppressed
+    await output_channel.send_text_message(recipient_id, "Next turn response")
+
     assert mock_websocket.send.call_count >= 1
