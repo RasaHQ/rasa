@@ -37,7 +37,11 @@ from rasa.core.channels.voice_ready.utils import (
     validate_username_password_credentials,
 )
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
-from rasa.core.channels.voice_stream.call_state import call_state
+from rasa.core.channels.voice_stream.call_state import (
+    BotIsSpeaking,
+    BotStoppedSpeaking,
+    call_state,
+)
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
 from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
@@ -181,7 +185,7 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
                 return map_call_params(data)
         return None
 
-    def map_input_message(
+    async def map_input_message(
         self,
         message: Any,
         ws: Websocket,
@@ -199,14 +203,18 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         elif data["event"] == "mark":
             if data["mark"]["name"] == call_state.latest_bot_audio_id:
                 # Just finished streaming last audio bytes
-                call_state.is_bot_speaking = False
+                await call_state.enqueue_event(
+                    BotStoppedSpeaking(),
+                )
                 if call_state.should_hangup:
                     logger.debug(
                         "twilio_streams.hangup", marker=call_state.latest_bot_audio_id
                     )
                     return EndConversationAction()
             else:
-                call_state.is_bot_speaking = True
+                await call_state.enqueue_event(
+                    BotIsSpeaking(),
+                )
         return ContinueConversationAction()
 
     def create_output_channel(

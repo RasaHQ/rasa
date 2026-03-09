@@ -10,7 +10,6 @@ from rasa.core.channels.voice_stream.audio_bytes import (
     AudioFormat,
     RasaAudioBytes,
 )
-from rasa.core.channels.voice_stream.call_state import CallState, _call_state
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS, AzureTTSConfig
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
 from rasa.core.channels.voice_stream.twilio_media_streams import (
@@ -63,10 +62,6 @@ async def tts_engine(
     return engine
 
 
-def ensure_call_state_context():
-    _call_state.set(CallState())
-
-
 def check_media_message(message: str, recipient_id: str):
     data = json.loads(message)
     assert data["event"] == "media"
@@ -81,12 +76,12 @@ def check_mark_message(message: str, recipient_id: str):
     assert len(data["mark"]["name"]) > 0
 
 
+@pytest.mark.usefixtures("setup_call_state")
 async def test_twilio_media_streams_output_channel_send(
     tts_engine: AzureTTS,
     tts_cache: TTSCache,
     mock_websocket: AsyncMock,
 ):
-    ensure_call_state_context()
     recipient_id = "test_id"
     output_channel = TwilioMediaStreamsOutputChannel(
         mock_websocket, tts_engine, tts_cache, MULAW_8KHZ
@@ -106,12 +101,12 @@ async def test_twilio_media_streams_output_channel_send(
     check_mark_message(messages[-1][0][0], recipient_id)
 
 
+@pytest.mark.usefixtures("setup_call_state")
 async def test_twilio_media_streams_output_channel_caching(
     tts_engine: AzureTTS,
     tts_cache: TTSCache,
     mock_websocket: AsyncMock,
 ):
-    ensure_call_state_context()
     recipient_id = "test_id"
     output_channel = TwilioMediaStreamsOutputChannel(
         mock_websocket, tts_engine, tts_cache, MULAW_8KHZ
@@ -138,12 +133,12 @@ async def test_twilio_media_streams_output_channel_caching(
     check_mark_message(messages[-1][0][0], recipient_id)
 
 
+@pytest.mark.usefixtures("setup_call_state")
 async def test_twilio_media_streams_output_channel_send_when_client_closed(
     mock_websocket: AsyncMock,
     tts_cache: TTSCache,
     tts_engine: AzureTTS,
 ):
-    ensure_call_state_context()
     mock_websocket.send.side_effect = WebsocketClosed()
     output_channel = TwilioMediaStreamsOutputChannel(
         mock_websocket, tts_engine, tts_cache, MULAW_8KHZ
@@ -204,6 +199,7 @@ async def _empty_async_gen():
     yield  # make this an async generator
 
 
+@pytest.mark.usefixtures("setup_call_state")
 async def test_send_response_chunk_end_retains_accumulated_text(
     tts_cache: TTSCache,
     mock_websocket: AsyncMock,
@@ -212,7 +208,6 @@ async def test_send_response_chunk_end_retains_accumulated_text(
     a subsequent send_text_message with identical content is detected as a
     duplicate and skipped.
     """
-    ensure_call_state_context()
     recipient_id = "test_id"
     tts_engine = _make_streaming_tts_engine()
 
@@ -247,13 +242,14 @@ async def _single_chunk_async_gen():
     yield RasaAudioBytes(b"\x00" * 160, format=MULAW_8KHZ)
 
 
+@pytest.mark.usefixtures("setup_call_state")
 async def test_send_text_message_skipped_when_duplicate_of_streamed_response(
     tts_cache: TTSCache,
     mock_websocket: AsyncMock,
 ) -> None:
     """send_text_message() is a no-op when its text matches the last streamed
     response, preventing double delivery of the same content."""
-    ensure_call_state_context()
+
     recipient_id = "test_id"
     tts_engine = _make_non_streaming_tts_engine()
 
@@ -273,6 +269,7 @@ async def test_send_text_message_skipped_when_duplicate_of_streamed_response(
     mock_websocket.send.assert_not_called()
 
 
+@pytest.mark.usefixtures("setup_call_state")
 async def test_send_text_message_different_text_is_not_skipped(
     tts_cache: TTSCache,
     mock_websocket: AsyncMock,
@@ -281,7 +278,7 @@ async def test_send_text_message_different_text_is_not_skipped(
     last streamed response (e.g. the MCP agent case where send_text_message is
     never called after streaming, so the next turn's distinct message must go
     through)."""
-    ensure_call_state_context()
+
     recipient_id = "test_id"
     tts_engine = _make_non_streaming_tts_engine()
 

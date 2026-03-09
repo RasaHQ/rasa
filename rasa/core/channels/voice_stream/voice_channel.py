@@ -48,8 +48,14 @@ from rasa.core.channels.voice_stream.audio_bytes import (
 )
 from rasa.core.channels.voice_stream.call_state import (
     CallState,
+    RasaIsListening,
+    RasaIsProcessing,
+    UserStoppedSpeaking,
     _call_state,
     call_state,
+)
+from rasa.core.channels.voice_stream.call_state import (
+    UserIsSpeaking as UserIsSpeakingCallStateMessage,
 )
 from rasa.core.channels.voice_stream.tts import BUILT_IN_TTS_ENGINES
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
@@ -210,9 +216,9 @@ class VoiceOutputChannel(OutputChannel):
         self.voice_websocket = voice_websocket
         self.tts_engine = tts_engine
         self.tts_cache = tts_cache
-        self.latest_message_id: Optional[str] = None
         self.min_buffer_size = min_buffer_size
         self.audio_format = audio_format
+        self.latest_message_id: Optional[str] = None
 
         # For streaming responses - background task that sends TTS audio
         self.audio_sender_task: Optional[asyncio.Task] = None
@@ -591,6 +597,14 @@ class VoiceOutputChannel(OutputChannel):
         """
         pass
 
+    async def notify_message_processing_started(self) -> None:
+        """Notify that message is being processed."""
+        await call_state.enqueue_event(RasaIsProcessing())
+
+    async def notify_message_processing_completed(self) -> None:
+        """Notify that message processing is completed."""
+        await call_state.enqueue_event(RasaIsListening())
+
 
 class VoiceLanguageChangePlugin:
     """Plugin that notifies ASR and TTS engines when the language slot changes.
@@ -712,23 +726,6 @@ class VoiceInputChannel(InputChannel):
         """Get the sender ID for the channel."""
         return call_parameters.call_id
 
-    async def monitor_silence_timeout(self, asr_event_queue: asyncio.Queue) -> None:
-        timeout = call_state.silence_timeout
-        if not timeout:
-            return
-        logger.debug("voice_channel.silence_timeout_watch_started", timeout=timeout)
-        await asyncio.sleep(timeout)
-        await asr_event_queue.put(UserSilence())
-        logger.debug("voice_channel.silence_timeout_tripped")
-
-    @staticmethod
-    def _cancel_silence_timeout_watcher() -> None:
-        """Cancels the silent timeout task if it exists."""
-        if call_state.silence_timeout_watcher:
-            logger.debug("voice_channel.cancelling_current_timeout_watcher_task")
-            call_state.silence_timeout_watcher.cancel()
-            call_state.silence_timeout_watcher = None
-
     @classmethod
     def validate_basic_credentials(cls, credentials: Optional[Dict[str, Any]]) -> None:
         """Validate the basic credentials for the voice channel."""
@@ -783,7 +780,7 @@ class VoiceInputChannel(InputChannel):
         await on_new_message(message)
         await output_channel.send_turn_end_marker(sender_id)
 
-    def map_input_message(
+    async def map_input_message(
         self,
         message: Any,
         ws: Websocket,
@@ -901,8 +898,13 @@ class VoiceInputChannel(InputChannel):
         return "en"
 
     def _initialize_call_state(self) -> None:
-        _call_state.set(CallState())
-        call_state.current_language = self.language
+        call_state_ = CallState(
+            internal_queue=asyncio.Queue(),
+            asr_event_queue=asyncio.Queue(),
+        )
+        call_state_.start_state_monitoring()
+        call_state_.current_language = self.language
+        _call_state.set(call_state_)
 
     def _get_asr_and_tts_engines(self) -> Tuple[ASREngine, TTSEngine]:
         asr_engine = asr_engine_from_config(
@@ -927,7 +929,6 @@ class VoiceInputChannel(InputChannel):
     ) -> None:
         """Pipe input audio to ASR and consume ASR events simultaneously."""
         self._initialize_call_state()
-        asr_event_queue: asyncio.Queue = asyncio.Queue()
 
         call_parameters = await self.collect_call_parameters(channel_websocket, request)
         if call_parameters is None:
@@ -955,25 +956,10 @@ class VoiceInputChannel(InputChannel):
                 is_disconnected = False
                 try:
                     async for message in channel_websocket:
-                        was_bot_speaking_before = call_state.is_bot_speaking
-                        channel_action = self.map_input_message(
+                        channel_action = await self.map_input_message(
                             message, channel_websocket
                         )
-                        is_bot_speaking_after = call_state.is_bot_speaking
 
-                        if not was_bot_speaking_before and is_bot_speaking_after:
-                            logger.debug("voice_channel.bot_started_speaking")
-                            # relevant when the bot speaks multiple messages in one turn
-                            self._cancel_silence_timeout_watcher()
-
-                        # we just stopped speaking, start a watcher for silence
-                        # timeout
-                        if was_bot_speaking_before and not is_bot_speaking_after:
-                            logger.debug("voice_channel.bot_stopped_speaking")
-                            self._cancel_silence_timeout_watcher()
-                            call_state.silence_timeout_watcher = asyncio.create_task(
-                                self.monitor_silence_timeout(asr_event_queue)
-                            )
                         if isinstance(channel_action, NewAudioAction):
                             await asr_engine.send_audio_chunks(
                                 channel_action.audio_bytes
@@ -1023,14 +1009,14 @@ class VoiceInputChannel(InputChannel):
                     self.receive_asr_events(
                         asr_engine,
                         tts_engine,
-                        asr_event_queue,
+                        call_state.asr_event_queue,
                         channel_websocket,
                         call_parameters,
                     )
                 ),
                 asyncio.create_task(
                     self.handle_asr_events(
-                        asr_event_queue,
+                        call_state.asr_event_queue,
                         channel_websocket,
                         on_new_message,
                         tts_engine,
@@ -1058,7 +1044,7 @@ class VoiceInputChannel(InputChannel):
             await asr_engine.close_connection()
             await tts_engine.close_connection()
             await channel_websocket.close()
-            self._cancel_silence_timeout_watcher()
+            call_state.stop_all()
 
     def create_output_channel(
         self,
@@ -1080,7 +1066,7 @@ class VoiceInputChannel(InputChannel):
 
     async def handle_asr_event(
         self,
-        e: ASREvent,
+        asr_event: ASREvent,
         voice_websocket: Websocket,
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
         tts_engine: TTSEngine,
@@ -1088,8 +1074,12 @@ class VoiceInputChannel(InputChannel):
         asr_engine: ASREngine,
     ) -> None:
         """Handle a new event from the ASR system."""
-        if isinstance(e, NewTranscript) and e.text:
-            call_state.is_user_speaking = False
+        if isinstance(asr_event, NewTranscript) and asr_event.text:
+            logger.debug(
+                "VoiceInputChannel.handle_asr_event.new_transcript",
+                transcript=asr_event.text,
+            )
+            await call_state.enqueue_event(UserStoppedSpeaking())
 
             # Track ASR and Rasa latencies
             self._track_asr_latency()
@@ -1109,7 +1099,7 @@ class VoiceInputChannel(InputChannel):
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             sender_id = self.get_sender_id(call_parameters)
             message = UserMessage(
-                text=e.text,
+                text=asr_event.text,
                 output_channel=output_channel,
                 sender_id=sender_id,
                 input_channel=self.name(),
@@ -1117,13 +1107,11 @@ class VoiceInputChannel(InputChannel):
             )
             await on_new_message(message)
             await output_channel.send_turn_end_marker(sender_id)
-        elif isinstance(e, UserIsSpeaking):
-            # Track when user starts speaking for ASR latency calculation
+        elif isinstance(asr_event, UserIsSpeaking):
             if not call_state.is_user_speaking:
                 call_state.user_speech_start_time = time.time()
-            self._cancel_silence_timeout_watcher()
-            call_state.is_user_speaking = True
-        elif isinstance(e, UserSilence):
+            await call_state.enqueue_event(UserIsSpeakingCallStateMessage())
+        elif isinstance(asr_event, UserSilence):
             call_state.dtmf_buffer = ""
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             message = UserMessage(

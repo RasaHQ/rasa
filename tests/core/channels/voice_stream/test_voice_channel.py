@@ -1,26 +1,41 @@
 import asyncio
-from typing import Any, AsyncIterator, Dict
+from dataclasses import asdict
+from typing import Any, AsyncIterator, Dict, Optional
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 from data.test_voice_channel.custom_asr_engine import CustomASREngine
 from data.test_voice_channel.custom_tts_engine import CustomTTSEngine
+from rasa.core.channels.constants import USER_CONVERSATION_SILENCE_TIMEOUT
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.asr.asr_event import (
     ASREvent,
     NewTranscript,
     UserIsSpeaking,
+    UserSilence,
 )
-from rasa.core.channels.voice_stream.call_state import _call_state, call_state
+from rasa.core.channels.voice_stream.audio_bytes import AudioFormat
+from rasa.core.channels.voice_stream.call_state import (
+    RasaIsListening,
+    RasaIsProcessing,
+    UserStoppedSpeaking,
+    _call_state,
+)
+from rasa.core.channels.voice_stream.call_state import (
+    UserIsSpeaking as UserIsSpeakingCallStateMessage,
+)
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 from rasa.core.channels.voice_stream.voice_channel import (
     DTMFInputAction,
     VoiceInputChannel,
     VoiceLanguageChangePlugin,
+    VoiceOutputChannel,
     asr_engine_from_config,
     tts_engine_from_config,
 )
+from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.core.flows.steps.collect import DTMFConfig
 
 
@@ -34,7 +49,28 @@ class StubVoiceInputChannel(VoiceInputChannel):
     pass
 
 
-async def test_azure_tts_engine_from_config(mulaw_format):
+class StubVoiceOutputChannel(VoiceOutputChannel):
+    """Minimal VoiceOutputChannel stub for unit tests.
+
+    Implements the three abstract methods with no-op / trivial bodies so that
+    the concrete channel machinery is not needed.
+    """
+
+    def rasa_audio_bytes_to_channel_bytes(self, rasa_audio_bytes: Any) -> bytes:
+        return rasa_audio_bytes.data
+
+    def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
+        return channel_bytes.hex()
+
+    def create_marker_message(self, recipient_id: str):
+        return "{}", "marker-id"
+
+
+async def test_azure_tts_engine_from_config(
+    mulaw_format: AudioFormat, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setenv(AZURE_SPEECH_API_KEY_ENV_VAR, "some key")
+
     config = {"name": "azure"}
     tts_engine = tts_engine_from_config(config, language="en", format=mulaw_format)
     assert isinstance(tts_engine, AzureTTS)
@@ -44,13 +80,15 @@ async def test_azure_tts_engine_from_config(mulaw_format):
         await tts_engine.session.close()
 
 
-def test_tts_engine_from_config_fails_for_not_implemented_engine(mulaw_format):
+def test_tts_engine_from_config_fails_for_not_implemented_engine(
+    mulaw_format: AudioFormat,
+):
     config = {"name": "XY_non_existent"}
     with pytest.raises(ImportError):
         tts_engine_from_config(config, language="en", format=mulaw_format)
 
 
-def test_custom_asr_service(mulaw_format) -> None:
+def test_custom_asr_service(mulaw_format: AudioFormat) -> None:
     # Given a custom ASR engine
     config = {
         "name": "data.test_voice_channel.custom_asr_engine.CustomASREngine",
@@ -64,7 +102,7 @@ def test_custom_asr_service(mulaw_format) -> None:
     assert isinstance(asr_engine, CustomASREngine)
 
 
-def test_custom_tts_service(mulaw_format) -> None:
+def test_custom_tts_service(mulaw_format: AudioFormat) -> None:
     # Given a custom TTS engine
     config = {
         "name": "data.test_voice_channel.custom_tts_engine.CustomTTSEngine",
@@ -89,14 +127,16 @@ def test_custom_tts_service(mulaw_format) -> None:
         (None, "ASR configuration dictionary cannot be empty"),
     ],
 )
-def test_asr_engine_config_validation(config, expected_error, mulaw_format):
+def test_asr_engine_config_validation(
+    config: Optional[Dict], expected_error: str, mulaw_format: AudioFormat
+):
     """Test validation of ASR engine configuration."""
     with pytest.raises(ValueError, match=expected_error):
         asr_engine_from_config(config, language="en", format=mulaw_format)
 
 
 @pytest.mark.parametrize(
-    "config,expected_error",
+    "config, expected_error",
     [
         ({}, "TTS configuration dictionary cannot be empty"),
         (
@@ -106,7 +146,9 @@ def test_asr_engine_config_validation(config, expected_error, mulaw_format):
         (None, "TTS configuration dictionary cannot be empty"),
     ],
 )
-def test_tts_engine_config_validation(config, expected_error, mulaw_format):
+def test_tts_engine_config_validation(
+    config: Optional[Dict], expected_error: str, mulaw_format: AudioFormat
+):
     """Test validation of TTS engine configuration."""
     with pytest.raises(ValueError, match=expected_error):
         tts_engine_from_config(config, language="en", format=mulaw_format)
@@ -122,7 +164,8 @@ def test_dtmf_input_action_all_digits(digit):
     assert action.digit == digit
 
 
-def test_dtmf_config_in_call_state(setup_call_state):
+@pytest.mark.usefixtures("setup_call_state")
+def test_dtmf_config_in_call_state():
     """Test storing DTMF config in call state."""
     call_state = _call_state.get()
 
@@ -136,7 +179,8 @@ def test_dtmf_config_in_call_state(setup_call_state):
     assert call_state.is_collecting_dtmf is True
 
 
-def test_dtmf_config_none_when_not_collecting(setup_call_state):
+@pytest.mark.usefixtures("setup_call_state")
+def test_dtmf_config_none_when_not_collecting():
     """Test that DTMF config can be None when not collecting."""
     call_state = _call_state.get()
     call_state.is_collecting_dtmf = False
@@ -216,15 +260,17 @@ def _make_channel_and_mocks(
         {"allow_interruptions": True},
     ],
 )
+@pytest.mark.usefixtures("setup_call_state")
 async def test_stop_streaming_and_interrupt_playback_on_interruption(
     allow_interruptions_dict: Dict[str, bool],
     mock_validate_voice_license_scope,
-    setup_call_state,
     asr_event: ASREvent,
     call_parameters: CallParameters,
 ) -> None:
     """Test that ASR event triggers interruption when its text is above threshold."""
     # Given a channel with interruptions enabled and the bot currently speaking
+    from rasa.core.channels.voice_stream.call_state import call_state
+
     mock_web_socket = MagicMock()
 
     channel, mock_tts_engine = _make_channel_and_mocks(
@@ -264,14 +310,16 @@ async def test_stop_streaming_and_interrupt_playback_on_interruption(
         {"allow_interruptions": True},
     ],
 )
+@pytest.mark.usefixtures("setup_call_state")
 async def test_receive_asr_events_does_not_interrupt_when_words_below_threshold(
     allow_interruptions_dict: Dict[str, bool],
     mock_validate_voice_license_scope,
-    setup_call_state,
     call_parameters: CallParameters,
 ) -> None:
     """Test that interruptions do not trigger when word count is below threshold."""
     # Given events with fewer words than the min_words threshold (3)
+    from rasa.core.channels.voice_stream.call_state import call_state
+
     mock_web_socket = MagicMock()
     channel, mock_tts_engine = _make_channel_and_mocks(
         mock_validate_voice_license_scope,
@@ -311,13 +359,15 @@ async def test_receive_asr_events_does_not_interrupt_when_words_below_threshold(
         {"allow_interruptions": True},
     ],
 )
+@pytest.mark.usefixtures("setup_call_state")
 async def test_interruptions_for_multiple_asr_events_in_sequence(
     allow_interruptions_dict: Dict[str, bool],
     mock_validate_voice_license_scope,
-    setup_call_state,
     call_parameters: CallParameters,
 ) -> None:
     """Tests that multiple consecutive ASR events triggers interruptions."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
     mock_websocket = MagicMock()
     # Given events with fewer words than the min_words threshold (3)
     channel, mock_tts_engine = _make_channel_and_mocks(
@@ -358,14 +408,16 @@ async def test_interruptions_for_multiple_asr_events_in_sequence(
         {"allow_interruptions": True},
     ],
 )
+@pytest.mark.usefixtures("setup_call_state")
 async def test_interruptions_not_firing_when_disabled(
     allow_interruptions_dict: Dict[str, bool],
     mock_validate_voice_license_scope,
-    setup_call_state,
     call_parameters: CallParameters,
 ) -> None:
     """Test that interruptions are not firing if they are disabled."""
     # Given events with fewer words than the min_words threshold (3)
+    from rasa.core.channels.voice_stream.call_state import call_state
+
     mock_web_socket = MagicMock()
     channel, mock_tts_engine = _make_channel_and_mocks(
         mock_validate_voice_license_scope,
@@ -398,9 +450,10 @@ async def test_interruptions_not_firing_when_disabled(
     assert asr_event_queue.qsize() == 2
 
 
-async def test_language_change_hook_schedules_update(
-    setup_call_state,
-) -> None:
+@pytest.mark.usefixtures("setup_call_state")
+async def test_language_change_hook_schedules_update() -> None:
+    from rasa.core.channels.voice_stream.call_state import call_state
+
     call_state.current_language = "en-US"
     asr_engine = MagicMock()
     tts_engine = MagicMock()
@@ -423,9 +476,10 @@ async def test_language_change_hook_schedules_update(
     assert call_state.current_language == "de-DE"
 
 
-async def test_language_change_hook_ignores_other_senders(
-    setup_call_state,
-) -> None:
+@pytest.mark.usefixtures("setup_call_state")
+async def test_language_change_hook_ignores_other_senders() -> None:
+    from rasa.core.channels.voice_stream.call_state import call_state
+
     call_state.current_language = "en-US"
     asr_engine = MagicMock()
     tts_engine = MagicMock()
@@ -473,9 +527,10 @@ async def test_language_change_hook_without_call_state_context() -> None:
     tts_engine.set_language.assert_awaited_once_with("de-DE")
 
 
-async def test_run_audio_streaming_unregisters_language_plugin_on_session_error(
-    mock_validate_voice_license_scope: Any,
-) -> None:
+@pytest.mark.usefixtures("mock_validate_voice_license_scope")
+async def test_run_audio_streaming_unregisters_language_plugin_on_session_error() -> (
+    None
+):
     channel = create_stub_voice_input_channel(interruption_config={"enabled": True})
     mock_websocket = MagicMock()
     mock_websocket.close = AsyncMock()
@@ -515,3 +570,281 @@ async def test_run_audio_streaming_unregisters_language_plugin_on_session_error(
     asr_engine.close_connection.assert_awaited_once()
     tts_engine.close_connection.assert_awaited_once()
     mock_websocket.close.assert_awaited_once()
+
+
+@pytest.fixture
+def stub_voice_input_channel(
+    mock_validate_voice_license_scope,
+) -> StubVoiceInputChannel:
+    """Return a StubVoiceInputChannel with a mocked output channel."""
+    channel = StubVoiceInputChannel(
+        server_url="https://example.com",
+        asr_config={"name": "deepgram"},
+        tts_config={"name": "azure"},
+    )
+    return channel
+
+
+def _attach_mock_output_channel(channel: StubVoiceInputChannel) -> MagicMock:
+    """Replace create_output_channel with a mock that returns a mock output channel."""
+    mock_output_channel = MagicMock()
+    mock_output_channel.send_turn_end_marker = AsyncMock()
+    mock_output_channel.check_language_change = MagicMock(return_value=None)
+    channel.create_output_channel = MagicMock(return_value=mock_output_channel)
+    return mock_output_channel
+
+
+@pytest.mark.usefixtures("mock_validate_voice_license_scope", "setup_call_state")
+async def test_handle_asr_event_new_transcript_calls_on_new_message(
+    call_parameters: CallParameters,
+    stub_voice_input_channel: StubVoiceInputChannel,
+):
+    """NewTranscript with non-empty text triggers on_new_message and
+    send_turn_end_marker.
+    """
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    mock_output_channel = _attach_mock_output_channel(stub_voice_input_channel)
+
+    voice_websocket = MagicMock()
+    on_new_message = AsyncMock()
+    tts_engine = MagicMock()
+    asr_engine = MagicMock()
+    asr_engine.set_language = AsyncMock()
+
+    await stub_voice_input_channel.handle_asr_event(
+        asr_event=NewTranscript(text="hello world"),
+        voice_websocket=voice_websocket,
+        on_new_message=on_new_message,
+        tts_engine=tts_engine,
+        call_parameters=call_parameters,
+        asr_engine=asr_engine,
+    )
+
+    on_new_message.assert_awaited_once()
+    sent_message = on_new_message.call_args[0][0]
+    assert sent_message.text == "hello world"
+    assert sent_message.sender_id == call_parameters.call_id
+    mock_output_channel.send_turn_end_marker.assert_awaited_once_with(
+        call_parameters.call_id
+    )
+    # No language change → set_language should NOT be called
+    asr_engine.set_language.assert_not_awaited()
+    message = call_state.internal_queue.get_nowait()
+    assert isinstance(message, UserStoppedSpeaking)
+
+
+@pytest.mark.usefixtures("mock_validate_voice_license_scope", "setup_call_state")
+async def test_handle_asr_event_new_transcript_empty_text_ignored(
+    call_parameters: CallParameters,
+    stub_voice_input_channel: StubVoiceInputChannel,
+):
+    """NewTranscript with empty text should not call on_new_message."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    _attach_mock_output_channel(stub_voice_input_channel)
+
+    on_new_message = AsyncMock()
+    asr_engine = MagicMock()
+    asr_engine.set_language = AsyncMock()
+
+    await stub_voice_input_channel.handle_asr_event(
+        asr_event=NewTranscript(text=""),
+        voice_websocket=MagicMock(),
+        on_new_message=on_new_message,
+        tts_engine=MagicMock(),
+        call_parameters=call_parameters,
+        asr_engine=asr_engine,
+    )
+
+    on_new_message.assert_not_awaited()
+    asr_engine.set_language.assert_not_awaited()
+    assert call_state.internal_queue.qsize() == 0
+
+
+@pytest.mark.usefixtures("mock_validate_voice_license_scope", "setup_call_state")
+async def test_handle_asr_event_new_transcript_ignored_during_dtmf_collection(
+    call_parameters: CallParameters,
+    stub_voice_input_channel: StubVoiceInputChannel,
+):
+    """NewTranscript is silently ignored while collecting DTMF and
+    allow_audio_input is False.
+    """
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    _attach_mock_output_channel(stub_voice_input_channel)
+
+    # Simulate active DTMF collection that blocks audio input
+    call_state.is_collecting_dtmf = True
+    call_state.dtmf_config = DTMFConfig(length=4, allow_audio_input=False)
+
+    on_new_message = AsyncMock()
+    asr_engine = MagicMock()
+    asr_engine.set_language = AsyncMock()
+
+    await stub_voice_input_channel.handle_asr_event(
+        asr_event=NewTranscript(text="some words"),
+        voice_websocket=MagicMock(),
+        on_new_message=on_new_message,
+        tts_engine=MagicMock(),
+        call_parameters=call_parameters,
+        asr_engine=asr_engine,
+    )
+
+    on_new_message.assert_not_awaited()
+    asr_engine.set_language.assert_not_awaited()
+    message = call_state.internal_queue.get_nowait()
+    assert isinstance(message, UserStoppedSpeaking)
+
+
+@pytest.mark.usefixtures("mock_validate_voice_license_scope", "setup_call_state")
+async def test_handle_asr_event_new_transcript_allowed_when_dtmf_allows_audio(
+    call_parameters: CallParameters,
+    stub_voice_input_channel: StubVoiceInputChannel,
+):
+    """NewTranscript is processed normally when allow_audio_input is True,
+    even while collecting DTMF.
+    """
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    _attach_mock_output_channel(stub_voice_input_channel)
+
+    call_state.is_collecting_dtmf = True
+    call_state.dtmf_config = DTMFConfig(length=4, allow_audio_input=True)
+
+    on_new_message = AsyncMock()
+    asr_engine = MagicMock()
+    asr_engine.set_language = AsyncMock()
+
+    await stub_voice_input_channel.handle_asr_event(
+        asr_event=NewTranscript(text="hello"),
+        voice_websocket=MagicMock(),
+        on_new_message=on_new_message,
+        tts_engine=MagicMock(),
+        call_parameters=call_parameters,
+        asr_engine=asr_engine,
+    )
+
+    on_new_message.assert_awaited_once()
+    message = call_state.internal_queue.get_nowait()
+    assert isinstance(message, UserStoppedSpeaking)
+
+
+@pytest.mark.usefixtures("mock_validate_voice_license_scope", "setup_call_state")
+async def test_handle_asr_event_user_silence_sends_silence_timeout_message(
+    call_parameters: CallParameters,
+    stub_voice_input_channel: StubVoiceInputChannel,
+):
+    """UserSilence event calls on_new_message with USER_CONVERSATION_SILENCE_TIMEOUT
+    and clears the DTMF buffer.
+    """
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    mock_output_channel = _attach_mock_output_channel(stub_voice_input_channel)
+
+    call_state.dtmf_buffer = "123"
+    on_new_message = AsyncMock()
+
+    await stub_voice_input_channel.handle_asr_event(
+        asr_event=UserSilence(),
+        voice_websocket=MagicMock(),
+        on_new_message=on_new_message,
+        tts_engine=MagicMock(),
+        call_parameters=call_parameters,
+        asr_engine=MagicMock(),
+    )
+
+    on_new_message.assert_awaited_once()
+    sent_message = on_new_message.call_args[0][0]
+    assert sent_message.text == USER_CONVERSATION_SILENCE_TIMEOUT
+    assert sent_message.sender_id == call_parameters.call_id
+    assert sent_message.output_channel == mock_output_channel
+    assert sent_message.input_channel == stub_voice_input_channel.name()
+    assert sent_message.metadata == asdict(call_parameters)
+    assert call_state.dtmf_buffer == ""
+
+
+@pytest.mark.usefixtures("mock_validate_voice_license_scope", "setup_call_state")
+async def test_handle_asr_event_new_transcript_puts_user_stopped_speaking_in_queue(
+    call_parameters: CallParameters,
+    stub_voice_input_channel: StubVoiceInputChannel,
+):
+    """UserIsSpeaking puts UserIsSpeakingCallStateMessage into the
+    internal queue.
+    """
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    on_new_message = AsyncMock()
+
+    await stub_voice_input_channel.handle_asr_event(
+        asr_event=UserIsSpeaking(text="hello"),
+        voice_websocket=MagicMock(),
+        on_new_message=on_new_message,
+        tts_engine=MagicMock(),
+        call_parameters=call_parameters,
+        asr_engine=MagicMock(),
+    )
+
+    message = call_state.internal_queue.get_nowait()
+    assert isinstance(message, UserIsSpeakingCallStateMessage)
+
+
+# ---------------------------------------------------------------------------
+# Fixtures and tests for VoiceOutputChannel.notify_message_processing_*
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def stub_voice_output_channel(mulaw_format: AudioFormat) -> StubVoiceOutputChannel:
+    """Return a StubVoiceOutputChannel with mocked websocket and TTS engine."""
+    return StubVoiceOutputChannel(
+        voice_websocket=MagicMock(),
+        tts_engine=MagicMock(),
+        tts_cache=MagicMock(),
+        audio_format=mulaw_format,
+    )
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_notify_message_processing_started_enqueues_rasa_is_processing(
+    stub_voice_output_channel: StubVoiceOutputChannel,
+):
+    """notify_message_processing_started puts RasaIsProcessing on the internal queue."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    await stub_voice_output_channel.notify_message_processing_started()
+
+    assert call_state.internal_queue.qsize() == 1
+    message = call_state.internal_queue.get_nowait()
+    assert isinstance(message, RasaIsProcessing)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_notify_message_processing_completed_enqueues_rasa_is_listening(
+    stub_voice_output_channel: StubVoiceOutputChannel,
+):
+    """notify_message_processing_completed puts RasaIsListening
+    on the internal queue.
+    """
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    await stub_voice_output_channel.notify_message_processing_completed()
+
+    assert call_state.internal_queue.qsize() == 1
+    message = call_state.internal_queue.get_nowait()
+    assert isinstance(message, RasaIsListening)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_notify_message_processing_started_then_completed_order(
+    stub_voice_output_channel: StubVoiceOutputChannel,
+):
+    """Calling started then completed enqueues messages in FIFO order."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    await stub_voice_output_channel.notify_message_processing_started()
+    await stub_voice_output_channel.notify_message_processing_completed()
+
+    assert call_state.internal_queue.qsize() == 2
+    assert isinstance(call_state.internal_queue.get_nowait(), RasaIsProcessing)
+    assert isinstance(call_state.internal_queue.get_nowait(), RasaIsListening)

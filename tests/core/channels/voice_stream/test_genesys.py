@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 from unittest.mock import AsyncMock
 
 import pytest
@@ -32,7 +32,7 @@ def input_channel() -> GenesysInputChannel:
 
 
 @pytest.fixture
-def valid_headers():
+def valid_headers() -> Dict[str, str]:
     return {
         "Audiohook-Organization-Id": "22352111-6076-492a-8163-514a00723975",
         "Audiohook-Correlation-Id": "386dc26f-6d1d-4cf0-b153-93c43f540874",
@@ -44,14 +44,14 @@ def valid_headers():
 
 
 @pytest.fixture
-def mocked_request(valid_headers):
+def mocked_request(valid_headers) -> AsyncMock:
     return AsyncMock(
         headers=valid_headers,
     )
 
 
 @pytest.fixture
-def open_message():
+def open_message() -> Dict[str, Any]:
     return {
         "version": "2",
         "id": "3ccd9712-cdbe-44f7-bcc1-486e2a1a8ff6",
@@ -82,7 +82,7 @@ def open_message():
     }
 
 
-async def test_call_params(open_message):
+async def test_call_params(open_message: Dict[str, Any]):
     call_parameters = map_call_params(open_message)
     assert call_parameters is not None
     assert call_parameters.bot_phone == "+493070016507"
@@ -92,14 +92,16 @@ async def test_call_params(open_message):
     assert call_parameters.direction is None
 
 
-def test_ensure_api_key(input_channel, mocked_request):
+def test_ensure_api_key(input_channel: GenesysInputChannel, mocked_request: AsyncMock):
     assert input_channel._ensure_api_key(mocked_request) is True
 
     mocked_request.headers[HEADER_API_KEY] = "invalid-key"
     assert input_channel._ensure_api_key(mocked_request) is False
 
 
-def test_ensure_required_headers(input_channel, mocked_request):
+def test_ensure_required_headers(
+    input_channel: GenesysInputChannel, mocked_request: AsyncMock
+):
     assert input_channel._ensure_required_headers(mocked_request) is True
 
     del mocked_request.headers["Audiohook-Organization-Id"]
@@ -112,7 +114,9 @@ def test_ensure_required_headers(input_channel, mocked_request):
     assert input_channel._ensure_required_headers(mocked_request) is False
 
 
-async def test_verify_signature(input_channel, mocked_request):
+async def test_verify_signature(
+    input_channel: GenesysInputChannel, mocked_request: AsyncMock
+):
     assert await input_channel._verify_signature(mocked_request) is True
 
     # modify the header and verification should fail
@@ -140,7 +144,7 @@ async def test_verify_signature(input_channel, mocked_request):
     ],
 )
 @pytest.mark.usefixtures("mock_validate_voice_license_scope")
-def test_from_credentials(input_data: dict, mock_validate_voice_license_scope):
+def test_from_credentials(input_data: dict):
     """Tests the from_credentials method."""
     channel = GenesysInputChannel.from_credentials(
         input_data,
@@ -190,7 +194,8 @@ def test_invalid_credentials(
         GenesysInputChannel.from_credentials(config)
 
 
-def test_map_input_message_dtmf(input_channel: GenesysInputChannel, setup_call_state):
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_dtmf(input_channel: GenesysInputChannel):
     """Test handling of DTMF input messages."""
     import json
 
@@ -206,7 +211,7 @@ def test_map_input_message_dtmf(input_channel: GenesysInputChannel, setup_call_s
         "serverseq": 5,
     }
     websocket = AsyncMock()
-    action = input_channel.map_input_message(json.dumps(dtmf_message), websocket)
+    action = await input_channel.map_input_message(json.dumps(dtmf_message), websocket)
 
     assert isinstance(action, DTMFInputAction)
     assert action.digit == "5"
@@ -216,8 +221,9 @@ def test_map_input_message_dtmf(input_channel: GenesysInputChannel, setup_call_s
     "dtmf_digit",
     ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "#", "*"],
 )
-def test_map_input_message_dtmf_all_digits(
-    input_channel: GenesysInputChannel, dtmf_digit: str, setup_call_state
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_dtmf_all_digits(
+    input_channel: GenesysInputChannel, dtmf_digit: str
 ):
     """Test handling of all valid DTMF digits."""
     import json
@@ -234,15 +240,14 @@ def test_map_input_message_dtmf_all_digits(
         "serverseq": 5,
     }
     websocket = AsyncMock()
-    action = input_channel.map_input_message(json.dumps(dtmf_message), websocket)
+    action = await input_channel.map_input_message(json.dumps(dtmf_message), websocket)
 
     assert isinstance(action, DTMFInputAction)
     assert action.digit == dtmf_digit
 
 
-def test_map_input_message_unknown_type(
-    input_channel: GenesysInputChannel, setup_call_state
-):
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_unknown_type(input_channel: GenesysInputChannel):
     """Test handling of unknown message types."""
     import json
 
@@ -254,6 +259,8 @@ def test_map_input_message_unknown_type(
         "serverseq": 5,
     }
     websocket = AsyncMock()
-    action = input_channel.map_input_message(json.dumps(unknown_message), websocket)
+    action = await input_channel.map_input_message(
+        json.dumps(unknown_message), websocket
+    )
 
     assert isinstance(action, ContinueConversationAction)

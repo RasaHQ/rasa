@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import base64
 import hashlib
 import hmac
@@ -20,6 +19,8 @@ from rasa.core.channels import UserMessage
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import (
+    BotIsSpeaking,
+    BotStoppedSpeaking,
     call_state,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
@@ -204,7 +205,7 @@ class GenesysInputChannel(VoiceInputChannel):
 
         return None
 
-    def map_input_message(
+    async def map_input_message(
         self,
         message: Any,
         ws: Websocket,
@@ -219,20 +220,20 @@ class GenesysInputChannel(VoiceInputChannel):
             msg_type = data.get("type")
             if msg_type == "close":
                 logger.info("genesys.handle_close", message=data)
-                self.handle_close(ws, data)
+                await self.handle_close(ws, data)
                 return EndConversationAction()
             elif msg_type == "ping":
                 logger.debug("genesys.handle_ping", message=data)
-                self.handle_ping(ws, data)
+                await self.handle_ping(ws, data)
             elif msg_type == "playback_started":
                 logger.debug("genesys.handle_playback_started", message=data)
-                call_state.is_bot_speaking = True
+                await call_state.enqueue_event(BotIsSpeaking())
             elif msg_type == "playback_completed":
                 logger.debug("genesys.handle_playback_completed", message=data)
-                call_state.is_bot_speaking = False
+                await call_state.enqueue_event(BotStoppedSpeaking())
                 if call_state.should_hangup:
                     logger.info("genesys.hangup")
-                    self.disconnect(ws, data)
+                    await self.disconnect(ws, data)
                     # the conversation should continue until
                     # we receive a close message from Genesys
             elif msg_type == "dtmf":
@@ -280,7 +281,7 @@ class GenesysInputChannel(VoiceInputChannel):
             )
         return call_parameters
 
-    def handle_ping(self, ws: Websocket, message: dict) -> None:
+    async def handle_ping(self, ws: Websocket, message: dict) -> None:
         """Handle ping message from Genesys."""
         response: Dict[str, Any] = {
             "version": "2",
@@ -291,9 +292,9 @@ class GenesysInputChannel(VoiceInputChannel):
             "parameters": {},
         }
         logger.debug("genesys.handle_ping.pong", response=response)
-        _schedule_ws_task(ws.send(json.dumps(response)))
+        await ws.send(json.dumps(response))
 
-    def handle_close(self, ws: Websocket, message: dict) -> None:
+    async def handle_close(self, ws: Websocket, message: dict) -> None:
         """Handle close message from Genesys."""
         response = {
             "version": "2",
@@ -305,9 +306,9 @@ class GenesysInputChannel(VoiceInputChannel):
         }
         logger.debug("genesys.handle_close.closed", response=response)
 
-        _schedule_ws_task(ws.send(json.dumps(response)))
+        await ws.send(json.dumps(response))
 
-    def disconnect(self, ws: Websocket, data: dict) -> None:
+    async def disconnect(self, ws: Websocket, data: dict) -> None:
         """Send disconnect message to Genesys.
 
         https://developer.genesys.cloud/devapps/audiohook/protocol-reference#disconnect
@@ -327,7 +328,7 @@ class GenesysInputChannel(VoiceInputChannel):
             },
         }
         logger.debug("genesys.disconnect", message=message)
-        _schedule_ws_task(ws.send(json.dumps(message)))
+        await ws.send(json.dumps(message))
 
     def _calculate_signature(self, request: Request) -> str:
         """Calculate the signature using request data."""
@@ -468,13 +469,3 @@ class GenesysInputChannel(VoiceInputChannel):
                 raise
 
         return blueprint
-
-
-def _schedule_ws_task(coro: Awaitable[Any]) -> None:
-    """Helper function to schedule a coroutine in the event loop.
-
-    Args:
-        coro: The coroutine to schedule
-    """
-    loop = asyncio.get_running_loop()
-    loop.call_soon_threadsafe(lambda: loop.create_task(coro))

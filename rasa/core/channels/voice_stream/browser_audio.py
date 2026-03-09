@@ -24,7 +24,11 @@ from rasa.core.channels.voice_stream.audio_bytes import (
     RasaAudioBytes,
 )
 from rasa.core.channels.voice_stream.audio_debugging import _save_rasa_bytes_to_wav
-from rasa.core.channels.voice_stream.call_state import call_state
+from rasa.core.channels.voice_stream.call_state import (
+    BotIsSpeaking,
+    BotStoppedSpeaking,
+    call_state,
+)
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
 from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
@@ -195,7 +199,7 @@ class BrowserAudioInputChannel(VoiceInputChannel):
             )
         return cls(**new_creds)
 
-    def map_input_message(
+    async def map_input_message(
         self,
         message: Any,
         ws: Websocket,
@@ -209,14 +213,14 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         elif "marker" in data:
             if data["marker"] == call_state.latest_bot_audio_id:
                 # Just finished streaming last audio bytes
-                call_state.is_bot_speaking = False
+                await call_state.enqueue_event(BotStoppedSpeaking())
                 if call_state.should_hangup:
                     logger.debug(
                         "browser_audio.hangup", marker=call_state.latest_bot_audio_id
                     )
                     return EndConversationAction()
             else:
-                call_state.is_bot_speaking = True
+                await call_state.enqueue_event(BotIsSpeaking())
         return ContinueConversationAction()
 
     async def interrupt_playback(

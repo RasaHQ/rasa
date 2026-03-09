@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import MagicMock
 
 import pytest
@@ -28,11 +29,21 @@ def setup_call_state():
     channel tests can rely on a bound context for `_call_state`.
     """
     # Initialize a new call state
-    _call_state.set(CallState())
+    _call_state.set(
+        CallState(
+            internal_queue=asyncio.Queue(),
+            asr_event_queue=asyncio.Queue(),
+        )
+    )
     yield
     # Reset call state to a fresh CallState instance to avoid unbound errors
     try:
-        _call_state.set(CallState())
+        _call_state.set(
+            CallState(
+                internal_queue=asyncio.Queue(),
+                asr_event_queue=asyncio.Queue(),
+            )
+        )
     except Exception:
         # Best-effort cleanup; if this fails, ignore to not mask test failures
         pass

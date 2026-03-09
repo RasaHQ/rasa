@@ -222,6 +222,7 @@ class MessageProcessor:
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message with this processor."""
         # preprocess message if necessary
+        await message.output_channel.notify_message_processing_started()
         self.time_turn_start = time.time()
         tracker = await self.log_message(message, should_save_tracker=False)
 
@@ -231,6 +232,7 @@ class MessageProcessor:
                 "No core model. Skipping action prediction and execution.",
                 docs=DOCS_URL_NLU_BASED_POLICIES,
             )
+            await message.output_channel.notify_message_processing_completed()
             return None
 
         tracker = await self.run_action_extract_slots(message.output_channel, tracker)
@@ -238,6 +240,8 @@ class MessageProcessor:
         await self._run_prediction_loop(message.output_channel, tracker)
 
         await self.save_tracker(tracker)
+
+        await message.output_channel.notify_message_processing_completed()
 
         self.trigger_anonymization(tracker)
 

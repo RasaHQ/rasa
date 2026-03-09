@@ -1,16 +1,22 @@
 import json
+from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
-from rasa.core.channels.voice_stream.call_state import _call_state
+from rasa.core.channels.voice_stream.audio_bytes import AudioFormat, RasaAudioBytes
+from rasa.core.channels.voice_stream.call_state import (
+    BotIsSpeaking,
+    BotStoppedSpeaking,
+    _call_state,
+)
 from rasa.core.channels.voice_stream.jambonz import (
     JAMBONZ_STREAMS_WEBSOCKET_PATH,
     JambonzStreamInputChannel,
     JambonzStreamOutputChannel,
     map_call_params,
 )
+from rasa.core.channels.voice_stream.tts import TTSCache
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     DTMFInputAction,
@@ -35,7 +41,7 @@ def input_channel() -> JambonzStreamInputChannel:
 
 
 @pytest.fixture
-def call_metadata():
+def call_metadata() -> Dict[str, Any]:
     return {
         "sampleRate": 16000,
         "mixType": "mono",
@@ -59,14 +65,14 @@ def call_metadata():
 
 
 @pytest.fixture
-def mock_tts_engine():
+def mock_tts_engine() -> MagicMock:
     engine = MagicMock()
     engine.generate_audio.return_value = b"dummy_audio"
     return engine
 
 
 @pytest.fixture
-def mock_websocket(call_metadata):
+def mock_websocket(call_metadata) -> AsyncMock:
     ws = AsyncMock()
     ws.recv.side_effect = [
         json.dumps(call_metadata),
@@ -75,17 +81,21 @@ def mock_websocket(call_metadata):
 
 
 @pytest.fixture
-def sample_audio_bytes():
+def sample_audio_bytes() -> bytes:
     # Create 1 second of silence at 8kHz
     return bytes([0xFF] * 8000)
 
 
 @pytest.fixture
-def jambonz_output_channel(mock_websocket, mock_tts_engine, mulaw_format):
-    return JambonzStreamOutputChannel(mock_websocket, mock_tts_engine, {}, mulaw_format)
+def jambonz_output_channel(
+    mock_websocket: AsyncMock, mock_tts_engine: MagicMock, mulaw_format: AudioFormat
+) -> JambonzStreamOutputChannel:
+    return JambonzStreamOutputChannel(
+        mock_websocket, mock_tts_engine, TTSCache(max_size=2000), mulaw_format
+    )
 
 
-def test_map_call_params(call_metadata):
+def test_map_call_params(call_metadata: Dict[str, Any]):
     """Test mapping of call parameters from metadata."""
     params = map_call_params(call_metadata)
     assert params.call_id == "d5d1dffb-36fc-4314-81ef-054d41f06b8b"
@@ -94,40 +104,149 @@ def test_map_call_params(call_metadata):
     assert params.stream_id == "d5d1dffb-36fc-4314-81ef-054d41f06b8b"
 
 
-async def test_collect_call_parameters(input_channel, mock_websocket):
+async def test_collect_call_parameters(
+    input_channel: JambonzStreamInputChannel, mock_websocket: AsyncMock
+):
     """Test collection of call parameters from websocket."""
     params = await input_channel.collect_call_parameters(mock_websocket)
     assert params is not None
     assert params.call_id == "d5d1dffb-36fc-4314-81ef-054d41f06b8b"
 
 
-def test_channel_bytes_conversion(input_channel, sample_audio_bytes):
+def test_channel_bytes_conversion(
+    input_channel: JambonzStreamInputChannel, sample_audio_bytes: bytes
+):
     """Test that there's no audio format conversion"""
     result = input_channel.channel_bytes_to_rasa_audio_bytes(sample_audio_bytes)
     assert isinstance(result, RasaAudioBytes)
     assert len(result) == len(result)
 
 
-def test_map_input_message_bytes(input_channel, sample_audio_bytes, mock_websocket):
+async def test_map_input_message_bytes(
+    input_channel: JambonzStreamInputChannel,
+    sample_audio_bytes: bytes,
+    mock_websocket: AsyncMock,
+):
     """Test handling of binary audio input."""
-    action = input_channel.map_input_message(sample_audio_bytes, mock_websocket)
+    action = await input_channel.map_input_message(sample_audio_bytes, mock_websocket)
     assert isinstance(action, NewAudioAction)
 
 
-def test_map_input_message_mark(input_channel, mock_websocket, setup_call_state):
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark(
+    input_channel: JambonzStreamInputChannel,
+    mock_websocket: AsyncMock,
+):
     """Test handling of mark messages."""
     _call_state.get().latest_bot_audio_id = "1234"
     mark_message = {"type": "mark", "data": {"name": "1234"}}
-    action = input_channel.map_input_message(json.dumps(mark_message), mock_websocket)
+    action = await input_channel.map_input_message(
+        json.dumps(mark_message), mock_websocket
+    )
     assert isinstance(action, ContinueConversationAction)
 
     # Test mark message with hangup flag
     _call_state.get().should_hangup = True
-    action = input_channel.map_input_message(json.dumps(mark_message), mock_websocket)
+    action = await input_channel.map_input_message(
+        json.dumps(mark_message), mock_websocket
+    )
     assert isinstance(action, EndConversationAction)
 
 
-async def test_output_channel_audio_sending(jambonz_output_channel, mock_websocket):
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_matching_id_puts_bot_stopped_speaking(
+    input_channel: JambonzStreamInputChannel,
+    mock_websocket: AsyncMock,
+):
+    """Test that a mark matching latest_bot_audio_id puts
+    BotStoppedSpeaking on queue."""
+    from rasa.core.channels.voice_stream.call_state import BotStoppedSpeaking
+
+    state = _call_state.get()
+    state.latest_bot_audio_id = "abc"
+    state.should_hangup = False
+
+    mark_message = {"type": "mark", "data": {"name": "abc"}}
+    action = await input_channel.map_input_message(
+        json.dumps(mark_message), mock_websocket
+    )
+
+    assert isinstance(action, ContinueConversationAction)
+    assert not state.internal_queue.empty()
+    queued = state.internal_queue.get_nowait()
+    assert isinstance(queued, BotStoppedSpeaking)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_matching_id_hangup_puts_bot_stopped_speaking(
+    input_channel: JambonzStreamInputChannel,
+    mock_websocket: AsyncMock,
+):
+    """Test that a mark with hangup flag still puts BotStoppedSpeaking on queue."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    call_state.latest_bot_audio_id = "xyz"
+    call_state.should_hangup = True
+
+    mark_message = {"type": "mark", "data": {"name": "xyz"}}
+    action = await input_channel.map_input_message(
+        json.dumps(mark_message), mock_websocket
+    )
+
+    assert isinstance(action, EndConversationAction)
+    assert not call_state.internal_queue.empty()
+    queued = call_state.internal_queue.get_nowait()
+    assert isinstance(queued, BotStoppedSpeaking)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_non_matching_id(
+    input_channel: JambonzStreamInputChannel,
+    mock_websocket: AsyncMock,
+):
+    """Test that a mark whose name does not match latest_bot_audio_id
+    puts BotIsSpeaking on queue."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    call_state.latest_bot_audio_id = "current-id"
+
+    mark_message = {"type": "mark", "data": {"name": "older-id"}}
+    action = await input_channel.map_input_message(
+        json.dumps(mark_message), mock_websocket
+    )
+
+    assert isinstance(action, ContinueConversationAction)
+    assert not call_state.internal_queue.empty()
+    queued = call_state.internal_queue.get_nowait()
+    assert isinstance(queued, BotIsSpeaking)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_non_matching_id_no_hangup(
+    input_channel: JambonzStreamInputChannel,
+    mock_websocket: AsyncMock,
+):
+    """Test that a non-last mark doesn't trigger hangup
+    even when should_hangup is True."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    call_state.latest_bot_audio_id = "final-id"
+    call_state.should_hangup = True
+
+    mark_message = {"type": "mark", "data": {"name": "intermediate-id"}}
+    action = await input_channel.map_input_message(
+        json.dumps(mark_message), mock_websocket
+    )
+
+    # should NOT hang up — the name did not match the latest audio id
+    assert isinstance(action, ContinueConversationAction)
+    queued = call_state.internal_queue.get_nowait()
+    assert isinstance(queued, BotIsSpeaking)
+
+
+async def test_output_channel_audio_sending(
+    jambonz_output_channel: JambonzStreamOutputChannel, mock_websocket: AsyncMock
+) -> None:
     """Test audio sending through output channel."""
     format = jambonz_output_channel.audio_format
     audio_bytes = RasaAudioBytes(b"test_audio", format=format)
@@ -140,7 +259,9 @@ async def test_output_channel_audio_sending(jambonz_output_channel, mock_websock
     assert len(sent_bytes) == len(audio_bytes)
 
 
-def test_create_marker_message(jambonz_output_channel):
+def test_create_marker_message(
+    jambonz_output_channel: JambonzStreamOutputChannel,
+) -> None:
     """Test marker message creation."""
     message, marker_id = jambonz_output_channel.create_marker_message("test_recipient")
 
@@ -151,7 +272,7 @@ def test_create_marker_message(jambonz_output_channel):
     assert len(marker_id) > 0
 
 
-async def test_blueprint_health_endpoint(input_channel):
+async def test_blueprint_health_endpoint(input_channel: JambonzStreamInputChannel):
     """Test health check endpoint."""
     from sanic import Sanic
 
@@ -185,7 +306,7 @@ async def test_blueprint_health_endpoint(input_channel):
         },  # Missing username
     ],
 )
-def test_from_credentials_validation(credentials):
+def test_from_credentials_validation(credentials: Dict[str, str]) -> None:
     """Test validation of credentials when creating channel from config."""
     with pytest.raises(InvalidConfigException):
         JambonzStreamInputChannel.from_credentials(credentials)
@@ -236,7 +357,7 @@ def test_from_credentials_success():
         ),
     ],
 )
-def test_websocket_stream_url(server_url: str, expected_ws_url: str):
+def test_websocket_stream_url(server_url: str, expected_ws_url: str) -> None:
     """Test websocket URL generation with different server URL formats."""
     channel = JambonzStreamInputChannel(
         server_url=server_url,
@@ -246,10 +367,14 @@ def test_websocket_stream_url(server_url: str, expected_ws_url: str):
     assert channel._websocket_stream_url() == expected_ws_url
 
 
-def test_map_input_message_dtmf(input_channel, mock_websocket):
+async def test_map_input_message_dtmf(
+    input_channel: JambonzStreamInputChannel, mock_websocket: AsyncMock
+) -> None:
     """Test handling of DTMF input messages."""
     dtmf_message = {"event": "dtmf", "dtmf": "5", "duration": "1600"}
-    action = input_channel.map_input_message(json.dumps(dtmf_message), mock_websocket)
+    action = await input_channel.map_input_message(
+        json.dumps(dtmf_message), mock_websocket
+    )
 
     assert isinstance(action, DTMFInputAction)
     assert action.digit == "5"
@@ -259,19 +384,25 @@ def test_map_input_message_dtmf(input_channel, mock_websocket):
     "dtmf_digit",
     ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "#", "*"],
 )
-def test_map_input_message_dtmf_all_digits(input_channel, mock_websocket, dtmf_digit):
+async def test_map_input_message_dtmf_all_digits(
+    input_channel: JambonzStreamInputChannel, mock_websocket: AsyncMock, dtmf_digit: str
+) -> None:
     """Test handling of all valid DTMF digits."""
     dtmf_message = {"event": "dtmf", "dtmf": dtmf_digit, "duration": "1600"}
-    action = input_channel.map_input_message(json.dumps(dtmf_message), mock_websocket)
+    action = await input_channel.map_input_message(
+        json.dumps(dtmf_message), mock_websocket
+    )
 
     assert isinstance(action, DTMFInputAction)
     assert action.digit == dtmf_digit
 
 
-def test_map_input_message_unknown_event(input_channel, mock_websocket):
+async def test_map_input_message_unknown_event(
+    input_channel: JambonzStreamInputChannel, mock_websocket: AsyncMock
+):
     """Test handling of unknown event types."""
     unknown_message = {"event": "unknown_event", "data": "something"}
-    action = input_channel.map_input_message(
+    action = await input_channel.map_input_message(
         json.dumps(unknown_message), mock_websocket
     )
 

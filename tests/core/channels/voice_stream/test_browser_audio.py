@@ -9,12 +9,15 @@ from rasa.core.channels.voice_stream.audio_bytes import (
     L16_24KHZ,
     L16_48KHZ,
     MULAW_8KHZ,
+    AudioFormat,
     RasaAudioBytes,
 )
 from rasa.core.channels.voice_stream.browser_audio import (
     BrowserAudioInputChannel,
     BrowserAudioOutputChannel,
 )
+from rasa.core.channels.voice_stream.call_state import BotIsSpeaking, BotStoppedSpeaking
+from rasa.core.channels.voice_stream.tts import TTSCache
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     EndConversationAction,
@@ -23,7 +26,7 @@ from rasa.core.channels.voice_stream.voice_channel import (
 
 
 @pytest.fixture
-def input_channel():
+def input_channel() -> BrowserAudioInputChannel:
     return BrowserAudioInputChannel(
         server_url="localhost",
         asr_config={"name": "dummy_asr"},
@@ -33,26 +36,26 @@ def input_channel():
 
 
 @pytest.fixture
-def output_channel(mulaw_format):
+def output_channel(mulaw_format) -> BrowserAudioOutputChannel:
     return BrowserAudioOutputChannel(
-        MagicMock(), MagicMock(), {}, audio_format=mulaw_format
+        MagicMock(), MagicMock(), TTSCache(max_size=2000), audio_format=mulaw_format
     )
 
 
 @pytest.fixture
-def mock_websocket():
+def mock_websocket() -> AsyncMock:
     ws = AsyncMock()
     return ws
 
 
 @pytest.fixture
-def sample_audio_bytes():
+def sample_audio_bytes() -> bytes:
     # 1 second of silence, 16-bit (2 bytes/sample)
     return bytes([0x00] * 16000)
 
 
 def test_channel_bytes_to_rasa_audio_bytes_mulaw_8khz(
-    input_channel, sample_audio_bytes
+    input_channel: BrowserAudioInputChannel, sample_audio_bytes: bytes
 ):
     input_channel.audio_format = MULAW_8KHZ
     rasa_audio = input_channel.channel_bytes_to_rasa_audio_bytes(sample_audio_bytes)
@@ -61,7 +64,9 @@ def test_channel_bytes_to_rasa_audio_bytes_mulaw_8khz(
     assert len(rasa_audio) == len(sample_audio_bytes) // 2
 
 
-def test_channel_bytes_to_rasa_audio_bytes_l16_24khz(input_channel, sample_audio_bytes):
+def test_channel_bytes_to_rasa_audio_bytes_l16_24khz(
+    input_channel: BrowserAudioInputChannel, sample_audio_bytes: bytes
+):
     input_channel.audio_format = L16_24KHZ
     rasa_audio = input_channel.channel_bytes_to_rasa_audio_bytes(sample_audio_bytes)
     assert isinstance(rasa_audio, RasaAudioBytes)
@@ -69,7 +74,9 @@ def test_channel_bytes_to_rasa_audio_bytes_l16_24khz(input_channel, sample_audio
     assert len(rasa_audio) == len(sample_audio_bytes)
 
 
-def test_channel_bytes_to_rasa_audio_bytes_l16_48khz(input_channel, sample_audio_bytes):
+def test_channel_bytes_to_rasa_audio_bytes_l16_48khz(
+    input_channel: BrowserAudioInputChannel, sample_audio_bytes: bytes
+):
     input_channel.audio_format = L16_48KHZ
     rasa_audio = input_channel.channel_bytes_to_rasa_audio_bytes(sample_audio_bytes)
     assert isinstance(rasa_audio, RasaAudioBytes)
@@ -78,14 +85,18 @@ def test_channel_bytes_to_rasa_audio_bytes_l16_48khz(input_channel, sample_audio
 
 
 def test_rasa_audio_bytes_to_channel_bytes(
-    output_channel, sample_audio_bytes, mulaw_format
+    output_channel: BrowserAudioOutputChannel,
+    sample_audio_bytes: bytes,
+    mulaw_format: AudioFormat,
 ):
     rasa_audio = RasaAudioBytes(sample_audio_bytes[:8000], format=mulaw_format)
     channel_bytes = output_channel.rasa_audio_bytes_to_channel_bytes(rasa_audio)
     assert isinstance(channel_bytes, bytes)
 
 
-def test_channel_bytes_to_message(output_channel, sample_audio_bytes):
+def test_channel_bytes_to_message(
+    output_channel: BrowserAudioOutputChannel, sample_audio_bytes: bytes
+):
     msg = output_channel.channel_bytes_to_message(
         "recipient", sample_audio_bytes[:8000]
     )
@@ -95,41 +106,92 @@ def test_channel_bytes_to_message(output_channel, sample_audio_bytes):
     assert decoded == sample_audio_bytes[:8000]
 
 
-def test_map_input_message_audio(input_channel, sample_audio_bytes, mock_websocket):
+async def test_map_input_message_audio(
+    input_channel: BrowserAudioInputChannel,
+    sample_audio_bytes: bytes,
+    mock_websocket: AsyncMock,
+):
     audio_b64 = base64.b64encode(sample_audio_bytes[:8000]).decode("utf-8")
     msg = json.dumps({"audio": audio_b64})
-    action = input_channel.map_input_message(msg, mock_websocket)
+    action = await input_channel.map_input_message(msg, mock_websocket)
     assert isinstance(action, NewAudioAction)
 
 
-def test_map_input_message_marker(input_channel, mock_websocket, setup_call_state):
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_marker_no_hangup_not_last_marker(
+    input_channel: BrowserAudioInputChannel,
+    mock_websocket: AsyncMock,
+):
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    call_state.latest_bot_audio_id = "abc1234"
+    call_state.should_hangup = False
+
+    msg = json.dumps({"marker": "abc123"})
+    action = await input_channel.map_input_message(msg, mock_websocket)
+    assert isinstance(action, ContinueConversationAction)
+    assert call_state.internal_queue.qsize() == 1
+    message = call_state.internal_queue.get_nowait()
+    assert isinstance(message, BotIsSpeaking)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_marker_no_hangup_last_marker(
+    input_channel: BrowserAudioInputChannel,
+    mock_websocket: AsyncMock,
+):
     from rasa.core.channels.voice_stream.call_state import call_state
 
     call_state.latest_bot_audio_id = "abc123"
     call_state.should_hangup = False
+
     msg = json.dumps({"marker": "abc123"})
-    action = input_channel.map_input_message(msg, mock_websocket)
+    action = await input_channel.map_input_message(msg, mock_websocket)
     assert isinstance(action, ContinueConversationAction)
+    assert call_state.internal_queue.qsize() == 1
+    message = call_state.internal_queue.get_nowait()
+    assert isinstance(message, BotStoppedSpeaking)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_marker_with_hangup(
+    input_channel: BrowserAudioInputChannel,
+    mock_websocket: AsyncMock,
+):
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    call_state.latest_bot_audio_id = "abc123"
+
+    msg = json.dumps({"marker": "abc123"})
     call_state.should_hangup = True
-    action = input_channel.map_input_message(msg, mock_websocket)
+    action = await input_channel.map_input_message(msg, mock_websocket)
     assert isinstance(action, EndConversationAction)
+    assert call_state.internal_queue.qsize() == 1
+    message = call_state.internal_queue.get_nowait()
+    assert isinstance(message, BotStoppedSpeaking)
 
 
-def test_map_input_message_unknown(input_channel, mock_websocket):
+async def test_map_input_message_unknown(
+    input_channel: BrowserAudioInputChannel, mock_websocket: AsyncMock
+):
     msg = json.dumps({"foo": "bar"})
-    action = input_channel.map_input_message(msg, mock_websocket)
+    action = await input_channel.map_input_message(msg, mock_websocket)
     assert isinstance(action, ContinueConversationAction)
 
 
 @pytest.mark.asyncio
-async def test_collect_call_parameters(input_channel, mock_websocket):
+async def test_collect_call_parameters(
+    input_channel: BrowserAudioInputChannel, mock_websocket: AsyncMock
+):
     params = await input_channel.collect_call_parameters(mock_websocket)
     assert isinstance(params, CallParameters)
     assert params.call_id.startswith("inspect-")
 
 
 @pytest.mark.asyncio
-async def test_interrupt_playback(input_channel, mock_websocket):
+async def test_interrupt_playback(
+    input_channel: BrowserAudioInputChannel, mock_websocket: AsyncMock
+):
     await input_channel.interrupt_playback(
         mock_websocket, CallParameters("cid", "u", "b")
     )
@@ -137,7 +199,7 @@ async def test_interrupt_playback(input_channel, mock_websocket):
 
 
 @pytest.mark.asyncio
-async def test_blueprint_health_endpoint(input_channel):
+async def test_blueprint_health_endpoint(input_channel: BrowserAudioInputChannel):
     from sanic import Sanic
 
     app = Sanic("test_app")

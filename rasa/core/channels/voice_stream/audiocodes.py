@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import base64
 import hmac
 import json
@@ -20,6 +19,8 @@ from rasa.core.channels.voice_ready.audiocodes import map_call_params
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audio_bytes import L16_24KHZ, RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import (
+    BotIsSpeaking,
+    BotStoppedSpeaking,
     call_state,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
@@ -95,8 +96,7 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
         # however, Audiocodes does not have an event to indicate that.
         # This is an approximation, as the bot will be sent the audio chunks next
         # which are played to the user immediately.
-        call_state.is_bot_speaking = True
-        VoiceInputChannel._cancel_silence_timeout_watcher()
+        await call_state.enqueue_event(BotIsSpeaking())
 
     async def send_intermediate_marker(self, recipient_id: str) -> None:
         """Audiocodes doesn't need intermediate markers, so do nothing."""
@@ -164,7 +164,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
                     "audiocodes_stream.collect_call_parameters.session.initiate",
                     data=data,
                 )
-                self._send_accepted(channel_websocket, data)
+                await self._send_accepted(channel_websocket, data)
             elif data["type"] == "activities":
                 activities = data["activities"]
                 for activity in activities:
@@ -180,12 +180,12 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
                     "audiocodes_stream.collect_call_parameters.connection.validate",
                     event_info="received request to validate integration",
                 )
-                self._send_validated(channel_websocket, data)
+                await self._send_validated(channel_websocket, data)
             else:
                 logger.warning("audiocodes_stream.unknown_message", data=data)
         return None
 
-    def map_input_message(
+    async def map_input_message(
         self,
         message: Any,
         ws: Websocket,
@@ -201,26 +201,26 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
                     return DTMFInputAction(digit=activity["value"])
                 elif activity["name"] == "playFinished":
                     logger.debug("audiocodes_stream.playFinished", data=activity)
-                    call_state.is_bot_speaking = False
+                    await call_state.enqueue_event(BotStoppedSpeaking())
                     if call_state.should_hangup:
                         logger.info("audiocodes_stream.hangup")
-                        self._send_hangup(ws, data)
+                        await self._send_hangup(ws, data)
                         # the conversation should continue until
                         # we receive a end message from audiocodes
                 else:
                     logger.warning("audiocodes_stream.unknown_activity", data=activity)
         elif data["type"] == "userStream.start":
             logger.debug("audiocodes_stream.userStream.start", data=data)
-            self._send_recognition_started(ws, data)
+            await self._send_recognition_started(ws, data)
         elif data["type"] == "userStream.chunk":
             audio_bytes = self.channel_bytes_to_rasa_audio_bytes(data["audioChunk"])
             return NewAudioAction(audio_bytes)
         elif data["type"] == "userStream.stop":
             logger.debug("audiocodes_stream.stop_recognition", data=data)
-            self._send_recognition_ended(ws, data)
+            await self._send_recognition_ended(ws, data)
         elif data["type"] == "session.resume":
             logger.debug("audiocodes_stream.resume", data=data)
-            self._send_accepted(ws, data)
+            await self._send_accepted(ws, data)
         elif data["type"] == "session.end":
             logger.debug("audiocodes_stream.end", data=data)
             return EndConversationAction()
@@ -231,7 +231,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
 
         return ContinueConversationAction()
 
-    def _send_accepted(self, ws: Websocket, data: Dict[Text, Any]) -> None:
+    async def _send_accepted(self, ws: Websocket, data: Dict[Text, Any]) -> None:
         supported_formats = data.get("supportedMediaFormats", [])
         preferred_format = PREFERRED_AUDIO_FORMAT
 
@@ -247,15 +247,19 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
             "type": "session.accepted",
             "mediaFormat": PREFERRED_AUDIO_FORMAT,
         }
-        _schedule_async_task(ws.send(json.dumps(payload)))
+        await ws.send(json.dumps(payload))
 
-    def _send_recognition_started(self, ws: Websocket, data: Dict[Text, Any]) -> None:
+    async def _send_recognition_started(
+        self, ws: Websocket, data: Dict[Text, Any]
+    ) -> None:
         payload = {"type": "userStream.started"}
-        _schedule_async_task(ws.send(json.dumps(payload)))
+        await ws.send(json.dumps(payload))
 
-    def _send_recognition_ended(self, ws: Websocket, data: Dict[Text, Any]) -> None:
+    async def _send_recognition_ended(
+        self, ws: Websocket, data: Dict[Text, Any]
+    ) -> None:
         payload = {"type": "userStream.stopped"}
-        _schedule_async_task(ws.send(json.dumps(payload)))
+        await ws.send(json.dumps(payload))
 
     def _send_hypothesis(self, ws: Websocket, data: Dict[Text, Any]) -> None:
         """TODO: Hypothesis message for partial recognition results.
@@ -271,20 +275,20 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         """
         pass
 
-    def _send_hangup(self, ws: Websocket, data: Dict[Text, Any]) -> None:
+    async def _send_hangup(self, ws: Websocket, data: Dict[Text, Any]) -> None:
         payload = {
             "conversationId": data["conversationId"],
             "type": "activities",
             "activities": [{"type": "event", "name": "hangup"}],
         }
-        _schedule_async_task(ws.send(json.dumps(payload)))
+        await ws.send(json.dumps(payload))
 
-    def _send_validated(self, ws: Websocket, data: Dict[Text, Any]) -> None:
+    async def _send_validated(self, ws: Websocket, data: Dict[Text, Any]) -> None:
         payload = {
             "type": "connection.validated",
             "success": True,
         }
-        _schedule_async_task(ws.send(json.dumps(payload)))
+        await ws.send(json.dumps(payload))
 
     def create_output_channel(
         self, voice_websocket: Websocket, tts_engine: TTSEngine
@@ -343,13 +347,3 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
                 raise
 
         return blueprint
-
-
-def _schedule_async_task(coro: Awaitable[Any]) -> None:
-    """Helper function to schedule a coroutine in the event loop.
-
-    Args:
-        coro: The coroutine to schedule
-    """
-    loop = asyncio.get_running_loop()
-    loop.call_soon_threadsafe(lambda: loop.create_task(coro))

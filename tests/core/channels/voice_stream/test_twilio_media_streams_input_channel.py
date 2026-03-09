@@ -1,13 +1,13 @@
-import asyncio
 import base64
 import json
 import logging
 from dataclasses import asdict
 from http import HTTPStatus
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 from sanic import Request
 from twilio.twiml.voice_response import VoiceResponse
 
@@ -15,7 +15,16 @@ from rasa import server
 from rasa.core.agent import Agent
 from rasa.core.channels import TwilioMediaStreamsInputChannel, UserMessage, channel
 from rasa.core.channels.channel import BASIC_AUTH_SCHEME
+from rasa.core.channels.constants import (
+    USER_CONVERSATION_SESSION_END,
+    USER_CONVERSATION_SESSION_START,
+)
 from rasa.core.channels.voice_ready.utils import CallParameters
+from rasa.core.channels.voice_stream.call_state import (
+    BotIsSpeaking,
+    BotStoppedSpeaking,
+    _call_state,
+)
 from rasa.core.channels.voice_stream.twilio_media_streams import (
     CALL_SID_REQUEST_KEY,
     DIRECTION_REQUEST_KEY,
@@ -24,14 +33,17 @@ from rasa.core.channels.voice_stream.twilio_media_streams import (
     TWILIO_MEDIA_STREAMS_WEBHOOK_PATH,
     TWILIO_MEDIA_STREAMS_WEBSOCKET_PATH,
     TwilioMediaStreamsOutputChannel,
+    map_call_params,
 )
 from rasa.core.channels.voice_stream.util import read_wav_to_rasa_audio_bytes
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     DTMFInputAction,
+    EndConversationAction,
     NewAudioAction,
     tts_engine_from_config,
 )
+from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.exceptions import RasaException
 
 
@@ -41,7 +53,10 @@ def server_url() -> str:
 
 
 @pytest.fixture
-def input_channel(server_url: str) -> TwilioMediaStreamsInputChannel:
+def input_channel(
+    server_url: str, monkeypatch: MonkeyPatch
+) -> TwilioMediaStreamsInputChannel:
+    monkeypatch.setenv(AZURE_SPEECH_API_KEY_ENV_VAR, "test_key")
     asr_config = {"name": "deepgram"}
     tts_config = {"name": "azure"}
     input_channel = TwilioMediaStreamsInputChannel(
@@ -157,7 +172,7 @@ def test_invalid_credentials(
         TwilioMediaStreamsInputChannel.from_credentials(config)
 
 
-def test_map_input_message_dtmf(input_channel: TwilioMediaStreamsInputChannel):
+async def test_map_input_message_dtmf(input_channel: TwilioMediaStreamsInputChannel):
     """Test handling of DTMF input messages."""
     dtmf_message = {
         "event": "dtmf",
@@ -168,7 +183,7 @@ def test_map_input_message_dtmf(input_channel: TwilioMediaStreamsInputChannel):
         },
     }
     websocket = AsyncMock()
-    action = input_channel.map_input_message(json.dumps(dtmf_message), websocket)
+    action = await input_channel.map_input_message(json.dumps(dtmf_message), websocket)
 
     assert isinstance(action, DTMFInputAction)
     assert action.digit == "5"
@@ -178,7 +193,7 @@ def test_map_input_message_dtmf(input_channel: TwilioMediaStreamsInputChannel):
     "dtmf_digit",
     ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "#", "*"],
 )
-def test_map_input_message_dtmf_all_digits(
+async def test_map_input_message_dtmf_all_digits(
     input_channel: TwilioMediaStreamsInputChannel, dtmf_digit: str
 ):
     """Test handling of all valid DTMF digits."""
@@ -191,13 +206,13 @@ def test_map_input_message_dtmf_all_digits(
         },
     }
     websocket = AsyncMock()
-    action = input_channel.map_input_message(json.dumps(dtmf_message), websocket)
+    action = await input_channel.map_input_message(json.dumps(dtmf_message), websocket)
 
     assert isinstance(action, DTMFInputAction)
     assert action.digit == dtmf_digit
 
 
-def test_map_input_message_stop(input_channel: TwilioMediaStreamsInputChannel):
+async def test_map_input_message_stop(input_channel: TwilioMediaStreamsInputChannel):
     """Test handling of stop event."""
     from rasa.core.channels.voice_stream.voice_channel import EndConversationAction
 
@@ -207,21 +222,101 @@ def test_map_input_message_stop(input_channel: TwilioMediaStreamsInputChannel):
         "streamSid": "MZ123",
     }
     websocket = AsyncMock()
-    action = input_channel.map_input_message(json.dumps(stop_message), websocket)
+    action = await input_channel.map_input_message(json.dumps(stop_message), websocket)
 
     assert isinstance(action, EndConversationAction)
 
 
-def test_map_input_message_unknown_event(input_channel: TwilioMediaStreamsInputChannel):
+async def test_map_input_message_unknown_event(
+    input_channel: TwilioMediaStreamsInputChannel,
+):
     """Test handling of unknown event types."""
     unknown_message = {
         "event": "unknown_event",
         "data": "something",
     }
     websocket = AsyncMock()
-    action = input_channel.map_input_message(json.dumps(unknown_message), websocket)
+    action = await input_channel.map_input_message(
+        json.dumps(unknown_message), websocket
+    )
 
     assert isinstance(action, ContinueConversationAction)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_bot_is_speaking(
+    input_channel: TwilioMediaStreamsInputChannel,
+):
+    """Test that a mark event whose name does NOT match latest_bot_audio_id
+    puts BotIsSpeaking on the internal queue and returns ContinueConversationAction."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    call_state.latest_bot_audio_id = "final-mark-id"
+    mark_message = {
+        "event": "mark",
+        "streamSid": "MZ123",
+        "mark": {"name": "intermediate-mark-id"},
+    }
+    websocket = AsyncMock()
+
+    action = await input_channel.map_input_message(json.dumps(mark_message), websocket)
+
+    assert isinstance(action, ContinueConversationAction)
+    queued = call_state.internal_queue.get_nowait()
+    assert isinstance(queued, BotIsSpeaking)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_bot_stopped_speaking(
+    input_channel: TwilioMediaStreamsInputChannel,
+):
+    """Test that a mark event whose name matches latest_bot_audio_id puts
+    BotStoppedSpeaking on the internal queue and returns ContinueConversationAction
+    when should_hangup is False."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    audio_id = "final-mark-id"
+    call_state.latest_bot_audio_id = audio_id
+    call_state.should_hangup = False
+
+    mark_message = {
+        "event": "mark",
+        "streamSid": "MZ123",
+        "mark": {"name": audio_id},
+    }
+    websocket = AsyncMock()
+
+    action = await input_channel.map_input_message(json.dumps(mark_message), websocket)
+
+    assert isinstance(action, ContinueConversationAction)
+    queued = _call_state.get().internal_queue.get_nowait()
+    assert isinstance(queued, BotStoppedSpeaking)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_hangup(
+    input_channel: TwilioMediaStreamsInputChannel,
+):
+    """Test that a mark event matching latest_bot_audio_id with should_hangup=True
+    puts BotStoppedSpeaking on the internal queue and returns EndConversationAction."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    audio_id = "final-mark-id"
+    call_state.latest_bot_audio_id = audio_id
+    call_state.should_hangup = True
+
+    mark_message = {
+        "event": "mark",
+        "streamSid": "MZ123",
+        "mark": {"name": audio_id},
+    }
+    websocket = AsyncMock()
+
+    action = await input_channel.map_input_message(json.dumps(mark_message), websocket)
+
+    assert isinstance(action, EndConversationAction)
+    queued = call_state.internal_queue.get_nowait()
+    assert isinstance(queued, BotStoppedSpeaking)
 
 
 def create_twilio_media_streams_start_message(
@@ -285,33 +380,59 @@ def create_twilio_media_streams_media_messages(
     return messages
 
 
-def create_twilio_media_streams_input_stream(audio_data_path: str) -> AsyncMock:
-    bot_phone = "+49123456789"
-    user_phone = "+49176124567"
-    stream_id = "MZcdce5426d49ccf48c7b0d0ab86a63d52"
-    call_id = "CAa874cb4d1ac15290b51b28c91d467812"
-    direction = "inbound"
-    channel_start_message = create_twilio_media_streams_start_message(
-        bot_phone, user_phone, call_id, stream_id, direction
+@pytest.fixture
+def twilio_start_message() -> str:
+    return json.dumps(
+        {
+            "event": "start",
+            "sequenceNumber": "1",
+            "start": {
+                "accountSid": "ACbc2d4fd426ce33de19d54bdcd6e41186",
+                "streamSid": "MZcdce5426d49ccf48c7b0d0ab86a63d52",
+                "callSid": "CAa874cb4d1ac15290b51b28c91d467812",
+                "tracks": ["inbound"],
+                "mediaFormat": {
+                    "encoding": "audio/x-mulaw",
+                    "sampleRate": 8000,
+                    "channels": 1,
+                },
+                "customParameters": {
+                    "direction": "inbound",
+                    "call_id": "CAa874cb4d1ac15290b51b28c91d467812",
+                    "user_phone": "+49176124567",
+                    "bot_phone": "+49123456789",
+                },
+            },
+            "streamSid": "MZcdce5426d49ccf48c7b0d0ab86a63d52",
+        }
     )
-    media_messages = create_twilio_media_streams_media_messages(
-        audio_data_path + "/01.wav", stream_id
+
+
+@pytest.fixture
+def twilio_call_parameters(twilio_start_message: str) -> CallParameters:
+    return map_call_params(json.loads(twilio_start_message))
+
+
+@pytest.fixture
+def twilio_input_stream(twilio_start_message: str) -> List[Any]:
+    stream_id = "MZcdce5426d49ccf48c7b0d0ab86a63d52"
+
+    media_message = json.dumps(
+        {
+            "event": "media",
+            "sequenceNumber": 1,
+            "media": {
+                "track": "inbound",
+                "chunk": 0,
+                "timestamp": "some timestamp",
+                "payload": base64.b64encode(b"some payload").decode("utf-8"),
+            },
+            "streamSid": stream_id,
+        }
     )
     stop_message = json.dumps({"event": "stop"})
-    websocket = AsyncMock()
 
-    def spaced_return(messages: List[str], timeout: float = 1024 / 8000):
-        async def wrapped(self):
-            for message in messages:
-                yield message
-                await asyncio.sleep(timeout)
-
-        return wrapped
-
-    websocket.__aiter__ = spaced_return(
-        [channel_start_message] + media_messages + [stop_message]
-    )
-    return websocket
+    return [twilio_start_message] + [media_message] + [stop_message]
 
 
 def test_channel_creation(input_channel: TwilioMediaStreamsInputChannel):
@@ -381,21 +502,66 @@ async def test_map_media_input_message(
     media_messages = create_twilio_media_streams_media_messages(
         audio_data_path + "/01.wav", "test_id"
     )
-    action = input_channel.map_input_message(media_messages[0], websocket)
+    action = await input_channel.map_input_message(media_messages[0], websocket)
     assert isinstance(action, NewAudioAction)
 
 
 async def test_run_audio_streaming(
-    input_channel: TwilioMediaStreamsInputChannel, audio_data_path: str
+    input_channel: TwilioMediaStreamsInputChannel,
+    twilio_call_parameters: CallParameters,
+    twilio_input_stream: List[str],
+    monkeypatch: MonkeyPatch,
 ):
-    websocket = create_twilio_media_streams_input_stream(audio_data_path)
+    asr_mock = AsyncMock()
+    asr_mock.send_audio_chunks = AsyncMock()
+    tts_mock = AsyncMock()
+
+    websocket = AsyncMock()
+
+    async def wrapped(messages: List[Any]):
+        for message in messages:
+            yield message
+
+    websocket.__aiter__.side_effect = lambda: wrapped(twilio_input_stream)
+
+    input_channel._get_asr_and_tts_engines = MagicMock(
+        return_value=(asr_mock, tts_mock)
+    )
+
     on_new_message = AsyncMock()
     await input_channel.run_audio_streaming(on_new_message, websocket)
     # Should be called thrice with,
     # - /session_start
-    # - transcribed audio
     # - /session_end
-    assert on_new_message.call_count == 3
+    assert on_new_message.call_count == 2
+
+    # assert that when streaming start we start with /session_start
+    awaited_message1 = on_new_message.await_args_list[0].args[0]
+    assert awaited_message1.text == USER_CONVERSATION_SESSION_START
+    assert awaited_message1.input_channel == input_channel.name()
+    assert awaited_message1.metadata == asdict(twilio_call_parameters)
+    assert awaited_message1.sender_id == input_channel.get_sender_id(
+        twilio_call_parameters
+    )
+
+    # assert that after streaming is finished we end the conversation by processing
+    # /session_end
+    awaited_message2 = on_new_message.await_args_list[1].args[0]
+    assert awaited_message2.text == USER_CONVERSATION_SESSION_END
+    assert awaited_message2.input_channel == input_channel.name()
+    assert awaited_message2.metadata is None
+    assert awaited_message2.sender_id == input_channel.get_sender_id(
+        twilio_call_parameters
+    )
+
+    # Should be called when websocket has audio data
+
+    mapped_message = await input_channel.map_input_message(
+        twilio_input_stream[1], websocket
+    )
+    assert isinstance(mapped_message, NewAudioAction)
+
+    asr_mock.send_audio_chunks.assert_awaited_once_with(mapped_message.audio_bytes)
 
 
 USERNAME = 0

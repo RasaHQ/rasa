@@ -25,7 +25,11 @@ from rasa.core.channels import UserMessage
 from rasa.core.channels.socketio import SocketBlueprint, SocketIOInput
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
-from rasa.core.channels.voice_stream.call_state import call_state
+from rasa.core.channels.voice_stream.call_state import (
+    BotIsSpeaking,
+    BotStoppedSpeaking,
+    call_state,
+)
 from rasa.core.channels.voice_stream.tts import TTSEngine
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
@@ -388,7 +392,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         session_id = channel_websocket.session_id
         return CallParameters(session_id, "local", "local", stream_id=session_id)
 
-    def map_input_message(
+    async def map_input_message(
         self,
         message: Any,
         ws: "Websocket",
@@ -401,14 +405,14 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         elif "marker" in message:
             if message["marker"] == call_state.latest_bot_audio_id:
                 # Just finished streaming last audio bytes
-                call_state.is_bot_speaking = False
+                await call_state.enqueue_event(BotStoppedSpeaking())
                 if call_state.should_hangup:
                     structlogger.debug(
                         "studio_chat.hangup", marker=call_state.latest_bot_audio_id
                     )
                     return EndConversationAction()
             else:
-                call_state.is_bot_speaking = True
+                await call_state.enqueue_event(BotIsSpeaking())
         return ContinueConversationAction()
 
     def create_output_channel(
