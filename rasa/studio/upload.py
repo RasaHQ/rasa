@@ -672,10 +672,10 @@ def remove_quotes(node: Any) -> Any:
         return node
 
 
-def check_if_assistant_already_exists(
+def get_assistant_id_by_name(
     assistant_name: str, endpoint: str, verify: bool = True
-) -> bool:
-    """Checks if the assistant already exists in Studio.
+) -> Optional[str]:
+    """Returns the Studio ID of an assistant, or None if it does not exist.
 
     Args:
         assistant_name: The name of the assistant
@@ -683,13 +683,13 @@ def check_if_assistant_already_exists(
         verify: Whether to verify SSL
 
     Returns:
-        bool: The upload confirmation
+        The assistant ID string, or None if not found.
     """
     graphql_req = build_get_assistant_by_name_request(assistant_name)
 
     structlogger.info(
-        "rasa.studio.upload.assistant_already_exists",
-        event_info="Checking if assistant already exists...",
+        "rasa.studio.upload.get_assistant_id_by_name",
+        event_info="Looking up assistant by name...",
         assistant_name=assistant_name,
     )
 
@@ -708,18 +708,38 @@ def check_if_assistant_already_exists(
         verify=verify,
         timeout=None,
     )
-    response = res.json()["data"]["assistantByName"] or {}
-    if results_logger.response_has_id(response):
-        structlogger.info(
-            "rasa.studio.upload.assistant_already_exists",
-            event_info="Assistant already exists.",
+    res_json = res.json()
+    if results_logger.response_has_errors(res_json):
+        raise RasaException(
+            f"Error while looking up assistant by name in Rasa Studio: "
+            f"{results_logger.extract_error_messages(res_json)}"
         )
-        return True
-
+    assistant = res_json.get("data", {}).get("assistantByName") or {}
+    assistant_id = assistant.get("id")
+    if isinstance(assistant_id, str) and assistant_id:
+        return assistant_id
     structlogger.info(
-        "rasa.studio.upload.assistant_not_found", event_info="Assistant not found."
+        "rasa.studio.upload.get_assistant_id_by_name.assistant_not_found",
+        event_info="Assistant not found.",
+        assistant_name=assistant_name,
     )
-    return False
+    return None
+
+
+def check_if_assistant_already_exists(
+    assistant_name: str, endpoint: str, verify: bool = True
+) -> bool:
+    """Checks if the assistant already exists in Studio.
+
+    Args:
+        assistant_name: The name of the assistant
+        endpoint: The studio endpoint
+        verify: Whether to verify SSL
+
+    Returns:
+        bool: True if the assistant exists, False otherwise.
+    """
+    return get_assistant_id_by_name(assistant_name, endpoint, verify) is not None
 
 
 def build_get_assistant_by_name_request(
@@ -743,6 +763,68 @@ def build_get_assistant_by_name_request(
     return graphql_req
 
 
+def build_delete_assistant_request(assistant_id: str) -> Dict:
+    """Builds the GraphQL request for deleting an assistant by ID.
+
+    Args:
+        assistant_id: The Studio ID of the assistant to delete
+
+    Returns:
+        A dictionary representing the GraphQL request.
+    """
+    return {
+        "query": (
+            "mutation DeleteAssistant($input: DeleteAssistantInput!) {"
+            " deleteAssistant(input: $input) {"
+            " ... on Assistant { id name }"
+            " ... on DeleteAssistant_AssistantNotFound { _ }"
+            " }"
+            "}"
+        ),
+        "variables": {"input": {"assistantId": assistant_id}},
+    }
+
+
+def delete_assistant(
+    assistant_id: str, assistant_name: str, endpoint: str, verify: bool = True
+) -> bool:
+    """Deletes an assistant in Studio by ID.
+
+    Args:
+        assistant_id: The Studio ID of the assistant to delete
+        assistant_name: The name of the assistant
+        endpoint: The studio endpoint
+        verify: Whether to verify SSL
+
+    Returns:
+        True if deletion succeeded, False otherwise.
+    """
+    structlogger.info(
+        "rasa.studio.upload.delete_assistant",
+        event_info="Deleting existing assistant...",
+        assistant_id=assistant_id,
+        assistant_name=assistant_name,
+    )
+    result = make_request(
+        endpoint, build_delete_assistant_request(assistant_id), verify
+    )
+    if not result.was_successful:
+        structlogger.error(
+            "rasa.studio.upload.delete_assistant.failed",
+            event_info="Failed to delete assistant.",
+            assistant_id=assistant_id,
+            assistant_name=assistant_name,
+        )
+        return False
+    structlogger.info(
+        "rasa.studio.upload.delete_assistant.success",
+        event_info="Assistant deleted successfully.",
+        assistant_id=assistant_id,
+        assistant_name=assistant_name,
+    )
+    return True
+
+
 def _handle_existing_assistant(
     assistant_name: str,
     endpoint: str,
@@ -758,12 +840,20 @@ def _handle_existing_assistant(
         args: The command line arguments
 
     Returns:
-        bool: True if the assistant does not exist and can be created,
-              False if the assistant already exists and was linked.
+        bool: True if upload should proceed, False if it was cancelled or handled.
     """
     from rasa.studio.link import handle_link
 
-    if not check_if_assistant_already_exists(assistant_name, endpoint, verify):
+    assistant_id = get_assistant_id_by_name(assistant_name, endpoint, verify)
+
+    if assistant_id is None:
+        return True  # no collision — proceed with upload
+
+    if getattr(args, "dangerously_delete_existing", False):
+        if not delete_assistant(assistant_id, assistant_name, endpoint, verify):
+            rasa.shared.utils.cli.print_error_and_exit(
+                f"Could not delete assistant '{assistant_name}'. Upload cancelled."
+            )
         return True
 
     should_link = questionary.confirm(
@@ -772,7 +862,11 @@ def _handle_existing_assistant(
     ).ask()
 
     if not should_link:
-        rasa.shared.utils.cli.print_error_and_exit("Upload cancelled.")
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Upload cancelled. If you want to replace the existing assistant instead, "
+            "use the --dangerously-delete-existing flag. Use with caution, "
+            "as this will delete the existing assistant and all its data."
+        )
         return False
 
     args.assistant_name = assistant_name

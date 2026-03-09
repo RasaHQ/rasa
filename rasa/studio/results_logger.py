@@ -29,12 +29,7 @@ class StudioResult:
         Factory will evaluate the response and return a StudioResult with the
         appropriate message and success status.
         """
-        if isinstance(response.get("errors"), list):
-            error_details = "; ".join(
-                [error.get("message", "Unknown error") for error in response["errors"]]
-            )
-        else:
-            error_details = "No detailed error information available."
+        error_details = extract_error_messages(response)
 
         structlogger.warn(
             "studio.graphql_error", event_info=error_details, response=response
@@ -76,6 +71,15 @@ def response_has_errors(response: Dict) -> bool:
         and isinstance(response["errors"], list)
         and len(response["errors"]) > 0
     )
+
+
+def extract_error_messages(response: Dict) -> str:
+    """Extracts the error messages from a GraphQL response into a single string."""
+    if isinstance(response.get("errors"), list):
+        return "; ".join(
+            error.get("message", "Unknown error") for error in response["errors"]
+        )
+    return "No detailed error information available."
 
 
 def response_has_id(response: Dict[Text, Any]) -> bool:

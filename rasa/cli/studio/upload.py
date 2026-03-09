@@ -62,3 +62,14 @@ def set_upload_arguments(parser: argparse.ArgumentParser) -> None:
         type=str,
         help="Name of the assistant on Rasa Studio",
     )
+
+    parser.add_argument(
+        "--dangerously-delete-existing",
+        action="store_true",
+        default=False,
+        dest="dangerously_delete_existing",
+        help=(
+            "Delete an existing assistant with the same "
+            "name in Rasa Studio before uploading."
+        ),
+    )

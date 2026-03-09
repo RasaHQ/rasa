@@ -10,6 +10,7 @@ def test_rasa_upload_help(run: Callable[..., RunResult]) -> None:
                 [--endpoints ENDPOINTS]
                 [--entities ENTITIES [ENTITIES ...]]
                 [--intents INTENTS [INTENTS ...]]
+                [--dangerously-delete-existing]
                 """
     lines = help_text.split("\n")
 

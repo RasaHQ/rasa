@@ -11,6 +11,7 @@ import pytest
 import questionary
 from pytest import MonkeyPatch
 
+import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.shared.utils.yaml
 import rasa.studio.upload
@@ -26,8 +27,10 @@ from rasa.studio.prompts import (
 )
 from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 from rasa.studio.upload import (
+    build_delete_assistant_request,
     build_get_assistant_by_name_request,
     check_if_assistant_already_exists,
+    get_assistant_id_by_name,
     make_request,
 )
 from tests.studio.conftest import (
@@ -887,3 +890,253 @@ def test_run_validation_accepts_data_str_or_list(
     # Validator is called as expected
     ValidatorMock.from_importer.assert_called_once_with(importer_instance)
     validator_instance.verify_studio_supported_validations.assert_called_once()
+
+
+def test_get_assistant_id_by_name_returns_id(monkeypatch: MonkeyPatch) -> None:
+    """get_assistant_id_by_name returns the id string when the assistant exists."""
+    monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", MagicMock())
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "data": {"assistantByName": {"id": "asst-123", "name": "mybot", "mode": "CALM"}}
+    }
+
+    with patch("rasa.studio.upload.requests.Session.post", return_value=mock_response):
+        result = get_assistant_id_by_name(
+            "mybot", "https://studio.example.com/graphql", verify=True
+        )
+
+    assert result == "asst-123"
+
+
+def test_get_assistant_id_by_name_returns_none_when_not_found(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """get_assistant_id_by_name returns None when the assistant does not exist."""
+    monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", MagicMock())
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"data": {"assistantByName": {}}}
+
+    with patch("rasa.studio.upload.requests.Session.post", return_value=mock_response):
+        result = get_assistant_id_by_name(
+            "nonexistent", "https://studio.example.com/graphql", verify=True
+        )
+
+    assert result is None
+
+
+def test_get_assistant_id_by_name_raises_on_graphql_error(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """get_assistant_id_by_name raises RasaException when the response has errors."""
+    monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", MagicMock())
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"errors": [{"message": "Unauthorized"}]}
+
+    with patch("rasa.studio.upload.requests.Session.post", return_value=mock_response):
+        with pytest.raises(RasaException, match="Unauthorized"):
+            get_assistant_id_by_name(
+                "mybot", "https://studio.example.com/graphql", verify=True
+            )
+
+
+def test_check_if_assistant_already_exists_still_works(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Regression: check_if_assistant_already_exists wrapper returns True/False correctly."""  # noqa: E501
+    monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", MagicMock())
+
+    mock_response_exists = MagicMock()
+    mock_response_exists.json.return_value = {
+        "data": {"assistantByName": {"id": "asst-123", "name": "mybot", "mode": "CALM"}}
+    }
+    mock_response_not_exists = MagicMock()
+    mock_response_not_exists.json.return_value = {"data": {"assistantByName": {}}}
+
+    with patch("rasa.studio.upload.requests.Session.post") as mock_post:
+        mock_post.return_value = mock_response_exists
+        assert (
+            check_if_assistant_already_exists(
+                "mybot", "https://studio.example.com/graphql"
+            )
+            is True
+        )
+
+        mock_post.return_value = mock_response_not_exists
+        assert (
+            check_if_assistant_already_exists(
+                "mybot", "https://studio.example.com/graphql"
+            )
+            is False
+        )
+
+
+def test_build_delete_assistant_request() -> None:
+    """build_delete_assistant_request produces the correct GraphQL mutation."""
+    result = build_delete_assistant_request("asst-123")
+
+    assert result["variables"]["input"]["assistantId"] == "asst-123"
+    assert "DeleteAssistant" in result["query"]
+    assert "deleteAssistant" in result["query"]
+    assert "DeleteAssistant_AssistantNotFound" in result["query"]
+
+
+def test_dangerously_delete_existing_flag_deletes_then_uploads(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """When flag is set and assistant exists, it is deleted then upload proceeds."""
+    endpoint = "https://studio.example.com/graphql"
+    assistant_name = "mybot"
+    assistant_id = "asst-123"
+
+    monkeypatch.setattr(
+        rasa.studio.upload,
+        "get_assistant_id_by_name",
+        MagicMock(return_value=assistant_id),
+    )
+    mock_delete = MagicMock(return_value=True)
+    monkeypatch.setattr(rasa.studio.upload, "delete_assistant", mock_delete)
+
+    args = argparse.Namespace(dangerously_delete_existing=True)
+    result = rasa.studio.upload._handle_existing_assistant(
+        assistant_name, endpoint, verify=True, args=args
+    )
+
+    assert result is True
+    mock_delete.assert_called_once_with(assistant_id, assistant_name, endpoint, True)
+
+
+def test_dangerously_delete_existing_flag_exits_when_delete_fails(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """When flag is set but delete fails, print_error_and_exit is called."""
+    endpoint = "https://studio.example.com/graphql"
+    assistant_name = "mybot"
+
+    monkeypatch.setattr(
+        rasa.studio.upload,
+        "get_assistant_id_by_name",
+        MagicMock(return_value="asst-123"),
+    )
+    monkeypatch.setattr(
+        rasa.studio.upload, "delete_assistant", MagicMock(return_value=False)
+    )
+    mock_exit = MagicMock()
+    monkeypatch.setattr(rasa.shared.utils.cli, "print_error_and_exit", mock_exit)
+    monkeypatch.setattr(rasa.shared.utils.cli, "print_warning", MagicMock())
+
+    args = argparse.Namespace(dangerously_delete_existing=True)
+    rasa.studio.upload._handle_existing_assistant(
+        assistant_name, endpoint, verify=True, args=args
+    )
+
+    mock_exit.assert_called_once()
+    assert "mybot" in mock_exit.call_args[0][0]
+
+
+def test_dangerously_delete_existing_flag_no_op_when_assistant_does_not_exist(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """When flag is set but assistant does not exist, upload proceeds without calling delete."""  # noqa: E501
+    endpoint = "https://studio.example.com/graphql"
+
+    monkeypatch.setattr(
+        rasa.studio.upload,
+        "get_assistant_id_by_name",
+        MagicMock(return_value=None),
+    )
+    mock_delete = MagicMock()
+    monkeypatch.setattr(rasa.studio.upload, "delete_assistant", mock_delete)
+
+    args = argparse.Namespace(dangerously_delete_existing=True)
+    result = rasa.studio.upload._handle_existing_assistant(
+        "nonexistent", endpoint, verify=True, args=args
+    )
+
+    assert result is True
+    mock_delete.assert_not_called()
+
+
+def test_delete_assistant_success(monkeypatch: MonkeyPatch) -> None:
+    """delete_assistant returns True when make_request succeeds."""
+    mock_result = StudioResult("Upload successful.", True)
+    monkeypatch.setattr(
+        rasa.studio.upload, "make_request", MagicMock(return_value=mock_result)
+    )
+
+    result = rasa.studio.upload.delete_assistant(
+        "asst-123", "mybot", "https://studio.example.com/graphql", verify=True
+    )
+
+    assert result is True
+
+
+def test_delete_assistant_failure(monkeypatch: MonkeyPatch) -> None:
+    """delete_assistant returns False when make_request fails."""
+    mock_result = StudioResult("Some error.", False)
+    monkeypatch.setattr(
+        rasa.studio.upload, "make_request", MagicMock(return_value=mock_result)
+    )
+
+    result = rasa.studio.upload.delete_assistant(
+        "asst-123", "mybot", "https://studio.example.com/graphql", verify=True
+    )
+
+    assert result is False
+
+
+def test_handle_existing_assistant_link_prompt_no(monkeypatch: MonkeyPatch) -> None:
+    """When user declines link prompt, print_error_and_exit is called with overwrite hint."""  # noqa: E501
+    endpoint = "https://studio.example.com/graphql"
+    assistant_name = "mybot"
+
+    monkeypatch.setattr(
+        rasa.studio.upload,
+        "get_assistant_id_by_name",
+        MagicMock(return_value="asst-123"),
+    )
+    monkeypatch.setattr(
+        questionary,
+        "confirm",
+        MagicMock(return_value=MagicMock(ask=MagicMock(return_value=False))),
+    )
+    mock_exit = MagicMock()
+    monkeypatch.setattr(rasa.shared.utils.cli, "print_error_and_exit", mock_exit)
+
+    args = argparse.Namespace(dangerously_delete_existing=False)
+    result = rasa.studio.upload._handle_existing_assistant(
+        assistant_name, endpoint, verify=True, args=args
+    )
+
+    assert result is False
+    mock_exit.assert_called_once()
+    assert "--dangerously-delete-existing" in mock_exit.call_args[0][0]
+
+
+def test_handle_existing_assistant_link_prompt_yes(monkeypatch: MonkeyPatch) -> None:
+    """When user accepts link prompt, handle_link is called and upload halts."""
+    endpoint = "https://studio.example.com/graphql"
+    assistant_name = "mybot"
+
+    monkeypatch.setattr(
+        rasa.studio.upload,
+        "get_assistant_id_by_name",
+        MagicMock(return_value="asst-123"),
+    )
+    monkeypatch.setattr(
+        questionary,
+        "confirm",
+        MagicMock(return_value=MagicMock(ask=MagicMock(return_value=True))),
+    )
+    mock_handle_link = MagicMock()
+    monkeypatch.setattr("rasa.studio.link.handle_link", mock_handle_link)
+
+    args = argparse.Namespace(dangerously_delete_existing=False, assistant_name=None)
+    result = rasa.studio.upload._handle_existing_assistant(
+        assistant_name, endpoint, verify=True, args=args
+    )
+
+    assert result is False
+    mock_handle_link.assert_called_once_with(args)
