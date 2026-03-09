@@ -2806,15 +2806,6 @@ jobs:
         with:
           path: artifacts
 
-      - name: Publish integration test results
-        if: success() || failure()
-        uses: EnricoMi/publish-unit-test-result-action@afb2984f4d89672b2f9d9c13ae23d53779671984 # v2.19.0
-        with:
-          files: "artifacts/**/integration-results-*.xml"
-          check_name: "Integration Test Results"
-          compare_to_earlier_commit: false
-          comment_mode: "failures"
-
   checkout-code-for-sonarscan:
     runs-on: warp-ubuntu-latest-x64-4x
     # Do not run on scheduled-runs, as SonarScan does not run on them

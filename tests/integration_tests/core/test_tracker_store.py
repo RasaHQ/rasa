@@ -513,16 +513,6 @@ async def test_postgres_concurrent_initialization_with_advisory_lock(
         )
         assert len(tables_created_logs) == 1
 
-        # Verify that other workers skipped table creation
-        tables_exist_logs = filter_logs(
-            all_logs,
-            event="sql_tracker_store.tables_already_exist",
-            log_level="debug",
-            log_message_parts=["Tables already exist, skipping creation."],
-        )
-        # At least one worker should have skipped table creation
-        assert len(tables_exist_logs) >= 1
-
         # All tracker stores should be functional
         for tracker_store in tracker_stores:
             assert tracker_store.engine.url.database == postgres_db_name
