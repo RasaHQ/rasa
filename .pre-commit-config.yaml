@@ -2,8 +2,8 @@
 # See https://pre-commit.com/hooks.html for more hooks
 exclude: |
   (?x)^(
-    rasa\/core/channels\/inspector\/dist\/assets\/.+|
-    rasa/core/channels/inspector/dist/index.html
+    rasa\/core/channels\/inspector-nextgen\/dist\/assets\/.+|
+    rasa/core/channels/inspector-nextgen/dist/index.html
   )$
 
 repos:
@@ -65,3 +65,21 @@ repos:
         types: [ python ]
         pass_filenames: false
         stages: [ commit ]
+      - id: inspector-lint
+        name: Inspector Lint
+        entry: bash -c "cd rasa/core/channels/inspector-nextgen && yarn lint"
+        language: system
+        pass_filenames: false
+        files: ^rasa/core/channels/inspector-nextgen/.*\.(ts|tsx|js|jsx)$
+      - id: inspector-test
+        name: Inspector Tests
+        entry: bash -c "cd rasa/core/channels/inspector-nextgen && yarn test"
+        language: system
+        pass_filenames: false
+        files: ^rasa/core/channels/inspector-nextgen/.*\.(ts|tsx|js|jsx)$
+      - id: inspector-build
+        name: Inspector Build
+        entry: bash -c "cd rasa/core/channels/inspector-nextgen && yarn build"
+        language: system
+        pass_filenames: false
+        files: ^rasa/core/channels/inspector-nextgen/.*\.(ts|tsx|js|jsx)$

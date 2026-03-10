@@ -10,7 +10,7 @@ from sanic import Sanic
 from rasa.builder.exceptions import AgentLoadError, TrainingError
 from rasa.builder.models import TrainingInput
 from rasa.core.agent import Agent, load_agent
-from rasa.core.channels.studio_chat import StudioChatInput
+from rasa.core.channels.inspector import InspectorInputChannel
 from rasa.core.config.configuration import Configuration
 from rasa.model import get_latest_model
 from rasa.model_training import TrainingResult, train
@@ -24,7 +24,7 @@ def update_agent(agent: Optional[Agent], app: Sanic) -> None:
     """Update the agent in the request context."""
     app.ctx.agent = agent
     if hasattr(app.ctx, "input_channel") and isinstance(
-        app.ctx.input_channel, StudioChatInput
+        app.ctx.input_channel, InspectorInputChannel
     ):
         app.ctx.input_channel.agent = agent
 

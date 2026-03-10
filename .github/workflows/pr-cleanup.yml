@@ -7,8 +7,8 @@ env:
   AWS_REGION: eu-west-1
 
 permissions:
-  id-token: write # This is required for requesting the JWT
-  contents: read # This is required for actions/checkout
+  id-token: write # Required for GCP workload identity (npm-inspector job)
+  contents: read # Required for actions/checkout
 
 jobs:
   aws-ecr-private:
@@ -110,13 +110,13 @@ jobs:
             echo "Images matching pattern '$SEARCH_STRING':"
             echo "$MATCHING_IMAGES"
             echo ""
-            
+
             echo "6. Would delete the following images (DRY RUN):"
             for IMAGE in $MATCHING_IMAGES
             do
               echo "  - $IMAGE"
             done
-            
+
             echo ""
             echo "7. Deleting images..."
             for IMAGE in $MATCHING_IMAGES
@@ -125,3 +125,66 @@ jobs:
               aws ecr-public batch-delete-image --repository-name $REPO_NAME --region us-east-1 --image-ids imageTag=$IMAGE
             done
           fi
+
+  # Delete Rasa Inspector npm package versions published from this PR (0.0.0-pr-<number>-*) from GCP Artifact Registry.
+  npm-inspector-pr-versions:
+    if: (github.actor != 'dependabot[bot]')
+    name: Delete PR-scoped Rasa Inspector npm versions
+    runs-on: warp-ubuntu-latest-x64-2x
+    env:
+      GCP_PROJECT: rasa-releases
+      GCP_LOCATION: europe-west3
+      NPM_REPOSITORY: rasa-inspector
+      NPM_PACKAGE_ID: "@rasahq/rasa-inspector"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@71f986410dfbc7added4569d411d040a91dc6935 # v2.1.8
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC }}
+          service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a # v2.1.4
+
+      - name: Delete PR-scoped package versions from Artifact Registry
+        env:
+          VERSION_PREFIX: "0.0.0-pr-${{ github.event.pull_request.number }}-"
+        run: |
+          echo "Listing npm package versions with prefix: ${VERSION_PREFIX}"
+          VERSIONS=$(gcloud artifacts versions list \
+            --project="${GCP_PROJECT}" \
+            --repository="${NPM_REPOSITORY}" \
+            --location="${GCP_LOCATION}" \
+            --package="${NPM_PACKAGE_ID}" \
+            --format="value(name)") || { echo "::error::gcloud artifacts versions list failed."; exit 1; }
+          if [ -z "${VERSIONS}" ]; then
+            echo "No package versions found for PR #${{ github.event.pull_request.number }}"
+            exit 0
+          fi
+          # Each line is either a full resource path or a bare version ID; extract version for prefix match, pass through for delete
+          TO_DELETE=$(echo "${VERSIONS}" | while read -r v; do
+            [ -z "$v" ] && continue
+            version_id="${v##*/}"
+            [[ "$version_id" == "${VERSION_PREFIX}"* ]] && echo "$v"
+          done)
+          if [ -z "${TO_DELETE}" ]; then
+            echo "No PR-scoped versions to delete for PR #${{ github.event.pull_request.number }}"
+            exit 0
+          fi
+          echo "Versions to delete:"
+          echo "${TO_DELETE}"
+          echo "${TO_DELETE}" | while read -r full_name; do
+            [ -z "$full_name" ] && continue
+            version_id="${full_name##*/}"
+            echo "Deleting ${NPM_PACKAGE_ID}@${version_id}"
+            gcloud artifacts versions delete "${full_name}" \
+              --project="${GCP_PROJECT}" \
+              --repository="${NPM_REPOSITORY}" \
+              --location="${GCP_LOCATION}" \
+              --package="${NPM_PACKAGE_ID}" \
+              --delete-tags \
+              --quiet
+          done

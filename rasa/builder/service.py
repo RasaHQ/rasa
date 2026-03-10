@@ -102,7 +102,7 @@ from rasa.builder.training_service import (
     update_agent,
 )
 from rasa.core.agent import Agent
-from rasa.core.channels.studio_chat import StudioChatInput
+from rasa.core.channels.inspector import InspectorInputChannel
 from rasa.core.exceptions import AgentNotReady
 from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.flows.yaml_flows_io import get_flows_as_json
@@ -153,7 +153,7 @@ def get_project_generator(request: Request) -> ProjectGenerator:
     return request.app.ctx.project_generator
 
 
-def get_input_channel(request: Request) -> StudioChatInput:
+def get_input_channel(request: Request) -> InspectorInputChannel:
     """Get the input channel from app context."""
     return request.app.ctx.input_channel
 

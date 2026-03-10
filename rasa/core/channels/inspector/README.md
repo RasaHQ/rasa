@@ -1,6 +1,12 @@
-# Rasa Inspector
+# Rasa Inspector (deprecated)
 
 A rapid prototyping tool for enterprise developer personas working in Rasa Pro built with React + Typescript + Vite.
+
+Important: this project is deprecated in favor of the new inspector UI. This app will only be used when running `rasa run --inspect`, and mostly to monitor the external channels. The `rasa inspect` command will serve the new inspector.
+
+Please refrain from making changes to this project unless you know what you're doing.
+
+This README is outdated and might contain incorrect information.
 
 ## How to run
 
@@ -20,7 +26,7 @@ A rapid prototyping tool for enterprise developer personas working in Rasa Pro b
 ### Running the stack
 
 - install a local version of the rasa-pro package
-- run `yarn build:watch` in the `/inspector` folder (this will watch over the React project and re-build it when
+- run `yarn build:watch` in the `rasa/core/channels/inspector` folder (this will watch over the React project and re-build it when
   necessary)
 - run `rasa inspect`
 - head to [http://localhost:5005/webhooks/socketio/inspect.html](http://localhost:5005/webhooks/socketio/inspect.html) -

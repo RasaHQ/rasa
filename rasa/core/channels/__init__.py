@@ -24,7 +24,7 @@ from rasa.core.channels.voice_ready.audiocodes import AudiocodesInput
 from rasa.core.channels.voice_stream.browser_audio import BrowserAudioInputChannel
 from rasa.core.channels.hangouts import HangoutsInput
 from rasa.core.channels.voice_stream.genesys import GenesysInputChannel
-from rasa.core.channels.studio_chat import StudioChatInput
+from rasa.core.channels.inspector import InspectorInputChannel
 from rasa.core.channels.voice_stream.audiocodes import AudiocodesVoiceInputChannel
 from rasa.core.channels.voice_stream.jambonz import JambonzStreamInputChannel
 
@@ -105,7 +105,7 @@ input_channel_classes: List[Type[InputChannel]] = [
         TwilioMediaStreamsInputChannel,
         BrowserAudioInputChannel,
         GenesysInputChannel,
-        StudioChatInput,
+        InspectorInputChannel,
         AudiocodesVoiceInputChannel,
         JambonzStreamInputChannel,
     ]

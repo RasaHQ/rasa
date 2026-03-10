@@ -27,8 +27,8 @@ from rasa.builder.logging_utils import (
 )
 from rasa.builder.service import bp, setup_project_generator
 from rasa.builder.training_service import try_load_existing_agent, update_agent
+from rasa.core.channels.inspector import InspectorInputChannel
 from rasa.core.channels.rest import RestInput
-from rasa.core.channels.studio_chat import StudioChatInput
 from rasa.model_manager.warm_rasa_process import warmup
 from rasa.server import configure_cors
 from rasa.utils.common import configure_logging_and_warnings
@@ -60,12 +60,12 @@ def setup_logging() -> None:
     )
 
 
-def setup_input_channel() -> StudioChatInput:
+def setup_input_channel() -> InspectorInputChannel:
     """Setup the input channel for chat interactions."""
-    studio_chat_credentials = config.get_default_credentials().get(
-        StudioChatInput.name()
+    inspector_credentials = config.get_default_credentials().get(
+        InspectorInputChannel.name()
     )
-    return StudioChatInput.from_credentials(credentials=studio_chat_credentials)
+    return InspectorInputChannel.from_credentials(credentials=inspector_credentials)
 
 
 def setup_middleware(app: Sanic) -> None:

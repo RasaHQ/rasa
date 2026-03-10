@@ -119,6 +119,15 @@ or updating dependencies:
 - apply a strict upper bound to prevent `pip` taking a long time to resolve dependencies when newer versions had been
   released that we haven't caught up to
 
+### Rasa Inspector
+
+The Rasa Inspector is a React + TypeScript + Vite frontend used by `rasa inspect`. It is developed in
+[`rasa/core/channels/inspector-nextgen/`](rasa/core/channels/inspector-nextgen/) and published as an NPM package to Google Artifact Registry.
+
+For local setup, development workflow, **versioning and release** (how tags and branches map to NPM versions and
+dist-tags), see the [Inspector README](rasa/core/channels/inspector-nextgen/README.md). The publish workflow is
+[`.github/workflows/publish-rasa-inspector-npm.yml`](.github/workflows/publish-rasa-inspector-npm.yml).
+
 ### Running the Tests
 
 In order to run the tests, make sure that you have set locally the environment variable `RASA_PRO_LICENSE` to a valid

@@ -1,0 +1,34 @@
+name: Workspace Setup
+description: "Setup node and install all workspace dependencies"
+inputs:
+  FONTAWESOME_NPM_AUTH_TOKEN:
+    description: "Font Awesome NPM auth token"
+    required: true
+  WORKING_DIRECTORY:
+    description: "Directory to run `yarn install` in"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 #v4.4.0
+      with:
+        node-version-file: "${{ inputs.WORKING_DIRECTORY }}/.nvmrc"
+
+    - name: Cache node modules
+      uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+      id: yarn-cache
+      with:
+        path: "${{ inputs.WORKING_DIRECTORY }}/node_modules"
+        key: ${{ runner.os }}-node-${{ hashFiles(format('{0}/.nvmrc', inputs.WORKING_DIRECTORY)) }}-modules-${{ hashFiles(format('{0}/yarn.lock', inputs.WORKING_DIRECTORY)) }}
+
+    - name: Install all workspace dependencies
+      shell: bash
+      if: steps.yarn-cache.outputs.cache-hit != 'true'
+      env:
+        FONTAWESOME_NPM_AUTH_TOKEN: ${{ inputs.FONTAWESOME_NPM_AUTH_TOKEN }}
+      working-directory: ${{ inputs.WORKING_DIRECTORY }}
+      run: |
+        npm config set "@fortawesome:registry" https://npm.fontawesome.com/
+        npm config set "//npm.fontawesome.com/:_authToken" ${FONTAWESOME_NPM_AUTH_TOKEN}
+        yarn install --frozen-lockfile

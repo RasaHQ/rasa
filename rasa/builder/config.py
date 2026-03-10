@@ -178,7 +178,7 @@ MCP_SERVER_STARTUP_TIMEOUT = int(os.getenv("MCP_SERVER_STARTUP_TIMEOUT", "30"))
 def get_default_credentials() -> Dict[str, Any]:
     """Get default credentials configuration."""
     default_credentials_yaml = """
-    studio_chat:
+    inspector:
       user_message_evt: "user_message"
       bot_message_evt: "bot_message"
       session_persistence: true

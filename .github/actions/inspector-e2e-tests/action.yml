@@ -1,0 +1,141 @@
+name: Run Inspector E2E Tests
+description: "Install Rasa with channels, train a minimal model, start Rasa with inspector, run Playwright e2e tests in Docker"
+inputs:
+  RASA_PRO_LICENSE:
+    description: "Rasa Pro license key for training"
+    required: true
+  OPENAI_API_KEY:
+    description: "OpenAI API key for training"
+    required: true
+  PROJECT_TEMPLATE:
+    description: "Project template to use for the tests"
+    required: true
+    default: finance
+  DD_API_KEY:
+    description: "Datadog API key for test visibility"
+    required: true
+  DD_SITE:
+    description: "Datadog site (e.g., datadoghq.com, datadoghq.eu)"
+    required: false
+    default: "datadoghq.eu"
+  DD_ENV:
+    description: "Datadog environment for test visibility"
+    required: false
+    default: ""
+  DD_SERVICE:
+    description: "Datadog service name for test visibility"
+    required: false
+    default: "inspector-e2e"
+  AWS_ASSUME_ROLE:
+    description: "AWS IAM role ARN to assume for S3 report upload"
+    required: true
+  PR_COMMENT_HEADER:
+    description: "Header identifier for the sticky PR comment"
+    required: false
+    default: "inspector-e2e-reports"
+  PR_COMMENT_TITLE:
+    description: "Title for the PR comment"
+    required: false
+    default: "Inspector E2E Test Report"
+
+outputs:
+  REPORT_URL:
+    description: "URL to view the uploaded Playwright test report"
+    value: ${{ steps.upload-reports.outputs.REPORT_URL }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Activate virtualenv
+      shell: bash
+      run: |
+        . .venv/bin/activate
+        echo PATH=$PATH >> $GITHUB_ENV
+
+    - name: Train minimal model
+      shell: bash
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.RASA_PRO_LICENSE }}
+        OPENAI_API_KEY: ${{ inputs.OPENAI_API_KEY }}
+      run: |
+        rasa train
+      working-directory: rasa/cli/project_templates/${{ inputs.PROJECT_TEMPLATE }}
+
+    - name: Start Rasa with inspector
+      shell: bash
+      env:
+        BROWSER: echo
+        RASA_PRO_LICENSE: ${{ inputs.RASA_PRO_LICENSE }}
+        OPENAI_API_KEY: ${{ inputs.OPENAI_API_KEY }}
+      run: |
+        rasa inspect --nextgen --port 5005 2>&1 | tee rasa-inspector.log &
+      working-directory: rasa/cli/project_templates/${{ inputs.PROJECT_TEMPLATE }}
+
+    - name: Get Playwright version
+      id: playwright-version
+      shell: bash
+      run: |
+        PLAYWRIGHT_VERSION=$(node -p "require('./package.json').devDependencies['@playwright/test'].replace(/^[\^~]/, '')")
+        echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
+      working-directory: rasa/core/channels/inspector-nextgen/e2e
+
+    - name: Configure Datadog Test Optimization
+      uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+      with:
+        languages: js
+        api_key: ${{ inputs.DD_API_KEY }}
+        site: ${{ inputs.DD_SITE }}
+
+    - name: Run Playwright tests in Docker
+      id: playwright
+      shell: bash
+      env:
+        BASE_URL: http://localhost:5005
+        CI: true
+        PLAYWRIGHT_VERSION: ${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}
+        DD_API_KEY: ${{ inputs.DD_API_KEY }}
+        DD_SITE: ${{ inputs.DD_SITE }}
+        DD_ENV: ${{ inputs.DD_ENV }}
+        DD_SERVICE: ${{ inputs.DD_SERVICE }}
+      run: |
+        DOCKER_ENV_ARGS=(
+          -e "BASE_URL=$BASE_URL"
+          -e "CI=$CI"
+          -e "DD_API_KEY=$DD_API_KEY"
+          -e "DD_SITE=$DD_SITE"
+          -e "DD_ENV=$DD_ENV"
+          -e "DD_SERVICE=$DD_SERVICE"
+          -e "DD_CIVISIBILITY_AGENTLESS_ENABLED=true"
+          -e "NODE_OPTIONS=-r ../node_modules/dd-trace/ci/init"
+        )
+        docker run --rm \
+          --ipc=host \
+          --network host \
+          -v "$(pwd)":/workspace \
+          -w /workspace/rasa/core/channels/inspector-nextgen/e2e \
+          "${DOCKER_ENV_ARGS[@]}" \
+          mcr.microsoft.com/playwright:v$PLAYWRIGHT_VERSION-noble \
+          bash -c "
+            set -e
+            git config --global --add safe.directory /workspace
+            npx playwright test --retries 1 --workers 2
+          "
+
+    - name: Upload Playwright report
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+      with:
+        name: inspector-e2e-report
+        path: rasa/core/channels/inspector-nextgen/e2e/playwright-report
+        if-no-files-found: ignore
+
+    - name: Upload reports to S3 and comment on PR
+      id: upload-reports
+      if: always()
+      uses: ./.github/actions/upload-reports-to-s3
+      with:
+        AWS_ASSUME_ROLE: ${{ inputs.AWS_ASSUME_ROLE }}
+        REPORTS_DIR: rasa/core/channels/inspector-nextgen/e2e/playwright-report
+        PR_COMMENT_HEADER: ${{ inputs.PR_COMMENT_HEADER }}
+        PR_COMMENT_TITLE: ${{ inputs.PR_COMMENT_TITLE }}
+        PUSH_COMMENT: ${{ steps.playwright.outcome == 'failure' }}

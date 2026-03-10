@@ -78,17 +78,29 @@ pii-management:
   - tests_deployment/integration_tests_pii_management_in_calm/**
   - tests/integration_tests/privacy/**
 
+inspector-files:
+  - rasa/core/channels/inspector-nextgen/**
+  - rasa/core/channels/inspector/**
+  - rasa/core/channels/development_inspector.py
+  - rasa/core/channels/inspector.py
+  - rasa/cli/inspect.py
+  - rasa/core/run.py
+  - rasa/server.py
+  - tests/core/channels/test_development_inspector.py
+  - .github/actions/inspector-e2e-tests/**
+  - .github/actions/setup-node/**
+
 voice-files:
   - rasa/core/channels/voice_ready/**
   - rasa/core/channels/voice_stream/**
   - rasa/core/channels/channel.py
   - rasa/core/channels/socketio.py
-  - rasa/core/channels/studio_chat.py
+  - rasa/core/channels/inspector.py
   - tests/core/channels/voice_ready/**
   - tests/core/channels/voice_stream/**
   - tests/core/test_channels.py
   - tests/core/channels/test_socketio.py
-  - tests/core/channels/test_studio_chat.py
+  - tests/core/channels/test_inspector.py
   - tests/integration_tests/core/channels/test_voice_primitives.py
   - tests/integration_tests/core/channels/test_websocket_channel.py
   - tests/integration_tests/core/channels/utils/replay_common.py

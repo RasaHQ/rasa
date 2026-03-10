@@ -5,7 +5,7 @@ import pytest
 import rasa.core.run
 from rasa.core.agent import Agent
 from rasa.core.channels.development_inspector import (
-    INSPECT_TEMPLATE_PATH,
+    INSPECT_LEGACY_TEMPLATE_PATH,
     DevelopmentInspectProxy,
 )
 from rasa.core.channels.rest import RestInput
@@ -26,7 +26,7 @@ ABSOLUTE_INSPECT_FOLDER_PATH = (
     / "rasa"
     / "core"
     / "channels"
-    / INSPECT_TEMPLATE_PATH
+    / INSPECT_LEGACY_TEMPLATE_PATH
 )
 
 ABSOLUTE_INSPECT_TEMPLATE_PATH = ABSOLUTE_INSPECT_FOLDER_PATH / "index.html"

@@ -4,7 +4,7 @@
 recipe: default.v1
 language: en
 
-# The agent project unique identifier  
+# The agent project unique identifier
 # This default value must be replaced with a unique agent name within your deployment
 assistant_id: placeholder_default
 

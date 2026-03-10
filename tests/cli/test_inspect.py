@@ -71,6 +71,7 @@ def test_inspect_invokes_cli_run_with_local_model(
     # Assert that the arguments are correctly passed to the `rasa run` command
     assert args.model == f"{trained_simple_project}/models"
     assert args.endpoints == f"{trained_simple_project}/endpoints.yml"
+    assert args.connector == "socketio"
 
     mock_rasa_run.assert_called_once_with(**vars(args))
 
@@ -107,4 +108,27 @@ def test_cli_run_with_skip_yaml_validation(
     assert args.skip_yaml_validation == ["domain"]
     assert not Domain.validate_yaml
 
+    mock_rasa_run.assert_called_once_with(**vars(args))
+
+
+def test_inspect_nextgen_sets_inspector_connector(
+    inspect_parser: argparse.ArgumentParser,
+    mock_rasa_run: MagicMock,
+    trained_simple_project: Path,
+) -> None:
+    """Tests whether `rasa inspect --nextgen` uses nextgen inspector channel."""
+    args = inspect_parser.parse_args(
+        [
+            "inspect",
+            "--nextgen",
+            "--endpoints",
+            f"{trained_simple_project}/endpoints.yml",
+            "--model",
+            f"{trained_simple_project}/models",
+        ]
+    )
+
+    inspect(args)
+
+    assert args.connector == "rasa.core.channels.inspector.InspectorInputChannel"
     mock_rasa_run.assert_called_once_with(**vars(args))

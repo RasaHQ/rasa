@@ -69,7 +69,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.events import Event
-from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
+from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, get_flows_as_json
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
@@ -1586,6 +1586,17 @@ def create_app(
         processor = app.ctx.agent.processor
         flows = await processor.get_flows()
         return response.json(flows.as_json_list())
+
+    @app.get("/data")
+    @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
+    async def get_data(request: Request) -> HTTPResponse:
+        """Return combined domain and flows as JSON."""
+        domain = app.ctx.agent.domain.as_dict()
+        processor = app.ctx.agent.processor
+        flows = await processor.get_flows()
+        flows_list = get_flows_as_json(flows)
+        return response.json({"domain": domain, "flows": flows_list})
 
     @app.get("/sub-agents")
     @requires_auth(app, auth_token)

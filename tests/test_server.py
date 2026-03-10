@@ -1810,6 +1810,7 @@ def test_list_routes(empty_agent: Agent):
         "unload_model",
         "get_domain",
         "get_flows",
+        "get_data",
         "get_sub_agents",
         "get_trackers_by_user_id",
     }
@@ -3013,6 +3014,52 @@ def test_retrieve_flows_with_invalid_authentication(
     # Message assertion fails as actual message is just "User is not authenticated."
     # assert jsonResponse["message"] == "User is not authenticated to access resource."
     assert "User is not authenticated. " in jsonResponse["message"]
+    assert jsonResponse["code"] == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Does not run on windows")
+def test_retrieve_bot_data(start_server, server_host, server_port, domain_path):
+    response = requests.get(
+        f"http://{server_host}:{server_port}/data",
+        params={"token": "rasa"},
+    )
+    assert response.status_code == HTTPStatus.OK
+    data = response.json()
+    flows = data.get("flows").values()
+    assert flows
+    required_fields = {"description", "steps", "file_path"}
+    assert all(required_fields.issubset(flow.keys()) for flow in flows)
+    step_types = {"action", "collect", "link", "call", "set_slots", "noop"}
+    steps = []
+    for flow in flows:
+        steps.extend(flow["steps"])
+    assert all(any(key in step_types for key in step.keys()) for step in steps)
+
+    domain = data.get("domain")
+    assert domain
+    original_domain_dict = Domain.load(domain_path).as_dict()
+    for key in original_domain_dict.keys():
+        assert key in domain
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Does not run on windows")
+def test_retrieve_bot_data_with_invalid_authentication(
+    start_server,
+    server_host,
+    server_port,
+):
+    response = requests.get(
+        f"http://{server_host}:{server_port}/data",
+        params={"token": "invalid"},
+    )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+    jsonResponse = response.json()
+    assert jsonResponse["version"]
+    assert jsonResponse["status"] == "failure"
+    assert jsonResponse["reason"] == "NotAuthenticated"
+    # Message assertion fails as actual message is just "User is not authenticated."
+    # assert jsonResponse["message"] == "User is not authenticated to access resource."
+    assert "User is not authenticated." in jsonResponse["message"]
     assert jsonResponse["code"] == HTTPStatus.UNAUTHORIZED
 
 

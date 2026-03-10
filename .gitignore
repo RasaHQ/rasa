@@ -19,6 +19,7 @@ venv
 dist/
 !rasa/core/channels/inspector/
 !rasa/core/channels/inspector/dist/
+!rasa/core/channels/inspector-nextgen/dist/
 pip-wheel-metadata
 server/
 scala/
@@ -115,6 +116,7 @@ file_ids.json
 rasa_docs_md/**
 anonymization_db
 deletion_db
+**/.npmrc
 scripts/use-venv.sh
 
 # Snyk Security Extension - AI Rules (auto-generated)

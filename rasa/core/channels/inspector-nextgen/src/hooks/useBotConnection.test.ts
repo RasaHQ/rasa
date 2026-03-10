@@ -1,0 +1,328 @@
+import { renderHook, act } from "@testing-library/react";
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  afterEach,
+  type MockedFunction,
+} from "vitest";
+import { useBotConnection } from "./useBotConnection";
+import { useParams } from "react-router-dom";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { REACT_APP_SESSION_HISTORY_KEY } from "../constants";
+import { SocketTimeoutError } from "../errors";
+
+vi.mock("react-router-dom", () => ({
+  useParams: vi.fn(),
+}));
+
+vi.mock("../hooks/useLocalStorage", () => ({
+  useLocalStorage: vi.fn(),
+}));
+
+const mockCreateAudioQueue = vi.fn(() => ({ buffer: [], socket: {} }));
+const mockSetupAudioPlayback = vi.fn().mockResolvedValue(undefined);
+const mockStopAudioPlayback = vi.fn().mockResolvedValue(undefined);
+const mockStreamMicrophoneToServer = vi.fn().mockResolvedValue(undefined);
+const mockStopMicrophoneStream = vi.fn().mockResolvedValue(undefined);
+const mockAddDataToAudioQueue = vi.fn(() => vi.fn());
+
+vi.mock("../utils/voice/audiostream", () => ({
+  createAudioQueue: () => mockCreateAudioQueue(),
+  setupAudioPlayback: (): Promise<void> =>
+    mockSetupAudioPlayback() as Promise<void>,
+  stopAudioPlayback: (): Promise<void> =>
+    mockStopAudioPlayback() as Promise<void>,
+  streamMicrophoneToServer: (): Promise<void> =>
+    mockStreamMicrophoneToServer() as Promise<void>,
+  stopMicrophoneStream: (): Promise<void> =>
+    mockStopMicrophoneStream() as Promise<void>,
+  addDataToAudioQueue: (): ReturnType<typeof mockAddDataToAudioQueue> =>
+    mockAddDataToAudioQueue(),
+}));
+
+const mockIo = vi.fn();
+vi.mock("socket.io-client", () => ({
+  io: (url: string): ReturnType<typeof mockIo> => mockIo(url),
+}));
+
+vi.mock("../stores/copilot/actions", () => ({
+  setSessionId: vi.fn(),
+}));
+
+vi.mock("../stores/project/actions", () => ({
+  setProjectInactive: vi.fn(),
+}));
+
+const mockLogError = vi.fn();
+const mockTrack = vi.fn();
+
+vi.mock("../InspectorContext", () => ({
+  useInspectorContext: () => ({
+    logError: mockLogError,
+    track: mockTrack,
+  }),
+}));
+
+type MockedUseParams = MockedFunction<typeof useParams>;
+type MockedUseLocalStorage = MockedFunction<typeof useLocalStorage>;
+
+type SocketHandlers = Record<string, () => void>;
+type MockSocket = {
+  emit: ReturnType<typeof vi.fn>;
+  handlers: SocketHandlers;
+  on: (event: string, cb: () => void) => void;
+  disconnect: ReturnType<typeof vi.fn>;
+  removeAllListeners: ReturnType<typeof vi.fn>;
+  io: { on: ReturnType<typeof vi.fn>; removeAllListeners: ReturnType<typeof vi.fn> };
+};
+
+describe("useBotConnection", () => {
+  let lastSocket: MockSocket;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useParams as MockedUseParams).mockReturnValue({
+      projectId: "test-project",
+    });
+    (useLocalStorage as MockedUseLocalStorage).mockReturnValue([
+      {},
+      vi.fn(),
+      vi.fn(),
+    ]);
+    mockIo.mockImplementation(() => {
+      const socket: MockSocket = {
+        emit: vi.fn(),
+        handlers: {} as SocketHandlers,
+        on: (event: string, cb: () => void) => {
+          socket.handlers[event] = cb;
+        },
+        disconnect: vi.fn(),
+        removeAllListeners: vi.fn(),
+        io: { on: vi.fn(), removeAllListeners: vi.fn() },
+      };
+      lastSocket = socket;
+      return socket;
+    });
+  });
+
+  it("uses correct localStorage key based on projectId from URL", () => {
+    (useLocalStorage as MockedUseLocalStorage).mockReturnValue([
+      {},
+      vi.fn(),
+      vi.fn(),
+    ]);
+
+    renderHook(() => useBotConnection({
+      projectId: "test-project",
+      onSessionStart: vi.fn(),
+      onReconnectError: vi.fn(),
+      useMemoryOnly: false,
+    }));
+
+    expect(useLocalStorage).toHaveBeenCalledWith(
+      `${REACT_APP_SESSION_HISTORY_KEY}_test-project`,
+      {},
+    );
+  });
+
+  it("returns initial state with input disabled and valid sessionId", () => {
+    const { result } = renderHook(() => useBotConnection({
+      projectId: "test-project",
+      onSessionStart: vi.fn(),
+      onReconnectError: vi.fn(),
+      useMemoryOnly: false,
+    }));
+
+    expect(result.current.inputDisabled).toBe(true);
+    expect(result.current.sessionId).toBeDefined();
+    expect(typeof result.current.sessionId).toBe("string");
+    expect(result.current.sessionId.length).toBeGreaterThan(0);
+    expect(result.current.conversationList).toEqual([]);
+    expect(result.current.error).toBeUndefined();
+  });
+
+  it("startNewConversation returns new sessionId and updates sessionId", () => {
+    const { result } = renderHook(() => useBotConnection({
+      projectId: "test-project",
+      onSessionStart: vi.fn(),
+      onReconnectError: vi.fn(),
+      useMemoryOnly: false,
+    }));
+
+    const initialSessionId = result.current.sessionId;
+    let newSessionId: string | undefined;
+
+    act(() => {
+      newSessionId = result.current.startNewConversation();
+    });
+
+    expect(newSessionId).toBeDefined();
+    expect(newSessionId).not.toBe(initialSessionId);
+    expect(result.current.sessionId).toBe(newSessionId);
+  });
+
+  describe("session_start message behavior", () => {
+    it("sends /session_start on session_confirm when in text modality", () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: true,
+        }),
+      );
+
+      act(() => {
+        result.current.setUrl("https://test.example.com");
+      });
+
+      act(() => {
+        lastSocket.handlers["connect"]?.();
+      });
+
+      act(() => {
+        lastSocket.handlers["session_confirm"]?.();
+      });
+
+      expect(lastSocket.emit).toHaveBeenCalledWith("user_message", {
+        message: "/session_start",
+        session_id: result.current.sessionId,
+      });
+    });
+
+    it("does not send /session_start on session_confirm when in voice modality", async () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: true,
+        }),
+      );
+
+      act(() => {
+        result.current.setUrl("https://test.example.com");
+      });
+
+      let voicePromise: Promise<void>;
+      act(() => {
+        voicePromise = result.current.startVoiceStreaming();
+      });
+
+      act(() => {
+        lastSocket.handlers["connect"]?.();
+      });
+
+      act(() => {
+        lastSocket.handlers["session_confirm"]?.();
+      });
+
+      await act(async () => {
+        await voicePromise;
+      });
+
+      const userMessageCalls = lastSocket.emit.mock.calls.filter(
+        (call) => call[0] === "user_message",
+      );
+      expect(userMessageCalls).toHaveLength(0);
+    });
+  });
+
+  describe("voice streaming", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("startVoiceStreaming throws SocketTimeoutError when session_confirm does not arrive within 10s", async () => {
+      vi.useFakeTimers();
+      const { result } = renderHook(() => useBotConnection({
+        projectId: "test-project",
+        onSessionStart: vi.fn(),
+        onReconnectError: vi.fn(),
+        useMemoryOnly: false,
+      }));
+
+      act(() => {
+        result.current.setUrl("https://test.example.com");
+      });
+
+      let voicePromise: Promise<void>;
+      act(() => {
+        voicePromise = result.current.startVoiceStreaming();
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(10000);
+        await expect(voicePromise).rejects.toThrow(SocketTimeoutError);
+      });
+    });
+
+    it("startVoiceStreaming after session_confirm calls setupAudioPlayback and streamMicrophoneToServer", async () => {
+      const { result } = renderHook(() => useBotConnection({
+        projectId: "test-project",
+        onSessionStart: vi.fn(),
+        onReconnectError: vi.fn(),
+        useMemoryOnly: false,
+      }));
+
+      act(() => {
+        result.current.setUrl("https://test.example.com");
+      });
+
+      let voicePromise: Promise<void>;
+      act(() => {
+        voicePromise = result.current.startVoiceStreaming();
+      });
+
+      act(() => {
+        lastSocket.handlers["session_confirm"]?.();
+      });
+
+      await act(async () => {
+        await voicePromise;
+      });
+
+      expect(mockCreateAudioQueue).toHaveBeenCalled();
+      expect(mockSetupAudioPlayback).toHaveBeenCalled();
+      expect(mockStreamMicrophoneToServer).toHaveBeenCalled();
+    });
+
+    it("stopVoiceStreaming calls stopMicrophoneStream, stopAudioPlayback and startNewConversation", async () => {
+      const { result } = renderHook(() => useBotConnection({
+        projectId: "test-project",
+        onSessionStart: vi.fn(),
+        onReconnectError: vi.fn(),
+        useMemoryOnly: false,
+      }));
+
+      act(() => {
+        result.current.setUrl("https://test.example.com");
+      });
+
+      let voicePromise: Promise<void>;
+      act(() => {
+        voicePromise = result.current.startVoiceStreaming();
+      });
+
+      act(() => {
+        lastSocket.handlers["session_confirm"]?.();
+      });
+      await act(async () => {
+        await voicePromise;
+      });
+
+      const sessionIdAfterStart = result.current.sessionId;
+
+      await act(async () => {
+        await result.current.stopVoiceStreaming();
+      });
+
+      expect(mockStopMicrophoneStream).toHaveBeenCalled();
+      expect(mockStopAudioPlayback).toHaveBeenCalled();
+      expect(result.current.sessionId).not.toBe(sessionIdAfterStart);
+    });
+  });
+});

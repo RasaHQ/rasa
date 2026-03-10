@@ -1,0 +1,25 @@
+@font-face {
+  font-family: "Soehne";
+  src:
+    url("./assets/fonts/soehne-buch.woff2") format("woff2"),
+    url("./assets/fonts/soehne-buch.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 450;
+}
+
+@font-face {
+  font-family: "Soehne";
+  src:
+    url("./assets/fonts/soehne-kraftig.woff2") format("woff2"),
+    url("./assets/fonts/soehne-kraftig.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 451 900;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("./assets/fonts/ibm-plex-mono-regular.ttf") format("truetype");
+  font-style: normal;
+  font-display: swap;
+}
+

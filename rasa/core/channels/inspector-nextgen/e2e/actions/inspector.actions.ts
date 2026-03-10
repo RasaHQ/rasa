@@ -1,0 +1,292 @@
+import { expect, type Page } from "@playwright/test";
+
+const INSPECT_PAGE_PATH = "/webhooks/inspector/inspect.html";
+
+const getLocators = (page: Page) => {
+  const inspectorCanvas = page.getByTestId("inspector-canvas");
+  const conversationEvents = page.getByTestId("conversation-events");
+  return {
+    inspectToggle: page.getByTestId("inspect-toggle"),
+    restartConversation: page.getByTestId("restart-conversation"),
+    tryAssistantContainer: page.getByTestId("try-assistant-container"),
+    assistantInput: page.getByTestId("assistant-input"),
+    messageInputField: page.getByPlaceholder("Type your message"),
+    sendMessageButton: page.getByRole("button", { name: "Send message" }),
+    assistantChat: page.getByTestId("assistant-chat"),
+    loadingSpinner: page.getByTestId("loading-spinner"),
+    inspectorCanvas,
+    canvas: page.getByTestId("canvas"),
+    flowNodes: page.getByTestId("node"),
+    flowNode: (nodeName: string) =>
+      inspectorCanvas.getByTestId("node").filter({ hasText: nodeName }),
+    loadingDots: page.getByTestId("loading-dots"),
+    userMessage: page.getByTestId("assistant-user-message"),
+    botMessage: page.getByTestId("assistant-response"),
+    conversationEvents,
+    conversationEvent: (eventName: string) =>
+      conversationEvents.getByText(eventName, { exact: true }),
+    flowName: (flowName: string) => inspectorCanvas.getByText(flowName),
+    eventDetailsClose: page.getByTestId("event-details-close"),
+    eventSlotOrFlowName: page.getByTestId("event-slot-or-flow-name"),
+    eventSlotValue: page.getByTestId("event-slot-value"),
+    actionEventInfo: page.getByTestId("action-event-info"),
+    downloadButton: page.getByTestId("download-button"),
+    downloadE2e: page.getByTestId("download-e2e"),
+    downloadConversation: page.getByTestId("download-conversation"),
+  };
+};
+
+export const locators = getLocators;
+
+export const actions = (page: Page) => {
+  const locators = getLocators(page);
+  return {
+    navigateToInspectPage: async (query?: string) => {
+      const path = query ? `${INSPECT_PAGE_PATH}${query}` : INSPECT_PAGE_PATH;
+      await page.goto(path);
+    },
+    toggleInspect: async () => {
+      await locators.inspectToggle.click();
+    },
+    restartConversation: async () => {
+      await locators.restartConversation.click();
+    },
+    sendMessage: async (message: string) => {
+      await locators.messageInputField.fill(message);
+      await locators.sendMessageButton.click();
+    },
+    sendMessageWithEnter: async (message: string) => {
+      await locators.messageInputField.fill(message);
+      await locators.messageInputField.press("Enter");
+    },
+    getUserMessageCount: async () => {
+      return await locators.userMessage.count();
+    },
+    getBotMessageCount: async () => {
+      return await locators.botMessage.count();
+    },
+    clickConversationEvent: async (eventName: string) => {
+      await locators.conversationEvent(eventName).click();
+    },
+    clickBotMessage: async (index = 0) => {
+      await locators.botMessage.nth(index).click();
+    },
+    clickUserMessage: async (index = 0) => {
+      await locators.userMessage.nth(index).click();
+    },
+    closeEventDetails: async () => {
+      await locators.eventDetailsClose.click();
+    },
+    openDownloadPopover: async () => {
+      await locators.downloadButton.click();
+    },
+    clickDownloadE2e: async () => {
+      await locators.downloadE2e.click();
+    },
+    clickDownloadConversation: async () => {
+      await locators.downloadConversation.click();
+    },
+  };
+};
+
+export const assertions = (page: Page) => {
+  const locators = getLocators(page);
+  return {
+    assertInspectPageLoaded: async () => {
+      await expect(
+        locators.inspectToggle,
+        "Inspector UI (inspect toggle) should be visible",
+      ).toBeVisible();
+    },
+    assertHomePage: async () => {
+      await expect(
+        locators.tryAssistantContainer,
+        "Try assistant container should be visible",
+      ).toBeVisible();
+      await expect(
+        locators.assistantInput,
+        "Message input should be visible",
+      ).toBeVisible();
+      await expect(
+        locators.assistantChat,
+        "Assistant chat area should be visible",
+      ).toBeVisible();
+      await expect(
+        locators.loadingSpinner,
+        "Loading spinner should not be visible after load",
+      ).toBeHidden();
+    },
+    assertInspectorCanvasVisible: async () => {
+      await expect(
+        locators.inspectorCanvas,
+        "Inspector canvas should be visible when Inspect is on",
+      ).toBeVisible();
+    },
+    assertInspectorCanvasHidden: async () => {
+      await expect(
+        locators.inspectorCanvas,
+        "Inspector canvas should not be visible when Inspect is off",
+      ).toBeHidden();
+    },
+    assertFlowPanelNoActiveFlow: async () => {
+      await expect(
+        page
+          .getByText("No flow is currently active")
+          .or(page.getByText("Failed to load flows")),
+        "Flow panel should show no active flow placeholder or flow load error",
+      ).toBeVisible();
+    },
+    assertFlowPanelLoading: async () => {
+      await expect(
+        locators.loadingSpinner,
+        "Loading spinner should be visible when loading flows",
+      ).toBeVisible({ timeout: 15000 });
+    },
+    assertInputCleared: async () => {
+      await expect(
+        locators.messageInputField,
+        "Message input should be empty after send",
+      ).toHaveValue("");
+    },
+    assertUserMessageInChat: async (message: string) => {
+      await expect(
+        locators.userMessage.filter({ hasText: message }),
+        "User message should appear in chat",
+      ).toBeVisible();
+    },
+    assertCanvasWithNodesVisible: async () => {
+      await expect(
+        locators.canvas,
+        "Flow canvas should be visible",
+      ).toBeVisible();
+      await expect(
+        locators.flowNodes.first(),
+        "At least one flow node should be visible",
+      ).toBeVisible({ timeout: 10000 });
+    },
+    assertUserMessageCount: async (count: number) => {
+      await expect(
+        locators.userMessage,
+        "User message count should be " + count,
+      ).toHaveCount(count);
+    },
+    assertBotMessageCount: async (count: number) => {
+      await expect(
+        locators.botMessage,
+        "Bot message count should be " + count,
+      ).toHaveCount(count);
+    },
+    assertFlowNodeVisible: async (nodeName: string) => {
+      await expect(
+        locators.flowNode(nodeName),
+        `Flow node "${nodeName}" should be visible`,
+      ).toBeVisible({ timeout: 10000 });
+    },
+    assertConversationEventVisible: async (eventName: string) => {
+      await expect(
+        locators.conversationEvent(eventName),
+        "Conversation event should be visible",
+      ).toBeVisible();
+    },
+    assertActiveFlowName: async (flowName: string) => {
+      await expect(
+        locators.flowName(flowName),
+        "Active flow name should be visible",
+      ).toBeVisible();
+    },
+    assertBotResponse: async (response: string) => {
+      await expect(
+        locators.botMessage.filter({ hasText: response }),
+        "Bot response should be visible",
+      ).toBeVisible();
+    },
+    assertEventDetailsPanelVisible: async (title: string) => {
+      await expect(
+        page.getByRole("heading", { name: title }),
+        `Event details panel with title "${title}" should be visible`,
+      ).toBeVisible();
+    },
+    assertEventDetailsPanelHidden: async () => {
+      await expect(
+        locators.eventDetailsClose,
+        "Event details close button should not be visible",
+      ).toBeHidden();
+    },
+    assertEventSlotOrFlowName: async (name: string) => {
+      await expect(
+        locators.eventSlotOrFlowName,
+        `Slot or flow name "${name}" should be visible`,
+      ).toContainText(name);
+    },
+    assertEventSlotValue: async (value: string) => {
+      await expect(
+        locators.eventSlotValue,
+        `Slot value "${value}" should be visible`,
+      ).toContainText(value);
+    },
+    assertActionEventInfo: async () => {
+      await expect(
+        locators.actionEventInfo,
+        "Action event info should be visible",
+      ).toBeVisible();
+    },
+    assertDownloadButtonVisible: async () => {
+      await expect(
+        locators.downloadButton,
+        "Download button should be visible",
+      ).toBeVisible();
+    },
+    assertDownloadButtonDisabled: async () => {
+      await expect(
+        locators.downloadButton,
+        "Download button should be disabled",
+      ).toBeDisabled();
+    },
+    assertDownloadButtonEnabled: async () => {
+      await expect(
+        locators.downloadButton,
+        "Download button should be enabled",
+      ).toBeEnabled();
+    },
+    assertDownloadPopoverVisible: async () => {
+      await expect(
+        locators.downloadE2e,
+        "Download E2E option should be visible",
+      ).toBeVisible();
+      await expect(
+        locators.downloadConversation,
+        "Download Conversation option should be visible",
+      ).toBeVisible();
+    },
+    assertDownloadPopoverHidden: async () => {
+      await expect(
+        locators.downloadE2e,
+        "Download E2E option should not be visible",
+      ).toBeHidden();
+    },
+    assertFlowCanvasReplaced: async () => {
+      await expect(
+        locators.canvas,
+        "Flow canvas should be hidden when event details is shown",
+      ).toBeHidden();
+    },
+    assertFlowCanvasVisible: async () => {
+      await expect(
+        locators.canvas,
+        "Flow canvas should be visible",
+      ).toBeVisible();
+    },
+    assertEventDetailsPanelContainsText: async (text: string) => {
+      await expect(
+        locators.inspectorCanvas,
+        `Event details panel should contain text "${text}"`,
+      ).toContainText(text);
+    },
+    assertEventDetailsAccordion: async (title: string) => {
+      await expect(
+        locators.inspectorCanvas.getByText(title, { exact: true }),
+        `Accordion item "${title}" should be visible`,
+      ).toBeVisible();
+    },
+  };
+};

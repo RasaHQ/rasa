@@ -1,0 +1,150 @@
+# Publish Rasa Inspector NPM package to GCP Artifact Registry.
+# Triggers: push to main/3.x, push of release tags (including prerelease e.g. 3.16.1-a6, 3.16.1-dev.0), and PRs labeled hello-rasa or studio.
+# Versioning: release tag = version as-is (3.16.0 -> latest). Prerelease: npm version = semver (normalized), dist-tag = original tag (PEP 440) so hello can install with raw rasa-pro-version.txt. Python-style tags (3.16.1a6, 3.16.1dev0, 3.16.1.dev20260209) are normalized to semver. Branch/PR = 0.0.0-<tag_version>.
+# Requires: GCP Artifact Registry npm repository rasa-inspector in project rasa-releases, location europe-west3. See https://docs.cloud.google.com/artifact-registry/docs/nodejs/store-nodejs
+
+name: Publish Rasa Inspector to Artifact Registry
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
+  push:
+    branches:
+      - main
+      - "3.*"
+    tags:
+      - "[0-9]*.[0-9]*.[0-9]*"
+
+env:
+  INSPECTOR_DIR: rasa/core/channels/inspector-nextgen
+  GCP_PROJECT: rasa-releases
+  GCP_LOCATION: europe-west3
+  NPM_REPOSITORY: rasa-inspector
+
+jobs:
+  publish-npm:
+    name: Publish Rasa Inspector to Artifact Registry
+    runs-on: warp-ubuntu-latest-x64-2x
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+       (contains(github.event.pull_request.labels.*.name, 'hello-rasa') ||
+        contains(github.event.pull_request.labels.*.name, 'studio')))
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set tag version
+        id: set-tag-version
+        uses: ./.github/actions/set-tag-version
+
+      - name: Set NPM version and dist-tag
+        id: npm-version
+        run: |
+          TAG_VERSION="${{ steps.set-tag-version.outputs.tag_version }}"
+          ORIGINAL_TAG="$TAG_VERSION"
+          # Normalize Python-style (PEP 440) .dev date to semver: 3.16.1.dev20260209 -> 3.16.1-dev.20260209
+          if [[ "$TAG_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)\.dev([0-9]+)$ ]]; then
+            TAG_VERSION="${BASH_REMATCH[1]}-dev.${BASH_REMATCH[2]}"
+          fi
+          # Normalize Python-style (PEP 440) to semver: 3.16.1a6 -> 3.16.1-a6, 3.16.1dev0 -> 3.16.1-dev.0
+          if [[ "$TAG_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)(a|b|rc|dev)([0-9]+)$ ]]; then
+            base="${BASH_REMATCH[1]}"
+            type="${BASH_REMATCH[2]}"
+            num="${BASH_REMATCH[3]}"
+            if [[ "$type" == "dev" ]]; then
+              TAG_VERSION="${base}-dev.${num}"
+            else
+              TAG_VERSION="${base}-${type}${num}"
+            fi
+          fi
+          # Exact release (e.g. 3.16.0) -> latest
+          if [[ "$TAG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "npm_version=${TAG_VERSION}" >> $GITHUB_OUTPUT
+            echo "npm_dist_tag=latest" >> $GITHUB_OUTPUT
+          # Semver prerelease or dev (e.g. 3.16.1-a6, 3.16.1-alpha.6, 3.16.1-dev.0) -> use as-is, dist-tag = original tag (PEP 440) so hello can install with raw rasa-pro-version.txt value
+          elif [[ "$TAG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-.+$ ]]; then
+            echo "npm_version=${TAG_VERSION}" >> $GITHUB_OUTPUT
+            echo "npm_dist_tag=${ORIGINAL_TAG}" >> $GITHUB_OUTPUT
+          else
+            # Branch/main/PR builds: 0.0.0-<tag_version>
+            echo "npm_version=0.0.0-${TAG_VERSION}" >> $GITHUB_OUTPUT
+            if [[ "$TAG_VERSION" == main-* ]]; then
+              echo "npm_dist_tag=main" >> $GITHUB_OUTPUT
+            elif [[ "$TAG_VERSION" == pr-* ]]; then
+              # e.g. pr-4604-06e9329 -> dist-tag pr-4604 so install is @rasahq/rasa-inspector@pr-4604
+              PR_NUM="${TAG_VERSION#pr-}"
+              PR_NUM="${PR_NUM%%-*}"
+              echo "npm_dist_tag=pr-${PR_NUM}" >> $GITHUB_OUTPUT
+            else
+              # Branch like 3.16.x-abc1234 -> dist-tag branch-3.16.x (npm rejects tags that parse as semver ranges, e.g. 3.16.x)
+              BRANCH_PART="${TAG_VERSION%-*}"
+              echo "npm_dist_tag=branch-${BRANCH_PART}" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Set up Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          FONTAWESOME_NPM_AUTH_TOKEN: ${{ secrets.FONTAWESOME_NPM_AUTH_TOKEN }}
+          WORKING_DIRECTORY: ${{ env.INSPECTOR_DIR }}
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@71f986410dfbc7added4569d411d040a91dc6935 # v2.1.8
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC }}
+          service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a # v2.1.4
+
+      - name: Configure .npmrc for Artifact Registry
+        working-directory: ${{ env.INSPECTOR_DIR }}
+        run: |
+          gcloud artifacts print-settings npm \
+            --project=${{ env.GCP_PROJECT }} \
+            --repository=${{ env.NPM_REPOSITORY }} \
+            --location=${{ env.GCP_LOCATION }} \
+            --scope=@rasahq >> .npmrc
+
+      - name: Authenticate npm with Artifact Registry
+        working-directory: ${{ env.INSPECTOR_DIR }}
+        run: npx google-artifactregistry-auth --repo-config=./.npmrc --credential-config=./.npmrc
+
+      - name: Check if version already published
+        id: check-version
+        working-directory: ${{ env.INSPECTOR_DIR }}
+        run: |
+          if npm view @rasahq/rasa-inspector@${{ steps.npm-version.outputs.npm_version }} version 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Version ${{ steps.npm-version.outputs.npm_version }} already published, skipping publish."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Version ${{ steps.npm-version.outputs.npm_version }} not found, will publish."
+          fi
+
+      - name: Override package version
+        if: steps.check-version.outputs.exists != 'true'
+        working-directory: ${{ env.INSPECTOR_DIR }}
+        run: npm version --no-git-tag-version ${{ steps.npm-version.outputs.npm_version }}
+
+      - name: Build
+        if: steps.check-version.outputs.exists != 'true'
+        working-directory: ${{ env.INSPECTOR_DIR }}
+        run: yarn build
+
+      # Yarn requires private for workspaces; npm requires non-private to publish.
+      - name: Allow publish
+        if: steps.check-version.outputs.exists != 'true'
+        working-directory: ${{ env.INSPECTOR_DIR }}
+        run: npm pkg delete private
+
+      - name: Publish to Artifact Registry
+        if: steps.check-version.outputs.exists != 'true'
+        working-directory: ${{ env.INSPECTOR_DIR }}
+        run: npm publish --tag ${{ steps.npm-version.outputs.npm_dist_tag }}

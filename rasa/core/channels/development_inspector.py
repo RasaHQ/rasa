@@ -42,7 +42,8 @@ if TYPE_CHECKING:
 from rasa.hooks import hookimpl
 from rasa.plugin import plugin_manager
 
-INSPECT_TEMPLATE_PATH = "inspector/dist"
+INSPECT_NEXTGEN_TEMPLATE_PATH = "inspector-nextgen/dist"
+INSPECT_LEGACY_TEMPLATE_PATH = "inspector/dist"
 
 structlogger = structlog.get_logger()
 
@@ -137,12 +138,16 @@ class DevelopmentInspectProxy(InputChannel):
     def get_metadata(self, request: Request) -> Optional[Dict[Text, Any]]:
         return self.underlying.get_metadata(request)
 
-    @staticmethod
-    def inspect_html_path() -> Text:
+    def inspect_html_path(self) -> Text:
         """Returns the path to the inspect.html file."""
         import pkg_resources
 
-        return pkg_resources.resource_filename(__name__, INSPECT_TEMPLATE_PATH)
+        if self.underlying.name() == "inspector":
+            path = INSPECT_NEXTGEN_TEMPLATE_PATH
+        else:
+            path = INSPECT_LEGACY_TEMPLATE_PATH
+
+        return pkg_resources.resource_filename(__name__, path)
 
     async def _get_tracker(self, sender_id: Text) -> DialogueStateTracker:
         """Returns the tracker for the given sender ID."""
@@ -203,10 +208,9 @@ class DevelopmentInspectProxy(InputChannel):
         """Proxies the on_new_message call to the underlying channel."""
         await on_new_message(message)
 
-    @classmethod
-    async def serve_inspect_html(cls) -> HTTPResponse:
+    async def serve_inspect_html(self) -> HTTPResponse:
         """Serves the inspect.html file."""
-        return await response.file(cls.inspect_html_path() + "/index.html")
+        return await response.file(self.inspect_html_path() + "/index.html")
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]

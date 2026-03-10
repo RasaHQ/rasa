@@ -296,6 +296,63 @@ def test_response_variation_filter_get_response_id_with_channels() -> None:
     assert response_variation_id == "ID_0"
 
 
+def test_response_variation_filter_get_response_id_with_inspector_channels() -> None:
+    utter_action = "utter_greet"
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id="inspector_channel", evts=[UserUttered("Hello")]
+    )
+
+    domain_yaml = textwrap.dedent(
+        """
+        version: "3.1"
+
+        intents:
+        - greet
+
+        responses:
+          utter_greet:
+            - text: "Default response"
+              id: "ID_default"
+
+            - text: "Voice response"
+              id: "ID_voice"
+              channel: browser_audio
+
+            - text: "Text response"
+              id: "ID_text"
+              channel: custom_text_channel
+
+            - text: "Custom voice response"
+              id: "ID_custom_voice"
+              channel: my_custom_voice
+        """
+    )
+
+    domain = Domain.from_yaml(domain_yaml)
+    response_variation_filter = ResponseVariationFilter(domain.responses)
+
+    response_variation_id = response_variation_filter.get_response_variation_id(
+        utter_action, tracker, output_channel="browser_audio"
+    )
+    assert response_variation_id == "ID_voice"
+
+    response_variation_id = response_variation_filter.get_response_variation_id(
+        utter_action, tracker, output_channel="custom_text_channel"
+    )
+    assert response_variation_id == "ID_text"
+
+    response_variation_id = response_variation_filter.get_response_variation_id(
+        utter_action, tracker, output_channel="my_custom_voice"
+    )
+    assert response_variation_id == "ID_custom_voice"
+
+    response_variation_id = response_variation_filter.get_response_variation_id(
+        utter_action, tracker, output_channel="default"
+    )
+    assert response_variation_id == "ID_default"
+
+
 @pytest.mark.parametrize(
     "initial_value, output_channel, expected_id",
     [

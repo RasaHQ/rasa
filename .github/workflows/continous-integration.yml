@@ -52,7 +52,6 @@ env:
   RASA_PRO_HELM_REPO: oci://europe-west3-docker.pkg.dev/rasa-releases/helm-charts/rasa
   RASA_PRO_HELM_VERSION: 1.2.0
   DEFAULT_PYTHON_VERSION: "3.10"
-  NODE_VERSION_INSPECTOR_BUILD: 24
   SONAR_ORGANIZATION: rasahq
   SONAR_PROJECT_KEY: RasaHQ_rasa-private
   TEMPLATES: "telco finance basic"
@@ -348,6 +347,7 @@ jobs:
     timeout-minutes: 10
     outputs:
       # Unit test related outputs
+      inspector-files: ${{ steps.filter.outputs.inspector-files }}
       voice-files: ${{ steps.filter.outputs.voice-files }}
       dm1-tensorflow-files: ${{ steps.filter.outputs.dm1-tensorflow-files }}
       nlu-files: ${{ steps.filter.outputs.nlu-files }}
@@ -493,8 +493,8 @@ jobs:
           key: rasa-docker-image-${{ needs.compute-docker-image-hash.outputs.hash }}.tar.gz
           path: rasa-docker-image.tar.gz
 
-  check-inspector-build:
-    name: Check Inspector Build
+  check-inspector-build-legacy:
+    name: Check Inspector Build (Legacy)
     if: inputs.pr-author != 'dependabot[bot]'
     runs-on: warp-ubuntu-latest-x64-2x
     timeout-minutes: 15
@@ -510,7 +510,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 #v4.4.0
         with:
-          node-version: ${{ env.NODE_VERSION_INSPECTOR_BUILD }}
+          node-version-file: "rasa/core/channels/inspector/.nvmrc"
 
       - name: Cache node modules
         uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
@@ -542,6 +542,130 @@ jobs:
             echo "Detected changes in the Inspector build output. Please build the Inspector and commit the contents of rasa/core/channels/inspector/dist/ ."
             exit 1
           fi
+
+  check-inspector-build-nextgen:
+    name: Check Inspector Build (Nextgen)
+    if: inputs.pr-author != 'dependabot[bot]'
+    runs-on: warp-ubuntu-latest-x64-2x
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: rasa/core/channels/inspector-nextgen
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          FONTAWESOME_NPM_AUTH_TOKEN: ${{ secrets.FONTAWESOME_NPM_AUTH_TOKEN }}
+          WORKING_DIRECTORY: "rasa/core/channels/inspector-nextgen"
+
+      - name: Build Inspector
+        run: |
+          yarn build
+
+      - name: Store build output
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: inspector-build-nextgen
+          path: rasa/core/channels/inspector-nextgen/dist
+
+      - name: Compare build output
+        run: |
+          if git diff --quiet -- dist; then
+            echo "No changes in the Inspector build output."
+          else
+            echo "Detected changes in the Inspector build output. Please build the Inspector and commit the contents of rasa/core/channels/inspector-nextgen/dist/ ."
+            exit 1
+          fi
+
+  inspector-lint:
+    name: Inspector Linting
+    if: ${{ inputs.full_ci_mode == 'true' || needs.check-code-changes.outputs.inspector-files == 'true' }}
+    needs:
+      - check-code-changes
+    runs-on: warp-ubuntu-latest-x64-2x
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          FONTAWESOME_NPM_AUTH_TOKEN: ${{ secrets.FONTAWESOME_NPM_AUTH_TOKEN }}
+          WORKING_DIRECTORY: "rasa/core/channels/inspector-nextgen"
+
+      - name: Run linting
+        run: yarn lint
+        env:
+          # Prevent ESLint from running out of memory (JavaScript heap OOM in frontend)
+          NODE_OPTIONS: --max-old-space-size=4096
+        working-directory: rasa/core/channels/inspector-nextgen
+
+  inspector-unit-tests:
+    name: Inspector Unit Tests
+    if: ${{ inputs.full_ci_mode == 'true' || needs.check-code-changes.outputs.inspector-files == 'true' }}
+    needs:
+      - check-code-changes
+    runs-on: warp-ubuntu-latest-x64-2x
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          FONTAWESOME_NPM_AUTH_TOKEN: ${{ secrets.FONTAWESOME_NPM_AUTH_TOKEN }}
+          WORKING_DIRECTORY: "rasa/core/channels/inspector-nextgen"
+
+      - name: Run tests
+        run: yarn vitest run --coverage
+        working-directory: rasa/core/channels/inspector-nextgen
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: inspector-coverage-report
+          path: rasa/core/channels/inspector-nextgen/coverage
+
+  inspector-e2e:
+    name: Inspector E2E
+    if: ${{ inputs.full_ci_mode == 'true' || needs.check-code-changes.outputs.inspector-files == 'true' }}
+    needs:
+      - install-and-cache-rasa
+      - check-code-changes
+    runs-on: warp-ubuntu-latest-x64-4x
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          FONTAWESOME_NPM_AUTH_TOKEN: ${{ secrets.FONTAWESOME_NPM_AUTH_TOKEN }}
+          WORKING_DIRECTORY: "rasa/core/channels/inspector-nextgen"
+
+      - name: Prepare the job
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Run Inspector E2E tests
+        uses: ./.github/actions/inspector-e2e-tests
+        with:
+          PROJECT_TEMPLATE: finance
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          AWS_ASSUME_ROLE: ${{ vars.AWS_ASSUME_ROLE_REPORTS }}
 
   tracing-integration-test:
     name: Tracing Integration Tests
@@ -3066,7 +3190,11 @@ jobs:
       - check-code-changes
       - train-templates-dev
       - rasa-private-dev-docker-image
-      - check-inspector-build
+      - check-inspector-build-nextgen
+      - check-inspector-build-legacy
+      - inspector-lint
+      - inspector-unit-tests
+      - inspector-e2e
       - tracing-integration-test
       - metric-integration-test
       - custom-action-integration-tests

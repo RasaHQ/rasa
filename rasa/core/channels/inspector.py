@@ -11,9 +11,11 @@ from typing import (
     Any,
     Awaitable,
     Callable,
+    ClassVar,
     Dict,
     List,
     Optional,
+    Set,
     Text,
     Tuple,
     Union,
@@ -22,7 +24,7 @@ from typing import (
 import structlog
 
 from rasa.core.channels import UserMessage
-from rasa.core.channels.socketio import SocketBlueprint, SocketIOInput
+from rasa.core.channels.socketio import SocketBlueprint, SocketIOInput, SocketIOOutput
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import (
@@ -31,6 +33,7 @@ from rasa.core.channels.voice_stream.call_state import (
     call_state,
 )
 from rasa.core.channels.voice_stream.tts import TTSEngine
+from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     EndConversationAction,
@@ -80,10 +83,10 @@ def does_need_action_prediction(tracker: "DialogueStateTracker") -> bool:
     )
 
 
-class StudioTrackerUpdatePlugin:
+class InspectorTrackerUpdatePlugin:
     """Plugin for publishing tracker updates a socketio channel."""
 
-    def __init__(self, socket_channel: "StudioChatInput") -> None:
+    def __init__(self, socket_channel: "InspectorInputChannel") -> None:
         self.socket_channel = socket_channel
         self.tasks: List[asyncio.Task] = []
 
@@ -127,9 +130,7 @@ class StudioTrackerUpdatePlugin:
 
     def handle_tracker_update(self, tracker: "DialogueStateTracker") -> None:
         """Handles a tracker update when triggered by a hook."""
-        structlogger.info(
-            "studio_chat.after_tracker_update", sender_id=tracker.sender_id
-        )
+        structlogger.info("inspector.after_tracker_update", sender_id=tracker.sender_id)
         # directly create a dump to avoid the tracker getting modified by another
         # function before it gets published (since the publishing is scheduled
         # as an async task)
@@ -146,63 +147,75 @@ class StudioTrackerUpdatePlugin:
         await self._cancel_tasks()
 
 
-class StudioChatInput(SocketIOInput, VoiceInputChannel):
-    """Input channel for the communication between Rasa Studio and Rasa Pro."""
+class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
+    """Input channel for the communication between Inspector and Rasa Pro."""
 
     requires_voice_license = False
 
     @classmethod
     def name(cls) -> Text:
-        return "studio_chat"
+        return "inspector"
+
+    DEFAULT_VOICE_CHANNEL_NAME = "browser_audio"
+    DEFAULT_TEXT_CHANNEL_NAME = "custom_text_channel"
+
+    _SOCKETIO_PARAMS: ClassVar[Set[str]] = {
+        "user_message_evt",
+        "bot_message_evt",
+        "namespace",
+        "session_persistence",
+        "socketio_path",
+        "jwt_key",
+        "jwt_method",
+        "metadata_key",
+        "enable_silence_timeout",
+    }
+
+    _SOCKETIO_DEFAULTS: ClassVar[Dict[str, Any]] = {
+        "user_message_evt": "user_message",
+        "bot_message_evt": "bot_message",
+        "session_persistence": True,
+        "socketio_path": "/socket.io",
+        "jwt_method": "HS256",
+        "metadata_key": "metadata",
+        "enable_silence_timeout": False,
+    }
 
     def __init__(
         self,
-        server_url: str,
-        asr_config: Dict,
-        tts_config: Dict,
-        user_message_evt: Text = "user_uttered",
-        bot_message_evt: Text = "bot_uttered",
-        namespace: Optional[Text] = None,
-        session_persistence: bool = False,
-        socketio_path: Optional[Text] = "/socket.io",
-        jwt_key: Optional[Text] = None,
-        jwt_method: Optional[Text] = "HS256",
-        metadata_key: Optional[Text] = "metadata",
-        enable_silence_timeout: bool = False,
+        server_url: str = "localhost",
+        asr_config: Optional[Dict] = None,
+        tts_config: Optional[Dict] = None,
         interruptions: Optional[Dict[str, Any]] = None,
+        voice_channel: Optional[str] = None,
+        text_channel: Optional[str] = None,
         silence_timeout: Optional[Union[float, int]] = None,
+        **kwargs: Any,
     ) -> None:
-        """Creates a `StudioChatInput` object."""
+        """Creates a `InspectorInputChannel` object."""
         from rasa.core.agent import Agent
 
         self.agent: Optional[Agent] = None
 
-        # Initialize the SocketIO input channel
-        SocketIOInput.__init__(
-            self,
-            user_message_evt=user_message_evt,
-            bot_message_evt=bot_message_evt,
-            namespace=namespace,
-            session_persistence=session_persistence,
-            socketio_path=socketio_path,
-            jwt_key=jwt_key,
-            jwt_method=jwt_method,
-            metadata_key=metadata_key,
-            enable_silence_timeout=enable_silence_timeout,
-        )
+        socketio_kwargs = {
+            k: v for k, v in kwargs.items() if k in self._SOCKETIO_PARAMS
+        }
+        for key, default in self._SOCKETIO_DEFAULTS.items():
+            socketio_kwargs.setdefault(key, default)
 
-        # Initialize the Voice Input Channel
+        SocketIOInput.__init__(self, **socketio_kwargs)
+
         VoiceInputChannel.__init__(
             self,
             server_url=server_url,
-            asr_config=asr_config,
-            tts_config=tts_config,
+            asr_config=asr_config if asr_config is not None else {"name": "deepgram"},
+            tts_config=tts_config if tts_config is not None else {"name": "deepgram"},
             interruptions=interruptions,
         )
 
-        # Dictionaries to manage active connections and background tasks
-        # `active_connections` holds the active voice sessions
-        # `background_tasks` holds the asyncio tasks for voice streaming
+        self.voice_channel_name = voice_channel or self.DEFAULT_VOICE_CHANNEL_NAME
+        self.text_channel_name = text_channel or self.DEFAULT_TEXT_CHANNEL_NAME
+
         self.active_connections: Dict[str, SocketIOVoiceWebsocketAdapter] = {}
         self.background_tasks: Dict[str, asyncio.Task] = {}
         self._turn_start_times: Dict[Text, float] = {}
@@ -213,38 +226,35 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
     @classmethod
     def from_credentials(
         cls, credentials: Optional[Dict[Text, Any]]
-    ) -> "StudioChatInput":
-        """Creates a StudioChatInput channel from credentials."""
-        credentials = credentials or {}
+    ) -> "InspectorInputChannel":
+        """Creates an InspectorInputChannel from credentials configuration."""
+        if not credentials:
+            return cls()
+        new_creds = repack_voice_credentials(credentials)
+        new_creds = {k: v for k, v in new_creds.items() if v is not None}
+        return cls(**new_creds)
 
-        return cls(
-            # Voice specific parameters
-            server_url=credentials.get("server_url", ""),
-            asr_config=credentials.get("asr", {}),
-            tts_config=credentials.get("tts", {}),
-            interruptions=credentials.get("interruptions"),
-            # SocketIO parameters
-            user_message_evt=credentials.get("user_message_evt", "user_uttered"),
-            bot_message_evt=credentials.get("bot_message_evt", "bot_uttered"),
-            namespace=credentials.get("namespace"),
-            session_persistence=credentials.get("session_persistence", False),
-            socketio_path=credentials.get("socketio_path", "/socket.io"),
-            jwt_key=credentials.get("jwt_key"),
-            jwt_method=credentials.get("jwt_method", "HS256"),
-            metadata_key=credentials.get("metadata_key", "metadata"),
-            enable_silence_timeout=credentials.get("enable_silence_timeout", False),
-            silence_timeout=credentials.get("silence_timeout"),
+    def get_output_channel(
+        self,
+    ) -> Optional["InspectorTextOutputChannel"]:
+        if self.sio_server is None:
+            return None
+        return InspectorTextOutputChannel(
+            self,
+            self.sio_server,
+            self.bot_message_evt,
+            channel_name=self.text_channel_name,
         )
 
     async def emit(self, event: str, data: Union[Dict, str], room: str) -> None:
         """Emits an event to the websocket."""
         if not self.sio_server:
-            structlogger.error("studio_chat.emit.sio_not_initialized")
+            structlogger.error("inspector.emit.sio_not_initialized")
             return
         await self.sio_server.emit(event, data, room=room)
 
     def _register_tracker_update_hook(self) -> None:
-        plugin_manager().register(StudioTrackerUpdatePlugin(self))
+        plugin_manager().register(InspectorTrackerUpdatePlugin(self))
 
     async def on_tracker_updated(self, tracker: "DialogueStateTracker") -> None:
         """Triggers a tracker update notification after a change to the tracker."""
@@ -287,13 +297,13 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             await on_new_message(message)
         except Exception as e:
             structlogger.exception(
-                "studio_chat.on_new_message.error",
+                "inspector.on_new_message.error",
                 error=str(e),
                 sender_id=message.sender_id,
             )
 
         if not self.agent or not self.agent.is_ready():
-            structlogger.error("studio_chat.on_message_proxy.agent_not_initialized")
+            structlogger.error("inspector.on_message_proxy.agent_not_initialized")
             await self.emit_error(
                 "The Rasa Pro model could not be loaded. "
                 "Please check the training and deployment logs "
@@ -305,7 +315,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
 
         tracker = await self.agent.tracker_store.retrieve(message.sender_id)
         if tracker is None:
-            structlogger.error("studio_chat.on_message_proxy.tracker_not_found")
+            structlogger.error("inspector.on_message_proxy.tracker_not_found")
             return
 
         await self.on_tracker_updated(tracker)
@@ -325,16 +335,16 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         from rasa.shared.core.trackers import DialogueStateTracker
 
         structlogger.debug(
-            "studio_chat.sio.handle_tracker_update",
+            "inspector.sio.handle_tracker_update",
             sid=sid,
             sender_id=data["sender_id"],
         )
         if self.agent is None:
-            structlogger.error("studio_chat.sio.agent_not_initialized")
+            structlogger.error("inspector.sio.agent_not_initialized")
             return None
 
         if not (domain := self.agent.domain):
-            structlogger.error("studio_chat.sio.domain_not_initialized")
+            structlogger.error("inspector.sio.domain_not_initialized")
             return None
 
         tracker: Optional[DialogueStateTracker] = None
@@ -359,7 +369,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
                     await self.agent.tracker_store.save(tracker)
             except Exception as e:
                 structlogger.error(
-                    "studio_chat.sio.handle_tracker_update.error",
+                    "inspector.sio.handle_tracker_update.error",
                     error=e,
                     sender_id=data["sender_id"],
                 )
@@ -408,7 +418,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
                 await call_state.enqueue_event(BotStoppedSpeaking())
                 if call_state.should_hangup:
                     structlogger.debug(
-                        "studio_chat.hangup", marker=call_state.latest_bot_audio_id
+                        "inspector.hangup", marker=call_state.latest_bot_audio_id
                     )
                     return EndConversationAction()
             else:
@@ -419,18 +429,19 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         self, voice_websocket: "Websocket", tts_engine: TTSEngine
     ) -> VoiceOutputChannel:
         """Create a voice output channel. This is used by VoiceInputChannel."""
-        return StudioVoiceOutputChannel(
+        return InspectorVoiceOutputChannel(
             voice_websocket=voice_websocket,
             tts_engine=tts_engine,
             tts_cache=self.tts_cache,
             audio_format=self.audio_format,
+            channel_name=self.voice_channel_name,
         )
 
     async def interrupt_playback(
         self, ws: Websocket, call_parameters: CallParameters
     ) -> None:
         """Interrupt the current playback of audio."""
-        structlogger.debug("studio_chat.interrupt_playback")
+        structlogger.debug("inspector.interrupt_playback")
         await ws.send(json.dumps({"interruptPlayback": True}))
 
     def _start_voice_session(
@@ -442,13 +453,13 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         """Create SocketIO WebSocket Adaptor & start async task for voice streaming."""
         if sid in self.active_connections:
             structlogger.warning(
-                "studio_chat._start_voice_session.session_already_active",
+                "inspector._start_voice_session.session_already_active",
                 session_id=sid,
             )
             return
 
         structlogger.info(
-            "studio_chat._start_voice_session.starting_session", session_id=sid
+            "inspector._start_voice_session.starting_session", session_id=sid
         )
 
         # Create a websocket adapter for this connection
@@ -478,7 +489,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             await self.run_audio_streaming(on_new_message, ws_adapter)
         except Exception as e:
             structlogger.exception(
-                "studio_voice.voice_streaming.error",
+                "inspector.voice_streaming.error",
                 error=str(e),
                 sid=sid,
             )
@@ -495,7 +506,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
     @hookimpl
     async def after_server_stop(self) -> None:
         """Cleanup background tasks and active connections when the server stops."""
-        structlogger.info("studio_chat.after_server_stop.cleanup")
+        structlogger.info("inspector.after_server_stop.cleanup")
         self.active_connections.clear()
         for task in self.background_tasks.values():
             if not task.done():
@@ -514,7 +525,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         )
 
         if not self.sio_server:
-            structlogger.error("studio_chat.blueprint.sio_not_initialized")
+            structlogger.error("inspector.blueprint.sio_not_initialized")
             return socket_blueprint
 
         @socket_blueprint.listener("after_server_start")  # type: ignore[misc]
@@ -526,7 +537,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
 
         @self.sio_server.on("disconnect", namespace=self.namespace)
         async def disconnect(sid: Text) -> None:
-            structlogger.debug("studio_chat.sio.disconnect", sid=sid)
+            structlogger.debug("inspector.sio.disconnect", sid=sid)
             self._cleanup_tasks_for_sid(sid)
 
         @self.sio_server.on("session_request", namespace=self.namespace)
@@ -536,7 +547,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             Args:
               sid: ID of the session (from SocketIO).
               data:
-                - session_id: Studio Chat channel is used with a Bridge Architecture
+                - session_id: Inspector Voice channel is used with a Bridge Architecture
                   (Model Service's Socket Bridge), so we use session_id to remain
                   consistent across the bridge. Session ID becomes the sender_id
                   for the UserMessage.
@@ -565,7 +576,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
                 await self.handle_user_message(sid, data, on_new_message)
             except Exception as e:
                 structlogger.exception(
-                    "studio_chat.sio.handle_message.error",
+                    "inspector.sio.handle_message.error",
                     error=str(e),
                     sid=sid,
                 )
@@ -578,10 +589,35 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         return socket_blueprint
 
 
-class StudioVoiceOutputChannel(VoiceOutputChannel):
-    @classmethod
-    def name(cls) -> str:
-        return "studio_chat"
+class InspectorTextOutputChannel(SocketIOOutput):
+    def __init__(
+        self,
+        input_channel: "InspectorInputChannel",
+        sio_server: AsyncServer,
+        bot_message_evt: Text,
+        channel_name: str = InspectorInputChannel.DEFAULT_TEXT_CHANNEL_NAME,
+    ) -> None:
+        super().__init__(input_channel, sio_server, bot_message_evt)
+        self._channel_name = channel_name
+
+    def name(self) -> str:  # type: ignore[override]
+        return self._channel_name
+
+
+class InspectorVoiceOutputChannel(VoiceOutputChannel):
+    def __init__(
+        self,
+        voice_websocket: "Websocket",
+        tts_engine: TTSEngine,
+        tts_cache: Any,
+        audio_format: Any,
+        channel_name: str = InspectorInputChannel.DEFAULT_VOICE_CHANNEL_NAME,
+    ) -> None:
+        super().__init__(voice_websocket, tts_engine, tts_cache, audio_format)
+        self._channel_name = channel_name
+
+    def name(self) -> str:  # type: ignore[override]
+        return self._channel_name
 
     def rasa_audio_bytes_to_channel_bytes(
         self, rasa_audio_bytes: RasaAudioBytes

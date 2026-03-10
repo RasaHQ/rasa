@@ -1,0 +1,108 @@
+name: "Upload Reports to S3 and Comment on PR"
+description: "Uploads test reports to S3 and posts a comment on PRs with the report URL"
+
+inputs:
+  AWS_ASSUME_ROLE:
+    description: "AWS IAM role ARN to assume for S3 upload"
+    required: true
+  AWS_REGION:
+    description: "AWS region for S3 bucket"
+    required: false
+    default: "us-east-1"
+  S3_BUCKET:
+    description: "S3 bucket name for storing reports"
+    required: false
+    default: "rasa-playwright-reports-dev"
+  REPORTS_DIR:
+    description: "Local directory containing reports to upload"
+    required: true
+  REPORT_URL_BASE:
+    description: "Base URL for viewing reports (e.g., https://reports.example.com)"
+    required: false
+    default: "https://reports.hello.rasa-dev.io"
+  PR_COMMENT_HEADER:
+    description: "Header identifier for the sticky PR comment"
+    required: false
+    default: "Inspector E2E Test Report"
+  PR_COMMENT_TITLE:
+    description: "Title for the PR comment"
+    required: false
+    default: "Inspector E2E Test Report"
+  PUSH_COMMENT:
+    description: "When true, post the PR comment (e.g. set to steps.<test-step>.outcome == 'failure' to comment only on test failure)."
+    required: false
+    default: "false"
+
+outputs:
+  REPORT_URL:
+    description: "URL to view the uploaded report"
+    value: ${{ steps.upload-reports.outputs.REPORT_URL }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS Credentials for S3 Upload
+      uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df #v4.2.1
+      with:
+        role-to-assume: ${{ inputs.AWS_ASSUME_ROLE }}
+        aws-region: ${{ inputs.AWS_REGION }}
+
+    - name: Sanitize branch name
+      id: sanitize-branch
+      shell: bash
+      env:
+        HEAD_REF: ${{ github.head_ref }}
+        REF_NAME: ${{ github.ref_name }}
+      run: |
+        # Get branch name - use head_ref for PRs, ref_name for branch pushes
+        if [ -n "$HEAD_REF" ]; then
+          BRANCH_NAME="$HEAD_REF"
+        else
+          BRANCH_NAME="$REF_NAME"
+        fi
+        # Sanitize branch name for URL safety:
+        # - Convert to lowercase
+        # - Replace any non-alphanumeric character (except - and _) with a hyphen
+        # - Replace multiple consecutive hyphens with a single hyphen
+        # - Remove leading and trailing hyphens
+        BRANCH_NAME_SANITIZED=$(echo "$BRANCH_NAME" | \
+          tr '[:upper:]' '[:lower:]' | \
+          sed 's/[^a-z0-9_-]/-/g' | \
+          sed 's/-\+/-/g' | \
+          sed 's/^-//;s/-$//')
+        echo "BRANCH_NAME_SANITIZED=${BRANCH_NAME_SANITIZED}" >> $GITHUB_OUTPUT
+
+    - name: Upload reports to S3
+      id: upload-reports
+      shell: bash
+      env:
+        AWS_REGION: ${{ inputs.AWS_REGION }}
+        S3_BUCKET: ${{ inputs.S3_BUCKET }}
+        REPORTS_DIR: ${{ inputs.REPORTS_DIR }}
+        REPORT_URL_BASE: ${{ inputs.REPORT_URL_BASE }}
+        BRANCH_NAME_SANITIZED: ${{ steps.sanitize-branch.outputs.BRANCH_NAME_SANITIZED }}
+        RUN_ID: ${{ github.run_id }}
+      run: |
+        S3_PATH="s3://${S3_BUCKET}/${BRANCH_NAME_SANITIZED}/${RUN_ID}/"
+        REPORT_URL="${REPORT_URL_BASE}/${BRANCH_NAME_SANITIZED}/${RUN_ID}/index.html"
+
+        echo "Uploading reports to ${S3_PATH}"
+        aws s3 sync "${REPORTS_DIR}" "${S3_PATH}" --delete
+
+        echo "REPORT_URL=${REPORT_URL}" >> $GITHUB_OUTPUT
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📊 Test Report URL: ${REPORT_URL}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    - name: Post PR comment with report URL
+      if: github.event_name == 'pull_request' && inputs.PUSH_COMMENT == 'true'
+      uses: marocchino/sticky-pull-request-comment@d2ad0de260ae8b0235ce059e63f2949ba9e05943 #v2.9.3
+      with:
+        header: ${{ inputs.PR_COMMENT_HEADER }}
+        recreate: true
+        message: |
+          ## ${{ inputs.PR_COMMENT_TITLE }}
+
+          View the full test report: [View Report](${{ steps.upload-reports.outputs.REPORT_URL }})
+
+          **Note**: Reports are automatically deleted after 15 days.

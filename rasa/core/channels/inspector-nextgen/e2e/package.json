@@ -1,0 +1,21 @@
+{
+  "name": "inspector-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "e2e": "start-server-and-test '(cd ../../../../cli/project_templates/finance && rasa inspect --nextgen --port 5005 2>&1) | grep --line-buffered -v \"Task was destroyed\" || true' http-get://localhost:5005 e2e:only",
+    "e2e:only": "playwright test --reporter=html --workers=1",
+    "e2e:watch": "playwright test --ui",
+    "e2e:debug": "playwright test --debug --reporter=html --workers=1",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "@types/node": "24.0.10",
+    "@playwright/cli": "0.1.0",
+    "dd-trace": "5.82.0",
+    "start-server-and-test": "2.1.3"
+  }
+}

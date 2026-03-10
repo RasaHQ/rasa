@@ -1,4 +1,5 @@
 import argparse
+import os
 import webbrowser
 from asyncio import AbstractEventLoop
 from pathlib import Path
@@ -45,6 +46,12 @@ def add_subparser(
     inspect_parser.add_argument(
         "--voice", help="Enable voice", action="store_true", default=False
     )
+    inspect_parser.add_argument(
+        "--nextgen",
+        help="Serve the next-gen inspector UI.",
+        action="store_true",
+        default=False,
+    )
 
     add_sub_agents_param(inspect_parser)
 
@@ -58,11 +65,21 @@ def add_subparser(
 async def open_inspector_in_browser(
     server_url: Text,
     voice: bool = False,
+    nextgen: bool = False,
     token: Optional[Text] = None,
 ) -> None:
     """Opens the rasa inspector in the default browser."""
-    channel = "socketio" if not voice else "browser_audio"
-    webbrowser.open(f"{server_url}/webhooks/{channel}/inspect.html?token={token}")
+    dev_port = os.environ.get("RASA_INSPECTOR_DEV_PORT")
+    if dev_port:
+        webbrowser.open(f"http://localhost:{dev_port}")
+    else:
+        if voice:
+            channel = "browser_audio"
+        elif nextgen:
+            channel = "inspector"
+        else:
+            channel = "socketio"
+        webbrowser.open(f"{server_url}/webhooks/{channel}/inspect.html?token={token}")
 
 
 def inspect(args: argparse.Namespace) -> None:
@@ -74,17 +91,28 @@ def inspect(args: argparse.Namespace) -> None:
     async def after_start_hook_open_inspector(_: Sanic, __: AbstractEventLoop) -> None:
         """Hook to open the browser on server start."""
         server_url = constants.DEFAULT_SERVER_FORMAT.format("http", args.port)
-        await open_inspector_in_browser(server_url, args.voice, args.auth_token)
+        await open_inspector_in_browser(
+            server_url, args.voice, args.nextgen, args.auth_token
+        )
 
     # the following arguments are not exposed to the user
     if args.voice:
         args.connector = "browser_audio"
+    elif args.nextgen:
+        args.connector = "rasa.core.channels.inspector.InspectorInputChannel"
     else:
-        args.connector = "rasa.core.channels.socketio.SocketIOInput"
+        args.connector = "socketio"
     args.enable_api = True
     args.inspect = True
     args.credentials = None
     args.server_listeners = [(after_start_hook_open_inspector, "after_server_start")]
+    dev_port = os.environ.get("RASA_INSPECTOR_DEV_PORT")
+    if dev_port:
+        inspector_frontend_url = f"http://localhost:{dev_port}"
+        if args.cors:
+            args.cors.append(inspector_frontend_url)
+        else:
+            args.cors = [inspector_frontend_url]
 
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
