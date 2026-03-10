@@ -779,12 +779,15 @@ class A2AAgent(AgentProtocol):
             }
             parts.append(Part(root=DataPart(data=slots_dict)))
 
+        # Pass through metadata (e.g. auth tokens, user context) to the backend
+        # without processing by the LLM.
         agent_message = Message(
             role=Role.user,
             parts=parts,
             message_id=str(uuid.uuid4()),
             context_id=agent_input.metadata.get(A2A_AGENT_CONTEXT_ID_KEY, None),
             task_id=agent_input.metadata.get(A2A_AGENT_TASK_ID_KEY, None),
+            metadata=agent_input.metadata,
         )
         structlogger.debug(
             "a2a_agent.prepare_message",

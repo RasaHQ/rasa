@@ -3089,3 +3089,29 @@ def test_create_a2a_specific_metadata_removes_stale_when_absent() -> None:
     result = A2AAgent._create_a2a_specific_metadata(base, message=message, task=task)
     assert result[BOT_UTTERANCE_MESSAGE_ID_KEY] == "new"
     assert BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY not in result
+
+
+def test_prepare_message_forwards_metadata_to_message():
+    """Input metadata (e.g. auth tokens, user context) is passed to the Message.
+
+    Backend can use it without the data being in message parts sent to the LLM.
+    """
+    agent_input = AgentInput(
+        id="agent-a",
+        user_message="Hi",
+        slots=[],
+        conversation_history="User: Hi",
+        events=[],
+        metadata={
+            A2A_AGENT_CONTEXT_ID_KEY: "ctx-1",
+            "auth_token": "secret-token",
+            "user_id": "user-42",
+        },
+    )
+    message = A2AAgent._prepare_message(agent_input)
+    assert message.metadata == agent_input.metadata
+    assert message.metadata.get("auth_token") == "secret-token"
+    assert message.metadata.get("user_id") == "user-42"
+    # Metadata is not in parts, so it is not sent to the LLM
+    assert len(message.parts) == 1
+    assert isinstance(message.parts[0].root, TextPart)
