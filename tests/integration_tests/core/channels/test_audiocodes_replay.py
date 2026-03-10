@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.integration_tests.core.channels.websocket_replay import WebSocketReplay
+from tests.integration_tests.core.channels.utils.websocket_replay import WebSocketReplay
 
 
 @pytest.fixture
@@ -34,14 +34,14 @@ def traffic_file() -> str:
 
 @pytest.fixture
 def websocket_timeout() -> int:
-    """Timeout for WebSocket responses"""
-    return int(os.getenv("WEBSOCKET_TIMEOUT", "5"))
+    """Timeout for WebSocket responses (use WEBSOCKET_TIMEOUT to override)."""
+    return int(os.getenv("WEBSOCKET_TIMEOUT", "3"))
 
 
 @pytest.fixture
 def websocket_delay() -> float:
-    """Delay between messages"""
-    return float(os.getenv("WEBSOCKET_DELAY", "1.0"))
+    """Delay between messages (increase via WEBSOCKET_DELAY for debugging)."""
+    return float(os.getenv("WEBSOCKET_DELAY", "0.05"))
 
 
 @pytest.fixture

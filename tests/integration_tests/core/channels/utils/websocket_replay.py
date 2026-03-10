@@ -1,18 +1,32 @@
 """
-Test utility for replaying AudioCodes WebSocket traffic
-WebSocket Traffic Replay Tool
-Replays captured AudioCodes WebSocket traffic for testing Rasa
+Test utility for replaying AudioCodes WebSocket traffic.
+
+Replays captured AudioCodes WebSocket traffic for testing Rasa.
+Supports generate mode to create a minimal traffic file for CI.
 """
 
 import argparse
 import asyncio
 import json
 import logging
+from datetime import datetime, timezone
 
 from aiohttp import ClientSession, WSMsgType
 
+from tests.integration_tests.core.channels.utils.replay_common import (
+    build_websocket_url,
+    is_graceful_connection_error,
+    load_traffic_log,
+    print_session_summary,
+    record_connection_closed_before_send,
+    record_outer_error,
+    record_send_error,
+    record_server_close,
+)
+
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -35,16 +49,9 @@ class WebSocketReplay:
 
     async def replay_websocket_session(self):
         """Replay a complete WebSocket session from captured traffic"""
-        logger.info(f"Loading traffic from {self.log_file}")
-
-        try:
-            with open(self.log_file, "r") as f:
-                traffic_log = json.load(f)
-        except FileNotFoundError:
-            logger.error(f"File not found: {self.log_file}")
-            return
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in log file: {e}")
+        logger.info("Loading traffic from %s", self.log_file)
+        traffic_log = load_traffic_log(self.log_file)
+        if traffic_log is None:
             return
 
         # Filter for WebSocket messages
@@ -87,11 +94,10 @@ class WebSocketReplay:
             for warning in validation_result["warnings"]:
                 logger.warning(f"  - {warning}")
 
-        # Connect to Rasa WebSocket
-        ws_url = self.rasa_url.replace("http://", "ws://").replace("https://", "wss://")
-        ws_url = f"{ws_url}/webhooks/audiocodes_stream/websocket"
-
-        logger.info(f"Connecting to Rasa at {ws_url}")
+        ws_url = build_websocket_url(
+            self.rasa_url, "webhooks/audiocodes_stream/websocket"
+        )
+        logger.info("Connecting to Rasa at %s", ws_url)
 
         async with ClientSession() as session:
             try:
@@ -107,80 +113,52 @@ class WebSocketReplay:
                         logger.debug(f"[{i}/{len(incoming)}] Sending: {message_type}")
                         logger.debug(f"Data: {json.dumps(data, indent=2)}")
 
-                        # Check connection state before sending
                         if ws.closed:
                             logger.debug(
-                                f"Connection closed before sending message "
-                                f"{i} ({message_type})"
+                                "Connection closed before sending message %s (%s)",
+                                i,
+                                message_type,
                             )
-                            self.connection_state["errors"].append(
-                                {
-                                    "message_index": i,
-                                    "message_type": message_type,
-                                    "error": "Connection closed before sending",
-                                }
+                            record_connection_closed_before_send(
+                                self.connection_state["errors"], i, message_type
                             )
                             break
 
-                        # Send the message
                         try:
                             await ws.send_json(data)
                             self.connection_state["messages_sent"] += 1
-
-                            # Update state tracking
                             if message_type == "session.initiate":
                                 self.connection_state["session_initiated"] = True
                             elif message_type == "activities":
                                 activities = data.get("activities", [])
-                                if any(a.get("name") == "start" for a in activities):
+                                start_sent = any(
+                                    a.get("name") == "start" for a in activities
+                                )
+                                if start_sent:
                                     self.connection_state["activities_start_sent"] = (
                                         True
                                     )
                         except Exception as send_error:
-                            error_str = str(send_error)
-                            error_type = type(send_error).__name__
-
-                            # Check if this is a graceful connection closure
-                            is_graceful_closure = (
-                                "closing transport" in error_str.lower()
-                                or "connection closed" in error_str.lower()
-                                or error_type
-                                in (
-                                    "ConnectionResetError",
-                                    "ClientConnectionResetError",
-                                )
-                            )
-
-                            if is_graceful_closure:
+                            if is_graceful_connection_error(send_error):
                                 logger.debug(
-                                    f"Connection closed by Rasa while sending "
-                                    f"message {i} ({message_type}) - this is "
-                                    f"expected when conversation ends"
-                                )
-                                self.connection_state["errors"].append(
-                                    {
-                                        "message_index": i,
-                                        "message_type": message_type,
-                                        "error": (
-                                            f"Connection closed gracefully: "
-                                            f"{error_str}"
-                                        ),
-                                        "graceful": True,
-                                    }
+                                    "Connection closed by Rasa while sending "
+                                    "message %s (%s) - expected when conversation ends",
+                                    i,
+                                    message_type,
                                 )
                             else:
                                 logger.debug(
-                                    f"Error sending message {i} "
-                                    f"({message_type}): {send_error}"
+                                    "Error sending message %s (%s): %s",
+                                    i,
+                                    message_type,
+                                    send_error,
                                 )
-                                self.connection_state["errors"].append(
-                                    {
-                                        "message_index": i,
-                                        "message_type": message_type,
-                                        "error": str(send_error),
-                                        "graceful": False,
-                                    }
-                                )
+                            record_send_error(
+                                self.connection_state["errors"],
+                                i,
+                                message_type,
+                                send_error,
+                            )
                             break
 
                         # Wait for response (some messages may not have responses)
@@ -227,18 +205,14 @@ class WebSocketReplay:
                                         msg.data if hasattr(msg, "data") else "unknown"
                                     )
                                     logger.warning(
-                                        f"WebSocket closed by server "
-                                        f"(code: {close_code})"
+                                        "WebSocket closed by server (code: %s)",
+                                        close_code,
                                     )
-                                    self.connection_state["errors"].append(
-                                        {
-                                            "message_index": i,
-                                            "message_type": message_type,
-                                            "error": (
-                                                f"Connection closed by server "
-                                                f"(code: {close_code})"
-                                            ),
-                                        }
+                                    record_server_close(
+                                        self.connection_state["errors"],
+                                        i,
+                                        message_type,
+                                        close_code,
                                     )
                                     break
                             except asyncio.TimeoutError:
@@ -258,27 +232,34 @@ class WebSocketReplay:
                         if i < len(incoming):  # Don't delay after last message
                             await asyncio.sleep(self.delay)
 
-                    # Print summary
-                    self._print_session_summary()
-
+                    print_session_summary(
+                        self.connection_state,
+                        state_keys=[
+                            ("session_initiated", "Session initiated"),
+                            ("session_accepted", "Session accepted"),
+                            ("activities_start_sent", "Activities start sent"),
+                        ],
+                    )
                     logger.info("✓ Replay complete")
 
-                    # Close connection gracefully if still open
                     if not ws.closed:
                         try:
                             await ws.close()
                             logger.info("✓ Connection closed gracefully")
                         except Exception as close_error:
-                            logger.warning(f"Error closing connection: {close_error}")
+                            logger.warning("Error closing connection: %s", close_error)
 
             except Exception as e:
-                logger.error(f"WebSocket error: {e}", exc_info=True)
-                self.connection_state["errors"].append(
-                    {"error_type": type(e).__name__, "error_message": str(e)}
+                logger.error("WebSocket error: %s", e, exc_info=True)
+                record_outer_error(self.connection_state["errors"], e)
+                print_session_summary(
+                    self.connection_state,
+                    state_keys=[
+                        ("session_initiated", "Session initiated"),
+                        ("session_accepted", "Session accepted"),
+                        ("activities_start_sent", "Activities start sent"),
+                    ],
                 )
-
-                # Print summary even on error
-                self._print_session_summary()
 
     def _validate_message_flow(self, incoming: list) -> dict:
         """Validate that the message flow follows expected patterns"""
@@ -309,65 +290,8 @@ class WebSocketReplay:
 
     def _should_wait_for_response(self, message_type: str) -> bool:
         """Determine if we should wait for a response to this message type"""
-        # Messages that typically don't have responses
         no_response_types = {"userStream.chunk"}
         return message_type not in no_response_types
-
-    def _print_session_summary(self) -> None:
-        """Print a summary of the session"""
-        logger.info("\n" + "=" * 60)
-        logger.info("SESSION SUMMARY")
-        logger.info("=" * 60)
-        logger.debug(
-            f"Messages sent:         " f"{self.connection_state['messages_sent']}"
-        )
-        logger.debug(
-            f"Messages received:    " f"{self.connection_state['messages_received']}"
-        )
-        logger.info(
-            f"Session initiated:    " f"{self.connection_state['session_initiated']}"
-        )
-        logger.info(
-            f"Session accepted:     " f"{self.connection_state['session_accepted']}"
-        )
-        logger.info(
-            f"Activities start sent: "
-            f"{self.connection_state['activities_start_sent']}"
-        )
-
-        if self.connection_state["errors"]:
-            graceful_errors = [
-                e for e in self.connection_state["errors"] if e.get("graceful", False)
-            ]
-            actual_errors = [
-                e
-                for e in self.connection_state["errors"]
-                if not e.get("graceful", False)
-            ]
-
-            if graceful_errors:
-                logger.info(
-                    f"\nGraceful connection closures: " f"{len(graceful_errors)}"
-                )
-                for error in graceful_errors:
-                    msg_idx = error.get("message_index", "?")
-                    msg_type = error.get("message_type", "unknown")
-                    error_msg = error.get("error", "Connection closed")
-                    logger.info(f"  - Message {msg_idx} ({msg_type}): {error_msg}")
-
-            if actual_errors:
-                logger.warning(f"\nErrors encountered: {len(actual_errors)}")
-                for error in actual_errors:
-                    msg_idx = error.get("message_index", "?")
-                    msg_type = error.get("message_type", "unknown")
-                    error_msg = error.get("error", "Unknown error")
-                    logger.warning(f"  - Message {msg_idx} ({msg_type}): {error_msg}")
-            elif not graceful_errors:
-                logger.info("\nNo errors encountered")
-        else:
-            logger.info("\nNo errors encountered")
-
-        logger.info("=" * 60 + "\n")
 
     async def analyze_traffic(self):
         """Analyze captured traffic and show statistics"""
@@ -430,19 +354,104 @@ class WebSocketReplay:
         print("\n" + "=" * 60 + "\n")
 
 
+def generate_sample_log(
+    output_path: str,
+    conversation_id: str = "e2e-audiocodes-replay-001",
+    bot_name: str = "e2e-bot-001",
+) -> None:
+    """Generate a minimal AudioCodes WebSocket traffic log for replay tests."""
+    now = datetime.now(timezone.utc).isoformat()
+    log_entries = [
+        {
+            "timestamp": now,
+            "direction": "incoming",
+            "type": "websocket",
+            "data": {"type": "connection.validate"},
+        },
+        {
+            "timestamp": now,
+            "direction": "incoming",
+            "type": "websocket",
+            "data": {
+                "type": "session.initiate",
+                "conversationId": conversation_id,
+                "caller": "anonymous",
+                "botName": bot_name,
+                "expectAudioMessages": True,
+                "supportedMediaFormats": [
+                    "raw/lpcm16",
+                    "wav/lpcm16",
+                    "raw/lpcm16_24",
+                    "wav/lpcm16_24",
+                    "raw/mulaw",
+                    "wav/mulaw",
+                ],
+            },
+        },
+        {
+            "timestamp": now,
+            "direction": "incoming",
+            "type": "websocket",
+            "data": {
+                "conversationId": conversation_id,
+                "type": "activities",
+                "activities": [
+                    {
+                        "id": "e2e-activity-start-001",
+                        "timestamp": now,
+                        "language": "en",
+                        "type": "event",
+                        "name": "start",
+                        "parameters": {
+                            "locale": "en",
+                            "callee": "LiveHub",
+                            "vaigConversationId": conversation_id,
+                        },
+                    }
+                ],
+            },
+        },
+    ]
+    with open(output_path, "w") as f:
+        json.dump(log_entries, f, indent=2)
+    logger.info("Generated AudioCodes traffic log at %s", output_path)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="WebSocket Traffic Replay Tool")
-    parser.add_argument("log_file", help="Path to audiocodes_traffic.json file")
+    parser = argparse.ArgumentParser(
+        description="WebSocket Traffic Replay Tool (AudioCodes)"
+    )
+    parser.add_argument(
+        "log_file",
+        nargs="?",
+        default=None,
+        help="Path to audiocodes_traffic.json (required for replay/analyze)",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["replay", "analyze", "generate"],
+        default="replay",
+        help="Mode: replay, analyze, or generate sample traffic",
+    )
+    parser.add_argument(
+        "--output",
+        default="data/e2e_voice/audiocodes_traffic.json",
+        help="Output path for generate mode",
+    )
+    parser.add_argument(
+        "--conversation-id",
+        default="e2e-audiocodes-replay-001",
+        help="Conversation ID for generate mode",
+    )
+    parser.add_argument(
+        "--bot-name",
+        default="e2e-bot-001",
+        help="Bot name for generate mode",
+    )
     parser.add_argument(
         "--rasa-url",
         default="http://localhost:5005",
         help="Rasa server URL (default: http://localhost:5005)",
-    )
-    parser.add_argument(
-        "--mode",
-        choices=["replay", "analyze"],
-        default="replay",
-        help="Mode: replay messages or analyze traffic",
     )
     parser.add_argument(
         "--timeout",
@@ -459,6 +468,16 @@ def main():
 
     args = parser.parse_args()
 
+    if args.mode == "generate":
+        generate_sample_log(
+            args.output,
+            conversation_id=args.conversation_id,
+            bot_name=args.bot_name,
+        )
+        return
+
+    if not args.log_file:
+        parser.error("log_file is required for replay and analyze modes")
     replay = WebSocketReplay(
         args.rasa_url, args.log_file, timeout=args.timeout, delay=args.delay
     )

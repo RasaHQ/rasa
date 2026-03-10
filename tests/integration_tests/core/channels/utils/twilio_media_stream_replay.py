@@ -12,6 +12,17 @@ import logging
 
 from aiohttp import ClientSession, WSMsgType
 
+from tests.integration_tests.core.channels.utils.replay_common import (
+    build_websocket_url,
+    is_graceful_connection_error,
+    load_traffic_log,
+    print_session_summary,
+    record_connection_closed_before_send,
+    record_outer_error,
+    record_send_error,
+    record_server_close,
+)
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
@@ -159,14 +170,8 @@ class TwilioMediaStreamReplay:
     async def replay_twilio_session(self) -> None:
         """Replay a complete Twilio Media Stream session from the traffic log."""
         logger.info("Loading traffic from %s", self.log_file)
-        try:
-            with open(self.log_file, "r") as f:
-                traffic_log = json.load(f)
-        except FileNotFoundError:
-            logger.error("File not found: %s", self.log_file)
-            return
-        except json.JSONDecodeError as e:
-            logger.error("Invalid JSON in log file: %s", e)
+        traffic_log = load_traffic_log(self.log_file)
+        if traffic_log is None:
             return
 
         incoming = self._get_incoming(traffic_log)
@@ -190,10 +195,9 @@ class TwilioMediaStreamReplay:
             for warning in validation_result["warnings"]:
                 logger.warning("  - %s", warning)
 
-        base_ws = self.rasa_url.replace("http://", "ws://").replace(
-            "https://", "wss://"
+        ws_url = build_websocket_url(
+            self.rasa_url, "webhooks/twilio_media_streams/websocket"
         )
-        ws_url = f"{base_ws}/webhooks/twilio_media_streams/websocket"
         logger.info("Connecting to Rasa at %s", ws_url)
 
         async with ClientSession() as session:
@@ -216,12 +220,8 @@ class TwilioMediaStreamReplay:
                                 i,
                                 event,
                             )
-                            self.connection_state["errors"].append(
-                                {
-                                    "message_index": i,
-                                    "event": event,
-                                    "error": "Connection closed before sending",
-                                }
+                            record_connection_closed_before_send(
+                                self.connection_state["errors"], i, event
                             )
                             break
 
@@ -231,26 +231,7 @@ class TwilioMediaStreamReplay:
                             if event == "start":
                                 self.connection_state["start_sent"] = True
                         except Exception as send_error:
-                            error_str = str(send_error)
-                            error_type = type(send_error).__name__
-                            is_graceful = (
-                                "closing transport" in error_str.lower()
-                                or "connection closed" in error_str.lower()
-                                or error_type
-                                in (
-                                    "ConnectionResetError",
-                                    "ClientConnectionResetError",
-                                )
-                            )
-                            self.connection_state["errors"].append(
-                                {
-                                    "message_index": i,
-                                    "event": event,
-                                    "error": error_str,
-                                    "graceful": is_graceful,
-                                }
-                            )
-                            if is_graceful:
+                            if is_graceful_connection_error(send_error):
                                 logger.debug(
                                     "Connection closed by Rasa while sending "
                                     "message %s (%s) - expected when conversation ends",
@@ -264,6 +245,9 @@ class TwilioMediaStreamReplay:
                                     event,
                                     send_error,
                                 )
+                            record_send_error(
+                                self.connection_state["errors"], i, event, send_error
+                            )
                             break
 
                         if self._should_wait_for_response(event):
@@ -285,22 +269,15 @@ class TwilioMediaStreamReplay:
                                     close_code = (
                                         msg.data if hasattr(msg, "data") else "unknown"
                                     )
-                                    # 1000 = Normal Closure (RFC 6455)
-                                    is_graceful_close = close_code == 1000
                                     logger.warning(
                                         "WebSocket closed by server (code: %s)",
                                         close_code,
                                     )
-                                    self.connection_state["errors"].append(
-                                        {
-                                            "message_index": i,
-                                            "event": event,
-                                            "error": (
-                                                "Connection closed by server "
-                                                "(code: %s)" % close_code
-                                            ),
-                                            "graceful": is_graceful_close,
-                                        }
+                                    record_server_close(
+                                        self.connection_state["errors"],
+                                        i,
+                                        event,
+                                        close_code,
                                     )
                                     break
                             except asyncio.TimeoutError:
@@ -315,7 +292,10 @@ class TwilioMediaStreamReplay:
                         if i < len(incoming):
                             await asyncio.sleep(self.delay)
 
-                    self._print_session_summary()
+                    print_session_summary(
+                        self.connection_state,
+                        state_keys=[("start_sent", "Start sent")],
+                    )
                     logger.info("✓ Replay complete")
 
                     if not ws.closed:
@@ -327,55 +307,11 @@ class TwilioMediaStreamReplay:
 
             except Exception as e:
                 logger.error("WebSocket error: %s", e, exc_info=True)
-                error_str = str(e)
-                is_graceful = (
-                    "closing transport" in error_str.lower()
-                    or "connection closed" in error_str.lower()
-                    or type(e).__name__
-                    in (
-                        "ConnectionResetError",
-                        "ClientConnectionResetError",
-                    )
+                record_outer_error(self.connection_state["errors"], e)
+                print_session_summary(
+                    self.connection_state,
+                    state_keys=[("start_sent", "Start sent")],
                 )
-                self.connection_state["errors"].append(
-                    {
-                        "error_type": type(e).__name__,
-                        "error_message": error_str,
-                        "graceful": is_graceful,
-                    }
-                )
-                self._print_session_summary()
-
-    def _print_session_summary(self) -> None:
-        """Print a summary of the replay session."""
-        logger.info("\n" + "=" * 60)
-        logger.info("SESSION SUMMARY")
-        logger.info("=" * 60)
-        logger.debug(
-            "Messages sent:      %s",
-            self.connection_state["messages_sent"],
-        )
-        logger.debug(
-            "Messages received: %s",
-            self.connection_state["messages_received"],
-        )
-        logger.info(
-            "Start sent:         %s",
-            self.connection_state["start_sent"],
-        )
-        errors = self.connection_state["errors"]
-        if errors:
-            graceful = [e for e in errors if e.get("graceful", False)]
-            actual = [e for e in errors if not e.get("graceful", False)]
-            if graceful:
-                logger.info("\nGraceful connection closures: %s", len(graceful))
-            if actual:
-                logger.warning("\nErrors encountered: %s", len(actual))
-            elif not graceful:
-                logger.info("\nNo errors encountered")
-        else:
-            logger.info("\nNo errors encountered")
-        logger.info("=" * 60 + "\n")
 
     async def analyze_traffic(self) -> None:
         """Analyze captured traffic and show statistics."""

@@ -191,6 +191,15 @@ jobs:
           poetry run pytest -s -vv -o log_cli=true -o log_cli_level=DEBUG tests/integration_tests/core/channels/test_voice_primitives.py --voice-files=${{ matrix.voice_data_files }}
         shell: bash
 
+      - name: Generate AudioCodes traffic file
+        if: steps.train_and_run_rasa.outcome == 'success'
+        run: |
+          mkdir -p data/e2e_voice
+          poetry run python tests/integration_tests/core/channels/utils/websocket_replay.py \
+            --mode generate \
+            --output data/e2e_voice/audiocodes_traffic.json
+        shell: bash
+
       - name: Run AudioCodes replay test
         if: steps.train_and_run_rasa.outcome == 'success'
         env:
@@ -206,7 +215,7 @@ jobs:
       - name: Generate Twilio Media Stream traffic file
         if: steps.train_and_run_rasa.outcome == 'success'
         run: |
-          poetry run python tests/integration_tests/core/channels/twilio_media_stream_replay.py \
+          poetry run python tests/integration_tests/core/channels/utils/twilio_media_stream_replay.py \
             --mode generate \
             --wav data/e2e_voice/user_remove_contact_from_list/1.wav \
             --output data/e2e_voice/twilio_traffic.json
@@ -222,6 +231,26 @@ jobs:
           echo "Running Twilio Media Stream replay test..."
           poetry run pytest -s -vv -o log_cli=true -o log_cli_level=INFO \
             tests/integration_tests/core/channels/test_twilio_media_stream_replay.py
+        shell: bash
+
+      - name: Generate Jambonz Stream traffic file
+        if: steps.train_and_run_rasa.outcome == 'success'
+        run: |
+          poetry run python tests/integration_tests/core/channels/utils/jambonz_replay.py \
+            --mode generate \
+            --output data/e2e_voice/jambonz_traffic.json
+        shell: bash
+
+      - name: Run Jambonz Stream replay test
+        if: steps.train_and_run_rasa.outcome == 'success'
+        env:
+          RASA_URL: http://localhost:5005
+          JAMBONZ_TRAFFIC_FILE: data/e2e_voice/jambonz_traffic.json
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+        run: |
+          echo "Running Jambonz Stream replay test..."
+          poetry run pytest -s -vv -o log_cli=true -o log_cli_level=INFO \
+            tests/integration_tests/core/channels/test_jambonz_replay.py
         shell: bash
 
   send_slack_notification_on_failure:
