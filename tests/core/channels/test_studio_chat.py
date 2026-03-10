@@ -117,6 +117,8 @@ async def test_studio_chat_handle_tracker_update(
         ],
     }
     await studio_input.handle_tracker_update("some_sid", data)
+    # Allow async tasks from hooks to complete (small grace period)
+    await asyncio.sleep(0.05)
 
     assert len(studio_input.sio_server.emit.call_args_list) == 1
     call = studio_input.sio_server.emit.call_args_list[0]

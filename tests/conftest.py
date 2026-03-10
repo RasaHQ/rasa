@@ -188,6 +188,9 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "core", "policies", "test_flow_policy.py").absolute(),
         Path("tests", "core", "policies", "test_intentless_policy.py").absolute(),
     ],
+    "category_message_processor": [
+        Path("tests", "core", "test_processor.py").absolute()
+    ],
     "category_nlu_featurizers": [
         Path(
             "tests", "nlu", "featurizers", "test_count_vectors_featurizer.py"

@@ -2494,23 +2494,31 @@ jobs:
           path: |
             ${{ github.workspace }}/unit-tests-results-test-cli-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
-  unit-test:
-    name: Run Unit Tests
-    runs-on: warp-ubuntu-latest-x64-16x
-    timeout-minutes: 20
+  unit-test-other:
+    name: Run Other Unit Tests (${{ matrix.python-version }}, ${{ matrix.runner }}/7)
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        test:
-          - test-other-unit-tests
-          - test-flaky
         python-version: ${{ fromJson(inputs.python-versions) }}
-        # While more runners can be added, but when using lots of them
-        # intermittently some jobs get stuck in queue for a GHA-hosted
-        # runner to be available, becoming a bottleneck and slowing down
-        # overall CI completion time.
-        # test-other-unit-tests uses runners 1-20, test-flaky uses runners 1-9
-        runner: [1, 2, 3, 4]
+        runner: [1, 2, 3, 4, 5, 6, 7]
+        include:
+          # Group 1 (runner 1) runs the heaviest split (~test_server.py etc.); use larger runner and job timeout
+          - runner: 1
+            runs-on: warp-ubuntu-latest-x64-16x
+          - runner: 2
+            runs-on: warp-ubuntu-latest-x64-4x
+          - runner: 3
+            runs-on: warp-ubuntu-latest-x64-4x
+          - runner: 4
+            runs-on: warp-ubuntu-latest-x64-4x
+          - runner: 5
+            runs-on: warp-ubuntu-latest-x64-4x
+          - runner: 6
+            runs-on: warp-ubuntu-latest-x64-4x
+          - runner: 7
+            runs-on: warp-ubuntu-latest-x64-4x
     needs: [install-and-cache-rasa]
 
     steps:
@@ -2527,7 +2535,7 @@ jobs:
         id: linux-dependencies
         with:
           packages: libpq-dev graphviz graphviz-dev python3-tk
-          version: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test }}-${{ matrix.runner }}
+          version: ${{ runner.os }}-${{ matrix.python-version }}-test-other-unit-tests-${{ matrix.runner }}
 
       - name: Install Linux dependencies
         if: ${{ steps.linux-dependencies.outputs.cache-hit != 'true' }}
@@ -2550,7 +2558,7 @@ jobs:
           PYTHONUNBUFFERED: 1
           ARGS: "-v"
           RUNNER_ID: ${{ matrix.runner }}
-          NUMBER_OF_RUNNERS: 4
+          NUMBER_OF_RUNNERS: 7
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
           CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
@@ -2564,22 +2572,177 @@ jobs:
           UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
           VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
           API_DOCS_FORMAT: yaml
-          TEST: ${{ matrix.test }}
-        run: bash scripts/run_pytest_with_splits.sh "${TEST}"
+        run: bash scripts/run_pytest_with_splits.sh test-other-unit-tests
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Prepare test results
         if: success() || failure()
         run: |
-          mv coverage.xml ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-test-other-unit-tests-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
       - name: Save Test Results
         if: success() || failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}
+          name: unit-tests-results-test-other-unit-tests-python-${{ matrix.python-version }}-${{ matrix.runner }}
           path: |
-            ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+            ${{ github.workspace }}/unit-tests-results-test-other-unit-tests-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+  unit-test-flaky:
+    name: Run Flaky Unit Tests
+    runs-on: warp-ubuntu-latest-x64-4x
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python-versions) }}
+        runner: [1, 2, 3]
+    needs: [install-and-cache-rasa]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+          RASA_INSTALL_GROUP: "full-with-spacy-mitie-and-transformer-models"
+
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: linux-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ${{ runner.os }}-${{ matrix.python-version }}-test-flaky-${{ matrix.runner }}
+
+      - name: Install Linux dependencies
+        if: ${{ steps.linux-dependencies.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt-get -y install libpq-dev
+          make prepare-tests-ubuntu
+
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          DD_RECORD_TEST_MEMORY: "true"
+          JOBS: logical
+          PYTHONUTF8: 1
+          PYTHONUNBUFFERED: 1
+          ARGS: "-v"
+          RUNNER_ID: ${{ matrix.runner }}
+          NUMBER_OF_RUNNERS: 3
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
+          CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
+          CHAMPION_SERVER_INTERNAL_LICENSE: ${{ secrets.CHAMPION_SERVER_INTERNAL_LICENSE }}
+          CHAMPION_SERVER_LIMITED_LICENSE: ${{ secrets.CHAMPION_SERVER_LIMITED_LICENSE }}
+          EXPIRED_LICENSE: ${{ secrets.EXPIRED_LICENSE }}
+          IMMATURE_LICENSE: ${{ secrets.IMMATURE_LICENSE }}
+          INVALID_SCHEMA_LICENSE: ${{ secrets.INVALID_SCHEMA_LICENSE }}
+          INVALID_SIGNATURE_LICENSE: ${{ secrets.INVALID_SIGNATURE_LICENSE }}
+          NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
+          UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
+          VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
+          API_DOCS_FORMAT: yaml
+        run: bash scripts/run_pytest_with_splits.sh test-flaky
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Prepare test results
+        if: success() || failure()
+        run: |
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-test-flaky-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+      - name: Save Test Results
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: unit-tests-results-test-flaky-python-${{ matrix.python-version }}-${{ matrix.runner }}
+          path: |
+            ${{ github.workspace }}/unit-tests-results-test-flaky-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+  unit-test-message-processor:
+    name: Run Message Processor Tests
+    runs-on: warp-ubuntu-latest-x64-8x
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python-versions) }}
+        runner: [1]
+    needs: [install-and-cache-rasa]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+          RASA_INSTALL_GROUP: "full-with-spacy-mitie-and-transformer-models"
+
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 #v1.6.0
+        id: linux-dependencies
+        with:
+          packages: libpq-dev graphviz graphviz-dev python3-tk
+          version: ${{ runner.os }}-${{ matrix.python-version }}-test-message-processor-${{ matrix.runner }}
+
+      - name: Install Linux dependencies
+        if: ${{ steps.linux-dependencies.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt-get -y install libpq-dev
+          make prepare-tests-ubuntu
+
+      - name: Configure Datadog Test Optimization
+        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        with:
+          languages: python
+          api_key: ${{secrets.DD_API_KEY}}
+          site: datadoghq.eu
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          DD_RECORD_TEST_MEMORY: "true"
+          JOBS: 3
+          PYTHONUTF8: 1
+          PYTHONUNBUFFERED: 1
+          ARGS: "-v"
+          RUNNER_ID: ${{ matrix.runner }}
+          NUMBER_OF_RUNNERS: 1
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
+          CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
+          CHAMPION_SERVER_INTERNAL_LICENSE: ${{ secrets.CHAMPION_SERVER_INTERNAL_LICENSE }}
+          CHAMPION_SERVER_LIMITED_LICENSE: ${{ secrets.CHAMPION_SERVER_LIMITED_LICENSE }}
+          EXPIRED_LICENSE: ${{ secrets.EXPIRED_LICENSE }}
+          IMMATURE_LICENSE: ${{ secrets.IMMATURE_LICENSE }}
+          INVALID_SCHEMA_LICENSE: ${{ secrets.INVALID_SCHEMA_LICENSE }}
+          INVALID_SIGNATURE_LICENSE: ${{ secrets.INVALID_SIGNATURE_LICENSE }}
+          NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
+          UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
+          VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
+          API_DOCS_FORMAT: yaml
+        run: bash scripts/run_pytest_with_splits.sh test-message-processor
+        shell: bash
+
+      - name: Prepare test results
+        if: success() || failure()
+        run: |
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-test-message-processor-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
+
+      - name: Save Test Results
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: unit-tests-results-test-message-processor-python-${{ matrix.python-version }}-${{ matrix.runner }}
+          path: |
+            ${{ github.workspace }}/unit-tests-results-test-message-processor-python-${{ matrix.python-version }}-${{ matrix.runner }}.xml
 
   test-builder:
     name: Run Builder Tests
@@ -2835,12 +2998,14 @@ jobs:
     runs-on: warp-ubuntu-latest-x64-4x
     needs:
       [
-        unit-test,
+        unit-test-other,
+        unit-test-flaky,
         test-anonymization,
         unit-test-cli,
         unit-test-nlu,
         unit-test-agents,
         unit-test-policies,
+        unit-test-message-processor,
         voice-unit-tests,
         test-builder,
         checkout-code-for-sonarscan,
@@ -2848,12 +3013,14 @@ jobs:
       # We don't want to run the code quality checks on scheduled runs
     if: >-
       ${{ always() && (
-        needs.unit-test.result != 'skipped' ||
+        needs.unit-test-other.result != 'skipped' ||
+        needs.unit-test-flaky.result != 'skipped' ||
         needs.test-anonymization.result != 'skipped' ||
         needs.unit-test-cli.result != 'skipped' ||
         needs.unit-test-nlu.result != 'skipped' ||
         needs.unit-test-agents.result != 'skipped' ||
         needs.unit-test-policies.result != 'skipped' ||
+        needs.unit-test-message-processor.result != 'skipped' ||
         needs.voice-unit-tests.result != 'skipped' ||
         needs.test-builder.result != 'skipped'
       ) }}
@@ -2922,7 +3089,8 @@ jobs:
       - check-for-merge-conflicts
       - install-and-cache-rasa
       - quality
-      - unit-test
+      - unit-test-other
+      - unit-test-flaky
       - test-anonymization
       # Conditional jobs based on file changes
       - check-code-changes
@@ -2949,6 +3117,7 @@ jobs:
       - unit-test-agents
       - unit-test-nlu
       - unit-test-cli
+      - unit-test-message-processor
       - run-test-to-monitor-memory-consumption-and-display-on-PR
       - sonarqube
       - publish-test-results

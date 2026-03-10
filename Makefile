@@ -263,9 +263,12 @@ test-full-model-training: PYTEST_MARKER=category_full_model_training and (not fl
 test-full-model-training: test-marker-without-voice  ## Run full model training tests
 
 test-nlu: PYTEST_MARKER=nlu and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
-test-nlu: test-marker  ## Run unit tests that use default_agent or trained_default_agent_model (NLU job only)
+test-nlu: test-marker-without-voice  ## Run unit tests that use default_agent or trained_default_agent_model (NLU job only). Excludes voice_stream so those run in voice-unit-tests.
 
-test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not category_builder_tests) and (not nlu) and (not category_audio_manual)
+test-message-processor: PYTEST_MARKER=category_message_processor and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not nlu)
+test-message-processor: test-marker-without-voice  ## Run message processor tests (tests/core/test_processor.py) in dedicated CI job
+
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents) and (not category_builder_tests) and (not nlu) and (not category_audio_manual) and (not category_message_processor)
 test-other-unit-tests: test-marker-without-voice  ## Run other unit tests
 
 test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not nlu)

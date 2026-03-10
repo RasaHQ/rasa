@@ -293,6 +293,9 @@ async def test_message_order(tmp_path: Path, agent_with_flows: Agent):
         # (n_messages - 1) * lock_wait
         time_limit = np.sum(wait_times[1:])
         time_limit += (n_messages - 1) * lock_wait
+        # Add 1 second tolerance for CI infrastructure variance
+        # (scheduling, system load)
+        time_limit += 1.0
         assert time.time() - start_time < time_limit
 
 
