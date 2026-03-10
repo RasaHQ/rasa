@@ -2947,36 +2947,6 @@ jobs:
         run: |
           rm -rf /tmp/rasa-memory-test
 
-  publish-test-results:
-    runs-on: warp-ubuntu-latest-x64-2x
-    needs:
-      - tracing-integration-test
-      - metric-integration-test
-      - enterprise-search-integration-tests
-      - custom-action-integration-tests
-      - sequential-integration-test
-      - non-sequential-integration-test
-      - concurrent-lockstore-integration-test
-      - broker-integration-test
-      - channel-connector-integration-tests
-    if: >-
-      ${{ always() && (
-        needs.tracing-integration-test.result != 'skipped' ||
-        needs.metric-integration-test.result != 'skipped' ||
-        needs.enterprise-search-integration-tests.result != 'skipped' ||
-        needs.custom-action-integration-tests.result != 'skipped' ||
-        needs.sequential-integration-test.result != 'skipped' ||
-        needs.non-sequential-integration-test.result != 'skipped' ||
-        needs.concurrent-lockstore-integration-test.result != 'skipped' ||
-        needs.broker-integration-test.result != 'skipped' ||
-        needs.channel-connector-integration-tests.result != 'skipped'
-      ) }}
-    steps:
-      - name: Download test reports
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
-        with:
-          path: artifacts
-
   checkout-code-for-sonarscan:
     runs-on: warp-ubuntu-latest-x64-4x
     # Do not run on scheduled-runs, as SonarScan does not run on them
@@ -3120,7 +3090,6 @@ jobs:
       - unit-test-message-processor
       - run-test-to-monitor-memory-consumption-and-display-on-PR
       - sonarqube
-      - publish-test-results
       - clean-docker-image-artifact
       - test-builder
     steps:

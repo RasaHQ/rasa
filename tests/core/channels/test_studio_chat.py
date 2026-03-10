@@ -1,5 +1,6 @@
 import asyncio
 import json
+import uuid
 from unittest.mock import AsyncMock, call
 
 import pytest
@@ -103,14 +104,18 @@ async def test_studio_chat_handle_tracker_update(
     default_tracker: DialogueStateTracker,
     agent_with_flows: Agent,
 ) -> None:
-    default_tracker.sender_id = "test_studio_chat_handle_tracker_update"
+    # Use a unique sender_id to avoid cross-test pollution: agent_with_flows is
+    # session-scoped, so the tracker store is shared; a fixed id can collide with
+    # other tests or leave state that makes this test flaky.
+    sender_id = f"test_studio_chat_handle_tracker_update_{uuid.uuid4().hex}"
+    default_tracker.sender_id = sender_id
     default_tracker.update(UserUttered("foo bar"))
     await agent_with_flows.tracker_store.save(default_tracker)
 
     studio_input.agent = agent_with_flows
 
     data = {
-        "sender_id": default_tracker.sender_id,
+        "sender_id": sender_id,
         "events": [
             UserUttered("hello world").as_dict(),
             ActionExecuted(ACTION_LISTEN_NAME).as_dict(),
@@ -127,9 +132,7 @@ async def test_studio_chat_handle_tracker_update(
     assert "hello world" in json.dumps(call.args[1])
     assert "foo bar" not in json.dumps(call.args[1])
 
-    retrieved_tracker = await agent_with_flows.tracker_store.retrieve(
-        default_tracker.sender_id
-    )
+    retrieved_tracker = await agent_with_flows.tracker_store.retrieve(sender_id)
     assert retrieved_tracker is not None
 
     # old events should be gone from the tracker and there should only be
@@ -146,23 +149,22 @@ async def test_studio_chat_handle_partial_tracker_update(
     default_tracker: DialogueStateTracker,
     agent_with_flows: Agent,
 ) -> None:
-    default_tracker.sender_id = "test_studio_chat_handle_partial_tracker_update"
+    sender_id = f"test_studio_chat_handle_partial_tracker_update_{uuid.uuid4().hex}"
+    default_tracker.sender_id = sender_id
     default_tracker.update(UserUttered("foo bar"))
     await agent_with_flows.tracker_store.save(default_tracker)
 
     studio_input.agent = agent_with_flows
 
     data = {
-        "sender_id": default_tracker.sender_id,
+        "sender_id": sender_id,
         "events": [
             UserUttered("hello world").as_dict(),
         ],
     }
     await studio_input.handle_tracker_update("some_sid", data)
 
-    retrieved_tracker = await agent_with_flows.tracker_store.retrieve(
-        default_tracker.sender_id
-    )
+    retrieved_tracker = await agent_with_flows.tracker_store.retrieve(sender_id)
     assert retrieved_tracker is not None
 
     # the conversation should have been continued and the last action should
