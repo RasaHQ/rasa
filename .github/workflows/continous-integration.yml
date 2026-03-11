@@ -3134,6 +3134,17 @@ jobs:
           merge-multiple: true
 
       - name: SonarQube Scan
+        if: >-
+          needs.unit-test-other.result != 'failure' &&
+          needs.unit-test-flaky.result != 'failure' &&
+          needs.test-anonymization.result != 'failure' &&
+          needs.unit-test-cli.result != 'failure' &&
+          needs.unit-test-nlu.result != 'failure' &&
+          needs.unit-test-agents.result != 'failure' &&
+          needs.unit-test-policies.result != 'failure' &&
+          needs.unit-test-message-processor.result != 'failure' &&
+          needs.voice-unit-tests.result != 'failure' &&
+          needs.test-builder.result != 'failure'
         uses: SonarSource/sonarqube-scan-action@1a6d90ebcb0e6a6b1d87e37ba693fe453195ae25 # v5.3.1
         env:
           GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }} # Needed to get PR information, if any
