@@ -56,10 +56,10 @@ DEFAULT_LLM_CONFIG = {
 
 # Non-agent defaults
 DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
-    "command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+    "command_prompt_v3_gpt_5_1_2025_11_13_template.jinja2"
 )
 FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
-    "command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+    "command_prompt_v3_gpt_5_1_2025_11_13_template.jinja2"
 )
 MODEL_PROMPT_MAPPER = {
     # GPT-4o
@@ -108,10 +108,10 @@ MODEL_PROMPT_MAPPER = {
 
 # Agentic mapping and defaults (used only when agents exist)
 AGENT_DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
-    "agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+    "agent_command_prompt_v3_gpt_5_1_2025_11_13_template.jinja2"
 )
 AGENT_FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
-    "agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+    "agent_command_prompt_v3_gpt_5_1_2025_11_13_template.jinja2"
 )
 AGENT_MODEL_PROMPT_MAPPER = {
     # GPT-4o

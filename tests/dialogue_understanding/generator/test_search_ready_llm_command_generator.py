@@ -108,7 +108,7 @@ command_prompt_v3_claude_sonnet_4_5_20250929_template = rasa.shared.utils.io.rea
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_claude_sonnet_4_5_20250929_template.jinja2"
 )
 command_prompt_v3_fallback_other_models_template = rasa.shared.utils.io.read_file(
-    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_gpt_5_1_2025_11_13_template.jinja2"
 )
 command_prompt_v3_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
@@ -121,7 +121,7 @@ command_prompt_v3_gpt_5_1_2025_11_13_template = rasa.shared.utils.io.read_file(
 )
 # Agent versions of the prompt templates
 agent_command_prompt_v3_fallback_other_models_template = rasa.shared.utils.io.read_file(
-    f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_gpt_5_1_2025_11_13_template.jinja2"
 )
 agent_command_prompt_v3_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
@@ -262,9 +262,9 @@ class TestSearchReadyLLMCommandGenerator:
         [
             (
                 False,
-                command_prompt_v3_gpt_4o_2024_11_20_template,
+                command_prompt_v3_gpt_5_1_2025_11_13_template,
             ),
-            (True, agent_command_prompt_v3_gpt_4o_2024_11_20_template),
+            (True, agent_command_prompt_v3_gpt_5_1_2025_11_13_template),
         ],
     )
     async def test_default_template_when_no_prompt_template_provided(
@@ -317,7 +317,7 @@ class TestSearchReadyLLMCommandGenerator:
             {}, model_storage, Resource("llmcmdgen")
         )
         # Then
-        assert generator.prompt_template.startswith("## Task Description")
+        assert generator.prompt_template.startswith("## Critical rules")
         assert (
             generator.user_input_config.max_characters
             == DEFAULT_MAX_USER_INPUT_CHARACTERS
@@ -466,7 +466,7 @@ class TestSearchReadyLLMCommandGenerator:
 
         # Then
         assert message.get(LLM_PROMPT) is not None
-        assert message.get(LLM_PROMPT).startswith("## Task Description")
+        assert message.get(LLM_PROMPT).startswith("## Critical rules")
         assert message.get(LLM_COMMANDS) == [
             {"command": "start flow", "flow": "test_flow"}
         ]
@@ -506,7 +506,7 @@ class TestSearchReadyLLMCommandGenerator:
             prompts[0].get(KEY_COMPONENT_NAME)
             == SearchReadyLLMCommandGenerator.__name__
         )
-        assert prompts[0][KEY_USER_PROMPT].startswith("## Task Description")
+        assert prompts[0][KEY_USER_PROMPT].startswith("## Critical rules")
         assert message.get(PREDICTED_COMMANDS)[
             SearchReadyLLMCommandGenerator.__name__
         ] == [{"command": "start flow", "flow": "test_flow"}]
@@ -826,10 +826,11 @@ class TestSearchReadyLLMCommandGenerator:
         # make sure non-startable flow isn't there
         assert "called_flow" not in rendered_template
         # make sure it looks like we are in the calling flow
+        # (v3 gpt-5.1 uses string for active_flow)
         assert (
             "\nUse the following structured data:\n"
             "```json\n"
-            '{"flows":[{"name":"test_flow",'
+            '{"active_flow":"test_flow",'
         ) in rendered_template
         # make sure the slot from the called flow is available in the template
         assert """current_step":{"requested_slot":"test_slot",""" in rendered_template
@@ -900,10 +901,9 @@ class TestSearchReadyLLMCommandGenerator:
         )
         # Then
 
-        # Make sure it looks like we are in the calling flow
+        # Make sure it looks like we have flows
+        # (v3 gpt-5.1 has flows in Available Flows section)
         assert (
-            "\nUse the following structured data:\n"
-            "```json\n"
             '{"flows":[{"name":"test_flow_inline_descriptions",'
         ) in rendered_template
 
@@ -1580,8 +1580,8 @@ class TestSearchReadyLLMCommandGenerator:
     @pytest.mark.parametrize(
         "agents_present,expected_prompt_template",
         [
-            (False, command_prompt_v3_gpt_4o_2024_11_20_template),
-            (True, agent_command_prompt_v3_gpt_4o_2024_11_20_template),
+            (False, command_prompt_v3_gpt_5_1_2025_11_13_template),
+            (True, agent_command_prompt_v3_gpt_5_1_2025_11_13_template),
         ],
     )
     def test_load_with_default_prompt(
@@ -1593,7 +1593,7 @@ class TestSearchReadyLLMCommandGenerator:
         agents_present: bool,
         expected_prompt_template: Any,
     ):
-        # Given
+        # Given: v3 gpt-5.1 template is the default
         set_agents_presence(agents_present)
         resource = Resource("llmcmdgen")
         generator = SearchReadyLLMCommandGenerator({}, model_storage, resource)
@@ -1605,10 +1605,10 @@ class TestSearchReadyLLMCommandGenerator:
         )
 
         # Then
-        assert loaded.prompt_template.startswith("## Task Description")
+        assert loaded.prompt_template.startswith("## Critical rules")
         assert loaded.prompt_template.find("## Available Flows and Slots\n") > 0
         assert loaded.prompt_template.find("```json\n") > 0
-        assert loaded.prompt_template.find("| search and reply   |") > 0
+        assert "search and reply" in loaded.prompt_template
         assert loaded.prompt_template == expected_prompt_template
 
     @patch(
@@ -1619,7 +1619,7 @@ class TestSearchReadyLLMCommandGenerator:
         "agents_present,expected_prompt_template",
         [
             (False, command_prompt_v3_fallback_other_models_template),
-            (True, agent_command_prompt_v3_fallback_other_models_template),
+            (True, agent_command_prompt_v3_gpt_5_1_2025_11_13_template),
         ],
     )
     def test_load_with_fallback_prompt(
@@ -1631,7 +1631,7 @@ class TestSearchReadyLLMCommandGenerator:
         agents_present: bool,
         expected_prompt_template: Any,
     ):
-        # Given
+        # Given: v3 gpt-5.1 template is the fallback
         set_agents_presence(agents_present)
         resource = Resource("llmcmdgen")
         generator = SearchReadyLLMCommandGenerator(
@@ -1645,15 +1645,11 @@ class TestSearchReadyLLMCommandGenerator:
         )
 
         # Then
-        assert loaded.prompt_template.startswith("## Task Description")
+        assert loaded.prompt_template.startswith("## Critical rules")
         assert loaded.prompt_template.find("## Available Flows and Slots\n") > 0
-        assert (
-            loaded.prompt_template.find(
-                "\nUse the following structured data:\n```json\n"
-            )
-            > 0
-        )
-        assert loaded.prompt_template.find("| search and reply   |") > 0
+        assert "Use the following structured data" in loaded.prompt_template
+        assert "```json" in loaded.prompt_template
+        assert "search and reply" in loaded.prompt_template
         assert loaded.prompt_template == expected_prompt_template
 
     @patch(

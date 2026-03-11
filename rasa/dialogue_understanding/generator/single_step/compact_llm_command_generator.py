@@ -149,18 +149,18 @@ AGENT_MODEL_PROMPT_MAPPER = {
 
 # Defaults for non-agent prompts
 DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
-    "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+    "command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2"
 )
 FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
-    "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+    "command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2"
 )
 
 # Defaults for agentic prompts
 AGENT_DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
-    "agent_command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+    "agent_command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2"
 )
 AGENT_FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
-    "agent_command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+    "agent_command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2"
 )
 
 

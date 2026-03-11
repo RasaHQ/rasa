@@ -108,7 +108,7 @@ command_prompt_v2_claude_sonnet_4_5_20250929_template = rasa.shared.utils.io.rea
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_claude_sonnet_4_5_20250929_template.jinja2"
 )
 command_prompt_v2_fallback_other_models_template = rasa.shared.utils.io.read_file(
-    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2"
 )
 command_prompt_v2_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
@@ -121,7 +121,7 @@ command_prompt_v2_gpt_5_1_2025_11_13_template = rasa.shared.utils.io.read_file(
 )
 # Agent versions of the prompt templates
 agent_command_prompt_v2_fallback_other_models_template = rasa.shared.utils.io.read_file(
-    f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+    f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v2_gpt_5_1_2025_11_13_template.jinja2"
 )
 agent_command_prompt_v2_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/"
@@ -271,9 +271,9 @@ class TestCompactLLMCommandGenerator:
         [
             (
                 False,
-                command_prompt_v2_gpt_4o_2024_11_20_template,
+                command_prompt_v2_gpt_5_1_2025_11_13_template,
             ),
-            (True, agent_command_prompt_v2_gpt_4o_2024_11_20_template),
+            (True, agent_command_prompt_v2_gpt_5_1_2025_11_13_template),
         ],
     )
     async def test_default_template_when_no_prompt_template_provided(
@@ -324,7 +324,7 @@ class TestCompactLLMCommandGenerator:
         # When
         generator = CompactLLMCommandGenerator({}, model_storage, Resource("llmcmdgen"))
         # Then
-        assert generator.prompt_template.startswith("## Task Description")
+        assert generator.prompt_template.startswith("## Task")
         assert (
             generator.user_input_config.max_characters
             == DEFAULT_MAX_USER_INPUT_CHARACTERS
@@ -473,7 +473,7 @@ class TestCompactLLMCommandGenerator:
 
         # Then
         assert message.get(LLM_PROMPT) is not None
-        assert message.get(LLM_PROMPT).startswith("## Task Description")
+        assert message.get(LLM_PROMPT).startswith("## Task")
         assert message.get(LLM_COMMANDS) == [
             {"command": "start flow", "flow": "test_flow"}
         ]
@@ -510,7 +510,7 @@ class TestCompactLLMCommandGenerator:
         prompts = message.get(PROMPTS)
         assert prompts is not None
         assert prompts[0].get(KEY_COMPONENT_NAME) == CompactLLMCommandGenerator.__name__
-        assert prompts[0][KEY_USER_PROMPT].startswith("## Task Description")
+        assert prompts[0][KEY_USER_PROMPT].startswith("## Task")
         assert message.get(PREDICTED_COMMANDS)[CompactLLMCommandGenerator.__name__] == [
             {"command": "start flow", "flow": "test_flow"}
         ]
@@ -1670,8 +1670,8 @@ class TestCompactLLMCommandGenerator:
     @pytest.mark.parametrize(
         "agents_present,expected_prompt_template",
         [
-            (False, command_prompt_v2_gpt_4o_2024_11_20_template),
-            (True, agent_command_prompt_v2_gpt_4o_2024_11_20_template),
+            (False, command_prompt_v2_gpt_5_1_2025_11_13_template),
+            (True, agent_command_prompt_v2_gpt_5_1_2025_11_13_template),
         ],
     )
     def test_load_with_default_prompt(
@@ -1683,7 +1683,7 @@ class TestCompactLLMCommandGenerator:
         agents_present: bool,
         expected_prompt_template: Any,
     ):
-        # Given
+        # Given: gpt-5.1 template is the default
         set_agents_presence(agents_present)
         resource = Resource("llmcmdgen")
         generator = CompactLLMCommandGenerator({}, model_storage, resource)
@@ -1693,7 +1693,7 @@ class TestCompactLLMCommandGenerator:
         loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
 
         # Then
-        assert loaded.prompt_template.startswith("## Task Description")
+        assert loaded.prompt_template.startswith("## Task")
         assert loaded.prompt_template.find("## Available Flows and Slots\n") > 0
         assert loaded.prompt_template.find("```json\n") > 0
         assert loaded.prompt_template == expected_prompt_template
@@ -1730,7 +1730,7 @@ class TestCompactLLMCommandGenerator:
         loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
 
         # Then
-        assert loaded.prompt_template.startswith("## Task Description")
+        assert loaded.prompt_template.startswith("## Task")
         assert loaded.prompt_template.find("## Available Flows and Slots\n") > 0
         assert (
             loaded.prompt_template.find(
@@ -1917,8 +1917,8 @@ class TestCompactLLMCommandGenerator:
     @pytest.mark.parametrize(
         "agents_present,expected_prompt_template",
         [
-            (False, command_prompt_v2_gpt_4o_2024_11_20_template),
-            (True, agent_command_prompt_v2_gpt_4o_2024_11_20_template),
+            (False, command_prompt_v2_gpt_5_1_2025_11_13_template),
+            (True, agent_command_prompt_v2_gpt_5_1_2025_11_13_template),
         ],
     )
     def test_load_default_prompt_based_on_model_name_gpt_4o(
@@ -1930,7 +1930,7 @@ class TestCompactLLMCommandGenerator:
         agents_present: bool,
         expected_prompt_template: Any,
     ):
-        # Given
+        # Given: gpt-5.1 template is used as default/fallback for all models
         set_agents_presence(agents_present)
         resource = Resource("llmcmdgen")
         config = {"llm": {"provider": "openai", "model": "gpt-4o"}}
@@ -1941,7 +1941,7 @@ class TestCompactLLMCommandGenerator:
         loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
 
         # Then
-        assert loaded.prompt_template.startswith("## Task Description")
+        assert loaded.prompt_template.startswith("## Task")
         assert (
             loaded.prompt_template.find(
                 "Flows and Slots\nUse the following structured data:\n```json\n"
@@ -2031,8 +2031,8 @@ class TestCompactLLMCommandGenerator:
     @pytest.mark.parametrize(
         "agents_present,expected_prompt_template",
         [
-            (False, command_prompt_v2_gpt_4o_2024_11_20_template),
-            (True, agent_command_prompt_v2_gpt_4o_2024_11_20_template),
+            (False, command_prompt_v2_gpt_5_1_2025_11_13_template),
+            (True, agent_command_prompt_v2_gpt_5_1_2025_11_13_template),
         ],
     )
     def test_load_default_prompt_based_on_model_name_from_model_group_gpt_4o(
@@ -2048,7 +2048,7 @@ class TestCompactLLMCommandGenerator:
         agents_present: bool,
         expected_prompt_template: Any,
     ):
-        # Given
+        # Given: gpt-5.1 template is used as default/fallback for all models
         set_agents_presence(agents_present)
 
         mock_available_endpoints.model_groups = [
@@ -2074,7 +2074,7 @@ class TestCompactLLMCommandGenerator:
         loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
 
         # Then
-        assert loaded.prompt_template.startswith("## Task Description")
+        assert loaded.prompt_template.startswith("## Task")
         assert (
             loaded.prompt_template.find(
                 "Flows and Slots\nUse the following structured data:\n```json\n"
