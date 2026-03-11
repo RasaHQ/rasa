@@ -46,6 +46,8 @@ AGENT_METADATA_MODEL_ID_KEY = "model_id"
 # A2A-specific constants
 A2A_AGENT_CONTEXT_ID_KEY = "context_id"
 A2A_AGENT_TASK_ID_KEY = "task_id"
+A2A_TASK_POOLING_INITIAL_DELAY = 0.5
+A2A_TASK_POOLING_MAX_WAIT = 60
 
 # Streaming filler message configuration defaults
 AGENT_FILLER_MESSAGES_ENABLED_DEFAULT = True

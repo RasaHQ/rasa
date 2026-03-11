@@ -47,6 +47,8 @@ ALLOWED_KEYS = {
         "include_date_time",
         "timezone",
         "enable_filler_messages",
+        "max_polling_time",
+        "polling_initial_delay",
     },
     "connections": {"mcp_servers"},
 }

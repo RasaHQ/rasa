@@ -1132,9 +1132,7 @@ async def test_run_unexpected_response_type_returns_fatal_error(
 
 @pytest.mark.asyncio
 @patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
-async def test_polling_timeout_returns_fatal_error(
-    mock_init_client: MagicMock, monkeypatch: pytest.MonkeyPatch
-):
+async def test_polling_timeout_returns_fatal_error(mock_init_client: MagicMock):
     non_terminal_task = Task(
         context_id="abc",
         id="abc-123",
@@ -1154,11 +1152,6 @@ async def test_polling_timeout_returns_fatal_error(
     mock_client.get_task = slow_get_task
     mock_init_client.return_value = mock_client
 
-    # Set only the overall timeout to 1s
-    import rasa.agents.protocol.a2a.a2a_agent as a2a_mod
-
-    monkeypatch.setattr(a2a_mod, "A2A_TASK_POOLING_MAX_WAIT", 1.0, raising=False)
-
     agent = A2AAgent.from_config(
         AgentConfig(
             agent=AgentInfo(
@@ -1166,7 +1159,9 @@ async def test_polling_timeout_returns_fatal_error(
                 description="A test agent",
                 protocol=ProtocolConfig.A2A,
             ),
-            configuration=AgentConfiguration(agent_card="some/path"),
+            configuration=AgentConfiguration(
+                agent_card="some/path", max_polling_time=1
+            ),
         )
     )
     with patch(
@@ -1290,6 +1285,49 @@ def test_from_config_respects_provided_timeout_and_retries():
 
     assert agent._timeout == 7
     assert agent._max_retries == 9
+
+
+def test_from_config_defaults_polling_params():
+    from rasa.agents.constants import (
+        A2A_TASK_POOLING_INITIAL_DELAY,
+        A2A_TASK_POOLING_MAX_WAIT,
+    )
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(
+                agent_card="some/path",
+                max_polling_time=None,
+                polling_initial_delay=None,
+            ),
+        )
+    )
+
+    assert agent._max_polling_time == A2A_TASK_POOLING_MAX_WAIT
+    assert agent._polling_initial_delay == A2A_TASK_POOLING_INITIAL_DELAY
+
+
+def test_from_config_respects_provided_polling_params():
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(
+                agent_card="some/path", max_polling_time=120, polling_initial_delay=2.0
+            ),
+        )
+    )
+
+    assert agent._max_polling_time == 120
+    assert agent._polling_initial_delay == 2.0
 
 
 @pytest.mark.asyncio

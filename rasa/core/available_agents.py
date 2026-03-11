@@ -74,6 +74,12 @@ class AgentConfiguration(BaseModel):
     tool_timeout: Optional[float] = Field(
         default=None, gt=0, allow_inf_nan=False
     )  # timeout for tool calls in seconds
+    max_polling_time: Optional[int] = Field(
+        default=None, gt=0
+    )  # max total polling time in seconds for A2A agents
+    polling_initial_delay: Optional[float] = Field(
+        default=None, gt=0, allow_inf_nan=False
+    )  # initial polling delay in seconds for A2A agents
 
 
 class AgentConnections(BaseModel):

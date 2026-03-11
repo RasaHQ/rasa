@@ -42,6 +42,8 @@ from pydantic import ValidationError
 from rasa.agents.constants import (
     A2A_AGENT_CONTEXT_ID_KEY,
     A2A_AGENT_TASK_ID_KEY,
+    A2A_TASK_POOLING_INITIAL_DELAY,
+    A2A_TASK_POOLING_MAX_WAIT,
     AGENT_DEFAULT_MAX_RETRIES,
     AGENT_DEFAULT_TIMEOUT_SECONDS,
     AGENT_METADATA_STRUCTURED_RESULTS_KEY,
@@ -69,9 +71,6 @@ from rasa.shared.exceptions import (
     RasaException,
 )
 
-A2A_TASK_POOLING_INITIAL_DELAY = 0.5
-A2A_TASK_POOLING_MAX_WAIT = 60
-
 structlogger = structlog.get_logger()
 
 
@@ -95,6 +94,8 @@ class A2AAgent(AgentProtocol):
         agent_card_path: str,
         timeout: int,
         max_retries: int,
+        max_polling_time: int = A2A_TASK_POOLING_MAX_WAIT,
+        polling_initial_delay: float = A2A_TASK_POOLING_INITIAL_DELAY,
         auth_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         self._name = name
@@ -103,6 +104,8 @@ class A2AAgent(AgentProtocol):
         self._timeout = timeout
         self._max_retries = max_retries
         self._auth_config = auth_config
+        self._max_polling_time = max_polling_time
+        self._polling_initial_delay = polling_initial_delay
 
         self.agent_card: Optional[AgentCard] = None
         self._client: Optional[Client] = None
@@ -131,6 +134,16 @@ class A2AAgent(AgentProtocol):
         )
 
         _auth_config = config.configuration.auth if config.configuration else None
+        max_polling_time = (
+            config.configuration.max_polling_time
+            if config.configuration and config.configuration.max_polling_time
+            else A2A_TASK_POOLING_MAX_WAIT
+        )
+        polling_initial_delay = (
+            config.configuration.polling_initial_delay
+            if config.configuration and config.configuration.polling_initial_delay
+            else A2A_TASK_POOLING_INITIAL_DELAY
+        )
         return cls(
             name=config.agent.name,
             description=config.agent.description,
@@ -138,6 +151,8 @@ class A2AAgent(AgentProtocol):
             timeout=timeout,
             max_retries=max_retries,
             auth_config=_auth_config,
+            max_polling_time=max_polling_time,
+            polling_initial_delay=polling_initial_delay,
         )
 
     @property
@@ -305,8 +320,8 @@ class A2AAgent(AgentProtocol):
             agent_input=agent_input,
             task_id=task_id,
             generated_events=generated_events,
-            max_wait=A2A_TASK_POOLING_MAX_WAIT,
-            initial_delay=A2A_TASK_POOLING_INITIAL_DELAY,
+            max_wait=self._max_polling_time,
+            initial_delay=self._polling_initial_delay,
             max_delay=MAX_AGENT_RETRY_DELAY_SECONDS,
             output_channel=output_channel,
         )
