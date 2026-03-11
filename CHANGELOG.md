@@ -353,6 +353,30 @@ Rasa Pro 3.15.0 (2025-11-26)
 ### Miscellaneous internal changes
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
 
+## [3.14.18] - 2026-03-11
+                         
+Rasa Pro 3.14.18 (2026-03-11)                              
+### Deprecations and Removals
+- [#4675](https://github.com/rasahq/rasa-private/issues/4675): Removed an explicit deprecation warning for the license varible `RASA_PRO_LICENSE` to provide clarity that we will continue to support both this and the newer `RASA_LICENSE` variable for the forseeable future.
+
+### Bugfixes
+- [#2669](https://github.com/rasahq/rasa-private/issues/2669): When a flow had Agent A → flow steps → Agent B and the user restarted Agent A while Agent B was already started (then interrupted), execution after the restarted Agent A completed would jump back to Agent B and skip the flow steps between A and B. Flow steps between agents are now executed correctly, and the previously interrupted Agent B is resumed instead of started from scratch.
+- [#4831](https://github.com/rasahq/rasa-private/issues/4831): Fixes MCP tool result handling to now process results that contain only ``structuredContent`` (and no or empty ``content``).
+  Previously, an empty ``content`` field caused the result to be skipped and slots were not set from ``structuredContent``.
+- [#4846](https://github.com/rasahq/rasa-private/issues/4846): Downgraded the A2A polling "waiting to poll again" log from ERROR to INFO so normal polling no longer triggers false alerts.
+- [#4847](https://github.com/rasahq/rasa-private/issues/4847): SQL tracker store: `update()` now supports a content-only path when the timestamp-based delete removes no rows
+  (e.g. anonymization: same timestamps, content changed). In that case, the store either updates existing event rows
+  in place where content differs or performs a full replace if event counts differ, so anonymized content is persisted
+  correctly in a single atomic transaction.
+
+  Anonymization cron job: the privacy manager now uses `update(updated_tracker)` for anonymization instead of delete-then-save.
+  SQL tracker store behavior is aligned with MongoDB, Redis and DynamoDB (overwrite semantics), and anonymization with SQL
+  completes in one atomic operation without a separate delete/save sequence.
+- [#4864](https://github.com/rasahq/rasa-private/issues/4864): Prevent `JsonPatchConflict` exceptions raised when tracker is split in sub-sessions during PII anonymization cron jobs.
+  Replace usage of a utility function that was recreating tracker objects using sub-sessions with an approach retrieving 
+  list of events for each sub-session instead.
+
+
 ## [3.14.17] - 2026-03-03
                          
 Rasa Pro 3.14.17 (2026-03-03)                              
