@@ -1,81 +1,60 @@
-"""Interactive setup wizard for `rasa tools init`.
+"""``rasa tools init`` — interactive setup wizard.
 
 Collects configuration values through a step-by-step terminal UI
 (or via CLI flags in non-interactive mode), persists them to
-`.rasa/tools.yaml`, optionally fetches the offline docs bundle,
+``.rasa/tools.yaml``, optionally fetches the offline docs bundle,
 and writes IDE-specific MCP configuration files.
 """
 
 import argparse
 import json
-import os
 import sys
-import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List
 
 import questionary
-from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
-from rasa.cli.arguments.tools import (
+from rasa.cli.tools.constants import (
     DOCS_MODE_OFFLINE,
     DOCS_MODE_ONLINE,
+    HELLO_LLM_PROXY_BASE_URL_ENV_VAR,
+    HELLO_LLM_PROXY_URL,
+    IDE_DISPLAY_NAMES,
     MCP_TOOLS_DEFAULT_PORT,
     MCP_TOOLS_TRANSPORT_HTTP,
     MCP_TOOLS_TRANSPORT_STDIO,
     SUPPORTED_IDES,
-)
-from rasa.cli.tools import (
     TOOLS_CONFIG_DIR,
     TOOLS_CONFIG_FILENAME,
-    RunConfig,
-    _resolve_project_dir,
+    WIZARD_STYLE,
 )
-
-_DEFAULT_LLMS_TXT_BASE_URL = "https://rasa.com/docs"
-LLMS_TXT_BASE_URL_ENV_VAR = "RASA_LLMS_TXT_BASE_URL"
-
-_HELLO_LLM_PROXY_URL = "https://hello-llm-proxy.rasa-e2e.workers.dev"
-_HTTP_TIMEOUT = 30
-_LLMS_TXT_FILES = ("llms.txt", "llms-full.txt")
-
-_AGENT_SKILLS_REPO = "RasaHQ/rasa-agent-skills"
-_AGENT_SKILLS_API_URL = "https://api.github.com/repos/{repo}/contents/skills"
-_AGENT_SKILLS_RAW_URL = (
-    "https://raw.githubusercontent.com/{repo}/main/skills/{skill}/SKILL.md"
+from rasa.cli.tools.docs import (
+    fetch_offline_docs,
+    warn_if_offline_docs_exist,
 )
-
-# Base directory within the project root where each IDE loads skills from.
-# All IDEs use the same layout: <base>/<skill-name>/SKILL.md
-_IDE_SKILLS_BASE: Dict[str, str] = {
-    "cursor": ".cursor/skills",
-    "vscode": ".github/skills",
-    "claude": ".claude/skills",
-    # JetBrains has no standard skills location.
-}
-
-IDE_DISPLAY_NAMES: Dict[str, str] = {
-    "cursor": "Cursor",
-    "vscode": "VS Code (GitHub Copilot)",
-    "claude": "Claude Code",
-    "jetbrains": "JetBrains IDEs (IntelliJ, WebStorm, PyCharm, etc.)",
-}
-
-WIZARD_STYLE = Style(
-    [
-        ("qmark", "fg:ansicyan bold"),
-        ("question", "bold"),
-        ("answer", "fg:ansigreen bold"),
-        ("pointer", "fg:ansicyan bold"),
-        ("highlighted", "fg:ansicyan bold"),
-        ("selected", "fg:ansigreen"),
-    ]
+from rasa.cli.tools.skills import (
+    install_agent_skills,
+    warn_if_agent_skills_exist,
 )
+from rasa.cli.tools.utils import RunConfig, _precheck, _resolve_project_dir
 
 console = Console()
+
+
+# ── Entrypoint ────────────────────────────────────────────────────────────────
+
+
+def init_tools(args: argparse.Namespace) -> None:
+    """Entrypoint for `rasa tools init`.
+
+    Args:
+        args: The CLI arguments.
+    """
+    _precheck()
+    run_wizard(args)
 
 
 # ── Public entry point ────────────────────────────────────────────────────────
@@ -119,9 +98,9 @@ def run_wizard(args: argparse.Namespace) -> None:
     console.print(f"\n[green]✔[/green] Saved config → [bold]{config_path}[/bold]")
 
     if config.docs_mode == DOCS_MODE_OFFLINE:
-        _fetch_offline_docs(project_dir)
+        fetch_offline_docs(project_dir, non_interactive=non_interactive)
     elif config.docs_mode == DOCS_MODE_ONLINE:
-        _warn_if_offline_docs_exist(project_dir)
+        warn_if_offline_docs_exist(project_dir)
 
     _write_ide_configs(project_dir, config)
 
@@ -133,9 +112,13 @@ def run_wizard(args: argparse.Namespace) -> None:
             else _ask_install_agent_skills()
         )
         if install_skills:
-            _install_agent_skills(project_dir, config.ide_integrations)
+            install_agent_skills(
+                project_dir,
+                config.ide_integrations,
+                non_interactive=non_interactive,
+            )
         else:
-            _warn_if_agent_skills_exist(project_dir, config.ide_integrations)
+            warn_if_agent_skills_exist(project_dir, config.ide_integrations)
 
     _print_summary(config, config_path)
 
@@ -172,7 +155,7 @@ def _confirm_overwrite(non_interactive: bool) -> bool:
     return bool(proceed)
 
 
-# ── Interactive flow ──────────────────────────────────────────────────────────
+# Interactive flow =====================================================================
 
 
 def _run_interactive(project_dir: Path) -> RunConfig:
@@ -313,7 +296,7 @@ def _abort() -> None:
     sys.exit(1)
 
 
-# ── Non-interactive flow ──────────────────────────────────────────────────────
+# Non-interactive flow =================================================================
 
 
 def _run_non_interactive(args: argparse.Namespace, project_dir: Path) -> RunConfig:
@@ -352,87 +335,7 @@ def _run_non_interactive(args: argparse.Namespace, project_dir: Path) -> RunConf
     return RunConfig(**config_kwargs)
 
 
-# ── Offline docs fetching ────────────────────────────────────────────────────
-
-
-def _resolve_llms_txt_base_url() -> str:
-    """Return the base URL for fetching llms.txt documentation files.
-
-    Reads from the `RASA_LLMS_TXT_BASE_URL` environment variable if set,
-    otherwise falls back to the default Rasa documentation URL.
-
-    Returns:
-        Base URL string (without trailing slash).
-    """
-    url = os.getenv(LLMS_TXT_BASE_URL_ENV_VAR, _DEFAULT_LLMS_TXT_BASE_URL)
-    return url.rstrip("/")
-
-
-def _fetch_offline_docs(project_dir: Path) -> None:
-    """Download the offline docs bundle (llms.txt files) into the config directory.
-
-    Fetches each file listed in `_LLMS_TXT_FILES` from the resolved base URL
-    and saves them under `<project_dir>/.rasa/`.  Failures are reported but
-    do not abort the wizard.
-
-    Args:
-        project_dir: Absolute path to the Rasa project root.
-    """
-    base_url = _resolve_llms_txt_base_url()
-    dest_dir = project_dir / TOOLS_CONFIG_DIR
-    dest_dir.mkdir(parents=True, exist_ok=True)
-
-    console.print()
-    for filename in _LLMS_TXT_FILES:
-        url = f"{base_url}/{filename}"
-        dest = dest_dir / filename
-        console.print(f"  Fetching {filename}…", end=" ")
-        try:
-            with urllib.request.urlopen(url, timeout=_HTTP_TIMEOUT) as response:
-                dest.write_bytes(response.read())
-            console.print("[green]✔[/green]")
-            console.print(f"  Saved to [bold]{dest}[/bold]")
-        except Exception as exc:
-            console.print("[red]✖[/red]")
-            console.print(
-                f"  [yellow]Could not fetch {filename}:[/yellow] {exc}\n"
-                f"  Download manually from [link]{url}[/link]\n"
-                f"  and place it at {dest}"
-            )
-
-
-def _warn_if_offline_docs_exist(project_dir: Path) -> None:
-    """Warn the user if offline docs files exist when switching to online mode.
-
-    Checks for the presence of any llms.txt files in the config directory and
-    displays a warning panel if found. The files are not deleted automatically.
-
-    Args:
-        project_dir: Absolute path to the Rasa project root.
-    """
-    dest_dir = project_dir / TOOLS_CONFIG_DIR
-    existing_files = [
-        filename for filename in _LLMS_TXT_FILES if (dest_dir / filename).exists()
-    ]
-
-    if existing_files:
-        file_list = "\n".join(f"  • {dest_dir / f}" for f in existing_files)
-        console.print()
-        console.print(
-            Panel(
-                "[yellow]⚠[/yellow]  [bold]Offline docs files detected[/bold]\n\n"
-                "You selected online documentation mode, "
-                "but these offline files exist:\n\n"
-                f"{file_list}\n\n"
-                "If left in the project, the agent may still read and use them. "
-                "Delete them to ensure only online documentation is used.",
-                border_style="yellow",
-                expand=False,
-            )
-        )
-
-
-# ── Agent skills installation ─────────────────────────────────────────────────
+# Agent skills installation ============================================================
 
 
 def _ask_install_agent_skills() -> bool:
@@ -453,110 +356,7 @@ def _ask_install_agent_skills() -> bool:
     return bool(answer)
 
 
-def _fetch_skill_names() -> List[str]:
-    """Fetch the list of available skill names from the agent skills repository.
-
-    Returns:
-        List of skill directory names (e.g. `["rasa-building-flows", ...]`).
-        Returns an empty list if the fetch fails.
-    """
-    url = _AGENT_SKILLS_API_URL.format(repo=_AGENT_SKILLS_REPO)
-
-    try:
-        with urllib.request.urlopen(url, timeout=_HTTP_TIMEOUT) as response:
-            entries = json.loads(response.read())
-        # Each skill is a directory. The API also returns non-skill files (e.g. README).
-        return [e["name"] for e in entries if e["type"] == "dir"]
-    except Exception as exc:
-        console.print(f"  [red]✖[/red] Could not fetch skill list: {exc}")
-        return []
-
-
-def _install_agent_skills(project_dir: Path, ides: List[str]) -> None:
-    """Download and install Rasa agent skills for each selected IDE.
-
-    Fetches each skill's `SKILL.md` from the agent skills repository and
-    writes it to `<base>/<skill-name>/SKILL.md` under the project root.
-    IDEs that have no standard skills location (JetBrains) are skipped.
-
-    Args:
-        project_dir: Absolute path to the Rasa project root.
-        ides: List of IDE identifiers to install skills for.
-    """
-    console.print()
-    skill_names = _fetch_skill_names()
-    if not skill_names:
-        return
-
-    # Only keep IDEs that have a known skills base directory.
-    destinations: Dict[str, Path] = {
-        ide: project_dir / base for ide, base in _IDE_SKILLS_BASE.items() if ide in ides
-    }
-
-    if not destinations:
-        console.print(
-            "  [yellow]ℹ[/yellow]  No IDEs with a supported skills location selected."
-        )
-        return
-
-    console.print(f"  Installing [bold]{len(skill_names)}[/bold] agent skills…")
-
-    for skill in skill_names:
-        url = _AGENT_SKILLS_RAW_URL.format(repo=_AGENT_SKILLS_REPO, skill=skill)
-        try:
-            with urllib.request.urlopen(url, timeout=_HTTP_TIMEOUT) as response:
-                content = response.read().decode("utf-8")
-        except Exception as exc:
-            # Log the failure but continue installing the remaining skills.
-            console.print(f"  [red]✖[/red] {skill}: {exc}")
-            continue
-
-        # All IDEs share the same layout: <base>/<skill-name>/SKILL.md
-        for dest_dir in destinations.values():
-            dest = dest_dir / skill / "SKILL.md"
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(content, encoding="utf-8")
-
-        ide_labels = ", ".join(IDE_DISPLAY_NAMES.get(ide, ide) for ide in destinations)
-        console.print(f"  [green]✔[/green] {skill}  →  {ide_labels}")
-
-
-def _warn_if_agent_skills_exist(project_dir: Path, ides: List[str]) -> None:
-    """Warn the user if agent skills directories exist when skipping installation.
-
-    Checks for non-empty skills directories for the selected IDEs and displays
-    a warning panel if any are found. The directories are not deleted automatically.
-
-    Args:
-        project_dir: Absolute path to the Rasa project root.
-        ides: List of IDE identifiers that were selected.
-    """
-    existing_dirs = [
-        project_dir / base
-        for ide, base in _IDE_SKILLS_BASE.items()
-        if ide in ides
-        and (project_dir / base).is_dir()
-        and any((project_dir / base).iterdir())
-    ]
-
-    if existing_dirs:
-        dir_list = "\n".join(f"  • {d}" for d in existing_dirs)
-        console.print()
-        console.print(
-            Panel(
-                "[yellow]⚠[/yellow]  [bold]Agent skills detected[/bold]\n\n"
-                "You chose not to install agent skills, "
-                "but these skill directories already exist:\n\n"
-                f"{dir_list}\n\n"
-                "If left in the project, your IDE may still load them. "
-                "Delete them manually if you no longer need them.",
-                border_style="yellow",
-                expand=False,
-            )
-        )
-
-
-# ── IDE configuration writers ─────────────────────────────────────────────────
+# IDE configuration writers ============================================================
 
 
 def _write_ide_configs(project_dir: Path, config: RunConfig) -> None:
@@ -610,7 +410,7 @@ def _build_stdio_entry(project_dir: Path) -> Dict[str, Any]:
         ],
         "env": {
             LICENSE_ENV_VAR: license_value,
-            "HELLO_LLM_PROXY_BASE_URL": _HELLO_LLM_PROXY_URL,
+            HELLO_LLM_PROXY_BASE_URL_ENV_VAR: HELLO_LLM_PROXY_URL,
         },
     }
 
@@ -728,7 +528,7 @@ _IDE_CONFIG_WRITERS = {
 }
 
 
-# ── JSON merge helper ─────────────────────────────────────────────────────────
+# JSON merge helper ====================================================================
 
 
 def _merge_mcp_json(path: Path, entry: Dict[str, Any], *, wrapper_key: str) -> None:
@@ -766,7 +566,7 @@ def _merge_mcp_json(path: Path, entry: Dict[str, Any], *, wrapper_key: str) -> N
     path.write_text(json.dumps(existing, indent=2) + "\n")
 
 
-# ── Summary panel ─────────────────────────────────────────────────────────────
+# Summary panel ========================================================================
 
 
 def _print_summary(config: RunConfig, config_path: Path) -> None:
@@ -803,7 +603,24 @@ def _print_summary(config: RunConfig, config_path: Path) -> None:
         )
     )
     if config.mode == MCP_TOOLS_TRANSPORT_HTTP:
-        next_step = "\n  Start the MCP server: [cyan]rasa tools run[/cyan]\n"
+        from rasa.utils.licensing import LICENSE_ENV_VAR
+
+        console.print(
+            Panel(
+                "[bold]To start the MCP server, export the required "
+                "environment variables\n"
+                "and then run the server:[/bold]\n\n"
+                f"  [cyan]export {LICENSE_ENV_VAR}=<your-license-key>[/cyan]\n"
+                f"  [cyan]export {HELLO_LLM_PROXY_BASE_URL_ENV_VAR}="
+                f"{HELLO_LLM_PROXY_URL}[/cyan]\n"
+                f"  [cyan]rasa tools run[/cyan]\n\n"
+                f"[dim]{LICENSE_ENV_VAR} is your Rasa Pro license key.\n"
+                f"{HELLO_LLM_PROXY_BASE_URL_ENV_VAR} is the LLM proxy endpoint,\n"
+                "also required for online documentation access.[/dim]",
+                title="[bold]Next[/bold]",
+                border_style="cyan",
+                expand=False,
+            )
+        )
     else:
-        next_step = "\n  Start the server from your IDE.\n"
-    console.print("\n[bold]Next:[/bold]" + next_step)
+        console.print("\n[bold]Next:[/bold]\n  Start the server from your IDE.\n")

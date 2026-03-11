@@ -1,26 +1,69 @@
 import argparse
 
-# Duplicated here to avoid importing rasa.builder.copilot.* at CLI startup.
-# The copilot __init__.py eagerly loads heavy dependencies (agents SDK) which
-# makes every CLI command (including "rasa --help") slow.
-# Canonical values live in rasa.builder.copilot.mcp_server.constants and
-# rasa.builder.copilot.constants — keep these in sync when updating.
-MCP_TOOLS_DEFAULT_PORT = 7331
-MCP_TOOLS_DEFAULT_HOST = "127.0.0.1"
-MCP_TOOLS_TRANSPORT_STDIO = "stdio"
-MCP_TOOLS_TRANSPORT_HTTP = "http"
-MCP_TOOLS_TRANSPORT_STREAMABLE_HTTP = "streamable-http"
-MCP_TOOLS_RASA_PROJECT_FOLDER_ENV_VAR = "RASA_PROJECT_FOLDER"
-# keep in sync with MCP_HTTP_URL_PATTERN in rasa.builder.copilot.mcp_server.constants
-MCP_TOOLS_HTTP_URL_PATTERN = "http://{host}:{port}/mcp"
-MCP_TOOLS_HTTP_HEALTH_URL_PATTERN = "http://{host}:{port}/health"
+from rasa.cli.tools.constants import (
+    DOCS_MODE_OFFLINE,
+    DOCS_MODES,
+    MCP_TOOLS_DEFAULT_PORT,
+    MCP_TOOLS_RASA_PROJECT_FOLDER_ENV_VAR,
+    MCP_TOOLS_TRANSPORT_HTTP,
+    MCP_TOOLS_TRANSPORT_STDIO,
+    SUPPORTED_IDES,
+)
 
 
-DOCS_MODE_OFFLINE = "offline"
-DOCS_MODE_ONLINE = "online"
-DOCS_MODES = (DOCS_MODE_OFFLINE, DOCS_MODE_ONLINE)
+def set_tools_docs_arguments(parser: argparse.ArgumentParser) -> None:
+    """Arguments for `rasa tools init docs`."""
+    parser.add_argument(
+        "--project-path",
+        type=str,
+        default=None,
+        dest="project_path",
+        help=(
+            "Path to the Rasa project folder. "
+            "Defaults to the current directory when not specified."
+        ),
+    )
+    parser.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        default=False,
+        dest="yes",
+        help="Skip confirmation prompts and overwrite existing docs.",
+    )
 
-SUPPORTED_IDES = ("cursor", "vscode", "claude", "jetbrains")
+
+def set_tools_skills_arguments(parser: argparse.ArgumentParser) -> None:
+    """Arguments for `rasa tools init skills`."""
+    parser.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        default=False,
+        dest="yes",
+        help="Skip confirmation prompts and accept defaults.",
+    )
+    parser.add_argument(
+        "--project-path",
+        type=str,
+        default=None,
+        dest="project_path",
+        help=(
+            "Path to the Rasa project folder. "
+            "Defaults to the current directory when not specified."
+        ),
+    )
+    parser.add_argument(
+        "--ides",
+        type=str,
+        default=None,
+        dest="ides",
+        help=(
+            "Comma-separated list of IDEs to install skills for: "
+            f"{', '.join(SUPPORTED_IDES)}. "
+            "If omitted, reads from the saved configuration."
+        ),
+    )
 
 
 def set_tools_init_arguments(parser: argparse.ArgumentParser) -> None:

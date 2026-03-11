@@ -11,128 +11,22 @@ from rasa.builder.copilot.mcp_server.constants import (
     MCP_TRANSPORT_STDIO,
     MCP_TRANSPORT_STREAMABLE_HTTP,
 )
-from rasa.cli.arguments.tools import MCP_TOOLS_DEFAULT_HOST
-from rasa.cli.tools import (
+from rasa.cli.tools.constants import (
+    MCP_TOOLS_DEFAULT_HOST,
     TOOLS_CONFIG_DIR,
     TOOLS_CONFIG_FILENAME,
-    RunConfig,
-    _precheck,
-    _redirect_logging_to_stderr,
+)
+from rasa.cli.tools.run import (
     _resolve_config_path,
-    _resolve_project_dir,
     _resolve_tools_run_config,
     _validate_config_exclusivity,
     run_tools,
 )
+from rasa.cli.tools.utils import (
+    RunConfig,
+    _redirect_logging_to_stderr,
+)
 from rasa.shared.exceptions import RasaException
-
-tools_module_path = "rasa.cli.tools"
-
-
-class TestResolveProjectDir:
-    """Tests for _resolve_project_dir."""
-
-    def test_cli_arg_takes_priority(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """CLI arg wins over env var and CWD."""
-        cli_dir = tmp_path / "cli"
-        cli_dir.mkdir()
-        env_dir = tmp_path / "env"
-        env_dir.mkdir()
-        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(env_dir))
-
-        assert _resolve_project_dir(str(cli_dir)) == cli_dir.resolve()
-
-    def test_env_var_used_when_no_cli_arg(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Env var is used when no CLI arg is given."""
-        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(tmp_path))
-
-        assert _resolve_project_dir() == tmp_path.resolve()
-
-    def test_config_project_path_used_when_no_cli_or_env(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """config_project_path is consulted when neither CLI arg nor env var is set."""
-        config_dir = tmp_path / "config"
-        config_dir.mkdir()
-        monkeypatch.delenv(RASA_PROJECT_FOLDER_ENV_VAR, raising=False)
-
-        assert (
-            _resolve_project_dir(config_project_path=str(config_dir))
-            == config_dir.resolve()
-        )
-
-    def test_cli_arg_beats_config_project_path(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """CLI arg takes priority over config_project_path."""
-        cli_dir = tmp_path / "cli"
-        cli_dir.mkdir()
-        config_dir = tmp_path / "config"
-        config_dir.mkdir()
-        monkeypatch.delenv(RASA_PROJECT_FOLDER_ENV_VAR, raising=False)
-
-        assert (
-            _resolve_project_dir(str(cli_dir), config_project_path=str(config_dir))
-            == cli_dir.resolve()
-        )
-
-    def test_env_var_beats_config_project_path(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Env var takes priority over config_project_path."""
-        env_dir = tmp_path / "env"
-        env_dir.mkdir()
-        config_dir = tmp_path / "config"
-        config_dir.mkdir()
-        monkeypatch.setenv(RASA_PROJECT_FOLDER_ENV_VAR, str(env_dir))
-
-        assert (
-            _resolve_project_dir(config_project_path=str(config_dir))
-            == env_dir.resolve()
-        )
-
-    def test_falls_back_to_cwd(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Falls back to CWD when no CLI arg, env var, or config path is given."""
-        monkeypatch.delenv(RASA_PROJECT_FOLDER_ENV_VAR, raising=False)
-        monkeypatch.chdir(tmp_path)
-
-        assert _resolve_project_dir() == tmp_path.resolve()
-
-    def test_resolves_relative_path_to_absolute(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Relative paths are resolved to absolute."""
-        subdir = tmp_path / "subdir"
-        subdir.mkdir()
-        monkeypatch.chdir(tmp_path)
-
-        result = _resolve_project_dir("subdir")
-        assert result.is_absolute()
-        assert result == subdir.resolve()
-
-    def test_no_existence_check_by_default(self) -> None:
-        """Missing paths are allowed when validate_exists is not set."""
-        result = _resolve_project_dir("/path/that/does/not/exist")
-        assert str(result) == "/path/that/does/not/exist"
-
-    def test_validate_exists_raises_for_missing_path(self) -> None:
-        """validate_exists=True raises RasaException for a non-existent path."""
-        with pytest.raises(RasaException, match="does not exist"):
-            _resolve_project_dir("/path/that/does/not/exist", validate_exists=True)
-
-    def test_validate_exists_raises_when_path_is_file(self, tmp_path: Path) -> None:
-        """validate_exists=True raises RasaException when path is a file."""
-        file_path = tmp_path / "somefile.txt"
-        file_path.write_text("content")
-
-        with pytest.raises(RasaException, match="not a directory"):
-            _resolve_project_dir(str(file_path), validate_exists=True)
 
 
 class TestResolveRunConfig:
@@ -450,7 +344,7 @@ class TestRunTools:
             original_redirect()
 
         monkeypatch.setattr(
-            "rasa.cli.tools._redirect_logging_to_stderr", tracking_redirect
+            "rasa.cli.tools.run._redirect_logging_to_stderr", tracking_redirect
         )
         monkeypatch.setattr(
             "rasa.utils.licensing.validate_license_from_env",
@@ -619,49 +513,6 @@ class TestRunTools:
         assert "<could not read file>" in captured.out
 
 
-class TestRunConfigLoad:
-    def test_raises_when_file_does_not_exist(self, tmp_path: Path) -> None:
-        with pytest.raises(RasaException, match="does not exist"):
-            RunConfig.load(tmp_path / "missing.yaml")
-
-    def test_raises_on_invalid_config_content(self, tmp_path: Path) -> None:
-        path = tmp_path / "tools.yaml"
-        path.write_text("ide_integrations: [not-a-valid-ide]\n")
-        with pytest.raises(RasaException, match="Invalid config"):
-            RunConfig.load(path)
-
-    def test_raises_on_unparseable_yaml(self, tmp_path: Path) -> None:
-        path = tmp_path / "tools.yaml"
-        path.write_text("key: [unclosed bracket\n")
-        with pytest.raises(RasaException, match="Failed to read config file"):
-            RunConfig.load(path)
-
-
-class TestRunConfigSerializer:
-    def test_ide_integrations_omitted_when_empty(self) -> None:
-        data = RunConfig(mode="stdio", ide_integrations=[]).model_dump()
-        assert "ide_integrations" not in data
-
-    def test_ide_integrations_present_when_non_empty(self) -> None:
-        data = RunConfig(mode="stdio", ide_integrations=["cursor"]).model_dump()
-        assert data["ide_integrations"] == ["cursor"]
-
-    def test_extra_fields_ignored_on_load(self, tmp_path: Path) -> None:
-        path = tmp_path / "tools.yaml"
-        path.write_text("mode: stdio\nunknown_future_field: some_value\n")
-        cfg = RunConfig.load(path)
-        assert cfg.mode == "stdio"
-        assert not hasattr(cfg, "unknown_future_field")
-
-    def test_port_omitted_for_stdio(self) -> None:
-        data = RunConfig(mode="stdio").model_dump()
-        assert "port" not in data
-
-    def test_port_included_for_http(self) -> None:
-        data = RunConfig(mode="http", port=9000).model_dump()
-        assert data["port"] == 9000
-
-
 class TestValidateConfigExclusivity:
     def _args(self, **kwargs: object) -> argparse.Namespace:
         defaults = dict(config=None, mode=None, port=None, project_path=None)
@@ -757,33 +608,12 @@ class TestResolveConfigPath:
         assert _resolve_config_path(None, tmp_path) is None
 
 
-class TestPrecheckStreamRouting:
+class TestRunToolsBannerRouting:
     _VALIDATE = "rasa.utils.licensing.validate_license_from_env"
 
     @pytest.fixture(autouse=True)
     def _mock_license(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(self._VALIDATE, MagicMock())
-
-    def test_banner_written_to_stderr_when_file_is_stderr(
-        self,
-        capsys: pytest.CaptureFixture[str],
-    ) -> None:
-        import sys
-
-        _precheck(file=sys.stderr)
-
-        captured = capsys.readouterr()
-        assert captured.out == ""
-        assert len(captured.err) > 0
-
-    def test_banner_written_to_stdout_by_default(
-        self,
-        capsys: pytest.CaptureFixture[str],
-    ) -> None:
-        _precheck()
-
-        captured = capsys.readouterr()
-        assert len(captured.out) > 0
 
     def test_run_tools_banner_never_reaches_stdout(
         self,
@@ -805,31 +635,3 @@ class TestPrecheckStreamRouting:
         run_tools(args)
 
         assert capsys.readouterr().out == ""
-
-
-class TestRedirectLoggingToStderr:
-    def test_handler_without_stream_attr_is_skipped(self) -> None:
-        import logging
-
-        handler = logging.Handler()
-        assert not hasattr(handler, "stream")
-
-        root = logging.getLogger()
-        root.addHandler(handler)
-        try:
-            _redirect_logging_to_stderr()  # must not raise
-        finally:
-            root.removeHandler(handler)
-
-    def test_non_stdout_handler_stream_is_not_changed(self) -> None:
-        import logging
-        import sys
-
-        handler = logging.StreamHandler(sys.stderr)
-        root = logging.getLogger()
-        root.addHandler(handler)
-        try:
-            _redirect_logging_to_stderr()
-            assert handler.stream is sys.stderr
-        finally:
-            root.removeHandler(handler)

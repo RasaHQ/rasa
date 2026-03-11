@@ -1,15 +1,9 @@
 import argparse
-from pathlib import Path
 from typing import List, Optional
 
 import pytest
 
-from rasa.cli.tools import (
-    TOOLS_CONFIG_DIR,
-    TOOLS_CONFIG_FILENAME,
-    RunConfig,
-    _validate_config_exclusivity,
-)
+from rasa.cli.tools.run import _validate_config_exclusivity
 from rasa.shared.exceptions import RasaException
 
 
@@ -231,58 +225,66 @@ def test_config_with_other_args_raises(
         _validate_config_exclusivity(args)
 
 
-class TestRunConfigPersistence:
-    def test_save_creates_directory_and_file(self, tmp_path: Path) -> None:
-        cfg = RunConfig(mode="http", port=1234)
-        dest = tmp_path / "nested" / "dir" / "tools.yaml"
-        cfg.save(dest)
+class TestToolsInitSkillsArguments:
+    def test_default_skills_arguments(
+        self, tools_parser: argparse.ArgumentParser
+    ) -> None:
+        args = tools_parser.parse_args(["tools", "init", "skills"])
+        assert args.project_path is None
+        assert args.ides is None
+        assert args.yes is False
 
-        assert dest.exists()
+    def test_skills_yes_flag(self, tools_parser: argparse.ArgumentParser) -> None:
+        args = tools_parser.parse_args(["tools", "init", "skills", "--yes"])
+        assert args.yes is True
 
-    def test_roundtrip(self, tmp_path: Path) -> None:
-        cfg = RunConfig(mode="http", port=4567)
-        dest = tmp_path / TOOLS_CONFIG_DIR / TOOLS_CONFIG_FILENAME
-        cfg.save(dest)
+    def test_skills_yes_short_flag(self, tools_parser: argparse.ArgumentParser) -> None:
+        args = tools_parser.parse_args(["tools", "init", "skills", "-y"])
+        assert args.yes is True
 
-        loaded = RunConfig.load(dest)
-        assert loaded.mode == "http"
-        assert loaded.port == 4567
-
-    def test_roundtrip_with_new_fields(self, tmp_path: Path) -> None:
-        cfg = RunConfig(
-            mode="stdio",
-            port=7331,
-            project_path="/my/bot",
-            docs_mode="online",
-            ide_integrations=["cursor", "vscode"],
+    def test_skills_with_project_path(
+        self, tools_parser: argparse.ArgumentParser
+    ) -> None:
+        args = tools_parser.parse_args(
+            ["tools", "init", "skills", "--project-path", "/my/bot"]
         )
-        dest = tmp_path / TOOLS_CONFIG_DIR / TOOLS_CONFIG_FILENAME
-        cfg.save(dest)
+        assert args.project_path == "/my/bot"
 
-        loaded = RunConfig.load(dest)
-        assert loaded.project_path == "/my/bot"
-        assert loaded.docs_mode == "online"
-        assert loaded.ide_integrations == ["cursor", "vscode"]
+    def test_skills_with_ides(self, tools_parser: argparse.ArgumentParser) -> None:
+        args = tools_parser.parse_args(
+            ["tools", "init", "skills", "--ides", "cursor,vscode"]
+        )
+        assert args.ides == "cursor,vscode"
 
-    def test_new_fields_have_defaults(self) -> None:
-        cfg = RunConfig()
-        assert cfg.project_path == "."
-        assert cfg.docs_mode == "offline"
-        assert cfg.ide_integrations == []
+    def test_skills_with_all_flags(self, tools_parser: argparse.ArgumentParser) -> None:
+        args = tools_parser.parse_args(
+            [
+                "tools",
+                "init",
+                "skills",
+                "-y",
+                "--project-path",
+                "/my/bot",
+                "--ides",
+                "cursor,vscode,claude",
+            ]
+        )
+        assert args.yes is True
+        assert args.project_path == "/my/bot"
+        assert args.ides == "cursor,vscode,claude"
 
-    def test_load_raises_for_missing_file(self, tmp_path: Path) -> None:
-        with pytest.raises(RasaException, match="does not exist"):
-            RunConfig.load(tmp_path / "nonexistent.yaml")
 
-    def test_load_raises_for_non_dict_yaml(self, tmp_path: Path) -> None:
-        bad = tmp_path / "bad.yaml"
-        bad.write_text("- item1\n- item2\n")
-        with pytest.raises(RasaException, match="Invalid config"):
-            RunConfig.load(bad)
+class TestToolsInitDocsArguments:
+    def test_default_docs_arguments(
+        self, tools_parser: argparse.ArgumentParser
+    ) -> None:
+        args = tools_parser.parse_args(["tools", "init", "docs"])
+        assert args.project_path is None
 
-    def test_load_handles_extra_keys_gracefully(self, tmp_path: Path) -> None:
-        cfg_file = tmp_path / "tools.yaml"
-        cfg_file.write_text("mode: http\nport: 5000\nfuture_key: value\n")
-        loaded = RunConfig.load(cfg_file)
-        assert loaded.mode == "http"
-        assert loaded.port == 5000
+    def test_docs_with_project_path(
+        self, tools_parser: argparse.ArgumentParser
+    ) -> None:
+        args = tools_parser.parse_args(
+            ["tools", "init", "docs", "--project-path", "/my/bot"]
+        )
+        assert args.project_path == "/my/bot"

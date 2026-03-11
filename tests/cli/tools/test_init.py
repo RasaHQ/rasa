@@ -3,46 +3,36 @@ import json
 import sys
 from io import StringIO
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from pydantic import ValidationError
 from rich.console import Console
 
-from rasa.cli.arguments.tools import (
+from rasa.cli.tools.constants import (
     DOCS_MODE_OFFLINE,
     DOCS_MODE_ONLINE,
+    HELLO_LLM_PROXY_BASE_URL_ENV_VAR,
+    HELLO_LLM_PROXY_URL,
     MCP_TOOLS_RASA_PROJECT_FOLDER_ENV_VAR,
     MCP_TOOLS_TRANSPORT_HTTP,
     MCP_TOOLS_TRANSPORT_STDIO,
-)
-from rasa.cli.tools import (
     TOOLS_CONFIG_DIR,
     TOOLS_CONFIG_FILENAME,
-    RunConfig,
-    _precheck,
-    init_tools,
-    run_tools,
 )
-from rasa.cli.tools_wizard import (
-    _HELLO_LLM_PROXY_URL,
-    LLMS_TXT_BASE_URL_ENV_VAR,
+from rasa.cli.tools.init import (
     _build_http_entry,
     _build_stdio_entry,
     _confirm_overwrite,
-    _fetch_offline_docs,
-    _fetch_skill_names,
-    _install_agent_skills,
     _merge_mcp_json,
     _print_summary,
-    _resolve_llms_txt_base_url,
     _run_non_interactive,
-    _warn_if_agent_skills_exist,
-    _warn_if_offline_docs_exist,
     _write_ide_configs,
+    init_tools,
     run_wizard,
 )
+from rasa.cli.tools.run import run_tools
+from rasa.cli.tools.utils import RunConfig
 
 _FAKE_LICENSE = "fake-license-token-for-tests"
 _RETRIEVE_LICENSE = "rasa.utils.licensing.retrieve_license_from_env"
@@ -61,20 +51,6 @@ def _make_args(**overrides: Any) -> argparse.Namespace:
     )
     defaults.update(overrides)
     return argparse.Namespace(**defaults)
-
-
-class TestResolveLlmsTxtBaseUrl:
-    def test_uses_env_var_when_set(self, monkeypatch: Any) -> None:
-        monkeypatch.setenv(LLMS_TXT_BASE_URL_ENV_VAR, "https://custom.example.com")
-        assert _resolve_llms_txt_base_url() == "https://custom.example.com"
-
-    def test_falls_back_to_default_when_env_var_absent(self, monkeypatch: Any) -> None:
-        monkeypatch.delenv(LLMS_TXT_BASE_URL_ENV_VAR, raising=False)
-        assert _resolve_llms_txt_base_url() == "https://rasa.com/docs"
-
-    def test_strips_trailing_slash(self, monkeypatch: Any) -> None:
-        monkeypatch.setenv(LLMS_TXT_BASE_URL_ENV_VAR, "https://custom.example.com/")
-        assert _resolve_llms_txt_base_url() == "https://custom.example.com"
 
 
 class TestNonInteractive:
@@ -143,7 +119,7 @@ class TestMcpEntryBuilders:
     ) -> None:
         monkeypatch.setattr(_RETRIEVE_LICENSE, lambda: (_FAKE_LICENSE, "RASA_LICENSE"))
         entry = _build_stdio_entry(tmp_path)
-        assert entry["env"]["HELLO_LLM_PROXY_BASE_URL"] == _HELLO_LLM_PROXY_URL
+        assert entry["env"][HELLO_LLM_PROXY_BASE_URL_ENV_VAR] == HELLO_LLM_PROXY_URL
 
     def test_http_entry(self) -> None:
         entry = _build_http_entry(9000)
@@ -342,28 +318,19 @@ class TestRunWizardNonInteractive:
 
     def test_offline_docs_called(self, tmp_path: Path, monkeypatch: Any) -> None:
         mock_fetch = MagicMock()
-        monkeypatch.setattr("rasa.cli.tools_wizard._fetch_offline_docs", mock_fetch)
+        monkeypatch.setattr("rasa.cli.tools.init.fetch_offline_docs", mock_fetch)
         args = _make_args(project_path=str(tmp_path), docs=DOCS_MODE_OFFLINE)
         run_wizard(args)
 
-        mock_fetch.assert_called_once_with(tmp_path)
+        mock_fetch.assert_called_once_with(tmp_path, non_interactive=True)
 
     def test_online_docs_skips_fetch(self, tmp_path: Path, monkeypatch: Any) -> None:
         mock_fetch = MagicMock()
-        monkeypatch.setattr("rasa.cli.tools_wizard._fetch_offline_docs", mock_fetch)
+        monkeypatch.setattr("rasa.cli.tools.init.fetch_offline_docs", mock_fetch)
         args = _make_args(project_path=str(tmp_path), docs=DOCS_MODE_ONLINE)
         run_wizard(args)
 
         mock_fetch.assert_not_called()
-
-    def test_stdio_mode_excludes_port_from_config(self, tmp_path: Path) -> None:
-        """Port should not be saved in config when using stdio mode."""
-        args = _make_args(project_path=str(tmp_path), mode=MCP_TOOLS_TRANSPORT_STDIO)
-        run_wizard(args)
-
-        config_path = tmp_path / TOOLS_CONFIG_DIR / TOOLS_CONFIG_FILENAME
-        config_text = config_path.read_text()
-        assert "port:" not in config_text
 
     def test_http_mode_includes_port_in_config(self, tmp_path: Path) -> None:
         """Port should be saved in config when using http mode."""
@@ -381,9 +348,7 @@ class TestRunWizardNonInteractive:
     ) -> None:
         """Switching to online mode should warn if offline files exist."""
         mock_warn = MagicMock()
-        monkeypatch.setattr(
-            "rasa.cli.tools_wizard._warn_if_offline_docs_exist", mock_warn
-        )
+        monkeypatch.setattr("rasa.cli.tools.init.warn_if_offline_docs_exist", mock_warn)
         args = _make_args(project_path=str(tmp_path), docs=DOCS_MODE_ONLINE)
         run_wizard(args)
 
@@ -399,48 +364,26 @@ class TestRunWizardNonInteractive:
         config_path = tmp_path / TOOLS_CONFIG_DIR / TOOLS_CONFIG_FILENAME
         assert config_path.exists()
 
-    def test_stdio_cursor_config_includes_env(self, tmp_path: Path) -> None:
-        """Cursor stdio config must include license and proxy env vars."""
-        args = _make_args(project_path=str(tmp_path), ides="cursor")
+    @pytest.mark.parametrize(
+        "ide, cfg_path, wrapper_key",
+        [
+            ("cursor", ".cursor/mcp.json", "mcpServers"),
+            ("vscode", ".vscode/mcp.json", "servers"),
+            ("claude", ".mcp.json", "mcpServers"),
+        ],
+        ids=["cursor", "vscode", "claude"],
+    )
+    def test_stdio_config_includes_env(
+        self, tmp_path: Path, ide: str, cfg_path: str, wrapper_key: str
+    ) -> None:
+        """Stdio config for each IDE must include license and proxy env vars."""
+        args = _make_args(project_path=str(tmp_path), ides=ide)
         run_wizard(args)
 
-        data = json.loads((tmp_path / ".cursor" / "mcp.json").read_text())
-        env = data["mcpServers"]["rasa-tools"]["env"]
+        data = json.loads((tmp_path / cfg_path).read_text())
+        env = data[wrapper_key]["rasa-tools"]["env"]
         assert env["RASA_LICENSE"] == _FAKE_LICENSE
-        assert env["HELLO_LLM_PROXY_BASE_URL"] == _HELLO_LLM_PROXY_URL
-
-    def test_stdio_vscode_config_includes_env(self, tmp_path: Path) -> None:
-        """VS Code stdio config must include license and proxy env vars."""
-        args = _make_args(project_path=str(tmp_path), ides="vscode")
-        run_wizard(args)
-
-        data = json.loads((tmp_path / ".vscode" / "mcp.json").read_text())
-        env = data["servers"]["rasa-tools"]["env"]
-        assert env["RASA_LICENSE"] == _FAKE_LICENSE
-        assert env["HELLO_LLM_PROXY_BASE_URL"] == _HELLO_LLM_PROXY_URL
-
-    def test_stdio_claude_config_includes_env(self, tmp_path: Path) -> None:
-        """Claude stdio config must include license and proxy env vars."""
-        args = _make_args(project_path=str(tmp_path), ides="claude")
-        run_wizard(args)
-
-        data = json.loads((tmp_path / ".mcp.json").read_text())
-        env = data["mcpServers"]["rasa-tools"]["env"]
-        assert env["RASA_LICENSE"] == _FAKE_LICENSE
-        assert env["HELLO_LLM_PROXY_BASE_URL"] == _HELLO_LLM_PROXY_URL
-
-    def test_http_config_has_no_env(self, tmp_path: Path) -> None:
-        """HTTP mode config entries should not contain an env block."""
-        args = _make_args(
-            project_path=str(tmp_path),
-            mode=MCP_TOOLS_TRANSPORT_HTTP,
-            port=9000,
-            ides="cursor",
-        )
-        run_wizard(args)
-
-        data = json.loads((tmp_path / ".cursor" / "mcp.json").read_text())
-        assert "env" not in data["mcpServers"]["rasa-tools"]
+        assert env[HELLO_LLM_PROXY_BASE_URL_ENV_VAR] == HELLO_LLM_PROXY_URL
 
     def test_env_var_project_path_used_when_no_cli_arg(
         self, tmp_path: Path, monkeypatch: Any
@@ -468,106 +411,19 @@ class TestRunWizardNonInteractive:
         assert not (other_dir / TOOLS_CONFIG_DIR / TOOLS_CONFIG_FILENAME).exists()
 
 
-class TestAgentSkills:
+class TestWizardSkillsIntegration:
+    """Tests that run_wizard correctly delegates to skills functions."""
+
     @pytest.fixture(autouse=True)
     def _mock_license(self, monkeypatch: Any) -> None:
         monkeypatch.setattr(_RETRIEVE_LICENSE, lambda: (_FAKE_LICENSE, "RASA_LICENSE"))
 
-    FAKE_SKILLS: ClassVar[list[str]] = [
-        "rasa-building-flows",
-        "rasa-writing-custom-actions",
-    ]
-
-    def _fake_urlopen(self, url: str, timeout: int = 30) -> MagicMock:
-        if "api.github.com" in url:
-            entries = [{"name": s, "type": "dir"} for s in self.FAKE_SKILLS]
-            mock = MagicMock()
-            mock.__enter__ = MagicMock(return_value=mock)
-            mock.__exit__ = MagicMock(return_value=False)
-            mock.read = MagicMock(return_value=json.dumps(entries).encode())
-            return mock
-        # Raw SKILL.md fetch
-        mock = MagicMock()
-        mock.__enter__ = MagicMock(return_value=mock)
-        mock.__exit__ = MagicMock(return_value=False)
-        mock.read = MagicMock(
-            return_value=b"---\nname: rasa-skill\n---\n# Skill content"
-        )
-        return mock
-
-    def test_cursor_skill_files_created(self, tmp_path: Path, monkeypatch: Any) -> None:
-        """Each skill should be written as SKILL.md under .cursor/skills/<skill>/."""
-        mock_urlopen = MagicMock(side_effect=self._fake_urlopen)
-        monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
-        _install_agent_skills(tmp_path, ["cursor"])
-
-        for skill in self.FAKE_SKILLS:
-            dest = tmp_path / ".cursor" / "skills" / skill / "SKILL.md"
-            assert dest.exists(), f"Expected {dest}"
-            assert "Skill content" in dest.read_text()
-
-    def test_vscode_skill_files_created(self, tmp_path: Path, monkeypatch: Any) -> None:
-        """Each skill should be written as SKILL.md under .github/skills/<skill>/."""
-        mock_urlopen = MagicMock(side_effect=self._fake_urlopen)
-        monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
-        _install_agent_skills(tmp_path, ["vscode"])
-
-        for skill in self.FAKE_SKILLS:
-            dest = tmp_path / ".github" / "skills" / skill / "SKILL.md"
-            assert dest.exists(), f"Expected {dest}"
-
-    def test_claude_skill_files_created(self, tmp_path: Path, monkeypatch: Any) -> None:
-        """Each skill should be written as SKILL.md under .claude/skills/<skill>/."""
-        mock_urlopen = MagicMock(side_effect=self._fake_urlopen)
-        monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
-        _install_agent_skills(tmp_path, ["claude"])
-
-        for skill in self.FAKE_SKILLS:
-            dest = tmp_path / ".claude" / "skills" / skill / "SKILL.md"
-            assert dest.exists(), f"Expected {dest}"
-
-    def test_jetbrains_skipped(self, tmp_path: Path, monkeypatch: Any) -> None:
-        """JetBrains IDE has no skills location; nothing should be written."""
-        mock_urlopen = MagicMock(side_effect=self._fake_urlopen)
-        monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
-        _install_agent_skills(tmp_path, ["jetbrains"])
-
-        assert not (tmp_path / ".cursor").exists()
-        assert not (tmp_path / ".github").exists()
-        assert not (tmp_path / ".claude").exists()
-
-    def test_multiple_ides_all_receive_skills(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        """All three supported IDEs should receive the full skill set in one call."""
-        mock_urlopen = MagicMock(side_effect=self._fake_urlopen)
-        monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
-        _install_agent_skills(tmp_path, ["cursor", "vscode", "claude"])
-
-        for skill in self.FAKE_SKILLS:
-            assert (tmp_path / ".cursor" / "skills" / skill / "SKILL.md").exists()
-            assert (tmp_path / ".github" / "skills" / skill / "SKILL.md").exists()
-            assert (tmp_path / ".claude" / "skills" / skill / "SKILL.md").exists()
-
-    def test_network_failure_writes_nothing(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        """When the GitHub API call fails, no skill directories should be created."""
-        monkeypatch.setattr(
-            "urllib.request.urlopen", MagicMock(side_effect=OSError("network error"))
-        )
-        _install_agent_skills(tmp_path, ["cursor", "vscode", "claude"])
-
-        assert not (tmp_path / ".cursor").exists()
-        assert not (tmp_path / ".github").exists()
-        assert not (tmp_path / ".claude").exists()
-
     def test_skills_flag_triggers_install(
         self, tmp_path: Path, monkeypatch: Any
     ) -> None:
-        """Passing --skills in non-interactive mode calls _install_agent_skills."""
+        """Passing --skills in non-interactive mode calls install_agent_skills."""
         mock_install = MagicMock()
-        monkeypatch.setattr("rasa.cli.tools_wizard._install_agent_skills", mock_install)
+        monkeypatch.setattr("rasa.cli.tools.init.install_agent_skills", mock_install)
         args = _make_args(project_path=str(tmp_path), ides="cursor", skills=True)
         run_wizard(args)
 
@@ -576,9 +432,9 @@ class TestAgentSkills:
     def test_no_skills_flag_skips_install(
         self, tmp_path: Path, monkeypatch: Any
     ) -> None:
-        """Without --skills, _install_agent_skills should not be called."""
+        """Without --skills, install_agent_skills should not be called."""
         mock_install = MagicMock()
-        monkeypatch.setattr("rasa.cli.tools_wizard._install_agent_skills", mock_install)
+        monkeypatch.setattr("rasa.cli.tools.init.install_agent_skills", mock_install)
         args = _make_args(project_path=str(tmp_path), ides="cursor", skills=False)
         run_wizard(args)
 
@@ -588,14 +444,48 @@ class TestAgentSkills:
         """When no IDEs are selected, skills install and warn should never run."""
         mock_install = MagicMock()
         mock_warn = MagicMock()
-        monkeypatch.setattr("rasa.cli.tools_wizard._install_agent_skills", mock_install)
-        monkeypatch.setattr(
-            "rasa.cli.tools_wizard._warn_if_agent_skills_exist", mock_warn
-        )
+        monkeypatch.setattr("rasa.cli.tools.init.install_agent_skills", mock_install)
+        monkeypatch.setattr("rasa.cli.tools.init.warn_if_agent_skills_exist", mock_warn)
         args = _make_args(project_path=str(tmp_path), ides=None, skills=True)
         run_wizard(args)
 
         mock_install.assert_not_called()
+        mock_warn.assert_not_called()
+
+    def test_wizard_warns_when_skills_declined(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        """run_wizard calls warn_if_agent_skills_exist when skills are declined."""
+        mock_warn = MagicMock()
+        monkeypatch.setattr("rasa.cli.tools.init.warn_if_agent_skills_exist", mock_warn)
+        args = _make_args(project_path=str(tmp_path), ides="cursor", skills=False)
+        run_wizard(args)
+
+        mock_warn.assert_called_once_with(tmp_path, ["cursor"])
+
+    def test_wizard_skips_warn_when_skills_installed(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        """warn_if_agent_skills_exist is not called when skills are installed."""
+        mock_warn = MagicMock()
+        mock_install = MagicMock()
+        monkeypatch.setattr("rasa.cli.tools.init.warn_if_agent_skills_exist", mock_warn)
+        monkeypatch.setattr("rasa.cli.tools.init.install_agent_skills", mock_install)
+        args = _make_args(project_path=str(tmp_path), ides="cursor", skills=True)
+        run_wizard(args)
+
+        mock_install.assert_called_once()
+        mock_warn.assert_not_called()
+
+    def test_wizard_skips_warn_when_no_ides_configured(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        """warn_if_agent_skills_exist is never reached when no IDEs are selected."""
+        mock_warn = MagicMock()
+        monkeypatch.setattr("rasa.cli.tools.init.warn_if_agent_skills_exist", mock_warn)
+        args = _make_args(project_path=str(tmp_path), ides=None, skills=False)
+        run_wizard(args)
+
         mock_warn.assert_not_called()
 
 
@@ -603,37 +493,12 @@ _VALIDATE_LICENSE = "rasa.utils.licensing.validate_license_from_env"
 
 
 class TestLicenseEnforcement:
-    def test_precheck_passes_with_valid_license(self, monkeypatch: Any) -> None:
-        """_precheck should complete without error when the license is valid."""
-        mock_validate = MagicMock()
-        monkeypatch.setattr(_VALIDATE_LICENSE, mock_validate)
-        _precheck()
-        mock_validate.assert_called_once()
-
-    def test_precheck_exits_when_license_missing(self, monkeypatch: Any) -> None:
-        """_precheck should propagate SystemExit when no license is found."""
-        monkeypatch.setattr(
-            _VALIDATE_LICENSE,
-            MagicMock(side_effect=SystemExit("A Rasa license is required.")),
-        )
-        with pytest.raises(SystemExit):
-            _precheck()
-
-    def test_precheck_exits_when_license_invalid(self, monkeypatch: Any) -> None:
-        """_precheck should propagate SystemExit when the license is invalid."""
-        monkeypatch.setattr(
-            _VALIDATE_LICENSE,
-            MagicMock(side_effect=SystemExit("Failed to validate Rasa license.")),
-        )
-        with pytest.raises(SystemExit):
-            _precheck()
-
     def test_init_tools_exits_before_wizard_without_license(
         self, tmp_path: Path, monkeypatch: Any
     ) -> None:
         """init_tools must exit before reaching the wizard if no license is set."""
         mock_wizard = MagicMock()
-        monkeypatch.setattr("rasa.cli.tools_wizard.run_wizard", mock_wizard)
+        monkeypatch.setattr("rasa.cli.tools.init.run_wizard", mock_wizard)
         monkeypatch.setattr(_VALIDATE_LICENSE, MagicMock(side_effect=SystemExit(1)))
 
         with pytest.raises(SystemExit):
@@ -649,40 +514,6 @@ class TestLicenseEnforcement:
 
         with pytest.raises(SystemExit):
             run_tools(_make_args(mode=MCP_TOOLS_TRANSPORT_STDIO))
-
-
-class TestRunConfigValidation:
-    def test_invalid_ide_rejected(self) -> None:
-        """Invalid IDE values should raise ValidationError."""
-        with pytest.raises(ValidationError, match="Unsupported IDE"):
-            RunConfig(ide_integrations=["cursor", "invalid-ide"])
-
-    def test_valid_ides_accepted(self) -> None:
-        """All supported IDEs should be accepted."""
-        cfg = RunConfig(ide_integrations=["cursor", "vscode", "claude", "jetbrains"])
-        assert len(cfg.ide_integrations) == 4
-
-    def test_empty_ide_list_accepted(self) -> None:
-        """Empty IDE list should be valid."""
-        cfg = RunConfig(ide_integrations=[])
-        assert cfg.ide_integrations == []
-
-    def test_bare_string_coerced_to_single_element_list(self) -> None:
-        """A scalar string (as written in YAML without brackets) is accepted."""
-        cfg = RunConfig(ide_integrations="cursor")  # type: ignore[arg-type]
-        assert cfg.ide_integrations == ["cursor"]
-
-    def test_bare_invalid_string_names_ide_not_characters(self) -> None:
-        """A bare invalid string should report the IDE name, not its characters."""
-        with pytest.raises(ValidationError, match="not-an-ide"):
-            RunConfig(ide_integrations="not-an-ide")  # type: ignore[arg-type]
-
-    def test_bare_string_loaded_from_yaml(self, tmp_path: Path) -> None:
-        """tools.yaml with a scalar ide_integrations value is loaded correctly."""
-        path = tmp_path / "tools.yaml"
-        path.write_text("mode: stdio\nide_integrations: cursor\n")
-        cfg = RunConfig.load(path)
-        assert cfg.ide_integrations == ["cursor"]
 
 
 class TestRunToolsProjectPathResolution:
@@ -800,271 +631,6 @@ class TestConfirmOverwrite:
             _confirm_overwrite(non_interactive=False)
 
 
-class TestFetchOfflineDocs:
-    def _make_urlopen(self, content: bytes = b"ok") -> Any:
-        """Return a fake urlopen that yields *content* for every request."""
-
-        def fake_urlopen(url: str, timeout: int) -> Any:
-            mock = MagicMock()
-            mock.__enter__ = MagicMock(return_value=mock)
-            mock.__exit__ = MagicMock(return_value=False)
-            mock.read = MagicMock(return_value=content)
-            return mock
-
-        return fake_urlopen
-
-    def test_creates_dest_dir_and_writes_files(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        """Successful fetch writes each llms.txt file under .rasa/."""
-        monkeypatch.setattr(
-            "urllib.request.urlopen",
-            self._make_urlopen(b"content of docs"),
-        )
-        _fetch_offline_docs(tmp_path)
-
-        dest_dir = tmp_path / TOOLS_CONFIG_DIR
-        assert (dest_dir / "llms.txt").exists()
-        assert (dest_dir / "llms-full.txt").exists()
-        assert "content of docs" in (dest_dir / "llms.txt").read_bytes().decode()
-
-    def test_graceful_failure_does_not_raise(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        """A network error must not propagate — the wizard continues."""
-        monkeypatch.setattr(
-            "urllib.request.urlopen",
-            MagicMock(side_effect=OSError("network error")),
-        )
-        _fetch_offline_docs(tmp_path)  # must not raise
-
-    def test_partial_failure_continues_remaining_files(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        """If one file fails, the other is still attempted."""
-        fetched_urls: list[str] = []
-
-        def fake_urlopen(url: str, timeout: int) -> Any:
-            fetched_urls.append(url)
-            if "llms-full.txt" in url:
-                raise OSError("timeout")
-            mock = MagicMock()
-            mock.__enter__ = MagicMock(return_value=mock)
-            mock.__exit__ = MagicMock(return_value=False)
-            mock.read = MagicMock(return_value=b"ok")
-            return mock
-
-        monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
-        _fetch_offline_docs(tmp_path)
-
-        assert len(fetched_urls) == 2
-        assert (tmp_path / TOOLS_CONFIG_DIR / "llms.txt").exists()
-        assert not (tmp_path / TOOLS_CONFIG_DIR / "llms-full.txt").exists()
-
-    def test_uses_custom_base_url(self, tmp_path: Path, monkeypatch: Any) -> None:
-        """The fetched URL must use the resolved base URL."""
-        fetched_urls: list[str] = []
-
-        def fake_urlopen(url: str, timeout: int) -> Any:
-            fetched_urls.append(url)
-            mock = MagicMock()
-            mock.__enter__ = MagicMock(return_value=mock)
-            mock.__exit__ = MagicMock(return_value=False)
-            mock.read = MagicMock(return_value=b"ok")
-            return mock
-
-        monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
-        monkeypatch.setenv(LLMS_TXT_BASE_URL_ENV_VAR, "https://custom.example.com")
-        _fetch_offline_docs(tmp_path)
-
-        assert all(u.startswith("https://custom.example.com/") for u in fetched_urls)
-
-
-class TestWarnIfOfflineDocsExist:
-    def test_no_warning_when_no_files_present(self, tmp_path: Path) -> None:
-        """No output expected when the .rasa/ dir has no llms.txt files."""
-        _warn_if_offline_docs_exist(tmp_path)  # must not raise; nothing to assert
-
-    def test_warns_when_llms_txt_exists(self, tmp_path: Path, monkeypatch: Any) -> None:
-        """Warning panel is printed when at least one llms.txt file is present."""
-        dest_dir = tmp_path / TOOLS_CONFIG_DIR
-        dest_dir.mkdir(parents=True)
-        (dest_dir / "llms.txt").write_text("docs")
-
-        buf = StringIO()
-        wide = Console(file=buf, width=1000)
-        monkeypatch.setattr("rasa.cli.tools_wizard.console", wide)
-        _warn_if_offline_docs_exist(tmp_path)
-
-        assert "llms.txt" in buf.getvalue()
-
-    def test_warns_for_each_present_file(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        """Both llms.txt files are listed in the warning when both are present."""
-        dest_dir = tmp_path / TOOLS_CONFIG_DIR
-        dest_dir.mkdir(parents=True)
-        (dest_dir / "llms.txt").write_text("docs")
-        (dest_dir / "llms-full.txt").write_text("full docs")
-
-        buf = StringIO()
-        wide = Console(file=buf, width=1000)
-        monkeypatch.setattr("rasa.cli.tools_wizard.console", wide)
-        _warn_if_offline_docs_exist(tmp_path)
-
-        output = buf.getvalue()
-        assert "llms.txt" in output
-        assert "llms-full.txt" in output
-
-
-class TestWarnIfAgentSkillsExist:
-    def test_no_warning_when_no_skills_installed(self, tmp_path: Path) -> None:
-        """No output when no skill directories exist."""
-        _warn_if_agent_skills_exist(tmp_path, ["cursor"])  # must not raise
-
-    def test_no_warning_when_skills_dir_is_empty(self, tmp_path: Path) -> None:
-        """No output when the skills directory exists but is empty."""
-        (tmp_path / ".cursor" / "skills").mkdir(parents=True)
-        _warn_if_agent_skills_exist(tmp_path, ["cursor"])  # must not raise
-
-    def test_warns_when_skills_exist_for_selected_ide(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        """Warning panel is shown when a non-empty skills directory is found."""
-        skill_dir = tmp_path / ".cursor" / "skills" / "rasa-flows"
-        skill_dir.mkdir(parents=True)
-        (skill_dir / "SKILL.md").write_text("content")
-
-        buf = StringIO()
-        wide = Console(file=buf, width=1000)
-        monkeypatch.setattr("rasa.cli.tools_wizard.console", wide)
-        _warn_if_agent_skills_exist(tmp_path, ["cursor"])
-
-        assert ".cursor/skills" in buf.getvalue()
-
-    def test_no_warning_for_unselected_ide(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        """No warning for an IDE not in the selected list, even if files exist."""
-        skill_dir = tmp_path / ".cursor" / "skills" / "rasa-flows"
-        skill_dir.mkdir(parents=True)
-        (skill_dir / "SKILL.md").write_text("content")
-
-        buf = StringIO()
-        wide = Console(file=buf, width=1000)
-        monkeypatch.setattr("rasa.cli.tools_wizard.console", wide)
-        _warn_if_agent_skills_exist(tmp_path, ["vscode"])
-
-        assert buf.getvalue() == ""
-
-    def test_warns_for_multiple_ides(self, tmp_path: Path, monkeypatch: Any) -> None:
-        """Warning lists all IDEs that have existing skills."""
-        for base in (".cursor/skills", ".github/skills"):
-            skill_dir = tmp_path / base / "rasa-flows"
-            skill_dir.mkdir(parents=True)
-            (skill_dir / "SKILL.md").write_text("content")
-
-        buf = StringIO()
-        wide = Console(file=buf, width=1000)
-        monkeypatch.setattr("rasa.cli.tools_wizard.console", wide)
-        _warn_if_agent_skills_exist(tmp_path, ["cursor", "vscode"])
-
-        output = buf.getvalue()
-        assert ".cursor/skills" in output
-        assert ".github/skills" in output
-
-    def test_wizard_warns_when_skills_exist_and_install_declined(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        """run_wizard calls _warn_if_agent_skills_exist when skills are declined."""
-        mock_warn = MagicMock()
-        monkeypatch.setattr(
-            "rasa.cli.tools_wizard._warn_if_agent_skills_exist", mock_warn
-        )
-        monkeypatch.setattr(_RETRIEVE_LICENSE, lambda: (_FAKE_LICENSE, "RASA_LICENSE"))
-        args = _make_args(project_path=str(tmp_path), ides="cursor", skills=False)
-        run_wizard(args)
-
-        mock_warn.assert_called_once_with(tmp_path, ["cursor"])
-
-    def test_wizard_skips_warn_when_skills_installed(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        """_warn_if_agent_skills_exist is not called when skills are installed."""
-        mock_warn = MagicMock()
-        mock_install = MagicMock()
-        monkeypatch.setattr(
-            "rasa.cli.tools_wizard._warn_if_agent_skills_exist", mock_warn
-        )
-        monkeypatch.setattr("rasa.cli.tools_wizard._install_agent_skills", mock_install)
-        monkeypatch.setattr(_RETRIEVE_LICENSE, lambda: (_FAKE_LICENSE, "RASA_LICENSE"))
-        args = _make_args(project_path=str(tmp_path), ides="cursor", skills=True)
-        run_wizard(args)
-
-        mock_install.assert_called_once()
-        mock_warn.assert_not_called()
-
-    def test_wizard_skips_warn_when_no_ides_configured(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        """_warn_if_agent_skills_exist is never reached when no IDEs are selected."""
-        mock_warn = MagicMock()
-        monkeypatch.setattr(
-            "rasa.cli.tools_wizard._warn_if_agent_skills_exist", mock_warn
-        )
-        monkeypatch.setattr(_RETRIEVE_LICENSE, lambda: (_FAKE_LICENSE, "RASA_LICENSE"))
-        args = _make_args(project_path=str(tmp_path), ides=None, skills=False)
-        run_wizard(args)
-
-        mock_warn.assert_not_called()
-
-
-class TestFetchSkillNames:
-    def test_returns_only_directory_entries(self, monkeypatch: Any) -> None:
-        """Only entries with type=='dir' should be returned; files are filtered out."""
-        entries = [
-            {"name": "rasa-flows", "type": "dir"},
-            {"name": "README.md", "type": "file"},
-            {"name": "rasa-actions", "type": "dir"},
-        ]
-        mock = MagicMock()
-        mock.__enter__ = MagicMock(return_value=mock)
-        mock.__exit__ = MagicMock(return_value=False)
-        mock.read = MagicMock(return_value=json.dumps(entries).encode())
-        monkeypatch.setattr("urllib.request.urlopen", MagicMock(return_value=mock))
-
-        names = _fetch_skill_names()
-        assert names == ["rasa-flows", "rasa-actions"]
-
-    def test_returns_empty_list_on_network_error(self, monkeypatch: Any) -> None:
-        """Any network failure must return [] without raising."""
-        monkeypatch.setattr(
-            "urllib.request.urlopen", MagicMock(side_effect=OSError("timeout"))
-        )
-        assert _fetch_skill_names() == []
-
-    def test_returns_empty_list_on_invalid_json(self, monkeypatch: Any) -> None:
-        """Malformed JSON from the API must return [] without raising."""
-        mock = MagicMock()
-        mock.__enter__ = MagicMock(return_value=mock)
-        mock.__exit__ = MagicMock(return_value=False)
-        mock.read = MagicMock(return_value=b"NOT JSON {{{")
-        monkeypatch.setattr("urllib.request.urlopen", MagicMock(return_value=mock))
-
-        assert _fetch_skill_names() == []
-
-    def test_returns_empty_list_when_no_dirs(self, monkeypatch: Any) -> None:
-        """When the API returns only non-dir entries, result must be empty."""
-        entries = [{"name": "README.md", "type": "file"}]
-        mock = MagicMock()
-        mock.__enter__ = MagicMock(return_value=mock)
-        mock.__exit__ = MagicMock(return_value=False)
-        mock.read = MagicMock(return_value=json.dumps(entries).encode())
-        monkeypatch.setattr("urllib.request.urlopen", MagicMock(return_value=mock))
-
-        assert _fetch_skill_names() == []
-
-
 class TestWriteIdeConfigs:
     @pytest.fixture(autouse=True)
     def _mock_license(self, monkeypatch: Any) -> None:
@@ -1096,7 +662,7 @@ class TestPrintSummary:
     def _render(self, config: RunConfig, tmp_path: Path, monkeypatch: Any) -> str:
         config_path = tmp_path / TOOLS_CONFIG_DIR / TOOLS_CONFIG_FILENAME
         buf = StringIO()
-        monkeypatch.setattr("rasa.cli.tools_wizard.console", Console(file=buf))
+        monkeypatch.setattr("rasa.cli.tools.init.console", Console(file=buf))
         _print_summary(config, config_path)
         return buf.getvalue()
 
@@ -1114,6 +680,19 @@ class TestPrintSummary:
             RunConfig(mode=MCP_TOOLS_TRANSPORT_HTTP, port=9000), tmp_path, monkeypatch
         )
         assert "9000" in output
+
+    def test_http_mode_shows_export_instructions(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        """HTTP summary must show export commands for license and proxy."""
+        output = self._render(
+            RunConfig(mode=MCP_TOOLS_TRANSPORT_HTTP, port=9000),
+            tmp_path,
+            monkeypatch,
+        )
+        assert "RASA_LICENSE" in output
+        assert HELLO_LLM_PROXY_BASE_URL_ENV_VAR in output
+        assert "rasa tools run" in output
 
     def test_includes_ide_names_when_configured(
         self, tmp_path: Path, monkeypatch: Any
