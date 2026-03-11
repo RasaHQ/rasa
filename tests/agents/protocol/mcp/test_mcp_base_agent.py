@@ -19,7 +19,13 @@ from rasa.agents.constants import (
 )
 from rasa.agents.core.types import AgentStatus
 from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
-from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentOutput, AgentToolResult
+from rasa.agents.schemas import (
+    AgentInput,
+    AgentInputSlot,
+    AgentOutput,
+    AgentToolContext,
+    AgentToolResult,
+)
 from rasa.core.available_agents import (
     AgentConfig,
     AgentConfiguration,
@@ -1529,7 +1535,11 @@ class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
             "custom_tool", {"arg": "value"}
         )
 
-        mock_tool_executor.assert_called_once_with({"arg": "value"})
+        mock_tool_executor.assert_called_once()
+        args, context = mock_tool_executor.call_args[0]
+        assert args == {"arg": "value"}
+        assert isinstance(context, AgentToolContext)
+        assert context.metadata == {}
         assert result.tool_name == "custom_tool"
         assert not result.is_error
 
@@ -1573,6 +1583,66 @@ class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
                 None,  # agent_input
             )
             assert result.tool_name == "mcp_tool"
+
+    @pytest.mark.asyncio
+    async def test_execute_tool_call_custom_tool_receives_request_metadata(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Custom tool executor receives (args, context) with context.metadata."""
+        mock_tool_executor = AsyncMock(
+            return_value=AgentToolResult(
+                tool_name="custom_tool",
+                result="ok",
+                is_error=False,
+            )
+        )
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.tool_name = "custom_tool"
+        mock_custom_tool.tool_executor = mock_tool_executor
+        mock_mcp_base_agent._custom_tools = [mock_custom_tool]
+
+        result = await mock_mcp_base_agent._execute_tool_call(
+            "custom_tool",
+            {"arg": "value"},
+            agent_input=mock_agent_input,
+        )
+
+        assert not result.is_error
+        mock_tool_executor.assert_called_once()
+        args, context = mock_tool_executor.call_args[0]
+        assert args == {"arg": "value"}
+        assert isinstance(context, AgentToolContext)
+        assert isinstance(context.metadata, dict)
+        assert context.metadata == mock_agent_input.metadata
+        assert context.metadata["key"] == "value"
+        assert context.metadata["nested"] == {"data": "test"}
+
+    @pytest.mark.asyncio
+    async def test_execute_tool_call_custom_tool_no_metadata_when_agent_input_none(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        """Custom tool executor receives context with empty metadata."""
+        mock_tool_executor = AsyncMock(
+            return_value=AgentToolResult(
+                tool_name="custom_tool",
+                result="ok",
+                is_error=False,
+            )
+        )
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.tool_name = "custom_tool"
+        mock_custom_tool.tool_executor = mock_tool_executor
+        mock_mcp_base_agent._custom_tools = [mock_custom_tool]
+
+        await mock_mcp_base_agent._execute_tool_call(
+            "custom_tool", {"arg": "value"}, agent_input=None
+        )
+
+        mock_tool_executor.assert_called_once()
+        args, context = mock_tool_executor.call_args[0]
+        assert args == {"arg": "value"}
+        assert isinstance(context, AgentToolContext)
+        assert context.metadata == {}
 
     @pytest.mark.parametrize(
         "error_message, expected_status",
@@ -1742,7 +1812,7 @@ class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
         mock_mcp_base_agent._tool_timeout = 0.1
 
         # Mock tool executor that sleeps longer than timeout
-        async def slow_tool_executor(args):
+        async def slow_tool_executor(args, context=None):
             await anyio.sleep(0.2)  # Sleep longer than TOOL_CALL_DEFAULT_TIMEOUT
             return AgentToolResult(
                 tool_name="timeout_tool",
@@ -1783,7 +1853,7 @@ class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
         mock_mcp_base_agent.TOOL_CALL_DEFAULT_TIMEOUT = 0.1
 
         # Mock tool executor that completes quickly
-        async def fast_tool_executor(args):
+        async def fast_tool_executor(args, context=None):
             return AgentToolResult(
                 tool_name="fast_tool",
                 result="success",
@@ -1812,7 +1882,7 @@ class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
         mock_custom_tool.tool_name = "failing_tool"
 
         # Mock tool executor that raises exception
-        async def failing_tool_executor(args):
+        async def failing_tool_executor(args, context=None):
             raise ValueError("Tool execution failed")
 
         mock_custom_tool.tool_executor = failing_tool_executor
@@ -2288,7 +2358,7 @@ class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
         mock_custom_tool = MagicMock()
         mock_custom_tool.tool_name = "slow_tool"
 
-        async def slow_tool_executor(args):
+        async def slow_tool_executor(args, context=None):
             await anyio.sleep(0.3)
             return AgentToolResult(
                 tool_name="slow_tool",

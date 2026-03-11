@@ -17,6 +17,8 @@ from rasa.agents.constants import (
     TOOL_TYPE_FUNCTION_KEY,
     TOOL_TYPE_KEY,
 )
+from rasa.agents.schemas.agent_tool_context import AgentToolContext
+from rasa.agents.schemas.agent_tool_result import AgentToolResult
 
 
 class AgentToolSchema(BaseModel):
@@ -179,11 +181,16 @@ class AgentToolSchema(BaseModel):
 
 
 class CustomToolSchema(BaseModel):
-    """A class that represents the schema of a custom agent tool."""
+    """A class that represents the schema of a custom agent tool.
+
+    The tool_executor is invoked as: tool_executor(args, context).
+    - args: Dict of arguments from the LLM (tool parameters only).
+    - context: AgentToolContext with request metadata.
+    """
 
     tool_name: str
     tool_definition: AgentToolSchema
-    tool_executor: Callable
+    tool_executor: Callable[[Dict[str, Any], AgentToolContext], AgentToolResult]
 
     @classmethod
     def from_dict(cls, config: Dict[str, Any]) -> "CustomToolSchema":

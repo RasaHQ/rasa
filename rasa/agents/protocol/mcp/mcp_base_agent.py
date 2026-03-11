@@ -38,6 +38,7 @@ from rasa.agents.schemas import (
     AgentInput,
     AgentInputSlot,
     AgentOutput,
+    AgentToolContext,
     AgentToolResult,
     AgentToolSchema,
     CustomToolSchema,
@@ -332,7 +333,9 @@ class MCPBaseAgent(AgentProtocol):
         format and must include:
         - "type": should always be "function" for tools.
         - "function" → the tool metadata (name, description, and parameters).
-        - "tool_executor" → a coroutine method that actually performs the tool's action.
+        - "tool_executor" → a coroutine method (args, context) that performs the
+          tool's action. Receives tool arguments and AgentToolContext (with
+          context.metadata) as separate parameters.
 
         Refer:
         - LiteLLM JSON Format - https://docs.litellm.ai/docs/completion/function_call#full-code---parallel-function-calling-with-gpt-35-turbo-1106
@@ -376,6 +379,8 @@ class MCPBaseAgent(AgentProtocol):
                         "tool_executor": self.get_current_weather,
                     }
                 ]
+
+            Tool executor signature: (args: Dict[str, Any], context: AgentToolContext)
             ```
         """
         return []
@@ -649,7 +654,9 @@ class MCPBaseAgent(AgentProtocol):
 
     def _build_context_for_prompt(self, context: AgentInput) -> Dict[str, Any]:
         """Get the context dictionary for the prompt."""
-        context_dict = context.model_dump(exclude={"id", "timestamp", "events"})
+        context_dict = context.model_dump(
+            exclude={"id", "timestamp", "events", "metadata"}
+        )
         if "slots" in context_dict and isinstance(context_dict["slots"], list):
             context_dict["slots"] = {
                 slot.name: slot.value
@@ -980,7 +987,9 @@ class MCPBaseAgent(AgentProtocol):
         # Cache is per `send_message` run; use only mutable prompt inputs from
         # `context` so key changes track in-loop state updates (e.g. SlotSet).
         key_payload = {
-            "context": context.model_dump(exclude={"id", "timestamp", "events"}),
+            "context": context.model_dump(
+                exclude={"id", "timestamp", "events", "metadata"}
+            ),
         }
         return json.dumps(key_payload, sort_keys=True, default=str)
 
@@ -1292,18 +1301,30 @@ class MCPBaseAgent(AgentProtocol):
             )
 
     async def _run_custom_tool(
-        self, custom_tool: CustomToolSchema, arguments: Dict[str, Any]
+        self,
+        custom_tool: CustomToolSchema,
+        arguments: Dict[str, Any],
+        agent_input: Optional[AgentInput] = None,
     ) -> AgentToolResult:
         """Run a custom tool and return the result.
 
         Args:
             custom_tool: The custom tool schema containing the tool executor.
-            arguments: The arguments to pass to the tool executor.
+            arguments: The arguments from the LLM to pass to the tool executor.
+            agent_input: Optional agent input.
 
         Returns:
             The result of the tool execution as an AgentToolResult.
         """
-        result = custom_tool.tool_executor(arguments)
+        executor_args = dict(arguments)
+        context = AgentToolContext(
+            metadata=(
+                agent_input.metadata
+                if agent_input and agent_input.metadata is not None
+                else {}
+            )
+        )
+        result = custom_tool.tool_executor(executor_args, context)
         return await result if isawaitable(result) else result
 
     async def _execute_tool_call(
@@ -1330,7 +1351,9 @@ class MCPBaseAgent(AgentProtocol):
                 if custom_tool.tool_name == tool_name:
                     try:
                         with anyio.fail_after(self._tool_timeout):
-                            return await self._run_custom_tool(custom_tool, arguments)
+                            return await self._run_custom_tool(
+                                custom_tool, arguments, agent_input
+                            )
 
                     except TimeoutError:
                         return AgentToolResult(
