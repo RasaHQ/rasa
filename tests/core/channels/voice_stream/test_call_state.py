@@ -12,6 +12,7 @@ from rasa.core.channels.voice_stream.call_state import (
     UserIsSpeaking,
     UserStoppedSpeaking,
 )
+from tests.core.channels.voice_stream.conftest import wait_for_task_to_become_cancelled
 
 
 @pytest.fixture
@@ -121,15 +122,6 @@ async def test_stop_silence_monitoring_is_safe_when_no_watcher(
     # Should not raise
     call_state_instance.stop_silence_monitoring()
     assert call_state_instance.silence_timeout_watcher is None
-
-
-async def wait_for_task_to_become_cancelled(
-    task: asyncio.Task,
-) -> None:
-    try:
-        await task
-    except asyncio.CancelledError:
-        assert task.cancelled()
 
 
 async def test_start_silence_monitoring_replaces_existing_watcher(

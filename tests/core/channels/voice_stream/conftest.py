@@ -52,3 +52,12 @@ def setup_call_state():
 @pytest.fixture
 def mulaw_format() -> AudioFormat:
     return MULAW_8KHZ
+
+
+async def wait_for_task_to_become_cancelled(
+    task: asyncio.Task,
+) -> None:
+    try:
+        await task
+    except asyncio.CancelledError:
+        assert task.cancelled()

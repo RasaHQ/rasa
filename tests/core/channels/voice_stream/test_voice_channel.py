@@ -284,6 +284,16 @@ async def test_stop_streaming_and_interrupt_playback_on_interruption(
     asr_event_queue: asyncio.Queue = asyncio.Queue()
     mock_asr_engine = _make_mock_asr_engine([asr_event])
 
+    # set silence timeout to a big value to ensure that its async.Task will
+    # be running through duration of the test
+    call_state.silence_timeout = 120
+    call_state.start_silence_monitoring()
+
+    silence_timeout_watcher = call_state.silence_timeout_watcher
+
+    # make sure that silence timeout watcher is running
+    assert silence_timeout_watcher is not None
+
     # When receive_asr_events processes the event
     await channel.receive_asr_events(
         asr_engine=mock_asr_engine,
@@ -298,6 +308,7 @@ async def test_stop_streaming_and_interrupt_playback_on_interruption(
     assert await asr_event_queue.get() is asr_event
 
     # And stop_streaming and interrupt_playback are called once
+    assert call_state.silence_timeout_watcher is None
     mock_tts_engine.stop_streaming.assert_awaited_once()
     channel.interrupt_playback.assert_awaited_once_with(
         mock_web_socket, call_parameters

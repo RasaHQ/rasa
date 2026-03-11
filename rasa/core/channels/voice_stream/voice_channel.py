@@ -894,6 +894,7 @@ class VoiceInputChannel(InputChannel):
             await asr_event_queue.put(event)
             if self.should_interrupt(event):
                 logger.debug("voice_channel.asr_event_should_interrupt", ev=event)
+                call_state.stop_silence_monitoring()
                 await tts_engine.stop_streaming()
                 # We only stop sending audio bytes which came from Azure TTS in order
                 # not to break Deepgram, Cartesia and Rime
