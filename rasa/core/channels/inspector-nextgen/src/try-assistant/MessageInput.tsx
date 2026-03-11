@@ -4,11 +4,13 @@ import {
   type ForwardedRef,
   forwardRef,
   type KeyboardEvent,
+  type RefObject,
   useMemo,
   useState,
 } from "react";
 import { Icon, PaperPlaneTop } from "../Icon";
 import { useVoiceCall } from "../hooks/useVoiceCall";
+import type { VoiceErrorHandler } from "../types";
 import { VoiceButton } from "./VoiceButton";
 
 interface Props {
@@ -16,13 +18,14 @@ interface Props {
   isDisabled?: boolean;
   startVoiceStreaming: () => Promise<void>;
   stopVoiceStreaming: () => Promise<void>;
+  onVoiceErrorRef: RefObject<VoiceErrorHandler>;
   voiceFeaturesEnabled: boolean;
 }
 
 export const MessageInput = forwardRef<HTMLInputElement, Props>(
-  ({ onSubmit, isDisabled = false, startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled }, ref: ForwardedRef<HTMLInputElement>) => {
+  ({ onSubmit, isDisabled = false, startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled }, ref: ForwardedRef<HTMLInputElement>) => {
     const { callDuration, startVoiceCall, stopVoiceCall, voiceCallState } =
-      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled });
+      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled });
     const [message, setMessage] = useState("");
     const placeholder = useMemo(() => {
       if (voiceCallState === "connecting") {

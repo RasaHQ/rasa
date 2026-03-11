@@ -2,7 +2,7 @@ import asyncio
 import base64
 import json
 import uuid
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
@@ -28,11 +28,11 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 
 @pytest.fixture
-def studio_input() -> InspectorInputChannel:
+def inspector_input() -> InspectorInputChannel:
     sio = AsyncMock()
-    output_channel = InspectorInputChannel("", {}, {})
-    output_channel.sio_server = sio
-    return output_channel
+    channel = InspectorInputChannel("", {}, {})
+    channel.sio_server = sio
+    return channel
 
 
 @pytest.fixture
@@ -73,12 +73,12 @@ def test_tracker_as_dump_only_returns_last_session_on_tracker(
 
 
 async def test_tracker_update_plugin_triggers_after_new_user_message(
-    studio_input: InspectorInputChannel,
+    inspector_input: InspectorInputChannel,
     default_tracker: DialogueStateTracker,
 ) -> None:
     default_tracker.update(UserUttered("hello world"))
 
-    plugin = InspectorTrackerUpdatePlugin(studio_input)
+    plugin = InspectorTrackerUpdatePlugin(inspector_input)
     plugin.after_new_user_message(default_tracker)
 
     assert len(plugin.tasks) == 1
@@ -95,16 +95,16 @@ async def test_tracker_update_plugin_triggers_after_new_user_message(
             room=default_tracker.sender_id,
         ),
     ]
-    studio_input.sio_server.emit.assert_has_calls(expected_calls, any_order=False)
+    inspector_input.sio_server.emit.assert_has_calls(expected_calls, any_order=False)
 
 
 async def test_tracker_update_plugin_triggers_after_action_executed(
-    studio_input: InspectorInputChannel,
+    inspector_input: InspectorInputChannel,
     default_tracker: DialogueStateTracker,
 ) -> None:
     default_tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
-    plugin = InspectorTrackerUpdatePlugin(studio_input)
+    plugin = InspectorTrackerUpdatePlugin(inspector_input)
     plugin.after_action_executed(default_tracker)
 
     assert len(plugin.tasks) == 1
@@ -121,11 +121,11 @@ async def test_tracker_update_plugin_triggers_after_action_executed(
             room=default_tracker.sender_id,
         ),
     ]
-    studio_input.sio_server.emit.assert_has_calls(expected_calls, any_order=False)
+    inspector_input.sio_server.emit.assert_has_calls(expected_calls, any_order=False)
 
 
 async def test_inspector_handle_tracker_update(
-    studio_input: InspectorInputChannel,
+    inspector_input: InspectorInputChannel,
     default_tracker: DialogueStateTracker,
     agent_with_flows: Agent,
 ) -> None:
@@ -137,7 +137,7 @@ async def test_inspector_handle_tracker_update(
     default_tracker.update(UserUttered("foo bar"))
     await agent_with_flows.tracker_store.save(default_tracker)
 
-    studio_input.agent = agent_with_flows
+    inspector_input.agent = agent_with_flows
 
     data = {
         "sender_id": sender_id,
@@ -146,12 +146,12 @@ async def test_inspector_handle_tracker_update(
             ActionExecuted(ACTION_LISTEN_NAME).as_dict(),
         ],
     }
-    await studio_input.handle_tracker_update("some_sid", data)
+    await inspector_input.handle_tracker_update("some_sid", data)
     # Allow async tasks from hooks to complete (small grace period)
     await asyncio.sleep(0.05)
 
-    assert len(studio_input.sio_server.emit.call_args_list) == 1
-    call = studio_input.sio_server.emit.call_args_list[0]
+    assert len(inspector_input.sio_server.emit.call_args_list) == 1
+    call = inspector_input.sio_server.emit.call_args_list[0]
     assert call.args[0] == "tracker"
     # check that the new message is present and the old one isn't
     assert "hello world" in json.dumps(call.args[1])
@@ -170,7 +170,7 @@ async def test_inspector_handle_tracker_update(
 
 
 async def test_inspector_handle_partial_tracker_update(
-    studio_input: InspectorInputChannel,
+    inspector_input: InspectorInputChannel,
     default_tracker: DialogueStateTracker,
     agent_with_flows: Agent,
 ) -> None:
@@ -179,7 +179,7 @@ async def test_inspector_handle_partial_tracker_update(
     default_tracker.update(UserUttered("foo bar"))
     await agent_with_flows.tracker_store.save(default_tracker)
 
-    studio_input.agent = agent_with_flows
+    inspector_input.agent = agent_with_flows
 
     data = {
         "sender_id": sender_id,
@@ -187,7 +187,7 @@ async def test_inspector_handle_partial_tracker_update(
             UserUttered("hello world").as_dict(),
         ],
     }
-    await studio_input.handle_tracker_update("some_sid", data)
+    await inspector_input.handle_tracker_update("some_sid", data)
 
     retrieved_tracker = await agent_with_flows.tracker_store.retrieve(sender_id)
     assert retrieved_tracker is not None
@@ -296,6 +296,49 @@ def test_inspector_get_output_channel_returns_none_without_sio() -> None:
     assert channel.get_output_channel() is None
 
 
+async def test_handle_voice_streaming_emits_voice_error_on_exception(
+    inspector_input: InspectorInputChannel,
+) -> None:
+    """Test that _handle_voice_streaming emits voice_error when streaming fails."""
+    sid = "test_sid"
+    ws_adapter = AsyncMock()
+    inspector_input.active_connections[sid] = ws_adapter
+
+    error = RuntimeError("Missing environment variable for ASR Engine")
+
+    with patch.object(
+        inspector_input,
+        "run_audio_streaming",
+        new_callable=AsyncMock,
+        side_effect=error,
+    ):
+        await inspector_input._handle_voice_streaming(AsyncMock(), ws_adapter, sid)
+
+    inspector_input.sio_server.emit.assert_called_once_with(
+        "voice_error",
+        {
+            "message": "Voice streaming failed",
+            "error": str(error),
+            "exception": "RuntimeError",
+        },
+        room=sid,
+    )
+    assert sid not in inspector_input.active_connections
+
+
+async def test_handle_voice_streaming_no_emit_on_success(
+    inspector_input: InspectorInputChannel,
+) -> None:
+    """Test that _handle_voice_streaming does not emit voice_error on success."""
+    sid = "test_sid"
+    ws_adapter = AsyncMock()
+
+    with patch.object(inspector_input, "run_audio_streaming", new_callable=AsyncMock):
+        await inspector_input._handle_voice_streaming(AsyncMock(), ws_adapter, sid)
+
+    inspector_input.sio_server.emit.assert_not_called()
+
+
 def test_inspector_from_credentials_parses_text_channel() -> None:
     """Test that from_credentials parses text_channel alongside other values."""
     credentials = {
@@ -342,9 +385,9 @@ def test_does_need_action_prediction_action_listen(
 
 
 async def test_plugin_cancel_tasks(
-    studio_input: InspectorInputChannel,
+    inspector_input: InspectorInputChannel,
 ) -> None:
-    plugin = InspectorTrackerUpdatePlugin(studio_input)
+    plugin = InspectorTrackerUpdatePlugin(inspector_input)
 
     async def long_running() -> None:
         await asyncio.sleep(100)
@@ -358,9 +401,9 @@ async def test_plugin_cancel_tasks(
 
 
 async def test_plugin_cleanup_tasks_removes_done(
-    studio_input: InspectorInputChannel,
+    inspector_input: InspectorInputChannel,
 ) -> None:
-    plugin = InspectorTrackerUpdatePlugin(studio_input)
+    plugin = InspectorTrackerUpdatePlugin(inspector_input)
 
     async def immediate() -> None:
         return
@@ -382,25 +425,25 @@ async def test_plugin_cleanup_tasks_removes_done(
 
 
 async def test_plugin_after_response_chunk(
-    studio_input: InspectorInputChannel,
+    inspector_input: InspectorInputChannel,
     default_tracker: DialogueStateTracker,
 ) -> None:
-    plugin = InspectorTrackerUpdatePlugin(studio_input)
+    plugin = InspectorTrackerUpdatePlugin(inspector_input)
     default_tracker.update(UserUttered("hi"))
     plugin.after_response_chunk(default_tracker, "streaming text")
 
     assert len(plugin.tasks) == 1
     await asyncio.sleep(0.1)
 
-    studio_input.sio_server.emit.assert_called()
-    event_data = json.dumps(studio_input.sio_server.emit.call_args.args[1])
+    inspector_input.sio_server.emit.assert_called()
+    event_data = json.dumps(inspector_input.sio_server.emit.call_args.args[1])
     assert "streaming text" in event_data
 
 
 async def test_plugin_after_server_stop(
-    studio_input: InspectorInputChannel,
+    inspector_input: InspectorInputChannel,
 ) -> None:
-    plugin = InspectorTrackerUpdatePlugin(studio_input)
+    plugin = InspectorTrackerUpdatePlugin(inspector_input)
 
     async def long_running() -> None:
         await asyncio.sleep(100)
@@ -429,11 +472,11 @@ async def test_emit_noop_without_sio() -> None:
     await channel.emit("evt", {"k": "v"}, room="r1")
 
 
-async def test_emit_error(studio_input: InspectorInputChannel) -> None:
+async def test_emit_error(inspector_input: InspectorInputChannel) -> None:
     err = ValueError("broken")
-    await studio_input.emit_error("Oh no", "room1", err)
+    await inspector_input.emit_error("Oh no", "room1", err)
 
-    call_args = studio_input.sio_server.emit.call_args
+    call_args = inspector_input.sio_server.emit.call_args
     assert call_args.args[0] == "error"
     assert call_args.args[1]["message"] == "Oh no"
     assert call_args.args[1]["error"] == "broken"
@@ -441,13 +484,13 @@ async def test_emit_error(studio_input: InspectorInputChannel) -> None:
 
 
 async def test_publish_streaming_response(
-    studio_input: InspectorInputChannel,
+    inspector_input: InspectorInputChannel,
     default_tracker: DialogueStateTracker,
 ) -> None:
-    await studio_input.publish_streaming_response(
+    await inspector_input.publish_streaming_response(
         default_tracker.sender_id, default_tracker, "partial"
     )
-    state = studio_input.sio_server.emit.call_args.args[1]
+    state = inspector_input.sio_server.emit.call_args.args[1]
     last_event = state["events"][-1]
     assert last_event["text"] == "partial"
     assert last_event["metadata"]["streaming"] is True
@@ -457,32 +500,32 @@ async def test_publish_streaming_response(
 
 
 async def test_on_message_proxy_success(
-    studio_input: InspectorInputChannel,
+    inspector_input: InspectorInputChannel,
     default_tracker: DialogueStateTracker,
     default_agent: Agent,
 ) -> None:
-    studio_input.agent = default_agent
+    inspector_input.agent = default_agent
     default_tracker.sender_id = "test_on_message_proxy_success"
     default_tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
     await default_agent.tracker_store.save(default_tracker)
 
     on_new_message = AsyncMock()
     msg = UserMessage("hello", sender_id=default_tracker.sender_id)
-    await studio_input.on_message_proxy(on_new_message, msg)
+    await inspector_input.on_message_proxy(on_new_message, msg)
 
     on_new_message.assert_called_once_with(msg)
-    studio_input.sio_server.emit.assert_called()
+    inspector_input.sio_server.emit.assert_called()
 
 
 async def test_on_message_proxy_agent_not_ready(
-    studio_input: InspectorInputChannel,
+    inspector_input: InspectorInputChannel,
 ) -> None:
-    studio_input.agent = None
+    inspector_input.agent = None
     msg = UserMessage("hello", sender_id="test_sender")
-    await studio_input.on_message_proxy(AsyncMock(), msg)
+    await inspector_input.on_message_proxy(AsyncMock(), msg)
 
     assert any(
-        c.args[0] == "error" for c in studio_input.sio_server.emit.call_args_list
+        c.args[0] == "error" for c in inspector_input.sio_server.emit.call_args_list
     )
 
 

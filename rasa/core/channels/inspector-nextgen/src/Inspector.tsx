@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
 import { useBotConnection } from "./hooks/useBotConnection";
 import { InspectorContextProvider } from "./InspectorContext";
+import { Toaster } from "./Toaster";
 import { TryAssistant } from "./try-assistant/TryAssistant";
 import type {
   ConversationEventAction,
   LogErrorFn,
   OnboardingTooltipConfig,
+  ShowToastFn,
   TrackFn,
 } from "./types";
 
@@ -23,13 +25,15 @@ type Props = {
   onReconnectError?: (error: unknown) => void;
   track?: TrackFn;
   logError?: LogErrorFn;
+  showToast?: ShowToastFn;
   onboardingTooltips?: OnboardingTooltipConfig[];
   voiceFeaturesEnabled?: boolean;
 };
 
-export const Inspector = ({ track, logError, onboardingTooltips, ...rest }: Props) => (
-  <InspectorContextProvider track={track} logError={logError} onboardingTooltips={onboardingTooltips}>
+export const Inspector = ({ track, logError, showToast, onboardingTooltips, ...rest }: Props) => (
+  <InspectorContextProvider track={track} logError={logError} showToast={showToast} onboardingTooltips={onboardingTooltips}>
     <InspectorContent {...rest} />
+    {!showToast && <Toaster />}
   </InspectorContextProvider>
 );
 
@@ -61,6 +65,7 @@ const InspectorContent = (props: Omit<Props, "track" | "logError" | "onboardingT
     replayConversation,
     startVoiceStreaming,
     stopVoiceStreaming,
+    onVoiceErrorRef,
   } = useBotConnection({
     projectId: projectId ?? uuid(),
     useMemoryOnly: singleSessionMode ?? false,
@@ -92,6 +97,7 @@ const InspectorContent = (props: Omit<Props, "track" | "logError" | "onboardingT
       botDataEndpoint={botDataEndpoint}
       startVoiceStreaming={startVoiceStreaming}
       stopVoiceStreaming={stopVoiceStreaming}
+      onVoiceErrorRef={onVoiceErrorRef}
       voiceFeaturesEnabled={voiceFeaturesEnabled}
     />
   );

@@ -1,4 +1,5 @@
 import { useContext } from "react";
-import { InspectorContext } from "./InspectorContext";
+import { InspectorContext, type InspectorContextValue } from "./InspectorContext";
 
-export const useInspectorContext = () => useContext(InspectorContext);
+export const useInspectorContext = (): InspectorContextValue =>
+  useContext(InspectorContext);

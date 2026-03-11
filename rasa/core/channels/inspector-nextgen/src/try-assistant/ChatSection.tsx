@@ -1,13 +1,13 @@
-import { useRef } from "react";
 import { Box } from "@chakra-ui/react";
+import { type RefObject, useRef } from "react";
+import { OnboardingTooltip } from "../OnboardingTooltip";
+import { type Conversation, type ConversationEventAction, type UnionEventType, type VoiceErrorHandler } from "../types";
 import {
   ScrollContainer,
   ScrollContent,
   ScrollFixedFooter,
   ScrollFixedHeader,
 } from "../VerticalScroll";
-import { OnboardingTooltip } from "../OnboardingTooltip";
-import { type Conversation, type ConversationEventAction, type UnionEventType } from "../types";
 import { ChatHeader } from "./ChatHeader";
 import { MessageInput } from "./MessageInput";
 import { TryAssistantConversation } from "./TryAssistantConversation";
@@ -30,6 +30,7 @@ interface ChatSectionProps {
   flowView: boolean;
   startVoiceStreaming: () => Promise<void>;
   stopVoiceStreaming: () => Promise<void>;
+  onVoiceErrorRef: RefObject<VoiceErrorHandler>;
   voiceFeaturesEnabled: boolean;
 }
 
@@ -51,6 +52,7 @@ export const ChatSection = ({
   flowView,
   startVoiceStreaming,
   stopVoiceStreaming,
+  onVoiceErrorRef,
   voiceFeaturesEnabled,
 }: ChatSectionProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +101,7 @@ export const ChatSection = ({
               onSubmit={handleMessageSubmit}
               startVoiceStreaming={startVoiceStreaming}
               stopVoiceStreaming={stopVoiceStreaming}
+              onVoiceErrorRef={onVoiceErrorRef}
               isDisabled={inputDisabled}
               voiceFeaturesEnabled={voiceFeaturesEnabled}
             />

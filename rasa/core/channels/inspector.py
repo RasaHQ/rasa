@@ -493,6 +493,15 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
                 error=str(e),
                 sid=sid,
             )
+            await self.emit(
+                "voice_error",
+                {
+                    "message": "Voice streaming failed",
+                    "error": str(e),
+                    "exception": type(e).__name__,
+                },
+                room=sid,
+            )
             if sid in self.active_connections:
                 del self.active_connections[sid]
 

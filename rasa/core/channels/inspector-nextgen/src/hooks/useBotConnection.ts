@@ -146,6 +146,7 @@ export function useBotConnection({
   const [error, setError] = useState<
     ModelServiceError | RasaProError | undefined
   >(undefined);
+  const onVoiceErrorRef = useRef<((err: RasaProError) => void) | null>(null);
   const socket = useRef<Socket>(undefined);
   const audioQueueRef = useRef<AudioQueue>(undefined);
   const microphoneStreamRef =
@@ -296,6 +297,16 @@ export function useBotConnection({
         disableChat();
       });
 
+      socket.current?.on("voice_error", (error) => {
+        logError(error, {
+          tags: {
+            component: "useBotConnection",
+            action: "voice_error",
+          },
+        });
+        onVoiceErrorRef.current?.(error as RasaProError);
+      });
+
       socket.current?.on("disconnect", (reason, details) => {
         if (!socket.current?.active) {
           disableChat();
@@ -376,7 +387,7 @@ export function useBotConnection({
         }
       };
     }
-  }, [url, sessionId, sendMessage]);
+  }, [url, sessionId, sendMessage, logError]);
 
   useEffect(() => {
     onSessionStartRef?.current?.(sessionId);
@@ -465,7 +476,7 @@ export function useBotConnection({
       audioQueueRef.current = undefined;
       startNewConversation();
     }
-  }, [startNewConversation]);
+  }, [startNewConversation, logError]);
 
   const replayConversation = useCallback(
     (events: UnionEventType[]) => {
@@ -499,6 +510,7 @@ export function useBotConnection({
     replayingConversation,
     waitingForUserInput,
     error,
+    onVoiceErrorRef,
     setUrl,
     reset,
     sendMessage,

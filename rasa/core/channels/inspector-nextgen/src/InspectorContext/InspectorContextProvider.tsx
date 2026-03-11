@@ -1,10 +1,17 @@
 import { useMemo, type ReactNode } from "react";
-import type { LogErrorFn, OnboardingTooltipConfig, TrackFn } from "../types";
+import { defaultShowToast } from "../Toaster";
+import type {
+  LogErrorFn,
+  OnboardingTooltipConfig,
+  ShowToastFn,
+  TrackFn,
+} from "../types";
 import { InspectorContext } from "./InspectorContext";
 
 interface Props {
   logError?: LogErrorFn;
   track?: TrackFn;
+  showToast?: ShowToastFn;
   onboardingTooltips?: OnboardingTooltipConfig[];
   children: ReactNode;
 }
@@ -12,6 +19,7 @@ interface Props {
 export const InspectorContextProvider = ({
   logError,
   track,
+  showToast,
   onboardingTooltips,
   children,
 }: Props) => {
@@ -19,9 +27,10 @@ export const InspectorContextProvider = ({
     () => ({
       logError: logError ?? console.error,
       track: track ?? (() => undefined),
+      showToast: showToast ?? defaultShowToast,
       onboardingTooltips: onboardingTooltips ?? [],
     }),
-    [logError, track, onboardingTooltips],
+    [logError, track, showToast, onboardingTooltips],
   );
 
   return (

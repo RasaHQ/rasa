@@ -1,19 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toaster } from "../Toaster";
+import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { useInspectorContext } from "../InspectorContext";
 import { SocketTimeoutError, SocketUnavailableError } from "../errors";
+import type { VoiceErrorHandler } from "../types";
 
 export type VoiceCallState = "active" | "inactive" | "connecting";
 
 interface Props {
   startVoiceStreaming: () => Promise<void>;
   stopVoiceStreaming: () => Promise<void>;
+  onVoiceErrorRef: RefObject<VoiceErrorHandler>;
   voiceFeaturesEnabled: boolean;
 }
 
 export const useVoiceCall = ({
   startVoiceStreaming,
   stopVoiceStreaming,
+  onVoiceErrorRef,
   voiceFeaturesEnabled,
 }: Props): {
   callDuration: string;
@@ -21,7 +23,7 @@ export const useVoiceCall = ({
   stopVoiceCall: () => Promise<void>;
   voiceCallState: VoiceCallState;
 } => {
-  const { logError, track } = useInspectorContext();
+  const { logError, showToast, track } = useInspectorContext();
   const [voiceCallState, setVoiceCallState] =
     useState<VoiceCallState>("inactive");
   const voiceCallTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -65,7 +67,7 @@ export const useVoiceCall = ({
           tags: { component: "useVoiceCall", action: "startVoiceCall" },
         });
       }
-      toaster.create({
+      showToast({
         title: "Failed to start voice call",
         description: userErrorMessage,
         type: "error",
@@ -76,6 +78,10 @@ export const useVoiceCall = ({
       return;
     }
 
+    // stopVoiceCall may have fired via onVoiceErrorRef while we were awaiting
+    if (operationRef.current !== "start") return;
+    operationRef.current = null;
+
     if (voiceCallTimerRef.current) {
       clearInterval(voiceCallTimerRef.current);
       voiceCallTimerRef.current = null;
@@ -85,13 +91,28 @@ export const useVoiceCall = ({
       setCallDuration(formatDuration(callDurationRef.current));
     }, 1000);
     setVoiceCallState("active");
-  }, [startVoiceStreaming, stopVoiceCall, logError, track]);
+  }, [startVoiceStreaming, stopVoiceCall, showToast, logError, track]);
 
   useEffect(() => {
     return () => {
       void stopVoiceCall();
     };
   }, [stopVoiceCall]);
+
+  useEffect(() => {
+    onVoiceErrorRef.current = () => {
+      showToast({
+        title: "Voice isn't set up yet",
+        description: "To test in voice, add your Voice API keys and complete the voice configuration.",
+        type: "warning",
+        closable: true,
+      });
+      void stopVoiceCall();
+    };
+    return () => {
+      onVoiceErrorRef.current = null;
+    };
+  }, [onVoiceErrorRef, showToast, stopVoiceCall]);
 
   return voiceFeaturesEnabled
     ? {

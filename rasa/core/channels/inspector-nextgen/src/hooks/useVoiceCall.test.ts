@@ -1,33 +1,31 @@
 import { renderHook, act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi, afterEach } from "vitest";
 import { useVoiceCall } from "./useVoiceCall";
-import { toaster } from "../Toaster";
 import { SocketTimeoutError, SocketUnavailableError } from "../errors";
-
-vi.mock("../Toaster", () => ({
-  toaster: {
-    create: vi.fn(),
-  },
-}));
+import type { VoiceErrorHandler } from "../types";
 
 const mockLogError = vi.fn();
+const mockShowToast = vi.fn();
 
 vi.mock("../InspectorContext", () => ({
   useInspectorContext: () => ({
     logError: mockLogError,
     track: vi.fn(),
+    showToast: mockShowToast,
   }),
 }));
 
 describe("useVoiceCall", () => {
   let startVoiceStreaming: ReturnType<typeof vi.fn>;
   let stopVoiceStreaming: ReturnType<typeof vi.fn>;
+  let onVoiceErrorRef: { current: VoiceErrorHandler };
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     startVoiceStreaming = vi.fn().mockResolvedValue(undefined);
     stopVoiceStreaming = vi.fn().mockResolvedValue(undefined);
+    onVoiceErrorRef = { current: null };
   });
 
   afterEach(() => {
@@ -36,7 +34,7 @@ describe("useVoiceCall", () => {
 
   it("should initialize with inactive state, 00:00 duration, and function references", () => {
     const { result } = renderHook(() =>
-      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
     );
 
     expect(result.current.voiceCallState).toBe("inactive");
@@ -47,7 +45,7 @@ describe("useVoiceCall", () => {
 
   it("should transition from inactive to active and back to inactive when stopped", async () => {
     const { result } = renderHook(() =>
-      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
     );
 
     expect(result.current.voiceCallState).toBe("inactive");
@@ -71,7 +69,7 @@ describe("useVoiceCall", () => {
   describe("call duration timer", () => {
     it("should increment every second and format correctly (minutes, hours)", async () => {
       const { result } = renderHook(() =>
-        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
       );
 
       await act(async () => {
@@ -112,7 +110,7 @@ describe("useVoiceCall", () => {
 
     it("should stop timer when call is stopped and reset on new call", async () => {
       const { result } = renderHook(() =>
-        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
       );
 
       await act(async () => {
@@ -156,13 +154,13 @@ describe("useVoiceCall", () => {
       );
 
       const { result } = renderHook(() =>
-        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
       );
 
       await result.current.startVoiceCall();
 
       expect(result.current.voiceCallState).toBe("inactive");
-      expect(toaster.create).toHaveBeenCalledWith({
+      expect(mockShowToast).toHaveBeenCalledWith({
         title: "Failed to start voice call",
         description: "Connection timeout - please try again",
         type: "error",
@@ -177,12 +175,12 @@ describe("useVoiceCall", () => {
       );
 
       const { result } = renderHook(() =>
-        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
       );
 
       await result.current.startVoiceCall();
 
-      expect(toaster.create).toHaveBeenCalledWith({
+      expect(mockShowToast).toHaveBeenCalledWith({
         title: "Failed to start voice call",
         description: "Connection unavailable - please try again",
         type: "error",
@@ -202,12 +200,12 @@ describe("useVoiceCall", () => {
         startVoiceStreaming.mockRejectedValueOnce(error);
 
         const { result } = renderHook(() =>
-          useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+          useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
         );
 
         await result.current.startVoiceCall();
 
-        expect(toaster.create).toHaveBeenCalledWith({
+        expect(mockShowToast).toHaveBeenCalledWith({
           title: "Failed to start voice call",
           description,
           type: "error",
@@ -221,12 +219,12 @@ describe("useVoiceCall", () => {
       startVoiceStreaming.mockRejectedValueOnce(new Error("Some error"));
 
       const { result } = renderHook(() =>
-        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
       );
 
       await result.current.startVoiceCall();
 
-      expect(toaster.create).toHaveBeenCalledWith({
+      expect(mockShowToast).toHaveBeenCalledWith({
         title: "Failed to start voice call",
         description: "Failed to start voice call",
         type: "error",
@@ -246,7 +244,7 @@ describe("useVoiceCall", () => {
         },
       });
 
-      expect(toaster.create).toHaveBeenCalledWith({
+      expect(mockShowToast).toHaveBeenCalledWith({
         title: "Failed to start voice call",
         description: "An unknown error occurred",
         type: "error",
@@ -254,11 +252,45 @@ describe("useVoiceCall", () => {
       });
     });
 
+    it("should stop voice call and show toast when voiceError callback is invoked", async () => {
+      const voiceError = {
+        message: "Voice streaming failed",
+        error: "Missing environment variable for ASR Engine DeepgramASR: DEEPGRAM_API_KEY",
+        exception: "ProviderClientValidationError",
+      };
+
+      const { result } = renderHook(() =>
+        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
+      );
+
+      await act(async () => {
+        await result.current.startVoiceCall();
+      });
+      expect(result.current.voiceCallState).toBe("active");
+      expect(onVoiceErrorRef.current).toBeTypeOf("function");
+
+      act(() => {
+        onVoiceErrorRef.current!(voiceError);
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      await act(async () => {});
+
+      expect(result.current.voiceCallState).toBe("inactive");
+      expect(mockShowToast).toHaveBeenCalledWith({
+        title: "Voice isn't set up yet",
+        description: "To test in voice, add your Voice API keys and complete the voice configuration.",
+        type: "warning",
+        closable: true,
+      });
+      expect(stopVoiceStreaming).toHaveBeenCalled();
+    });
+
     it("should not start timer if error occurs", async () => {
       startVoiceStreaming.mockRejectedValueOnce(new Error("Failed"));
 
       const { result } = renderHook(() =>
-        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
       );
 
       await act(async () => {
@@ -276,7 +308,7 @@ describe("useVoiceCall", () => {
 
   it("should guard against concurrent startVoiceCall (no interval leak)", async () => {
     const { result } = renderHook(() =>
-      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
     );
 
     await act(async () => {
@@ -296,7 +328,7 @@ describe("useVoiceCall", () => {
 
   it("should guard against concurrent stopVoiceCall", async () => {
     const { result } = renderHook(() =>
-      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
     );
 
     await act(async () => {
@@ -317,7 +349,7 @@ describe("useVoiceCall", () => {
 
   it("should handle rapid start/stop and double calls", async () => {
     const { result } = renderHook(() =>
-      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
     );
 
     // Concurrent double start - second call is ignored (no interval leak)
@@ -350,7 +382,7 @@ describe("useVoiceCall", () => {
   describe("cleanup on unmount", () => {
     it("should call stopVoiceStreaming and clear timer when unmounting with active call", async () => {
       const { result, unmount } = renderHook(() =>
-        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
       );
 
       await act(async () => {
@@ -376,7 +408,7 @@ describe("useVoiceCall", () => {
 
     it("should call stopVoiceStreaming on unmount even when voice was never started", () => {
       const { unmount } = renderHook(() =>
-        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
       );
 
       unmount();
@@ -389,7 +421,7 @@ describe("useVoiceCall", () => {
     stopVoiceStreaming.mockRejectedValueOnce(new Error("Stop failed"));
 
     const { result } = renderHook(() =>
-      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, voiceFeaturesEnabled: true }),
+      useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
     );
 
     await result.current.startVoiceCall();

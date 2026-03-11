@@ -69,11 +69,12 @@ vi.mock("../InspectorContext", () => ({
 type MockedUseParams = MockedFunction<typeof useParams>;
 type MockedUseLocalStorage = MockedFunction<typeof useLocalStorage>;
 
-type SocketHandlers = Record<string, () => void>;
+type SocketHandler = (...args: unknown[]) => void;
+type SocketHandlers = Record<string, SocketHandler>;
 type MockSocket = {
   emit: ReturnType<typeof vi.fn>;
   handlers: SocketHandlers;
-  on: (event: string, cb: () => void) => void;
+  on: (event: string, cb: SocketHandler) => void;
   disconnect: ReturnType<typeof vi.fn>;
   removeAllListeners: ReturnType<typeof vi.fn>;
   io: { on: ReturnType<typeof vi.fn>; removeAllListeners: ReturnType<typeof vi.fn> };
@@ -96,7 +97,7 @@ describe("useBotConnection", () => {
       const socket: MockSocket = {
         emit: vi.fn(),
         handlers: {} as SocketHandlers,
-        on: (event: string, cb: () => void) => {
+        on: (event: string, cb: SocketHandler) => {
           socket.handlers[event] = cb;
         },
         disconnect: vi.fn(),
@@ -228,6 +229,65 @@ describe("useBotConnection", () => {
         (call) => call[0] === "user_message",
       );
       expect(userMessageCalls).toHaveLength(0);
+    });
+  });
+
+  describe("voice_error event", () => {
+    it("calls onVoiceErrorRef callback when voice_error event is received", () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: true,
+        }),
+      );
+
+      act(() => {
+        result.current.setUrl("https://test.example.com");
+      });
+
+      const handler = vi.fn();
+      result.current.onVoiceErrorRef.current = handler;
+
+      const voiceErrorPayload = {
+        message: "Voice streaming failed",
+        error: "Missing environment variable for ASR Engine DeepgramASR: DEEPGRAM_API_KEY",
+        exception: "ProviderClientValidationError",
+      };
+
+      act(() => {
+        lastSocket.handlers["voice_error"]?.(voiceErrorPayload);
+      });
+
+      expect(handler).toHaveBeenCalledWith(voiceErrorPayload);
+    });
+
+    it("does not throw when onVoiceErrorRef.current is null", () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: true,
+        }),
+      );
+
+      act(() => {
+        result.current.setUrl("https://test.example.com");
+      });
+
+      expect(result.current.onVoiceErrorRef.current).toBeNull();
+
+      expect(() => {
+        act(() => {
+          lastSocket.handlers["voice_error"]?.({
+            message: "Voice streaming failed",
+            error: "some error",
+            exception: "SomeException",
+          });
+        });
+      }).not.toThrow();
     });
   });
 

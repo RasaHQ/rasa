@@ -1,11 +1,12 @@
 import { Box, Flex } from "@chakra-ui/react";
-import { useEffect, useMemo, useState } from "react";
+import { type RefObject, useEffect, useMemo, useState } from "react";
 import { useConversationData } from "../hooks/useConversationData";
 import {
   type Conversation,
   type ConversationEventAction,
   type Stack,
   type UnionEventType,
+  type VoiceErrorHandler,
 } from "../types";
 import { ChatSection } from "./ChatSection";
 import { EventDetails } from "./EventDetails";
@@ -29,6 +30,7 @@ type Props = {
   botDataEndpoint: string;
   startVoiceStreaming: () => Promise<void>;
   stopVoiceStreaming: () => Promise<void>;
+  onVoiceErrorRef: RefObject<VoiceErrorHandler>;
   voiceFeaturesEnabled: boolean;
 };
 
@@ -50,6 +52,7 @@ export function TryAssistant({
   botDataEndpoint,
   startVoiceStreaming,
   stopVoiceStreaming,
+  onVoiceErrorRef,
   voiceFeaturesEnabled,
 }: Readonly<Props>) {
   const { flows, isLoading: flowsLoading, error: flowsError } = useConversationData(projectUrl, botDataEndpoint);
@@ -147,6 +150,7 @@ export function TryAssistant({
           flowView={flowView}
           startVoiceStreaming={startVoiceStreaming}
           stopVoiceStreaming={stopVoiceStreaming}
+          onVoiceErrorRef={onVoiceErrorRef}
           voiceFeaturesEnabled={voiceFeaturesEnabled}
         />
       </Box>

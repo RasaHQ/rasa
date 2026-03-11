@@ -2,6 +2,7 @@ import { describe, it, vi, expect, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "../tests/utils";
 import { TryAssistant } from "./TryAssistant";
+import type { VoiceErrorHandler } from "../types";
 
 vi.mock("@tanstack/react-store", async () => {
   const actual = await vi.importActual("@tanstack/react-store");
@@ -44,6 +45,7 @@ describe("TryAssistant", () => {
     botDataEndpoint: "/data",
     startVoiceStreaming: vi.fn(),
     stopVoiceStreaming: vi.fn(),
+    onVoiceErrorRef: { current: null } as { current: VoiceErrorHandler },
     voiceFeaturesEnabled: true,
   } satisfies Parameters<typeof TryAssistant>[0];
 

@@ -1,11 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../tests/utils";
+import type { VoiceErrorHandler } from "../types";
 import { MessageInput } from "./MessageInput";
 
 const mockStartVoiceStreaming = vi.fn().mockResolvedValue(undefined);
 const mockStopVoiceStreaming = vi.fn().mockResolvedValue(undefined);
+const mockOnVoiceErrorRef: { current: VoiceErrorHandler } = { current: null };
 
 vi.mock("../../hooks/useVoiceCall", () => ({
   useVoiceCall: vi.fn(() => ({
@@ -30,6 +32,7 @@ describe("MessageInput", () => {
         onSubmit={onSubmit}
         startVoiceStreaming={mockStartVoiceStreaming}
         stopVoiceStreaming={mockStopVoiceStreaming}
+        onVoiceErrorRef={mockOnVoiceErrorRef}
         voiceFeaturesEnabled={true}
       />,
     );
@@ -67,6 +70,7 @@ describe("MessageInput", () => {
         onSubmit={onSubmit}
         startVoiceStreaming={mockStartVoiceStreaming}
         stopVoiceStreaming={mockStopVoiceStreaming}
+        onVoiceErrorRef={mockOnVoiceErrorRef}
         voiceFeaturesEnabled={true}
       />,
     );
@@ -84,6 +88,7 @@ describe("MessageInput", () => {
         isDisabled={true}
         startVoiceStreaming={mockStartVoiceStreaming}
         stopVoiceStreaming={mockStopVoiceStreaming}
+        onVoiceErrorRef={mockOnVoiceErrorRef}
         voiceFeaturesEnabled={true}
       />,
     );
@@ -103,6 +108,7 @@ describe("MessageInput", () => {
           onSubmit={onSubmit}
           startVoiceStreaming={mockStartVoiceStreaming}
           stopVoiceStreaming={mockStopVoiceStreaming}
+          onVoiceErrorRef={mockOnVoiceErrorRef}
           voiceFeaturesEnabled={false}
         />,
       );
