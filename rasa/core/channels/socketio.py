@@ -246,6 +246,12 @@ class SocketIOInput(InputChannel):
         self.jwt_algorithm = jwt_method
         self.on_new_message: Optional[OnNewMessageType] = None
         self.sender_silence_map: Dict[str, Task] = {}
+        # Maps Socket.IO transport-level session IDs (sid) to Rasa sender IDs.
+        # When session_persistence is enabled, the sender_id comes from the
+        # client-provided session_id rather than the sid.  On disconnect we only
+        # receive the sid, so this map lets us resolve the corresponding sender_id.
+        self._sid_to_sender: Dict[str, str] = {}
+        self.on_disconnect_callback: Optional[Callable[[str], None]] = None
 
     def get_output_channel(self) -> Optional[OutputChannel]:
         """Creates socket.io output channel object."""
@@ -303,6 +309,8 @@ class SocketIOInput(InputChannel):
             sender_id = data["session_id"]
         else:
             sender_id = sid
+
+        self._sid_to_sender[sid] = sender_id
 
         # We cancel silence timeout when a new message is received
         # to prevent sending a silence timeout message
@@ -369,10 +377,24 @@ class SocketIOInput(InputChannel):
 
         @sio_server.on("disconnect", namespace=self.namespace)
         async def disconnect(sid: Text) -> None:
+            sender_id = self._sid_to_sender.pop(sid, None)
             logger.debug(
                 "socketio_channel.input.disconnect",
                 message=f"User {sid} disconnected from socketIO endpoint.",
             )
+            if self.on_disconnect_callback and sender_id:
+                logger.debug(
+                    "socketio_channel.input.disconnect.callback",
+                    message=f"Calling on_disconnect_callback for sender {sender_id}.",
+                )
+                try:
+                    self.on_disconnect_callback(sender_id)
+                except Exception as e:
+                    logger.error(
+                        "socketio_channel.input.disconnect.callback.error",
+                        message=f"on_disconnect_callback failed for sender "
+                        f"{sender_id}: {e}",
+                    )
 
         @sio_server.on("session_request", namespace=self.namespace)
         async def session_request(sid: Text, data: Optional[Dict]) -> None:

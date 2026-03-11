@@ -200,6 +200,30 @@ class RestInput(InputChannel):
         async def receive(request: Request) -> Union[ResponseStream, BaseHTTPResponse]:
             return await self.receive_messages(request, on_new_message)
 
+        @custom_webhook.route(
+            "/cancel_background_tasks/<sender_id:str>", methods=["POST"]
+        )
+        async def cancel_background_tasks(
+            request: Request, sender_id: str
+        ) -> HTTPResponse:
+            """Cancel any in-flight background processing for the given sender."""
+            structlogger.debug(
+                "rest.cancel_background_tasks",
+                sender_id=sender_id,
+            )
+            try:
+                agent = request.app.ctx.agent
+                cancelled = agent.cancel_background_tasks(sender_id)
+            except Exception as e:
+                structlogger.warning(
+                    "rest.cancel_background_tasks.error",
+                    sender_id=sender_id,
+                    error=str(e),
+                )
+                return response.json({"cancelled": False}, status=500)
+
+            return response.json({"cancelled": cancelled})
+
         return custom_webhook
 
 

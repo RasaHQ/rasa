@@ -26,6 +26,7 @@ from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from rasa.agents.core.agent_protocol import AgentProtocol
+from rasa.agents.core.cancellation import CancellationToken
 from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
 from rasa.agents.schemas import AgentInput, AgentOutput, AgentToolSchema
 from rasa.core.actions.action import Action, CustomActionExecutor, RemoteAction
@@ -1332,10 +1333,16 @@ def _instrument_advance_flows_until_next_action(
             flows: FlowsList,
             slots: List[Slot],
             output_channel: Optional[OutputChannel] = None,
+            cancellation_token: Optional[CancellationToken] = None,
         ) -> FlowActionPrediction:
             with tracer.start_as_current_span(f"{module_name}.{fn.__name__}") as span:
                 prediction: FlowActionPrediction = await fn(
-                    tracker, available_actions, flows, slots
+                    tracker,
+                    available_actions,
+                    flows,
+                    slots,
+                    output_channel=output_channel,
+                    cancellation_token=cancellation_token,
                 )
 
                 span.set_attributes(
@@ -1387,6 +1394,7 @@ def _instrument_call_agent_with_retry(
         agent_input: Any,
         max_retries: int,
         output_channel: Optional[OutputChannel] = None,
+        cancellation_token: Optional[CancellationToken] = None,
     ) -> Any:
         agent_input_attrs = {
             "agent_name": agent_name,
@@ -1412,7 +1420,12 @@ def _instrument_call_agent_with_retry(
         ) as span:
             start_time = time.perf_counter_ns()
             result = await original_function(
-                agent_name, protocol_type, agent_input, max_retries
+                agent_name,
+                protocol_type,
+                agent_input,
+                max_retries,
+                output_channel=output_channel,
+                cancellation_token=cancellation_token,
             )
             end_time = time.perf_counter_ns()
             duration_ns = end_time - start_time

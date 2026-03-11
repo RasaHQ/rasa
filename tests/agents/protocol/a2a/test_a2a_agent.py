@@ -667,8 +667,7 @@ async def test_run_pooling_agent_handles_unknown_task_state(mock_init_client):
 
     # Ensure a warning about unknown task state was logged at least once
     assert any(
-        log.get("event") == "a2a_agent.run_streaming_agent.unknown_task_state"
-        for log in logs
+        log.get("event") == "a2a_agent.handle_task.unknown_task_state" for log in logs
     )
 
 
@@ -951,8 +950,7 @@ async def test_run_streaming_agent_handles_unknown_then_completed_no_poll(
     assert output.status == AgentStatus.COMPLETED
 
     assert any(
-        log.get("event") == "a2a_agent.run_streaming_agent.unknown_task_state"
-        for log in logs
+        log.get("event") == "a2a_agent.handle_task.unknown_task_state" for log in logs
     )
 
 
@@ -1289,8 +1287,8 @@ def test_from_config_respects_provided_timeout_and_retries():
 
 def test_from_config_defaults_polling_params():
     from rasa.agents.constants import (
-        A2A_TASK_POOLING_INITIAL_DELAY,
-        A2A_TASK_POOLING_MAX_WAIT,
+        A2A_TASK_POLLING_INITIAL_DELAY,
+        A2A_TASK_POLLING_MAX_WAIT,
     )
 
     agent = A2AAgent.from_config(
@@ -1308,8 +1306,8 @@ def test_from_config_defaults_polling_params():
         )
     )
 
-    assert agent._max_polling_time == A2A_TASK_POOLING_MAX_WAIT
-    assert agent._polling_initial_delay == A2A_TASK_POOLING_INITIAL_DELAY
+    assert agent._max_polling_time == A2A_TASK_POLLING_MAX_WAIT
+    assert agent._polling_initial_delay == A2A_TASK_POLLING_INITIAL_DELAY
 
 
 def test_from_config_respects_provided_polling_params():
@@ -1511,7 +1509,7 @@ def test_generate_structured_results_from_artifacts_accumulates_previous():
     assert current[0]["result"] == {"d": 1}
     assert current[1]["name"] == "agent-x_0_1"
     assert current[1]["type"] == "file"
-    assert current[1]["result "] == {"uri": "u1", "name": "n1", "mime_type": "t1"}
+    assert current[1]["result"] == {"uri": "u1", "name": "n1", "mime_type": "t1"}
 
 
 @pytest.mark.asyncio
@@ -3153,3 +3151,585 @@ def test_prepare_message_forwards_metadata_to_message():
     # Metadata is not in parts, so it is not sent to the LLM
     assert len(message.parts) == 1
     assert isinstance(message.parts[0].root, TextPart)
+
+
+# =============================================================================
+# CancellationToken integration tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_polling_cancelled_returns_early(
+    mock_init_client: MagicMock, monkeypatch: pytest.MonkeyPatch
+):
+    """Cancellation token interrupts the polling loop before max_wait."""
+    from rasa.agents.core.cancellation import CancellationToken
+
+    non_terminal_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.working),
+    )
+
+    async def stream():
+        yield non_terminal_task, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_client.get_task = AsyncMock(return_value=non_terminal_task)
+    mock_init_client.return_value = mock_client
+
+    import rasa.agents.protocol.a2a.a2a_agent as a2a_mod
+
+    monkeypatch.setattr(a2a_mod, "A2A_TASK_POLLING_MAX_WAIT", 30, raising=False)
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_card = MagicMock()
+        mock_card.url = "http://example.com"
+        mock_load_card.return_value = mock_card
+        await agent.connect()
+
+    token = CancellationToken()
+
+    async def _cancel_soon():
+        await asyncio.sleep(0.15)
+        token.cancel()
+
+    background_task = asyncio.create_task(_cancel_soon())
+
+    import time
+
+    start = time.monotonic()
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+        ),
+        cancellation_token=token,
+    )
+    elapsed = time.monotonic() - start
+
+    assert output.status == AgentStatus.CANCELLED
+    assert (output.metadata or {}).get("cancellation_reason") == "Polling cancelled"
+    assert elapsed < 5.0, f"Should have exited quickly, took {elapsed:.2f}s"
+    assert background_task.done()
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_polling_without_cancellation_token_behaves_as_before(
+    mock_init_client: MagicMock, monkeypatch: pytest.MonkeyPatch
+):
+    """With cancellation_token=None, polling still times out normally."""
+    non_terminal_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.working),
+    )
+
+    async def stream():
+        yield non_terminal_task, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_client.get_task = AsyncMock(return_value=non_terminal_task)
+    mock_init_client.return_value = mock_client
+
+    import rasa.agents.protocol.a2a.a2a_agent as a2a_mod
+
+    monkeypatch.setattr(a2a_mod, "A2A_TASK_POLLING_MAX_WAIT", 0.5, raising=False)
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_card = MagicMock()
+        mock_card.url = "http://example.com"
+        mock_load_card.return_value = mock_card
+        await agent.connect()
+
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+        ),
+        cancellation_token=None,
+    )
+
+    assert output.status == AgentStatus.FATAL_ERROR
+    assert "Polling timed out" in (output.error_message or "")
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_session_timeout_cancels_a2a_polling_via_processor(
+    mock_init_client: MagicMock, monkeypatch: pytest.MonkeyPatch
+):
+    """Simulates the full timer -> processor -> token -> A2A chain.
+
+    The session timer calls ``processor.cancel_background_tasks(sender_id)``
+    which signals the CancellationToken that is active in an A2A polling
+    loop, causing it to exit promptly instead of waiting for max_wait.
+    """
+    from rasa.agents.core.cancellation import CancellationToken
+    from rasa.core.processor import MessageProcessor
+
+    non_terminal_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.working),
+    )
+
+    async def stream():
+        yield non_terminal_task, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_client.get_task = AsyncMock(return_value=non_terminal_task)
+    mock_init_client.return_value = mock_client
+
+    import rasa.agents.protocol.a2a.a2a_agent as a2a_mod
+
+    monkeypatch.setattr(a2a_mod, "A2A_TASK_POLLING_MAX_WAIT", 30, raising=False)
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_card = MagicMock()
+        mock_card.url = "http://example.com"
+        mock_load_card.return_value = mock_card
+        await agent.connect()
+
+    # Build a processor with the real registry methods
+    processor = MagicMock()
+    processor._active_cancellation_tokens = {}
+    processor.register_cancellation_token = (
+        MessageProcessor.register_cancellation_token.__get__(processor)
+    )
+    processor.cancel_background_tasks = (
+        MessageProcessor.cancel_background_tasks.__get__(processor)
+    )
+
+    # Create and register a token — same as Agent.handle_message() does
+    sender_id = "user-123"
+    token = CancellationToken()
+    processor.register_cancellation_token(sender_id, token)
+
+    async def _simulate_session_timeout():
+        """Simulate what handle_session_timeout does: call cancel_background_tasks
+        before trying to acquire the lock."""
+        await asyncio.sleep(0.15)
+        processor.cancel_background_tasks(sender_id)
+
+    background_task = asyncio.create_task(_simulate_session_timeout())
+
+    import time
+
+    start = time.monotonic()
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+        ),
+        cancellation_token=token,
+    )
+    elapsed = time.monotonic() - start
+
+    assert output.status == AgentStatus.CANCELLED
+    assert (output.metadata or {}).get("cancellation_reason") == "Polling cancelled"
+    assert (
+        elapsed < 5.0
+    ), f"Timer should have stopped polling quickly, took {elapsed:.2f}s"
+    assert token.is_cancelled is True
+    assert background_task.done()
+
+
+# =============================================================================
+# Streaming cancellation tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_streaming_cancelled_returns_early(
+    mock_init_client: MagicMock,
+):
+    """Cancellation token interrupts a slow A2A stream mid-flight."""
+    from rasa.agents.core.cancellation import CancellationToken
+
+    working_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.working),
+    )
+
+    async def slow_stream():
+        yield working_task, None
+        # Simulate a server that takes a long time to send the next event
+        await asyncio.sleep(30)
+        yield (
+            Task(
+                context_id="abc",
+                id="abc-123",
+                status=TaskStatus(state=TaskState.completed),
+            ),
+            None,
+        )
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = slow_stream()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_card = MagicMock()
+        mock_card.url = "http://example.com"
+        mock_load_card.return_value = mock_card
+        await agent.connect()
+
+    token = CancellationToken()
+
+    async def _cancel_soon():
+        await asyncio.sleep(0.15)
+        token.cancel()
+
+    background_task = asyncio.create_task(_cancel_soon())
+
+    import time
+
+    start = time.monotonic()
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+        ),
+        cancellation_token=token,
+    )
+    elapsed = time.monotonic() - start
+
+    assert output.status == AgentStatus.CANCELLED
+    assert (output.metadata or {}).get("cancellation_reason") == "Streaming cancelled"
+    assert elapsed < 5.0, f"Should have exited quickly, took {elapsed:.2f}s"
+    assert background_task.done()
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_streaming_already_cancelled_returns_immediately(
+    mock_init_client: MagicMock,
+):
+    """If the token is already cancelled before streaming starts, exit immediately."""
+    from rasa.agents.core.cancellation import CancellationToken
+
+    async def stream_that_should_not_be_consumed():
+        raise AssertionError("Stream should never be consumed")
+        yield  # make it an async generator  # pragma: no cover
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream_that_should_not_be_consumed()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_card = MagicMock()
+        mock_card.url = "http://example.com"
+        mock_load_card.return_value = mock_card
+        await agent.connect()
+
+    token = CancellationToken()
+    token.cancel()
+
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+        ),
+        cancellation_token=token,
+    )
+
+    assert output.status == AgentStatus.CANCELLED
+    assert (output.metadata or {}).get("cancellation_reason") == "Streaming cancelled"
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_streaming_completes_before_cancellation(
+    mock_init_client: MagicMock,
+):
+    """If the stream completes normally before the token fires, return the result."""
+    from rasa.agents.core.cancellation import CancellationToken
+
+    completed_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.completed),
+        artifacts=[Artifact(artifact_id="a1", parts=[])],
+    )
+
+    async def fast_stream():
+        yield completed_task, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = fast_stream()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_card = MagicMock()
+        mock_card.url = "http://example.com"
+        mock_load_card.return_value = mock_card
+        await agent.connect()
+
+    token = CancellationToken()
+
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+        ),
+        cancellation_token=token,
+    )
+
+    assert output.status == AgentStatus.COMPLETED
+    assert token.is_cancelled is False
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_streaming_without_cancellation_token_still_works(
+    mock_init_client: MagicMock,
+):
+    """Backward compat: streaming with cancellation_token=None uses the old path."""
+    completed_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.completed),
+        artifacts=[Artifact(artifact_id="a1", parts=[])],
+    )
+
+    async def stream():
+        yield completed_task, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_load_card.return_value = MagicMock()
+        await agent.connect()
+
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+        ),
+        cancellation_token=None,
+    )
+
+    assert output.status == AgentStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_session_timeout_cancels_a2a_streaming_via_processor(
+    mock_init_client: MagicMock,
+):
+    """Simulates the full timer -> processor -> token -> streaming chain.
+
+    The session timer calls ``processor.cancel_background_tasks(sender_id)``
+    which signals the CancellationToken that is active during A2A streaming,
+    causing the stream to be interrupted promptly.
+    """
+    from rasa.agents.core.cancellation import CancellationToken
+    from rasa.core.processor import MessageProcessor
+
+    working_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.working),
+    )
+
+    async def slow_stream():
+        yield working_task, None
+        await asyncio.sleep(30)
+        yield (
+            Task(
+                context_id="abc",
+                id="abc-123",
+                status=TaskStatus(state=TaskState.completed),
+                artifacts=[Artifact(artifact_id="a1", parts=[])],
+            ),
+            None,
+        )
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = slow_stream()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_card = MagicMock()
+        mock_card.url = "http://example.com"
+        mock_load_card.return_value = mock_card
+        await agent.connect()
+
+    processor = MagicMock()
+    processor._active_cancellation_tokens = {}
+    processor.register_cancellation_token = (
+        MessageProcessor.register_cancellation_token.__get__(processor)
+    )
+    processor.cancel_background_tasks = (
+        MessageProcessor.cancel_background_tasks.__get__(processor)
+    )
+
+    sender_id = "user-456"
+    token = CancellationToken()
+    processor.register_cancellation_token(sender_id, token)
+
+    async def _simulate_session_timeout():
+        """Simulate what handle_session_timeout does: call cancel_background_tasks
+        before trying to acquire the lock."""
+        await asyncio.sleep(0.15)
+        processor.cancel_background_tasks(sender_id)
+
+    background_task = asyncio.create_task(_simulate_session_timeout())
+
+    import time
+
+    start = time.monotonic()
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+        ),
+        cancellation_token=token,
+    )
+    elapsed = time.monotonic() - start
+
+    assert output.status == AgentStatus.CANCELLED
+    assert (output.metadata or {}).get("cancellation_reason") == "Streaming cancelled"
+    assert (
+        elapsed < 5.0
+    ), f"Timer should have stopped streaming quickly, took {elapsed:.2f}s"
+    assert token.is_cancelled is True
+    assert background_task.done()

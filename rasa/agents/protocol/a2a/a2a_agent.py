@@ -3,8 +3,9 @@ import json
 import os
 import time
 import uuid
+from collections.abc import AsyncIterator
 from contextlib import aclosing
-from typing import Any, ClassVar, Dict, List, Optional, Set
+from typing import Any, ClassVar, Dict, List, NamedTuple, Optional, Set, Union
 from urllib.parse import urlparse
 
 import httpx
@@ -42,14 +43,18 @@ from pydantic import ValidationError
 from rasa.agents.constants import (
     A2A_AGENT_CONTEXT_ID_KEY,
     A2A_AGENT_TASK_ID_KEY,
-    A2A_TASK_POOLING_INITIAL_DELAY,
-    A2A_TASK_POOLING_MAX_WAIT,
+    A2A_CANCELLATION_REASON_POLLING,
+    A2A_CANCELLATION_REASON_STREAMING,
+    A2A_TASK_POLLING_INITIAL_DELAY,
+    A2A_TASK_POLLING_MAX_WAIT,
     AGENT_DEFAULT_MAX_RETRIES,
     AGENT_DEFAULT_TIMEOUT_SECONDS,
+    AGENT_METADATA_CANCELLATION_REASON_KEY,
     AGENT_METADATA_STRUCTURED_RESULTS_KEY,
     MAX_AGENT_RETRY_DELAY_SECONDS,
 )
 from rasa.agents.core.agent_protocol import AgentProtocol
+from rasa.agents.core.cancellation import CancellationToken
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentInput, AgentOutput
 from rasa.agents.utils import map_agent_metadata_to_bot_uttered
@@ -74,6 +79,14 @@ from rasa.shared.exceptions import (
 structlogger = structlog.get_logger()
 
 
+class StreamResult(NamedTuple):
+    """Result of consuming an A2A streaming response."""
+
+    agent_output: Optional[AgentOutput]
+    task_id: Optional[str]
+    events_received: int
+
+
 class A2AAgent(AgentProtocol):
     """A2A client implementation."""
 
@@ -94,8 +107,8 @@ class A2AAgent(AgentProtocol):
         agent_card_path: str,
         timeout: int,
         max_retries: int,
-        max_polling_time: int = A2A_TASK_POOLING_MAX_WAIT,
-        polling_initial_delay: float = A2A_TASK_POOLING_INITIAL_DELAY,
+        max_polling_time: int = A2A_TASK_POLLING_MAX_WAIT,
+        polling_initial_delay: float = A2A_TASK_POLLING_INITIAL_DELAY,
         auth_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         self._name = name
@@ -137,12 +150,12 @@ class A2AAgent(AgentProtocol):
         max_polling_time = (
             config.configuration.max_polling_time
             if config.configuration and config.configuration.max_polling_time
-            else A2A_TASK_POOLING_MAX_WAIT
+            else A2A_TASK_POLLING_MAX_WAIT
         )
         polling_initial_delay = (
             config.configuration.polling_initial_delay
             if config.configuration and config.configuration.polling_initial_delay
-            else A2A_TASK_POOLING_INITIAL_DELAY
+            else A2A_TASK_POLLING_INITIAL_DELAY
         )
         return cls(
             name=config.agent.name,
@@ -220,7 +233,10 @@ class A2AAgent(AgentProtocol):
         return agent_input
 
     async def run(
-        self, agent_input: AgentInput, output_channel: Optional[OutputChannel] = None
+        self,
+        agent_input: AgentInput,
+        output_channel: Optional[OutputChannel] = None,
+        cancellation_token: Optional[CancellationToken] = None,
     ) -> AgentOutput:
         """Send a message to Agent/server and return response."""
         generated_events: List[Event] = []
@@ -243,32 +259,28 @@ class A2AAgent(AgentProtocol):
         )
         message = self._prepare_message(agent_input)
 
-        task_id: Optional[str] = None
-        events_received = 0
         try:
-            # Use aclosing to ensure proper cleanup of the async generator
             stream = self._client.send_message(message)
-            async with aclosing(stream) as stream:  # type: ignore[type-var]
-                async for event in stream:
-                    events_received += 1
-                    agent_output = self._handle_send_message_response(
-                        agent_input,
-                        event,
-                        generated_events,
-                        output_channel=output_channel,
-                    )
-                    if agent_output is not None:
-                        return agent_output
-                    else:
-                        # Not a terminal response, save taskID (in case that's the only
-                        # event, and we need to pool) and continue waiting for events
-                        if (
-                            isinstance(event, tuple)
-                            and len(event) == 2
-                            and isinstance(event[0], Task)
-                        ):
-                            task_id = event[0].id
-                        continue
+
+            if cancellation_token:
+                result = await self._consume_stream_or_cancel(
+                    stream,
+                    agent_input,
+                    generated_events,
+                    output_channel,
+                    cancellation_token,
+                )
+            else:
+                result = await self._consume_stream(
+                    stream, agent_input, generated_events, output_channel
+                )
+
+            if result.agent_output is not None:
+                return result.agent_output
+
+            task_id = result.task_id
+            events_received = result.events_received
+
         except A2AClientJSONRPCError as e:
             return self._handle_json_rpc_error_response(
                 agent_input, e.error, generated_events
@@ -305,7 +317,7 @@ class A2AAgent(AgentProtocol):
         # Now we need to poll the task until it reaches a terminal state.
         if not task_id:
             structlogger.error(
-                "a2a_agent.run.pooling.missing_id",
+                "a2a_agent.run.polling.missing_id",
                 event_info="Missing task_id for polling",
                 agent_name=self._name,
                 task_id=task_id,
@@ -316,7 +328,7 @@ class A2AAgent(AgentProtocol):
                 error_message="Missing task_id for polling",
                 events=generated_events or None,
             )
-        return await self._pool_task_until_terminal(
+        return await self._poll_task_until_terminal(
             agent_input=agent_input,
             task_id=task_id,
             generated_events=generated_events,
@@ -324,6 +336,141 @@ class A2AAgent(AgentProtocol):
             initial_delay=self._polling_initial_delay,
             max_delay=MAX_AGENT_RETRY_DELAY_SECONDS,
             output_channel=output_channel,
+            cancellation_token=cancellation_token,
+        )
+
+    @staticmethod
+    def _create_cancelled_agent_output(
+        agent_input: AgentInput,
+        reason: str,
+        generated_events: Optional[List[Event]] = None,
+    ) -> AgentOutput:
+        """Create an ``AgentOutput`` for a cancelled operation."""
+        return AgentOutput(
+            id=agent_input.id,
+            status=AgentStatus.CANCELLED,
+            metadata={
+                AGENT_METADATA_CANCELLATION_REASON_KEY: reason,
+            },
+            events=generated_events or None,
+        )
+
+    async def _consume_stream(
+        self,
+        client_stream: AsyncIterator[Union[ClientEvent, Message]],
+        agent_input: AgentInput,
+        generated_events: List[Event],
+        output_channel: Optional[OutputChannel],
+    ) -> StreamResult:
+        """Consume A2A streaming events until a terminal state or stream end.
+
+        Returns a ``StreamResult``.  When ``agent_output`` is not ``None`` the
+        stream yielded a terminal response; otherwise the caller should fall
+        through to polling using ``task_id`` / ``events_received``.
+
+        Propagates ``A2AClientJSONRPCError`` / ``A2AClientError`` to the caller.
+        """
+        task_id: Optional[str] = None
+        events_received = 0
+        async with aclosing(client_stream) as stream:  # type: ignore[type-var]
+            async for event in stream:
+                events_received += 1
+                agent_output = self._handle_send_message_response(
+                    agent_input,
+                    event,
+                    generated_events,
+                    output_channel=output_channel,
+                )
+                if agent_output is not None:
+                    return StreamResult(agent_output, task_id, events_received)
+                # Not a terminal response, save taskID (in case that's the only
+                # event, and we need to poll) and continue waiting for events
+                if (
+                    isinstance(event, tuple)
+                    and len(event) == 2
+                    and isinstance(event[0], Task)
+                ):
+                    task_id = event[0].id
+        return StreamResult(None, task_id, events_received)
+
+    async def _consume_stream_or_cancel(
+        self,
+        client_stream: AsyncIterator[Union[ClientEvent, Message]],
+        agent_input: AgentInput,
+        generated_events: List[Event],
+        output_channel: Optional[OutputChannel],
+        cancellation_token: CancellationToken,
+    ) -> StreamResult:
+        """Race stream consumption against the cancellation token.
+
+        If the token fires before the stream completes, the consume task is
+        force-cancelled and a ``StreamResult`` with a ``CANCELLED``
+        ``AgentOutput`` is returned immediately.
+
+        If the stream completes first (with a terminal ``AgentOutput`` or by
+        ending without one), the ``StreamResult`` is returned as-is — including
+        any exception that ``_consume_stream`` would raise.
+        """
+        if cancellation_token.is_cancelled:
+            # If already cancelled before we start, close the stream and return
+            try:
+                await client_stream.aclose()  # type: ignore[attr-defined]
+            except Exception:
+                structlogger.debug(
+                    "a2a_agent.run.streaming.close_failed",
+                    agent_name=self._name,
+                    exc_info=True,
+                )
+            structlogger.info(
+                "a2a_agent.run.streaming.cancelled",
+                agent_name=self._name,
+            )
+            return StreamResult(
+                self._create_cancelled_agent_output(
+                    agent_input, A2A_CANCELLATION_REASON_STREAMING, generated_events
+                ),
+                task_id=None,
+                events_received=0,
+            )
+
+        # Race two tasks: stream consumption vs. cancellation signal.
+        # Whichever completes first wins; the loser is cancelled and we
+        # suppress its CancelledError to ensure clean shutdown
+        consume_task = asyncio.create_task(
+            self._consume_stream(
+                client_stream, agent_input, generated_events, output_channel
+            )
+        )
+        cancel_task = asyncio.create_task(cancellation_token.wait_until_cancelled())
+
+        done, pending = await asyncio.wait(
+            {consume_task, cancel_task},
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+
+        # Clean up the losing task
+        for t in pending:
+            t.cancel()
+            try:
+                await t
+            except asyncio.CancelledError:
+                pass
+
+        # Stream finished first — return its result (or re-raise its exception)
+        if consume_task in done:
+            return consume_task.result()
+
+        # Cancellation won — the stream was interrupted
+        structlogger.info(
+            "a2a_agent.run.streaming.cancelled",
+            agent_name=self._name,
+        )
+        return StreamResult(
+            self._create_cancelled_agent_output(
+                agent_input, A2A_CANCELLATION_REASON_STREAMING, generated_events
+            ),
+            task_id=None,
+            events_received=0,
         )
 
     async def process_agent_output(self, output: AgentOutput) -> AgentOutput:
@@ -358,13 +505,13 @@ class A2AAgent(AgentProtocol):
         In case of streaming, the response can be either exactly *one* Message,
         or a *series* of tuples of (Task, Optional[TaskUpdateEvent]).
 
-        In case of pooling, the response can be either exactly *one* Message,
+        In case of polling, the response can be either exactly *one* Message,
         or exactly *one* tuple of (Task, None).
 
         If the agent response is terminal (i.e., completed, failed, etc.),
         this method will return an AgentOutput.
         Otherwise, the task is still in progress (i.e., submitted, working), so this
-        method will return None, so that the streaming or pooling agent can continue
+        method will return None, so that the streaming or polling agent can continue
         to wait for updates.
         """
         if isinstance(response, Message):
@@ -496,7 +643,7 @@ class A2AAgent(AgentProtocol):
         """If task status is terminal (e.g. completed, failed) return AgentOutput.
 
         If the task is still in progress (i.e., submitted, working), return None,
-        so that the streaming or pooling agent can continue to wait for updates.
+        so that the streaming or polling agent can continue to wait for updates.
         """
         state = task.status.state
 
@@ -542,7 +689,7 @@ class A2AAgent(AgentProtocol):
             or state == TaskState.auth_required
         ):
             structlogger.error(
-                "a2a_agent.run_streaming_agent.unsuccessful_task_state",
+                "a2a_agent.handle_task.unsuccessful_task_state",
                 event_info="Task execution finished with an unsuccessful state",
                 agent_name=self._name,
                 state=state,
@@ -569,7 +716,7 @@ class A2AAgent(AgentProtocol):
             # The task has an unknown state. Perhaps this is a transient condition.
             # Return None to continue waiting for updates
             structlogger.warning(
-                "a2a_agent.run_streaming_agent.unknown_task_state",
+                "a2a_agent.handle_task.unknown_task_state",
                 event_info="Task is in unknown state, continuing to wait for updates",
                 agent_name=self._name,
                 state=state,
@@ -577,7 +724,7 @@ class A2AAgent(AgentProtocol):
             return None
         else:
             structlogger.error(
-                "a2a_agent.run_streaming_agent.unexpected_task_state",
+                "a2a_agent.handle_task.unexpected_task_state",
                 event_info="Unexpected task state received from A2A",
                 agent_name=self._name,
                 state=state,
@@ -817,7 +964,7 @@ class A2AAgent(AgentProtocol):
     # Task Management & Polling
     # ============================================================================
 
-    async def _pool_task_until_terminal(
+    async def _poll_task_until_terminal(
         self,
         agent_input: AgentInput,
         task_id: str,
@@ -826,11 +973,12 @@ class A2AAgent(AgentProtocol):
         initial_delay: float,
         max_delay: int,
         output_channel: Optional[OutputChannel] = None,
+        cancellation_token: Optional[CancellationToken] = None,
     ) -> AgentOutput:
         """Poll the task status until it reaches a terminal state or times out."""
         if not self._client:
             structlogger.error(
-                "a2a_agent.pool_task_until_terminal.error",
+                "a2a_agent.poll_task_until_terminal.error",
                 event_info="A2A client is not initialized. Call connect() first.",
             )
             return AgentOutput(
@@ -840,7 +988,7 @@ class A2AAgent(AgentProtocol):
             )
 
         structlogger.debug(
-            "a2a_agent.pool_task_until_terminal.start",
+            "a2a_agent.poll_task_until_terminal.start",
             event_info="Start polling task from A2A server",
             agent_name=self._name,
             task_id=task_id,
@@ -853,6 +1001,16 @@ class A2AAgent(AgentProtocol):
         sent_intermediate_messages: Set[str] = set()
 
         while True:
+            if cancellation_token and cancellation_token.is_cancelled:
+                structlogger.info(
+                    "a2a_agent.poll_task_until_terminal.cancelled",
+                    agent_name=self._name,
+                    task_id=task_id,
+                )
+                return self._create_cancelled_agent_output(
+                    agent_input, A2A_CANCELLATION_REASON_POLLING, generated_events
+                )
+
             try:
                 task = await self._client.get_task(TaskQueryParams(id=task_id))
                 agent_output = self._handle_task(
@@ -869,7 +1027,7 @@ class A2AAgent(AgentProtocol):
                 elapsed = time.monotonic() - start_time
                 if elapsed >= max_wait:
                     structlogger.debug(
-                        "a2a_agent.pool_task_until_terminal.timeout",
+                        "a2a_agent.poll_task_until_terminal.timeout",
                         event_info="Polling task from A2A server timed out",
                         agent_name=self._name,
                         task_id=task_id,
@@ -884,7 +1042,7 @@ class A2AAgent(AgentProtocol):
                     )
 
                 structlogger.info(
-                    "a2a_agent.pool_task_until_terminal.waiting",
+                    "a2a_agent.poll_task_until_terminal.waiting",
                     event_info="Task not in terminal state yet, waiting to poll again",
                     delay=delay,
                     agent_name=self._name,
@@ -892,13 +1050,29 @@ class A2AAgent(AgentProtocol):
                     elapsed=elapsed,
                     max_wait=max_wait,
                 )
-                await asyncio.sleep(delay)
+
+                if cancellation_token:
+                    cancelled = await cancellation_token.wait(timeout=delay)
+                    if cancelled:
+                        structlogger.info(
+                            "a2a_agent.poll_task_until_terminal.cancelled",
+                            agent_name=self._name,
+                            task_id=task_id,
+                        )
+                        return self._create_cancelled_agent_output(
+                            agent_input,
+                            A2A_CANCELLATION_REASON_POLLING,
+                            generated_events,
+                        )
+                else:
+                    await asyncio.sleep(delay)
+
                 # Exponential backoff with cap
                 delay = min(delay * 2, max_delay)
 
             except A2AClientError as exception:
                 structlogger.error(
-                    "a2a_agent.pool_task_until_terminal.error",
+                    "a2a_agent.poll_task_until_terminal.error",
                     event_info="Error during polling task from A2A server",
                     agent_name=self._name,
                     error=str(exception),
@@ -988,7 +1162,7 @@ class A2AAgent(AgentProtocol):
                     structured_result = {
                         "name": f"{agent_input.id}_{artifact_index}_{part_index}",
                         "type": "file",
-                        "result ": {
+                        "result": {
                             "uri": part.root.file.uri,
                             "name": part.root.file.name,
                             "mime_type": part.root.file.mime_type,

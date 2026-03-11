@@ -12,6 +12,7 @@ from rasa.agents.constants import (
 from rasa.core.policies.flow_policy import FlowPolicy
 
 if TYPE_CHECKING:
+    from rasa.agents.core.cancellation import CancellationToken
     from rasa.agents.protocol.a2a.a2a_agent import A2AAgent
     from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
     from rasa.agents.schemas import AgentInput
@@ -708,6 +709,7 @@ def extract_attrs_for_advance_flows(
     flows: FlowsList,
     slots: List[Slot],
     output_channel: Optional["OutputChannel"] = None,
+    cancellation_token: Optional["CancellationToken"] = None,
 ) -> Dict[str, Any]:
     from rasa.tracing.instrumentation.instrumentation import FLOW_EXECUTOR_MODULE_NAME
 
@@ -846,6 +848,7 @@ def extract_attrs_for_run_step(
     previous_step_id: Text,
     slots: List[Slot],
     output_channel: Optional["OutputChannel"] = None,
+    cancellation_token: Optional["CancellationToken"] = None,
 ) -> Dict[str, Any]:
     current_context = extract_current_context_attribute(stack)
 

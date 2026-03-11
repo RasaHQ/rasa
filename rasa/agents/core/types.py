@@ -68,6 +68,7 @@ class AgentStatus(Enum):
     INPUT_REQUIRED = "input_required"
     FATAL_ERROR = "fatal_error"
     RECOVERABLE_ERROR = "recoverable_error"
+    CANCELLED = "cancelled"
 
     def __str__(self) -> str:
         return self.value

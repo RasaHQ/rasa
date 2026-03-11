@@ -190,3 +190,50 @@ async def test_on_streaming_response_includes_synthetic_bot_event(
     assert last_event["event"] == "bot"
     assert last_event["text"] == "Hello, how are you"
     assert last_event["metadata"]["streaming"] is True
+
+
+# =============================================================================
+# on_disconnect_callback tests
+# =============================================================================
+
+
+def test_inspector_wires_cancel_callback_for_socketio():
+    """Inspector wrapping SocketIOInput should wire on_disconnect_callback
+    to agent.cancel_background_tasks after server start."""
+    from unittest.mock import MagicMock
+
+    from rasa.core.channels.socketio import SocketIOInput
+
+    socketio_channel = SocketIOInput()
+    assert socketio_channel.on_disconnect_callback is None
+
+    inspector = DevelopmentInspectProxy(socketio_channel)
+    app = rasa.core.run.configure_app([inspector], port=5004)
+
+    mock_agent = MagicMock()
+    mock_agent.processor = MagicMock()
+    app.ctx.agent = mock_agent
+
+    # Simulate after_server_start by triggering Sanic listeners
+    _, res = app.test_client.get("/webhooks/rest/inspect.html")
+
+    assert socketio_channel.on_disconnect_callback is not None
+    socketio_channel.on_disconnect_callback("test-sender")
+    mock_agent.cancel_background_tasks.assert_called_once_with("test-sender")
+
+
+def test_inspector_does_not_wire_callback_for_rest():
+    """Inspector wrapping a non-SocketIO channel should not set any callback."""
+    from unittest.mock import MagicMock
+
+    rest_channel = RestInput()
+    inspector = DevelopmentInspectProxy(rest_channel)
+    app = rasa.core.run.configure_app([inspector], port=5004)
+
+    mock_agent = MagicMock()
+    mock_agent.processor = MagicMock()
+    app.ctx.agent = mock_agent
+
+    _, res = app.test_client.get("/webhooks/rest/inspect.html")
+
+    assert not hasattr(rest_channel, "on_disconnect_callback")

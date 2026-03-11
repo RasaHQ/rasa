@@ -512,10 +512,34 @@ class Agent:
             logger.info("Ignoring message as there is no agent to handle it.")
             return None
 
-        async with self.lock_store.lock(message.sender_id):
-            return await self.processor.handle_message(  # type: ignore[union-attr]
-                message
+        from rasa.agents.core.cancellation import CancellationToken
+
+        token = CancellationToken()
+        try:
+            async with self.lock_store.lock(message.sender_id):
+                self.processor.register_cancellation_token(message.sender_id, token)  # type: ignore[union-attr]
+                return await self.processor.handle_message(  # type: ignore[union-attr]
+                    message
+                )
+        finally:
+            self.processor.unregister_cancellation_token(message.sender_id)  # type: ignore[union-attr]
+
+    def cancel_background_tasks(self, sender_id: Text) -> bool:
+        """Cancel any in-flight background tasks for a conversation.
+
+        Can be called by channels on client disconnect, by the session timer,
+        or by any external system that knows the ``sender_id``.
+
+        Returns:
+            ``True`` if a token was found and signalled, ``False`` otherwise.
+        """
+        if self.processor:
+            logger.debug(
+                f"Received request to cancel background tasks "
+                f"for sender_id '{sender_id}'."
             )
+            return self.processor.cancel_background_tasks(sender_id)
+        return False
 
     @agent_must_be_ready
     async def predict_next_for_sender_id(

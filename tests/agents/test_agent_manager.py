@@ -300,7 +300,7 @@ async def test_run_agent_success(
     # Verify all agent methods were called
     mock_agent_protocol.process_input.assert_called_once_with(mock_agent_input)
     mock_agent_protocol.run.assert_called_once_with(
-        processed_input, output_channel=None
+        processed_input, output_channel=None, cancellation_token=None
     )
 
     # Verify result

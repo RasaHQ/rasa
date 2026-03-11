@@ -37,6 +37,7 @@ from rasa.core.policies.flows.agent_executor import (
     _create_action_prediction,
     _create_agent_request_user_input_prediction,
     _create_send_text_prediction,
+    _handle_agent_cancelled,
     _handle_agent_completed,
     _handle_agent_fatal_error,
     _handle_agent_input_required,
@@ -89,6 +90,7 @@ from rasa.shared.core.events import (
     AgentResumed,
     AgentStarted,
     FlowCancelled,
+    FlowCompleted,
     SlotSet,
 )
 from rasa.shared.core.flows.flow import Flow
@@ -1937,6 +1939,121 @@ def test_handle_agent_fatal_error() -> None:
     assert isinstance(stack.frames[-1], InternalErrorPatternFlowStackFrame)
     # AgentStackFrame should be removed from stack
     assert not any(isinstance(frame, AgentStackFrame) for frame in stack.frames)
+
+
+def test_handle_agent_cancelled() -> None:
+    """_handle_agent_cancelled silently ends the flow."""
+    output = AgentOutput(
+        id="test_agent",
+        status=AgentStatus.CANCELLED,
+        metadata={"cancellation_reason": "Polling cancelled"},
+    )
+    final_events = []
+    user_frame = UserFlowStackFrame(flow_id="test_flow", step_id="test_step")
+    agent_frame = AgentStackFrame(
+        frame_id="agent-frame-id",
+        flow_id="test_flow",
+        agent_id="test_agent",
+        state=AgentState.WAITING_FOR_INPUT,
+    )
+    stack = DialogueStack(frames=[user_frame, agent_frame])
+    step = CallFlowStep(
+        custom_id="test_call",
+        idx=0,
+        description="Test call step",
+        call="test_agent",
+        next=FlowStepLinks(links=[]),
+        flow_id="test_flow",
+        metadata={},
+    )
+
+    result = _handle_agent_cancelled(output, final_events, stack, step)
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+    # AgentCancelled with the reason is present
+    assert any(
+        isinstance(e, AgentCancelled)
+        and e.agent_id == "test_agent"
+        and e.reason == "Polling cancelled"
+        for e in result.events
+    )
+    # FlowCancelled is present (flow was interrupted, not completed)
+    assert any(
+        isinstance(e, FlowCancelled) and e.flow_id == "test_flow" for e in result.events
+    )
+    # No FlowCompleted — the flow was cancelled, not completed
+    assert not any(isinstance(e, FlowCompleted) for e in result.events)
+    # No error/cancel patterns pushed
+    assert not any(
+        isinstance(f, InternalErrorPatternFlowStackFrame) for f in stack.frames
+    )
+    assert not any(isinstance(f, CancelPatternFlowStackFrame) for f in stack.frames)
+    # Both agent and flow frames are removed — stack is empty
+    assert len(stack.frames) == 0
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_run_agent_cancelled_is_silent(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """CANCELLED status emits AgentCancelled only — no error pattern."""
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    mock_run_agent.return_value = AgentOutput(
+        id="car-research",
+        status=AgentStatus.CANCELLED,
+        metadata={"cancellation_reason": "Streaming cancelled"},
+    )
+
+    flow_step_result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    assert isinstance(flow_step_result, ContinueFlowWithNextStep)
+    assert any(
+        isinstance(e, AgentCancelled) and e.agent_id == "car-research"
+        for e in flow_step_result.events
+    )
+    assert any(
+        isinstance(e, FlowCancelled) and e.flow_id == "my_flow"
+        for e in flow_step_result.events
+    )
+    assert not any(isinstance(e, FlowCompleted) for e in flow_step_result.events)
+    assert not any(
+        isinstance(frame, InternalErrorPatternFlowStackFrame) for frame in stack.frames
+    )
+    assert not any(
+        isinstance(frame, CancelPatternFlowStackFrame) for frame in stack.frames
+    )
+    # Stack is empty — both agent and flow frames removed
+    assert len(stack.frames) == 0
+    assert mock_run_agent.call_count == 1
 
 
 def test_handle_agent_unknown_status() -> None:

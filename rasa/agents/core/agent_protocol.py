@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
+    from rasa.agents.core.cancellation import CancellationToken
     from rasa.agents.core.types import ProtocolType
     from rasa.agents.schemas.agent_input import AgentInput
     from rasa.agents.schemas.agent_output import AgentOutput
@@ -77,7 +78,10 @@ class AgentProtocol(Protocol):
         ...
 
     async def run(
-        self, input: "AgentInput", output_channel: Optional[OutputChannel] = None
+        self,
+        input: "AgentInput",
+        output_channel: Optional[OutputChannel] = None,
+        cancellation_token: Optional["CancellationToken"] = None,
     ) -> "AgentOutput":
         """Send a message to Agent/server and return response.
 
@@ -86,6 +90,8 @@ class AgentProtocol(Protocol):
 
         Args:
             input: The input to the agent as an AgentInput object.
+            output_channel: Optional output channel for intermediate messages.
+            cancellation_token: Optional token for cooperative cancellation.
 
         Returns:
             The output from the agent as an AgentOutput object.

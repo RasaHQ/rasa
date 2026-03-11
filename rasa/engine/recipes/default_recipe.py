@@ -19,6 +19,7 @@ from rasa.dialogue_understanding.processor.command_processor_component import (
     CommandProcessorComponent,
 )
 from rasa.engine.constants import (
+    PLACEHOLDER_CANCELLATION_TOKEN,
     PLACEHOLDER_ENDPOINTS,
     PLACEHOLDER_IMPORTER,
     PLACEHOLDER_MESSAGE,
@@ -505,6 +506,8 @@ class DefaultV1Recipe(Recipe):
                 return "nlu_training_data_provider"
             elif "output_channel" == parameter:
                 return PLACEHOLDER_OUTPUT_CHANNEL
+            elif "cancellation_token" == parameter:
+                return PLACEHOLDER_CANCELLATION_TOKEN
             return f"{parameter}_provider"
 
         sig = signature(getattr(component, fn_name))

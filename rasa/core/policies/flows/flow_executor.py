@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Text
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
 
 import structlog
 from jinja2 import Template
 from structlog.contextvars import bound_contextvars
 
 from rasa.core.channels.channel import OutputChannel
+
+if TYPE_CHECKING:
+    from rasa.agents.core.cancellation import CancellationToken
 from rasa.core.channels.voice_stream.call_state import (
     call_state,
 )
@@ -538,6 +541,7 @@ async def advance_flows(
     flows: FlowsList,
     slots: List[Slot],
     output_channel: Optional[OutputChannel] = None,
+    cancellation_token: Optional["CancellationToken"] = None,
 ) -> FlowActionPrediction:
     """Advance the current flows until the next action.
 
@@ -547,6 +551,7 @@ async def advance_flows(
         flows: All flows.
         slots: The slots that are available in the domain.
         output_channel: The output channel to use.
+        cancellation_token: Optional token for cooperative cancellation.
 
     Returns:
     The predicted action and the events to run.
@@ -557,7 +562,12 @@ async def advance_flows(
         return FlowActionPrediction(None, 0.0)
 
     return await advance_flows_until_next_action(
-        tracker, available_actions, flows, slots, output_channel=output_channel
+        tracker,
+        available_actions,
+        flows,
+        slots,
+        output_channel=output_channel,
+        cancellation_token=cancellation_token,
     )
 
 
@@ -567,6 +577,7 @@ async def advance_flows_until_next_action(
     flows: FlowsList,
     slots: List[Slot],
     output_channel: Optional[OutputChannel] = None,
+    cancellation_token: Optional["CancellationToken"] = None,
 ) -> FlowActionPrediction:
     """Advance the flow and select the next action to execute.
 
@@ -581,6 +592,7 @@ async def advance_flows_until_next_action(
         flows: All flows.
         slots: The slots that are available in the domain.
         output_channel: The output channel to use.
+        cancellation_token: Optional token for cooperative cancellation.
 
     Returns:
         The next action to execute, the events that should be applied to the
@@ -655,6 +667,7 @@ async def advance_flows_until_next_action(
                     previous_step_id,
                     slots,
                     output_channel=output_channel,
+                    cancellation_token=cancellation_token,
                 )
                 new_events = step_result.events
                 if (
@@ -746,6 +759,7 @@ async def run_step(
     previous_step_id: str,
     slots: List[Slot],
     output_channel: Optional[OutputChannel] = None,
+    cancellation_token: Optional["CancellationToken"] = None,
 ) -> FlowStepResult:
     """Run a single step of a flow.
 
@@ -766,6 +780,7 @@ async def run_step(
         previous_step_id: The ID of the previous step.
         slots: The slots that are available in the domain.
         output_channel: The output channel to use.
+        cancellation_token: Optional token for cooperative cancellation.
 
     Returns:
     A result of running the step describing where to transition to.
@@ -820,6 +835,7 @@ async def run_step(
             slots,
             flows,
             output_channel=output_channel,
+            cancellation_token=cancellation_token,
         )
 
     elif isinstance(step, SetSlotsFlowStep):
@@ -895,6 +911,7 @@ async def _run_call_step(
     slots: List[Slot],
     flows: FlowsList,
     output_channel: Optional[OutputChannel] = None,
+    cancellation_token: Optional["CancellationToken"] = None,
 ) -> FlowStepResult:
     structlogger.debug("flow.step.run.call")
     if step.is_calling_mcp_tool():
@@ -908,6 +925,7 @@ async def _run_call_step(
             slots,
             flows,
             output_channel=output_channel,
+            cancellation_token=cancellation_token,
         )
     else:
         stack.push(

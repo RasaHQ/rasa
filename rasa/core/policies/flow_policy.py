@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Text
 
 import structlog
 
+from rasa.agents.core.cancellation import CancellationToken
 from rasa.core.channels.channel import OutputChannel
 from rasa.core.constants import (
     FLOW_POLICY_PRIORITY,
@@ -113,6 +114,7 @@ class FlowPolicy(Policy):
         rule_only_data: Optional[Dict[Text, Any]] = None,
         flows: Optional[FlowsList] = None,
         output_channel: Optional[OutputChannel] = None,
+        cancellation_token: Optional[CancellationToken] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -124,6 +126,7 @@ class FlowPolicy(Policy):
                 should be ignored by this policy.
             flows: The flows to use.
             output_channel: The output channel to use.
+            cancellation_token: Optional token for cooperative cancellation.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
 
@@ -146,6 +149,7 @@ class FlowPolicy(Policy):
                 flows,
                 domain.slots,
                 output_channel=output_channel,
+                cancellation_token=cancellation_token,
             )
             return self._create_prediction_result(
                 prediction.action_name,
@@ -177,6 +181,7 @@ class FlowPolicy(Policy):
                 flows,
                 domain.slots,
                 output_channel=output_channel,
+                cancellation_token=cancellation_token,
             )
             collected_events = events + (prediction.events or [])
             return self._create_prediction_result(

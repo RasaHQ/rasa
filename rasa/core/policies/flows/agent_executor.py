@@ -10,6 +10,7 @@ from rasa.agents.constants import (
     A2A_AGENT_CONTEXT_ID_KEY,
     AGENT_METADATA_AGENT_ID_KEY,
     AGENT_METADATA_AGENT_RESPONSE_KEY,
+    AGENT_METADATA_CANCELLATION_REASON_KEY,
     AGENT_METADATA_EXIT_IF_KEY,
     AGENT_METADATA_MODEL_ID_KEY,
     AGENT_METADATA_RESTARTED_KEY,
@@ -18,6 +19,7 @@ from rasa.agents.constants import (
     AGENT_METADATA_STRUCTURED_RESULTS_KEY,
     MAX_AGENT_RETRY_DELAY_SECONDS,
 )
+from rasa.agents.core.cancellation import CancellationToken
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentInput, AgentOutput
 from rasa.agents.schemas.agent_input import AgentInputSlot
@@ -48,6 +50,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     AgentStackFrame,
     AgentState,
     BaseFlowStackFrame,
+    UserFlowStackFrame,
 )
 from rasa.shared.agents.utils import get_protocol_type
 from rasa.shared.core.constants import (
@@ -106,6 +109,7 @@ async def run_agent(
     slots: List[Slot],
     flows: FlowsList,
     output_channel: Optional[OutputChannel] = None,
+    cancellation_token: Optional[CancellationToken] = None,
 ) -> FlowStepResult:
     """Run an agent call step."""
     structlogger.debug(
@@ -181,6 +185,7 @@ async def run_agent(
         agent_input=agent_input,
         max_retries=MAX_AGENT_RETRIES,
         output_channel=output_channel,
+        cancellation_token=cancellation_token,
     )
 
     # Ensure baseline metadata for agent name if the agent didn't provide it.
@@ -216,6 +221,8 @@ async def run_agent(
         return _handle_agent_input_required(output, final_events, stack, step)
     elif output.status == AgentStatus.COMPLETED:
         return _handle_agent_completed(output, final_events, stack, step)
+    elif output.status == AgentStatus.CANCELLED:
+        return _handle_agent_cancelled(output, final_events, stack, step)
     elif output.status == AgentStatus.FATAL_ERROR:
         return _handle_agent_fatal_error(
             output, final_events, stack, step, flows, tracker
@@ -232,6 +239,7 @@ async def _call_agent_with_retry(
     agent_input: AgentInput,
     max_retries: int,
     output_channel: Optional[OutputChannel] = None,
+    cancellation_token: Optional[CancellationToken] = None,
 ) -> AgentOutput:
     """Call an agent with retries in case of recoverable errors."""
     for attempt in range(max_retries):
@@ -248,6 +256,7 @@ async def _call_agent_with_retry(
                 protocol_type=protocol_type,
                 context=agent_input,
                 output_channel=output_channel,
+                cancellation_token=cancellation_token,
             )
         except Exception as e:
             # We don't have a vaild agent response at this time to act based
@@ -438,6 +447,46 @@ def _handle_agent_completed(
         )
     else:
         return ContinueFlowWithNextStep(events=final_events)
+
+
+def _handle_agent_cancelled(
+    output: AgentOutput,
+    final_events: List[Event],
+    stack: DialogueStack,
+    step: CallFlowStep,
+) -> FlowStepResult:
+    """Handle cancellation of agent execution.
+
+    Silently ends the owning flow: removes the agent and flow stack frames,
+    appends ``AgentCancelled`` and ``FlowCancelled`` events, and returns
+    ``ContinueFlowWithNextStep``.  The loop will see no active flow on the
+    stack and fall through to ``action_listen``.
+
+    Unlike fatal errors, ``pattern_internal_error`` is **not** triggered.
+    Unlike user-initiated cancellation, ``CancelPatternFlowStackFrame`` is
+    **not** pushed, so no bot message is sent and no flow-level side-effects
+    occur.
+    """
+    reason = (output.metadata or {}).get(AGENT_METADATA_CANCELLATION_REASON_KEY)
+    structlogger.info(
+        "flow.step.run_agent.cancelled",
+        agent_name=step.call,
+        step_id=step.id,
+        flow_id=step.flow_id,
+        reason=reason,
+    )
+    remove_agent_stack_frame(stack, step.call)
+    # Remove the owning flow frame so the flow doesn't advance to the next step
+    stack.frames = [
+        f
+        for f in stack.frames
+        if not (isinstance(f, UserFlowStackFrame) and f.flow_id == step.flow_id)
+    ]
+    final_events.append(
+        AgentCancelled(agent_id=step.call, flow_id=step.flow_id, reason=reason)
+    )
+    final_events.append(FlowCancelled(step.flow_id, step.id))
+    return ContinueFlowWithNextStep(events=final_events)
 
 
 def _handle_agent_fatal_error(

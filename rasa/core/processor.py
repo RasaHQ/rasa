@@ -50,6 +50,7 @@ from rasa.dialogue_understanding.stack.frames import BaseFlowStackFrame
 from rasa.dialogue_understanding.utils import add_commands_to_message_parse_data
 from rasa.engine import loader
 from rasa.engine.constants import (
+    PLACEHOLDER_CANCELLATION_TOKEN,
     PLACEHOLDER_ENDPOINTS,
     PLACEHOLDER_MESSAGE,
     PLACEHOLDER_OUTPUT_CHANNEL,
@@ -121,6 +122,7 @@ from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
+    from rasa.agents.core.cancellation import CancellationToken
     from rasa.core.config.available_endpoints import AvailableEndpoints
     from rasa.core.timer_managers.timer_manager import SessionTimerManager
     from rasa.privacy.privacy_manager import BackgroundPrivacyManager
@@ -181,8 +183,43 @@ class MessageProcessor:
         self.domain = self.model_metadata.domain
         self.http_interpreter = http_interpreter
         self.privacy_manager = privacy_manager
+        self._active_cancellation_tokens: Dict[str, "CancellationToken"] = {}
         if self.privacy_manager is not None:
             self.privacy_manager.validate_sensitive_slots_in_domain(self.domain)
+
+    def register_cancellation_token(
+        self, sender_id: str, token: "CancellationToken"
+    ) -> None:
+        """Register a cancellation token for a conversation turn."""
+        self._active_cancellation_tokens[sender_id] = token
+
+    def unregister_cancellation_token(self, sender_id: str) -> None:
+        """Remove a cancellation token after the turn completes."""
+        self._active_cancellation_tokens.pop(sender_id, None)
+
+    def cancel_background_tasks(self, sender_id: str) -> bool:
+        """Signal cancellation for in-flight background tasks.
+
+        Lock-free: safe to call from the session timer or any channel
+        disconnect handler without holding the conversation lock.
+
+        Returns:
+            ``True`` if a token was found and signaled, ``False`` otherwise.
+        """
+        token = self._active_cancellation_tokens.get(sender_id)
+        if token:
+            structlogger.debug(
+                "processor.cancel_background_tasks",
+                event_info=f"Cancelling background tasks for sender_id '{sender_id}'.",
+            )
+            token.cancel()
+            return True
+
+        structlogger.debug(
+            "processor.cancel_background_tasks.no_token_found",
+            event_info=f"No cancellation token found for sender_id '{sender_id}'.",
+        )
+        return False
 
     @staticmethod
     def _load_model(
@@ -237,7 +274,10 @@ class MessageProcessor:
 
         tracker = await self.run_action_extract_slots(message.output_channel, tracker)
 
-        await self._run_prediction_loop(message.output_channel, tracker)
+        cancellation_token = self._active_cancellation_tokens.get(message.sender_id)
+        await self._run_prediction_loop(
+            message.output_channel, tracker, cancellation_token
+        )
 
         await self.save_tracker(tracker)
 
@@ -625,6 +665,7 @@ class MessageProcessor:
         self,
         tracker: DialogueStateTracker,
         output_channel: Optional[OutputChannel] = None,
+        cancellation_token: Optional["CancellationToken"] = None,
     ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
 
@@ -646,7 +687,9 @@ class MessageProcessor:
                 "The limit of actions to predict has been reached."
             )
 
-        prediction = await self._predict_next_with_tracker(tracker, output_channel)
+        prediction = await self._predict_next_with_tracker(
+            tracker, output_channel, cancellation_token
+        )
 
         action = rasa.core.actions.action.action_for_index(
             prediction.max_confidence_index, self.domain, self.action_endpoint
@@ -737,6 +780,8 @@ class MessageProcessor:
                 If provided, expiration is skipped when a user message arrived
                 after this time (avoids race in multi-pod deployments).
         """
+        self.cancel_background_tasks(sender_id)
+
         async with self.lock_store.lock(sender_id):
             tracker = await self.get_tracker(sender_id)
 
@@ -1321,7 +1366,10 @@ class MessageProcessor:
         )
 
     async def _run_prediction_loop(
-        self, output_channel: OutputChannel, tracker: DialogueStateTracker
+        self,
+        output_channel: OutputChannel,
+        tracker: DialogueStateTracker,
+        cancellation_token: Optional["CancellationToken"] = None,
     ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -1334,7 +1382,7 @@ class MessageProcessor:
             # this actually just calls the policy's method by the same name
             try:
                 action, prediction = await self.predict_next_with_tracker_if_should(
-                    tracker, output_channel
+                    tracker, output_channel, cancellation_token
                 )
             except ActionLimitReached:
                 structlogger.warning(
@@ -1862,6 +1910,7 @@ class MessageProcessor:
         self,
         tracker: DialogueStateTracker,
         output_channel: Optional[OutputChannel] = None,
+        cancellation_token: Optional["CancellationToken"] = None,
     ) -> PolicyPrediction:
         """Collect predictions from ensemble and return action and predictions."""
         followup_action = tracker.followup_action
@@ -1891,6 +1940,7 @@ class MessageProcessor:
             PLACEHOLDER_TRACKER: tracker,
             PLACEHOLDER_ENDPOINTS: self.endpoints,
             PLACEHOLDER_OUTPUT_CHANNEL: output_channel,
+            PLACEHOLDER_CANCELLATION_TOKEN: cancellation_token,
         }
 
         results = await self.graph_runner.run(

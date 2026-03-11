@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, call
 
 import pytest
 
-from rasa.core.channels.socketio import SocketIOOutput
+from rasa.core.channels.socketio import SocketIOInput, SocketIOOutput
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -70,3 +70,23 @@ async def test_socketio_handles_buttons_with_payload(socketio_output: SocketIOOu
         ),
     ]
     socketio_output.sio_server.emit.assert_has_calls(expected_calls, any_order=False)
+
+
+# =============================================================================
+# on_disconnect_callback tests
+# =============================================================================
+
+
+def test_on_disconnect_callback_defaults_to_none():
+    channel = SocketIOInput()
+    assert channel.on_disconnect_callback is None
+
+
+def test_on_disconnect_callback_can_be_set():
+    channel = SocketIOInput()
+
+    def _cb(sender_id: str) -> None:
+        return None
+
+    channel.on_disconnect_callback = _cb
+    assert channel.on_disconnect_callback is not None

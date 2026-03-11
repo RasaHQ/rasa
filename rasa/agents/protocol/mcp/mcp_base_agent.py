@@ -129,6 +129,7 @@ DEFAULT_LLM_CONFIG = {
 }
 
 if TYPE_CHECKING:
+    from rasa.agents.core.cancellation import CancellationToken
     from rasa.core.config.available_endpoints import MCPMetaMapConfig
 
 structlogger = structlog.get_logger()
@@ -1684,7 +1685,10 @@ class MCPBaseAgent(AgentProtocol):
         ...
 
     async def run(
-        self, input: AgentInput, output_channel: Optional[OutputChannel] = None
+        self,
+        input: AgentInput,
+        output_channel: Optional[OutputChannel] = None,
+        cancellation_token: Optional["CancellationToken"] = None,
     ) -> AgentOutput:
         """Send a message to Agent/server and return response."""
         return await self.send_message(input, output_channel)

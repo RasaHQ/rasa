@@ -231,6 +231,23 @@ class DevelopmentInspectProxy(InputChannel):
             """Prints a message after the server has started with inspect URL."""
             self.processor = app.ctx.agent.processor
 
+            from rasa.core.channels.socketio import SocketIOInput
+
+            if isinstance(self.underlying, SocketIOInput):
+
+                def _cancel_background_tasks_on_disconnect(sender_id: str) -> None:
+                    structlogger.debug(
+                        "development_inspector.on_disconnect.cancel_background_tasks",
+                        sender_id=sender_id,
+                        event_info=f"Client disconnected, cancelling "
+                        f"background tasks for senderID {sender_id}.",
+                    )
+                    app.ctx.agent.cancel_background_tasks(sender_id)
+
+                self.underlying.on_disconnect_callback = (
+                    _cancel_background_tasks_on_disconnect
+                )
+
             inspect_path = app.url_for(f"{app.name}.{underlying_webhook.name}.inspect")
 
             # replace 0.0.0.0 with localhost

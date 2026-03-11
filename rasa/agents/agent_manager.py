@@ -4,6 +4,7 @@ import structlog
 
 from rasa.agents.agent_factory import AgentFactory
 from rasa.agents.core.agent_protocol import AgentProtocol
+from rasa.agents.core.cancellation import CancellationToken
 from rasa.agents.core.types import AgentIdentifier, ProtocolType
 from rasa.agents.protocol.a2a.a2a_agent import A2AAgent
 from rasa.agents.schemas import AgentInput, AgentOutput
@@ -109,6 +110,7 @@ class AgentManager(metaclass=Singleton):
         protocol_type: ProtocolType,
         context: AgentInput,
         output_channel: Optional[OutputChannel] = None,
+        cancellation_token: Optional[CancellationToken] = None,
     ) -> AgentOutput:
         """Run an agent, send the input to the agent and return the agent response.
 
@@ -117,6 +119,7 @@ class AgentManager(metaclass=Singleton):
             protocol_type: The protocol type of the agent.
             context: The input to the agent as an AgentInput object.
             output_channel: The output channel to use.
+            cancellation_token: Optional token for cooperative cancellation.
 
         Returns:
             The response from the agent.
@@ -147,7 +150,11 @@ class AgentManager(metaclass=Singleton):
             raise
 
         # Send message to agent
-        output = await agent.run(processed_input, output_channel=output_channel)
+        output = await agent.run(
+            processed_input,
+            output_channel=output_channel,
+            cancellation_token=cancellation_token,
+        )
 
         structlogger.debug(
             "agent_manager.run_agent.output",
