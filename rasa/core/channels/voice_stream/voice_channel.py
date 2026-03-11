@@ -16,7 +16,6 @@ from typing import (
     Optional,
     Text,
     Tuple,
-    cast,
 )
 
 import structlog
@@ -394,7 +393,7 @@ class VoiceOutputChannel(OutputChannel):
         # to synthesize audio.
         from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 
-        if cast(AzureTTS, self.tts_engine):
+        if isinstance(self.tts_engine, AzureTTS):
             call_state.stop_streaming_output_audio_chunks = call_state.is_user_speaking
 
         async for audio_chunk in audio_stream:
@@ -862,6 +861,10 @@ class VoiceInputChannel(InputChannel):
         if not call_state.channel_data.get("allow_interruptions", True):
             return False
 
+        # Is the bot speaking? If not, we don't want to interrupt
+        if not call_state.is_bot_speaking:
+            return False
+
         # Did the user speak more than 3 words?
         min_words = self.interruption_config.min_words
         if isinstance(e, (NewTranscript, UserIsSpeaking)):
@@ -892,6 +895,7 @@ class VoiceInputChannel(InputChannel):
     ) -> None:
         async for event in asr_engine.stream_asr_events():
             await asr_event_queue.put(event)
+            logger.debug("voice_channel.receive_asr_events", ev=event)
             if self.should_interrupt(event):
                 logger.debug("voice_channel.asr_event_should_interrupt", ev=event)
                 call_state.stop_silence_monitoring()
@@ -900,7 +904,7 @@ class VoiceInputChannel(InputChannel):
                 # not to break Deepgram, Cartesia and Rime
                 from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 
-                if cast(AzureTTS, tts_engine):
+                if isinstance(tts_engine, AzureTTS):
                     call_state.stop_streaming_output_audio_chunks = True
                 await self.interrupt_playback(ws, call_parameters)
 

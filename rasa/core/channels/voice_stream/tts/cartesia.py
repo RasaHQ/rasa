@@ -101,7 +101,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
             await self.ws.close()
             self.ws = None
 
-    async def _send_tts_request(self, text: str, flush: bool) -> None:
+    async def _send_tts_request(self, text: str, flush: bool, cancel: bool) -> None:
         """Send TTS request to Cartesia via WebSocket."""
         if not self.ws or self.ws.closed:
             raise TTSError("WebSocket connection not established")
@@ -130,6 +130,8 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
 
         if flush:
             message["flush"] = True
+        elif cancel:
+            message["cancel"] = True
         else:
             message["transcript"] = text
             message["continue"] = True
@@ -142,15 +144,25 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
         This sends text to Cartesia but doesn't return anything.
         Audio will be available via stream_audio().
         """
-        await self._send_tts_request(text, flush=False)
+        await self._send_tts_request(text, flush=False, cancel=False)
 
     async def signal_text_done(self) -> None:
         """Signal TTS engine to process any remaining buffered text.
 
         This tells Cartesia that all text has been sent and to finish processing.
         """
-        await self._send_tts_request("", flush=True)
+        await self._send_tts_request("", flush=True, cancel=False)
         self.context_id = uuid4().hex  # Reset context ID for next synthesis
+
+    async def signal_interrupt(self) -> None:
+        """Signal TTS engine to cancel any remaining buffered text.
+
+        This tells Cartesia that the current text should be cancelled and the next
+        text should be processed.
+        """
+        await self._send_tts_request("", flush=False, cancel=True)
+        self.context_id = uuid4().hex  # Reset context ID for next synthesis
+        structlogger.debug("cartesia.tts.cancel")
 
     async def stream_audio(self) -> AsyncIterator[RasaAudioBytes]:
         """Stream audio output from the TTS engine.

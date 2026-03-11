@@ -1,6 +1,7 @@
 from unittest import mock
 
 import pytest
+from aiohttp import WSMsgType
 from pytest import MonkeyPatch
 
 from rasa.core.channels.voice_stream.audio_bytes import L16_24KHZ, L16_48KHZ, MULAW_8KHZ
@@ -72,3 +73,59 @@ async def test_get_websocket_url(format, expected_encoding):
 
     assert f"encoding={expected_encoding}" in url
     assert f"sample_rate={format.sample_rate}" in url
+
+
+async def test_signal_interrupt_sends_clear(mulaw_format):
+    """Test that signal_interrupt sends a Clear payload to Deepgram."""
+    tts_engine = DeepgramTTS.from_config_dict(
+        config={}, rasa_language="en", format=mulaw_format
+    )
+
+    mock_ws = mock.AsyncMock()
+    mock_ws.closed = False
+    tts_engine.ws = mock_ws
+
+    await tts_engine.signal_interrupt()
+
+    clear_calls = [
+        call
+        for call in mock_ws.send_json.call_args_list
+        if call[0][0].get("type") == "Clear"
+    ]
+    assert len(clear_calls) == 1
+
+
+async def test_stream_audio_stops_on_cleared(mulaw_format):
+    """Test that stream_audio stops yielding when it receives a Cleared message."""
+    tts_engine = DeepgramTTS.from_config_dict(
+        config={}, rasa_language="en", format=mulaw_format
+    )
+
+    # ws should receive 2 chunks and stop after cleared message is received
+    ws_messages = [
+        (WSMsgType.BINARY, b"\x00\x01\x02\x03"),
+        (WSMsgType.BINARY, b"\x00\x01\x02\x03"),
+        (WSMsgType.TEXT, b'{"type": "Cleared"}'),
+        (WSMsgType.BINARY, b"\x00\x01\x02\x03"),
+    ]
+
+    class MockWebSocket:
+        def __init__(self) -> None:
+            self.closed = False
+            self.send_json = mock.AsyncMock()
+
+        def __aiter__(self):
+            return self._generate()
+
+        async def _generate(self):
+            for msg_type, msg_data in ws_messages:
+                msg = mock.MagicMock()
+                msg.type = msg_type
+                msg.data = msg_data
+                yield msg
+
+    tts_engine.ws = MockWebSocket()
+
+    received_chunks = [chunk async for chunk in tts_engine.stream_audio()]
+
+    assert len(received_chunks) == 2

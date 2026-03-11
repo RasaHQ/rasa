@@ -217,6 +217,10 @@ class TTSEngine(Generic[T]):
         """Convert the generated TTS audio bytes into rasa audio bytes."""
         raise NotImplementedError
 
+    async def signal_interrupt(self) -> None:
+        """Cancel the TTS engine buffer."""
+        pass
+
     @staticmethod
     def get_default_config() -> T:
         """Get the default config for this component."""

@@ -187,6 +187,13 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         await self.ws.send_json({"operation": "flush"})
         self.context_id = uuid4().hex  # Reset context ID for next synthesis
 
+    async def signal_interrupt(self) -> None:
+        """Clear the TTS engine buffer."""
+        if not self.ws or self.ws.closed:
+            return
+        await self.ws.send_json({"operation": "clear"})
+        structlogger.debug("rime.tts.clear")
+
     async def stream_audio(self) -> AsyncIterator[RasaAudioBytes]:
         """Stream audio output from the TTS engine.
 

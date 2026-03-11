@@ -134,6 +134,14 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
 
         await self.ws.send_json({"type": "Flush"})
 
+    async def signal_interrupt(self) -> None:
+        """Clear the TTS engine buffer."""
+        if not self.ws or self.ws.closed:
+            raise TTSError("WebSocket connection not established")
+
+        await self.ws.send_json({"type": "Clear"})
+        structlogger.debug("deepgram.tts.clear")
+
     async def stream_audio(self) -> AsyncIterator[RasaAudioBytes]:
         """Stream audio output from the TTS engine.
 
@@ -159,6 +167,9 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
                     elif data.get("type") == "Close":
                         # Connection closing
                         structlogger.debug("deepgram.stream_audio.close")
+                        break
+                    elif data.get("type") == "Cleared":
+                        structlogger.debug("deepgram.stream_audio.cleared")
                         break
 
                 elif msg.type == WSMsgType.CLOSED:

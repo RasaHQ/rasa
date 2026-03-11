@@ -1,3 +1,4 @@
+import base64
 from unittest import mock
 from unittest.mock import AsyncMock
 
@@ -201,3 +202,61 @@ async def test_unsupported_format_raises_error(monkeypatch: MonkeyPatch):
             config={}, rasa_language="en", format=L16_48KHZ
         )
         tts_engine.get_websocket_url()
+
+
+async def test_signal_interrupt_sends_clear(monkeypatch: MonkeyPatch, mulaw_format):
+    """Test that signal_interrupt sends a clear payload to Rime."""
+    monkeypatch.setenv("RIME_API_KEY", "test_key")
+    tts_engine = RimeTTS.from_config_dict(
+        config={}, rasa_language="en", format=mulaw_format
+    )
+
+    mock_ws = mock.AsyncMock()
+    mock_ws.closed = False
+    tts_engine.ws = mock_ws
+
+    await tts_engine.signal_interrupt()
+
+    clear_calls = [
+        call
+        for call in mock_ws.send_json.call_args_list
+        if call[0][0].get("operation") == "clear"
+    ]
+    assert len(clear_calls) == 1
+
+
+async def test_stream_audio_stops_on_done(monkeypatch: MonkeyPatch, mulaw_format):
+    """Test that stream_audio stops yielding when it receives a done message."""
+    monkeypatch.setenv("RIME_API_KEY", "test_key")
+    tts_engine = RimeTTS.from_config_dict(
+        config={}, rasa_language="en", format=mulaw_format
+    )
+
+    audio_data = base64.b64encode(b"\x00\x01\x02\x03").decode()
+    # ws should receive 2 chunks and stop after done message is received
+    ws_messages = [
+        {"type": "chunk", "data": audio_data},
+        {"type": "chunk", "data": audio_data},
+        {"type": "done"},
+        {"type": "chunk", "data": audio_data},
+    ]
+
+    class MockWebSocket:
+        def __init__(self) -> None:
+            self.closed = False
+            self.send_json = mock.AsyncMock()
+
+        def __aiter__(self):
+            return self._generate()
+
+        async def _generate(self):
+            for msg_data in ws_messages:
+                msg = mock.MagicMock()
+                msg.json.return_value = msg_data
+                yield msg
+
+    tts_engine.ws = MockWebSocket()
+
+    received_chunks = [chunk async for chunk in tts_engine.stream_audio()]
+
+    assert len(received_chunks) == 2
