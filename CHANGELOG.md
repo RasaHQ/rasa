@@ -10,6 +10,29 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.15.17] - 2026-03-11
+                         
+Rasa Pro 3.15.17 (2026-03-11)                              
+### Deprecations and Removals
+- [#4675](https://github.com/rasahq/rasa-private/issues/4675): Removed an explicit deprecation warning for the license varible `RASA_PRO_LICENSE` to provide clarity that we will continue to support both this and the newer `RASA_LICENSE` variable for the forseeable future.
+
+### Bugfixes
+- [#4831](https://github.com/rasahq/rasa-private/issues/4831): Fixes MCP tool result handling to now process results that contain only ``structuredContent`` (and no or empty ``content``).
+  Previously, an empty ``content`` field caused the result to be skipped and slots were not set from ``structuredContent``.
+- [#4846](https://github.com/rasahq/rasa-private/issues/4846): Downgraded the A2A polling "waiting to poll again" log from ERROR to INFO so normal polling no longer triggers false alerts.
+- [#4847](https://github.com/rasahq/rasa-private/issues/4847): SQL tracker store: `update()` now supports a content-only path when the timestamp-based delete removes no rows
+  (e.g. anonymization: same timestamps, content changed). In that case, the store either updates existing event rows
+  in place where content differs or performs a full replace if event counts differ, so anonymized content is persisted
+  correctly in a single atomic transaction.
+
+  Anonymization cron job: the privacy manager now uses `update(updated_tracker)` for anonymization instead of delete-then-save.
+  SQL tracker store behavior is aligned with MongoDB, Redis and DynamoDB (overwrite semantics), and anonymization with SQL
+  completes in one atomic operation without a separate delete/save sequence.
+- [#4864](https://github.com/rasahq/rasa-private/issues/4864): Prevent `JsonPatchConflict` exceptions raised when tracker is split in sub-sessions during PII anonymization cron jobs.
+  Replace usage of a utility function that was recreating tracker objects using sub-sessions with an approach retrieving 
+  list of events for each sub-session instead.
+
+
 ## [3.15.16] - 2026-03-06
                          
 Rasa Pro 3.15.16 (2026-03-06)                              
