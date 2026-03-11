@@ -1,1 +1,3 @@
 60d37f0884b0c13a36fd26b5e13a6f688e56fee7:tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store/tls/ca.key:private-key:1
+7338a735eb6e6ac78690be866b80c8508f620b19:tests/tracing/fixtures/certs/cert-key.pem:private-key:1
+7338a735eb6e6ac78690be866b80c8508f620b19:tests/tracing/fixtures/certs/ca-key.pem:private-key:1

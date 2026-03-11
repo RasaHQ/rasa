@@ -82,9 +82,9 @@ def secured_grpc_server(
         span_exporter, server
     )
 
-    with open(TRACING_TESTS_FIXTURES_DIRECTORY / "cert.pem", "rb") as f:
+    with open(TRACING_TESTS_FIXTURES_DIRECTORY / "certs/cert.pem", "rb") as f:
         cert = f.read()
-    with open(TRACING_TESTS_FIXTURES_DIRECTORY / "cert-key.pem", "rb") as f:
+    with open(TRACING_TESTS_FIXTURES_DIRECTORY / "certs/cert-key.pem", "rb") as f:
         cert_key = f.read()
 
     server.add_secure_port(
