@@ -1303,6 +1303,35 @@ session_config:
     assert domain.session_config.start_session_after_expiry is False
 
 
+@pytest.mark.parametrize(
+    "carry_over_slots, expected_warning_count",
+    [
+        (False, 1),
+        (True, 0),
+    ],
+)
+def test_carry_over_slots_no_effect_warning(
+    carry_over_slots: bool, expected_warning_count: int
+):
+    """Warn when both carry_over_slots_to_new_session and start_session_after_expiry are false."""
+    yaml_domain = f"""
+session_config:
+    session_expiration_time: 30
+    carry_over_slots_to_new_session: {str(carry_over_slots).lower()}
+    start_session_after_expiry: false
+"""
+    with structlog.testing.capture_logs() as caplog:
+        Domain.from_yaml(yaml_domain)
+
+    warning_logs = [
+        log
+        for log in caplog
+        if log["log_level"] == "warning"
+        and log["event"] == "domain.session_config.carry_over_slots_no_effect"
+    ]
+    assert len(warning_logs) == expected_warning_count
+
+
 def test_domain_as_dict_with_session_config():
     session_config = SessionConfig(123, False)
     domain = Domain([], [], [], {}, [], {}, {}, None, True, session_config)

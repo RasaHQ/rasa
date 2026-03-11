@@ -2061,6 +2061,20 @@ class Domain:
         incorrect_mappings = check_mappings(self.intent_properties)
 
         if (
+            not self.session_config.start_session_after_expiry
+            and not self.session_config.carry_over_slots
+        ):
+            structlogger.warning(
+                "domain.session_config.carry_over_slots_no_effect",
+                event_info=(
+                    "'carry_over_slots_to_new_session' has no effect when "
+                    "'start_session_after_expiry' is set to 'false'. No session "
+                    "boundary is created on expiry, so the conversation continues "
+                    "with all slot state intact."
+                ),
+            )
+
+        if (
             duplicate_actions
             or duplicate_slots
             or duplicate_entities
