@@ -132,7 +132,7 @@ async def _execute_mcp_tool_call(
                 tool_name=step.call,
                 mcp_server=step.mcp_server,
             )
-        elif not result.content:
+        elif not result.content and not result.structuredContent:
             structlogger.warning(
                 "call_mcp_tool.empty_tool_result",
                 tool_name=step.call,
@@ -148,7 +148,7 @@ async def _execute_mcp_tool_call(
                 json_formatting=["result_content", "result_structured_content"],
             )
 
-            # Process successful result
+            # Process successful result (from content and/or structuredContent)
             if set_slot_event := _process_tool_result(result, step.mapping["output"]):
                 initial_events.extend(set_slot_event)
             else:

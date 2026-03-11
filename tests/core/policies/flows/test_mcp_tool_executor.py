@@ -551,6 +551,7 @@ async def test_execute_mcp_tool_call_empty_result(
     mock_result = MagicMock()
     mock_result.isError = False
     mock_result.content = None
+    mock_result.structuredContent = None
 
     # Create a mock connection that returns a mock server
     mock_connection = MagicMock()
@@ -578,6 +579,66 @@ async def test_execute_mcp_tool_call_empty_result(
                 mock_logger.warning.assert_called_once()
                 # Verify connection cleanup
                 mock_connection.close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_execute_mcp_tool_call_structured_content_only(
+    mock_tracker: MagicMock,
+    mock_stack: MagicMock,
+    mock_mcp_server: MagicMock,
+) -> None:
+    """Test _execute_mcp_tool_call when tool returns only structured content."""
+    initial_events = []
+    mock_result = MagicMock()
+    mock_result.isError = False
+    mock_result.content = None
+    mock_result.structuredContent = {"answer": "from_structured"}
+    mock_result.model_dump.return_value = {
+        "isError": False,
+        "content": None,
+        "structuredContent": {"answer": "from_structured"},
+    }
+
+    step = CallFlowStep(
+        custom_id="test_step",
+        idx=0,
+        description="Step with structuredContent output",
+        metadata={},
+        next=FlowStepLinks(links=[]),
+        flow_id="test_flow",
+        call="test_tool",
+        mcp_server="test_server",
+        mapping={
+            "input": [],
+            "output": [
+                {"slot": "result_slot", "value": "result.structuredContent.answer"}
+            ],
+        },
+    )
+
+    mock_connection = MagicMock()
+    mock_connection.ensure_active_session = AsyncMock(return_value=mock_mcp_server)
+    mock_connection.close = AsyncMock()
+    mock_mcp_server.call_tool.return_value = mock_result
+
+    with patch(
+        "rasa.core.policies.flows.mcp_tool_executor._connect_to_mcp_server",
+        return_value=mock_connection,
+    ):
+        with patch(
+            "rasa.core.policies.flows.mcp_tool_executor._is_tool_available",
+            return_value=True,
+        ):
+            result = await _execute_mcp_tool_call(
+                initial_events, mock_stack, step, mock_tracker
+            )
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+    assert len(result.events) == 1
+    assert isinstance(result.events[0], SlotSet)
+    assert result.events[0].key == "result_slot"
+    assert result.events[0].value == "from_structured"
+    mock_connection.close.assert_called_once()
 
 
 @pytest.mark.asyncio
