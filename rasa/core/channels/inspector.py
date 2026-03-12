@@ -130,7 +130,9 @@ class InspectorTrackerUpdatePlugin:
 
     def handle_tracker_update(self, tracker: "DialogueStateTracker") -> None:
         """Handles a tracker update when triggered by a hook."""
-        structlogger.info("inspector.after_tracker_update", sender_id=tracker.sender_id)
+        structlogger.debug(
+            "inspector.after_tracker_update", sender_id=tracker.sender_id
+        )
         # directly create a dump to avoid the tracker getting modified by another
         # function before it gets published (since the publishing is scheduled
         # as an async task)
