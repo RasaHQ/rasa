@@ -1,7 +1,7 @@
 """Tests for MCP agent LLM instrumentation - consolidated version."""
 
 import json
-from typing import Dict, List
+from typing import Dict, List, Optional
 from unittest.mock import Mock, patch
 
 import pytest
@@ -12,6 +12,7 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 from rasa.agents.core.types import AgentStatus
 from rasa.agents.protocol.mcp.mcp_base_agent import DEFAULT_LLM_CONFIG
 from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentOutput, AgentToolSchema
+from rasa.core.channels import OutputChannel
 from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.instrumentation.attribute_extractors import (
     extract_attrs_for_mcp_agent_llm_call,
@@ -339,3 +340,55 @@ async def test_get_available_tools_tracing(
     # Verify tools JSON structure
     tools_dict = json.loads(tools_span.attributes["available_tools"])
     assert tools_dict == {"mcp_tool": "MCP tool", "built_in_tool": "Built-in tool"}
+
+
+class _RecordOutputChannelMCPAgent(MockMCPOpenAgent):
+    """MCP agent that records the output_channel passed to send_message.
+
+    Used to verify the tracing wrapper forwards output_channel to the underlying
+    implementation (fix for "No output channel or recipient ID provided" when
+    tracing is enabled).
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.received_output_channel: Optional[OutputChannel] = None
+
+    async def send_message(
+        self, agent_input: AgentInput, output_channel: Optional[OutputChannel] = None
+    ) -> AgentOutput:
+        self.received_output_channel = output_channel
+        return await super().send_message(agent_input, output_channel)
+
+
+@pytest.mark.asyncio
+async def test_send_message_response_capture_wrapper_forwards_output_channel(
+    tracer_provider: TracerProvider,
+    sample_agent_input: AgentInput,
+) -> None:
+    """Test that the send_message response-capture wrapper forwards output_channel.
+
+    When tracing is enabled, send_message is wrapped to capture the LLM response
+    in a span. The wrapper must pass output_channel through to the underlying
+    implementation; otherwise MCP agents raise 'No output channel or recipient
+    ID provided' when generating responses.
+    """
+    instrumentation.instrument(
+        tracer_provider,
+        subagent_classes=[_RecordOutputChannelMCPAgent],
+    )
+
+    mock_output_channel = Mock(spec=OutputChannel)
+    agent = _RecordOutputChannelMCPAgent()
+    agent.set_agent_output(
+        AgentOutput(
+            id=sample_agent_input.id,
+            status=AgentStatus.COMPLETED,
+            response_message="OK",
+            events=[],
+        )
+    )
+
+    await agent.send_message(sample_agent_input, output_channel=mock_output_channel)
+
+    assert agent.received_output_channel is mock_output_channel

@@ -904,7 +904,7 @@ def _instrument_mcp_agent_send_message_response_capture(
             agent_input: "AgentInput",
             output_channel: Optional[OutputChannel] = None,
         ) -> "AgentOutput":
-            agent_output = await fn(self, agent_input)
+            agent_output = await fn(self, agent_input, output_channel)
 
             # Only create response span if there's actually a response to capture
             if agent_output:
