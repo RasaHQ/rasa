@@ -2,7 +2,6 @@ import argparse
 import os
 import webbrowser
 from asyncio import AbstractEventLoop
-from pathlib import Path
 from typing import List, Optional, Text
 
 from sanic import Sanic
@@ -12,7 +11,7 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.cli.arguments.default_arguments import add_sub_agents_param
 from rasa.core import constants
-from rasa.core.config.configuration import Configuration
+from rasa.core.config.configuration import Configuration, EndpointsConfigPath
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.exceptions import ModelNotFound
 from rasa.model import get_local_model
@@ -120,7 +119,9 @@ def inspect(args: argparse.Namespace) -> None:
     # This will initialise the endpoints singleton properly so that
     # it can be used safely throughout the codebase with
     # `Configuration.get_instance().endpoints`
-    Configuration.initialise_endpoints(endpoints_path=Path(args.endpoints))
+    Configuration.initialise_endpoints(
+        endpoints_path=EndpointsConfigPath.validate(args.endpoints)
+    )
     Configuration.initialise_sub_agents(args.sub_agents)
 
     try:

@@ -134,3 +134,42 @@ def test_train_data_non_default_template(
 
     # picking domain as it is present in all templates
     assert (tmp_path / "domain").exists()
+
+
+def test_print_run_or_instructions_sets_required_inspect_attributes(
+    monkeypatch: MonkeyPatch,
+):
+    """Test that print_run_or_instructions sets all attributes required by inspect().
+
+    This test uses a mock inspect() that accesses all the attributes that the real
+    inspect() function uses.
+    If any attribute is missing, this will raise AttributeError.
+    """
+    from unittest.mock import MagicMock
+
+    def mock_inspect_that_checks_attributes(args):
+        """Mock inspect that accesses all attributes the real inspect() uses."""
+        # These are all the attributes accessed in inspect() function
+        _ = args.voice
+        _ = args.nextgen
+        _ = args.port
+        _ = args.auth_token
+        _ = args.cors
+        _ = args.model
+        _ = args.endpoints
+        _ = args.sub_agents
+
+    def mock_confirm(*args, **kwargs):
+        mock = MagicMock()
+        mock.skip_if.return_value.ask.return_value = True
+        return mock
+
+    monkeypatch.setattr(
+        "rasa.cli.scaffold.inspect", mock_inspect_that_checks_attributes
+    )
+    monkeypatch.setattr("questionary.confirm", mock_confirm)
+
+    args = argparse.Namespace(no_prompt=False, model="models/test.tar.gz")
+
+    # This should not raise AttributeError
+    scaffold.print_run_or_instructions(args)

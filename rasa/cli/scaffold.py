@@ -142,13 +142,14 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
             "jwt_method",
             "enable_api",
             "remote_storage",
+            "sub_agents",
         ]
         for a in attributes:
             setattr(args, a, None)
-
         args.port = constants.DEFAULT_SERVER_PORT
         args.voice = False
         args.skip_yaml_validation = ["domain"]
+        args.nextgen = False
 
         inspect(args)
     else:
