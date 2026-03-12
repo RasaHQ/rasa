@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, AsyncGenerator, Callable, List
+from typing import Any, AsyncGenerator, Callable, List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -888,6 +888,373 @@ def test_handle_task_returns_none_for_unknown_state():
     assert result is None
 
 
+def test_handle_task_input_required_includes_structured_results_from_message_parts():
+    """When status is input_required, DataParts in task.status.message.parts must
+    appear in AgentOutput.structured_results (e.g. callback_slots for callbacks).
+    """
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    callback_slots_data = {
+        "type": "callback_slots",
+        "slots": [
+            {
+                "date": "02.03.2026",
+                "timeslots": [
+                    {"startTime": "15:30", "endTime": "16:30"},
+                ],
+            },
+        ],
+        "phoneNumber": "+41796543512",
+    }
+    task = Task(
+        context_id="ctx",
+        id="t1",
+        status=TaskStatus(
+            state=TaskState.input_required,
+            message=Message(
+                role=Role.agent,
+                parts=[
+                    Part(root=TextPart(text="Please select a time slot.")),
+                    Part(root=DataPart(data=callback_slots_data)),
+                ],
+                message_id="m1",
+                context_id=None,
+                task_id=None,
+            ),
+        ),
+    )
+    agent_input = AgentInput(
+        id="agent-x",
+        metadata={},
+        user_message="",
+        slots=[],
+        conversation_history="",
+        events=[],
+    )
+    result = agent._handle_task(agent_input=agent_input, task=task, generated_events=[])
+    assert result is not None
+    assert result.status == AgentStatus.INPUT_REQUIRED
+    assert result.response_message == "Please select a time slot."
+    assert result.structured_results is not None
+    assert len(result.structured_results) == 1
+    assert len(result.structured_results[0]) == 1
+    assert result.structured_results[0][0]["type"] == "data"
+    assert result.structured_results[0][0]["result"] == callback_slots_data
+
+
+def test_handle_task_input_required_includes_structured_results_from_artifacts():
+    """When status is input_required and task has artifacts, they are included in
+    structured_results (same as for completed).
+    """
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    task = Task(
+        context_id="ctx",
+        id="t1",
+        status=TaskStatus(
+            state=TaskState.input_required,
+            message=Message(
+                role=Role.agent,
+                parts=[Part(root=TextPart(text="Need input."))],
+                message_id="m1",
+                context_id=None,
+                task_id=None,
+            ),
+        ),
+        artifacts=[
+            Artifact(
+                artifact_id="a1",
+                parts=[Part(root=DataPart(data={"callback_slots": []}))],
+            ),
+        ],
+    )
+    agent_input = AgentInput(
+        id="agent-x",
+        metadata={},
+        user_message="",
+        slots=[],
+        conversation_history="",
+        events=[],
+    )
+    result = agent._handle_task(agent_input=agent_input, task=task, generated_events=[])
+    assert result is not None
+    assert result.status == AgentStatus.INPUT_REQUIRED
+    assert result.structured_results is not None
+    assert len(result.structured_results) == 1
+    assert len(result.structured_results[0]) == 1
+    assert result.structured_results[0][0]["result"] == {"callback_slots": []}
+
+
+def test_handle_task_completed_includes_structured_results_from_message_parts():
+    """When status is completed, DataParts in task.status.message.parts must
+    appear in AgentOutput.structured_results (same logic as input_required).
+    """
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    callback_slots_data = {
+        "type": "callback_slots",
+        "slots": [
+            {
+                "date": "02.03.2026",
+                "timeslots": [
+                    {"startTime": "15:30", "endTime": "16:30"},
+                ],
+            },
+        ],
+        "phoneNumber": "+41796543512",
+    }
+    task = Task(
+        context_id="ctx",
+        id="t1",
+        status=TaskStatus(
+            state=TaskState.completed,
+            message=Message(
+                role=Role.agent,
+                parts=[
+                    Part(root=TextPart(text="Booking confirmed.")),
+                    Part(root=DataPart(data=callback_slots_data)),
+                ],
+                message_id="m1",
+                context_id=None,
+                task_id=None,
+            ),
+        ),
+    )
+    agent_input = AgentInput(
+        id="agent-x",
+        metadata={},
+        user_message="",
+        slots=[],
+        conversation_history="",
+        events=[],
+    )
+    result = agent._handle_task(agent_input=agent_input, task=task, generated_events=[])
+    assert result is not None
+    assert result.status == AgentStatus.COMPLETED
+    assert result.structured_results is not None
+    assert len(result.structured_results) == 1
+    assert len(result.structured_results[0]) == 1
+    assert result.structured_results[0][0]["type"] == "data"
+    assert result.structured_results[0][0]["result"] == callback_slots_data
+
+
+def test_handle_task_completed_includes_structured_results_from_artifacts():
+    """When status is completed and task has artifacts, they are included in
+    structured_results (same method _structured_results_from_task as input_required).
+    """
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    task = Task(
+        context_id="ctx",
+        id="t1",
+        status=TaskStatus(state=TaskState.completed),
+        artifacts=[
+            Artifact(
+                artifact_id="a1",
+                parts=[Part(root=DataPart(data={"callback_slots": []}))],
+            ),
+        ],
+    )
+    agent_input = AgentInput(
+        id="agent-x",
+        metadata={},
+        user_message="",
+        slots=[],
+        conversation_history="",
+        events=[],
+    )
+    result = agent._handle_task(agent_input=agent_input, task=task, generated_events=[])
+    assert result is not None
+    assert result.status == AgentStatus.COMPLETED
+    assert result.structured_results is not None
+    assert len(result.structured_results) == 1
+    assert len(result.structured_results[0]) == 1
+    assert result.structured_results[0][0]["result"] == {"callback_slots": []}
+
+
+@pytest.mark.parametrize(
+    "scenario",
+    [
+        "no_structured_data",
+        "artifacts_and_message_parts_both_included",
+    ],
+)
+def test_handle_task_input_required_structured_results(scenario: str):
+    """When status is input_required, structured_results come from task.artifacts
+    and/or status message DataParts. Parametrized over no data vs both sources.
+    """
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    agent_input = AgentInput(
+        id="agent-x",
+        metadata={},
+        user_message="",
+        slots=[],
+        conversation_history="",
+        events=[],
+    )
+
+    if scenario == "no_structured_data":
+        task = Task(
+            context_id="ctx",
+            id="t1",
+            status=TaskStatus(
+                state=TaskState.input_required,
+                message=Message(
+                    role=Role.agent,
+                    parts=[Part(root=TextPart(text="Please provide your name."))],
+                    message_id="m1",
+                    context_id=None,
+                    task_id=None,
+                ),
+            ),
+        )
+        result = agent._handle_task(
+            agent_input=agent_input, task=task, generated_events=[]
+        )
+        assert result is not None
+        assert result.status == AgentStatus.INPUT_REQUIRED
+        assert result.response_message == "Please provide your name."
+        assert result.structured_results is None
+        return
+
+    if scenario == "artifacts_and_message_parts_both_included":
+        message_data = {"type": "form_options", "options": ["A", "B"]}
+        artifact_data = {"from_artifact": True}
+        task = Task(
+            context_id="ctx",
+            id="t1",
+            status=TaskStatus(
+                state=TaskState.input_required,
+                message=Message(
+                    role=Role.agent,
+                    parts=[
+                        Part(root=TextPart(text="Choose:")),
+                        Part(root=DataPart(data=message_data)),
+                    ],
+                    message_id="m1",
+                    context_id=None,
+                    task_id=None,
+                ),
+            ),
+            artifacts=[
+                Artifact(
+                    artifact_id="a1",
+                    parts=[Part(root=DataPart(data=artifact_data))],
+                ),
+            ],
+        )
+        result = agent._handle_task(
+            agent_input=agent_input, task=task, generated_events=[]
+        )
+        assert result is not None
+        assert result.structured_results is not None
+        assert len(result.structured_results) == 1
+        results_this_iter = result.structured_results[0]
+        assert len(results_this_iter) == 2
+        results_by_name = {r["name"]: r for r in results_this_iter}
+        assert "agent-x_0_0" in results_by_name
+        # status_message artifact: index 0 = TextPart (skipped), index 1 = DataPart
+        assert "agent-x_1_1" in results_by_name
+        assert results_by_name["agent-x_0_0"]["result"] == artifact_data
+        assert results_by_name["agent-x_1_1"]["result"] == message_data
+        return
+
+    pytest.fail(f"Unknown scenario: {scenario}")
+
+
+@pytest.mark.parametrize(
+    "parts,expected",
+    [
+        (
+            [
+                Part(root=TextPart(text="ignore")),
+                Part(root=DataPart(data={"key": "value"})),
+            ],
+            True,
+        ),
+        (
+            [
+                Part(root=TextPart(text="ignore")),
+                Part(
+                    root=FilePart(
+                        file=FileWithUri(
+                            uri="https://example.com/f",
+                            name="f.txt",
+                            mime_type="text/plain",
+                        )
+                    ),
+                ),
+            ],
+            True,
+        ),
+        (
+            [
+                Part(root=TextPart(text="hello")),
+                Part(root=TextPart(text="world")),
+            ],
+            False,
+        ),
+        ([Part(root=DataPart(data={}))], False),
+        ([], False),
+        (None, False),
+    ],
+    ids=[
+        "data_part",
+        "file_part",
+        "text_only",
+        "empty_data_part",
+        "empty_list",
+        "none",
+    ],
+)
+def test_parts_contain_structured_data(parts: Optional[List[Part]], expected: bool):
+    """_parts_contain_structured_data returns True only when parts contain
+    a non-empty DataPart or a FilePart with FileWithUri.
+    """
+    assert A2AAgent._parts_contain_structured_data(parts) is expected
+
+
 @pytest.mark.asyncio
 @patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
 async def test_run_streaming_agent_handles_unknown_then_completed_no_poll(
@@ -1465,6 +1832,92 @@ def test_generate_completed_response_message_merges_status_and_artifacts(
     result = A2AAgent._generate_completed_response_message(task)
     # Preserves order: status message then artifacts
     assert result == f"Done\n{expected_result}"
+
+
+def test_get_artifacts_for_structured_results():
+    """_get_artifacts_for_structured_results returns task.artifacts and adds
+    status_message artifact when task.status.message has DataParts.
+    """
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    # No artifacts, no message -> empty list
+    task = Task(
+        context_id="ctx",
+        id="t1",
+        status=TaskStatus(state=TaskState.completed),
+    )
+    assert agent._get_artifacts_for_structured_results(task) == []
+
+    # Message with only TextPart -> no synthetic artifact (no structured data)
+    task = Task(
+        context_id="ctx",
+        id="t1",
+        status=TaskStatus(
+            state=TaskState.completed,
+            message=Message(
+                role=Role.agent,
+                parts=[Part(root=TextPart(text="Done."))],
+                message_id="m1",
+                context_id=None,
+                task_id=None,
+            ),
+        ),
+    )
+    assert agent._get_artifacts_for_structured_results(task) == []
+
+    # Message with DataPart -> synthetic artifact added
+    task = Task(
+        context_id="ctx",
+        id="t1",
+        status=TaskStatus(
+            state=TaskState.completed,
+            message=Message(
+                role=Role.agent,
+                parts=[Part(root=DataPart(data={"key": "value"}))],
+                message_id="m1",
+                context_id=None,
+                task_id=None,
+            ),
+        ),
+    )
+    artifacts = agent._get_artifacts_for_structured_results(task)
+    assert len(artifacts) == 1
+    assert artifacts[0].artifact_id == "status_message"
+    assert len(artifacts[0].parts) == 1
+    assert artifacts[0].parts[0].root.data == {"key": "value"}
+
+    # Task with artifacts and message with DataParts -> both
+    task = Task(
+        context_id="ctx",
+        id="t1",
+        status=TaskStatus(
+            state=TaskState.completed,
+            message=Message(
+                role=Role.agent,
+                parts=[Part(root=DataPart(data={"msg": 1}))],
+                message_id="m1",
+                context_id=None,
+                task_id=None,
+            ),
+        ),
+        artifacts=[
+            Artifact(artifact_id="a1", parts=[Part(root=DataPart(data={"a": 1}))])
+        ],
+    )
+    out = agent._get_artifacts_for_structured_results(task)
+    assert len(out) == 2
+    assert out[0].artifact_id == "a1"
+    assert out[0].parts[0].root.data == {"a": 1}
+    assert out[1].artifact_id == "status_message"
+    assert out[1].parts[0].root.data == {"msg": 1}
 
 
 def test_generate_structured_results_from_artifacts_accumulates_previous():

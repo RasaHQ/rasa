@@ -658,21 +658,22 @@ class A2AAgent(AgentProtocol):
                 else ""
             )  # This should not happen, but as type of message property
             # is optional, so we need to handle it
+
+            structured_results = self.get_structured_results_from_task(
+                agent_input, task
+            )
             return AgentOutput(
                 id=agent_input.id,
                 status=AgentStatus.INPUT_REQUIRED,
                 response_message=response_message,
+                structured_results=structured_results,
                 metadata=metadata,
                 events=generated_events or None,
             )
         elif state == TaskState.completed:
             response_message = self._generate_completed_response_message(task)
-            structured_results = (
-                self._generate_structured_results_from_artifacts(
-                    agent_input, task.artifacts
-                )
-                if task.artifacts
-                else None
+            structured_results = self.get_structured_results_from_task(
+                agent_input, task
             )
             return AgentOutput(
                 id=agent_input.id,
@@ -736,6 +737,49 @@ class A2AAgent(AgentProtocol):
                 metadata=metadata,
                 events=generated_events or None,
             )
+
+    def _get_artifacts_for_structured_results(self, task: Task) -> List[Artifact]:
+        """Build list of artifacts to use for structured_results from task.
+
+        Includes task.artifacts and, if task.status.message has DataParts or
+        FileWithUri (e.g. callback_slots), a synthetic artifact for those parts
+        so they reach the client.
+        """
+        artifacts: List[Artifact] = list(task.artifacts or [])
+        if (
+            task.status.message
+            and task.status.message.parts
+            and A2AAgent._parts_contain_structured_data(task.status.message.parts)
+        ):
+            artifacts.append(
+                Artifact(artifact_id="status_message", parts=task.status.message.parts)
+            )
+        return artifacts
+
+    def get_structured_results_from_task(
+        self, agent_input: AgentInput, task: Task
+    ) -> Optional[List[List[Dict[str, Any]]]]:
+        """Build structured_results from task.artifacts and/or task.status.message.parts
+
+        Used for both input_required and completed states so DataParts (e.g.
+        callback_slots) in the status message reach the client.
+        """
+        artifacts = self._get_artifacts_for_structured_results(task)
+        if not artifacts:
+            return None
+        return self._generate_structured_results_from_artifacts(agent_input, artifacts)
+
+    @staticmethod
+    def _parts_contain_structured_data(parts: List[Part]) -> bool:
+        """Return True if parts contain at least one DataPart or FileWithUri."""
+        for part in parts or []:
+            if isinstance(part.root, DataPart) and len(part.root.data) > 0:
+                return True
+            if isinstance(part.root, FilePart) and isinstance(
+                part.root.file, FileWithUri
+            ):
+                return True
+        return False
 
     def _send_intermediate_message(
         self,
