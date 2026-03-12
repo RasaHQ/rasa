@@ -657,6 +657,7 @@ jobs:
         uses: ./.github/actions/test-prerequisites
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          RASA_INSTALL_GROUP: channels
 
       - name: Run Inspector E2E tests
         uses: ./.github/actions/inspector-e2e-tests
@@ -664,6 +665,7 @@ jobs:
           PROJECT_TEMPLATE: finance
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           AWS_ASSUME_ROLE: ${{ vars.AWS_ASSUME_ROLE_REPORTS }}
 

@@ -1,4 +1,4 @@
-import { test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import * as actions from "../actions/index";
 
 export const navigateToInspectPageAndAssert = async (
@@ -207,5 +207,82 @@ export const clickUserMessageAndAssertPanel = async (
     await actions.inspector
       .assertions(page)
       .assertEventDetailsPanelVisible("User message details");
+  });
+};
+
+export const assertVoiceButtonVisibleOnLoad = async (page: Page) => {
+  await test.step("Assert voice start button visible on page load", async () => {
+    await actions.inspector.assertions(page).assertVoiceStartButtonVisible();
+  });
+  await test.step("Assert send message button hidden on page load", async () => {
+    await actions.inspector.assertions(page).assertSendMessageButtonHidden();
+  });
+};
+
+export const typeTextAndAssertSendButtonVisible = async (
+  page: Page,
+  text: string,
+) => {
+  await test.step("Type text in message input", async () => {
+    await actions.inspector.actions(page).typeInMessageInput(text);
+  });
+  await test.step("Assert send button visible and voice button hidden", async () => {
+    await actions.inspector.assertions(page).assertSendMessageButtonVisible();
+    await actions.inspector.assertions(page).assertVoiceStartButtonHidden();
+  });
+};
+
+export const clearTextAndAssertVoiceButtonVisible = async (page: Page) => {
+  await test.step("Clear message input", async () => {
+    await actions.inspector.actions(page).clearMessageInput();
+  });
+  await test.step("Assert voice button visible and send button hidden", async () => {
+    await actions.inspector.assertions(page).assertVoiceStartButtonVisible();
+    await actions.inspector.assertions(page).assertSendMessageButtonHidden();
+  });
+};
+
+export const startVoiceCallAndAssertActive = async (page: Page) => {
+  await test.step("Click start voice call", async () => {
+    await actions.inspector.actions(page).startVoiceCall();
+  });
+  await test.step("Assert connecting or active state", async () => {
+    await actions.inspector.assertions(page).assertVoiceConnectingOrActiveState();
+  });
+  await test.step("Assert active voice call state", async () => {
+    await actions.inspector.assertions(page).assertVoiceActiveState();
+    await actions.inspector.assertions(page).assertVoiceStopButtonVisible();
+  });
+};
+
+export const assertVoiceTimerIncremented = async (page: Page) => {
+  await test.step("Assert voice call timer increments", async () => {
+    const inputField = actions.inspector.locators(page).inputField;
+    const initialPlaceholder = await inputField.getAttribute("placeholder");
+    const timerPattern = /Voice conversation in progress \((\d{2}):(\d{2})\)/;
+
+    await expect
+      .poll(
+        async () => {
+          const current = await inputField.getAttribute("placeholder");
+          const match = current?.match(timerPattern);
+          return match ? current : null;
+        },
+        {
+          message: `Timer did not increment or voice call ended unexpectedly. Initial: "${initialPlaceholder}"`,
+          timeout: 10000,
+        },
+      )
+      .not.toBe(initialPlaceholder);
+  });
+};
+
+export const stopVoiceCallAndAssertInactive = async (page: Page) => {
+  await test.step("Click stop voice call", async () => {
+    await actions.inspector.actions(page).stopVoiceCall();
+  });
+  await test.step("Assert inactive voice state", async () => {
+    await actions.inspector.assertions(page).assertVoiceInactiveState();
+    await actions.inspector.assertions(page).assertVoiceStartButtonVisible();
   });
 };

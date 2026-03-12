@@ -7,6 +7,10 @@ inputs:
   OPENAI_API_KEY:
     description: "OpenAI API key for training"
     required: true
+  DEEPGRAM_API_KEY:
+    description: "Deepgram API key for voice ASR/TTS"
+    required: false
+    default: ""
   PROJECT_TEMPLATE:
     description: "Project template to use for the tests"
     required: true
@@ -67,6 +71,7 @@ runs:
         BROWSER: echo
         RASA_PRO_LICENSE: ${{ inputs.RASA_PRO_LICENSE }}
         OPENAI_API_KEY: ${{ inputs.OPENAI_API_KEY }}
+        DEEPGRAM_API_KEY: ${{ inputs.DEEPGRAM_API_KEY }}
       run: |
         rasa inspect --nextgen --port 5005 2>&1 | tee rasa-inspector.log &
       working-directory: rasa/cli/project_templates/${{ inputs.PROJECT_TEMPLATE }}

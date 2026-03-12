@@ -5,13 +5,21 @@ const INSPECT_PAGE_PATH = "/webhooks/inspector/inspect.html";
 const getLocators = (page: Page) => {
   const inspectorCanvas = page.getByTestId("inspector-canvas");
   const conversationEvents = page.getByTestId("conversation-events");
+  const assistantInput = page.getByTestId("assistant-input");
   return {
     inspectToggle: page.getByTestId("inspect-toggle"),
     restartConversation: page.getByTestId("restart-conversation"),
     tryAssistantContainer: page.getByTestId("try-assistant-container"),
-    assistantInput: page.getByTestId("assistant-input"),
+    assistantInput,
     messageInputField: page.getByPlaceholder("Type your message"),
+    inputField: assistantInput.locator("input"),
     sendMessageButton: page.getByRole("button", { name: "Send message" }),
+    voiceStartButton: page.getByRole("button", {
+      name: "Start voice conversation",
+    }),
+    voiceStopButton: page.getByRole("button", {
+      name: "Stop voice conversation",
+    }),
     assistantChat: page.getByTestId("assistant-chat"),
     loadingSpinner: page.getByTestId("loading-spinner"),
     inspectorCanvas,
@@ -64,6 +72,18 @@ export const actions = (page: Page) => {
     },
     getBotMessageCount: async () => {
       return await locators.botMessage.count();
+    },
+    startVoiceCall: async () => {
+      await locators.voiceStartButton.click();
+    },
+    stopVoiceCall: async () => {
+      await locators.voiceStopButton.click();
+    },
+    typeInMessageInput: async (text: string) => {
+      await locators.inputField.fill(text);
+    },
+    clearMessageInput: async () => {
+      await locators.inputField.fill("");
     },
     clickConversationEvent: async (eventName: string) => {
       await locators.conversationEvent(eventName).click();
@@ -287,6 +307,72 @@ export const assertions = (page: Page) => {
         locators.inspectorCanvas.getByText(title, { exact: true }),
         `Accordion item "${title}" should be visible`,
       ).toBeVisible();
+    },
+    assertVoiceStartButtonVisible: async () => {
+      await expect(
+        locators.voiceStartButton,
+        "Voice start button should be visible",
+      ).toBeVisible();
+    },
+    assertVoiceStartButtonHidden: async () => {
+      await expect(
+        locators.voiceStartButton,
+        "Voice start button should be hidden",
+      ).toBeHidden();
+    },
+    assertVoiceStopButtonVisible: async () => {
+      await expect(
+        locators.voiceStopButton,
+        "Voice stop button should be visible",
+      ).toBeVisible();
+    },
+    assertSendMessageButtonVisible: async () => {
+      await expect(
+        locators.sendMessageButton,
+        "Send message button should be visible",
+      ).toBeVisible();
+    },
+    assertSendMessageButtonHidden: async () => {
+      await expect(
+        locators.sendMessageButton,
+        "Send message button should be hidden",
+      ).toBeHidden();
+    },
+    assertVoiceConnectingOrActiveState: async () => {
+      await expect(
+        locators.inputField,
+        "Input placeholder should show 'Connecting...' or voice call in progress",
+      ).toHaveAttribute(
+        "placeholder",
+        /Connecting\.\.\.|Voice conversation in progress \(\d{2}:\d{2}\)/,
+      );
+      await expect(
+        locators.inputField,
+        "Input should be disabled during connecting or active state",
+      ).toBeDisabled();
+    },
+    assertVoiceActiveState: async () => {
+      await expect(
+        locators.inputField,
+        "Input placeholder should show voice call in progress",
+      ).toHaveAttribute(
+        "placeholder",
+        /Voice conversation in progress \(\d{2}:\d{2}\)/,
+      );
+      await expect(
+        locators.inputField,
+        "Input should be disabled during active voice call",
+      ).toBeDisabled();
+    },
+    assertVoiceInactiveState: async () => {
+      await expect(
+        locators.inputField,
+        "Input placeholder should show 'Type your message'",
+      ).toHaveAttribute("placeholder", "Type your message");
+      await expect(
+        locators.inputField,
+        "Input should be enabled when voice is inactive",
+      ).toBeEnabled();
     },
   };
 };

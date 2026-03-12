@@ -32,8 +32,13 @@ const config: PlaywrightTestConfig = {
         locale: "en-US",
         deviceScaleFactor: undefined,
         viewport: { width: 1240, height: 768 },
+        permissions: ["microphone"],
         launchOptions: {
-          args: ["--start-maximized"],
+          args: [
+            "--start-maximized",
+            "--use-fake-device-for-media-stream",
+            "--use-fake-ui-for-media-stream",
+          ],
         },
       },
     },
