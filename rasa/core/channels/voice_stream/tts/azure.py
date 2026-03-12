@@ -1,6 +1,5 @@
 import asyncio
 import os
-from dataclasses import dataclass
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 import aiohttp
@@ -69,7 +68,6 @@ class _AudioOutputCallback(speechsdk.audio.PushAudioOutputStreamCallback):
         pass
 
 
-@dataclass
 class AzureTTSConfig(TTSEngineConfig):
     """Configuration for Azure TTS.
 
@@ -387,10 +385,10 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
         return RasaAudioBytes(chunk, format=self.audio_format)
 
     @staticmethod
-    def get_default_config() -> AzureTTSConfig:
+    def get_default_config(rasa_language: str) -> AzureTTSConfig:
         return AzureTTSConfig(
             language_map={
-                "en": TTSLanguageMapEntry(
+                rasa_language: TTSLanguageMapEntry(
                     language="en-US",
                     voice="en-US-JennyNeural",
                 ),
@@ -411,7 +409,7 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
         return cls(
             rasa_language=rasa_language,
             format=format,
-            config=AzureTTSConfig.from_dict(config),
+            config=AzureTTSConfig.model_validate(config),
             additional_languages=additional_languages,
         )
 

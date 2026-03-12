@@ -1,7 +1,18 @@
-from dataclasses import dataclass
-from typing import AsyncIterator, Dict, Generic, List, Optional, Tuple, Type, TypeVar
+import warnings
+from typing import (
+    AsyncIterator,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 
 import structlog
+from pydantic import BaseModel, ConfigDict, ValidationInfo, model_validator
 
 from rasa.core.channels.voice_stream.audio_bytes import (
     AudioFormat,
@@ -9,7 +20,6 @@ from rasa.core.channels.voice_stream.audio_bytes import (
     RasaAudioBytes,
 )
 from rasa.core.channels.voice_stream.tts.config import StreamingConfig
-from rasa.core.channels.voice_stream.util import MergeableConfig
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.common import validate_environment
 
@@ -31,8 +41,7 @@ E = TypeVar("E", bound="TTSEngine")
 L = TypeVar("L", bound="TTSLanguageMapEntry")
 
 
-@dataclass
-class TTSLanguageMapEntry:
+class TTSLanguageMapEntry(BaseModel):
     """Entry in the language_map mapping Rasa language to TTS settings.
     Usually a TTS Engine will require at least a language code and voice
     identifier to be able to synthesize speech. This class can be extended with
@@ -49,33 +58,107 @@ class TTSLanguageMapEntry:
     model: Optional[str] = None
 
 
-@dataclass
-class TTSEngineConfig(MergeableConfig):
+class TTSEngineConfig(BaseModel):
     """Base configuration for TTS engines.
 
     Attributes:
-        language: (deprecated) TTS language code.
-        voice: (deprecated) TTS voice identifier.
         timeout: Request timeout in seconds.
         language_map: Maps Rasa language codes to TTS-specific settings.
             Each TTS engine should provide sensible defaults.
+        language: Deprecated. Use ``language_map`` instead.
+        voice: Deprecated. Use ``language_map`` instead.
+        model: Deprecated. Use ``language_map`` instead.
     """
 
+    # Deprecated: set these inside language_map instead
     language: Optional[str] = None
     voice: Optional[str] = None
+    model: Optional[str] = None
     timeout: int = 30
     language_map: Optional[Dict[str, TTSLanguageMapEntry]] = None
 
-    @classmethod
-    def from_dict(cls: Type["TTSEngineConfig"], data: dict) -> "TTSEngineConfig":
-        """Create config from dict, converting language_map entries."""
-        if data.get("language_map"):
-            data = {**data}  # shallow copy to avoid mutating the original
-            data["language_map"] = {
-                k: TTSLanguageMapEntry(**v) if isinstance(v, dict) else v
-                for k, v in data["language_map"].items()
+    model_config = ConfigDict(extra="allow")
+
+    @model_validator(mode="after")
+    def _validate_language_fields(self, info: ValidationInfo) -> "TTSEngineConfig":
+        """Validate mutual exclusivity of deprecated fields and language_map.
+
+        Skipped during merge(), which intentionally combines a user config
+        (potentially with deprecated fields) with a default config (which always
+        has language_map). apply_deprecated_fields() folds them together after.
+        """
+        if info.context and info.context.get("merging"):
+            return self
+
+        has_deprecated = (
+            self.language is not None
+            or self.voice is not None
+            or self.model is not None
+        )
+        has_language_map = self.language_map is not None
+
+        if has_deprecated and has_language_map:
+            raise ValueError(
+                "Cannot specify both top-level 'language'/'voice'/'model' and "
+                "'language_map'. Remove 'language', 'voice', and 'model' and "
+                "configure 'language_map' only."
+            )
+
+        if has_deprecated:
+            used_fields = sorted(
+                f
+                for f in ("language", "model", "voice")
+                if getattr(self, f) is not None
+            )
+            field_list = ", ".join(f"'{f}'" for f in used_fields)
+            warnings.warn(
+                f"Top-level TTS config field(s) {field_list} are deprecated. "
+                "Use 'language_map' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        return self
+
+    def merge(self: T, other: Optional[T]) -> T:
+        """Merges two configs while dropping None values of the second config."""
+        if other is None:
+            return self
+        other_dict = other.model_dump()
+        other_dict_clean = {k: v for k, v in other_dict.items() if v is not None}
+        merged = {**self.model_dump(), **other_dict_clean}
+        return self.__class__.model_validate(merged, context={"merging": True})
+
+    def apply_deprecated_fields(self, rasa_language: str) -> "TTSEngineConfig":
+        """Fold top-level deprecated fields into language_map[rasa_language].
+
+        Moves ``language``, ``voice``, or ``model`` values set at the top level
+        into the language_map entry for ``rasa_language``. The DeprecationWarning
+        is emitted earlier, during model validation.
+        """
+        updates = {
+            k: v
+            for k, v in [
+                ("language", self.language),
+                ("voice", self.voice),
+                ("model", self.model),
+            ]
+            if v is not None
+        }
+        if not updates:
+            return self
+
+        existing_map = dict(self.language_map or {})
+        existing_entry = existing_map.get(rasa_language, TTSLanguageMapEntry())
+        existing_map[rasa_language] = existing_entry.model_copy(update=updates)
+        return self.model_copy(
+            update={
+                "language": None,
+                "voice": None,
+                "model": None,
+                "language_map": existing_map,
             }
-        return cls(**data)
+        )
 
     def validate_language_map_keys(
         self,
@@ -151,7 +234,8 @@ class TTSEngine(Generic[T]):
         additional_languages: Optional[List[str]] = None,
     ):
         self.audio_format = format
-        self.config = self.get_default_config().merge(config)
+        self.config = self.get_default_config(rasa_language).merge(config)
+        self.config = cast(T, self.config.apply_deprecated_fields(rasa_language))
         self.config.validate_language_map_keys(rasa_language, additional_languages)
         validate_environment(
             self.required_env_vars,
@@ -222,7 +306,7 @@ class TTSEngine(Generic[T]):
         pass
 
     @staticmethod
-    def get_default_config() -> T:
+    def get_default_config(rasa_language: str) -> T:
         """Get the default config for this component."""
         raise NotImplementedError
 

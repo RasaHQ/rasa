@@ -1,6 +1,5 @@
 import base64
 import os
-from dataclasses import dataclass
 from typing import Any, AsyncIterator, Dict, List, Optional
 from uuid import uuid4
 
@@ -33,7 +32,6 @@ Audio Format: https://docs.cartesia.ai/build-with-cartesia/capability-guides/cho
 """
 
 
-@dataclass
 class CartesiaTTSConfig(TTSEngineConfig):
     model_id: Optional[str] = None
     version: Optional[str] = None
@@ -218,14 +216,14 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
         return RasaAudioBytes(chunk, format=self.audio_format)
 
     @staticmethod
-    def get_default_config() -> CartesiaTTSConfig:
+    def get_default_config(rasa_language: str) -> CartesiaTTSConfig:
         return CartesiaTTSConfig(
             timeout=30,
             model_id="sonic-3",
             version="2025-04-16",
             endpoint="wss://api.cartesia.ai/tts/websocket",
             language_map={
-                "en": TTSLanguageMapEntry(
+                rasa_language: TTSLanguageMapEntry(
                     language="en",
                     voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",
                 ),
@@ -240,13 +238,8 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
     ) -> "CartesiaTTS":
-        cfg = (
-            config
-            if type(config).__name__ == "CartesiaTTSConfig"
-            else CartesiaTTSConfig.from_dict(config)
-        )
         return cls(
-            config=cfg,
+            config=CartesiaTTSConfig.model_validate(config),
             format=format,
             rasa_language=rasa_language,
             additional_languages=additional_languages,

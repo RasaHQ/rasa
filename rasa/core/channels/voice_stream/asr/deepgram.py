@@ -40,8 +40,6 @@ class DeepgramASRConfig(ASREngineConfig):
     endpoint: Optional[str] = None
     # number of milliseconds of silence to determine end of speech
     endpointing: Optional[int] = None
-    language: Optional[str] = None
-    model: Optional[str] = None
     smart_format: Optional[bool] = None
     # number of milliseconds of no new transcript to determine end of speech
     # should be at least 1000 according to docs
@@ -161,16 +159,16 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
         return None
 
     @staticmethod
-    def get_default_config() -> DeepgramASRConfig:
+    def get_default_config(rasa_language: str) -> DeepgramASRConfig:
         return DeepgramASRConfig(
             endpoint="api.deepgram.com",
             endpointing=400,
             smart_format=True,
             utterance_end_ms=1000,
             language_map={
-                "en": ASRLanguageMapEntry(
+                rasa_language: ASRLanguageMapEntry(
                     language="en",
-                    model="nova-2-general",
+                    model="nova-3",
                 ),
             },
         )
@@ -183,15 +181,10 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
     ) -> "DeepgramASR":
-        cfg = (
-            config
-            if isinstance(config, DeepgramASRConfig)
-            else DeepgramASRConfig(**config)
-        )
         return cls(
             rasa_language=rasa_language,
             format=format,
-            config=cfg,
+            config=DeepgramASRConfig.model_validate(config),
             additional_languages=additional_languages,
         )
 

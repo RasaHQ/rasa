@@ -29,7 +29,7 @@ async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch, mulaw_format):
 
 
 def test_default_config():
-    config = DeepgramTTS.get_default_config()
+    config = DeepgramTTS.get_default_config("en")
     assert config.endpoint == "wss://api.deepgram.com/v1/speak"
     assert "en" in config.language_map
     assert config.language_map["en"].model == "aura-2-andromeda-en"
@@ -65,10 +65,11 @@ async def test_configuration_format(format):
     ],
 )
 async def test_get_websocket_url(format, expected_encoding):
+    rasa_language = "en"
     tts_engine = DeepgramTTS.from_config_dict(
-        config={}, rasa_language="en", format=format
+        config={}, rasa_language=rasa_language, format=format
     )
-    config = tts_engine.get_default_config()
+    config = tts_engine.get_default_config(rasa_language)
     url = tts_engine.get_websocket_url(config)
 
     assert f"encoding={expected_encoding}" in url

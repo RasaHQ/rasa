@@ -313,8 +313,8 @@ async def test_synthesis_with_asr(mulaw_format: AudioFormat):
 @pytest.mark.parametrize(
     "bad_config",
     [
-        AzureTTSConfig.from_dict({"speech_region": "nonexistent"}),
-        # AzureTTSConfig.from_dict({"voice": "non_existent_voice"}),
+        AzureTTSConfig(speech_region="nonexistent"),
+        AzureTTSConfig(voice="non_existent_voice"),
     ],
 )
 async def test_synthesis_error(bad_config: AzureTTSConfig, mulaw_format: AudioFormat):
@@ -338,7 +338,7 @@ async def test_synthesis_bad_api_key(
 
 
 def test_azure_default_config():
-    config = AzureTTS.get_default_config()
+    config = AzureTTS.get_default_config("en")
     assert "en" in config.language_map
     assert config.language_map["en"].language == "en-US"
     assert config.language_map["en"].voice == "en-US-JennyNeural"
@@ -346,7 +346,7 @@ def test_azure_default_config():
 
 
 def test_tts_url_creation():
-    config = AzureTTS.get_default_config()
+    config = AzureTTS.get_default_config("en")
     azure_tts_endpoint = AzureTTS.get_tts_endpoint(config)
     assert config.speech_region in azure_tts_endpoint
     assert azure_tts_endpoint.startswith("https://")

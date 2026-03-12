@@ -45,7 +45,7 @@ async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch, mulaw_format):
 
 
 def test_default_config():
-    config = CartesiaTTS.get_default_config()
+    config = CartesiaTTS.get_default_config("en")
     assert "en" in config.language_map
     assert config.language_map["en"].language == "en"
     assert config.language_map["en"].voice == "f786b574-daa5-4673-aa0c-cbe3e8534c02"

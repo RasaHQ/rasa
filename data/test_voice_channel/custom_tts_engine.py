@@ -4,10 +4,8 @@ from rasa.core.channels.voice_stream.tts.tts_engine import (
     TTSEngineConfig,
 )
 from rasa.core.channels.voice_stream.audio_bytes import AudioFormat
-from dataclasses import dataclass
-from typing import Optional, Dict, List
+from typing import Optional, Any, List
 
-@dataclass
 class CustomTTSConfig(TTSEngineConfig):
     server_url: Optional[str] = None
 
@@ -22,11 +20,11 @@ class CustomTTSEngine(TTSEngine[CustomTTSConfig]):
         super().__init__(rasa_language=rasa_language, format=format, config=config, additional_languages=additional_languages)
 
     @staticmethod
-    def get_default_config() -> CustomTTSConfig:
+    def get_default_config(rasa_language: str) -> CustomTTSConfig:
         return CustomTTSConfig(
             server_url="http://localhost:5000",
             language_map={
-                "en": TTSLanguageMapEntry(
+                rasa_language: TTSLanguageMapEntry(
                     language="en",
                     voice="nova-2-general",
                 ),
@@ -36,7 +34,7 @@ class CustomTTSEngine(TTSEngine[CustomTTSConfig]):
     @classmethod
     def from_config_dict(
         cls,
-        config: Dict,
+        config: Any,
         format: AudioFormat,
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
@@ -44,6 +42,6 @@ class CustomTTSEngine(TTSEngine[CustomTTSConfig]):
         return CustomTTSEngine(
             rasa_language=rasa_language,
             format=format,
-            config=CustomTTSConfig.from_dict(config),
+            config=CustomTTSConfig.model_validate(config),
             additional_languages=additional_languages,
         )

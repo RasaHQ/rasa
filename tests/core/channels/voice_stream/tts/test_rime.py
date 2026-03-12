@@ -21,7 +21,7 @@ async def test_environment_validation(mulaw_format):
 
 
 def test_default_config():
-    config = RimeTTS.get_default_config()
+    config = RimeTTS.get_default_config("en")
     assert "en" in config.language_map
     assert config.language_map["en"].voice == "cove"
     assert config.language_map["en"].language == "eng"

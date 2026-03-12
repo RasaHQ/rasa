@@ -76,7 +76,7 @@ async def test_azure_tts_engine_from_config(
     config = {"name": "azure"}
     tts_engine = tts_engine_from_config(config, language="en", format=mulaw_format)
     assert isinstance(tts_engine, AzureTTS)
-    default_config = AzureTTS.get_default_config()
+    default_config = AzureTTS.get_default_config("en")
     assert tts_engine.config.speech_region == default_config.speech_region
     if tts_engine.session:
         await tts_engine.session.close()
@@ -114,7 +114,7 @@ def test_custom_tts_service(mulaw_format: AudioFormat) -> None:
     # When the TTS engine is created from the config
     tts_engine = tts_engine_from_config(config, language="en", format=mulaw_format)
 
-    # Then the ASR engine should be an instance of the custom ASR engine
+    # Then the TTS engine should be an instance of the custom TTS engine
     assert isinstance(tts_engine, CustomTTSEngine)
 
 

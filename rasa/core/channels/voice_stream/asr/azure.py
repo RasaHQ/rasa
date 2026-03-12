@@ -42,8 +42,6 @@ class AzureASRConfig(ASREngineConfig):
         model: Optional model identifier.
     """
 
-    language: Optional[str] = None
-    model: Optional[str] = None
     speech_region: Optional[str] = None
     speech_host: Optional[str] = None
     speech_endpoint: Optional[str] = None
@@ -189,10 +187,10 @@ class AzureASR(ASREngine[AzureASRConfig]):
         return None
 
     @staticmethod
-    def get_default_config() -> AzureASRConfig:
+    def get_default_config(rasa_language: str) -> AzureASRConfig:
         return AzureASRConfig(
             language_map={
-                "en": ASRLanguageMapEntry(
+                rasa_language: ASRLanguageMapEntry(
                     language="en-US",
                 ),
             }
@@ -209,6 +207,6 @@ class AzureASR(ASREngine[AzureASRConfig]):
         return cls(
             rasa_language=rasa_language,
             format=format,
-            config=AzureASRConfig(**config),
+            config=AzureASRConfig.model_validate(config),
             additional_languages=additional_languages,
         )

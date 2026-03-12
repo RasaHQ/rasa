@@ -1,3 +1,4 @@
+import warnings
 from typing import (
     Any,
     AsyncIterator,
@@ -8,10 +9,11 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    cast,
 )
 
 import structlog
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationInfo, model_validator
 from websockets.legacy.client import WebSocketClientProtocol
 
 from rasa.core.channels.voice_stream.asr.asr_event import ASREvent
@@ -54,13 +56,51 @@ class ASREngineConfig(BaseModel):
         keep_alive_interval: Interval in seconds for keep-alive messages.
         language_map: Maps Rasa language codes to ASR-specific settings.
             Each ASR engine should provide sensible defaults via get_default_config().
+        language: Deprecated. Use ``language_map`` instead.
+        model: Deprecated. Use ``language_map`` instead.
     """
 
+    # Deprecated: set these inside language_map instead
+    language: Optional[str] = None
+    model: Optional[str] = None
     keep_alive_interval: int = 5
     language_map: Optional[Dict[str, ASRLanguageMapEntry]] = None
 
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _validate_language_fields(self, info: ValidationInfo) -> "ASREngineConfig":
+        """Validate mutual exclusivity of deprecated fields and language_map.
+
+        Skipped during merge(), which intentionally combines a user config
+        (potentially with deprecated fields) with a default config (which always
+        has language_map). apply_deprecated_fields() folds them together after.
+        """
+        if info.context and info.context.get("merging"):
+            return self
+
+        has_deprecated = self.language is not None or self.model is not None
+        has_language_map = self.language_map is not None
+
+        if has_deprecated and has_language_map:
+            raise ValueError(
+                "Cannot specify both top-level 'language'/'model' and 'language_map'. "
+                "Remove 'language' and 'model' and configure 'language_map' only."
+            )
+
+        if has_deprecated:
+            used_fields = sorted(
+                f for f in ("language", "model") if getattr(self, f) is not None
+            )
+            field_list = ", ".join(f"'{f}'" for f in used_fields)
+            warnings.warn(
+                f"Top-level ASR config field(s) {field_list} are deprecated. "
+                "Use 'language_map' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        return self
 
     def merge(self: T, other: Optional[T]) -> T:
         """Merges two configs while dropping None values of the second config."""
@@ -69,20 +109,35 @@ class ASREngineConfig(BaseModel):
         other_dict = other.model_dump()
         other_dict_clean = {k: v for k, v in other_dict.items() if v is not None}
         merged = {**self.model_dump(), **other_dict_clean}
-        return self.__class__(**merged)
+        return self.__class__.model_validate(merged, context={"merging": True})
 
-    @field_validator("language_map", mode="before")
-    @classmethod
-    def convert_language_map(cls, v: Any) -> Optional[Dict[str, ASRLanguageMapEntry]]:
-        """Convert language_map dict entries to ASRLanguageMapEntry objects."""
-        if v is None:
-            return None
-        if isinstance(v, dict):
-            return {
-                k: ASRLanguageMapEntry(**val) if isinstance(val, dict) else val
-                for k, val in v.items()
-            }
-        return v
+    def apply_deprecated_fields(self, rasa_language: str) -> "ASREngineConfig":
+        """Fold top-level deprecated fields into language_map[rasa_language].
+
+        Moves ``language`` or ``model`` values set at the top level into the
+        language_map entry for ``rasa_language``. The DeprecationWarning is
+        emitted earlier, during model validation.
+        """
+        updates = {
+            k: v
+            for k, v in [("language", self.language), ("model", self.model)]
+            if v is not None
+        }
+        if not updates:
+            # No deprecated fields to apply, return self unmodified
+            return self
+
+        existing_map = dict(self.language_map or {})
+        existing_entry = existing_map.get(rasa_language)
+        if existing_entry is not None:
+            existing_map[rasa_language] = existing_entry.model_copy(update=updates)
+        else:
+            # If ASR doesn't have a language map in default config
+            existing_map[rasa_language] = ASRLanguageMapEntry(**updates)
+
+        return self.model_copy(
+            update={"language": None, "model": None, "language_map": existing_map}
+        )
 
     def validate_language_map_keys(
         self,
@@ -154,7 +209,8 @@ class ASREngine(Generic[T]):
         additional_languages: Optional[List[str]] = None,
     ):
         self.audio_format = format
-        self.config = self.get_default_config().merge(config)
+        self.config = self.get_default_config(rasa_language).merge(config)
+        self.config = cast(T, self.config.apply_deprecated_fields(rasa_language))
         self.config.validate_language_map_keys(rasa_language, additional_languages)
         self.asr_socket: Optional[WebSocketClientProtocol] = None
         validate_environment(
@@ -218,7 +274,7 @@ class ASREngine(Generic[T]):
         raise NotImplementedError
 
     @staticmethod
-    def get_default_config() -> T:
+    def get_default_config(rasa_language: str) -> T:
         """Get the default config for this component."""
         raise NotImplementedError
 

@@ -1,5 +1,4 @@
 import os
-from dataclasses import dataclass
 from typing import AsyncIterator, Dict, List, Optional
 from urllib.parse import urlencode
 
@@ -33,7 +32,6 @@ Media Input Settings: https://developers.deepgram.com/docs/tts-media-output-sett
 """
 
 
-@dataclass
 class DeepgramTTSConfig(TTSEngineConfig):
     model_id: Optional[str] = None
     endpoint: Optional[str] = None
@@ -205,12 +203,12 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
         return RasaAudioBytes(chunk, format=self.audio_format)
 
     @staticmethod
-    def get_default_config() -> DeepgramTTSConfig:
+    def get_default_config(rasa_language: str) -> DeepgramTTSConfig:
         return DeepgramTTSConfig(
             endpoint="wss://api.deepgram.com/v1/speak",
             timeout=30,
             language_map={
-                "en": TTSLanguageMapEntry(
+                rasa_language: TTSLanguageMapEntry(
                     model="aura-2-andromeda-en",
                 ),
             },
@@ -227,7 +225,7 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
         return cls(
             rasa_language=rasa_language,
             format=format,
-            config=DeepgramTTSConfig.from_dict(config),
+            config=DeepgramTTSConfig.model_validate(config),
             additional_languages=additional_languages,
         )
 

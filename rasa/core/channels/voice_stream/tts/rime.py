@@ -1,6 +1,5 @@
 import base64
 import os
-from dataclasses import dataclass
 from typing import Any, AsyncIterator, List, Optional
 from urllib.parse import urlencode
 from uuid import uuid4
@@ -32,7 +31,6 @@ Docs: https://docs.rime.ai/api-reference/endpoint/websockets-json#variable-param
 """
 
 
-@dataclass
 class RimeTTSConfig(TTSEngineConfig):
     """Rime TTS variable parameters:
     See get_default_config() for default values.
@@ -258,7 +256,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         return RasaAudioBytes(chunk, format=self.audio_format)
 
     @staticmethod
-    def get_default_config() -> RimeTTSConfig:
+    def get_default_config(rasa_language: str) -> RimeTTSConfig:
         return RimeTTSConfig(
             model_id="mistv2",
             timeout=30,
@@ -267,7 +265,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
             segment="immediate",  # Synthesize immediately for low latency
             no_text_normalization=False,
             language_map={
-                "en": TTSLanguageMapEntry(
+                rasa_language: TTSLanguageMapEntry(
                     language="eng",
                     voice="cove",
                 ),
@@ -282,15 +280,10 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         rasa_language: str,
         additional_languages: Optional[List[str]] = None,
     ) -> "RimeTTS":
-        cfg = (
-            config
-            if type(config).__name__ == "RimeTTSConfig"
-            else RimeTTSConfig.from_dict(config)
-        )
         return cls(
             rasa_language=rasa_language,
             format=format,
-            config=cfg,
+            config=RimeTTSConfig.model_validate(config),
             additional_languages=additional_languages,
         )
 

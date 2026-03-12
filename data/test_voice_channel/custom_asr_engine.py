@@ -21,11 +21,11 @@ class CustomASREngine(ASREngine[CustomASRConfig]):
         super().__init__(rasa_language=rasa_language, format=format, config=config, additional_languages=additional_languages)
 
     @staticmethod
-    def get_default_config() -> CustomASRConfig:
+    def get_default_config(rasa_language: str) -> CustomASRConfig:
         return CustomASRConfig(
             endpoint="en",
             language_map={
-                "en": ASRLanguageMapEntry(
+                rasa_language: ASRLanguageMapEntry(
                     language="en",
                 ),
             },
@@ -42,6 +42,6 @@ class CustomASREngine(ASREngine[CustomASRConfig]):
         return CustomASREngine(
             rasa_language=rasa_language,
             format=format,
-            config=CustomASRConfig(**config),
+            config=CustomASRConfig.model_validate(config),
             additional_languages=additional_languages,
         )
