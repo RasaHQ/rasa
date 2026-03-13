@@ -76,7 +76,7 @@ export const TryAssistantConversation = ({
             inspectorMode={inspectorMode}
             waitingForResponse={
               index === nonEmptyConversationList.length - 1 &&
-              waitingForResponse
+              waitingForResponse && nonEmptyConversationList[index].totalNumberOfUserMessages > 0
             }
             replayingConversation={
               index === nonEmptyConversationList.length - 1 &&
