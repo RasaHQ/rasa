@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.16.0rc2"
+version = "3.16.0rc3"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -271,7 +271,7 @@ version = "~1.14.0"
 markers = "python_version >= '3.12'"
 
 [[tool.poetry.dependencies.rasa-sdk]]
-version = "3.16.0a3"  # upgraded to use updated protobuf required for python 3.12, depends on protobuf (>=5.29.5,<5.30.0)
+version = "3.16.0rc2"  # upgraded to use updated protobuf required for python 3.12, depends on protobuf (>=5.29.5,<5.30.0)
 allow-prereleases = true
 
 [tool.poetry.dependencies.langcodes]
@@ -555,6 +555,7 @@ convention = "google"
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "pypred.Predicate".msg = "Only use the patched pypred module from rasa.utils.pypred."
 "langfuse".msg = "Only import langfuse from rasa.builder.telemetry.langfuse_compat."
+
 
 
 
