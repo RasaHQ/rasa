@@ -52,8 +52,9 @@ TASK_COMPLETED_TOOL = {
             "This tool accepts no arguments. You MUST also include text in the same "
             "response: a natural, conversational follow-up to the user's last message "
             "(e.g. acknowledge their choice, wish them well, close warmly). Do NOT "
-            "summarize what you did or what happened in the conversation. A response "
-            "with only the tool call and no text is invalid. Keep it short and natural."
+            "summarize what you did or what happened in the conversation. Do NOT "
+            "include any inner thoughts or explanations. A response with only the "
+            "tool call and no text is invalid. Keep it short and natural."
         ),
         TOOL_PARAMETERS_KEY: {
             TOOL_TYPE_KEY: "object",
@@ -124,10 +125,13 @@ class MCPOpenAgent(MCPBaseAgent):
     def get_system_message_for_empty_content_at_task_completion() -> Dict[str, str]:
         """Get the system message for an empty content with task completed tool call."""
         system_message = (
-            "The previous assistant message with tool calls contained empty content "
-            "with a task completed tool call. Please instead write a short, natural "
-            "follow-up that directly addresses the user's last message (do not "
-            "summarize the conversation) and then call the task completed tool."
+            "This is the only system instruction for this turn. The goal is already "
+            "completed and the agent will stop after your response. Do not call any "
+            "tools. Generate only the final response to the user: a natural, "
+            "conversational follow-up to the user's last message (e.g. acknowledge "
+            "their choice, wish them well, close warmly). Do NOT summarize what you "
+            "did or what happened in the conversation. Do NOT include any inner "
+            "thoughts or explanations. Keep it short and natural."
         )
         return {
             KEY_ROLE: ROLE_SYSTEM,
@@ -151,7 +155,7 @@ class MCPOpenAgent(MCPBaseAgent):
 
     async def _run_task_completed_tool(
         self,
-        tool_call: LLMToolCall,
+        tool_call: Optional[LLMToolCall],
         agent_input: AgentInput,
         tool_results: Dict[str, AgentToolResult],
         current_iteration_tool_results: Dict[str, AgentToolResult],
@@ -180,11 +184,12 @@ class MCPOpenAgent(MCPBaseAgent):
                 accumulated_tool_output_events.extend(events_from_tool_results)
                 agent_input.events.extend(events_from_tool_results)
 
-        tool_result = AgentToolResult(
-            tool_name=tool_call.tool_name,
-            result="Task completed",
-        )
-        tool_results[tool_call.id] = tool_result
+        if tool_call:
+            tool_result = AgentToolResult(
+                tool_name=tool_call.tool_name,
+                result="Task completed",
+            )
+            tool_results[tool_call.id] = tool_result
 
         # Record the final response as a BotUttered event.
         if bot_uttered:
@@ -246,14 +251,28 @@ class MCPOpenAgent(MCPBaseAgent):
             tool.to_litellm_json_format() for tool in _available_tools
         ]
 
+        task_completed: bool = False
+
         for iteration in range(self.MAX_ITERATIONS):
             current_iteration_tool_results: Dict[str, AgentToolResult] = {}
             try:
                 messages = self._build_messages_for_llm_request_with_cache(
                     agent_input,
                     message_build_cache,
+                    strip_original_system_prompt=task_completed,
                 )
                 messages.extend(tool_call_messages)
+
+                if task_completed:
+                    # Move system message(s) to the front
+                    system_messages = [
+                        m for m in messages if m.get(KEY_ROLE) == ROLE_SYSTEM
+                    ]
+                    other_messages = [
+                        m for m in messages if m.get(KEY_ROLE) != ROLE_SYSTEM
+                    ]
+                    messages = system_messages + other_messages
+
                 structlogger.debug(
                     "mcp_open_agent.send_message.iteration",
                     event_info=(
@@ -274,7 +293,7 @@ class MCPOpenAgent(MCPBaseAgent):
 
                 llm_response, bot_uttered = await self.generate_and_send_response(
                     messages=messages,
-                    tools=tools_in_openai_format,
+                    tools=tools_in_openai_format if not task_completed else [],
                     metadata=self.get_llm_tracing_metadata(agent_input),
                     agent_input=agent_input,
                     output_channel=output_channel,
@@ -308,11 +327,25 @@ class MCPOpenAgent(MCPBaseAgent):
                     self._append_empty_content_at_task_completion_system_message(
                         tool_call_messages
                     )
+                    task_completed = True
                     continue
 
                 # Content only (no tool calls) → content already streamed
-                # and return INPUT_REQUIRED
+                # return INPUT_REQUIRED if task is not yet completed yet
+                # otherwise, return COMPLETED
                 if not llm_response.tool_calls and len(llm_response.choices) == 1:
+                    if task_completed:
+                        return await self._run_task_completed_tool(
+                            tool_call=None,
+                            agent_input=agent_input,
+                            tool_results=tool_results,
+                            current_iteration_tool_results=current_iteration_tool_results,
+                            generated_events=generated_events,
+                            accumulated_tool_output_events=accumulated_tool_output_events,
+                            output_channel=output_channel,
+                            bot_uttered=bot_uttered,
+                        )
+
                     # Record the content as a BotUttered event.
                     self._record_input_required_bot_uttered(
                         bot_uttered, generated_events

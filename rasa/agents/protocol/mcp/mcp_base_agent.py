@@ -1024,9 +1024,16 @@ class MCPBaseAgent(AgentProtocol):
         self,
         context: AgentInput,
         cache_state: Dict[str, Any],
+        strip_original_system_prompt: bool = False,
         turns: int = 10,
     ) -> List[Dict[str, str]]:
-        """Build LLM messages with loop-scoped cache reuse."""
+        """Build LLM messages with loop-scoped cache reuse.
+
+        When strip_original_system_prompt is True (e.g. after task_completed was
+        called or when retrying after empty content at task completion), the
+        first message (original system prompt) is omitted so the model sees
+        only the conversation and any later system message (e.g. retry instruction).
+        """
         cache_key = self._get_base_messages_cache_key(context, turns)
         cached_base_messages = cache_state.get(_MESSAGE_CACHE_BASE_MESSAGES)
         if (
@@ -1034,7 +1041,10 @@ class MCPBaseAgent(AgentProtocol):
             and cache_state.get(_MESSAGE_CACHE_BASE_MESSAGES_KEY) == cache_key
             and cached_base_messages is not None
         ):
-            return [dict(message) for message in cached_base_messages]
+            base = cached_base_messages
+            if strip_original_system_prompt and base:
+                return [dict(m) for m in base[1:]]
+            return [dict(message) for message in base]
 
         # Keep customer override behavior intact: cache wraps the public
         # `build_messages_for_llm_request` hook instead of bypassing it.
@@ -1049,6 +1059,8 @@ class MCPBaseAgent(AgentProtocol):
             cache_state.pop(_MESSAGE_CACHE_BASE_MESSAGES_KEY, None)
             cache_state.pop(_MESSAGE_CACHE_BASE_MESSAGES, None)
 
+        if strip_original_system_prompt and base_messages:
+            return [dict(message) for message in base_messages[1:]]
         return [dict(message) for message in base_messages]
 
     def _get_assistant_message_with_tool_calls(
@@ -1508,7 +1520,7 @@ class MCPBaseAgent(AgentProtocol):
             id=agent_input.id,
             status=AgentStatus.COMPLETED,
             response_message=(
-                "I've completed my research but couldn't provide a final answer within"
+                "I've completed my research but couldn't provide a final answer within "
                 "the allowed steps."
             ),
             events=events,

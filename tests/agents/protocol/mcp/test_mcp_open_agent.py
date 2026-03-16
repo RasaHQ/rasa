@@ -475,6 +475,74 @@ class TestMCPOpenAgent:
         )
 
     @pytest.mark.asyncio
+    async def test_send_message_empty_content_task_completion_retry_stripped_prompt(
+        self, mcp_open_agent, mock_agent_input, mock_output_channel
+    ):
+        """Empty content with task_completed triggers retry with stripped system prompt.
+
+        When the LLM returns task_completed but no text content, the agent
+        appends a retry system message, strips the original system prompt on the
+        next turn, and calls the LLM again with no tools. The second response
+        (content only) is treated as the final reply and completes via
+        _run_task_completed_tool.
+        """
+        mock_agent_input.recipient_id = "test_user"
+        task_completed_call = LLMToolCall(
+            id="call_task_done",
+            type="function",
+            tool_name="task_completed",
+            tool_args={},
+        )
+        first_response = LLMResponse(
+            id="first_id",
+            created=1642248600,
+            choices=[],  # No content
+            tool_calls=[task_completed_call],
+        )
+        final_text = "Goodbye and take care!"
+        second_response = LLMResponse(
+            id="second_id",
+            created=1642248601,
+            choices=[final_text],
+            tool_calls=None,
+        )
+
+        with (
+            patch.object(mcp_open_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_open_agent, "get_available_tools") as mock_get_tools,
+        ):
+            mock_llm_client.acompletion = AsyncMock(
+                side_effect=[first_response, second_response]
+            )
+            mock_tool = MagicMock()
+            mock_tool.name = "task_completed"
+            mock_get_tools.return_value = [mock_tool]
+
+            result = await mcp_open_agent.send_message(
+                mock_agent_input, output_channel=mock_output_channel
+            )
+
+        assert result.id == mock_agent_input.id
+        assert result.status.name == "COMPLETED"
+        assert mock_llm_client.acompletion.call_count == 2
+
+        second_call = mock_llm_client.acompletion.call_args_list[1]
+        second_messages = second_call.args[0]
+        assert (
+            second_call.kwargs.get("tools") == []
+        ), "Second call must pass no tools after task_completed"
+
+        retry_system_content = "This is the only system instruction for this turn."
+        assert second_messages and second_messages[0].get("role") == "system"
+        assert retry_system_content in (second_messages[0].get("content") or "")
+
+        assert result.events is not None
+        bot_texts = [
+            e.text for e in result.events if isinstance(e, BotUttered) and e.text
+        ]
+        assert final_text in bot_texts
+
+    @pytest.mark.asyncio
     async def test_send_message_filler_message_in_agent_output_events(
         self, mcp_open_agent, mock_agent_input
     ):
