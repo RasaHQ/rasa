@@ -1,16 +1,35 @@
 """Tests for the MessageProcessor cancellation token registry."""
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock
+import time as time_mod
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from a2a.types import Task, TaskState, TaskStatus
 
+import rasa.agents.protocol.a2a.a2a_agent as a2a_mod
 from rasa.agents.core.cancellation import CancellationToken
+from rasa.agents.core.types import AgentStatus
+from rasa.agents.protocol.a2a.a2a_agent import A2AAgent
+from rasa.agents.schemas import AgentInput
+from rasa.core.agent import Agent
+from rasa.core.available_agents import (
+    AgentConfig,
+    AgentConfiguration,
+    AgentInfo,
+    ProtocolConfig,
+)
+from rasa.core.channels.channel import UserMessage
+from rasa.core.lock_store import InMemoryLockStore
+from rasa.core.processor import MessageProcessor
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     AgentCancelled,
     AgentStarted,
     ConversationInactive,
     FlowCancelled,
+    SessionEnded,
     SessionStarted,
     UserUttered,
 )
@@ -20,8 +39,6 @@ def _create_processor_with_registry():
     """Create a minimal mock of MessageProcessor with the registry methods."""
     processor = MagicMock()
     processor._active_cancellation_tokens = {}
-
-    from rasa.core.processor import MessageProcessor
 
     processor.register_cancellation_token = (
         MessageProcessor.register_cancellation_token.__get__(processor)
@@ -99,12 +116,6 @@ def _create_agent_with_tracker_store():
     The tracker store persists events across calls, so we can assert on
     the full event sequence after cancellation + resume.
     """
-    from rasa.core.agent import Agent
-    from rasa.core.lock_store import InMemoryLockStore
-    from rasa.core.processor import MessageProcessor
-    from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
-    from rasa.shared.core.domain import Domain
-
     domain = Domain.empty()
     tracker_store = InMemoryTrackerStore(domain)
 
@@ -144,8 +155,6 @@ async def test_e2e_events_on_tracker_after_cancel_and_resume():
 
     Asserts the presence and ordering of all key events.
     """
-    from rasa.core.channels.channel import UserMessage
-
     agent, processor, tracker_store = _create_agent_with_tracker_store()
     sender_id = "user-e2e-events"
 
@@ -266,38 +275,13 @@ async def test_e2e_events_on_tracker_after_cancel_and_resume():
     assert tracker.inactive is False
 
 
-@pytest.mark.asyncio
-async def test_e2e_session_timeout_stops_a2a_polling_and_marks_inactive():
-    """Session expiration shorter than A2A max polling time stops polling.
+# =============================================================================
+# End-to-end: A2A polling cancellation helpers
+# =============================================================================
 
-    Wires together a real A2A polling loop (with a mock A2A client that never
-    completes) and the real ``handle_session_timeout`` method.  Verifies:
 
-    1. ``cancel_background_tasks`` interrupts the polling before max_wait.
-    2. ``ConversationInactive`` is persisted on the tracker.
-    3. The A2A output is ``CANCELLED`` (not a timeout / fatal error).
-    """
-    import time as time_mod
-    from unittest.mock import patch
-
-    from a2a.types import Task, TaskState, TaskStatus
-
-    from rasa.agents.core.cancellation import CancellationToken
-    from rasa.agents.core.types import AgentStatus
-    from rasa.agents.protocol.a2a.a2a_agent import A2AAgent
-    from rasa.agents.schemas import AgentInput
-    from rasa.core.available_agents import (
-        AgentConfig,
-        AgentConfiguration,
-        AgentInfo,
-        ProtocolConfig,
-    )
-    from rasa.core.lock_store import InMemoryLockStore
-    from rasa.core.processor import MessageProcessor
-    from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
-    from rasa.shared.core.domain import Domain
-
-    # -- Set up processor with real methods for the timeout path --
+def _create_a2a_processor_and_agent():
+    """Create a processor + Agent with real token registry for A2A tests."""
     domain = Domain.empty()
     tracker_store = InMemoryTrackerStore(domain)
     lock_store = InMemoryLockStore()
@@ -324,16 +308,16 @@ async def test_e2e_session_timeout_stops_a2a_polling_and_marks_inactive():
     processor.model_metadata = MagicMock(model_id="test", assistant_id="test")
     processor.model_filename = "test_model"
 
-    sender_id = "user-poll-timeout"
+    agent = Agent.__new__(Agent)
+    agent.processor = processor
+    agent.tracker_store = tracker_store
+    agent.lock_store = lock_store
 
-    # Pre-populate tracker with a valid session
-    tracker = await tracker_store.get_or_create_tracker(sender_id)
-    tracker.update(SessionStarted())
-    tracker.update(UserUttered("hello"))
-    await tracker_store.save(tracker)
-    session_id = tracker.current_session_id
+    return processor, agent, tracker_store, lock_store
 
-    # -- Set up A2A agent with a client that never reaches terminal state --
+
+async def _create_forever_polling_a2a_agent():
+    """Create an A2A agent whose client never reaches a terminal state."""
     non_terminal_task = Task(
         context_id="ctx",
         id="ctx-001",
@@ -369,8 +353,43 @@ async def test_e2e_session_timeout_stops_a2a_polling_and_marks_inactive():
             mock_load_card.return_value = mock_card
             await a2a_agent.connect()
 
-    # Force a large max_wait so polling would normally run for a long time
-    import rasa.agents.protocol.a2a.a2a_agent as a2a_mod
+    return a2a_agent
+
+
+def _make_agent_input():
+    return AgentInput(
+        id="ctx",
+        metadata={},
+        user_message="Test",
+        slots=[],
+        conversation_history="",
+        events=[],
+    )
+
+
+@pytest.mark.asyncio
+async def test_e2e_session_timeout_stops_a2a_polling_and_marks_inactive():
+    """Session expiration shorter than A2A max polling time stops polling.
+
+    Wires together a real A2A polling loop (with a mock A2A client that never
+    completes) and the real ``handle_session_timeout`` method.  Verifies:
+
+    1. ``cancel_background_tasks`` interrupts the polling before max_wait.
+    2. ``ConversationInactive`` is persisted on the tracker.
+    3. The A2A output is ``CANCELLED`` (not a timeout / fatal error).
+    """
+    processor, _agent, tracker_store, _lock_store = _create_a2a_processor_and_agent()
+
+    sender_id = "user-poll-timeout"
+
+    # Pre-populate tracker with a valid session
+    tracker = await tracker_store.get_or_create_tracker(sender_id)
+    tracker.update(SessionStarted())
+    tracker.update(UserUttered("hello"))
+    await tracker_store.save(tracker)
+    session_id = tracker.current_session_id
+
+    a2a_agent = await _create_forever_polling_a2a_agent()
 
     original_max_wait = getattr(a2a_mod, "A2A_TASK_POLLING_MAX_WAIT", 60)
 
@@ -389,17 +408,7 @@ async def test_e2e_session_timeout_stops_a2a_polling_and_marks_inactive():
         a2a_mod.A2A_TASK_POLLING_MAX_WAIT = 120
 
         start = time_mod.monotonic()
-        output = await a2a_agent.run(
-            AgentInput(
-                id="ctx",
-                metadata={},
-                user_message="Test",
-                slots=[],
-                conversation_history="",
-                events=[],
-            ),
-            cancellation_token=token,
-        )
+        output = await a2a_agent.run(_make_agent_input(), cancellation_token=token)
         elapsed = time_mod.monotonic() - start
     finally:
         a2a_mod.A2A_TASK_POLLING_MAX_WAIT = original_max_wait
@@ -420,3 +429,75 @@ async def test_e2e_session_timeout_stops_a2a_polling_and_marks_inactive():
     assert len(inactive_events) == 1
     assert tracker.inactive is True
     assert timeout_task.done()
+
+
+@pytest.mark.asyncio
+async def test_e2e_api_session_ended_stops_a2a_polling():
+    """SessionEnded via tracker/events API interrupts active A2A polling.
+
+    Simulates the code path executed by the ``POST /tracker/events`` endpoint
+    when a ``SessionEnded`` event is included in the request body:
+
+    1. The endpoint detects the terminal event **before** acquiring the lock.
+    2. ``cancel_background_tasks`` is called, signalling the token.
+    3. A2A polling (max_wait=120s) exits promptly with ``CANCELLED``.
+    4. The lock is then acquired and ``SessionEnded`` is persisted.
+
+    This mirrors the production flow in ``rasa.server.append_events``.
+    """
+    processor, agent, tracker_store, lock_store = _create_a2a_processor_and_agent()
+
+    sender_id = "user-api-session-ended"
+
+    # Pre-populate tracker with a valid session
+    tracker = await tracker_store.get_or_create_tracker(sender_id)
+    tracker.update(SessionStarted())
+    tracker.update(UserUttered("hello"))
+    await tracker_store.save(tracker)
+
+    a2a_agent = await _create_forever_polling_a2a_agent()
+
+    original_max_wait = getattr(a2a_mod, "A2A_TASK_POLLING_MAX_WAIT", 60)
+
+    token = CancellationToken()
+    processor.register_cancellation_token(sender_id, token)
+
+    async def _simulate_append_events():
+        """Reproduce the append_events endpoint logic for SessionEnded.
+
+        1. Detect terminal event → cancel_background_tasks (before lock).
+        2. Acquire lock → update tracker with SessionEnded.
+        """
+        await asyncio.sleep(0.15)
+        agent.cancel_background_tasks(sender_id)
+        async with lock_store.lock(sender_id):
+            t = await tracker_store.get_or_create_tracker(sender_id)
+            t.update(SessionEnded())
+            await tracker_store.save(t)
+
+    api_task = asyncio.create_task(_simulate_append_events())
+
+    try:
+        a2a_mod.A2A_TASK_POLLING_MAX_WAIT = 120
+
+        start = time_mod.monotonic()
+        output = await a2a_agent.run(_make_agent_input(), cancellation_token=token)
+        elapsed = time_mod.monotonic() - start
+    finally:
+        a2a_mod.A2A_TASK_POLLING_MAX_WAIT = original_max_wait
+
+    await api_task
+
+    # -- A2A polling was interrupted by the simulated API call --
+    assert output.status == AgentStatus.CANCELLED
+    assert (output.metadata or {}).get("cancellation_reason") == "Polling cancelled"
+    assert elapsed < 5.0, f"Polling should have exited promptly, took {elapsed:.2f}s"
+
+    # -- SessionEnded was persisted by the simulated API handler --
+    tracker = await tracker_store.get_or_create_tracker(sender_id)
+    events = list(tracker.events)
+
+    session_ended = [e for e in events if isinstance(e, SessionEnded)]
+    assert len(session_ended) == 1
+    assert tracker.terminated is True
+    assert api_task.done()

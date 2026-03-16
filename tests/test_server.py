@@ -23,6 +23,7 @@ import pytest
 import requests
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
+from a2a.types import Task, TaskState, TaskStatus
 from aioresponses import aioresponses
 from pytest import LogCaptureFixture
 from ruamel.yaml import StringIO
@@ -30,6 +31,7 @@ from sanic import Sanic
 from sanic_testing.testing import SanicASGITestClient
 
 import rasa
+import rasa.agents.protocol.a2a.a2a_agent as a2a_mod
 import rasa.constants
 import rasa.core.jobs
 import rasa.nlu
@@ -38,8 +40,18 @@ import rasa.server
 import rasa.shared.constants
 import rasa.shared.utils.io
 import rasa.utils.io
+from rasa.agents.core.cancellation import CancellationToken
+from rasa.agents.core.types import AgentStatus
+from rasa.agents.protocol.a2a.a2a_agent import A2AAgent
+from rasa.agents.schemas import AgentInput
 from rasa.core import utils
 from rasa.core.agent import Agent, load_agent
+from rasa.core.available_agents import (
+    AgentConfig,
+    AgentConfiguration,
+    AgentInfo,
+    ProtocolConfig,
+)
 from rasa.core.channels import (
     CallbackInput,
     CollectingOutputChannel,
@@ -48,6 +60,8 @@ from rasa.core.channels import (
     channel,
 )
 from rasa.core.channels.slack import SlackBot
+from rasa.core.lock_store import InMemoryLockStore
+from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
 from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -2572,6 +2586,205 @@ async def test_append_events_does_not_repeat_session_start(
         e["metadata"]["model_name"] = model_name
 
     assert resp_events == session_start_events
+
+
+async def test_append_session_ended_cancels_background_tasks(
+    rasa_app: SanicASGITestClient,
+):
+    """Appending SessionEnded via API cancels active background tasks."""
+    agent = rasa_app.sanic_app.ctx.agent
+    with patch.object(
+        agent, "cancel_background_tasks", return_value=True
+    ) as mock_cancel:
+        _, response = await rasa_app.post(
+            "/conversations/cancel-test/tracker/events",
+            json=[{"event": "session_ended"}],
+        )
+        assert response.status == HTTPStatus.OK
+        mock_cancel.assert_called_once_with("cancel-test")
+
+
+async def test_append_conversation_inactive_cancels_background_tasks(
+    rasa_app: SanicASGITestClient,
+):
+    """Appending ConversationInactive via API cancels active background tasks."""
+    agent = rasa_app.sanic_app.ctx.agent
+    with patch.object(
+        agent, "cancel_background_tasks", return_value=True
+    ) as mock_cancel:
+        _, response = await rasa_app.post(
+            "/conversations/cancel-test-2/tracker/events",
+            json=[{"event": "inactive"}],
+        )
+        assert response.status == HTTPStatus.OK
+        mock_cancel.assert_called_once_with("cancel-test-2")
+
+
+async def test_append_regular_event_does_not_cancel_background_tasks(
+    rasa_app: SanicASGITestClient,
+):
+    """Appending a regular event (e.g. SlotSet) does not cancel background tasks."""
+    agent = rasa_app.sanic_app.ctx.agent
+    with patch.object(agent, "cancel_background_tasks") as mock_cancel:
+        _, response = await rasa_app.post(
+            "/conversations/cancel-test-3/tracker/events",
+            json=[{"event": "slot", "name": "test_slot", "value": "test_value"}],
+        )
+        assert response.status == HTTPStatus.OK
+        mock_cancel.assert_not_called()
+
+
+def test_e2e_append_session_ended_stops_a2a_polling():
+    """POST /tracker/events with SessionEnded interrupts active A2A polling.
+
+    Wires the full ``append_events`` HTTP endpoint (via ``create_app``)
+    through a real ``Agent.cancel_background_tasks`` → real processor token
+    registry → real ``CancellationToken`` → real A2A polling loop.
+
+    Verifies:
+
+    1. The HTTP endpoint detects the terminal event and cancels background tasks.
+    2. A2A polling (max_wait=120s) exits promptly with ``CANCELLED``.
+    3. ``SessionEnded`` is persisted on the tracker.
+    """
+    # -- Processor with real token registry + tracker methods --
+    domain = Domain.empty()
+    tracker_store = InMemoryTrackerStore(domain)
+    lock_store = InMemoryLockStore()
+
+    processor = MagicMock(spec=MessageProcessor)
+    processor._active_cancellation_tokens = {}
+    processor.register_cancellation_token = (
+        MessageProcessor.register_cancellation_token.__get__(processor)
+    )
+    processor.cancel_background_tasks = (
+        MessageProcessor.cancel_background_tasks.__get__(processor)
+    )
+    processor.get_tracker = MessageProcessor.get_tracker.__get__(processor)
+    processor.fetch_tracker_with_initial_session = (
+        MessageProcessor.fetch_tracker_with_initial_session.__get__(processor)
+    )
+    processor.tracker_store = tracker_store
+    processor.lock_store = lock_store
+    processor.domain = domain
+    processor.model_metadata = MagicMock(model_id="test", assistant_id="test")
+    processor.model_filename = "test_model"
+    processor.timer_manager = None
+    processor._handle_session_timer_events = AsyncMock()
+
+    # -- Agent with real cancel_background_tasks --
+    agent = Agent.__new__(Agent)
+    agent.processor = processor
+    agent.tracker_store = tracker_store
+    agent.lock_store = lock_store
+    agent.domain = domain
+
+    # -- Create a Sanic app using create_app --
+    app = rasa.server.create_app(agent=agent)
+
+    sender_id = "api-session-ended-e2e"
+
+    # Pre-populate tracker with a valid session (synchronous via new loop)
+    loop = asyncio.new_event_loop()
+
+    async def _setup_tracker():
+        tracker = await tracker_store.get_or_create_tracker(sender_id)
+        tracker.update(SessionStarted())
+        tracker.update(UserUttered("hello"))
+        tracker.model_id = "test"
+        tracker.model_name = "test_model"
+        tracker.assistant_id = "test"
+        await tracker_store.save(tracker)
+
+    loop.run_until_complete(_setup_tracker())
+
+    # -- A2A agent that polls forever --
+    non_terminal_task = Task(
+        context_id="ctx",
+        id="ctx-001",
+        status=TaskStatus(state=TaskState.working),
+    )
+
+    async def _forever_working_stream():
+        yield (non_terminal_task, None)
+
+    mock_client = MagicMock()
+    mock_client.send_message.side_effect = lambda *a, **kw: _forever_working_stream()
+    mock_client.get_task = AsyncMock(return_value=non_terminal_task)
+
+    with patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client") as mock_init:
+        mock_init.return_value = mock_client
+        a2a_agent = A2AAgent.from_config(
+            AgentConfig(
+                agent=AgentInfo(
+                    name="test_agent",
+                    description="Test",
+                    protocol=ProtocolConfig.A2A,
+                ),
+                configuration=AgentConfiguration(agent_card="some/path"),
+            )
+        )
+        with patch(
+            "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+        ) as mock_load:
+            mock_card = MagicMock()
+            mock_card.url = "http://example.com"
+            mock_load.return_value = mock_card
+            loop.run_until_complete(a2a_agent.connect())
+
+    original_max_wait = getattr(a2a_mod, "A2A_TASK_POLLING_MAX_WAIT", 60)
+
+    token = CancellationToken()
+    processor.register_cancellation_token(sender_id, token)
+
+    polling_result: dict = {}
+
+    def _run_polling():
+        try:
+            a2a_mod.A2A_TASK_POLLING_MAX_WAIT = 120
+            start = time.monotonic()
+            output = loop.run_until_complete(
+                a2a_agent.run(
+                    AgentInput(
+                        id="ctx",
+                        metadata={},
+                        user_message="Test",
+                        slots=[],
+                        conversation_history="",
+                        events=[],
+                    ),
+                    cancellation_token=token,
+                )
+            )
+            polling_result["output"] = output
+            polling_result["elapsed"] = time.monotonic() - start
+        finally:
+            a2a_mod.A2A_TASK_POLLING_MAX_WAIT = original_max_wait
+
+    polling_thread = threading.Thread(target=_run_polling)
+    polling_thread.start()
+
+    # Give polling time to start, then POST SessionEnded through the endpoint
+    time.sleep(0.3)
+
+    _, res = app.test_client.post(
+        f"/conversations/{sender_id}/tracker/events",
+        json=[{"event": "session_ended"}],
+    )
+    assert res.status_code == HTTPStatus.OK
+
+    polling_thread.join(timeout=10)
+    assert not polling_thread.is_alive(), "Polling thread should have finished"
+
+    loop.close()
+
+    output = polling_result["output"]
+    elapsed = polling_result["elapsed"]
+
+    assert output.status == AgentStatus.CANCELLED
+    assert (output.metadata or {}).get("cancellation_reason") == "Polling cancelled"
+    assert elapsed < 5.0, f"Polling should have exited promptly, took {elapsed:.2f}s"
+    assert token.is_cancelled is True
 
 
 async def _create_tracker_for_query_params(

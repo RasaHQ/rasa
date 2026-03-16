@@ -68,7 +68,7 @@ from rasa.shared.constants import (
     TEST_STORIES_FILE_PREFIX,
 )
 from rasa.shared.core.domain import Domain, InvalidDomain
-from rasa.shared.core.events import Event
+from rasa.shared.core.events import ConversationInactive, Event, SessionEnded
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, get_flows_as_json
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
@@ -947,9 +947,18 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
+            events = _get_events_from_request_body(request)
+
+            # Cancel background tasks before acquiring the lock if the
+            # request contains a terminal event.  This mirrors what
+            # handle_session_timeout does for ConversationInactive and
+            # prevents the lock acquisition from blocking until the
+            # ticket expires when A2A polling/streaming is in progress.
+            if any(isinstance(e, (SessionEnded, ConversationInactive)) for e in events):
+                app.ctx.agent.cancel_background_tasks(conversation_id)
+
             async with app.ctx.agent.lock_store.lock(conversation_id):
                 processor = app.ctx.agent.processor
-                events = _get_events_from_request_body(request)
 
                 tracker = await update_conversation_with_events(
                     conversation_id, processor, app.ctx.agent.domain, events
