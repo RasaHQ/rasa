@@ -3,7 +3,7 @@
 from typing import Text
 
 import pytest
-import randomname
+from duoname import duoname
 from pytest import LogCaptureFixture
 from structlog.testing import capture_logs
 
@@ -153,7 +153,7 @@ async def test_pika_event_broker_connect_with_path_and_query_params_in_url(
         image=docker_image,
         detach=True,
         environment=environment,
-        name=f"rabbitmq_{randomname.generate(5)}",
+        name=f"rabbitmq_{duoname()}",
         hostname=hostname,
         ports={f"{RABBITMQ_PORT}/tcp": RABBITMQ_PORT, "15672/tcp": 15672},
     )

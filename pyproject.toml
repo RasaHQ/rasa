@@ -193,7 +193,7 @@ SQLAlchemy = "~2.0.46"
 psycopg2-binary = "~2.9.11"
 python-dateutil = "~2.8.2"
 protobuf = "~5.29.6"
-setuptools = "~78.1.1"
+setuptools = "~80.10.2"
 ujson = ">=5.8,<6.0"
 regex = "~2024.7.24" # required by litellm + whitespacetokenizer
 sentry-sdk = "~2.43.0"
@@ -203,7 +203,6 @@ typing-utils = "^0.1.0"
 tarsafe = ">=0.0.5,<0.0.6"
 google-auth = "~2.41.1"
 CacheControl = "~0.14.2"
-randomname = ">=0.2.1,<0.3.0"
 pluggy = "^1.2.0"
 confluent-kafka = ">=2.11.0,<3.0.0"
 portalocker = "^2.7.0"
@@ -261,6 +260,7 @@ openai-agents = "~0.9.2"
 # --------------------------------------------------------------------------------------
 # NON-OPTIONAL DEPENDENCIES WITH ADDITIONAL REQUIREMENTS
 # --------------------------------------------------------------------------------------
+duoname = "^0.0.2"
 
 [[tool.poetry.dependencies.scipy]]
 version = "~1.13.1"
@@ -557,16 +557,6 @@ convention = "google"
 "langfuse".msg = "Only import langfuse from rasa.builder.telemetry.langfuse_compat."
 
 
-
-
-
-
-
-
-
-
-
-
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.3.5,<0.4.0"
 docker = "~7.1.0"
@@ -589,7 +579,7 @@ bandit = "^1.6.3"
 types-pytz = "^2022.1.1"
 types-python-dateutil = "^2.8.19"
 types-requests = "^2.31.0"
-types-setuptools = "^75.3.0"
+types-setuptools = "^80.10.0.20260124"
 memory-profiler = "^0.61.0"
 mypy-extensions = ">=1.1.0,<1.2.0"
 sanic-testing = "~23.6.0"

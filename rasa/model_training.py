@@ -3,8 +3,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Text, Union
 
-import randomname
 import structlog
+from duoname import duoname
 
 import rasa.engine.validation
 import rasa.model
@@ -419,7 +419,7 @@ def _create_model_storage(
 
 def generate_random_model_name() -> str:
     time_format = "%Y%m%d-%H%M%S"
-    return f"{time.strftime(time_format)}-{randomname.get_name()}"
+    return f"{time.strftime(time_format)}-{duoname()}"
 
 
 def determine_model_name(

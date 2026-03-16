@@ -3,8 +3,8 @@ import time
 from pathlib import Path
 from typing import List, Optional, Text, Union
 
-import randomname
 import structlog
+from duoname import duoname
 
 from rasa.exceptions import ModelNotFound, ValidationError
 from rasa.shared.constants import (
@@ -112,9 +112,7 @@ def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
 
         # add random value for assistant id, overwrite config file
         time_format = "%Y%m%d-%H%M%S"
-        config_data[ASSISTANT_ID_KEY] = (
-            f"{time.strftime(time_format)}-{randomname.get_name()}"
-        )
+        config_data[ASSISTANT_ID_KEY] = f"{time.strftime(time_format)}-{duoname()}"
 
         write_yaml(data=config_data, target=config_file, should_preserve_key_order=True)
 

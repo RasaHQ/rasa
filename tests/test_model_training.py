@@ -1148,9 +1148,12 @@ def test_dry_run_result_force_retraining():
         ("test.1.2.tar.gz", "test.1.2.tar.gz"),
     ],
 )
-def test_model_training_determine_model_name(model_name, expected):
+def test_model_training_determine_model_name(
+    model_name, expected, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setattr("rasa.model_training.duoname", lambda: "expected_name")
+
     with (
-        patch("randomname.get_name", return_value="expected_name"),
         patch("time.strftime", return_value="20220101-120000"),
     ):
         assert determine_model_name(model_name, TrainingType.BOTH) == expected

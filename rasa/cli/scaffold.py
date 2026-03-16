@@ -5,8 +5,8 @@ from collections import defaultdict
 from enum import Enum
 from typing import List, Text
 
-import randomname
 import structlog
+from duoname import duoname
 
 from rasa import telemetry
 from rasa.api import train
@@ -197,7 +197,7 @@ def create_initial_project(
 
 def create_random_assistant_id(path: Text) -> None:
     """Create a random assistant id."""
-    assistant_id = f"{randomname.get_name()}"
+    assistant_id = f"{duoname()}"
     config = yaml.read_yaml_file(os.path.join(path, "config.yml"))
 
     if isinstance(config, dict):
