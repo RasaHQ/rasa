@@ -2,6 +2,7 @@ import copy
 import datetime
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -204,7 +205,7 @@ class PrivacyFilter:
 
         for key, slot in anonymized_slots.items():
             original_slot_value = key.split(":", 1)[1]
-            anonymized_text = self._smart_replace(
+            anonymized_text = self._replace_slot_value_and_variants(
                 user_event.text, original_slot_value, slot.value
             )
             user_event.text = anonymized_text
@@ -243,16 +244,47 @@ class PrivacyFilter:
             )
             return bot_event
 
-        for key, slot in anonymized_slots.items():
-            original_slot_value = key.split(":", 1)[1]
-            anonymized_text = self._smart_replace(
-                bot_event.text, original_slot_value, slot.value
-            )
-            bot_event.text = anonymized_text
+        bot_event.text = self._loop_through_anonymized_slots(
+            anonymized_slots, bot_event.text
+        )
 
         bot_event.text = self._anonymize_edge_cases(bot_event.text, anonymized_slots)
+        self._redact_slot_values_in_payload(bot_event.data, anonymized_slots)
         bot_event.anonymized_at = datetime.datetime.now(datetime.timezone.utc)
         return bot_event
+
+    def _redact_slot_values_in_payload(
+        self,
+        payload: Any,
+        anonymized_slots: Dict[str, SlotSet],
+    ) -> None:
+        """Recursively redact sensitive slot values in dict/list/string payload (e.g. BotUttered.data)."""  # noqa: E501
+        if isinstance(payload, dict):
+            for k, value in payload.items():
+                self._update_payload(payload, k, value, anonymized_slots)
+        elif isinstance(payload, list):
+            for i, item in enumerate(payload):
+                self._update_payload(payload, i, item, anonymized_slots)
+
+    def _loop_through_anonymized_slots(
+        self, anonymized_slots: Dict[str, SlotSet], original_value: Any
+    ) -> Any:
+        updated_value = original_value
+        for k, slot in anonymized_slots.items():
+            original_slot_value = k.split(":", 1)[1]
+            updated_value = self._replace_slot_value_and_variants(
+                updated_value, original_slot_value, slot.value
+            )
+        return updated_value
+
+    def _update_payload(
+        self, payload: Any, key: Any, value: Any, anonymized_slots: Dict[str, SlotSet]
+    ) -> None:
+        """Recursively update the payload with anonymized slot values."""
+        if isinstance(value, str):
+            payload[key] = self._loop_through_anonymized_slots(anonymized_slots, value)
+        else:
+            self._redact_slot_values_in_payload(value, anonymized_slots)
 
     def _anonymize_value(self, slot: SlotSet) -> str:
         """Anonymize the given slot value using the specified anonymization method."""
@@ -390,4 +422,46 @@ class PrivacyFilter:
                     event_info="Unable to anonymize float value.",
                 )
 
+        return result
+
+    # Minimum length for variant (regex) matching to reduce false positives
+    _VARIANT_MIN_LENGTH = 2
+
+    def _replace_slot_value_and_variants(
+        self, text: str, original_value: str, anonymized_slot_value: Any
+    ) -> str:
+        """Replace slot value and common display variants
+        (whitespace, TTS-style) in text.
+
+        Runs exact replacement first (via _smart_replace), then if the slot value
+        is suitable, applies a regex that matches the same character sequence
+        with optional whitespace or '...' between characters (e.g. "12 34 56 78 9"
+        or "1 2... 3 4... 5 6... 7 8... 9" for slot value "123456789").
+        """
+        replacement = (
+            anonymized_slot_value
+            if isinstance(anonymized_slot_value, str)
+            else json.dumps(anonymized_slot_value)
+        )
+        result = self._smart_replace(text, original_value, replacement)
+        if (
+            not isinstance(original_value, str)
+            or len(original_value) < self._VARIANT_MIN_LENGTH
+        ):
+            return result
+        # Skip variant matching if value already contains separators we'd inject
+        if "\n" in original_value or re.search(r"\.{2,}", original_value) is not None:
+            return result
+
+        try:
+            sep = r"(?:\s|\.{2,}\s*)*"
+            pattern = sep.join(re.escape(c) for c in original_value)
+            regex = re.compile(pattern)
+            result = regex.sub(replacement, result)
+        except re.error as error:
+            structlogger.warning(
+                "rasa.privacy.privacy_filter._replace_slot_value_and_variants_error",
+                event_info="Unable to anonymize slot value.",
+                error=str(error),
+            )
         return result

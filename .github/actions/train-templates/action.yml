@@ -64,6 +64,12 @@ runs:
       run: |
         make install
 
+    # Restored venv can be treated as broken by Poetry (path mismatch). Always run poetry install on cache hit so the venv is repopulated.
+    - name: Ensure venv is populated after cache restore
+      if: ${{ steps.cached-rasa.outputs.cache-hit == 'true' }}
+      shell: bash
+      run: poetry install
+
     - name: Activate virtualenv
       shell: bash
       run: |

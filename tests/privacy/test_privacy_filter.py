@@ -536,3 +536,160 @@ def test_privacy_filter_smart_replace(
         )
         == expected
     )
+
+
+@pytest.fixture
+def privacy_filter_with_account_number(
+    anonymization_rules: Dict[str, AnonymizationMethod],
+    monkeypatch: MonkeyPatch,
+) -> PrivacyFilter:
+    """PrivacyFilter with account_number slot for variant redaction tests."""
+    rules = {
+        **anonymization_rules,
+        "account_number": AnonymizationMethod.from_dict({"type": "mask"}),
+        "cvc": AnonymizationMethod.from_dict({"type": "mask"}),
+    }
+    monkeypatch.setattr(
+        "gliner.GLiNER.from_pretrained", MagicMock(side_effect=ImportError)
+    )
+    return PrivacyFilter(rules)
+
+
+@pytest.mark.parametrize(
+    "delimiter",
+    [
+        " ",
+        "\n",
+        "\t",
+        "..",
+        "...",
+    ],
+)
+def test_privacy_filter_replace_slot_value_and_variants_split_user_message(
+    privacy_filter_with_account_number: PrivacyFilter,
+    delimiter: str,
+) -> None:
+    """Slot is normalized (digits only); user message has spaces/newlines -> redacted."""  # noqa: E501
+    events = [
+        UserUttered(
+            f"My number is 12{delimiter}34{delimiter}56{delimiter}78{delimiter}9."
+        ),
+        SlotSet("account_number", "123456789"),
+    ]
+    anonymized = privacy_filter_with_account_number.anonymize(events, [])
+    user_ev = next(e for e in anonymized if isinstance(e, UserUttered))
+    assert "12 34 56 78 9" not in user_ev.text
+    assert "[ACCOUNT_NUMBER]" in user_ev.text
+
+
+@pytest.mark.parametrize("delimiter", [" ", "\n", "\t", "..", "...", "... "])
+def test_privacy_filter_replace_slot_value_and_variants_tts_bot_message(
+    privacy_filter_with_account_number: PrivacyFilter,
+    delimiter: str,
+) -> None:
+    """Bot formats slot for speech (1 2... 3 4... etc.) -> redacted."""
+    events = [
+        SlotSet("account_number", "123456789"),
+        BotUttered(
+            f"Let me read back the account number: 1 2{delimiter}3 4{delimiter}5 6{delimiter}7 8{delimiter}9. Correct?"  # noqa: E501
+        ),
+    ]
+    anonymized = privacy_filter_with_account_number.anonymize(events, [])
+    bot_ev = next(e for e in anonymized if isinstance(e, BotUttered))
+    assert (
+        f"1 2{delimiter}3 4{delimiter}5 6{delimiter}7 8{delimiter}9" not in bot_ev.text
+    )
+    assert "[ACCOUNT_NUMBER]" in bot_ev.text
+
+
+@pytest.mark.parametrize(
+    "nested_data, expected_output",
+    [
+        (
+            {"account": "123456789"},
+            {"account": "[ACCOUNT_NUMBER]"},
+        ),
+        (
+            ["123456789"],
+            ["[ACCOUNT_NUMBER]"],
+        ),
+    ],
+)
+def test_privacy_filter_redact_bot_uttered_data_dict(
+    privacy_filter_with_account_number: PrivacyFilter,
+    nested_data: Any,
+    expected_output: Any,
+) -> None:
+    """PII in BotUttered.data (e.g. custom/tool payload) is redacted."""
+    events = [
+        SlotSet("account_number", "123456789"),
+        BotUttered(text="Done.", data={"custom": nested_data}),
+    ]
+    anonymized = privacy_filter_with_account_number.anonymize(events, [])
+    bot_ev = next(e for e in anonymized if isinstance(e, BotUttered))
+    assert bot_ev.data.get("custom", {}) == expected_output
+    assert "123456789" not in str(bot_ev.data)
+
+
+def test_privacy_filter_replace_slot_value_tool_like_in_text(
+    privacy_filter_with_account_number: PrivacyFilter,
+) -> None:
+    """Tool-like string in text (e.g. account_number='123456789') is redacted."""
+    events = [
+        SlotSet("account_number", "123456789"),
+        BotUttered(text="Request with account_number='123456789' received."),
+    ]
+    anonymized = privacy_filter_with_account_number.anonymize(events, [])
+    bot_ev = next(e for e in anonymized if isinstance(e, BotUttered))
+    assert "123456789" not in bot_ev.text
+    assert "[ACCOUNT_NUMBER]" in bot_ev.text
+
+
+def test_privacy_filter_bot_message_full_example_name(
+    privacy_filter_with_account_number: PrivacyFilter,
+) -> None:
+    events = [
+        SlotSet("name", "Michael T Cors"),
+        BotUttered(
+            text='Thank you for confirming. Could you please provide the card number?\\n<tool>read_back_and_validate_name_on_card(name_on_card = Michael T Cors, is_name_on_card_confirmed = True): {\\"name_on_card_validity\\": true, \\"message\\": \\"Thank the user for confirmation and proceed directly to next step, but DO NOT mention validity or checks.\\"}</tool>'  # noqa: E501
+        ),
+    ]
+    anonymized = privacy_filter_with_account_number.anonymize(events, [])
+    bot_ev = next(e for e in anonymized if isinstance(e, BotUttered))
+    assert "Michael T Cors" not in bot_ev.text
+    assert "[NAME]" in bot_ev.text
+
+
+def test_privacy_filter_bot_messages_full_example_account_number(
+    privacy_filter_with_account_number: PrivacyFilter,
+) -> None:
+    events = [
+        SlotSet("account_number", "4000056655665556"),
+        BotUttered(
+            text='Let me read back the card number for you: 4 0... 0 0... 0 5... 6 6... 5 5... 6 6... 5 5... 5 6... . Could you please confirm if this is correct?\\n<tool>read_back_and_validate_card_number(card_number = 4000056655665556, is_card_number_confirmed = False): {\\"card_number_confirmation\\": false, \\"message\\": \\"\\\\n         Always read back the provided card number as follows: ` 4 0... 0 0... 0 5... 6 6... 5 5... 6 6... 5 5... 5 6...  `. Use the given TTS-aware formatted string exactly as provided, without altering or reformatting it ensuring a slow and deliberate pace for clarity. Speak in a human-like natural, non-repetitive and clear tone. Do not explain or mention how the digits are being read. Avoid asking multiple questions; conclude with a single, well-phrased question.\\\\n        \\"}</tool>'  # noqa: E501
+        ),
+    ]
+    anonymized = privacy_filter_with_account_number.anonymize(events, [])
+    bot_ev = next(e for e in anonymized if isinstance(e, BotUttered))
+    assert "4000056655665556" not in bot_ev.text
+    assert (
+        "Let me read back the card number for you: [ACCOUNT_NUMBER]... . Could"
+        in bot_ev.text
+    )
+    assert "[ACCOUNT_NUMBER]" in bot_ev.text
+
+
+def test_privacy_filter_bot_message_full_example_cvc(
+    privacy_filter_with_account_number: PrivacyFilter,
+) -> None:
+    events = [
+        SlotSet("cvc", "123"),
+        BotUttered(
+            text='Let me read back the CVC you provided: 1... 2... 3... . Could you please confirm if this is correct?\\n<tool>read_back_cvc_and_validate_cvc(cvc = 123, is_cvc_confirmed = False): {\\"is_valid\\": false, \\"message\\": \\"\\\\n         Always read back the provided CVC as follows: ` 1... 2... 3...  `. Use the given TTS-aware formatted string exactly as provided, without altering or reformatting it ensuring a slow and deliberate pace for clarity. Speak in a human-like natural, non-repetitive and clear tone. Do not explain or mention how the digits are being read. Avoid asking multiple questions; conclude with a single, well-phrased question.\\\\n        \\"}</tool>'  # noqa: E501
+        ),
+    ]
+    anonymized = privacy_filter_with_account_number.anonymize(events, [])
+    bot_ev = next(e for e in anonymized if isinstance(e, BotUttered))
+    assert "123" not in bot_ev.text
+    assert "Let me read back the CVC you provided: [CVC]... . Could" in bot_ev.text
+    assert "[CVC]" in bot_ev.text
