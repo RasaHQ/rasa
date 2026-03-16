@@ -12,8 +12,6 @@ from rich.console import Console
 from rasa.cli.tools.constants import (
     DOCS_MODE_OFFLINE,
     DOCS_MODE_ONLINE,
-    HELLO_LLM_PROXY_BASE_URL_ENV_VAR,
-    HELLO_LLM_PROXY_URL,
     MCP_TOOLS_RASA_PROJECT_FOLDER_ENV_VAR,
     MCP_TOOLS_TRANSPORT_HTTP,
     MCP_TOOLS_TRANSPORT_STDIO,
@@ -92,8 +90,7 @@ class TestNonInteractive:
 
 
 class TestMcpEntryBuilders:
-    def test_stdio_entry(self, tmp_path: Path, monkeypatch: Any) -> None:
-        monkeypatch.setattr(_RETRIEVE_LICENSE, lambda: (_FAKE_LICENSE, "RASA_LICENSE"))
+    def test_stdio_entry(self, tmp_path: Path) -> None:
         entry = _build_stdio_entry(tmp_path)
         assert entry["command"] == sys.executable
         assert entry["args"] == [
@@ -107,19 +104,9 @@ class TestMcpEntryBuilders:
             str(tmp_path),
         ]
 
-    def test_stdio_entry_includes_license_env(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        monkeypatch.setattr(_RETRIEVE_LICENSE, lambda: (_FAKE_LICENSE, "RASA_LICENSE"))
+    def test_stdio_entry_has_no_env(self, tmp_path: Path) -> None:
         entry = _build_stdio_entry(tmp_path)
-        assert entry["env"]["RASA_LICENSE"] == _FAKE_LICENSE
-
-    def test_stdio_entry_includes_hello_llm_proxy_url(
-        self, tmp_path: Path, monkeypatch: Any
-    ) -> None:
-        monkeypatch.setattr(_RETRIEVE_LICENSE, lambda: (_FAKE_LICENSE, "RASA_LICENSE"))
-        entry = _build_stdio_entry(tmp_path)
-        assert entry["env"][HELLO_LLM_PROXY_BASE_URL_ENV_VAR] == HELLO_LLM_PROXY_URL
+        assert "env" not in entry
 
     def test_http_entry(self) -> None:
         entry = _build_http_entry(9000)
@@ -373,17 +360,19 @@ class TestRunWizardNonInteractive:
         ],
         ids=["cursor", "vscode", "claude"],
     )
-    def test_stdio_config_includes_env(
+    def test_stdio_config_has_no_env_block(
         self, tmp_path: Path, ide: str, cfg_path: str, wrapper_key: str
     ) -> None:
-        """Stdio config for each IDE must include license and proxy env vars."""
+        """Stdio config must not embed credentials.
+
+        License and proxy URL are loaded at runtime from the project's
+        .env file and .rasa/tools.yaml respectively.
+        """
         args = _make_args(project_path=str(tmp_path), ides=ide)
         run_wizard(args)
 
         data = json.loads((tmp_path / cfg_path).read_text())
-        env = data[wrapper_key]["rasa-tools"]["env"]
-        assert env["RASA_LICENSE"] == _FAKE_LICENSE
-        assert env[HELLO_LLM_PROXY_BASE_URL_ENV_VAR] == HELLO_LLM_PROXY_URL
+        assert "env" not in data[wrapper_key]["rasa-tools"]
 
     def test_env_var_project_path_used_when_no_cli_arg(
         self, tmp_path: Path, monkeypatch: Any
@@ -681,17 +670,17 @@ class TestPrintSummary:
         )
         assert "9000" in output
 
-    def test_http_mode_shows_export_instructions(
+    def test_http_mode_shows_dotenv_instructions(
         self, tmp_path: Path, monkeypatch: Any
     ) -> None:
-        """HTTP summary must show export commands for license and proxy."""
+        """HTTP summary must guide users to put the license in .env."""
         output = self._render(
             RunConfig(mode=MCP_TOOLS_TRANSPORT_HTTP, port=9000),
             tmp_path,
             monkeypatch,
         )
         assert "RASA_LICENSE" in output
-        assert HELLO_LLM_PROXY_BASE_URL_ENV_VAR in output
+        assert ".env" in output
         assert "rasa tools run" in output
 
     def test_includes_ide_names_when_configured(

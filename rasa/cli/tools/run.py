@@ -21,6 +21,7 @@ from rasa.cli.tools.constants import (
 )
 from rasa.cli.tools.utils import (
     RunConfig,
+    _load_project_dotenv,
     _precheck,
     _redirect_logging_to_stderr,
     _resolve_project_dir,
@@ -42,10 +43,14 @@ def run_tools(args: argparse.Namespace) -> None:
     # this is harmless.
     _redirect_logging_to_stderr()
 
+    # Load the project's .env file early so that RASA_LICENSE (and any other env vars)
+    # are available before the license check.
+    # override=False ensures explicit env vars still take precedence.
+    cli_project_path = getattr(args, "project_path", None)
+    _load_project_dotenv(cli_project_path)
+
     _precheck(file=sys.stderr)
     _validate_config_exclusivity(args)
-
-    cli_project_path = getattr(args, "project_path", None)
 
     config, loaded_from_file = _resolve_tools_run_config(
         cli_mode=args.mode,
@@ -70,6 +75,12 @@ def run_tools(args: argparse.Namespace) -> None:
             "Run `rasa tools init` to set up your environment,\n"
             "or pass explicit flags (e.g. `rasa tools run --mode stdio`)."
         )
+
+    # Deferred import: rasa.builder.config reads env vars at module level, so it must be
+    # imported after _load_project_dotenv() populates os.environ.
+    from rasa.builder.config import TOOLS_PROXY_URL, apply_proxy_url
+
+    apply_proxy_url(TOOLS_PROXY_URL)
 
     is_stdio = config.mode == MCP_TOOLS_TRANSPORT_STDIO
 

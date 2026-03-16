@@ -1,7 +1,6 @@
 """Unit tests for InKeepDocumentRetrieval functionality."""
 
 import asyncio
-import importlib
 import json
 from typing import Any, Dict, List, Optional, Type, Union
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
@@ -185,7 +184,7 @@ class TestInKeepDocumentRetrieval:
         proxy_documentation_url = f"{proxy_base}/documentation"
 
         with (
-            patch.object(config, "HELLO_LLM_PROXY_BASE_URL", proxy_base),
+            patch.object(config, "PROXY_URL", proxy_base),
             patch.object(config, "INKEEP_BASE_URL", proxy_documentation_url),
         ):
             retrieval = InKeepDocumentRetrieval(api_key=mock_api_key, base_url=None)
@@ -498,7 +497,7 @@ class TestInKeepDocumentRetrieval:
         "deployment-stack",
     )
     @patch(
-        "rasa.builder.document_retrieval.inkeep_document_retrieval.config.HELLO_LLM_PROXY_BASE_URL",
+        "rasa.builder.document_retrieval.inkeep_document_retrieval.config.PROXY_URL",
         None,
     )
     @patch("openai.AsyncOpenAI")
@@ -536,13 +535,9 @@ class TestInKeepDocumentRetrieval:
     ):
         proxy = "https://hello-llm-proxy.example"
         license_token = "rasa-license-jwt"
-        monkeypatch.setenv("HELLO_LLM_PROXY_BASE_URL", proxy)
-        monkeypatch.setenv("RASA_PRO_LICENSE", license_token)
-
-        # Reload config to re-evaluate INKEEP_BASE_URL (computed at import)
-        importlib.reload(config)
-
-        # Patch config values after reload to ensure they take effect
+        monkeypatch.setattr(config, "PROXY_URL", proxy)
+        monkeypatch.setattr(config, "INKEEP_BASE_URL", f"{proxy}/documentation")
+        monkeypatch.setattr(config, "RASA_PRO_LICENSE", license_token)
         monkeypatch.setattr(config, "DEPLOYMENT_STACK", "unit-test")
         monkeypatch.setattr(config, "DEPLOYMENT_STACK_HEADER_NAME", "deployment-stack")
 
@@ -555,22 +550,11 @@ class TestInKeepDocumentRetrieval:
         async with retrieval._get_client() as client:
             assert client == mock_client
 
-        # Expect proxy auth (license), not provider key
-        assert (
-            async_openai_mock.call_args.kwargs.get("api_key") == config.RASA_PRO_LICENSE
-        )
+        assert async_openai_mock.call_args.kwargs.get("api_key") == license_token
 
-        # Expect the dynamically computed proxy base url from config with trailing slash
-        expected_base_url = getattr(config, "INKEEP_BASE_URL", None)
-        assert expected_base_url
-        # Implementation adds trailing slash to match client expectations
-        expected_base_url_with_slash = f"{expected_base_url.rstrip('/')}/"
-        assert (
-            async_openai_mock.call_args.kwargs.get("base_url")
-            == expected_base_url_with_slash
-        )
+        expected_base_url = f"{proxy}/documentation/"
+        assert async_openai_mock.call_args.kwargs.get("base_url") == expected_base_url
 
-        # Verify default_headers are set correctly
         assert async_openai_mock.call_args.kwargs.get("default_headers") == {
             "deployment-stack": "unit-test"
         }

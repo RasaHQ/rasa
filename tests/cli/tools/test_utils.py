@@ -1,6 +1,7 @@
 """Tests for ``rasa.cli.tools.utils``."""
 
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,7 @@ from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from rasa.cli.tools.constants import TOOLS_CONFIG_DIR, TOOLS_CONFIG_FILENAME
 from rasa.cli.tools.models import RunConfig
 from rasa.cli.tools.utils import (
+    _load_project_dotenv,
     _precheck,
     _redirect_logging_to_stderr,
     _resolve_ides,
@@ -200,6 +202,38 @@ class TestPrecheckStreamRouting:
 
         captured = capsys.readouterr()
         assert len(captured.out) > 0
+
+
+class TestLoadProjectDotenv:
+    """_load_project_dotenv must load the project's .env into os.environ."""
+
+    def test_loads_license_from_dotenv(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """License in .env must become available in os.environ."""
+        env_file = tmp_path / ".env"
+        env_file.write_text("RASA_LICENSE=license-from-dotenv\n")
+        monkeypatch.delenv("RASA_LICENSE", raising=False)
+        monkeypatch.delenv("RASA_PRO_LICENSE", raising=False)
+
+        _load_project_dotenv(str(tmp_path))
+
+        assert os.environ.get("RASA_LICENSE") == "license-from-dotenv"
+
+    def test_does_not_override_existing_env(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        """An explicit env var must take precedence over .env."""
+        env_file = tmp_path / ".env"
+        env_file.write_text("RASA_LICENSE=from-dotenv\n")
+        monkeypatch.setenv("RASA_LICENSE", "from-environment")
+
+        _load_project_dotenv(str(tmp_path))
+
+        assert os.environ.get("RASA_LICENSE") == "from-environment"
+
+    def test_no_dotenv_file_is_harmless(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """Missing .env must not raise."""
+        monkeypatch.delenv("RASA_LICENSE", raising=False)
+        _load_project_dotenv(str(tmp_path))
 
 
 class TestRedirectLoggingToStderr:

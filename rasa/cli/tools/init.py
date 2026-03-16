@@ -20,8 +20,6 @@ from rich.text import Text
 from rasa.cli.tools.constants import (
     DOCS_MODE_OFFLINE,
     DOCS_MODE_ONLINE,
-    HELLO_LLM_PROXY_BASE_URL_ENV_VAR,
-    HELLO_LLM_PROXY_URL,
     IDE_DISPLAY_NAMES,
     MCP_TOOLS_DEFAULT_PORT,
     MCP_TOOLS_TRANSPORT_HTTP,
@@ -381,21 +379,17 @@ def _write_ide_configs(project_dir: Path, config: RunConfig) -> None:
 def _build_stdio_entry(project_dir: Path) -> Dict[str, Any]:
     """Build an MCP config entry for stdio transport.
 
-    Uses the current Python interpreter to run Rasa as a module, ensuring
-    the correct virtual environment is used.  Includes environment variables
-    required at runtime (license, LLM proxy URL) so that IDE-spawned
-    processes work without relying on the user's shell environment.
+    Uses the current Python interpreter to run Rasa as a module, ensuring the correct
+    virtual environment is used.  At runtime the server loads credentials (license,
+    proxy URL) from the project's `.env` file and `.rasa/tools.yaml`, so nothing secret
+    is embedded here.
 
     Args:
         project_dir: Absolute path to the Rasa project root.
 
     Returns:
-        Dict with `command`, `args`, and `env` keys for launching the server.
+        Dict with `command` and `args` keys for launching the server.
     """
-    from rasa.utils.licensing import LICENSE_ENV_VAR, retrieve_license_from_env
-
-    license_value, _ = retrieve_license_from_env()
-
     return {
         "command": sys.executable,
         "args": [
@@ -408,10 +402,6 @@ def _build_stdio_entry(project_dir: Path) -> Dict[str, Any]:
             "--project-path",
             str(project_dir),
         ],
-        "env": {
-            LICENSE_ENV_VAR: license_value,
-            HELLO_LLM_PROXY_BASE_URL_ENV_VAR: HELLO_LLM_PROXY_URL,
-        },
     }
 
 
@@ -607,16 +597,13 @@ def _print_summary(config: RunConfig, config_path: Path) -> None:
 
         console.print(
             Panel(
-                "[bold]To start the MCP server, export the required "
-                "environment variables\n"
-                "and then run the server:[/bold]\n\n"
-                f"  [cyan]export {LICENSE_ENV_VAR}=<your-license-key>[/cyan]\n"
-                f"  [cyan]export {HELLO_LLM_PROXY_BASE_URL_ENV_VAR}="
-                f"{HELLO_LLM_PROXY_URL}[/cyan]\n"
+                "[bold]To start the MCP server, ensure your license is available and "
+                "then run the server:[/bold]\n\n"
+                f"  [cyan]echo '{LICENSE_ENV_VAR}=<your-license-key>' >> .env[/cyan]\n"
                 f"  [cyan]rasa tools run[/cyan]\n\n"
-                f"[dim]{LICENSE_ENV_VAR} is your Rasa Pro license key.\n"
-                f"{HELLO_LLM_PROXY_BASE_URL_ENV_VAR} is the LLM proxy endpoint,\n"
-                "also required for online documentation access.[/dim]",
+                f"[dim]The server loads {LICENSE_ENV_VAR} from the project's .env file "
+                "or from the environment. The proxy URL is read from .rasa/tools.yaml."
+                "[/dim]",
                 title="[bold]Next[/bold]",
                 border_style="cyan",
                 expand=False,

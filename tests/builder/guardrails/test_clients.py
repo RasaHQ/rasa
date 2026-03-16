@@ -1,7 +1,6 @@
 """Unit tests for guardrails clients."""
 
 import asyncio
-import importlib
 from typing import Any, Dict, Optional, Type
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
@@ -366,20 +365,18 @@ class TestLakeraAIGuardrails:
         with pytest.raises(ValueError):
             await lakera_guardrails.send_request(sample_request)
 
-    def test_lakera_client_proxy_base_url(self, monkeypatch: pytest.MonkeyPatch):
+    def test_lakera_client_proxy_base_url(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         proxy = "https://hello-llm-proxy.example"
         license_token = "rasa-license-jwt"
-        monkeypatch.setenv("HELLO_LLM_PROXY_BASE_URL", proxy)
-        monkeypatch.setenv("RASA_PRO_LICENSE", license_token)
-
-        # Reload config to re-evaluate computed base URLs (e.g. LAKERA_BASE_URL)
-        importlib.reload(config)
+        monkeypatch.setattr(config, "PROXY_URL", proxy)
+        monkeypatch.setattr(config, "LAKERA_BASE_URL", f"{proxy}/guardrails")
+        monkeypatch.setattr(config, "RASA_PRO_LICENSE", license_token)
 
         guardrails = LakeraAIGuardrails(api_key="lakera-direct-key")
 
-        # Use the dynamically computed base from config
-        expected_base = getattr(config, "LAKERA_BASE_URL", None)
-        assert expected_base
+        expected_base = f"{proxy}/guardrails"
         assert guardrails.guard_endpoint == f"{expected_base}/guard"
         assert guardrails.guard_results_endpoint == f"{expected_base}/guard/results"
 

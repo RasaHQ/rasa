@@ -1,6 +1,6 @@
-"""Shared constants for the ``rasa tools`` CLI command family.
+"""Shared constants for the `rasa tools` CLI command family.
 
-Duplicated from ``rasa.builder.copilot.*`` to avoid importing heavy
+Duplicated from `rasa.builder.copilot.*` to avoid importing heavy
 dependencies at CLI startup.  Keep these in sync when updating.
 """
 
@@ -56,8 +56,8 @@ TOOLS_CONFIG_FILENAME = "tools.yaml"
 DEFAULT_LLMS_TXT_BASE_URL = "https://rasa.com/docs"
 LLMS_TXT_BASE_URL_ENV_VAR = "RASA_LLMS_TXT_BASE_URL"
 
-HELLO_LLM_PROXY_BASE_URL_ENV_VAR = "HELLO_LLM_PROXY_BASE_URL"
-HELLO_LLM_PROXY_URL = "https://hello-llm-proxy.rasa-e2e.workers.dev"
+RASA_TOOLS_PROXY_BASE_URL_ENV_VAR = "RASA_TOOLS_PROXY_URL"
+
 HTTP_TIMEOUT = 30
 LLMS_TXT_FILES: Tuple[str, ...] = ("llms.txt", "llms-full.txt")
 

@@ -113,6 +113,28 @@ def _resolve_ides(
     return []
 
 
+# .env loading =========================================================================
+
+
+def _load_project_dotenv(cli_project_path: Optional[str] = None) -> None:
+    """Load the project's ``.env`` file into ``os.environ``.
+
+    This makes credentials like ``RASA_LICENSE`` available to the
+    license check even when the IDE-spawned process has no shell
+    environment.  Existing env vars are never overwritten.
+
+    Args:
+        cli_project_path: Value of the ``--project-path`` CLI argument
+            (may be ``None``).
+    """
+    from dotenv import load_dotenv
+
+    project_dir = _resolve_project_dir(cli_project_path)
+    env_file = project_dir / ".env"
+    if env_file.is_file():
+        load_dotenv(env_file, override=False)
+
+
 # Logging helpers ======================================================================
 
 

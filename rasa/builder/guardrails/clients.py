@@ -129,12 +129,12 @@ class LakeraAIGuardrails(GuardrailsClient):
         Returns:
             A dictionary containing the Authorization header with the API key.
         """
-        using_proxy = bool(config.HELLO_LLM_PROXY_BASE_URL)
+        using_proxy = bool(config.PROXY_URL)
 
         if using_proxy:
             if not config.RASA_PRO_LICENSE:
                 raise GuardrailsError(
-                    "HELLO_LLM_PROXY_BASE_URL is set but RASA_PRO_LICENSE is missing. "
+                    "Proxy is configured but RASA_PRO_LICENSE is missing. "
                     "Proxy requires a Rasa Pro license token for authentication."
                 )
             return {"Authorization": f"Bearer {config.RASA_PRO_LICENSE}"}

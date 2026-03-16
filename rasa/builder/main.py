@@ -193,9 +193,10 @@ def create_app(project_folder: str) -> Sanic:
 
 
 def _apply_llm_overrides_from_builder_env() -> None:
-    # Prefer a dedicated builder key, fall back to license if you proxy with it
     if not config.HELLO_LLM_PROXY_BASE_URL:
         return
+
+    config.apply_proxy_url(config.HELLO_LLM_PROXY_BASE_URL)
 
     structlogger.debug(
         "builder.main.using_llm_proxy", base_url=config.HELLO_LLM_PROXY_BASE_URL
@@ -287,10 +288,11 @@ def main(project_folder: Optional[str] = None) -> None:
         rasa.telemetry.initialize_telemetry()
         rasa.telemetry.initialize_error_reporting(private_mode=False)
 
-        # Setup langfuse
-        setup_langfuse()
-
         _apply_llm_overrides_from_builder_env()
+
+        # Setup langfuse (must run after proxy overrides so the proxy-derived host and
+        # credentials are already in place)
+        setup_langfuse()
 
         if config.HELLO_RASA_PROJECT_ID:
             # ensures long import times for modules are ahead of time

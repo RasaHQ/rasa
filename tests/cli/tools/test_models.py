@@ -5,7 +5,10 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from rasa.cli.tools.constants import TOOLS_CONFIG_DIR, TOOLS_CONFIG_FILENAME
+from rasa.cli.tools.constants import (
+    TOOLS_CONFIG_DIR,
+    TOOLS_CONFIG_FILENAME,
+)
 from rasa.cli.tools.models import AgentSkillInfo, RunConfig
 from rasa.shared.exceptions import RasaException
 
@@ -208,22 +211,22 @@ class TestRunConfig:
             (
                 dict(mode="stdio", ide_integrations=[]),
                 {},
-                ["ide_integrations", "port"],
+                ["ide_integrations", "port", "proxy_url"],
             ),
             (
                 dict(mode="stdio", ide_integrations=["cursor"]),
                 {"ide_integrations": ["cursor"]},
-                ["port"],
+                ["port", "proxy_url"],
             ),
             (
                 dict(mode="stdio"),
                 {},
-                ["port"],
+                ["port", "proxy_url"],
             ),
             (
                 dict(mode="http", port=9000),
                 {"port": 9000},
-                [],
+                ["proxy_url"],
             ),
         ],
         ids=[

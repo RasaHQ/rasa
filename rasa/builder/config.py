@@ -107,8 +107,17 @@ INKEEP_BASE_URL = os.getenv(
 ).rstrip("/")
 
 # LLM Proxy Configuration
+#
+# PROXY_URL is the value all components read for proxy-based access to
+# InKeep, Lakera, and Langfuse.  It starts as None and must be set
+# explicitly by the entrypoint via apply_proxy_url():
+#   - main.py sets it to HELLO_LLM_PROXY_BASE_URL  (Hello Copilot infra)
+#   - run.py  sets it to TOOLS_PROXY_URL            (rasa tools MCP server)
+PROXY_URL: str | None = None
+
 HELLO_LLM_PROXY_BASE_URL = os.getenv("HELLO_LLM_PROXY_BASE_URL")
-RASA_PRO_LICENSE = os.getenv("RASA_PRO_LICENSE")
+TOOLS_PROXY_URL = "https://copilot-llm-proxy.rasa-e2e.workers.dev"
+RASA_PRO_LICENSE = os.getenv("RASA_LICENSE") or os.getenv("RASA_PRO_LICENSE")
 
 # Langfuse Configuration
 LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")
@@ -117,15 +126,6 @@ LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
 LANGFUSE_DEFAULT_ENVIRONMENT = "default"
 DEPLOYMENT_STACK = os.getenv("DEPLOYMENT_STACK", "local")
 DEPLOYMENT_STACK_HEADER_NAME = "deployment-stack"
-
-# Compute proxy-aware base URLs and credentials
-if HELLO_LLM_PROXY_BASE_URL:
-    _proxy = HELLO_LLM_PROXY_BASE_URL.rstrip("/")
-    INKEEP_BASE_URL = f"{_proxy}/documentation"
-    LAKERA_BASE_URL = f"{_proxy}/guardrails"
-    LANGFUSE_HOST = f"{_proxy}/langfuse"
-    LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY or RASA_PRO_LICENSE
-    LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY or RASA_PRO_LICENSE
 
 
 # Number of minutes after FIRST_USED when authentication becomes required
@@ -194,3 +194,25 @@ def get_default_credentials() -> Dict[str, Any]:
         endpoint: "wss://hello-llm-proxy.rasa-e2e.workers.dev/deepgram/v1/speak"
     """
     return read_yaml(default_credentials_yaml)
+
+
+def apply_proxy_url(url: str | None) -> None:
+    """Set the proxy URL and recompute all derived service URLs.
+
+    Must be called explicitly by the entrypoint:
+    - ``rasa tools run`` calls this with ``TOOLS_PROXY_URL``
+    - ``main.py`` calls this with ``HELLO_LLM_PROXY_BASE_URL``
+    """
+    global PROXY_URL, INKEEP_BASE_URL, LAKERA_BASE_URL
+    global LANGFUSE_HOST, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY
+
+    PROXY_URL = url
+    if not url:
+        return
+
+    _proxy = url.rstrip("/")
+    INKEEP_BASE_URL = f"{_proxy}/documentation"
+    LAKERA_BASE_URL = f"{_proxy}/guardrails"
+    LANGFUSE_HOST = f"{_proxy}/langfuse"
+    LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY or RASA_PRO_LICENSE
+    LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY or RASA_PRO_LICENSE
