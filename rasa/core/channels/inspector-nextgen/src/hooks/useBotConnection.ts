@@ -409,6 +409,9 @@ export function useBotConnection({
     setConversation(initialConversationState(newSessionId));
     setSessionId(newSessionId);
     setMemoryHistory({});
+    setStack([]);
+    setSlots([]);
+    setSlotRelatedEvents([]);
     return newSessionId;
   }, []);
 

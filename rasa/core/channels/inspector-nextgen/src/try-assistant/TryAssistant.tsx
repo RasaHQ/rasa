@@ -103,6 +103,11 @@ export function TryAssistant({
     }
   };
 
+  const handleNewConversation = () => {
+    setSelectedElement(undefined);
+    startNewConversation();
+  };
+
   const replayConversationUntilSelectedElement = (eventId: string) => {
     const conversation = conversationList.find((conversation) =>
       conversation.events.some((event) => event?.id === eventId),
@@ -144,7 +149,7 @@ export function TryAssistant({
           inputDisabled={inputDisabled}
           waitingForResponse={!waitingForUserInput && !inputDisabled}
           replayingConversation={replayingConversation}
-          onNewConversation={startNewConversation}
+          onNewConversation={handleNewConversation}
           conversationEventActions={conversationEventActions}
           setFlowView={setFlowView}
           flowView={flowView}

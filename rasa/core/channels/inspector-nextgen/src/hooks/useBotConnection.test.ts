@@ -165,6 +165,43 @@ describe("useBotConnection", () => {
     expect(result.current.sessionId).toBe(newSessionId);
   });
 
+  it("startNewConversation clears stack, slots, and slotRelatedEvents", () => {
+    const { result } = renderHook(() => useBotConnection({
+      projectId: "test-project",
+      onSessionStart: vi.fn(),
+      onReconnectError: vi.fn(),
+      useMemoryOnly: false,
+    }));
+
+    act(() => {
+      result.current.setUrl("https://test.example.com");
+    });
+
+    act(() => {
+      lastSocket.handlers["connect"]?.();
+    });
+
+    act(() => {
+      lastSocket.handlers["tracker"]?.({
+        sender_id: result.current.sessionId,
+        events: [],
+        slots: [{ name: "some_slot", value: "some_value" }],
+        stack: [{ frame_id: "f1", flow_id: "my_flow", step_id: "s1", collect: undefined, utter: undefined }],
+      });
+    });
+
+    expect(result.current.stack).toHaveLength(1);
+    expect(result.current.slots).toHaveLength(1);
+
+    act(() => {
+      result.current.startNewConversation();
+    });
+
+    expect(result.current.stack).toEqual([]);
+    expect(result.current.slots).toEqual([]);
+    expect(result.current.slotRelatedEvents).toEqual([]);
+  });
+
   describe("session_start message behavior", () => {
     it("sends /session_start on session_confirm when in text modality", () => {
       const { result } = renderHook(() =>
