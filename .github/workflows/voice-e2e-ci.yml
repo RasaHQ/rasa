@@ -145,6 +145,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
           DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          RIME_API_KEY: ${{ secrets.RIME_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           PR_TITLE: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
@@ -185,6 +186,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
           DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          RIME_API_KEY: ${{ secrets.RIME_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
         run: |
           echo "Using VOICE_FILES=${{ matrix.voice_data_files }}"

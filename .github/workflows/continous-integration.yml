@@ -2269,6 +2269,7 @@ jobs:
           CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
           DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
           AZURE_SPEECH_API_KEY: ${{ secrets.AZURE_SPEECH_API_KEY }}
+          RIME_API_KEY: ${{ secrets.RIME_API_KEY }}
           API_DOCS_FORMAT: yaml
         run: |
           make test-audio-manual

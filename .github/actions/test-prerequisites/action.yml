@@ -75,3 +75,34 @@ runs:
       with:
         path: ${{ github.workspace }}/.venv
         key: rasa-${{ inputs.RASA_INSTALL_GROUP }}-install-${{ runner.os }}-${{ inputs.PYTHON_VERSION }}-${{ hashFiles('poetry.lock', 'Makefile', 'data/test/hf_transformers_models.txt', 'dry-run') }}
+
+    # Only install when the restored venv is empty (e.g. Poetry recreated it after path mismatch).
+    # Fixes : poetry treating the venv as broken and recreating an empty venv.
+    # Probe with poetry run which pytest: if it succeeds, venv is valid and we skip the heavy install
+    # (avoids TensorFlow install on Python 3.13 and saves time). If it fails, venv is empty → run install.
+    - name: Ensure Rasa dependencies in venv 📦
+      if: ${{ inputs.LOAD_CACHE == 'true' }}
+      env:
+        RASA_INSTALL_GROUP: ${{ inputs.RASA_INSTALL_GROUP }}
+      run: |
+        if poetry run which pytest >/dev/null 2>&1; then
+          echo "Venv already has pytest, skipping install."
+          exit 0
+        fi
+        echo "Venv missing pytest (empty or recreated), running install..."
+        if [[ "${RASA_INSTALL_GROUP}" == "default" ]]; then
+          make install | tee .output
+        elif [[ "${RASA_INSTALL_GROUP}" == "anonymisation" ]]; then
+          make install-nlu-pii-channels | tee .output
+          make install-monitoring | tee -a .output
+        elif [[ "${RASA_INSTALL_GROUP}" == "full-with-spacy-mitie-and-transformer-models" ]]; then
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-spacy
+          make prepare-mitie
+          make prepare-transformers
+        else
+          make install-"${RASA_INSTALL_GROUP}" | tee .output
+        fi
+        if grep 'The lock file is not up to date' .output; then exit 1; fi
+      shell: bash
