@@ -1,19 +1,17 @@
+#!/usr/bin/env python3
+"""Integration tests for Rime TTS engine."""
+
 import asyncio
 
 import pytest
 
-from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
 from rasa.core.channels.voice_stream.audio_bytes import (
     L16_24KHZ,
-    L16_48KHZ,
     MULAW_8KHZ,
     RasaAudioBytes,
 )
-from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
-from rasa.core.channels.voice_stream.tts.tts_engine import StreamState, TTSError
-from tests.core.channels.voice_stream.tts.test_tts import (
-    run_single_utterance_through_tts_and_asr,
-)
+from rasa.core.channels.voice_stream.tts.rime import RimeTTS
+from rasa.core.channels.voice_stream.tts.tts_engine import StreamState
 
 _INTERRUPT_TEST_TEXT = (
     "Hello, I am a conversational voice assistant and I can help you today."
@@ -26,15 +24,23 @@ _NEXT_MESSAGE_TEXT = "How can I help you?"
     [
         MULAW_8KHZ,
         L16_24KHZ,
-        L16_48KHZ,
     ],
 )
-async def test_synthesis_with_asr(format):
-    tts_engine = CartesiaTTS(rasa_language="en", format=format)
+async def test_rime_tts(tmp_path, format):
+    """Test basic Rime TTS synthesis and verify audio is produced."""
+    output_path = tmp_path / "output.wav"
+    tts_engine = RimeTTS(rasa_language="en", format=format)
     text = "hello my name is Edgar"
-    asr_engine = DeepgramASR(rasa_language="en", format=format)
-
-    await run_single_utterance_through_tts_and_asr(text, asr_engine, tts_engine, format)
+    audio_bytes = RasaAudioBytes(b"", format=format)
+    try:
+        await tts_engine.connect()
+        async for chunk in tts_engine.synthesize(text):
+            audio_bytes += chunk
+    finally:
+        await tts_engine.close_connection()
+    output_path.write_bytes(audio_bytes.data)
+    assert output_path.exists()
+    assert output_path.stat().st_size > 0
 
 
 @pytest.mark.parametrize(
@@ -42,7 +48,6 @@ async def test_synthesis_with_asr(format):
     [
         MULAW_8KHZ,
         L16_24KHZ,
-        L16_48KHZ,
     ],
 )
 async def test_interruption_during_sending_response_chunks(format):
@@ -55,7 +60,7 @@ async def test_interruption_during_sending_response_chunks(format):
     - stream_state transitions to INTERRUPTED
     - The engine can synthesize the next message normally (bot moves on)
     """
-    tts_engine = CartesiaTTS(rasa_language="en", format=format)
+    tts_engine = RimeTTS(rasa_language="en", format=format)
 
     await tts_engine.connect()
     try:
@@ -100,7 +105,6 @@ async def test_interruption_during_sending_response_chunks(format):
     [
         MULAW_8KHZ,
         L16_24KHZ,
-        L16_48KHZ,
     ],
 )
 async def test_interruption_after_response_chunks_sent(format):
@@ -110,16 +114,16 @@ async def test_interruption_after_response_chunks_sent(format):
     audio is actively streaming. Waiting for the first audio chunk before
     triggering the interrupt ensures that stream_audio() is already consuming
     the WebSocket — the same condition that holds in production. This means
-    Cartesia finishes sending the "done" for the active context before any
-    response to the cancel can arrive, so stream_audio() exits cleanly.
+    Rime finishes sending the "done" for the active request before any
+    response to the clear can arrive, so stream_audio() exits cleanly.
     Verifies that:
     - Audio stops being forwarded to the channel
         (stop_streaming_output_audio_chunks=True)
     - stream_state transitions to NO_STREAMING
-    - A cancel signal is sent to Cartesia to stop further audio generation
+    - A clear signal is sent to Rime to stop further audio generation
     - The engine can synthesize the next message normally (bot moves on)
     """
-    tts_engine = CartesiaTTS(rasa_language="en", format=format)
+    tts_engine = RimeTTS(rasa_language="en", format=format)
 
     await tts_engine.connect()
     try:
@@ -129,16 +133,9 @@ async def test_interruption_after_response_chunks_sent(format):
         async def consume_audio() -> None:
             await tts_engine.send_text_chunk(_INTERRUPT_TEST_TEXT)
             await tts_engine.signal_text_done()
-            try:
-                async for chunk in tts_engine.stream_audio():
-                    received_chunks.append(chunk)
-                    first_chunk_event.set()
-            except TTSError:
-                # Cartesia may return "Invalid context ID" when the cancel from
-                # stop_streaming() races with the active context's "done" response.
-                # This does not occur in production (stream_audio is always running
-                # well before the cancel arrives), so the error is suppressed here.
-                pass
+            async for chunk in tts_engine.stream_audio():
+                received_chunks.append(chunk)
+                first_chunk_event.set()
 
         consume_task = asyncio.create_task(consume_audio())
         await asyncio.wait_for(first_chunk_event.wait(), timeout=15.0)

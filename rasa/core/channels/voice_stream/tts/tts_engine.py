@@ -1,3 +1,4 @@
+import enum
 import warnings
 from typing import (
     AsyncIterator,
@@ -210,10 +211,17 @@ class TTSEngineConfig(BaseModel):
             )
 
 
+class StreamState(enum.Enum):
+    NO_STREAMING = "no_streaming"
+    SENDING_RESPONSE_CHUNKS = "sending_response_chunks"
+    RESPONSE_CHUNKS_SENT = "response_chunks_sent"
+    INTERRUPTED = "interrupted"
+
+
 class TTSEngine(Generic[T]):
     required_env_vars: Tuple[str, ...] = ()
     required_packages: Tuple[str, ...] = ()
-
+    stream_state: StreamState = StreamState.NO_STREAMING
     # If TTS supports input text streaming
     streaming_input: bool = False
 
@@ -243,6 +251,7 @@ class TTSEngine(Generic[T]):
             f"TTS Engine {self.__class__.__name__}",
         )
         self._set_current_language_config(rasa_language)
+        self.stop_streaming_output_audio_chunks = False
 
     async def prepare_response(
         self, streaming_config: Optional[StreamingConfig] = None
@@ -362,4 +371,4 @@ class TTSEngine(Generic[T]):
 
     async def stop_streaming(self) -> None:
         """Clear the TTS engine buffer."""
-        pass
+        self.stop_streaming_output_audio_chunks = True

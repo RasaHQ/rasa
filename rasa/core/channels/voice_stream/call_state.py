@@ -67,7 +67,6 @@ class CallState:
     asr_event_queue: asyncio.Queue
     is_user_speaking: bool = False
     is_bot_speaking: bool = False
-    stop_streaming_output_audio_chunks: bool = False
     is_rasa_listening: bool = False
     silence_timeout_watcher: Optional[asyncio.Task] = None
     silence_timeout: Optional[float] = None

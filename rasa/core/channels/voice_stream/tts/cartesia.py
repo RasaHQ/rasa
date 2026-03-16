@@ -162,6 +162,14 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
         self.context_id = uuid4().hex  # Reset context ID for next synthesis
         structlogger.debug("cartesia.tts.cancel")
 
+    async def stop_streaming(self) -> None:
+        await super().stop_streaming()
+        if self.stream_state == self.stream_state.SENDING_RESPONSE_CHUNKS:
+            self.stream_state = self.stream_state.INTERRUPTED
+        elif self.stream_state == self.stream_state.RESPONSE_CHUNKS_SENT:
+            self.stream_state = self.stream_state.NO_STREAMING
+            await self.signal_interrupt()
+
     async def stream_audio(self) -> AsyncIterator[RasaAudioBytes]:
         """Stream audio output from the TTS engine.
 

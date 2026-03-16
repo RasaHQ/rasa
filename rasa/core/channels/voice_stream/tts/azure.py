@@ -416,6 +416,7 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
     async def stop_streaming(self) -> None:
         """Clear the TTS engine buffer."""
         structlogger.debug("azure_tts.stop_streaming")
+        await super().stop_streaming()
         if self._synthesizer:
             structlogger.debug(
                 "azure_tts.stop_streaming._synthesizer.stop_speaking_async",

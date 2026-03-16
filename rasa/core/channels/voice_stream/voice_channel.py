@@ -58,7 +58,11 @@ from rasa.core.channels.voice_stream.call_state import (
 )
 from rasa.core.channels.voice_stream.tts import BUILT_IN_TTS_ENGINES
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
-from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
+from rasa.core.channels.voice_stream.tts.tts_engine import (
+    StreamState,
+    TTSEngine,
+    TTSError,
+)
 from rasa.core.channels.voice_stream.util import generate_silence
 from rasa.hooks import hookimpl
 from rasa.plugin import plugin_manager
@@ -232,6 +236,8 @@ class VoiceOutputChannel(OutputChannel):
         # enforce a minimum pacing gap before the next bot message.
         self._last_bot_message_end_time: Optional[float] = None
 
+        self.stream_interrupted = False
+
     @property
     def supports_streaming(self) -> bool:
         """Whether this channel supports streaming responses."""
@@ -388,19 +394,13 @@ class VoiceOutputChannel(OutputChannel):
         seconds_marker = -1
         leftover_byte: bytes = b""
 
-        # Set stop_streaming_output_audio_chunks to match if user is speaking.
-        # We are fixing this for A1, when Azure TTS is using HTTP mode
-        # to synthesize audio.
-        from rasa.core.channels.voice_stream.tts.azure import AzureTTS
-
-        if isinstance(self.tts_engine, AzureTTS):
-            call_state.stop_streaming_output_audio_chunks = call_state.is_user_speaking
+        self.tts_engine.stop_streaming_output_audio_chunks = call_state.is_user_speaking
 
         async for audio_chunk in audio_stream:
             collected_audio = collected_audio + audio_chunk
 
-            if call_state.stop_streaming_output_audio_chunks:
-                return None
+            if self.tts_engine.stop_streaming_output_audio_chunks:
+                continue
 
             # Track TTS first byte time
             if not first_byte_received:
@@ -521,6 +521,10 @@ class VoiceOutputChannel(OutputChannel):
         Enforces min delay since last bot message (pacing silence if needed).
         """
         await self._apply_min_delay_between_messages(recipient_id)
+
+        self.tts_engine.stream_state = StreamState.SENDING_RESPONSE_CHUNKS
+        self.stream_interrupted = False
+
         await super().send_response_chunk_start(recipient_id, **kwargs)
 
         # Let TTS engine prepare for this response (e.g., mode selection)
@@ -545,6 +549,10 @@ class VoiceOutputChannel(OutputChannel):
         The TTS engine will process this and the background consumer task
         will receive the audio and send it to the websocket.
         """
+        if self.tts_engine.stream_state == StreamState.INTERRUPTED:
+            self.stream_interrupted = True
+            return
+
         await super().send_response_chunk(recipient_id, chunk, **kwargs)
 
         if not self.tts_engine.streaming_input:
@@ -571,10 +579,16 @@ class VoiceOutputChannel(OutputChannel):
             # fallback to non-streaming synthesis
             return
 
-        await self.tts_engine.signal_text_done()
+        if self.tts_engine.stream_state == StreamState.INTERRUPTED:
+            await self.tts_engine.signal_interrupt()
+        else:
+            await self.tts_engine.signal_text_done()
+        self.tts_engine.stream_state = StreamState.RESPONSE_CHUNKS_SENT
+
         if self.audio_sender_task:
             await self.audio_sender_task
         await self.send_end_marker(recipient_id)
+        self.tts_engine.stream_state = StreamState.NO_STREAMING
         call_state.latest_bot_audio_id = self.latest_message_id
         self._last_bot_message_end_time = time.monotonic()
         logger.debug("voice_channel.end_streaming_response")
@@ -582,7 +596,10 @@ class VoiceOutputChannel(OutputChannel):
     async def send_text_message(
         self, recipient_id: str, text: str, **kwargs: Any
     ) -> None:
-        if self._is_duplicate_of_last_streamed_response(text):
+        if (
+            self._is_duplicate_of_last_streamed_response(text)
+            or self.stream_interrupted
+        ):
             logger.debug("voice_channel.skip_non_streaming_response")
             return
 
@@ -900,12 +917,6 @@ class VoiceInputChannel(InputChannel):
                 logger.debug("voice_channel.asr_event_should_interrupt", ev=event)
                 call_state.stop_silence_monitoring()
                 await tts_engine.stop_streaming()
-                # We only stop sending audio bytes which came from Azure TTS in order
-                # not to break Deepgram, Cartesia and Rime
-                from rasa.core.channels.voice_stream.tts.azure import AzureTTS
-
-                if isinstance(tts_engine, AzureTTS):
-                    call_state.stop_streaming_output_audio_chunks = True
                 await self.interrupt_playback(ws, call_parameters)
 
     async def handle_asr_events(
