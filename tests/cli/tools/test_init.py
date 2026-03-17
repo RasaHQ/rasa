@@ -620,6 +620,55 @@ class TestConfirmOverwrite:
             _confirm_overwrite(non_interactive=False)
 
 
+class TestRestoreBlockingIoCalledAfterPrompts:
+    """Every questionary .ask() in init.py must be followed by restore_blocking_io."""
+
+    _RESTORE = "rasa.cli.tools.init.restore_blocking_io"
+
+    def test_confirm_overwrite_calls_restore(self, monkeypatch: Any) -> None:
+        monkeypatch.setattr(
+            "questionary.confirm", lambda *a, **kw: MagicMock(ask=lambda: True)
+        )
+        mock_restore = MagicMock()
+        monkeypatch.setattr(self._RESTORE, mock_restore)
+
+        _confirm_overwrite(non_interactive=False)
+        mock_restore.assert_called()
+
+    def test_run_interactive_calls_restore(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        from rasa.cli.tools.init import _run_interactive
+
+        select_answers = iter([MCP_TOOLS_TRANSPORT_STDIO, DOCS_MODE_OFFLINE])
+        monkeypatch.setattr(
+            "rasa.cli.tools.init.questionary.select",
+            lambda *a, **kw: MagicMock(ask=lambda: next(select_answers)),
+        )
+        monkeypatch.setattr(
+            "rasa.cli.tools.init.questionary.checkbox",
+            lambda *a, **kw: MagicMock(ask=lambda: ["cursor"]),
+        )
+        mock_restore = MagicMock()
+        monkeypatch.setattr(self._RESTORE, mock_restore)
+
+        _run_interactive(tmp_path)
+        assert mock_restore.call_count >= 3
+
+    def test_ask_install_agent_skills_calls_restore(self, monkeypatch: Any) -> None:
+        from rasa.cli.tools.init import _ask_install_agent_skills
+
+        monkeypatch.setattr(
+            "rasa.cli.tools.init.questionary.confirm",
+            lambda *a, **kw: MagicMock(ask=lambda: True),
+        )
+        mock_restore = MagicMock()
+        monkeypatch.setattr(self._RESTORE, mock_restore)
+
+        _ask_install_agent_skills()
+        mock_restore.assert_called()
+
+
 class TestWriteIdeConfigs:
     @pytest.fixture(autouse=True)
     def _mock_license(self, monkeypatch: Any) -> None:

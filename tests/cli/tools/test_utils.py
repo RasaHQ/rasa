@@ -3,6 +3,7 @@
 import logging
 import os
 import sys
+from io import StringIO
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -18,6 +19,7 @@ from rasa.cli.tools.utils import (
     _redirect_logging_to_stderr,
     _resolve_ides,
     _resolve_project_dir,
+    restore_blocking_io,
 )
 from rasa.shared.exceptions import RasaException
 
@@ -202,6 +204,34 @@ class TestPrecheckStreamRouting:
 
         captured = capsys.readouterr()
         assert len(captured.out) > 0
+
+
+class TestRestoreBlockingIo:
+    def test_restores_blocking_after_nonblocking(self) -> None:
+        """Stdout must be blocking after restore, even if set non-blocking."""
+        fd = sys.stdout.fileno()
+        original = os.get_blocking(fd)
+        try:
+            os.set_blocking(fd, False)
+            assert not os.get_blocking(fd)
+
+            restore_blocking_io()
+            assert os.get_blocking(fd)
+        finally:
+            os.set_blocking(fd, original)
+
+    def test_noop_when_already_blocking(self) -> None:
+        """Calling restore when fds are already blocking must not raise."""
+        assert os.get_blocking(sys.stdout.fileno())
+        restore_blocking_io()
+        assert os.get_blocking(sys.stdout.fileno())
+
+    def test_handles_stream_without_fileno(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Must not raise when stdout lacks a real file descriptor."""
+        monkeypatch.setattr(sys, "stdout", StringIO())
+        restore_blocking_io()
 
 
 class TestLoadProjectDotenv:

@@ -20,7 +20,12 @@ from rasa.cli.tools.constants import (
     IDE_SKILLS_BASE,
 )
 from rasa.cli.tools.models import AgentSkillInfo
-from rasa.cli.tools.utils import _precheck, _resolve_ides, _resolve_project_dir
+from rasa.cli.tools.utils import (
+    _precheck,
+    _resolve_ides,
+    _resolve_project_dir,
+    restore_blocking_io,
+)
 from rasa.version import __version__ as rasa_version
 
 console = Console()
@@ -190,6 +195,7 @@ def _confirm_install_incompatible() -> bool:
     answer = questionary.confirm(
         "Install incompatible skills anyway?", default=False
     ).ask()
+    restore_blocking_io()
     if answer is None:
         sys.exit(1)
     return answer
@@ -303,6 +309,7 @@ def _confirm_overwrite_skills(existing: List[Path]) -> bool:
         )
     )
     answer = questionary.confirm("Overwrite existing skills?", default=False).ask()
+    restore_blocking_io()
     if answer is None:
         sys.exit(1)
     return answer

@@ -19,7 +19,7 @@ from rasa.cli.tools.constants import (
     TOOLS_CONFIG_DIR,
     TOOLS_CONFIG_FILENAME,
 )
-from rasa.cli.tools.utils import _precheck, _resolve_project_dir
+from rasa.cli.tools.utils import _precheck, _resolve_project_dir, restore_blocking_io
 
 console = Console()
 
@@ -124,6 +124,7 @@ def _confirm_overwrite_docs(existing: list, dest_dir: Path) -> bool:
         )
     )
     answer = questionary.confirm("Overwrite existing docs?", default=False).ask()
+    restore_blocking_io()
     if answer is None:
         sys.exit(1)
     return answer

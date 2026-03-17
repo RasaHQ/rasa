@@ -17,13 +17,32 @@ from rasa.cli.tools.constants import (
 from rasa.cli.tools.models import RunConfig
 from rasa.shared.exceptions import RasaException
 
-# Pre-check ============================================================================
+# I/O helpers =======================================================================
+
+
+def restore_blocking_io() -> None:
+    """Restore stdout and stderr to blocking mode.
+
+    `prompt_toolkit` (used by `questionary`) may leave file descriptors in
+    non-blocking mode after an interactive prompt.  Subsequent writes in
+    particular via `rich.Console.print()` — then raise `BlockingIOError`
+    on macOS (errno 35 / EAGAIN).  Calling this after each `.ask()` prevents
+    that.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            os.set_blocking(stream.fileno(), True)
+        except (AttributeError, OSError):
+            pass
+
+
+# Pre-check ========================================================================
 
 
 def _precheck(file: Optional[IO[str]] = None) -> None:
     """Validate the Rasa license and display the beta banner.
 
-    Called at the start of every ``rasa tools`` subcommand. Exits with a
+    Called at the start of every `rasa tools` subcommand. Exits with a
     clear message if no valid license is present in the environment.
 
     Args:
@@ -44,7 +63,7 @@ def _precheck(file: Optional[IO[str]] = None) -> None:
     console.print()
 
 
-# Project directory resolution =========================================================
+# Project directory resolution =======================================================
 
 
 def _resolve_project_dir(

@@ -37,7 +37,12 @@ from rasa.cli.tools.skills import (
     install_agent_skills,
     warn_if_agent_skills_exist,
 )
-from rasa.cli.tools.utils import RunConfig, _precheck, _resolve_project_dir
+from rasa.cli.tools.utils import (
+    RunConfig,
+    _precheck,
+    _resolve_project_dir,
+    restore_blocking_io,
+)
 
 console = Console()
 
@@ -143,6 +148,7 @@ def _confirm_overwrite(non_interactive: bool) -> bool:
         default=False,
         style=WIZARD_STYLE,
     ).ask()
+    restore_blocking_io()
 
     if proceed is None:
         _abort()
@@ -211,6 +217,7 @@ def _ask_mode() -> str:
         ],
         style=WIZARD_STYLE,
     ).ask()
+    restore_blocking_io()
     if answer is None:
         _abort()
     return answer
@@ -232,6 +239,7 @@ def _ask_port() -> int:
         ),
         style=WIZARD_STYLE,
     ).ask()
+    restore_blocking_io()
     if answer is None:
         _abort()
     return int(answer)
@@ -257,6 +265,7 @@ def _ask_docs_mode() -> str:
         ],
         style=WIZARD_STYLE,
     ).ask()
+    restore_blocking_io()
     if answer is None:
         _abort()
     return answer
@@ -280,6 +289,7 @@ def _ask_ides() -> List[str]:
         choices=choices,
         style=WIZARD_STYLE,
     ).ask()
+    restore_blocking_io()
     if answer is None:
         _abort()
     return answer
@@ -347,6 +357,7 @@ def _ask_install_agent_skills() -> bool:
         default=True,
         style=WIZARD_STYLE,
     ).ask()
+    restore_blocking_io()
 
     if answer is None:
         _abort()
