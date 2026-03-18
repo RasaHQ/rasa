@@ -288,6 +288,11 @@ def _ask_ides() -> List[str]:
         "Which IDEs do you use?",
         choices=choices,
         style=WIZARD_STYLE,
+        validate=lambda selected: (
+            True
+            if selected
+            else "Please select at least one IDE (use Space to select, then Enter)."
+        ),
     ).ask()
     restore_blocking_io()
     if answer is None:

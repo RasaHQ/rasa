@@ -19,6 +19,7 @@ from rasa.cli.tools.constants import (
     TOOLS_CONFIG_FILENAME,
 )
 from rasa.cli.tools.init import (
+    _ask_ides,
     _build_http_entry,
     _build_stdio_entry,
     _confirm_overwrite,
@@ -618,6 +619,60 @@ class TestConfirmOverwrite:
         )
         with pytest.raises(SystemExit):
             _confirm_overwrite(non_interactive=False)
+
+
+class TestAskIdes:
+    """Tests for the _ask_ides prompt, focusing on the validation callback."""
+
+    def _capture_validate(self, monkeypatch: Any) -> Any:
+        """Patch questionary.checkbox, return the captured validate kwarg."""
+        captured: dict = {}
+
+        def fake_checkbox(*args: Any, **kwargs: Any) -> MagicMock:
+            captured["validate"] = kwargs.get("validate")
+            return MagicMock(ask=lambda: ["cursor"])
+
+        monkeypatch.setattr("rasa.cli.tools.init.questionary.checkbox", fake_checkbox)
+        monkeypatch.setattr("rasa.cli.tools.init.restore_blocking_io", MagicMock())
+        _ask_ides()
+        return captured["validate"]
+
+    def test_validate_accepts_non_empty_selection(self, monkeypatch: Any) -> None:
+        validate = self._capture_validate(monkeypatch)
+        assert validate(["cursor"]) is True
+
+    def test_validate_accepts_multiple_selections(self, monkeypatch: Any) -> None:
+        validate = self._capture_validate(monkeypatch)
+        assert validate(["cursor", "vscode"]) is True
+
+    def test_validate_rejects_empty_selection(self, monkeypatch: Any) -> None:
+        validate = self._capture_validate(monkeypatch)
+        result = validate([])
+        assert isinstance(result, str)
+        assert len(result) > 0
+
+    def test_validate_error_message_mentions_space_key(self, monkeypatch: Any) -> None:
+        validate = self._capture_validate(monkeypatch)
+        result = validate([])
+        assert "Space" in result or "space" in result.lower()
+
+    def test_returns_selected_ides(self, monkeypatch: Any) -> None:
+        monkeypatch.setattr(
+            "rasa.cli.tools.init.questionary.checkbox",
+            lambda *a, **kw: MagicMock(ask=lambda: ["cursor", "vscode"]),
+        )
+        monkeypatch.setattr("rasa.cli.tools.init.restore_blocking_io", MagicMock())
+        assert _ask_ides() == ["cursor", "vscode"]
+
+    def test_aborts_on_ctrl_c(self, monkeypatch: Any) -> None:
+        """Ctrl+C (questionary returns None) must exit the process."""
+        monkeypatch.setattr(
+            "rasa.cli.tools.init.questionary.checkbox",
+            lambda *a, **kw: MagicMock(ask=lambda: None),
+        )
+        monkeypatch.setattr("rasa.cli.tools.init.restore_blocking_io", MagicMock())
+        with pytest.raises(SystemExit):
+            _ask_ides()
 
 
 class TestRestoreBlockingIoCalledAfterPrompts:
