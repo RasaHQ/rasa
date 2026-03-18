@@ -386,7 +386,7 @@ jobs:
     steps:
       - name: Notify Slack of successful release 💬
         if: ${{ needs.release-artifacts-docker.result == 'success' && needs.release-artifacts-pypi.result == 'success' }}
-        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -397,7 +397,7 @@ jobs:
 
       - name: Notify Slack of unsuccessful release ⛔️
         if: ${{ needs.release-artifacts-docker.result != 'success' || needs.release-artifacts-pypi.result != 'success' }}
-        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}

@@ -52,7 +52,7 @@ jobs:
 
       - name: Alert Slack if get_tags step fails
         if: steps.get_branches.outcome == 'failure' || steps.tags.outcome == 'failure'
-        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -123,7 +123,7 @@ jobs:
 
       - name: Alert Slack if build fails
         if: steps.build.outcome == 'failure'
-        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -174,7 +174,7 @@ jobs:
 
       # - name: Alert Slack on findings
       #   if: steps.trivy.outcome == 'failure'
-      #   uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+      #   uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
       #   with:
       #     payload: |
       #       {

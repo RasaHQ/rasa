@@ -97,7 +97,7 @@ jobs:
 
       - name: Send Slack notification to infrasec-alert channel
         if: steps.summary.outputs.failed == 'true'
-        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -113,7 +113,7 @@ jobs:
       
       - name: Send Slack notification to rasa-pro-alerts channel
         if: steps.summary.outputs.failed == 'true'
-        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}

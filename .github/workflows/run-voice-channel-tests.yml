@@ -118,7 +118,7 @@ jobs:
         # send notification if 'voice-integration-tests' failed or was skipped (e.g. dependency failed) on main branch.
         # skip notification when the run/job was cancelled (e.g. by a newer push to main).
         if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && needs.voice-integration-tests.result != 'success' && needs.voice-integration-tests.result != 'cancelled' }}
-        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}
