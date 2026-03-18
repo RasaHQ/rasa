@@ -1,4 +1,4 @@
-import { Box, Flex, IconButton, Popover, Text } from "@chakra-ui/react";
+import { Box, Flex, Heading, IconButton, Popover, Text } from "@chakra-ui/react";
 import { ArrowToBottom, Comment, FileCheck, Icon, Refresh } from "../Icon";
 import { OnboardingTooltip } from "../OnboardingTooltip";
 import { SwitchButton } from "../SwitchButton";
@@ -38,36 +38,31 @@ export const ChatHeader = ({
       </OnboardingTooltip>
       <Box display="flex" gap="0.25rem" alignItems="center">
         <Popover.Root positioning={{ placement: "bottom-end" }}>
-          <Popover.Trigger asChild>
-            <IconButton
-              aria-label="Download"
-              data-testid="download-button"
-              variant="subtle"
-              colorPalette="dark"
-              size="sm"
-              disabled={!hasEvents}
-              _hover={{ bg: "rasaNeutral.200" }}
-            >
-              <Icon icon={ArrowToBottom} />
-            </IconButton>
-          </Popover.Trigger>
+          <Tooltip content="Download conversation data" showArrow>
+            <Box>
+              <Popover.Trigger asChild>
+                <IconButton
+                  aria-label="Download"
+                  data-testid="download-button"
+                  variant="solid"
+                  colorPalette="light"
+                  size="sm"
+                  disabled={!hasEvents}
+                >
+                  <Icon icon={ArrowToBottom} />
+                </IconButton>
+              </Popover.Trigger>
+            </Box>
+          </Tooltip>
           <Popover.Positioner>
             <Popover.Content
               width="240px"
               borderRadius="0.5rem"
               boxShadow="0px 2px 10px 0px rgba(0, 0, 0, 0.18)"
-              padding="0.5rem"
             >
-              <Popover.Body padding="0">
-                <Box px="0.75rem" py="0.5rem" textAlign="start">
-                  <Text
-                    fontWeight="500"
-                    fontSize="0.875rem"
-                    letterSpacing="0.4px"
-                    color="rasawebDeepPurple.800"
-                  >
-                    Download:
-                  </Text>
+              <Popover.Body px="0" py="0.5rem">
+                <Box px="1.25rem" py="0.75rem" textAlign="start">
+                  <Heading size="sm">Download:</Heading>
                 </Box>
                 <DownloadMenuItem
                   icon={FileCheck}
@@ -91,8 +86,8 @@ export const ChatHeader = ({
           <IconButton
             aria-label="Restart conversation"
             data-testid="restart-conversation"
-            variant="subtle"
-            colorPalette="dark"
+            variant="solid"
+            colorPalette="light"
             onClick={onNewConversation}
             size="sm"
           >
@@ -120,24 +115,20 @@ function DownloadMenuItem({
       as="button"
       display="flex"
       alignItems="center"
-      gap="0.625rem"
+      gap="0.75rem"
       width="100%"
-      px="0.75rem"
-      py="0.5rem"
-      borderRadius="0.25rem"
+      px="1.25rem"
+      py="0.625rem"
       cursor="pointer"
       _hover={{ bg: "rasaNeutral.100" }}
       onClick={onClick}
       data-testid={testId}
+      fontSize="1rem"
     >
-      <Icon icon={icon} />
-      <Text
-        fontSize="0.875rem"
-        letterSpacing="0.4px"
-        color="rasawebDeepPurple.800"
-      >
-        {label}
-      </Text>
+      <Box width="1rem" height="1rem" display="flex" alignItems="center" justifyContent="center">
+        <Icon icon={icon} />
+      </Box>
+      <Text size="sm">{label}</Text>
     </Box>
   );
 }
