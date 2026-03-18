@@ -8,5 +8,6 @@ Assistant C: handles everything else
 
 The user said: """some message"""
 
-Answer which assistant needs to get this message:
-The message is for the assistant with the letter
+Answer which assistant needs to get this message.
+Respond with exactly one character: A, B, or C.
+Do not output any other words, punctuation, or explanation.

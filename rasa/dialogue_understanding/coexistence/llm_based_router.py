@@ -21,8 +21,6 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
-    LOGIT_BIAS_CONFIG_KEY,
-    MAX_COMPLETION_TOKENS_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
@@ -68,23 +66,12 @@ DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
 )
 LLM_BASED_ROUTER_CONFIG_FILE_NAME = "config.json"
 
-# Token ids for gpt-4o corresponding to space + capitalized Letter
-A_TO_C_TOKEN_IDS_CHATGPT = [
-    355,  # " A"
-    418,  # " B"
-    363,  # " C"
-]
-
 DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME_MINI,
     REASONING_EFFORT_CONFIG_KEY: REASONING_EFFORT_MINIMAL,
     TIMEOUT_CONFIG_KEY: 7,
     TEMPERATURE_CONFIG_KEY: DEFAULT_OPENAI_TEMPERATURE,
-    MAX_COMPLETION_TOKENS_CONFIG_KEY: 1,
-    LOGIT_BIAS_CONFIG_KEY: {
-        str(token_id): 100 for token_id in A_TO_C_TOKEN_IDS_CHATGPT
-    },
 }
 
 structlogger = structlog.get_logger()

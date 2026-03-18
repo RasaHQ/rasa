@@ -25,6 +25,8 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
     LLM_CONFIG_KEY,
+    LOGIT_BIAS_CONFIG_KEY,
+    MAX_COMPLETION_TOKENS_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
     PROMPT_CONFIG_KEY,
@@ -51,6 +53,10 @@ EXPECTED_PROMPT_PATH = "./tests/dialogue_understanding/coexistence/rendered_prom
 
 
 class TestLLMBasedRouter:
+    def test_default_llm_config_does_not_use_logit_bias_or_max_completion_tokens(self):
+        assert LOGIT_BIAS_CONFIG_KEY not in DEFAULT_LLM_CONFIG
+        assert MAX_COMPLETION_TOKENS_CONFIG_KEY not in DEFAULT_LLM_CONFIG
+
     @pytest.fixture
     def llm_based_router(self):
         """Create an LLMCommandGenerator."""
