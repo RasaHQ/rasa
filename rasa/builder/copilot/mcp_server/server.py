@@ -24,6 +24,7 @@ from starlette.responses import JSONResponse
 
 from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from rasa.builder.copilot.mcp_server.constants import (
+    DEFAULT_RASA_SERVER_URL,
     INSTRUCTIONS_FILE_PATH,
     MCP_DEFAULT_HOST,
     MCP_DEFAULT_PORT,
@@ -76,6 +77,10 @@ structlogger = structlog.get_logger()
 # Project folder path, resolved once at startup by run_server().
 # All MCP tools read this via _get_project_folder().
 _project_folder_path: Optional[str] = None
+
+# Server-level Rasa server URL, set once at startup by run_server().
+# MCP tools use this as the default when the LLM does not provide an override.
+_rasa_server_url: Optional[str] = None
 
 
 @asynccontextmanager
@@ -157,6 +162,21 @@ def _set_project_folder(folder: Optional[str]) -> None:
     """
     global _project_folder_path
     _project_folder_path = folder or os.getenv(RASA_PROJECT_FOLDER_ENV_VAR)
+
+
+def _set_rasa_server_url(url: Optional[str]) -> None:
+    """Store the Rasa server URL for use by MCP tools.
+
+    Call this once at startup; tools read the stored value via
+    _get_rasa_server_url().
+    """
+    global _rasa_server_url
+    _rasa_server_url = url or DEFAULT_RASA_SERVER_URL
+
+
+def _get_rasa_server_url() -> str:
+    """Return the Rasa server URL stored by _set_rasa_server_url."""
+    return _rasa_server_url or DEFAULT_RASA_SERVER_URL
 
 
 def _get_project_folder() -> str:
@@ -337,6 +357,18 @@ async def talk_to_assistant(
             ],
         ),
     ],
+    rasa_server_url: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Base URL of the running Rasa server "
+                "(e.g. http://localhost:5005). "
+                "Only set this to override the server URL configured at "
+                "startup. Leave empty to use the default."
+            ),
+            default=None,
+        ),
+    ] = None,
 ) -> TalkToAssistantResponse:
     """Test the assistant by sending messages and getting the conversation results.
 
@@ -366,10 +398,12 @@ async def talk_to_assistant(
             error="No messages provided",
         )
 
+    resolved_url = rasa_server_url or _get_rasa_server_url()
+
     await ctx.info(f"Starting conversation with {len(messages)} message(s)...")
 
     async with dummy_progress_reporter(ctx):
-        result = await _talk_to_assistant(messages)
+        result = await _talk_to_assistant(messages, resolved_url)
 
     await ctx.info("Conversation completed")
     return result
@@ -819,6 +853,7 @@ def run_server(
     port: int = MCP_DEFAULT_PORT,
     transport: str = MCP_TRANSPORT_STREAMABLE_HTTP,
     project_folder: Optional[str] = None,
+    rasa_server_url: Optional[str] = None,
 ) -> None:
     """Run the MCP server.
 
@@ -842,9 +877,16 @@ def run_server(
             for backward compatibility with the embedded builder server).
         project_folder: Path to the Rasa project folder. If not provided,
             falls back to the RASA_PROJECT_FOLDER environment variable.
+        rasa_server_url: Base URL of the running Rasa server
+            (e.g. ``http://localhost:5005``).  Stored as the server-level default that
+            MCP tools use when the caller (LLM) does not provide an explicit override.
+            - `rasa tools run` passes the value from `RunConfig` (default
+              `http://localhost:5005`);
+            - builder mode passes the co-hosted builder URL.
     """
     try:
         _set_project_folder(project_folder)
+        _set_rasa_server_url(rasa_server_url)
         resolved_folder = _get_project_folder()
 
         structlogger.info(

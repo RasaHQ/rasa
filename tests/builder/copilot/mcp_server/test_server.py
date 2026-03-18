@@ -8,6 +8,7 @@ import pytest
 import rasa.builder.copilot.mcp_server.server as server_module
 from rasa.builder.copilot.constants import RASA_PROJECT_FOLDER_ENV_VAR
 from rasa.builder.copilot.mcp_server.constants import (
+    DEFAULT_RASA_SERVER_URL,
     MCP_TRANSPORT_STDIO,
     MCP_TRANSPORT_STREAMABLE_HTTP,
 )
@@ -198,6 +199,13 @@ class TestMCPServerBotInteraction:
         monkeypatch.setattr(f"{SERVER_MODULE}._project_folder_path", str(tmp_path))
         return tmp_path
 
+    @pytest.fixture
+    def mock_rasa_server_url(self, monkeypatch):
+        """Set the Rasa server URL to the default value."""
+        monkeypatch.setattr(
+            f"{SERVER_MODULE}._rasa_server_url", DEFAULT_RASA_SERVER_URL
+        )
+
     @pytest.mark.asyncio
     async def test_talk_to_assistant_empty_messages(self, mock_project_folder):
         """Test talk_to_assistant with empty messages."""
@@ -210,7 +218,9 @@ class TestMCPServerBotInteraction:
         assert "No messages provided" in result.error
 
     @pytest.mark.asyncio
-    async def test_talk_to_assistant_with_messages(self, mock_project_folder):
+    async def test_talk_to_assistant_with_messages(
+        self, mock_project_folder, mock_rasa_server_url
+    ):
         """Test talk_to_assistant with messages."""
         mock_ctx = MagicMock()
         mock_ctx.info = AsyncMock()
@@ -230,7 +240,7 @@ class TestMCPServerBotInteraction:
 
             await talk_to_assistant(mock_ctx, ["Hello"])
 
-            mock_talk.assert_called_once_with(["Hello"])
+            mock_talk.assert_called_once_with(["Hello"], DEFAULT_RASA_SERVER_URL)
 
 
 class TestRunServer:

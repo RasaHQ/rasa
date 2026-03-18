@@ -19,7 +19,10 @@ from rasa.builder.copilot.mcp_server.models import (
 structlogger = structlog.get_logger()
 
 
-async def talk_to_assistant(messages: List[str]) -> TalkToAssistantResponse:
+async def talk_to_assistant(
+    messages: List[str],
+    rasa_server_url: str,
+) -> TalkToAssistantResponse:
     """Send a sequence of messages to the built assistant and return the conversation.
 
     This tool sends each message to the assistant one after another,
@@ -27,21 +30,19 @@ async def talk_to_assistant(messages: List[str]) -> TalkToAssistantResponse:
     tracker context so you can verify the conversation flow.
 
     Args:
-        messages: List of user messages to send to the assistant in order
+        messages: List of user messages to send to the assistant in order.
+        rasa_server_url: Base URL of the running Rasa server
 
     Returns:
         TalkToAssistantResponse with the conversation results and tracker context
     """
-    from rasa.builder import config
+    base_url = rasa_server_url.rstrip("/")
 
     # Generate a unique session ID for this test conversation
     session_id = f"mcp-test-{uuid.uuid4().hex[:8]}"
 
     # Build the webhook URL - use localhost since MCP runs alongside Sanic
-    webhook_url = (
-        f"http://{config.BUILDER_SERVER_HOST}:{config.BUILDER_SERVER_PORT}"
-        f"/webhooks/rest/webhook"
-    )
+    webhook_url = f"{base_url}/webhooks/rest/webhook"
 
     structlogger.info(
         "mcp_server.tools.bot_interaction.talk_to_assistant.start",
@@ -97,7 +98,7 @@ async def talk_to_assistant(messages: List[str]) -> TalkToAssistantResponse:
                     )
 
         # After all messages sent, fetch the tracker context
-        tracker_context = await _get_tracker_context(session_id)
+        tracker_context = await _get_tracker_context(session_id, base_url)
 
         structlogger.info(
             "mcp_server.tools.bot_interaction.talk_to_assistant.complete",
@@ -146,22 +147,20 @@ async def talk_to_assistant(messages: List[str]) -> TalkToAssistantResponse:
         )
 
 
-async def _get_tracker_context(session_id: str) -> Optional[TrackerContextOutput]:
+async def _get_tracker_context(
+    session_id: str,
+    rasa_server_base_url: str,
+) -> Optional[TrackerContextOutput]:
     """Fetch the tracker context for a session via internal API.
 
     Args:
-        session_id: The session ID to fetch the tracker for
+        session_id: The session ID to fetch the tracker for.
+        rasa_server_base_url: Base URL of the running Rasa server
 
     Returns:
         TrackerContextOutput or None if not available
     """
-    from rasa.builder import config
-
-    # Use the internal tracker endpoint
-    tracker_url = (
-        f"http://{config.BUILDER_SERVER_HOST}:{config.BUILDER_SERVER_PORT}"
-        f"/api/internal/tracker/{session_id}"
-    )
+    tracker_url = f"{rasa_server_base_url}/api/internal/tracker/{session_id}"
 
     try:
         async with aiohttp.ClientSession() as session:

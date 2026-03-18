@@ -18,6 +18,7 @@ class TestToolsInitArguments:
         assert args.port is None
         assert args.docs is None
         assert args.ides is None
+        assert args.rasa_server_url is None
 
     def test_init_yes_flag(self, tools_parser: argparse.ArgumentParser) -> None:
         args = tools_parser.parse_args(["tools", "init", "--yes"])
@@ -43,6 +44,8 @@ class TestToolsInitArguments:
                 "online",
                 "--ides",
                 "cursor,vscode",
+                "--rasa-server-url",
+                "http://my-server:9999",
             ]
         )
         assert args.yes is True
@@ -51,6 +54,7 @@ class TestToolsInitArguments:
         assert args.port == 9000
         assert args.docs == "online"
         assert args.ides == "cursor,vscode"
+        assert args.rasa_server_url == "http://my-server:9999"
 
     def test_init_invalid_mode_rejected(
         self, tools_parser: argparse.ArgumentParser
@@ -79,6 +83,7 @@ def test_default_tools_run_arguments(
     assert args.mode is None
     assert args.port is None
     assert args.config is None
+    assert args.rasa_server_url is None
 
 
 def test_tools_run_with_mode_stdio(
@@ -131,6 +136,17 @@ def test_tools_run_with_project(
     args = tools_parser.parse_args(["tools", "run", "--project-path", "/some/path"])
 
     assert args.project_path == "/some/path"
+
+
+def test_tools_run_with_rasa_server_url(
+    tools_parser: argparse.ArgumentParser,
+) -> None:
+    """Tests `rasa tools run --rasa-server-url http://localhost:5005`."""
+    args = tools_parser.parse_args(
+        ["tools", "run", "--rasa-server-url", "http://localhost:5005"]
+    )
+
+    assert args.rasa_server_url == "http://localhost:5005"
 
 
 def test_tools_run_with_config(
@@ -191,35 +207,51 @@ def test_tools_run_combined_arguments(
 
 def test_config_alone_is_valid() -> None:
     args = argparse.Namespace(
-        config="/some/config.yaml", mode=None, port=None, project_path=None
+        config="/some/config.yaml",
+        mode=None,
+        port=None,
+        project_path=None,
+        rasa_server_url=None,
     )
     _validate_config_exclusivity(args)
 
 
 def test_no_config_allows_other_args() -> None:
-    args = argparse.Namespace(config=None, mode="http", port=8080, project_path="/p")
+    args = argparse.Namespace(
+        config=None,
+        mode="http",
+        port=8080,
+        project_path="/p",
+        rasa_server_url=None,
+    )
     _validate_config_exclusivity(args)
 
 
 @pytest.mark.parametrize(
-    "mode, port, project_path",
+    "mode, port, project_path, rasa_server_url",
     [
-        ("http", None, None),
-        (None, 8080, None),
-        (None, None, "/p"),
-        ("http", 8080, None),
-        ("http", None, "/p"),
-        (None, 8080, "/p"),
-        ("http", 8080, "/p"),
+        ("http", None, None, None),
+        (None, 8080, None, None),
+        (None, None, "/p", None),
+        ("http", 8080, None, None),
+        ("http", None, "/p", None),
+        (None, 8080, "/p", None),
+        ("http", 8080, "/p", None),
+        (None, None, None, "http://localhost:5005"),
     ],
 )
 def test_config_with_other_args_raises(
     mode: Optional[str],
     port: Optional[int],
     project_path: Optional[str],
+    rasa_server_url: Optional[str],
 ) -> None:
     args = argparse.Namespace(
-        config="/some/config.yaml", mode=mode, port=port, project_path=project_path
+        config="/some/config.yaml",
+        mode=mode,
+        port=port,
+        project_path=project_path,
+        rasa_server_url=rasa_server_url,
     )
     with pytest.raises(RasaException, match="--config cannot be combined"):
         _validate_config_exclusivity(args)

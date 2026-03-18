@@ -12,6 +12,7 @@ from rasa.builder.copilot.mcp_server.constants import (
     MCP_TRANSPORT_STREAMABLE_HTTP,
 )
 from rasa.cli.tools.constants import (
+    DEFAULT_RASA_SERVER_URL,
     MCP_TOOLS_DEFAULT_HOST,
     TOOLS_CONFIG_DIR,
     TOOLS_CONFIG_FILENAME,
@@ -212,6 +213,7 @@ class TestRunTools:
         mock_run_server.assert_called_once_with(
             transport=MCP_TRANSPORT_STDIO,
             project_folder=str(tmp_path.resolve()),
+            rasa_server_url=DEFAULT_RASA_SERVER_URL,
         )
 
     def test_http_mode_calls_run_server_correctly(
@@ -234,6 +236,7 @@ class TestRunTools:
             port=9999,
             transport=MCP_TRANSPORT_STREAMABLE_HTTP,
             project_folder=str(tmp_path.resolve()),
+            rasa_server_url=DEFAULT_RASA_SERVER_URL,
         )
 
     def test_passes_project_folder_to_run_server(
@@ -260,6 +263,36 @@ class TestRunTools:
         mock_run_server.assert_called_once_with(
             transport=MCP_TRANSPORT_STDIO,
             project_folder=str(tmp_path.resolve()),
+            rasa_server_url=DEFAULT_RASA_SERVER_URL,
+        )
+
+    def test_passes_rasa_server_url_to_run_server(
+        self,
+        tmp_path: Path,
+        mock_run_server: MagicMock,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Test that a custom rasa_server_url is passed through to run_server."""
+        monkeypatch.delenv(RASA_PROJECT_FOLDER_ENV_VAR, raising=False)
+
+        config_path = tmp_path / TOOLS_CONFIG_DIR / TOOLS_CONFIG_FILENAME
+        RunConfig(mode="stdio").save(config_path)
+
+        custom_url = "http://my-server:9999"
+        args = argparse.Namespace(
+            mode=None,
+            port=None,
+            project_path=str(tmp_path),
+            config=None,
+            rasa_server_url=custom_url,
+        )
+
+        run_tools(args)
+
+        mock_run_server.assert_called_once_with(
+            transport=MCP_TRANSPORT_STDIO,
+            project_folder=str(tmp_path.resolve()),
+            rasa_server_url=custom_url,
         )
 
     def test_project_path_resolution_with_env_var(
@@ -515,7 +548,9 @@ class TestRunTools:
 
 class TestValidateConfigExclusivity:
     def _args(self, **kwargs: object) -> argparse.Namespace:
-        defaults = dict(config=None, mode=None, port=None, project_path=None)
+        defaults = dict(
+            config=None, mode=None, port=None, project_path=None, rasa_server_url=None
+        )
         defaults.update(kwargs)
         return argparse.Namespace(**defaults)
 

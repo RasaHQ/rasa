@@ -1,6 +1,7 @@
 import argparse
 
 from rasa.cli.tools.constants import (
+    DEFAULT_RASA_SERVER_URL,
     DOCS_MODE_OFFLINE,
     DOCS_MODES,
     MCP_TOOLS_DEFAULT_PORT,
@@ -129,6 +130,18 @@ def set_tools_init_arguments(parser: argparse.ArgumentParser) -> None:
         ),
     )
     parser.add_argument(
+        "--rasa-server-url",
+        type=str,
+        default=None,
+        dest="rasa_server_url",
+        help=(
+            "Base URL of the running Rasa server "
+            f"(e.g. {DEFAULT_RASA_SERVER_URL}). "
+            "Tells the MCP server where to reach the Rasa assistant. "
+            f"Defaults to {DEFAULT_RASA_SERVER_URL}."
+        ),
+    )
+    parser.add_argument(
         "--skills",
         action="store_true",
         default=False,
@@ -173,6 +186,19 @@ def set_tools_run_arguments(parser: argparse.ArgumentParser) -> None:
         help=(
             "Port for the MCP server in http mode. "
             f"Defaults to {MCP_TOOLS_DEFAULT_PORT} when not specified. "
+            "Cannot be used together with --config."
+        ),
+    )
+    parser.add_argument(
+        "--rasa-server-url",
+        type=str,
+        default=None,
+        dest="rasa_server_url",
+        help=(
+            "Base URL of the running Rasa server "
+            f"(e.g. {DEFAULT_RASA_SERVER_URL}). "
+            "Tells the MCP server where to reach the Rasa assistant. "
+            f"Defaults to {DEFAULT_RASA_SERVER_URL}. "
             "Cannot be used together with --config."
         ),
     )

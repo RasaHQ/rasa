@@ -49,6 +49,9 @@ def run_tools(args: argparse.Namespace) -> None:
     cli_project_path = getattr(args, "project_path", None)
     _load_project_dotenv(cli_project_path)
 
+    # Load the rasa server url from the args
+    cli_rasa_server_url = getattr(args, "rasa_server_url", None)
+
     _precheck(file=sys.stderr)
     _validate_config_exclusivity(args)
 
@@ -57,6 +60,7 @@ def run_tools(args: argparse.Namespace) -> None:
         cli_port=args.port,
         cli_config=args.config,
         cli_project_path=cli_project_path,
+        cli_rasa_server_url=cli_rasa_server_url,
     )
 
     project_path = _resolve_project_dir(
@@ -68,6 +72,7 @@ def run_tools(args: argparse.Namespace) -> None:
     has_explicit_cli_args = (
         getattr(args, "mode", None) is not None
         or getattr(args, "port", None) is not None
+        or getattr(args, "rasa_server_url", None) is not None
     )
     if not loaded_from_file and not has_explicit_cli_args:
         raise RasaException(
@@ -104,6 +109,7 @@ def run_tools(args: argparse.Namespace) -> None:
 
     mode = config.mode
     port = config.port
+    rasa_server_url = config.rasa_server_url
 
     from rasa.builder.copilot.mcp_server.server import run_server
 
@@ -120,6 +126,7 @@ def run_tools(args: argparse.Namespace) -> None:
         run_server(
             transport=MCP_TOOLS_TRANSPORT_STDIO,
             project_folder=str(project_path),
+            rasa_server_url=rasa_server_url,
         )
     elif mode == MCP_TOOLS_TRANSPORT_HTTP:
         mcp_url = MCP_TOOLS_HTTP_URL_PATTERN.format(
@@ -138,6 +145,8 @@ def run_tools(args: argparse.Namespace) -> None:
         lines.append(f"{health_url}\n")
         lines.append("Project:      ", style="bold")
         lines.append(f"{project_path}")
+        lines.append("Rasa server URL: ", style="bold")
+        lines.append(f"{rasa_server_url}")
 
         console.print(
             Panel(
@@ -152,6 +161,7 @@ def run_tools(args: argparse.Namespace) -> None:
             port=port,
             transport=MCP_TOOLS_TRANSPORT_STREAMABLE_HTTP,
             project_folder=str(project_path),
+            rasa_server_url=rasa_server_url,
         )
     else:
         raise ValueError(f"Unsupported transport mode: {mode!r}")
@@ -161,12 +171,12 @@ def run_tools(args: argparse.Namespace) -> None:
 
 
 def _validate_config_exclusivity(args: argparse.Namespace) -> None:
-    """Raise if --config is combined with --mode, --port, or --project-path."""
+    """Raise if --config is combined with other CLI flags."""
     if getattr(args, "config", None) is None:
         return
 
     conflicts = []
-    for name in ("mode", "port", "project_path"):
+    for name in ("mode", "port", "project_path", "rasa_server_url"):
         if getattr(args, name, None) is not None:
             conflicts.append(f"--{name.replace('_', '-')}")
     if conflicts:
@@ -185,6 +195,7 @@ def _resolve_tools_run_config(
     cli_port: Optional[int],
     cli_config: Optional[str],
     cli_project_path: Optional[str],
+    cli_rasa_server_url: Optional[str] = None,
 ) -> Tuple[RunConfig, Optional[Path]]:
     """Resolve the run configuration for `rasa tools run`.
 
@@ -194,11 +205,13 @@ def _resolve_tools_run_config(
         args / defaults.
 
     Priority:
-    1. Explicit CLI args (--mode, --port) → use those + defaults.
+    1. Explicit CLI args (--mode, --port, --rasa-server-url) → use those + defaults.
     2. No CLI args, config file found → load it (defaults fill missing).
     3. No CLI args, no config file → pure defaults.
     """
-    has_cli_args = cli_mode is not None or cli_port is not None
+    has_cli_args = (
+        cli_mode is not None or cli_port is not None or cli_rasa_server_url is not None
+    )
 
     if has_cli_args:
         kwargs: Dict[str, Any] = {}
@@ -206,6 +219,8 @@ def _resolve_tools_run_config(
             kwargs["mode"] = cli_mode
         if cli_port is not None:
             kwargs["port"] = cli_port
+        if cli_rasa_server_url is not None:
+            kwargs["rasa_server_url"] = cli_rasa_server_url
         return RunConfig(**kwargs), None
 
     # Locate the config file using CLI > env > cwd as a candidate directory.

@@ -18,6 +18,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 from rasa.cli.tools.constants import (
+    DEFAULT_RASA_SERVER_URL,
     DOCS_MODE_OFFLINE,
     DOCS_MODE_ONLINE,
     IDE_DISPLAY_NAMES,
@@ -189,6 +190,9 @@ def _run_interactive(project_dir: Path) -> RunConfig:
         port = _ask_port()
         config_kwargs["port"] = port
 
+    rasa_server_url = _ask_rasa_server_url()
+    config_kwargs["rasa_server_url"] = rasa_server_url
+
     docs_mode = _ask_docs_mode()
     ides = _ask_ides()
 
@@ -243,6 +247,23 @@ def _ask_port() -> int:
     if answer is None:
         _abort()
     return int(answer)
+
+
+def _ask_rasa_server_url() -> str:
+    """Prompt the user to enter the Rasa server URL.
+
+    Returns:
+        The Rasa server base URL.
+    """
+    answer = questionary.text(
+        "Rasa server base URL (where the assistant is running)",
+        default=DEFAULT_RASA_SERVER_URL,
+        style=WIZARD_STYLE,
+    ).ask()
+    restore_blocking_io()
+    if answer is None:
+        _abort()
+    return answer.strip()
 
 
 def _ask_docs_mode() -> str:
@@ -345,6 +366,10 @@ def _run_non_interactive(args: argparse.Namespace, project_dir: Path) -> RunConf
             cli_port if cli_port is not None else MCP_TOOLS_DEFAULT_PORT
         )
 
+    cli_rasa_server_url = getattr(args, "rasa_server_url", None)
+    if cli_rasa_server_url is not None:
+        config_kwargs["rasa_server_url"] = cli_rasa_server_url
+
     return RunConfig(**config_kwargs)
 
 
@@ -392,7 +417,7 @@ def _write_ide_configs(project_dir: Path, config: RunConfig) -> None:
             writer(project_dir, config)
 
 
-def _build_stdio_entry(project_dir: Path) -> Dict[str, Any]:
+def _build_stdio_entry(project_dir: Path, config: RunConfig) -> Dict[str, Any]:
     """Build an MCP config entry for stdio transport.
 
     Uses the current Python interpreter to run Rasa as a module, ensuring the correct
@@ -402,22 +427,28 @@ def _build_stdio_entry(project_dir: Path) -> Dict[str, Any]:
 
     Args:
         project_dir: Absolute path to the Rasa project root.
+        config: The resolved run configuration.
 
     Returns:
         Dict with `command` and `args` keys for launching the server.
     """
+    args = [
+        "-m",
+        "rasa",
+        "tools",
+        "run",
+        "--mode",
+        "stdio",
+        "--project-path",
+        str(project_dir),
+    ]
+
+    if config.rasa_server_url and config.rasa_server_url != DEFAULT_RASA_SERVER_URL:
+        args.extend(["--rasa-server-url", config.rasa_server_url])
+
     return {
         "command": sys.executable,
-        "args": [
-            "-m",
-            "rasa",
-            "tools",
-            "run",
-            "--mode",
-            "stdio",
-            "--project-path",
-            str(project_dir),
-        ],
+        "args": args,
     }
 
 
@@ -444,7 +475,7 @@ def _write_cursor_config(project_dir: Path, config: RunConfig) -> None:
     """
     path = project_dir / ".cursor" / "mcp.json"
     if config.mode == MCP_TOOLS_TRANSPORT_STDIO:
-        entry = _build_stdio_entry(project_dir)
+        entry = _build_stdio_entry(project_dir, config)
     else:
         entry = _build_http_entry(config.port)
     _merge_mcp_json(path, entry, wrapper_key="mcpServers")
@@ -463,7 +494,7 @@ def _write_vscode_config(project_dir: Path, config: RunConfig) -> None:
     if config.mode == MCP_TOOLS_TRANSPORT_STDIO:
         entry: Dict[str, Any] = {
             "type": MCP_TOOLS_TRANSPORT_STDIO,
-            **_build_stdio_entry(project_dir),
+            **_build_stdio_entry(project_dir, config),
         }
     else:
         entry = {
@@ -483,7 +514,7 @@ def _write_claude_config(project_dir: Path, config: RunConfig) -> None:
     """
     path = project_dir / ".mcp.json"
     if config.mode == MCP_TOOLS_TRANSPORT_STDIO:
-        entry: Dict[str, Any] = _build_stdio_entry(project_dir)
+        entry: Dict[str, Any] = _build_stdio_entry(project_dir, config)
     else:
         # Claude Code expects a "type" field alongside the url for HTTP.
         entry = {
@@ -506,7 +537,7 @@ def _write_jetbrains_config(project_dir: Path, config: RunConfig) -> None:
         config: The resolved run configuration.
     """
     if config.mode == MCP_TOOLS_TRANSPORT_STDIO:
-        entry = _build_stdio_entry(project_dir)
+        entry = _build_stdio_entry(project_dir, config)
     else:
         entry = _build_http_entry(config.port)
 
@@ -590,6 +621,9 @@ def _print_summary(config: RunConfig, config_path: Path) -> None:
     if config.mode == MCP_TOOLS_TRANSPORT_HTTP:
         lines.append("Port    ", style="bold")
         lines.append(f"{config.port}\n")
+    if config.rasa_server_url:
+        lines.append("Rasa server  ", style="bold")
+        lines.append(f"{config.rasa_server_url}\n")
     lines.append("Docs    ", style="bold")
     lines.append(f"{config.docs_mode.capitalize()}\n")
     if config.ide_integrations:

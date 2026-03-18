@@ -16,6 +16,7 @@ from rasa.cli.tools.constants import (
     AGENT_SKILL_RASA_VERSION_RE,
     AGENT_SKILL_VERSION_RE,
     AGENT_SKILLS_VERSION_SPECIFIER_PREFIX_RE,
+    DEFAULT_RASA_SERVER_URL,
     DOCS_MODE_OFFLINE,
     MCP_TOOLS_DEFAULT_PORT,
     MCP_TOOLS_TRANSPORT_HTTP,
@@ -138,6 +139,7 @@ class RunConfig(BaseModel):
     project_path: str = Field(default=".")
     docs_mode: Literal["offline", "online"] = Field(default=DOCS_MODE_OFFLINE)
     ide_integrations: List[str] = Field(default_factory=list)
+    rasa_server_url: Optional[str] = Field(default=DEFAULT_RASA_SERVER_URL)
 
     @field_validator("ide_integrations", mode="before")
     @classmethod
@@ -166,6 +168,8 @@ class RunConfig(BaseModel):
             data["port"] = self.port
         if self.ide_integrations:
             data["ide_integrations"] = self.ide_integrations
+        if self.rasa_server_url and self.rasa_server_url != DEFAULT_RASA_SERVER_URL:
+            data["rasa_server_url"] = self.rasa_server_url
         return data
 
     @classmethod

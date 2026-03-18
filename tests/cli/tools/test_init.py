@@ -10,6 +10,7 @@ import pytest
 from rich.console import Console
 
 from rasa.cli.tools.constants import (
+    DEFAULT_RASA_SERVER_URL,
     DOCS_MODE_OFFLINE,
     DOCS_MODE_ONLINE,
     MCP_TOOLS_RASA_PROJECT_FOLDER_ENV_VAR,
@@ -47,6 +48,7 @@ def _make_args(**overrides: Any) -> argparse.Namespace:
         docs=None,
         ides=None,
         skills=False,
+        rasa_server_url=None,
     )
     defaults.update(overrides)
     return argparse.Namespace(**defaults)
@@ -77,6 +79,16 @@ class TestNonInteractive:
         assert cfg.docs_mode == DOCS_MODE_ONLINE
         assert cfg.ide_integrations == ["cursor", "vscode", "claude"]
 
+    def test_default_rasa_server_url(self, tmp_path: Path) -> None:
+        args = _make_args()
+        cfg = _run_non_interactive(args, tmp_path)
+        assert cfg.rasa_server_url == DEFAULT_RASA_SERVER_URL
+
+    def test_explicit_rasa_server_url(self, tmp_path: Path) -> None:
+        args = _make_args(rasa_server_url="http://my-server:9999")
+        cfg = _run_non_interactive(args, tmp_path)
+        assert cfg.rasa_server_url == "http://my-server:9999"
+
     def test_ides_whitespace_handling(self, tmp_path: Path) -> None:
         args = _make_args(ides=" cursor , vscode , ")
         cfg = _run_non_interactive(args, tmp_path)
@@ -92,7 +104,8 @@ class TestNonInteractive:
 
 class TestMcpEntryBuilders:
     def test_stdio_entry(self, tmp_path: Path) -> None:
-        entry = _build_stdio_entry(tmp_path)
+        config = RunConfig(mode=MCP_TOOLS_TRANSPORT_STDIO)
+        entry = _build_stdio_entry(tmp_path, config)
         assert entry["command"] == sys.executable
         assert entry["args"] == [
             "-m",
@@ -106,8 +119,27 @@ class TestMcpEntryBuilders:
         ]
 
     def test_stdio_entry_has_no_env(self, tmp_path: Path) -> None:
-        entry = _build_stdio_entry(tmp_path)
+        config = RunConfig(mode=MCP_TOOLS_TRANSPORT_STDIO)
+        entry = _build_stdio_entry(tmp_path, config)
         assert "env" not in entry
+
+    def test_stdio_entry_includes_custom_rasa_server_url(self, tmp_path: Path) -> None:
+        config = RunConfig(
+            mode=MCP_TOOLS_TRANSPORT_STDIO,
+            rasa_server_url="http://my-server:9999",
+        )
+        entry = _build_stdio_entry(tmp_path, config)
+        assert "--rasa-server-url" in entry["args"]
+        idx = entry["args"].index("--rasa-server-url")
+        assert entry["args"][idx + 1] == "http://my-server:9999"
+
+    def test_stdio_entry_omits_default_rasa_server_url(self, tmp_path: Path) -> None:
+        config = RunConfig(
+            mode=MCP_TOOLS_TRANSPORT_STDIO,
+            rasa_server_url=DEFAULT_RASA_SERVER_URL,
+        )
+        entry = _build_stdio_entry(tmp_path, config)
+        assert "--rasa-server-url" not in entry["args"]
 
     def test_http_entry(self) -> None:
         entry = _build_http_entry(9000)
@@ -701,6 +733,10 @@ class TestRestoreBlockingIoCalledAfterPrompts:
             lambda *a, **kw: MagicMock(ask=lambda: next(select_answers)),
         )
         monkeypatch.setattr(
+            "rasa.cli.tools.init.questionary.text",
+            lambda *a, **kw: MagicMock(ask=lambda: DEFAULT_RASA_SERVER_URL),
+        )
+        monkeypatch.setattr(
             "rasa.cli.tools.init.questionary.checkbox",
             lambda *a, **kw: MagicMock(ask=lambda: ["cursor"]),
         )
@@ -708,7 +744,7 @@ class TestRestoreBlockingIoCalledAfterPrompts:
         monkeypatch.setattr(self._RESTORE, mock_restore)
 
         _run_interactive(tmp_path)
-        assert mock_restore.call_count >= 3
+        assert mock_restore.call_count >= 4
 
     def test_ask_install_agent_skills_calls_restore(self, monkeypatch: Any) -> None:
         from rasa.cli.tools.init import _ask_install_agent_skills
@@ -786,6 +822,15 @@ class TestPrintSummary:
         assert "RASA_LICENSE" in output
         assert ".env" in output
         assert "rasa tools run" in output
+
+    def test_includes_rasa_server_url(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """Summary must include the configured Rasa server URL."""
+        config = RunConfig(
+            mode=MCP_TOOLS_TRANSPORT_STDIO,
+            rasa_server_url="http://my-server:9999",
+        )
+        output = self._render(config, tmp_path, monkeypatch)
+        assert "http://my-server:9999" in output
 
     def test_includes_ide_names_when_configured(
         self, tmp_path: Path, monkeypatch: Any

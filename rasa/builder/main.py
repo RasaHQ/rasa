@@ -261,10 +261,15 @@ def start_mcp_server(project_folder: str) -> None:
 
         from rasa.builder.copilot.mcp_server.server import run_server
 
+        # Use the builder URL as the default Rasa server URL
+        builder_url = (
+            f"http://{config.BUILDER_SERVER_HOST}:{config.BUILDER_SERVER_PORT}"
+        )
         run_server(
             host=config.MCP_SERVER_HOST,
             port=config.MCP_SERVER_PORT,
             project_folder=project_folder,
+            rasa_server_url=builder_url,
         )
 
     except Exception as e:

@@ -20,6 +20,10 @@ MCP_TOOLS_RASA_PROJECT_FOLDER_ENV_VAR = "RASA_PROJECT_FOLDER"
 MCP_TOOLS_HTTP_URL_PATTERN = "http://{host}:{port}/mcp"
 MCP_TOOLS_HTTP_HEALTH_URL_PATTERN = "http://{host}:{port}/health"
 
+# Must match the default Rasa server URL (see DEFAULT_SERVER_PORT in
+# rasa/core/constants.py).
+DEFAULT_RASA_SERVER_URL = "http://localhost:5005"
+
 # Documentation modes ==================================================================
 
 DOCS_MODE_OFFLINE = "offline"

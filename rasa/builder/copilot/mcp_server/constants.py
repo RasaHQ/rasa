@@ -3,6 +3,12 @@
 from pathlib import Path
 from typing import Literal
 
+from rasa.core.constants import DEFAULT_SERVER_PORT
+
+# Default Rasa server URL used when no explicit URL is configured.
+# Must match DEFAULT_SERVER_PORT in rasa/core/constants.py.
+DEFAULT_RASA_SERVER_URL = f"http://localhost:{DEFAULT_SERVER_PORT}"
+
 INSTRUCTIONS_FILE_PATH = Path(__file__).parent / "INSTRUCTIONS.md"
 
 # MCP Transport Modes

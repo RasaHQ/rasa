@@ -205,6 +205,8 @@ class TestStartMcpServer:
 
         monkeypatch.setattr("rasa.builder.config.MCP_SERVER_HOST", "127.0.0.1")
         monkeypatch.setattr("rasa.builder.config.MCP_SERVER_PORT", 5051)
+        monkeypatch.setattr("rasa.builder.config.BUILDER_SERVER_HOST", "0.0.0.0")
+        monkeypatch.setattr("rasa.builder.config.BUILDER_SERVER_PORT", 5050)
 
         with patch("rasa.builder.copilot.mcp_server.server.run_server") as mock_run:
             start_mcp_server(str(tmp_path))
@@ -213,6 +215,7 @@ class TestStartMcpServer:
                 host="127.0.0.1",
                 port=5051,
                 project_folder=str(tmp_path),
+                rasa_server_url="http://0.0.0.0:5050",
             )
 
     def test_start_mcp_server_calls_run_server_with_config(
@@ -223,6 +226,8 @@ class TestStartMcpServer:
 
         monkeypatch.setattr("rasa.builder.config.MCP_SERVER_HOST", "127.0.0.1")
         monkeypatch.setattr("rasa.builder.config.MCP_SERVER_PORT", 5055)
+        monkeypatch.setattr("rasa.builder.config.BUILDER_SERVER_HOST", "127.0.0.1")
+        monkeypatch.setattr("rasa.builder.config.BUILDER_SERVER_PORT", 8080)
 
         with patch("rasa.builder.copilot.mcp_server.server.run_server") as mock_run:
             start_mcp_server(str(tmp_path))
@@ -231,6 +236,7 @@ class TestStartMcpServer:
                 host="127.0.0.1",
                 port=5055,
                 project_folder=str(tmp_path),
+                rasa_server_url="http://127.0.0.1:8080",
             )
 
     def test_start_mcp_server_handles_exception(

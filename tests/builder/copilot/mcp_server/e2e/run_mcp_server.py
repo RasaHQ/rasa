@@ -5,6 +5,7 @@ This script is used by E2E tests to start the MCP server in a subprocess.
 Usage: python run_test_server.py <project_folder> <host> <port>
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -20,6 +21,14 @@ if __name__ == "__main__":
     host = sys.argv[2]
     port = int(sys.argv[3])
 
+    # Rasa server URL (distinct from the MCP server's own host/port above).
+    # Set by MCPServerManager when a rasa_server fixture is active.
+    rasa_server_host = os.environ.get("SERVER_HOST")
+    rasa_server_port = os.environ.get("SERVER_PORT")
+    rasa_server_url = None
+    if rasa_server_host and rasa_server_port:
+        rasa_server_url = f"http://{rasa_server_host}:{rasa_server_port}"
+
     # Run server (blocking)
     # run_server() properly initializes the global project folder variable
     try:
@@ -28,6 +37,7 @@ if __name__ == "__main__":
             port=port,
             transport=MCP_TRANSPORT_STREAMABLE_HTTP,
             project_folder=str(project_folder),
+            rasa_server_url=rasa_server_url,
         )
     except KeyboardInterrupt:
         pass
