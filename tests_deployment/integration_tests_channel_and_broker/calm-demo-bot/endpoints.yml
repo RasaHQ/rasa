@@ -1,0 +1,5 @@
+action_endpoint:
+  actions_module: "actions"
+
+nlg:
+  type: rephrase

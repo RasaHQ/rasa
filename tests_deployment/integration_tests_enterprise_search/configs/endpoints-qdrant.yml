@@ -1,6 +1,9 @@
 action_endpoint:
   url: "http://action-server:5055/webhook"
 
+nlg:
+  type: rephrase
+
 vector_store:
   type: qdrant
   collection: rasa

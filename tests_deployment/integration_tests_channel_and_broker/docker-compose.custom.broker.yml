@@ -7,6 +7,8 @@ configs:
     content: |
       action_endpoint:
         actions_module: "actions"
+      nlg:
+        type: rephrase
       event_broker:
         type: addons.custom_sql.SQLEventBroker
         url: postgres

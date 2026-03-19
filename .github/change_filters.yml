@@ -118,6 +118,9 @@ broker-files:
   - tests_deployment/docker-compose.broker.yml
   - tests/integration_tests/core/brokers/**
   - tests_deployment/integration_tests_channel_and_broker/**
+  - rasa/validator.py
+  - rasa/cli/validation/**
+  - rasa/core/agent.py
   # CALM Kafka Restart Integration Tests use run-pii-calm-containers and this stack:
   - Makefile
   - tests_deployment/integration_tests_pii_management_in_calm/**
@@ -205,11 +208,18 @@ enterprise-search-policy-files:
   - rasa/dialogue_understanding/**
   - rasa/engine/**
   - rasa/shared/core/policies/**
+  - rasa/validator.py
+  - rasa/cli/validation/**
+  - rasa/core/agent.py
   - tests_deployment/integration_tests_enterprise_search/**
   - tests/integration_tests/enterprise_search/**
 
 channel-connector-files:
   - rasa/core/channels/**
+  - rasa/validator.py
+  - rasa/cli/validation/**
+  - rasa/core/agent.py
+  - tests_deployment/integration_tests_channel_and_broker/**
   - tests_deployment/integration_tests_channel_connectors/**
   - tests/integration_tests/core/channels/test_rest_channel.py
   - tests/integration_tests/core/channels/test_websocket_channel.py

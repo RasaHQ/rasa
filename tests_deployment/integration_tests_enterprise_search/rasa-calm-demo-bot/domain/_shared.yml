@@ -39,6 +39,10 @@ responses:
     - text: I understand if you'd rather not share that. Let's move on.
   utter_cannot_answer:
     - text: Sorry, I cannot answer that.
+  utter_no_relevant_answer_found:
+    - text: I'm sorry, I can't help with that.
+      metadata:
+        rephrase: False
   utter_struggle_understand:
     - text: I struggle to understand, can you be more specific or rephrase that?
   utter_empathetic_listen:

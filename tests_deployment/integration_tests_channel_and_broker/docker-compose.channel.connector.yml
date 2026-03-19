@@ -7,6 +7,8 @@ configs:
     content: |
       action_endpoint:
         actions_module: "actions"
+      nlg:
+        type: rephrase
 services:
   rasa-pro-assistant:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
