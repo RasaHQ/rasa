@@ -1610,7 +1610,10 @@ def _instrument_execute_tool_call(
 
     @functools.wraps(original_method)
     async def traced_execute_tool_call(
-        self: AgentProtocolType, tool_name: str, arguments: Dict[str, Any]
+        self: AgentProtocolType,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        agent_input: Optional[AgentInput] = None,
     ) -> Any:
         tool_input_attrs = {
             "tool_name": tool_name,
@@ -1625,7 +1628,9 @@ def _instrument_execute_tool_call(
             span_name, attributes=tool_input_attrs
         ) as span:
             start_time = time.perf_counter_ns()
-            result = await original_method(self, tool_name, arguments)
+            result = await original_method(
+                self, tool_name, arguments, agent_input=agent_input
+            )
             end_time = time.perf_counter_ns()
             duration_ns = end_time - start_time
 

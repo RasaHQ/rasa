@@ -24,6 +24,7 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from rasa.agents.core.agent_protocol import AgentProtocol
+from rasa.agents.core.cancellation import CancellationToken
 from rasa.agents.core.types import AgentStatus
 from rasa.agents.protocol.mcp.mcp_open_agent import MCPOpenAgent
 from rasa.agents.schemas import AgentInput, AgentOutput
@@ -85,7 +86,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
-from rasa.shared.utils.llm import LLMInput
+from rasa.shared.utils.llm import LLMInput, StreamingConfig
 from rasa.shared.utils.yaml import read_yaml_file
 from rasa.tracing.instrumentation.instrumentation import (
     FLOW_EXECUTOR_MODULE_NAME,
@@ -291,9 +292,12 @@ class MockAgentWithToolCall(MockAgent):
         return ProtocolType.MCP_OPEN
 
     async def _execute_tool_call(
-        self, tool_name: str, arguments: dict
+        self,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        agent_input: Optional[AgentInput] = None,
     ) -> AgentToolResult:
-        """Mock tool call execution."""
+        """Mock tool call execution (signature aligned with `MCPBaseAgent`)."""
         return AgentToolResult(
             tool_name=tool_name,
             result=f"Result for {tool_name}",
@@ -401,6 +405,7 @@ class MockMessageProcessor(MessageProcessor):
         self,
         tracker: DialogueStateTracker,
         output_channel: Optional[OutputChannel] = None,
+        cancellation_token: Optional[CancellationToken] = None,
     ) -> Mock:
         return Mock()
 
@@ -461,6 +466,7 @@ class MockTrackerStore(TrackerStore):
         event_broker: EventBroker,
         new_events: List[Event],
         sender_id: Text,
+        user_id: Optional[str] = None,
     ) -> None:
         if not (
             hasattr(self.__class__.__base__, "_stream_new_events")
@@ -713,6 +719,7 @@ class MockContextualResponseRephraser(ContextualResponseRephraser):
         llm_input: LLMInput,
         output_channel: Any,
         recipient_id: str,
+        streaming_config: Optional[StreamingConfig] = None,
     ) -> Optional[LLMResponse]:
         """Mock implementation that returns a dummy LLMResponse."""
         return LLMResponse(

@@ -102,6 +102,7 @@ from rasa.tracing.constants import (
 if TYPE_CHECKING:
     from langchain.llms.base import BaseLLM
 
+    from rasa.core.channels.voice_stream.tts.config import StreamingConfig
     from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
     from rasa.core.policies.intentless_policy import IntentlessPolicy
     from rasa.core.policies.policy import PolicyPrediction
@@ -253,13 +254,15 @@ def extract_attrs_for_tracker_store(
     event_broker: EventBroker,
     new_events: List[Event],
     sender_id: Text,
+    user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Extract the attributes for `TrackerStore.stream_events`.
+    """Extract the attributes for `TrackerStore._stream_new_events`.
 
-    :param self: The `TrackerStore` on which `stream_events` is called.
+    :param self: The `TrackerStore` on which `_stream_new_events` is called.
     :param event_broker: The `EventBroker` on which the new events are published.
     :param new_events: List of new events to stream.
     :param sender_id: The sender id of the tracker to which the new events were added.
+    :param user_id: Optional user id associated with the tracker.
     """
     return {
         "number_of_streamed_events": len(new_events),
@@ -323,12 +326,14 @@ def extract_intent_name_and_slots(
     self: MessageProcessor,
     tracker: DialogueStateTracker,
     output_channel: Optional["OutputChannel"] = None,
+    cancellation_token: Optional["CancellationToken"] = None,
 ) -> Dict[str, Any]:
     """Extract the attributes for `MessageProcessor._predict_next_with_tracker`.
 
     :param self: The `MessageProcessor` on which `_predict_next_with_tracker` is called.
     :param tracker: The `DialogueStateTracker` argument.
     :param output_channel: The `OutputChannel` argument (optional).
+    :param cancellation_token: Optional cancellation token for the prediction run.
     :return: A dictionary containing the attributes.
     """
     slots = {}
@@ -501,6 +506,7 @@ def extract_attrs_for_contextual_response_rephraser(
     llm_input: LLMInput,
     output_channel: Any,
     recipient_id: str,
+    streaming_config: Optional["StreamingConfig"] = None,
 ) -> Dict[str, Any]:
     from rasa.core.nlg.contextual_response_rephraser import DEFAULT_LLM_CONFIG
 
