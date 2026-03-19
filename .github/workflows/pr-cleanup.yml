@@ -154,12 +154,19 @@ jobs:
           VERSION_PREFIX: "0.0.0-pr-${{ github.event.pull_request.number }}-"
         run: |
           echo "Listing npm package versions with prefix: ${VERSION_PREFIX}"
+          GCLOUD_STDERR=$(mktemp)
           VERSIONS=$(gcloud artifacts versions list \
             --project="${GCP_PROJECT}" \
             --repository="${NPM_REPOSITORY}" \
             --location="${GCP_LOCATION}" \
             --package="${NPM_PACKAGE_ID}" \
-            --format="value(name)") || { echo "::error::gcloud artifacts versions list failed."; exit 1; }
+            --format="value(name)" 2>"$GCLOUD_STDERR") || {
+            echo "::error::gcloud artifacts versions list failed."
+            cat "$GCLOUD_STDERR"
+            rm -f "$GCLOUD_STDERR"
+            exit 1
+          }
+          rm -f "$GCLOUD_STDERR"
           if [ -z "${VERSIONS}" ]; then
             echo "No package versions found for PR #${{ github.event.pull_request.number }}"
             exit 0
@@ -168,7 +175,7 @@ jobs:
           TO_DELETE=$(echo "${VERSIONS}" | while read -r v; do
             [ -z "$v" ] && continue
             version_id="${v##*/}"
-            [[ "$version_id" == "${VERSION_PREFIX}"* ]] && echo "$v"
+            [[ "$version_id" == "${VERSION_PREFIX}"* ]] && echo "$v" || true
           done)
           if [ -z "${TO_DELETE}" ]; then
             echo "No PR-scoped versions to delete for PR #${{ github.event.pull_request.number }}"
