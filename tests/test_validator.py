@@ -15,6 +15,7 @@ from rasa.core.config.available_endpoints import (
     MCPServerConfig,
 )
 from rasa.core.config.configuration import Configuration
+from rasa.exceptions import ValidationError
 from rasa.shared.constants import (
     CONFIG_ADDITIONAL_LANGUAGES_KEY,
     CONFIG_LANGUAGE_KEY,
@@ -32,7 +33,7 @@ from rasa.telemetry import (
     TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE,
     TELEMETRY_VALIDATION_ERROR_LOG_EVENT,
 )
-from rasa.validator import Validator
+from rasa.validator import Validator, verify_rephrase_endpoints_consistency_or_raise
 from tests.utilities import filter_logs, flows_from_str
 
 PROMPT_TEMPLATES_DIR = Path("rasa/dialogue_understanding/generator/prompt_templates")
@@ -117,6 +118,171 @@ def validator_with_translation() -> Validator:
     )
     config = {CONFIG_LANGUAGE_KEY: "en", CONFIG_ADDITIONAL_LANGUAGES_KEY: ["it", "de"]}
     return Validator(domain, TrainingData(), StoryGraph([]), flows, config)
+
+
+def _domain_with_rephrase_response(
+    name: Text, text: Text = "hello", rephrase: bool = True
+) -> Domain:
+    return Domain.from_dict(
+        {
+            "responses": {
+                name: [
+                    {
+                        "text": text,
+                        "metadata": {"rephrase": rephrase},
+                    }
+                ]
+            }
+        }
+    )
+
+
+def test_verify_rephrase_defaults_only_without_nlg_warns_runtime(
+    monkeypatch: MonkeyPatch, capsys: CaptureFixture
+):
+    from rasa.shared.importers.importer import FlowSyncImporter
+
+    merged_domain = _domain_with_rephrase_response("utter_default", text="same")
+    default_domain = _domain_with_rephrase_response("utter_default", text="same")
+    monkeypatch.setattr(
+        FlowSyncImporter, "load_default_pattern_flows_domain", lambda: default_domain
+    )
+
+    # Defaults-only rephrase with missing NLG should warn, not raise ValidationError.
+    verify_rephrase_endpoints_consistency_or_raise(
+        domain=merged_domain, endpoints=None, user_domain=None
+    )
+    captured = capsys.readouterr()
+    assert (
+        "validator.verify_rephrase_endpoints_consistency.defaults_only_rephrase_without_nlg"
+        in captured.out
+    )
+
+
+def test_verify_rephrase_user_only_without_nlg_raises_runtime(monkeypatch: MonkeyPatch):
+    from rasa.shared.importers.importer import FlowSyncImporter
+
+    merged_domain = _domain_with_rephrase_response("utter_user", text="custom")
+    default_domain = Domain.empty()
+    monkeypatch.setattr(
+        FlowSyncImporter, "load_default_pattern_flows_domain", lambda: default_domain
+    )
+
+    # User-only rephrase with missing NLG should raise ValidationError.
+    with pytest.raises(ValidationError):
+        verify_rephrase_endpoints_consistency_or_raise(
+            domain=merged_domain, endpoints=None, user_domain=None
+        )
+
+
+def test_verify_rephrase_override_is_user_defined_runtime(monkeypatch: MonkeyPatch):
+    from rasa.shared.importers.importer import FlowSyncImporter
+
+    merged_domain = _domain_with_rephrase_response("utter_same", text="user text")
+    default_domain = _domain_with_rephrase_response("utter_same", text="default text")
+    monkeypatch.setattr(
+        FlowSyncImporter, "load_default_pattern_flows_domain", lambda: default_domain
+    )
+
+    # Same response name but different content should be treated as user-defined.
+    with pytest.raises(ValidationError):
+        verify_rephrase_endpoints_consistency_or_raise(
+            domain=merged_domain, endpoints=None, user_domain=None
+        )
+
+
+def test_verify_rephrase_both_user_and_defaults_without_nlg_raises_runtime(
+    monkeypatch: MonkeyPatch,
+):
+    from rasa.shared.importers.importer import FlowSyncImporter
+
+    merged_domain = Domain.from_dict(
+        {
+            "responses": {
+                "utter_default": [
+                    {"text": "same default text", "metadata": {"rephrase": True}}
+                ],
+                "utter_user": [{"text": "custom text", "metadata": {"rephrase": True}}],
+            }
+        }
+    )
+    default_domain = _domain_with_rephrase_response(
+        "utter_default", text="same default text"
+    )
+    monkeypatch.setattr(
+        FlowSyncImporter, "load_default_pattern_flows_domain", lambda: default_domain
+    )
+
+    # Mixed sources (default + user-defined rephrase) with missing NLG should raise.
+    with pytest.raises(ValidationError):
+        verify_rephrase_endpoints_consistency_or_raise(
+            domain=merged_domain, endpoints=None, user_domain=None
+        )
+
+
+def test_verify_rephrase_defaults_only_with_wrong_nlg_type_warns_runtime(
+    monkeypatch: MonkeyPatch, capsys: CaptureFixture
+):
+    from rasa.shared.importers.importer import FlowSyncImporter
+
+    merged_domain = _domain_with_rephrase_response("utter_default", text="same")
+    default_domain = _domain_with_rephrase_response("utter_default", text="same")
+    monkeypatch.setattr(
+        FlowSyncImporter, "load_default_pattern_flows_domain", lambda: default_domain
+    )
+
+    endpoints = MagicMock()
+    endpoints.nlg = MagicMock()
+    endpoints.nlg.type = "callback"
+
+    # Defaults-only rephrase with wrong NLG type should warn, not raise.
+    verify_rephrase_endpoints_consistency_or_raise(
+        domain=merged_domain, endpoints=endpoints, user_domain=None
+    )
+    captured = capsys.readouterr()
+    assert (
+        "validator.verify_rephrase_endpoints_consistency."
+        "defaults_only_rephrase_with_wrong_nlg_type" in captured.out
+    )
+
+
+def test_verify_rephrase_user_only_with_wrong_nlg_type_raises_runtime(
+    monkeypatch: MonkeyPatch,
+):
+    from rasa.shared.importers.importer import FlowSyncImporter
+
+    merged_domain = _domain_with_rephrase_response("utter_user", text="custom")
+    default_domain = Domain.empty()
+    monkeypatch.setattr(
+        FlowSyncImporter, "load_default_pattern_flows_domain", lambda: default_domain
+    )
+
+    endpoints = MagicMock()
+    endpoints.nlg = MagicMock()
+    endpoints.nlg.type = "callback"
+
+    # User-defined rephrase with wrong NLG type should raise ValidationError.
+    with pytest.raises(ValidationError) as exc_info:
+        verify_rephrase_endpoints_consistency_or_raise(
+            domain=merged_domain, endpoints=endpoints, user_domain=None
+        )
+    assert (
+        exc_info.value.code
+        == "validator.verify_rephrase_endpoints_consistency.nlg_not_rephrase_type"
+    )
+
+
+def test_verify_rephrase_with_rephrase_nlg_type_short_circuits_source_split():
+    merged_domain = _domain_with_rephrase_response("utter_user", text="custom")
+    endpoints = MagicMock()
+    endpoints.nlg = MagicMock()
+    endpoints.nlg.type = "rephrase"
+
+    # Happy path should return before source-splitting logic runs.
+    with patch("rasa.validator._split_rephrase_sources", side_effect=AssertionError):
+        verify_rephrase_endpoints_consistency_or_raise(
+            domain=merged_domain, endpoints=endpoints, user_domain=None
+        )
 
 
 def test_verify_nlu_with_e2e_story(

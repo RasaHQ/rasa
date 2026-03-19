@@ -2,7 +2,7 @@ import logging
 import re
 import string
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Text, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple
 
 import jinja2.exceptions
 import structlog
@@ -13,6 +13,7 @@ import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
 from rasa.agents.validation import validate_agent_names_not_conflicting_with_flows
 from rasa.core.channels import UserMessage
+from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.engine.language import Language
@@ -83,6 +84,246 @@ logger = logging.getLogger(__name__)
 structlog_processors = structlog.get_config()["processors"]
 updated_processors = [track_validation_error_log] + structlog_processors
 structlogger = structlog.get_logger(processors=updated_processors)
+REPHRASE_NLG_TYPE = "rephrase"
+
+
+def _get_rephrase_enabled_responses(domain: Domain) -> Set[Text]:
+    """Collect response names with rephrasing enabled.
+
+    Args:
+        domain: Domain whose responses are inspected.
+
+    Returns:
+        Set of response names where at least one response variation has
+        `metadata.rephrase: true`.
+    """
+    result: Set[Text] = set()
+    for name, variations in domain.responses.items():
+        if any(v.get("metadata", {}).get("rephrase", False) for v in variations):
+            result.add(name)
+    return result
+
+
+def _split_rephrase_sources(
+    domain: Domain, rephrase_in_domain: Set[Text], user_domain: Optional[Domain]
+) -> Tuple[Set[Text], Set[Text]]:
+    """Split rephrase-enabled responses by source.
+
+    Args:
+        domain: Merged domain used for validation.
+        rephrase_in_domain: Response names with `metadata.rephrase: true` in `domain`.
+        user_domain: Optional user domain before default pattern merge.
+
+    Returns:
+        Tuple of (`rephrase_from_user`, `rephrase_from_defaults`).
+
+    - When `user_domain` is provided (training-time validation), the split is exact.
+    - When `user_domain` is not provided (runtime validation), the split is inferred
+    by comparing merged responses with currently available default pattern responses.
+    - If default pattern responses cannot be loaded at runtime, all responses are
+    treated as user-defined to avoid missing a required endpoint validation error.
+
+    Note:
+        Runtime inference depends on current default patterns. If training and runtime
+        defaults differ, some responses can be misclassified.
+    """
+    if user_domain is not None:
+        rephrase_from_user = _get_rephrase_enabled_responses(user_domain)
+        rephrase_from_defaults = rephrase_in_domain - rephrase_from_user
+        return rephrase_from_user, rephrase_from_defaults
+
+    # Runtime path: infer defaults by comparing with current default pattern file.
+    # If that lookup fails, treat all as user-defined to avoid silently missing
+    # required endpoint validation.
+    try:
+        from rasa.shared.importers.importer import FlowSyncImporter
+
+        default_pattern_domain = FlowSyncImporter.load_default_pattern_flows_domain()
+    except Exception:
+        return set(rephrase_in_domain), set()
+
+    default_rephrase_names = _get_rephrase_enabled_responses(default_pattern_domain)
+    rephrase_from_user = set()
+    rephrase_from_defaults = set()
+
+    for response_name in rephrase_in_domain:
+        if response_name not in default_rephrase_names:
+            rephrase_from_user.add(response_name)
+            continue
+
+        # Name alone is not enough: users can override a default pattern response
+        # while keeping the same response key. Compare content to detect overrides.
+        # Identical content => default-derived; different content => user-defined.
+        if domain.responses.get(response_name) == default_pattern_domain.responses.get(
+            response_name
+        ):
+            rephrase_from_defaults.add(response_name)
+        else:
+            rephrase_from_user.add(response_name)
+
+    return rephrase_from_user, rephrase_from_defaults
+
+
+def _get_rephrase_source_case(
+    rephrase_from_user: Set[Text], rephrase_from_defaults: Set[Text]
+) -> Text:
+    """Classify where rephrase-enabled responses originate from."""
+    if rephrase_from_defaults and not rephrase_from_user:
+        return "defaults_only"
+    if rephrase_from_user and rephrase_from_defaults:
+        return "both"
+    return "user_only"
+
+
+class _RephraseMisconfigAction(NamedTuple):
+    """Result of rephrase misconfig classification for logging/validation."""
+
+    event_info: Text
+    log_event: Text
+    error_code: Optional[Text]
+    is_warn: bool
+    extra_log_kwargs: Dict[str, Any]
+
+
+def _get_rephrase_misconfig_action(
+    problem_type: Text,
+    source_case: Text,
+    nlg_type: Optional[Any] = None,
+) -> _RephraseMisconfigAction:
+    """Return action details for rephrase misconfiguration (log, warn, or raise)."""
+    nlg_display = nlg_type or "not set"
+    base = "validator.verify_rephrase_endpoints_consistency"
+
+    if source_case == "defaults_only":
+        if problem_type == "missing_nlg":
+            event_info = (
+                "Default pattern flows include responses with rephrasing enabled, "
+                "but the NLG endpoint is not configured in endpoints.yml. "
+                "Rephrasing for default patterns will be skipped."
+            )
+            return _RephraseMisconfigAction(
+                event_info=event_info,
+                log_event=f"{base}.defaults_only_rephrase_without_nlg",
+                error_code=None,
+                is_warn=True,
+                extra_log_kwargs={},
+            )
+
+        event_info = (
+            "Default pattern flows include responses with rephrasing enabled, "
+            f"but the NLG endpoint type is '{nlg_display}' instead "
+            f"of '{REPHRASE_NLG_TYPE}'. Rephrasing for default patterns will be "
+            "skipped."
+        )
+        return _RephraseMisconfigAction(
+            event_info=event_info,
+            log_event=f"{base}.defaults_only_rephrase_with_wrong_nlg_type",
+            error_code=None,
+            is_warn=True,
+            extra_log_kwargs={"nlg_type": nlg_type},
+        )
+
+    if source_case == "both":
+        if problem_type == "missing_nlg":
+            event_info = (
+                "Domain and default pattern flows both include responses with "
+                "'metadata.rephrase: true', but the NLG endpoint is not configured "
+                f"in endpoints.yml. Add 'nlg' with 'type: {REPHRASE_NLG_TYPE}' to your "
+                "endpoints configuration."
+            )
+        else:
+            event_info = (
+                "Domain and default pattern flows include responses with rephrasing, "
+                f"but the NLG endpoint type is '{nlg_display}' instead of "
+                f"'{REPHRASE_NLG_TYPE}'. Set 'nlg.type: {REPHRASE_NLG_TYPE}' "
+                "in endpoints.yml."
+            )
+    else:
+        if problem_type == "missing_nlg":
+            event_info = (
+                "Domain has responses with 'metadata.rephrase: true', but "
+                "the NLG endpoint is not configured in endpoints.yml. "
+                f"Add 'nlg' with 'type: {REPHRASE_NLG_TYPE}' to your endpoints "
+                "configuration."
+            )
+        else:
+            event_info = (
+                "Domain has responses with 'metadata.rephrase: true', but "
+                f"the NLG endpoint type is '{nlg_display}' instead of "
+                f"'{REPHRASE_NLG_TYPE}'. Set 'nlg.type: {REPHRASE_NLG_TYPE}' "
+                "in endpoints.yml for rephrasing to work."
+            )
+
+    error_code = (
+        f"{base}.rephrase_enabled_but_no_nlg"
+        if problem_type == "missing_nlg"
+        else f"{base}.nlg_not_rephrase_type"
+    )
+    return _RephraseMisconfigAction(
+        event_info=event_info,
+        log_event=error_code,
+        error_code=error_code,
+        is_warn=False,
+        extra_log_kwargs={"nlg_type": nlg_type} if problem_type == "wrong_type" else {},
+    )
+
+
+def verify_rephrase_endpoints_consistency_or_raise(
+    domain: Domain,
+    endpoints: Optional[AvailableEndpoints],
+    user_domain: Optional[Domain] = None,
+) -> None:
+    """Validate domain response rephrase settings against runtime endpoints.
+
+    Why this exists:
+    - Domain can enable rephrasing per response (`metadata.rephrase: true`).
+    - Rephrasing only works if runtime NLG endpoint is configured as `type: rephrase`.
+    - Without this guard, assistants can behave differently between environments
+      (e.g. local test vs deployed runtime) with no explicit failure.
+
+    Args:
+        domain: The domain to validate (merged domain including defaults).
+        endpoints: The runtime endpoints (or None). If None, treated as no NLG
+            configured.
+        user_domain: Optional user-defined domain (before default pattern merge).
+            When provided, allows differentiation between rephrase from user domain
+            vs default pattern flows for more precise error messages.
+
+    Raises:
+        ValidationError: If user-defined responses have rephrasing enabled but NLG
+            is missing or not configured as type rephrase.
+    """
+    rephrase_in_domain = _get_rephrase_enabled_responses(domain)
+    if not rephrase_in_domain:
+        return
+
+    nlg_endpoint = endpoints.nlg if endpoints is not None else None
+    nlg_type = nlg_endpoint.type if nlg_endpoint is not None else None
+
+    # Happy path: endpoint is correctly configured, no source split needed.
+    if nlg_type and str(nlg_type).lower() == REPHRASE_NLG_TYPE:
+        return
+
+    rephrase_from_user, rephrase_from_defaults = _split_rephrase_sources(
+        domain, rephrase_in_domain, user_domain
+    )
+    source_case = _get_rephrase_source_case(rephrase_from_user, rephrase_from_defaults)
+    problem_type = "missing_nlg" if nlg_endpoint is None else "wrong_type"
+
+    action = _get_rephrase_misconfig_action(problem_type, source_case, nlg_type)
+
+    if action.is_warn:
+        structlogger.warn(
+            action.log_event, event_info=action.event_info, **action.extra_log_kwargs
+        )
+        return
+
+    structlogger.error(
+        action.log_event,
+        event_info=action.event_info,
+        **action.extra_log_kwargs,
+    )
+    raise ValidationError(code=action.error_code, event_info=action.event_info)
 
 
 class Validator:
@@ -1425,6 +1666,36 @@ class Validator:
                 event_info=f"Agent-flow name conflict validation failed: {e}",
             )
             return False
+
+    def verify_rephrase_endpoints_consistency(
+        self, user_domain: Optional[Domain] = None
+    ) -> bool:
+        """Verifies rephrase-enabled responses have rephraser configured in endpoints.
+
+        When domain responses have `metadata.rephrase: true`, the NLG endpoint must be
+        configured with `type: rephrase` in endpoints.yml. Otherwise, rephrasing is
+        silently ignored at runtime, leading to different behaviour between environments
+        (e.g. local vs deployed) when endpoints differ.
+
+        Args:
+            user_domain: Optional user-defined domain (before default pattern merge).
+                When provided during training validation, enables more precise error
+                messages that distinguish rephrase from user domain vs default patterns.
+
+        Returns:
+            True if validation passes, False otherwise.
+        """
+        try:
+            endpoints = Configuration.get_instance().endpoints
+        except Exception:
+            endpoints = None
+        try:
+            verify_rephrase_endpoints_consistency_or_raise(
+                self.domain, endpoints, user_domain=user_domain
+            )
+        except ValidationError:
+            return False
+        return True
 
     def _get_response_translation_warnings(self) -> list:
         """Collect warnings for responses missing translations.

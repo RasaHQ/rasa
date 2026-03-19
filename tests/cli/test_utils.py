@@ -9,7 +9,7 @@ import tempfile
 import textwrap
 from pathlib import Path
 from typing import Any, Callable, Dict, Text
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import structlog
@@ -387,6 +387,56 @@ def test_data_validate_stories_with_max_history_zero():
             max_history=0,
             importer=importer,
         )
+
+
+def test_validate_files_passes_user_domain_to_rephrase_validation():
+    importer = MagicMock(spec=TrainingDataImporter)
+    user_domain = MagicMock()
+    user_domain.is_empty.return_value = False
+    importer.get_user_domain.return_value = user_domain
+
+    validator = MagicMock(spec=Validator)
+    validator.config = {}
+    validator.verify_domain_validity.return_value = True
+    validator.verify_actions_in_stories_rules.return_value = True
+    validator.verify_forms_in_stories_rules.return_value = True
+    validator.verify_form_slots.return_value = True
+    validator.verify_slot_mappings.return_value = True
+    validator.check_for_no_empty_parenthesis_in_responses.return_value = True
+    validator.validate_button_payloads.return_value = True
+    validator.verify_slot_validation.return_value = True
+    validator.validate_conditional_response_variation_predicates.return_value = True
+    validator.verify_nlu.return_value = True
+    validator.verify_story_structure.return_value = True
+    validator.verify_flows.return_value = True
+    validator.verify_mcp_meta_map_slots_against_domain.return_value = True
+    validator.verify_prompt_templates.return_value = True
+    validator.verify_translations.return_value = True
+    validator.validate_CALM_slot_mappings.return_value = True
+    validator.validate_agent_flow_conflicts.return_value = True
+    validator.verify_rephrase_endpoints_consistency.return_value = True
+
+    with (
+        patch(
+            "rasa.validator.Validator.from_importer",
+            return_value=validator,
+        ),
+        patch(
+            "rasa.cli.validation.bot_config._validate_sub_agents",
+            return_value=True,
+        ),
+    ):
+        validate_files(
+            fail_on_warnings=False,
+            max_history=None,
+            importer=importer,
+        )
+
+    # Pass user_domain so training-time source split is exact (user vs defaults),
+    # instead of runtime-style inference.
+    validator.verify_rephrase_endpoints_consistency.assert_called_once_with(
+        user_domain=user_domain
+    )
 
 
 @pytest.mark.parametrize(

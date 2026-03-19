@@ -33,7 +33,7 @@ from rasa.core.tracker_stores.tracker_store import (
     InMemoryTrackerStore,
     TrackerStore,
 )
-from rasa.exceptions import ModelNotFound
+from rasa.exceptions import ModelNotFound, ValidationError
 from rasa.nlu.utils import is_url
 from rasa.privacy.privacy_manager import BackgroundPrivacyManager
 from rasa.shared.agents.agent_setup import initialize_agents
@@ -226,6 +226,7 @@ async def load_agent(
     """
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_stores.tracker_store import TrackerStore
+    from rasa.validator import verify_rephrase_endpoints_consistency_or_raise
 
     tracker_store = None
     lock_store = None
@@ -279,6 +280,8 @@ async def load_agent(
             agent = await load_from_server(agent, model_server)
             # Initialize timer manager after model is loaded
             await agent.initialize_timer_manager()
+            if agent.domain is not None:
+                verify_rephrase_endpoints_consistency_or_raise(agent.domain, endpoints)
             return agent
 
         elif remote_storage is not None:
@@ -307,9 +310,14 @@ async def load_agent(
 
         # Initialize timer manager after model is loaded
         await agent.initialize_timer_manager()
+        # Ensure runtime rephrase settings are consistent with loaded endpoints.
+        if agent.domain is not None:
+            verify_rephrase_endpoints_consistency_or_raise(agent.domain, endpoints)
 
         return agent
 
+    except ValidationError:
+        raise
     except AgentInitializationException as e:
         if e.suppress_stack_trace:
             raise e from None

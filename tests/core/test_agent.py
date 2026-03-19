@@ -4,7 +4,7 @@ import uuid
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Text
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -24,7 +24,7 @@ from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import Persistor, RemoteStorageType
-from rasa.exceptions import ModelNotFound
+from rasa.exceptions import ModelNotFound, ValidationError
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.core.constants import LANGUAGE_SLOT
 from rasa.shared.core.domain import KEY_SLOTS, Domain
@@ -209,6 +209,34 @@ async def test_load_agent(trained_rasa_model: Text):
     assert agent.processor.graph_runner is not None
     # Verify timer manager is propagated to processor
     assert agent.processor.timer_manager is agent.timer_manager
+
+
+async def test_load_agent_runs_rephrase_validation(trained_rasa_model: Text):
+    endpoints = AvailableEndpoints()
+    with patch(
+        "rasa.validator.verify_rephrase_endpoints_consistency_or_raise",
+        MagicMock(),
+    ) as mock_verify_rephrase:
+        agent = await load_agent(model_path=trained_rasa_model, endpoints=endpoints)
+
+    mock_verify_rephrase.assert_called_once_with(agent.domain, endpoints)
+
+
+async def test_load_agent_rephrase_validation_error_propagates(
+    trained_rasa_model: Text,
+):
+    endpoints = AvailableEndpoints()
+    with patch(
+        "rasa.validator.verify_rephrase_endpoints_consistency_or_raise",
+        MagicMock(
+            side_effect=ValidationError(
+                code="validator.verify_rephrase_endpoints_consistency.rephrase_enabled_but_no_nlg",
+                event_info="missing nlg",
+            )
+        ),
+    ):
+        with pytest.raises(ValidationError):
+            await load_agent(model_path=trained_rasa_model, endpoints=endpoints)
 
 
 async def test_load_agent_on_not_existing_path():

@@ -206,6 +206,10 @@ def validate_files(
         if valid_sub_agents:
             valid_sub_agents = validator.validate_agent_flow_conflicts(sub_agents_path)
 
+        valid_rephrase_endpoints = validator.verify_rephrase_endpoints_consistency(
+            user_domain=importer.get_user_domain()
+        )
+
         all_good = (
             valid_domain
             and valid_nlu
@@ -216,6 +220,7 @@ def validate_files(
             and valid_translations
             and valid_CALM_slot_mappings
             and valid_sub_agents
+            and valid_rephrase_endpoints
         )
 
     if validator.config:

@@ -15,6 +15,7 @@ from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.credentials import CredentialsConfig
 from rasa.core.run import serve_application
+from rasa.exceptions import ValidationError
 
 CREDENTIALS_FILE = "data/test_moodbot/credentials.yml"
 
@@ -105,6 +106,35 @@ async def test_load_agent_on_start_with_bad_model_file(
             loop,
         )
         assert any("No valid model found at" in str(w.message) for w in warnings)
+
+
+async def test_load_agent_on_start_rephrase_validation_failure_raises(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # Verify runtime startup fails when agent load propagates ValidationError.
+    monkeypatch.setattr(
+        "rasa.core.run.agent.load_agent",
+        AsyncMock(
+            side_effect=ValidationError(
+                code="validator.verify_rephrase_endpoints_consistency.rephrase_enabled_but_no_nlg",
+                event_info="missing nlg",
+            )
+        ),
+    )
+
+    app = Mock()
+    app.ctx = Mock()
+    endpoints = AvailableEndpoints()
+
+    with pytest.raises(ValidationError):
+        await run.load_agent_on_start(
+            model_path="model.tar.gz",
+            endpoints=endpoints,
+            remote_storage=None,
+            sub_agents=AvailableAgents(),
+            app=app,
+            loop=Mock(spec=AbstractEventLoop),
+        )
 
 
 async def test_close_resources(loop: AbstractEventLoop):
