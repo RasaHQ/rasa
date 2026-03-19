@@ -8,6 +8,7 @@ For complex requests (like "create a booking flow"), the classifier delegates
 to the full AgentCopilot, which uses AgentCopilotResponseHandler instead.
 """
 
+import asyncio
 import copy
 import importlib.resources
 from contextlib import asynccontextmanager
@@ -30,6 +31,7 @@ from rasa.builder.copilot.models import (
     ControlledPredictionContent,
     CopilotTextEndContent,
     CopilotTextStartContent,
+    ExceptionContent,
     GeneratedContent,
     ResponseCategory,
     ResponseCompleteness,
@@ -40,6 +42,7 @@ from rasa.builder.copilot.response_handling.base_copilot_response_handler import
 )
 from rasa.builder.copilot.response_handling.constants import (
     ERROR_FALLBACK_RESPONSE_KEY,
+    EXCEPTION_RESPONSE,
     GOODBYE_FALLBACK_RESPONSE_KEY,
     GREETING_FALLBACK_RESPONSE_KEY,
     KNOWLEDGE_BASE_ACCESS_REQUESTED_RESPONSE_KEY,
@@ -48,6 +51,7 @@ from rasa.builder.copilot.response_handling.constants import (
     UNCLEAR_INPUT_RESPONSE_KEY,
 )
 from rasa.builder.document_retrieval.models import Document
+from rasa.builder.logging_utils import log_exception
 from rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry import (
     MessageClassifierResponseHandlerLangfuseTelemetry,
 )
@@ -285,7 +289,9 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
 
     async def stream(
         self,
-    ) -> AsyncIterator[Union[GeneratedContent, ControlledPredictionContent]]:
+    ) -> AsyncIterator[
+        Union[GeneratedContent, ControlledPredictionContent, ExceptionContent]
+    ]:
         """Stream the classified response with START/END markers.
 
         For greetings/goodbyes: streams token by token from LLM.
@@ -293,24 +299,50 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
 
         Yields:
             START marker, response content (streamed or complete), END marker.
+            On error: ExceptionContent (and re-raise for CancelledError).
         """
-        yield CopilotTextStartContent()
+        try:
+            yield CopilotTextStartContent()
 
-        # Stream LLM responses token by token
-        if self._response_category == ResponseCategory.GREETING_DETECTION:
-            async for token in self._stream_greeting():
-                yield token
-        elif self._response_category == ResponseCategory.GOODBYE_DETECTION:
-            async for token in self._stream_goodbye():
-                yield token
-        else:
-            # Template responses (out-of-scope, roleplay, etc.) - yield as complete
-            if self._response_content is None:
-                self._generate_template_response()
-            assert self._response_content is not None, "Response content must be set"
-            yield self._response_content
+            if self._response_category == ResponseCategory.GREETING_DETECTION:
+                async for token in self._stream_greeting():
+                    yield token
+            elif self._response_category == ResponseCategory.GOODBYE_DETECTION:
+                async for token in self._stream_goodbye():
+                    yield token
+            else:
+                # Template responses (out-of-scope, roleplay, etc.) - yield as complete
+                if self._response_content is None:
+                    self._generate_template_response()
+                assert self._response_content is not None
+                yield self._response_content
 
-        yield CopilotTextEndContent()
+            yield CopilotTextEndContent()
+        except asyncio.CancelledError as e:
+            log_exception(
+                event_name="classifier_response_handler.stream.cancelled",
+                event_info="Stream cancelled. Returning exception content.",
+                exc=e,
+            )
+            exception_content = ExceptionContent(
+                content=EXCEPTION_RESPONSE,
+                original_exception=e,
+            )
+            self._generated_responses.append(exception_content)
+            yield exception_content
+            raise
+        except Exception as e:
+            log_exception(
+                event_name="classifier_response_handler.stream.error",
+                event_info="Stream ended with an error. Returning exception content.",
+                exc=e,
+            )
+            exception_content = ExceptionContent(
+                content=EXCEPTION_RESPONSE,
+                original_exception=e,
+            )
+            self._generated_responses.append(exception_content)
+            yield exception_content
 
     def reset(self) -> None:
         """Reset handler state (no-op for classified responses)."""
@@ -380,9 +412,23 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
         return []
 
     def extract_text_from_generated_responses(self) -> str:
-        """Extract the full text from generated responses."""
+        """Extract the full text from generated responses.
+
+        Exception content takes priority — if the stream ended with an error,
+        the exception message is returned instead of any partial text.
+        """
+        for response in self._generated_responses:
+            if isinstance(response, ExceptionContent):
+                return response.content
         return self._response_text
 
     def extract_response_category(self) -> ResponseCategory:
-        """Extract the response category."""
+        """Extract the response category.
+
+        Returns EXCEPTION if the stream ended with an error, otherwise
+        the original classification category.
+        """
+        for response in self._generated_responses:
+            if isinstance(response, ExceptionContent):
+                return ResponseCategory.EXCEPTION
         return self._response_category

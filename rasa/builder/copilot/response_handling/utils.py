@@ -99,8 +99,9 @@ def extract_text_by_categories(
 ) -> str:
     """Extract and join all content from generated responses matching given categories.
 
-    Combines primary categories with controlled prediction categories and extracts
-    text content from matching responses.
+    Priority order: exception content > controlled predictions / primary text.
+    If any response has EXCEPTION category, its text is returned immediately
+    since the exception supersedes all other content.
 
     Args:
         responses: List of generated content responses to filter.
@@ -108,13 +109,16 @@ def extract_text_by_categories(
         controlled_prediction_categories: Set of controlled prediction categories.
 
     Returns:
-        Concatenated text from all responses matching the combined categories.
+        Concatenated text from all responses matching the combined categories,
+        or the exception text if an exception response is present.
     """
     content_parts: List[str] = []
     all_text_categories = primary_categories | controlled_prediction_categories
 
     for response in responses or []:
         if isinstance(response, GeneratedContent):
+            if response.response_category == ResponseCategory.EXCEPTION:
+                return response.content
             if response.response_category in all_text_categories:
                 content_parts.append(response.content)
     return "".join(content_parts)

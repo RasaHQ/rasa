@@ -22,7 +22,8 @@ responses:
     logs for the full details.
 
   exception_response: |
-    An error occurred while processing your request. Please try again later.
+    **⚠️ Something went wrong**<br>
+    I couldn’t finish that request. Try again?
 
   guardrail_policy_violation_response: |
     I'm here to help you with Rasa agent development in a safe and respectful

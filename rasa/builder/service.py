@@ -47,6 +47,7 @@ from rasa.builder.copilot.models import (
     ResponseCompleteness,
     TextContent,
 )
+from rasa.builder.copilot.response_handling.constants import EXCEPTION_RESPONSE
 from rasa.builder.download import create_bot_project_archive
 from rasa.builder.git_service import DEFAULT_COMMIT_INFO, CommitNotFoundError
 from rasa.builder.guardrails.constants import (
@@ -1660,52 +1661,32 @@ async def copilot(request: Request) -> None:
                 implementation=_get_copilot_mode(),
             )
 
-    except CopilotStreamError as e:
-        capture_exception_with_context(
-            e,
-            "bot_builder_service.copilot.generation_error",
-            extra={"session_id": req.session_id if req is not None else None},
-            tags={"endpoint": "/api/copilot"},
-        )
-        CopilotEndpointLangfuseTelemetry.update_trace_on_error(
-            request=req,
-            exc=e,
-        )
-        await sse.send(
-            ServerSentEvent(
-                event="error",
-                data={"error": str(e)},
-            ).format()
+    except CopilotStreamError as exc:
+        await _handle_copilot_exception(
+            exc,
+            req=req,
+            sse=sse,
+            chat_id=chat_id,
+            sentry_event="bot_builder_service.copilot.generation_error",
         )
 
     except asyncio.CancelledError as exc:
-        capture_exception_with_context(
+        await _handle_copilot_exception(
             exc,
-            "bot_builder_service.copilot.cancelled",
-            extra={"session_id": req.session_id if req is not None else None},
-            tags={"endpoint": "/api/copilot"},
-        )
-        CopilotEndpointLangfuseTelemetry.update_trace_on_error(
-            request=req,
-            exc=exc,
+            req=req,
+            sse=sse,
+            chat_id=chat_id,
+            sentry_event="bot_builder_service.copilot.cancelled",
+            send_sse_error=False,
         )
 
     except Exception as exc:
-        capture_exception_with_context(
+        await _handle_copilot_exception(
             exc,
-            "bot_builder_service.copilot.unexpected_error",
-            extra={"session_id": req.session_id if req is not None else None},
-            tags={"endpoint": "/api/copilot"},
-        )
-        CopilotEndpointLangfuseTelemetry.update_trace_on_error(
-            request=req,
-            exc=exc,
-        )
-        await sse.send(
-            ServerSentEvent(
-                event="error",
-                data={"error": str(exc)},
-            ).format()
+            req=req,
+            sse=sse,
+            chat_id=chat_id,
+            sentry_event="bot_builder_service.copilot.unexpected_error",
         )
 
     finally:
@@ -1963,6 +1944,53 @@ async def current_tracker_from_input_channel(
         return await app.ctx.agent.tracker_store.retrieve(session_id)
     else:
         return None
+
+
+async def _handle_copilot_exception(
+    exc: BaseException,
+    *,
+    req: Optional[CopilotTurnRequest],
+    sse: Any,
+    chat_id: str,
+    sentry_event: str,
+    send_sse_error: bool = True,
+) -> None:
+    """Common error handling for copilot endpoint exception handlers.
+
+    Captures telemetry, optionally sends an SSE error event, and persists
+    the canned exception response to conversation history.
+    """
+    capture_exception_with_context(
+        exc,
+        sentry_event,
+        extra={"session_id": req.session_id if req is not None else None},
+        tags={"endpoint": "/api/copilot"},
+    )
+
+    CopilotEndpointLangfuseTelemetry.update_trace_on_error(
+        request=req,
+        exc=exc,
+    )
+
+    if send_sse_error:
+        await sse.send(
+            ServerSentEvent(
+                event="error",
+                data={"error": str(exc)},
+            ).format()
+        )
+
+    try:
+        await persist_copilot_message_to_history(
+            text=EXCEPTION_RESPONSE,
+            chat_id=chat_id,
+            response_category=ResponseCategory.EXCEPTION,
+        )
+    except BaseException as persist_exc:
+        structlogger.error(
+            "builder.copilot.history.persist_failed",
+            error=str(persist_exc),
+        )
 
 
 async def _ensure_training_after_copilot_commit(

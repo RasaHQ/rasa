@@ -1,3 +1,4 @@
+import asyncio
 from typing import AsyncIterator, List
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -12,12 +13,14 @@ from rasa.builder.copilot.models import (
     ControlledPredictionContent,
     CopilotTextEndContent,
     CopilotTextStartContent,
+    ExceptionContent,
     GeneratedContent,
     ResponseCategory,
     ResponseCompleteness,
     UsageStatistics,
 )
 from rasa.builder.copilot.response_handling.constants import (
+    EXCEPTION_RESPONSE,
     GOODBYE_FALLBACK_RESPONSE_KEY,
     GREETING_FALLBACK_RESPONSE_KEY,
     OUT_OF_SCOPE_RESPONSE_KEY,
@@ -281,3 +284,55 @@ class TestMessageClassifierResponseHandler:
 
         assert handler.raw_llm_stream_item_count == expected_item_count
         assert handler.has_been_run() == expected_has_been_run
+
+    @pytest.mark.asyncio
+    async def test_stream_yields_exception_content_on_error(self):
+        """Test that a RuntimeError during streaming yields ExceptionContent."""
+        handler = MessageClassifierResponseHandler(
+            response_category=ResponseCategory.GREETING_DETECTION,
+            user_message="hi",
+        )
+
+        async def failing_greeting():
+            raise RuntimeError("LLM exploded")
+            yield  # make it an async generator
+
+        handler._stream_greeting = failing_greeting
+
+        responses: list = []
+        async for content in handler.stream():
+            responses.append(content)
+
+        exception_responses = [r for r in responses if isinstance(r, ExceptionContent)]
+        assert len(exception_responses) == 1
+        assert exception_responses[0].content == EXCEPTION_RESPONSE
+        assert exception_responses[0].response_category == (ResponseCategory.EXCEPTION)
+        assert isinstance(exception_responses[0].original_exception, RuntimeError)
+        assert handler.extract_response_category() == (ResponseCategory.EXCEPTION)
+
+    @pytest.mark.asyncio
+    async def test_stream_yields_exception_content_and_reraises_on_cancelled(
+        self,
+    ):
+        """Test that CancelledError yields ExceptionContent and re-raises."""
+        handler = MessageClassifierResponseHandler(
+            response_category=ResponseCategory.GOODBYE_DETECTION,
+            user_message="bye",
+        )
+
+        async def cancelled_goodbye():
+            raise asyncio.CancelledError()
+            yield  # make it an async generator
+
+        handler._stream_goodbye = cancelled_goodbye
+
+        responses: list = []
+        with pytest.raises(asyncio.CancelledError):
+            async for content in handler.stream():
+                responses.append(content)
+
+        exception_responses = [r for r in responses if isinstance(r, ExceptionContent)]
+        assert len(exception_responses) == 1
+        assert exception_responses[0].content == EXCEPTION_RESPONSE
+        assert exception_responses[0].response_category == (ResponseCategory.EXCEPTION)
+        assert handler.extract_response_category() == (ResponseCategory.EXCEPTION)

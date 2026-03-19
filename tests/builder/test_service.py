@@ -1345,3 +1345,185 @@ class TestEnsureTrainingAfterCopilotCommit:
         )
 
         assert result is False
+
+
+class TestHandleCopilotException:
+    """Tests for _handle_copilot_exception helper."""
+
+    @pytest.mark.asyncio
+    async def test_sends_sse_error_and_persists(self, monkeypatch: MonkeyPatch):
+        """Test that SSE error is sent and exception response is persisted."""
+        from rasa.builder.copilot.response_handling.constants import (
+            EXCEPTION_RESPONSE,
+        )
+        from rasa.builder.service import _handle_copilot_exception
+
+        mock_sse = AsyncMock()
+        mock_persist = AsyncMock()
+        monkeypatch.setattr(
+            "rasa.builder.service.persist_copilot_message_to_history",
+            mock_persist,
+        )
+        monkeypatch.setattr(
+            "rasa.builder.service.capture_exception_with_context",
+            MagicMock(),
+        )
+        monkeypatch.setattr(
+            "rasa.builder.service.CopilotEndpointLangfuseTelemetry"
+            ".update_trace_on_error",
+            MagicMock(),
+        )
+
+        exc = RuntimeError("something broke")
+        req = MagicMock()
+        req.session_id = "sess-1"
+
+        await _handle_copilot_exception(
+            exc,
+            req=req,
+            sse=mock_sse,
+            chat_id="chat-1",
+            sentry_event="test.error",
+        )
+
+        mock_sse.send.assert_called_once()
+        mock_persist.assert_called_once_with(
+            text=EXCEPTION_RESPONSE,
+            chat_id="chat-1",
+            response_category=ResponseCategory.EXCEPTION,
+        )
+
+    @pytest.mark.asyncio
+    async def test_skips_sse_error_when_disabled(self, monkeypatch: MonkeyPatch):
+        """Test that SSE error is not sent when send_sse_error=False."""
+        from rasa.builder.service import _handle_copilot_exception
+
+        mock_sse = AsyncMock()
+        monkeypatch.setattr(
+            "rasa.builder.service.persist_copilot_message_to_history",
+            AsyncMock(),
+        )
+        monkeypatch.setattr(
+            "rasa.builder.service.capture_exception_with_context",
+            MagicMock(),
+        )
+        monkeypatch.setattr(
+            "rasa.builder.service.CopilotEndpointLangfuseTelemetry"
+            ".update_trace_on_error",
+            MagicMock(),
+        )
+
+        await _handle_copilot_exception(
+            RuntimeError("err"),
+            req=MagicMock(),
+            sse=mock_sse,
+            chat_id="chat-1",
+            sentry_event="test.cancel",
+            send_sse_error=False,
+        )
+
+        mock_sse.send.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_persist_failure_does_not_raise(self, monkeypatch: MonkeyPatch):
+        """Test that a persist failure is logged but does not propagate."""
+        from rasa.builder.service import _handle_copilot_exception
+
+        monkeypatch.setattr(
+            "rasa.builder.service.persist_copilot_message_to_history",
+            AsyncMock(side_effect=Exception("DB down")),
+        )
+        monkeypatch.setattr(
+            "rasa.builder.service.capture_exception_with_context",
+            MagicMock(),
+        )
+        monkeypatch.setattr(
+            "rasa.builder.service.CopilotEndpointLangfuseTelemetry"
+            ".update_trace_on_error",
+            MagicMock(),
+        )
+
+        await _handle_copilot_exception(
+            RuntimeError("err"),
+            req=MagicMock(),
+            sse=AsyncMock(),
+            chat_id="chat-1",
+            sentry_event="test.error",
+        )
+
+    @pytest.mark.asyncio
+    async def test_captures_telemetry_with_correct_args(self, monkeypatch: MonkeyPatch):
+        """Test that Sentry and Langfuse telemetry receive the right params."""
+        from rasa.builder.service import _handle_copilot_exception
+
+        mock_capture = MagicMock()
+        mock_langfuse = MagicMock()
+        monkeypatch.setattr(
+            "rasa.builder.service.capture_exception_with_context",
+            mock_capture,
+        )
+        monkeypatch.setattr(
+            "rasa.builder.service.CopilotEndpointLangfuseTelemetry"
+            ".update_trace_on_error",
+            mock_langfuse,
+        )
+        monkeypatch.setattr(
+            "rasa.builder.service.persist_copilot_message_to_history",
+            AsyncMock(),
+        )
+
+        exc = ValueError("bad value")
+        req = MagicMock()
+        req.session_id = "sess-42"
+
+        await _handle_copilot_exception(
+            exc,
+            req=req,
+            sse=AsyncMock(),
+            chat_id="chat-1",
+            sentry_event="my.sentry.event",
+        )
+
+        mock_capture.assert_called_once_with(
+            exc,
+            "my.sentry.event",
+            extra={"session_id": "sess-42"},
+            tags={"endpoint": "/api/copilot"},
+        )
+        mock_langfuse.assert_called_once_with(request=req, exc=exc)
+
+    @pytest.mark.asyncio
+    async def test_handles_none_request(self, monkeypatch: MonkeyPatch):
+        """Test that req=None passes session_id=None to Sentry."""
+        from rasa.builder.service import _handle_copilot_exception
+
+        mock_capture = MagicMock()
+        monkeypatch.setattr(
+            "rasa.builder.service.capture_exception_with_context",
+            mock_capture,
+        )
+        monkeypatch.setattr(
+            "rasa.builder.service.CopilotEndpointLangfuseTelemetry"
+            ".update_trace_on_error",
+            MagicMock(),
+        )
+        monkeypatch.setattr(
+            "rasa.builder.service.persist_copilot_message_to_history",
+            AsyncMock(),
+        )
+
+        exc = RuntimeError("no request")
+        await _handle_copilot_exception(
+            exc,
+            req=None,
+            sse=AsyncMock(),
+            chat_id="chat-1",
+            sentry_event="test.none_req",
+        )
+
+        mock_capture.assert_called_once_with(
+            exc,
+            "test.none_req",
+            extra={"session_id": None},
+            tags={"endpoint": "/api/copilot"},
+        )

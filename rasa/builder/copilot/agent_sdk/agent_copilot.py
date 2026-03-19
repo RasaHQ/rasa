@@ -333,7 +333,6 @@ class AgentCopilot(BaseCopilot):
             messages_count=len(messages),
             max_turns=config.COPILOT_MAX_AGENT_STEPS,
         )
-
         try:
             # Run the agent with streaming enabled
             async with self._create_agent(system_prompt) as agent:
