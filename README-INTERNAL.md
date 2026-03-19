@@ -493,6 +493,13 @@ the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-
 
 Please refer to the [WORKFLOW_README FILE](https://github.com/RasaHQ/rasa-private/blob/main/WORKFLOW_README.md)
 
+## Creating TSL certificates
+TSL certificates are used for secure communication over the network.
+We have a makefile based tool which should be used to generate TLS certificates.
+Run the tool inside the tools/certs and copy created certificates where necessary.
+
+Take a look at: [Certs Tool](./tools/certs/README.md)
+
 ## Troubleshooting
 
 - When running docker commands, if you encounter this error: `OSError No space left on device`, consider running:
