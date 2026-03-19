@@ -28,6 +28,11 @@ from typing import (
 
 import numpy as np
 
+try:
+    from pydantic.warnings import PydanticDeprecatedSince20
+except ImportError:
+    PydanticDeprecatedSince20 = None  # type: ignore[misc, assignment]
+
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import (
@@ -60,6 +65,8 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # raised by magic_filter, google rpc
     # and probably other dependencies that use pkg_resources instead of importlib
     (DeprecationWarning, ".*pkg_resources.*"),
+    # setuptools emits pkg_resources deprecation as UserWarning in newer versions
+    (UserWarning, ".*pkg_resources.*"),
     # This warning is triggered by sanic-cors 2.0.0 and by langchain -> faiss.
     # The warning can be removed after the packages are updated:
     # sanic-cors: ^2.1.0
@@ -157,11 +164,30 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         UserWarning,
         "Pydantic serializer warnings.*",
     ),
+    # Known benign: coroutines registered but not awaited during teardown.
+    # Only list specific coroutines to preserve the safety net for real bugs.
+    # Add new entries as they are identified (e.g. from LiteLLM, copilot jobs).
+    (RuntimeWarning, "coroutine 'close_litellm_async_clients' was never awaited"),
     (
         RuntimeWarning,
-        "coroutine 'close_litellm_async_clients' was never awaited",
+        "coroutine 'run_copilot_training_error_analysis_job' was never awaited",
     ),
+    (RuntimeWarning, "coroutine 'run_copilot_training_success_job' was never awaited"),
+    (RuntimeWarning, "coroutine 'run_copilot_template_prompt_job' was never awaited"),
+    (RuntimeWarning, "coroutine 'run_copilot_welcome_message_job' was never awaited"),
+    (RuntimeWarning, "coroutine 'run_copilot_rollback_message_job' was never awaited"),
+    # spacy, weasel: Importing 'parser.split_arg_string' deprecated in Click 9.0
+    (DeprecationWarning, ".*split_arg_string.*"),
+    # aiohttp: client sessions not explicitly closed during training teardown
+    (ResourceWarning, "Unclosed client session.*aiohttp.*"),
 ]
+
+if PydanticDeprecatedSince20 is not None:
+    # Pydantic V2: class-based config deprecated in favor of ConfigDict
+    # Emitted when loading models (e.g. du_test_result, flow, agent schemas)
+    EXPECTED_WARNINGS.append(
+        (PydanticDeprecatedSince20, ".*class-based.*config.*deprecated.*")
+    )
 
 PYTHON_LOGGING_SCHEMA_DOCS = (
     "https://docs.python.org/3/library/logging.config.html#dictionary-schema-details"

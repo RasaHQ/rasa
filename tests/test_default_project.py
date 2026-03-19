@@ -73,4 +73,7 @@ def test_default_project_has_no_warnings(
     ]
 
     # Only fail if there are unexpected warnings
-    assert not unexpected_warnings
+    assert not unexpected_warnings, (
+        f"Unexpected warnings (add to EXPECTED_WARNINGS if benign): "
+        f"{[f'{type(w).__name__}: {w!s}' for w in unexpected_warnings]}"
+    )
