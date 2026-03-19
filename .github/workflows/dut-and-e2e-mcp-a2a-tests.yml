@@ -501,7 +501,8 @@ jobs:
             cd "${GITHUB_WORKSPACE}"/calm-benchmarking-bot
             rm -rf .rasa
             make dut-mcp | tee dut-mcp-log
-            grep -iE '\b0 failed test cases' dut-mcp-log
+            grep -iE '\b0 failed test cases' dut-mcp-log || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' dut-mcp-log \
+              && echo "::warning::DUTs failed due to external/3rd-party service issues (non-blocking)")
       - name: Save DUT results
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
@@ -587,7 +588,8 @@ jobs:
             cd "${GITHUB_WORKSPACE}"/calm-benchmarking-bot
             rm -rf .rasa
             make dut-a2a | tee dut-a2a-log
-            grep -iE '\b0 failed test cases' dut-a2a-log
+            grep -iE '\b0 failed test cases' dut-a2a-log || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' dut-a2a-log \
+              && echo "::warning::DUTs failed due to external/3rd-party service issues (non-blocking)")
           # Restart mock A2A agent to clear conversation history, before re-running test(s)
           on_retry_command: |
             set -Eeuxv
