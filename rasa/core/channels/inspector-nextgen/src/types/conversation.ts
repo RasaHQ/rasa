@@ -14,6 +14,11 @@ export type StackEvent = {
 export enum ConversationEventType {
   Action = "ACTION",
   ActiveLoop = "ACTIVE_LOOP",
+  AgentCancelled = "AGENT_CANCELLED",
+  AgentCompleted = "AGENT_COMPLETED",
+  AgentInterrupted = "AGENT_INTERRUPTED",
+  AgentResumed = "AGENT_RESUMED",
+  AgentStarted = "AGENT_STARTED",
   FlowCancelled = "FLOW_CANCELLED",
   FlowCompleted = "FLOW_COMPLETED",
   FlowInterrupted = "FLOW_INTERRUPTED",
@@ -132,7 +137,7 @@ export type RawEvent = {
   name: string;
   metadata: EventMetadata;
   timestamp: number;
-  event: "user" | "stack" | "action" | "bot" | "slot";
+  event: "user" | "stack" | "action" | "bot" | "slot" | "agent" | "agent_started" | "agent_completed" | "agent_interrupted" | "agent_cancelled" | "agent_resumed";
   conversation_id: string;
   text: string;
   data: BackendResponseData;

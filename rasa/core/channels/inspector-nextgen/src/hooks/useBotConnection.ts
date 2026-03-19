@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { v4 as uuid } from "uuid";
 import {
+  ConversationEventType,
   UtteranceType,
   type Conversation,
   type ConversationEvent,
@@ -29,7 +30,7 @@ import {
   createAudioQueue,
   setupAudioPlayback,
   stopAudioPlayback,
-  stopMicrophoneStream
+  stopMicrophoneStream,
 } from "../utils/voice/audiostream";
 import { SocketTimeoutError, SocketUnavailableError } from "../errors";
 
@@ -50,11 +51,42 @@ function formatSlots(slots: { [key: string]: unknown }): SlotState[] {
     .map((slotDuple) => ({ name: slotDuple[0], value: slotDuple[1] }));
 }
 
+const AGENT_INACTIVE_EVENTS = new Set([
+  ConversationEventType.AgentCompleted,
+  ConversationEventType.AgentCancelled,
+  ConversationEventType.AgentInterrupted,
+]);
+
+const AGENT_ACTIVE_EVENTS = new Set([
+  ConversationEventType.AgentStarted,
+  ConversationEventType.AgentResumed,
+]);
+
+function hasActiveSubAgent(events: UnionEventType[]): boolean {
+  for (let i = events.length - 1; i >= 0; i--) {
+    const event = events[i];
+    if (isUtterance(event)) continue;
+    if (AGENT_INACTIVE_EVENTS.has(event.conversationEventType)) return false;
+    if (AGENT_ACTIVE_EVENTS.has(event.conversationEventType)) return true;
+  }
+  return false;
+}
+
 function isWaitingForUserInput(events: UnionEventType[]): boolean {
-  const lastEvent = events[events.length - 1];
-  return (
-    lastEvent && !isUtterance(lastEvent) && lastEvent.name === "action_listen"
-  );
+  let userMessageAfterAction = false;
+
+  for (let i = events.length - 1; i >= 0; i--) {
+    const event = events[i];
+    if (isUtterance(event)) {
+      if (event.type === UtteranceType.User) userMessageAfterAction = true;
+      continue;
+    }
+    if (event.conversationEventType !== ConversationEventType.Action) continue;
+    if (userMessageAfterAction) return false;
+    if (event.name === "action_listen") return !hasActiveSubAgent(events);
+    return event.name === "action_agent_request_user_input";
+  }
+  return false;
 }
 
 function generatePlaceholderId() {
@@ -152,8 +184,8 @@ export function useBotConnection({
   const microphoneStreamRef =
     useRef<
       ReturnType<typeof streamMicrophoneToServer> extends Promise<infer T>
-      ? T
-      : never
+        ? T
+        : never
     >(undefined);
   const [conversation, setConversation] = useState<Conversation>(
     initialConversationState(sessionId),
@@ -161,9 +193,9 @@ export function useBotConnection({
   const [stack, setStack] = useState<Stack[]>([]);
   const [initialTrackerData, setInitialTrackerData] = useState<
     | {
-      sender_id: string;
-      events: (RawEvent | undefined)[];
-    }
+        sender_id: string;
+        events: (RawEvent | undefined)[];
+      }
     | undefined
   >(undefined);
   const [inputDisabled, setInputDisabled] = useState(true);

@@ -4,6 +4,7 @@ import { UtteranceType, type Utterance } from "../../../types";
 import { Avatar } from "../../../Avatar";
 import { UserAvatar, BotAvatar } from "../../../assets/images";
 import { useConversationLogSx } from "../useConversationLogSx";
+import { isBotUtteranceEmpty } from "../../../utils";
 
 interface Props extends FlexProps {
   utterance?: Omit<Utterance, "entities">;
@@ -47,7 +48,9 @@ export const MessageMarkup = forwardRef<HTMLDivElement | null, Props>(
 
     const utteranceType = utterance?.type || UtteranceType.Bot;
 
-    const showAvatar = utteranceType !== previousUtterance?.type;
+    const showAvatar =
+      !(utterance && isBotUtteranceEmpty(utterance)) &&
+      utteranceType !== previousUtterance?.type;
 
     const containerSx = {
       _first: { mt: 0 },
@@ -113,6 +116,7 @@ export const MessageMarkup = forwardRef<HTMLDivElement | null, Props>(
       <Flex css={containerSx} {...otherProps} ref={ref} position="relative">
         {showAvatar ? (
           <Avatar
+            data-testid="message-avatar"
             size="sm"
             mr={isUser ? 0 : "0.5rem"}
             ml={isUser ? "0.5rem" : 0}

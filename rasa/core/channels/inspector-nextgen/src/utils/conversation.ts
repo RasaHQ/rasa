@@ -155,6 +155,20 @@ export function isUtterance(event: UnionEventType): event is Utterance {
   );
 }
 
+export function isBotUtteranceEmpty(
+  utterance: Omit<Utterance, "entities">,
+): boolean {
+  return (
+    utterance.type === UtteranceType.Bot &&
+    !utterance.text &&
+    !utterance.responseData?.image &&
+    !utterance.responseData?.custom &&
+    !utterance.responseData?.attachment &&
+    !utterance.responseData?.buttons?.length &&
+    !utterance.responseData?.quickReplies?.length
+  );
+}
+
 export function isStackEvent(event: InspectorEventType): event is StackEvent {
   return event.__typename === "StackEvent";
 }

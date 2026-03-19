@@ -6,7 +6,12 @@ import {
   type UnionEventType,
   UtteranceType,
 } from "../types";
-import { formatDateTime, isConversationEvent, isUtterance } from "../utils";
+import {
+  formatDateTime,
+  isBotUtteranceEmpty,
+  isConversationEvent,
+  isUtterance,
+} from "../utils";
 import { ConversationLoadingSpinner } from "./ConversationLoadingSpinner";
 import { Event as ConversationEventComponent } from "./ConversationLog/Event";
 import { Message } from "./ConversationLog/Message/Message";
@@ -57,9 +62,11 @@ export const ConversationSession = ({
     whiteSpace: "nowrap",
   };
 
-  // we don't want to render stack events, becomes to noisy
+  // we don't want to render stack events, becomes too noisy
   const shownEvents = events.filter(
-    (event) => isUtterance(event) || isConversationEvent(event),
+    (event) =>
+      (isUtterance(event) && !isBotUtteranceEmpty(event)) ||
+      isConversationEvent(event),
   );
 
   const lastUtterance = shownEvents.findLast((event) => isUtterance(event));

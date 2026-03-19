@@ -5,7 +5,7 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState
+  useState,
 } from "react";
 import {
   type Edge,
@@ -160,6 +160,21 @@ export const CanvasContextProvider = ({
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [focusOnNode, selectedNode]);
+
+  const initialFitDoneRef = useRef(false);
+
+  useEffect(() => {
+    initialFitDoneRef.current = false;
+  }, [initNodes]);
+
+  useEffect(() => {
+    if (flowInstance && nodesWithCoordinates.length > 0 && !initialFitDoneRef.current) {
+      initialFitDoneRef.current = true;
+      setTimeout(() => {
+        fitView({ minZoom: 0.1 });
+      }, 0);
+    }
+  }, [flowInstance, nodesWithCoordinates, fitView]);
 
   const handleZoomInClick = () => {
     zoomIn({ duration: 200 });

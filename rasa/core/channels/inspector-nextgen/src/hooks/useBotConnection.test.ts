@@ -328,6 +328,176 @@ describe("useBotConnection", () => {
     });
   });
 
+  describe("waitingForUserInput with sub-agent events", () => {
+    function sendTracker(sessionId: string, rawEvents: Record<string, unknown>[]) {
+      lastSocket.handlers["tracker"]?.({
+        sender_id: sessionId,
+        events: rawEvents,
+        slots: [],
+        stack: [],
+      });
+    }
+
+    it("returns true when last action is action_agent_request_user_input", () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: false,
+        }),
+      );
+
+      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => lastSocket.handlers["connect"]?.());
+
+      act(() =>
+        sendTracker(result.current.sessionId, [
+          { event: "action", name: "action_agent_request_user_input", timestamp: 1 },
+        ]),
+      );
+
+      expect(result.current.waitingForUserInput).toBe(true);
+    });
+
+    it("returns true when action_agent_request_user_input is followed by an empty bot utterance", () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: false,
+        }),
+      );
+
+      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => lastSocket.handlers["connect"]?.());
+
+      act(() =>
+        sendTracker(result.current.sessionId, [
+          { event: "action", name: "action_agent_request_user_input", timestamp: 1 },
+          { event: "bot", timestamp: 2 },
+        ]),
+      );
+
+      expect(result.current.waitingForUserInput).toBe(true);
+    });
+
+    it("returns true for action_listen (standard flow)", () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: false,
+        }),
+      );
+
+      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => lastSocket.handlers["connect"]?.());
+
+      act(() =>
+        sendTracker(result.current.sessionId, [
+          { event: "action", name: "action_listen", timestamp: 1 },
+        ]),
+      );
+
+      expect(result.current.waitingForUserInput).toBe(true);
+    });
+
+    it("returns false when action_listen follows agent_started (sub-agent still working)", () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: false,
+        }),
+      );
+
+      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => lastSocket.handlers["connect"]?.());
+
+      act(() =>
+        sendTracker(result.current.sessionId, [
+          { event: "agent_started", timestamp: 1 },
+          { event: "action", name: "action_listen", timestamp: 2 },
+        ]),
+      );
+
+      expect(result.current.waitingForUserInput).toBe(false);
+    });
+
+    it("returns true when action_listen follows agent_completed (sub-agent done)", () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: false,
+        }),
+      );
+
+      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => lastSocket.handlers["connect"]?.());
+
+      act(() =>
+        sendTracker(result.current.sessionId, [
+          { event: "agent_started", timestamp: 1 },
+          { event: "agent_completed", timestamp: 2 },
+          { event: "action", name: "action_listen", timestamp: 3 },
+        ]),
+      );
+
+      expect(result.current.waitingForUserInput).toBe(true);
+    });
+
+    it("returns false when user message follows action_listen (bot is processing)", () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: false,
+        }),
+      );
+
+      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => lastSocket.handlers["connect"]?.());
+
+      act(() =>
+        sendTracker(result.current.sessionId, [
+          { event: "action", name: "action_listen", timestamp: 1 },
+          { event: "user", text: "find flights", timestamp: 2 },
+        ]),
+      );
+
+      expect(result.current.waitingForUserInput).toBe(false);
+    });
+
+    it("returns false when last action is not a listen/request action", () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: false,
+        }),
+      );
+
+      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => lastSocket.handlers["connect"]?.());
+
+      act(() =>
+        sendTracker(result.current.sessionId, [
+          { event: "action", name: "action_some_custom", timestamp: 1 },
+        ]),
+      );
+
+      expect(result.current.waitingForUserInput).toBe(false);
+    });
+  });
+
   describe("voice streaming", () => {
     afterEach(() => {
       vi.useRealTimers();
