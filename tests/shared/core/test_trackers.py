@@ -92,6 +92,7 @@ from rasa.shared.core.slots import (
     BooleanSlot,
     CategoricalSlot,
     FloatSlot,
+    LanguageSlot,
     ListSlot,
     Slot,
     TextSlot,
@@ -3516,3 +3517,64 @@ def test_conversation_inactive_persists_with_other_events(event):
 
     # Then
     assert tracker.inactive
+
+
+def _make_tracker_with_language_slot(
+    primary_language: str,
+    additional_languages: List[str],
+    current_language: Optional[str] = None,
+) -> DialogueStateTracker:
+    """Helper: build a tracker whose language slot mirrors LanguageImporter output."""
+    all_values = additional_languages.copy()
+    if primary_language not in all_values:
+        all_values.append(primary_language)
+
+    slot = LanguageSlot(
+        "language",
+        mappings=[],
+        values=all_values,
+        initial_value=primary_language,
+    )
+    if current_language:
+        slot.value = current_language
+
+    tracker = DialogueStateTracker("test", slots=[slot])
+    return tracker
+
+
+def test_supported_languages_marks_primary_as_default():
+    """The language configured as `language:` in config.yml must be is_default=True."""
+    tracker = _make_tracker_with_language_slot(
+        primary_language="en", additional_languages=["de", "it"]
+    )
+    supported = tracker.supported_languages
+    default_langs = [lang for lang in supported if lang.is_default]
+    non_default_langs = [lang for lang in supported if not lang.is_default]
+
+    assert len(default_langs) == 1
+    assert default_langs[0].code == "en"
+    assert {lang.code for lang in non_default_langs} == {"de", "it"}
+
+
+def test_default_language_returns_primary_language():
+    """default_language must return the language set as `language:` in config.yml."""
+    tracker = _make_tracker_with_language_slot(
+        primary_language="en", additional_languages=["de"]
+    )
+    assert tracker.default_language.code == "en"
+    assert tracker.default_language.is_default is True
+
+
+def test_default_language_raises_when_no_primary_configured():
+    """Regression: previously all languages were is_default=False, causing this
+    to raise even when languages were properly configured."""
+    # Simulate the old broken state: slot with no initial_value (None)
+    slot = LanguageSlot(
+        "language",
+        mappings=[],
+        values=["de", "en"],
+        initial_value=None,  # no primary language configured
+    )
+    tracker = DialogueStateTracker("test", slots=[slot])
+    with pytest.raises(Exception):
+        _ = tracker.default_language

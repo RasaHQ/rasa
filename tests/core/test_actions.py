@@ -112,7 +112,7 @@ from rasa.shared.core.events import (
     UserUtteranceReverted,
     UserUttered,
 )
-from rasa.shared.core.slots import StrictCategoricalSlot
+from rasa.shared.core.slots import LanguageSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -4072,7 +4072,7 @@ async def test_create_bot_utterance_translation(monkeypatch: MonkeyPatch):
     nlg = TemplatedNaturalLanguageGenerator(responses=responses)
     language = Language.from_language_code("fr", is_default=True)
     slots = [
-        StrictCategoricalSlot(
+        LanguageSlot(
             name="language",
             mappings=[{}],
             initial_value=language.code,

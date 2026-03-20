@@ -31,6 +31,10 @@ class InvalidSlotConfigError(RasaException, ValueError):
     """Raised if a slot's config is invalid."""
 
 
+class InvalidSlotValueError(RasaException, ValueError):
+    """Raised if a slot value is invalid."""
+
+
 @dataclass
 class SlotRejection:
     """A pair of validation condition and an utterance for the case of failure."""
@@ -857,7 +861,7 @@ class StrictCategoricalSlot(CategoricalSlot):
             if value.casefold() == allowed_value.casefold():
                 return allowed_value
 
-        raise InvalidSlotConfigError(
+        raise InvalidSlotValueError(
             f"Value '{value}' is not allowed for the slot '{self.name}'. "
             f"Allowed values are: {self.values}"
         )
@@ -872,3 +876,36 @@ class StrictCategoricalSlot(CategoricalSlot):
         # StrictCategoricalSlot enforces validation against a specified set of values,
         # so default values should not be automatically added.
         pass
+
+
+class LanguageSlot(StrictCategoricalSlot):
+    """Built-in slot for tracking the conversation language.
+
+    Extends StrictCategoricalSlot by additionally forbidding explicit resets to
+    None once the slot has been given a value.  Calling ``reset()`` (as done by
+    the tracker's ``_reset_slots``) always succeeds and restores the slot to its
+    ``initial_value``.
+    """
+
+    type_name = "language"
+
+    @Slot.value.setter  # type: ignore[attr-defined,misc]
+    def value(self, value: Any) -> None:
+        """Set the slot's value, preventing resets to None once a value is set."""
+        if value is None and self._value is not None:
+            raise InvalidSlotValueError(
+                f"Slot '{self.name}' is already set to '{self._value}' and cannot "
+                f"be reset to None."
+            )
+        coerced_value = self.coerce_value(value)
+        super(LanguageSlot, self.__class__).value.fset(self, coerced_value)
+
+    def reset(self) -> None:
+        """Reset the slot to its initial value.
+
+        Bypasses the None guard in the value setter so that tracker resets
+        (e.g. ``_reset_slots``) always succeed, even when ``initial_value`` is
+        None.
+        """
+        self._value = self.initial_value
+        self._has_been_set = False
