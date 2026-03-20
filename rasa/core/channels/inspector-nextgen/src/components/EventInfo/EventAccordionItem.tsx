@@ -1,4 +1,4 @@
-import { Accordion, Text } from "@chakra-ui/react";
+import { Accordion, Heading } from "@chakra-ui/react";
 
 interface EventAccordionItemProps {
   title: string;
@@ -18,10 +18,10 @@ export function EventAccordionItem({
       borderColor="rasaNeutral.300"
       py="0.25rem"
     >
-      <Accordion.ItemTrigger px="0" cursor="pointer">
-        <Text flex="1" fontWeight="bold" fontSize="0.875rem" textAlign="left">
+      <Accordion.ItemTrigger colorPalette="dark" px="0" cursor="pointer">
+        <Heading flex="1" size="md" textAlign="left">
           {title}
-        </Text>
+        </Heading>
         <Accordion.ItemIndicator />
       </Accordion.ItemTrigger>
       <Accordion.ItemContent>

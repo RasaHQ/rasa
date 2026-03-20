@@ -26,14 +26,15 @@ export function DetailView({
           borderBottom="1px solid"
           borderColor="rasaNeutral.300"
           px="1.5rem"
-          py="0.75rem"
+          py="0.5rem"
         >
-          <Heading fontSize="0.875rem" fontWeight="bold">
+          <Heading size="sm">
             {title}
           </Heading>
           <IconButton
             data-testid="event-details-close"
-            variant="ghost"
+            variant="subtle"
+            colorPalette="dark"
             size="sm"
             aria-label="Close"
             onClick={onClose}

@@ -46,8 +46,11 @@ export {
   faGhost as Ghost,
   faEyes as Eyes,
   faFileCheck as FileCheck,
-  faWaveformLines as WaveformLines,
 } from "@fortawesome/pro-light-svg-icons";
+
+export {
+  faWaveformLines as WaveformLines,
+} from "@fortawesome/pro-regular-svg-icons";
 
 export {
   faSquare as Square,

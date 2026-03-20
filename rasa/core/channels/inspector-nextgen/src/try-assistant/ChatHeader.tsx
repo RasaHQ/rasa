@@ -1,4 +1,5 @@
 import { Box, Flex, Heading, IconButton, Popover, Text } from "@chakra-ui/react";
+import { useState } from "react";
 import { ArrowToBottom, Comment, FileCheck, Icon, Refresh } from "../Icon";
 import { OnboardingTooltip } from "../OnboardingTooltip";
 import { SwitchButton } from "../SwitchButton";
@@ -60,8 +61,8 @@ export const ChatHeader = ({
               borderRadius="0.5rem"
               boxShadow="0px 2px 10px 0px rgba(0, 0, 0, 0.18)"
             >
-              <Popover.Body px="0" py="0.5rem">
-                <Box px="1.25rem" py="0.75rem" textAlign="start">
+              <Popover.Body p="0.5rem">
+                <Box px="0.75rem" py="0.5rem" textAlign="start">
                   <Heading size="sm">Download:</Heading>
                 </Box>
                 <DownloadMenuItem
@@ -110,6 +111,7 @@ function DownloadMenuItem({
   onClick: () => void;
   testId: string;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
   return (
     <Box
       as="button"
@@ -117,18 +119,21 @@ function DownloadMenuItem({
       alignItems="center"
       gap="0.75rem"
       width="100%"
-      px="1.25rem"
-      py="0.625rem"
+      px="0.75rem"
+      py="0.5rem"
       cursor="pointer"
       _hover={{ bg: "rasaNeutral.100" }}
       onClick={onClick}
       data-testid={testId}
       fontSize="1rem"
+      borderRadius="0.5rem"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <Box width="1rem" height="1rem" display="flex" alignItems="center" justifyContent="center">
-        <Icon icon={icon} />
+        <Icon color={isHovered ? "" : "rasaNeutral.700"} icon={icon} />
       </Box>
-      <Text size="sm">{label}</Text>
+      <Text size="sm" color={isHovered ? "rasawebDeepPurple.900" : "rasawebDeepPurple.800"}>{label}</Text>
     </Box>
   );
 }

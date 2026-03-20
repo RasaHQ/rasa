@@ -11,6 +11,8 @@ import { textRecipe } from "./recipes/text";
 import { segmentGroupSlotRecipe } from "./recipes/segmentGroup";
 import { tagSlotRecipe } from "./recipes/tag";
 import { toasterSlotRecipe } from "./recipes/toaster";
+import { separatorRecipe } from "./recipes/separator";
+import { accordionSlotRecipe } from "./recipes/accordion";
 
 const config = defineConfig({
   theme: {
@@ -89,12 +91,14 @@ const config = defineConfig({
       iconButton: buttonRecipe,
       heading: headingRecipe,
       text: textRecipe,
+      separator: separatorRecipe,
     },
     slotRecipes: {
       segmentGroup: segmentGroupSlotRecipe,
       tag: tagSlotRecipe,
       toast: toasterSlotRecipe,
       dialog: dialogSlotRecipe,
+      accordion: accordionSlotRecipe,
     },
     breakpoints: {
       sm: "480px",

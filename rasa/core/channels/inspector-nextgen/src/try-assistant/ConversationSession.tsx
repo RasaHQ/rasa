@@ -1,4 +1,4 @@
-import { Box, HStack, Separator, Text } from "@chakra-ui/react";
+import { Box, HStack, Text } from "@chakra-ui/react";
 import { useCallback } from "react";
 import {
   type Conversation,
@@ -53,7 +53,11 @@ export const ConversationSession = ({
     color: "rasaNeutral.700",
     fontSize: "0.75rem",
     textAlign: "center",
-    maxWidth: "80%",
+    width: "100%",
+    backgroundColor: "rasawebNeutral.50",
+    px: "3.5rem",
+    py: "0.5rem",
+    borderRadius: "0.75rem",
   };
 
   const versionSx = {
@@ -87,17 +91,15 @@ export const ConversationSession = ({
 
   return (
     <Box mt="1rem" mb="1rem">
-      <HStack padding="0.5rem" width="100%" justifyContent="center">
-        <Separator orientation="horizontal" marginLeft={"1rem"} />
-        <Box css={headingSx} flex="0 1 auto">
-          <Text size="sm" variant="muted">
+      <HStack px="1.5rem" py="0.5rem" width="100%" justifyContent="center">
+        <Box css={headingSx} flex="0 1 auto" >
+          <Text size="sm" variant="muted" color="rasawebNeutral.600">
             Session started on {formattedStartDate}
           </Text>
           {assistantVersion ? (
             <Text css={versionSx}>{assistantVersion}</Text>
           ) : null}
         </Box>
-        <Separator orientation="horizontal" marginRight={"1rem"} />
       </HStack>
 
       {shownEvents.map((event, index) => {

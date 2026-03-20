@@ -18,6 +18,7 @@ interface Props extends FlexProps {
   isInteractive?: boolean;
   isUser?: boolean;
   topOverlay?: React.ReactNode;
+  inspectorMode?: boolean;
 }
 
 export const MessageMarkup = forwardRef<HTMLDivElement | null, Props>(
@@ -32,13 +33,16 @@ export const MessageMarkup = forwardRef<HTMLDivElement | null, Props>(
       containerSx: containerSxAdditional,
       messageSx: messageSxAdditional,
       messageBreakout,
+      inspectorMode,
       isInteractive = false,
       isUser = false,
       topOverlay,
       ...otherProps
     } = props;
 
-    const { hoverableSx } = useConversationLogSx(isSelected ?? false);
+    const shouldUseSelectedStyles = isSelected && inspectorMode;
+
+    const { hoverableSx } = useConversationLogSx(shouldUseSelectedStyles ?? false);
 
     const regularBgColor = "rasaNeutral.100";
     const userBgColor = "rasawebDeepPurple.800";
@@ -58,8 +62,8 @@ export const MessageMarkup = forwardRef<HTMLDivElement | null, Props>(
       py: "0.5rem",
       pr: isUser ? "1.5rem" : "3.5rem",
       pl: isUser ? "3.5rem" : "1.5rem",
-      bg: isSelected ? "rasaNeutral.200" : "transparent",
-      ...hoverableSx,
+      bg: shouldUseSelectedStyles ? "rasaNeutral.200" : "transparent",
+      ...(inspectorMode ? hoverableSx : {}),
       ...containerSxAdditional,
     };
 
@@ -68,7 +72,7 @@ export const MessageMarkup = forwardRef<HTMLDivElement | null, Props>(
     if (isUser) {
       messageSxBg = userBgColor;
     } else {
-      messageSxBg = isSelected ? selectedBgColor : regularBgColor;
+      messageSxBg = shouldUseSelectedStyles ? selectedBgColor : regularBgColor;
     }
 
     const messageSxColor =

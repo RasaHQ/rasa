@@ -33,6 +33,7 @@ export const useConversationLogSx = (isSelected: boolean) => {
 
   const iconSx = {
     marginRight: "0.5rem",
+    width: "1.25rem",
   };
 
   const baseMessageSx = {
