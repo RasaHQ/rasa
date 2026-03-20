@@ -28,10 +28,11 @@ type Props = {
   showToast?: ShowToastFn;
   onboardingTooltips?: OnboardingTooltipConfig[];
   voiceFeaturesEnabled?: boolean;
+  socketReconnectAttempts?: number;
 };
 
-export const Inspector = ({ track, logError, showToast, onboardingTooltips, ...rest }: Props) => (
-  <InspectorContextProvider track={track} logError={logError} showToast={showToast} onboardingTooltips={onboardingTooltips}>
+export const Inspector = ({ track, logError, showToast, onboardingTooltips, socketReconnectAttempts, ...rest }: Props) => (
+  <InspectorContextProvider track={track} logError={logError} showToast={showToast} onboardingTooltips={onboardingTooltips} socketReconnectAttempts={socketReconnectAttempts}>
     <InspectorContent {...rest} />
     {!showToast && <Toaster />}
   </InspectorContextProvider>

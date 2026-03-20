@@ -35,7 +35,6 @@ import {
 import { SocketTimeoutError, SocketUnavailableError } from "../errors";
 
 const REACT_APP_SESSION_HISTORY_KEY = "rasa_session_history";
-const SOCKET_IO_RECONNECTION_ATTEMPTS = 3;
 
 type ConversationHistory = Record<string, Conversation>;
 
@@ -122,7 +121,7 @@ export function useBotConnection({
   onMessageSent?: (message: string) => void;
   useMemoryOnly?: boolean;
 }) {
-  const { logError, track } = useInspectorContext();
+  const { logError, showToast, socketReconnectAttempts, track } = useInspectorContext();
   const [localStorageHistory, setLocalStorageHistory] =
     // TODO: update useLocalStorage to deal with `undefined | null` keys
     // and avoid keys like `rasa_session_history_undefined`;
@@ -264,7 +263,7 @@ export function useBotConnection({
       socket.current = io(urlObject.toString(), {
         transports: ["websocket", "polling"],
         path: socketIoPath,
-        reconnectionAttempts: SOCKET_IO_RECONNECTION_ATTEMPTS,
+        reconnectionAttempts: socketReconnectAttempts,
         reconnectionDelayMax: 2000,
       });
 
@@ -304,6 +303,7 @@ export function useBotConnection({
             );
           }
         }
+
       });
 
       socket.current?.on("session_confirm", () => {
@@ -322,6 +322,11 @@ export function useBotConnection({
         if (activeModalityRef.current === "text") {
           sendMessage(SESSION_START_MESSAGE);
         }
+        // quick fix for new sessions after reconnecting, needs more attention in the future
+        setConversation({
+          ...conversation,
+          startDate: new Date().toISOString(),
+        });
       });
 
       socket.current?.on("error", (error) => {
@@ -340,6 +345,11 @@ export function useBotConnection({
       });
 
       socket.current?.on("disconnect", (reason, details) => {
+        showToast({
+          title: "Server disconnected",
+          description: "Trying to reconnect...",
+          type: "error",
+        });
         if (!socket.current?.active) {
           disableChat();
           logError(reason, {
@@ -353,6 +363,11 @@ export function useBotConnection({
       });
 
       socket.current?.io.on("reconnect_error", (error) => {
+        showToast({
+          title: "Reconnect failed",
+          description: "Reconnecting...",
+          type: "error",
+        });
         disableChat();
         onReconnectErrorRef?.current?.(error);
         logError(error, {
@@ -364,10 +379,16 @@ export function useBotConnection({
       });
 
       socket.current?.io.on("reconnect_failed", () => {
+        const errorDescription = `websocket wasn't able to reconnect ${socketReconnectAttempts ? `within ${socketReconnectAttempts} attempts` : ""}`
+        showToast({
+          title: "Reconnect failed",
+          description: errorDescription,
+          type: "error",
+        });
         disableChat();
         onReconnectErrorRef?.current?.(new Error("Reconnect failed"));
         logError(
-          `websocket wasn't able to reconnect within ${SOCKET_IO_RECONNECTION_ATTEMPTS} attempts`,
+          errorDescription,
           {
             tags: {
               component: "useBotConnection",
@@ -419,7 +440,8 @@ export function useBotConnection({
         }
       };
     }
-  }, [url, sessionId, sendMessage, logError]);
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [url, sessionId, sendMessage, logError, showToast, socketReconnectAttempts]);
 
   useEffect(() => {
     onSessionStartRef?.current?.(sessionId);

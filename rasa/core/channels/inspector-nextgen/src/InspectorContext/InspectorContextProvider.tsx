@@ -13,6 +13,7 @@ interface Props {
   track?: TrackFn;
   showToast?: ShowToastFn;
   onboardingTooltips?: OnboardingTooltipConfig[];
+  socketReconnectAttempts?: number;
   children: ReactNode;
 }
 
@@ -21,6 +22,7 @@ export const InspectorContextProvider = ({
   track,
   showToast,
   onboardingTooltips,
+  socketReconnectAttempts,
   children,
 }: Props) => {
   const value = useMemo(
@@ -29,8 +31,9 @@ export const InspectorContextProvider = ({
       track: track ?? (() => undefined),
       showToast: showToast ?? defaultShowToast,
       onboardingTooltips: onboardingTooltips ?? [],
+      socketReconnectAttempts,
     }),
-    [logError, track, showToast, onboardingTooltips],
+    [logError, track, showToast, onboardingTooltips, socketReconnectAttempts],
   );
 
   return (

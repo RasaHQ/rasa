@@ -12,6 +12,7 @@ export interface InspectorContextValue {
   track: TrackFn;
   showToast: ShowToastFn;
   onboardingTooltips: OnboardingTooltipConfig[];
+  socketReconnectAttempts?: number;
 }
 
 export const InspectorContext = createContext<InspectorContextValue>({
