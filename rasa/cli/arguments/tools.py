@@ -2,8 +2,6 @@ import argparse
 
 from rasa.cli.tools.constants import (
     DEFAULT_RASA_SERVER_URL,
-    DOCS_MODE_OFFLINE,
-    DOCS_MODES,
     MCP_TOOLS_DEFAULT_PORT,
     MCP_TOOLS_RASA_PROJECT_FOLDER_ENV_VAR,
     MCP_TOOLS_TRANSPORT_HTTP,
@@ -68,7 +66,11 @@ def set_tools_skills_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def set_tools_init_arguments(parser: argparse.ArgumentParser) -> None:
-    """Arguments for the interactive setup wizard via `rasa tools init`."""
+    """Arguments for the interactive setup wizard via `rasa tools init`.
+
+    The wizard collects all configuration values interactively, or applies
+    defaults in `--yes` mode.
+    """
     parser.add_argument(
         "--yes",
         "-y",
@@ -86,67 +88,6 @@ def set_tools_init_arguments(parser: argparse.ArgumentParser) -> None:
             "Path to the Rasa project folder. "
             "Defaults to the current directory when not specified."
         ),
-    )
-    parser.add_argument(
-        "--mode",
-        type=str,
-        choices=[MCP_TOOLS_TRANSPORT_STDIO, MCP_TOOLS_TRANSPORT_HTTP],
-        default=None,
-        dest="mode",
-        help=(
-            "Transport mode for the MCP server. "
-            f"Defaults to '{MCP_TOOLS_TRANSPORT_STDIO}' when not specified."
-        ),
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=None,
-        dest="port",
-        help=(
-            "Port for the MCP server in http mode. "
-            f"Defaults to {MCP_TOOLS_DEFAULT_PORT} when not specified."
-        ),
-    )
-    parser.add_argument(
-        "--docs",
-        type=str,
-        choices=list(DOCS_MODES),
-        default=None,
-        dest="docs",
-        help=(
-            "Documentation mode. "
-            f"Defaults to '{DOCS_MODE_OFFLINE}' when not specified."
-        ),
-    )
-    parser.add_argument(
-        "--ides",
-        type=str,
-        default=None,
-        dest="ides",
-        help=(
-            "Comma-separated list of IDEs to configure: "
-            f"{', '.join(SUPPORTED_IDES)}."
-        ),
-    )
-    parser.add_argument(
-        "--rasa-server-url",
-        type=str,
-        default=None,
-        dest="rasa_server_url",
-        help=(
-            "Base URL of the running Rasa server "
-            f"(e.g. {DEFAULT_RASA_SERVER_URL}). "
-            "Tells the MCP server where to reach the Rasa assistant. "
-            f"Defaults to {DEFAULT_RASA_SERVER_URL}."
-        ),
-    )
-    parser.add_argument(
-        "--skills",
-        action="store_true",
-        default=False,
-        dest="skills",
-        help="Install Rasa agent skills for all selected IDEs.",
     )
 
 

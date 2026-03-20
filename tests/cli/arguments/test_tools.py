@@ -14,11 +14,6 @@ class TestToolsInitArguments:
         args = tools_parser.parse_args(["tools", "init"])
         assert args.yes is False
         assert args.project_path is None
-        assert args.mode is None
-        assert args.port is None
-        assert args.docs is None
-        assert args.ides is None
-        assert args.rasa_server_url is None
 
     def test_init_yes_flag(self, tools_parser: argparse.ArgumentParser) -> None:
         args = tools_parser.parse_args(["tools", "init", "--yes"])
@@ -28,45 +23,25 @@ class TestToolsInitArguments:
         args = tools_parser.parse_args(["tools", "init", "-y"])
         assert args.yes is True
 
+    def test_init_project_path(self, tools_parser: argparse.ArgumentParser) -> None:
+        args = tools_parser.parse_args(["tools", "init", "--project-path", "/my/bot"])
+        assert args.project_path == "/my/bot"
+
     def test_init_all_flags(self, tools_parser: argparse.ArgumentParser) -> None:
         args = tools_parser.parse_args(
-            [
-                "tools",
-                "init",
-                "--yes",
-                "--project-path",
-                "/my/bot",
-                "--mode",
-                "http",
-                "--port",
-                "9000",
-                "--docs",
-                "online",
-                "--ides",
-                "cursor,vscode",
-                "--rasa-server-url",
-                "http://my-server:9999",
-            ]
+            ["tools", "init", "--yes", "--project-path", "/my/bot"]
         )
         assert args.yes is True
         assert args.project_path == "/my/bot"
-        assert args.mode == "http"
-        assert args.port == 9000
-        assert args.docs == "online"
-        assert args.ides == "cursor,vscode"
-        assert args.rasa_server_url == "http://my-server:9999"
 
-    def test_init_invalid_mode_rejected(
+    def test_init_rejects_removed_flags(
         self, tools_parser: argparse.ArgumentParser
     ) -> None:
-        with pytest.raises(SystemExit):
-            tools_parser.parse_args(["tools", "init", "--mode", "grpc"])
-
-    def test_init_invalid_docs_rejected(
-        self, tools_parser: argparse.ArgumentParser
-    ) -> None:
-        with pytest.raises(SystemExit):
-            tools_parser.parse_args(["tools", "init", "--docs", "hybrid"])
+        """Flags like --mode, --port, --docs, --ides, --skills belong to
+        ``rasa tools run`` or sub-commands, not the interactive wizard."""
+        for flag in ["--mode", "--port", "--docs", "--ides", "--skills"]:
+            with pytest.raises(SystemExit):
+                tools_parser.parse_args(["tools", "init", flag, "dummy"])
 
 
 def test_default_tools_run_arguments(
