@@ -262,9 +262,7 @@ class BrowserAudioInputChannel(VoiceInputChannel):
             try:
                 await self.run_audio_streaming(on_new_message, ws, request=request)
             except Exception as e:
-                logger.error(
-                    "browser_audio.handle_message.error", error=e, exc_info=True
-                )
+                logger.error("browser_audio.handle_message.error", error=e)
             finally:
                 self._stop_recording_and_save_to_wav_file()
 

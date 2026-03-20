@@ -75,10 +75,11 @@ def test_turning_off_utterance_end_detection(mulaw_format):
 
 def test_configuration_additional_attributes(mulaw_format):
     config = {"testingXYZ@@": "@@"}
-    with pytest.raises(
-        Exception
-    ):  # Pydantic raises ValidationError for missing language_map
-        DeepgramASR.from_config_dict(config, rasa_language="en", format=mulaw_format)
+    with pytest.warns(UserWarning, match="testingXYZ@@"):
+        engine = DeepgramASR.from_config_dict(
+            config, rasa_language="en", format=mulaw_format
+        )
+    assert engine is not None
 
 
 @pytest.mark.parametrize(

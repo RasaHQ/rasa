@@ -1,6 +1,8 @@
 x-environment: &environment
   RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
   OPENAI_API_KEY: ${OPENAI_API_KEY}
+  DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY}
+  CARTESIA_API_KEY: ${CARTESIA_API_KEY}
 
 configs:
   endpoints.yml:

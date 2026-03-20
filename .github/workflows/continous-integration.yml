@@ -1813,6 +1813,8 @@ jobs:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ needs.compute-docker-image-hash.outputs.hash }}
+          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
 
       - name: Configure Datadog Test Optimization
         uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0

@@ -62,8 +62,11 @@ async def test_configurating_language(mulaw_format):
 
 async def test_configuration_additional_attributes(mulaw_format):
     config = {"testingXYZ@@": "@@"}
-    with pytest.raises(Exception):  # Pydantic raises ValidationError for extra fields
-        AzureASR.from_config_dict(config, rasa_language="en", format=mulaw_format)
+    with pytest.warns(UserWarning, match="testingXYZ@@"):
+        engine = AzureASR.from_config_dict(
+            config, rasa_language="en", format=mulaw_format
+        )
+    assert engine is not None
 
 
 @pytest.mark.parametrize(

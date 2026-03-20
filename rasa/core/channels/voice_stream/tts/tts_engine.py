@@ -1,5 +1,4 @@
 import enum
-import warnings
 from typing import (
     AsyncIterator,
     Dict,
@@ -23,6 +22,7 @@ from rasa.core.channels.voice_stream.audio_bytes import (
 from rasa.core.channels.voice_stream.tts.config import StreamingConfig
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.common import validate_environment
+from rasa.shared.utils.io import raise_deprecation_warning, raise_warning
 
 logger = structlog.get_logger(__name__)
 
@@ -91,6 +91,13 @@ class TTSEngineConfig(BaseModel):
         if info.context and info.context.get("merging"):
             return self
 
+        if self.model_extra:
+            unknown = ", ".join(f"'{k}'" for k in self.model_extra)
+            raise_warning(
+                f"Unknown TTS config field(s) {unknown} will be ignored. "
+                "Please check the documentation for valid configuration options."
+            )
+
         has_deprecated = (
             self.language is not None
             or self.voice is not None
@@ -112,11 +119,9 @@ class TTSEngineConfig(BaseModel):
                 if getattr(self, f) is not None
             )
             field_list = ", ".join(f"'{f}'" for f in used_fields)
-            warnings.warn(
+            raise_deprecation_warning(
                 f"Top-level TTS config field(s) {field_list} are deprecated. "
-                "Use 'language_map' instead.",
-                DeprecationWarning,
-                stacklevel=2,
+                "Use 'language_map' instead."
             )
 
         return self
@@ -134,7 +139,7 @@ class TTSEngineConfig(BaseModel):
         """Fold top-level deprecated fields into language_map[rasa_language].
 
         Moves ``language``, ``voice``, or ``model`` values set at the top level
-        into the language_map entry for ``rasa_language``. The DeprecationWarning
+        into the language_map entry for ``rasa_language``. The FutureWarning is
         is emitted earlier, during model validation.
         """
         updates = {

@@ -1,4 +1,3 @@
-import warnings
 from typing import (
     Any,
     AsyncIterator,
@@ -24,6 +23,7 @@ from rasa.core.channels.voice_stream.audio_bytes import (
 )
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.utils.common import validate_environment
+from rasa.shared.utils.io import raise_deprecation_warning, raise_warning
 
 T = TypeVar("T", bound="ASREngineConfig")
 E = TypeVar("E", bound="ASREngine")
@@ -66,7 +66,7 @@ class ASREngineConfig(BaseModel):
     keep_alive_interval: int = 5
     language_map: Optional[Dict[str, ASRLanguageMapEntry]] = None
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")
 
     @model_validator(mode="after")
     def _validate_language_fields(self, info: ValidationInfo) -> "ASREngineConfig":
@@ -78,6 +78,13 @@ class ASREngineConfig(BaseModel):
         """
         if info.context and info.context.get("merging"):
             return self
+
+        if self.model_extra:
+            unknown = ", ".join(f"'{k}'" for k in self.model_extra)
+            raise_warning(
+                f"Unknown ASR config field(s) {unknown} will be ignored. "
+                "Please check the documentation for valid configuration options."
+            )
 
         has_deprecated = self.language is not None or self.model is not None
         has_language_map = self.language_map is not None
@@ -93,11 +100,9 @@ class ASREngineConfig(BaseModel):
                 f for f in ("language", "model") if getattr(self, f) is not None
             )
             field_list = ", ".join(f"'{f}'" for f in used_fields)
-            warnings.warn(
+            raise_deprecation_warning(
                 f"Top-level ASR config field(s) {field_list} are deprecated. "
-                "Use 'language_map' instead.",
-                DeprecationWarning,
-                stacklevel=2,
+                "Use 'language_map' instead."
             )
 
         return self

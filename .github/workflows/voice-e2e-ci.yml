@@ -136,9 +136,6 @@ jobs:
           api_key: ${{ secrets.DD_API_KEY }}
           site: datadoghq.eu
 
-      - name: Install additional dependencies
-        run: poetry add azure-cognitiveservices-speech
-
       - name: Train model and run rasa server
         id: train_and_run_rasa
         env:
@@ -147,6 +144,7 @@ jobs:
           DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
           RIME_API_KEY: ${{ secrets.RIME_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          AZURE_SPEECH_API_KEY: ${{ secrets.AZURE_SPEECH_API_KEY }}
           PR_TITLE: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
           set -euo pipefail

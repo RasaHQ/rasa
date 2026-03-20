@@ -7,22 +7,22 @@ from rasa.core.channels.voice_stream.tts.tts_engine import (
 
 
 def test_tts_language_field_emits_deprecation_warning():
-    with pytest.warns(DeprecationWarning, match="language_map"):
+    with pytest.warns(FutureWarning, match="language_map"):
         TTSEngineConfig(language="en-US")
 
 
 def test_tts_voice_field_emits_deprecation_warning():
-    with pytest.warns(DeprecationWarning, match="language_map"):
+    with pytest.warns(FutureWarning, match="language_map"):
         TTSEngineConfig(voice="en-US-JennyNeural")
 
 
 def test_tts_model_field_emits_deprecation_warning():
-    with pytest.warns(DeprecationWarning, match="language_map"):
+    with pytest.warns(FutureWarning, match="language_map"):
         TTSEngineConfig(model="some-model")
 
 
 def test_tts_deprecated_config_is_usable_after_apply():
-    with pytest.warns(DeprecationWarning):
+    with pytest.warns(FutureWarning):
         cfg = TTSEngineConfig(language="en-US", voice="en-US-JennyNeural")
     result = cfg.apply_deprecated_fields("en")
     assert result.language_map is not None
@@ -49,13 +49,38 @@ def test_tts_merge_preserves_non_none_values():
 
 
 def test_tts_language_and_voice_folded_into_language_map():
-    with pytest.warns(DeprecationWarning):
+    with pytest.warns(FutureWarning):
         cfg = TTSEngineConfig(language="en-US", voice="en-US-JennyNeural")
     result = cfg.apply_deprecated_fields("en")
     assert result.language is None
     assert result.voice is None
     assert result.language_map["en"].language == "en-US"
     assert result.language_map["en"].voice == "en-US-JennyNeural"
+
+
+def test_tts_unknown_field_emits_warning():
+    with pytest.warns(UserWarning, match="'langauge'"):
+        cfg = TTSEngineConfig(langauge="en-US")
+    assert cfg.model_extra == {"langauge": "en-US"}
+
+
+def test_tts_multiple_unknown_fields_emit_warning():
+    with pytest.warns(UserWarning, match="Unknown TTS config"):
+        cfg = TTSEngineConfig(foo="bar", baz=123)
+    assert "foo" in cfg.model_extra
+    assert "baz" in cfg.model_extra
+
+
+def test_tts_unknown_fields_silent_during_merge():
+    """Unknown fields should not trigger a warning during internal merge."""
+    base = TTSEngineConfig(
+        language_map={"en": TTSLanguageMapEntry(language="en-US", voice="Jenny")}
+    )
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        base.merge(None)  # should not raise
 
 
 def test_tts_language_map_dicts_coerced_to_entries():
