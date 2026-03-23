@@ -54,6 +54,16 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
+# Transformer logs a warning_advice on import
+# Warning Advice: PyTorch was not found. Models won't be available
+#   and only tokenizers, configuration and file/data utilities can be used.
+logging.getLogger("transformers").addFilter(
+    type(
+        "",
+        (logging.Filter,),
+        {"filter": lambda self, r: "PyTorch was not found" not in r.getMessage()},
+    )()
+)
 
 EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # TODO (issue #9932)
