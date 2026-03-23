@@ -83,6 +83,90 @@ structlogger = structlog.get_logger()
 MAX_AGENT_RETRIES = 3
 
 
+def normalize_agent_output_events(
+    events: Optional[List[Any]],
+    *,
+    agent_name: Optional[str] = None,
+) -> List[Event]:
+    """Coerce agent ``output.events`` entries to Rasa :class:`Event` instances.
+
+    Flow code (e.g. ``attach_stack_metadata_to_events``) assumes each item is an
+    ``Event`` with a ``metadata`` dict. Agents may return serialized dicts; those
+    are parsed via :meth:`Event.from_parameters`. Unsupported values are omitted
+    and an error is logged.
+
+    Args:
+        events: Raw list from :class:`~rasa.agents.schemas.agent_output.AgentOutput`.
+        agent_name: Optional agent id for structured logs.
+
+    Returns:
+        A new list containing only valid ``Event`` instances.
+    """
+    if not events:
+        return []
+
+    normalized: List[Event] = []
+    for index, item in enumerate(events):
+        if isinstance(item, Event):
+            if not isinstance(item.metadata, dict):
+                structlogger.error(
+                    "flow_executor.normalize_agent_output_events.invalid_metadata_type",
+                    event_info=(
+                        "Agent output event has non-dict metadata, "
+                        "replacing with empty dict."
+                    ),
+                    agent_name=agent_name,
+                    implementation_class=item.__class__.__name__,
+                    metadata_type=type(item.metadata).__name__,
+                )
+                item.metadata = {}
+            normalized.append(item)
+            continue
+
+        if isinstance(item, dict):
+            try:
+                parsed = Event.from_parameters(item)
+            except Exception as e:
+                structlogger.error(
+                    "flow_executor.normalize_agent_output_events.parse_failed",
+                    event_info=(
+                        "Failed to parse agent output event dict into a Rasa Event."
+                    ),
+                    agent_name=agent_name,
+                    error=str(e),
+                    declared_type=item.get("event"),
+                    parameter_keys=sorted(item.keys()),
+                )
+                continue
+            if parsed is None:
+                structlogger.error(
+                    "flow_executor.normalize_agent_output_events.unsupported_dict_event",
+                    event_info=(
+                        "Agent output event dict is not a supported Rasa event "
+                        "(missing or unknown `event` type)."
+                    ),
+                    agent_name=agent_name,
+                    declared_type=item.get("event"),
+                    parameter_keys=sorted(item.keys()),
+                )
+                continue
+            if not isinstance(parsed.metadata, dict):
+                parsed.metadata = {}
+            normalized.append(parsed)
+            continue
+
+        structlogger.error(
+            "flow_executor.normalize_agent_output_events.unsupported_event_type",
+            event_info=(
+                "Dropping agent output event: not a Rasa Event instance. "
+                "Send an event of `rasa.shared.core.events.Event` type instead."
+            ),
+            agent_name=agent_name,
+            unsupported_event_type=type(item).__name__,
+        )
+    return normalized
+
+
 def remove_agent_stack_frame(stack: DialogueStack, agent_id: str) -> None:
     """Finishes the agentic loop by popping the agent stack frame from provided `stack`.
 
@@ -214,7 +298,11 @@ async def run_agent(
 
     # add the set slot events returned by the agent to the list of final events
     if output.events:
-        final_events.extend(output.events)
+        normalized_events = normalize_agent_output_events(
+            output.events, agent_name=step.call
+        )
+        output.events = normalized_events or None
+        final_events.extend(normalized_events)
 
     # handle the agent output based on the agent status
     if output.status == AgentStatus.INPUT_REQUIRED:
