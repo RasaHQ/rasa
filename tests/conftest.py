@@ -1215,6 +1215,7 @@ def pytest_collection_modifyitems(items: List[Function]) -> None:
         if (
             "default_agent" in item.fixturenames
             or "trained_default_agent_model" in item.fixturenames
+            or "response_selector_agent" in item.fixturenames
         ):
             item.add_marker("nlu")
 

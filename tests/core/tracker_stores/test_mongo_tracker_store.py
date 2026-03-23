@@ -15,6 +15,8 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
+    ConversationInactive,
+    DialogueStackUpdated,
     Event,
     SessionStarted,
     UserUttered,
@@ -77,6 +79,36 @@ async def test_mongo_additional_events_with_session_start(domain: Domain):
     assert isinstance(additional_events[0], UserUttered)
 
 
+async def test_mongo_additional_events_domain_none():
+    """When the domain is empty, _additional_events returns an empty iterator (no silent loss)."""
+    domain = Domain.empty()
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    tracker = DialogueStateTracker.from_events(
+        "sender_domain_none", [UserUttered("hello")]
+    )
+    await tracker_store.save(tracker)
+    # noinspection PyProtectedMember
+    result = list(tracker_store._additional_events(tracker))
+
+    assert result == []
+
+
+def test_events_since_last_action_session_start_no_match_returns_all():
+    """When no action_session_start action exists, all events are returned."""
+    from rasa.core.tracker_stores.mongo_tracker_store import MongoTrackerStore
+
+    events = [
+        {"event": "user", "text": "hello"},
+        {"event": "bot", "text": "hi"},
+        {"event": "session_started"},
+    ]
+    # noinspection PyProtectedMember
+    result = MongoTrackerStore._events_since_last_action_session_start(events)
+
+    assert result == events
+
+
 def test_current_state_without_events(domain: Domain):
     tracker_store = MockedMongoTrackerStore(domain)
 
@@ -99,11 +131,12 @@ def test_current_state_without_events(domain: Domain):
     assert state and "events" not in state
 
 
-def test_mongo_tracker_store_with_token_serialisation(
-    domain: Domain, flow_policy_bot_agent: Agent
+@pytest.mark.asyncio
+async def test_mongo_tracker_store_with_token_serialisation(
+    domain: Domain, response_selector_agent: Agent
 ):
     tracker_store = MockedMongoTrackerStore(domain)
-    prepare_token_serialisation(tracker_store, flow_policy_bot_agent, "mongo")
+    await prepare_token_serialisation(tracker_store, response_selector_agent, "mongo")
 
 
 async def test_mongo_tracker_store_retrieve_full_tracker(
@@ -131,10 +164,99 @@ async def test_mongo_tracker_store_retrieve(
 
     tracker = await tracker_store.retrieve(sender_id)
 
-    # the retrieved tracker with the latest session would not contain
-    # `action_session_start` event because the MongoTrackerStore filters
-    # only the events after `session_started` event
-    assert list(tracker.events) == events_after_restart[1:]
+    # Latest session begins at the last ``action_session_start`` (inclusive).
+    assert list(tracker.events) == events_after_restart
+
+
+async def test_mongo_tracker_store_retrieve_latest_session_with_stack_events() -> None:
+    """Same stack scenario as SQL: align with SQL fixture (see SQL test docstring).
+
+    Do not emit ``SessionStarted`` between the second ``action_session_start`` and
+    the stack ``replace``: ``SessionStarted`` resets the tracker (including the
+    stack), so a replace on ``/0`` would fail during replay.
+    """
+    tracker_store = MockedMongoTrackerStore(Domain.empty())
+    sender_id = "mongo_stack_latest"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "old", "flow_id": "foo", "step_id": "OLD", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    retrieved = await tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert next(iter(retrieved.events)).type_name == ActionExecuted.type_name
+    assert next(iter(retrieved.events)).action_name == ACTION_SESSION_START_NAME
+    assert retrieved.stack.frames[0].frame_id == "old"
+    assert retrieved.stack.frames[0].step_id == "SECOND"
+
+
+async def test_mongo_tracker_store_retrieve_widens_prefix_for_stack_integrity_true_mode() -> (
+    None
+):
+    """Replay-safe widening across action_session_start when start_session_after_expiry is True."""
+    domain = Domain.from_dict({"session_config": {"start_session_after_expiry": True}})
+    tracker_store = MockedMongoTrackerStore(domain)
+    sender_id = "mongo_widen_true"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    retrieved = await tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 4
+    assert retrieved.stack.frames[0].step_id == "SECOND"
+
+
+async def test_mongo_tracker_store_retrieve_widens_prefix_for_stack_integrity_false_mode() -> (
+    None
+):
+    """Boundary after ConversationInactive when start_session_after_expiry is False."""
+    domain = Domain.from_dict({"session_config": {"start_session_after_expiry": False}})
+    tracker_store = MockedMongoTrackerStore(domain)
+    sender_id = "mongo_widen_false"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ConversationInactive(),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "AFTER_INACTIVE"}]'
+            ),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    retrieved = await tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 3
+    assert retrieved.stack.frames[0].step_id == "AFTER_INACTIVE"
 
 
 def test_mongo_tracker_store_connection_error(domain: Domain):
@@ -179,6 +301,7 @@ async def test_tracker_store_retrieve_with_session_started_events_mongo(
     events = [
         UserUttered("Hola", {"name": "greet"}, timestamp=1),
         BotUttered("Hi", timestamp=2),
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=2.5),
         SessionStarted(timestamp=3),
         UserUttered("Ciao", {"name": "greet"}, timestamp=4),
     ]
@@ -190,10 +313,10 @@ async def test_tracker_store_retrieve_with_session_started_events_mongo(
     other_tracker = DialogueStateTracker.from_events("other-sender", [SessionStarted()])
     await tracker_store.save(other_tracker)
 
-    # Retrieve tracker with events since latest SessionStarted
+    # Latest session begins at ``action_session_start`` (inclusive).
     tracker = await tracker_store.retrieve(sender_id)
 
-    assert len(tracker.events) == 2
+    assert len(tracker.events) == 3
     assert all((event == tracker.events[i] for i, event in enumerate(events[2:])))
 
 

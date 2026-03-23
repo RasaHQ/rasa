@@ -320,15 +320,12 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         if fetch_all_sessions:
             return tracker
 
-        # only return the last session
-        multiple_tracker_sessions = (
-            rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
+        return rasa.shared.core.trackers.get_latest_replay_safe_session_tracker(
+            tracker,
+            start_session_after_expiry=(
+                self.domain.session_config.start_session_after_expiry
+            ),
         )
-
-        if len(multiple_tracker_sessions) <= 1:
-            return tracker
-
-        return multiple_tracker_sessions[-1]
 
     async def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store."""

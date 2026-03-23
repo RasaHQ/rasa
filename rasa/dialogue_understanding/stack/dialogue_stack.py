@@ -179,7 +179,7 @@ class DialogueStack:
             patch_dump: The patch to apply to the stack.
 
         Returns:
-        The updated stack.
+            The updated stack.
         """
         patch = jsonpatch.JsonPatch.from_string(patch_dump)
         dialogue_stack_dump = patch.apply(self.as_dict())

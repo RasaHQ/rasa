@@ -5,6 +5,7 @@ from typing import Dict, Generator, Text
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import pytest_asyncio
 from sanic.request import Request
 from scipy import sparse
 
@@ -203,7 +204,7 @@ def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
     return tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
 
 
-@pytest.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session")
 @patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
@@ -232,7 +233,7 @@ async def trained_flow_policy_bot(
             )
 
 
-@pytest.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session")
 @patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
@@ -240,8 +241,8 @@ async def trained_flow_policy_bot(
 @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
 @patch("rasa.shared.utils.health_check.health_check.try_instantiate_embedder")
 async def trained_nlu_trigger_flow_policy_bot(
-    mock_try_instantiate_llm_client: Mock,
     mock_try_instantiate_embedder: Mock,
+    mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_from_documents: Mock,
     trained_async: TrainedAsync,
@@ -258,7 +259,7 @@ async def trained_nlu_trigger_flow_policy_bot(
     )
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 @patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
@@ -284,7 +285,7 @@ async def flow_policy_bot_agent(
             )
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 @patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"

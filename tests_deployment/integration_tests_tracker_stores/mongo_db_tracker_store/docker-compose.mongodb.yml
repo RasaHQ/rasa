@@ -1,11 +1,14 @@
 configs:
   mongod.conf:
     content: |
+      # bind to all interfaces so published ports work on Linux CI (not only Docker Desktop).
+      # Without this, mongod may listen on 127.0.0.1 inside the container and host:27017 fails.
       net:
-         tls:
-            mode: requireTLS
-            certificateKeyFile: /etc/mongodb/mongodb.pem
-            CAFile: /etc/mongodb/ca.crt
+        bindIp: 0.0.0.0
+        tls:
+          mode: requireTLS
+          certificateKeyFile: /etc/mongodb/mongodb.pem
+          CAFile: /etc/mongodb/ca.crt
   db-entrypoint.sh:
     content: |
       #!/bin/bash
@@ -48,8 +51,9 @@ services:
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
-      timeout: 5s
-      retries: 3
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   mongodb-with-tls:
     image: mongodb/mongodb-community-server:8.0-ubuntu2204
@@ -73,6 +77,19 @@ services:
       - mongodb_tls_data:/data/db
     ports:
       - "27017:27017"
+    # TLS service has a longer init (temp mongod → init scripts → restart with TLS).
+    # Without a healthcheck, `compose up --wait` can return before TLS accepts connections.
+    # Use root credentials so ping works after auth is enabled (unauthenticated ping can fail).
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'mongosh --quiet "mongodb://$${MONGODB_INITDB_ROOT_USERNAME}:$${MONGODB_INITDB_ROOT_PASSWORD}@127.0.0.1:27017/admin?authSource=admin&tls=true&tlsCAFile=/etc/mongodb/ca.crt&tlsCertificateKeyFile=/etc/mongodb/mongodb.pem" --eval "db.adminCommand({ ping: 1 })"',
+        ]
+      interval: 10s
+      timeout: 15s
+      retries: 10
+      start_period: 120s
 
 volumes:
   mongodb_data:

@@ -93,7 +93,9 @@ def filter_logs(
         matches_event = event is None or log["event"] == event
         matches_log_level = log_level is None or log["log_level"] == log_level
         matches_message_parts = log_message_parts is None or contains_message_parts(log)
-        matches_exec_info = exec_info is None or log["exec_info"] == exec_info
+        matches_exec_info = (
+            exec_info is None or log.get("exec_info", log.get("exc_info")) == exec_info
+        )
 
         if (
             matches_event

@@ -598,15 +598,12 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
         if fetch_all_sessions:
             return tracker
 
-        # only return the last session
-        multiple_tracker_sessions = (
-            rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
+        return rasa.shared.core.trackers.get_latest_replay_safe_session_tracker(
+            tracker,
+            start_session_after_expiry=(
+                self.domain.session_config.start_session_after_expiry
+            ),
         )
-
-        if len(multiple_tracker_sessions) <= 1:
-            return tracker
-
-        return multiple_tracker_sessions[-1]
 
     async def update(
         self, tracker: DialogueStateTracker, apply_deletion_only: bool = True
@@ -724,6 +721,7 @@ class FailSafeTrackerStore(TrackerStore):
                     f"the '{InMemoryTrackerStore.__name__}'. Please "
                     f"investigate the following error: {error}."
                 ),
+                exc_info=error,
             )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
@@ -804,7 +802,7 @@ class FailSafeTrackerStore(TrackerStore):
                     f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
                     f"the '{InMemoryTrackerStore.__name__}'."
                 ),
-                exec_info=error,
+                exc_info=error,
             )
 
     async def get_trackers_by_user_id(

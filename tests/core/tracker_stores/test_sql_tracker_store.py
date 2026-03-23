@@ -45,6 +45,8 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
+    ConversationInactive,
+    DialogueStackUpdated,
     Event,
     SessionStarted,
     UserUttered,
@@ -239,6 +241,23 @@ async def test_sql_additional_events_with_session_start(domain: Domain):
         additional_events = list(tracker_store._additional_events(session, tracker))
         assert len(additional_events) == 1
         assert isinstance(additional_events[0], UserUttered)
+
+
+async def test_sql_additional_events_domain_none():
+    """When the domain is empty, _additional_events returns an empty iterator (no silent loss)."""
+    domain = Domain.empty()
+    tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
+
+    tracker = DialogueStateTracker.from_events(
+        "sender_domain_none", [UserUttered("hello")]
+    )
+    await tracker_store.save(tracker)
+
+    with tracker_store.session_scope() as session:
+        # noinspection PyProtectedMember
+        result = list(tracker_store._additional_events(session, tracker))
+
+    assert result == []
 
 
 async def test_tracker_store_retrieve_ordered_by_id(
@@ -438,11 +457,12 @@ def test_login_db_with_no_postgresql(tmp_path: Path):
         SQLTrackerStore(db=str(tmp_path / "rasa.db"), login_db=str(tmp_path / "other"))
 
 
-def test_sql_tracker_store_with_token_serialisation(
-    domain: Domain, flow_policy_bot_agent: Agent
+@pytest.mark.asyncio
+async def test_sql_tracker_store_with_token_serialisation(
+    domain: Domain, response_selector_agent: Agent
 ):
     tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
-    prepare_token_serialisation(tracker_store, flow_policy_bot_agent, "sql")
+    await prepare_token_serialisation(tracker_store, response_selector_agent, "sql")
 
 
 def test_sql_tracker_store_creation_with_invalid_port(domain: Domain):
@@ -517,10 +537,100 @@ async def test_sql_tracker_store_retrieve(
 
     tracker = await tracker_store.retrieve(sender_id)
 
-    # the retrieved tracker with the latest session would not contain
-    # `action_session_start` event because the SQLTrackerStore filters
-    # only the events after `session_started` event
-    assert list(tracker.events) == events_after_restart[1:]
+    # Latest session begins at the last ``action_session_start`` (inclusive).
+    assert list(tracker.events) == events_after_restart
+
+
+async def test_sql_tracker_store_retrieve_latest_session_with_stack_events() -> None:
+    """Replay-safe retrieve widens prefix if needed; stack state comes from events.
+
+    The second session only patches the existing frame at ``/0`` (no separate
+    ``add`` for another frame_id). ``get_latest_replay_safe_session_tracker`` may
+    widen to full history when the latest-session slice fails to replay, but it
+    cannot invent stack events that are not in storage.
+    """
+    tracker_store = SQLTrackerStore(Domain.empty(), **{"host": "sqlite:///"})
+    sender_id = "sql_stack_latest"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "old", "flow_id": "foo", "step_id": "OLD", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    retrieved = await tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert next(iter(retrieved.events)).type_name == ActionExecuted.type_name
+    assert next(iter(retrieved.events)).action_name == ACTION_SESSION_START_NAME
+    assert retrieved.stack.frames[0].frame_id == "old"
+    assert retrieved.stack.frames[0].step_id == "SECOND"
+
+
+async def test_sql_tracker_store_retrieve_widens_prefix_for_stack_integrity_true_mode() -> (
+    None
+):
+    """Replay-safe widening across action_session_start when start_session_after_expiry is True."""
+    domain = Domain.from_dict({"session_config": {"start_session_after_expiry": True}})
+    tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
+    sender_id = "sql_widen_true"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    retrieved = await tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 4
+    assert retrieved.stack.frames[0].step_id == "SECOND"
+
+
+async def test_sql_tracker_store_retrieve_widens_prefix_for_stack_integrity_false_mode() -> (
+    None
+):
+    """Boundary after ConversationInactive when start_session_after_expiry is False."""
+    domain = Domain.from_dict({"session_config": {"start_session_after_expiry": False}})
+    tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
+    sender_id = "sql_widen_false"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ConversationInactive(),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "AFTER_INACTIVE"}]'
+            ),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    retrieved = await tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 3
+    assert retrieved.stack.frames[0].step_id == "AFTER_INACTIVE"
 
 
 def test_create_tracker_store_from_endpoints_file_in_sql_tracker_store(
@@ -565,6 +675,7 @@ async def test_sql_tracker_store_retrieve_with_session_started_events(
     events = [
         UserUttered("Hola", {"name": "greet"}, timestamp=1),
         BotUttered("Hi", timestamp=2),
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=2.5),
         SessionStarted(timestamp=3),
         UserUttered("Ciao", {"name": "greet"}, timestamp=4),
     ]
@@ -576,10 +687,10 @@ async def test_sql_tracker_store_retrieve_with_session_started_events(
     other_tracker = DialogueStateTracker.from_events("other-sender", [SessionStarted()])
     await tracker_store.save(other_tracker)
 
-    # Retrieve tracker with events since latest SessionStarted
+    # Latest session begins at ``action_session_start`` (inclusive).
     tracker = await tracker_store.retrieve(sender_id)
 
-    assert len(tracker.events) == 2
+    assert len(tracker.events) == 3
     assert all((event == tracker.events[i] for i, event in enumerate(events[2:])))
 
 
@@ -715,7 +826,7 @@ async def test_sql_tracker_store_update_tracker() -> None:
 
 
 @pytest.mark.asyncio
-async def test_sql_tracker_store_update_in_place_when_no_rows_deleted_and_count_matches() -> (  # noqa: E501
+async def test_sql_tracker_store_update_in_place_when_no_rows_deleted_and_count_matches() -> (
     None
 ):
     """When delete removes 0 rows and count matches, events are updated in place."""
@@ -760,7 +871,7 @@ async def test_sql_tracker_store_update_in_place_when_no_rows_deleted_and_count_
 
 
 @pytest.mark.asyncio
-async def test_sql_tracker_store_update_full_replace_when_no_rows_deleted_and_count_differs() -> (  # noqa: E501
+async def test_sql_tracker_store_update_full_replace_when_no_rows_deleted_and_count_differs() -> (
     None
 ):
     """When delete removes 0 rows and count differs, full replace."""
@@ -839,7 +950,7 @@ async def test_sql_tracker_store_update_empty_events_no_crash() -> None:
 
 
 @pytest.mark.asyncio
-async def test_sql_tracker_store_update_deletion_rowcount_zero_does_not_run_content_only() -> (  # noqa: E501
+async def test_sql_tracker_store_update_deletion_rowcount_zero_does_not_run_content_only() -> (
     None
 ):
     """With apply_deletion_only=True (default), rowcount==0 must not run content-only.
@@ -1326,13 +1437,14 @@ async def test_sql_tracker_store_get_trackers_by_user_id_no_users_table(
     tracker_store = SQLTrackerStore(domain, host="sqlite:///")
     user_id = "user_123"
 
-    # Mock inspector to return False for users table
+    # Simulate a missing users table by bypassing the cache and forcing the
+    # property to resolve False. Patch sa.inspect (the replacement for the
+    # deprecated Inspector.from_engine) so _users_table_exists returns False.
     mock_inspector = Mock()
     mock_inspector.has_table.return_value = False
-    monkeypatch.setattr(
-        "sqlalchemy.engine.Inspector.from_engine",
-        Mock(return_value=mock_inspector),
-    )
+    monkeypatch.setattr("sqlalchemy.inspect", Mock(return_value=mock_inspector))
+    # Clear any cached result so the monkeypatched inspect is actually called.
+    tracker_store._has_users_table = None
 
     # When
     with capture_logs() as caplog:
@@ -1573,3 +1685,155 @@ async def test_sql_negative_skip_and_limit_ignored(domain: Domain) -> None:
     # Then: Should return all trackers (both negative values ignored)
     assert len(trackers) == 5
     assert_all_trackers_have_user_id(trackers, user_id)
+
+
+# ---------------------------------------------------------------------------
+# Two-phase fetch optimisation tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_sql_additional_events_fast_path_issues_session_only_query() -> None:
+    """_additional_events uses only the session-only query for single-session trackers.
+
+    Spies on _event_query to confirm it is called exactly once with
+    fetch_events_from_all_sessions=False and never with True, covering the
+    common fast path where no cross-session stack dependencies exist.
+    """
+    # A non-empty domain is required: Domain.empty() triggers the early-exit branch
+    # which always uses fetch_events_from_all_sessions=True.
+    domain = Domain.from_dict({"session_config": {"start_session_after_expiry": True}})
+    tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
+    # Use a uuid-based sender so stale rasa.db data from prior runs cannot interfere.
+    sender_id = f"fastpath_sender_{uuid.uuid4().hex}"
+
+    # Save an initial event so there is something persisted.
+    initial_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()],
+    )
+    await tracker_store.save(initial_tracker)
+
+    # Add a new event that has not been persisted yet.
+    initial_tracker.update(UserUttered("hello"))
+
+    calls: list = []
+    real_event_query = tracker_store._event_query
+
+    def spy_event_query(session, sid, fetch_events_from_all_sessions):
+        calls.append(fetch_events_from_all_sessions)
+        return real_event_query(session, sid, fetch_events_from_all_sessions)
+
+    with patch.object(tracker_store, "_event_query", side_effect=spy_event_query):
+        with tracker_store.session_scope() as session:
+            # noinspection PyProtectedMember
+            result = list(tracker_store._additional_events(session, initial_tracker))
+
+    assert result == [UserUttered("hello")]
+    # Fast path: session-only query issued exactly once, full-history query never.
+    assert calls == [False], f"Unexpected _event_query call pattern: {calls}"
+
+
+@pytest.mark.asyncio
+async def test_sql_additional_events_falls_back_to_full_history_for_stack_deps() -> (
+    None
+):
+    """_additional_events issues a second full-history query for cross-session stack deps.
+
+    When the session-only view cannot reconstruct the dialogue stack
+    (because a second session patches a frame added in the first session),
+    _additional_events must fall back to fetching full history.
+    """
+    domain = Domain.from_dict({"session_config": {"start_session_after_expiry": True}})
+    tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
+    # Use a uuid-based sender so stale rasa.db data from prior runs cannot interfere.
+    sender_id = f"fallback_sender_{uuid.uuid4().hex}"
+
+    # Build a two-session tracker where session 2 depends on session 1's stack frame.
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    # Add one more event that has not been persisted yet.
+    tracker.update(UserUttered("after"))
+
+    calls: list = []
+    real_event_query = tracker_store._event_query
+
+    def spy_event_query(session, sid, fetch_events_from_all_sessions):
+        calls.append(fetch_events_from_all_sessions)
+        return real_event_query(session, sid, fetch_events_from_all_sessions)
+
+    with patch.object(tracker_store, "_event_query", side_effect=spy_event_query):
+        with tracker_store.session_scope() as session:
+            # noinspection PyProtectedMember
+            result = list(tracker_store._additional_events(session, tracker))
+
+    assert len(result) == 1
+    assert isinstance(result[0], UserUttered)
+    # Phase 1 (False) attempted, Phase 2 (True) triggered as fallback.
+    assert calls == [False, True], f"Unexpected _event_query call pattern: {calls}"
+
+
+def test_sql_users_table_existence_is_cached() -> None:
+    """_users_table_exists caches the sa.inspect result after the first call.
+
+    Verified by poisoning the cached boolean to a sentinel value after the
+    first resolution and confirming the second call returns the sentinel rather
+    than re-running sa.inspect().  No global patching is used so this test
+    cannot affect sibling tests via shared module-level state.
+    """
+    tracker_store = SQLTrackerStore(Domain.empty(), **{"host": "sqlite:///"})
+    # Ensure the cache is clear so the first access resolves fresh.
+    tracker_store._has_users_table = None
+
+    # First access: resolves and caches (True when users table was created at init).
+    first_result = tracker_store._users_table_exists
+    assert tracker_store._has_users_table is not None  # sentinel: cache is populated
+
+    # Flip the cached value to a known sentinel.
+    tracker_store._has_users_table = not first_result
+
+    # Second access must return the cached sentinel, NOT re-run sa.inspect().
+    second_result = tracker_store._users_table_exists
+    assert second_result == (
+        not first_result
+    ), "_users_table_exists should return the cached value, not re-resolve"
+
+
+@pytest.mark.asyncio
+async def test_build_stored_tracker_sets_user_id_from_users_table() -> None:
+    """_build_stored_tracker populates user_id from the users table when available."""
+    domain = Domain.empty()
+    tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
+    sender_id = f"build_tracker_user_id_sender_{uuid.uuid4().hex}"
+    expected_user_id = "expected-user-42"
+
+    # Persist a tracker with a user_id so the users table has a mapping.
+    tracker = DialogueStateTracker.from_events(
+        sender_id, [SessionStarted(), UserUttered("hi")]
+    )
+    tracker.user_id = expected_user_id
+    await tracker_store.save(tracker)
+
+    # Retrieve the raw persisted rows.
+    with tracker_store.session_scope() as session:
+        rows = tracker_store._event_query(
+            session, sender_id, fetch_events_from_all_sessions=True
+        ).all()
+
+        # noinspection PyProtectedMember
+        result_tracker = tracker_store._build_stored_tracker(session, sender_id, rows)
+
+    assert result_tracker.user_id == expected_user_id

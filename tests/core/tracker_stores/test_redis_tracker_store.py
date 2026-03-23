@@ -36,6 +36,8 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
+    ConversationInactive,
+    DialogueStackUpdated,
     Event,
     SessionStarted,
     UserUttered,
@@ -379,6 +381,60 @@ async def test_redis_tracker_store_retrieve(
 
     tracker = await tracker_store.retrieve(sender_id)
     assert list(tracker.events) == events_after_restart
+
+
+async def test_redis_tracker_store_retrieve_widens_prefix_for_stack_integrity_true_mode(
+    domain: Domain,
+) -> None:
+    tracker_store = MockedRedisTrackerStore(domain)
+    sender_id = "redis_widen_true"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    retrieved = await tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 4
+    assert retrieved.stack.frames[0].step_id == "SECOND"
+
+
+async def test_redis_tracker_store_retrieve_widens_prefix_for_stack_integrity_false_mode() -> (
+    None
+):
+    domain = Domain.from_dict({"session_config": {"start_session_after_expiry": False}})
+    tracker_store = MockedRedisTrackerStore(domain)
+    sender_id = "redis_widen_false"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ConversationInactive(),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "AFTER_INACTIVE"}]'
+            ),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    retrieved = await tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 3
+    assert retrieved.stack.frames[0].step_id == "AFTER_INACTIVE"
 
 
 async def test_redis_tracker_store_merge_trackers_same_session() -> None:

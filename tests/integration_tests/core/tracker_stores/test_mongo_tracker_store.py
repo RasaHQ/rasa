@@ -8,8 +8,15 @@ import pytest
 from dotenv import load_dotenv
 
 from rasa.core.tracker_stores.mongo_tracker_store import MongoTrackerStore
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SessionStarted, UserUttered
+from rasa.shared.core.events import (
+    ActionExecuted,
+    ConversationInactive,
+    DialogueStackUpdated,
+    SessionStarted,
+    UserUttered,
+)
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from tests.integration_tests.core.conftest import (
     assert_all_trackers_have_properties,
@@ -133,10 +140,92 @@ async def test_mongo_tracker_store_retrieve(
 
     tracker = await mongo_tracker_store.retrieve(sender_id)
 
-    # the retrieved tracker with the latest session would not contain
-    # `action_session_start` event because the MongoTrackerStore filters
-    # only the events after `session_started` event
-    assert list(tracker.events) == events_after_restart[1:]
+    # Latest session begins at the last ``action_session_start`` (inclusive).
+    assert list(tracker.events) == events_after_restart
+
+
+@pytest.mark.parametrize(
+    "host_uri", ["mongodb://localhost:27000", get_mongodb_tls_host_uri()]
+)
+async def test_mongo_tracker_store_retrieve_widens_prefix_for_stack_integrity_true_mode(
+    domain: "Domain",
+    mongodb_credentials: Tuple[str, str, str],
+    host_uri: str,
+) -> None:
+    """Replay-safe widening across action_session_start (start_session_after_expiry True)."""
+    db_name, username, password = mongodb_credentials
+
+    mongo_tracker_store = MongoTrackerStore(
+        domain,
+        host=host_uri,
+        db=db_name,
+        username=username,
+        password=password,
+        auth_source=db_name,
+    )
+    sender_id = f"mongo_it_stack_{uuid.uuid4().hex}"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "old", "flow_id": "foo", "step_id": "OLD", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+    await mongo_tracker_store.save(tracker)
+
+    retrieved = await mongo_tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 4
+    assert retrieved.stack.frames[0].frame_id == "old"
+    assert retrieved.stack.frames[0].step_id == "SECOND"
+
+
+@pytest.mark.parametrize(
+    "host_uri", ["mongodb://localhost:27000", get_mongodb_tls_host_uri()]
+)
+async def test_mongo_tracker_store_retrieve_widens_prefix_for_stack_integrity_false_mode(
+    mongodb_credentials: Tuple[str, str, str],
+    host_uri: str,
+) -> None:
+    """Replay-safe boundary after ConversationInactive when sessions do not auto-start."""
+    domain = Domain.from_dict({"session_config": {"start_session_after_expiry": False}})
+    db_name, username, password = mongodb_credentials
+
+    mongo_tracker_store = MongoTrackerStore(
+        domain,
+        host=host_uri,
+        db=db_name,
+        username=username,
+        password=password,
+        auth_source=db_name,
+    )
+    sender_id = f"mongo_it_widen_false_{uuid.uuid4().hex}"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ConversationInactive(),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "AFTER_INACTIVE"}]'
+            ),
+        ],
+    )
+    await mongo_tracker_store.save(tracker)
+
+    retrieved = await mongo_tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 3
+    assert retrieved.stack.frames[0].step_id == "AFTER_INACTIVE"
 
 
 @pytest.mark.parametrize(

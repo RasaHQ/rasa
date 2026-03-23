@@ -10,9 +10,14 @@ from pymongo.synchronous.collection import Collection
 from rasa.constants import USER_ID
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.tracker_stores.tracker_store import SerializedTrackerAsText, TrackerStore
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SessionStarted
-from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.trackers import (
+    DialogueStateTracker,
+    EventVerbosity,
+    get_latest_replay_safe_session_tracker,
+)
 
 structlogger = structlog.get_logger(__name__)
 
@@ -22,6 +27,13 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
 
     Property methods:
         conversations: returns the current conversation
+
+    Latest-session retrieval and incremental saves use the same session boundary
+    as other tracker stores: ``ActionExecuted(action_session_start)``. That
+    action is run by :class:`~rasa.core.processor.MessageProcessor` whenever a
+    new session starts, so it is a reliable marker in stored histories. Slicing
+    on ``SessionStarted`` was legacy and breaks when a custom
+    ``action_session_start`` omits that event.
     """
 
     def __init__(
@@ -126,6 +138,11 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
     def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
         """Return events from the tracker which aren't currently stored.
 
+        The offset matches the length of the tracker returned by
+        :meth:`retrieve` (replay-safe latest session with ``action_session_start``
+        boundaries), not only the suffix length from the last matching action in
+        storage.
+
         Args:
             tracker: Tracker to inspect.
 
@@ -136,34 +153,57 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
         all_events = self._events_from_serialized_tracker(stored)
 
-        number_events_since_last_session = len(
-            self._events_since_last_session_start(all_events)
-        )
+        if self.domain.is_empty():
+            # Fallback for domain-less operation: use a simple offset based on the
+            # number of already-persisted events for this sender_id so that new
+            # events are still stored even when no domain is loaded.
+            offset = len(all_events)
+            return itertools.islice(tracker.events, offset, len(tracker.events))
 
-        return itertools.islice(
-            tracker.events, number_events_since_last_session, len(tracker.events)
+        if not all_events:
+            # Nothing persisted yet — all in-memory events are new (matches legacy
+            # suffix-length 0 => islice from 0).
+            return itertools.islice(tracker.events, 0, len(tracker.events))
+
+        stored_tracker = DialogueStateTracker.from_dict(
+            tracker.sender_id,
+            all_events,
+            self.domain.slots,
+            user_id=stored.get(USER_ID),
         )
+        sliced = get_latest_replay_safe_session_tracker(
+            stored_tracker,
+            start_session_after_expiry=(
+                self.domain.session_config.start_session_after_expiry
+            ),
+        )
+        offset = len(sliced.events)
+
+        return itertools.islice(tracker.events, offset, len(tracker.events))
 
     @staticmethod
     def _events_from_serialized_tracker(serialised: Dict) -> List[Dict]:
         return serialised.get("events", [])
 
     @staticmethod
-    def _events_since_last_session_start(events: List[Dict]) -> List[Dict]:
-        """Retrieve events since and including the latest `SessionStart` event.
+    def _events_since_last_action_session_start(events: List[Dict]) -> List[Dict]:
+        """Events from the latest ``action_session_start`` action onwards (inclusive).
 
         Args:
             events: All events for a conversation ID.
 
         Returns:
-            List of serialised events since and including the latest `SessionStarted`
-            event. Returns all events if no such event is found.
+            Serialised events from the latest ``ActionExecuted(action_session_start)``
+            onward. Returns all events if no such action is found.
 
         """
         events_after_session_start = []
         for event in reversed(events):
             events_after_session_start.append(event)
-            if event["event"] == SessionStarted.type_name:
+            if (
+                event.get("event") == ActionExecuted.type_name
+                and event.get("name") == ACTION_SESSION_START_NAME
+            ):
                 break
 
         return list(reversed(events_after_session_start))
@@ -190,14 +230,19 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         events = self._events_from_serialized_tracker(stored)
 
         if not fetch_events_from_all_sessions:
-            events = self._events_since_last_session_start(events)
+            events = self._events_since_last_action_session_start(events)
 
         # Return both events and user_id
         return events, stored.get(USER_ID)
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Retrieves tracker for the latest conversation session."""
-        result = await self._retrieve(sender_id, fetch_events_from_all_sessions=False)
+        """Retrieves tracker for the latest conversation session.
+
+        The latest session is the replay-safe slice from the last
+        ``action_session_start`` action (see
+        :func:`get_latest_replay_safe_session_tracker`).
+        """
+        result = await self._retrieve(sender_id, fetch_events_from_all_sessions=True)
 
         if result is None:
             return None
@@ -207,8 +252,14 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         if not events:
             return None
 
-        return DialogueStateTracker.from_dict(
+        tracker = DialogueStateTracker.from_dict(
             sender_id, events, self.domain.slots, user_id=user_id
+        )
+        return get_latest_replay_safe_session_tracker(
+            tracker,
+            start_session_after_expiry=(
+                self.domain.session_config.start_session_after_expiry
+            ),
         )
 
     async def retrieve_full_tracker(

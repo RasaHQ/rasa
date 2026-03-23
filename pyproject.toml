@@ -551,6 +551,16 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "tests/test_telemetry.py" = [ "E501",]
 "tests/shared/core/test_domain.py" = [ "E501",]
+# Long JSON literals in stack / tracker regression tests
+"tests/core/tracker_stores/test_dynamo_tracker_store.py" = [ "E501",]
+"tests/core/tracker_stores/test_mongo_tracker_store.py" = [ "E501",]
+"tests/core/tracker_stores/test_redis_tracker_store.py" = [ "E501",]
+"tests/core/tracker_stores/test_sql_tracker_store.py" = [ "E501",]
+"tests/core/tracker_stores/test_tracker_stores.py" = [ "E501",]
+"tests/integration_tests/core/test_tracker_store.py" = [ "E501",]
+"tests/integration_tests/core/tracker_stores/test_dynamo_tracker_store.py" = [ "E501",]
+"tests/integration_tests/core/tracker_stores/test_mongo_tracker_store.py" = [ "E501",]
+"tests/shared/core/test_trackers.py" = [ "E501",]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "pypred.Predicate".msg = "Only use the patched pypred module from rasa.utils.pypred."

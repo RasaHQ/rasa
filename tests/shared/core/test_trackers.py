@@ -9,6 +9,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Text, Type
+from unittest.mock import patch
 
 import fakeredis
 import freezegun
@@ -97,7 +98,11 @@ from rasa.shared.core.slots import (
     StrictCategoricalSlot,
     TextSlot,
 )
-from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import (
+    DialogueStateTracker,
+    EventVerbosity,
+    get_latest_replay_safe_session_tracker,
+)
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
@@ -1403,6 +1408,160 @@ def test_trackers_for_conversation_sessions(
     subtrackers = trackers_module.get_trackers_for_conversation_sessions(tracker)
 
     assert len(subtrackers) == n_subtrackers
+
+
+def test_latest_replay_safe_session_tracker_widens_for_start_session_after_expiry_true():
+    tracker = DialogueStateTracker.from_events(
+        "some-conversation-ID",
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+
+    latest_tracker = get_latest_replay_safe_session_tracker(
+        tracker, start_session_after_expiry=True
+    )
+
+    # The preferred latest slice is invalid and must widen to include older context.
+    assert len(latest_tracker.events) == 4
+    assert latest_tracker.stack.frames[0].step_id == "SECOND"
+
+
+def test_latest_replay_safe_session_tracker_widens_for_start_session_after_expiry_false():
+    tracker = DialogueStateTracker.from_events(
+        "some-conversation-ID",
+        [
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ConversationInactive(),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "AFTER_INACTIVE"}]'
+            ),
+        ],
+    )
+
+    latest_tracker = get_latest_replay_safe_session_tracker(
+        tracker, start_session_after_expiry=False
+    )
+
+    # Boundary is after ConversationInactive; this widens to preserve stack integrity.
+    assert len(latest_tracker.events) == 3
+    assert latest_tracker.stack.frames[0].step_id == "AFTER_INACTIVE"
+
+
+def test_latest_replay_safe_session_tracker_inactive_last_event_widens_to_full_history():
+    """When ConversationInactive is the last event, preferred_start is len(events).
+
+    Empty slices must not be accepted: from_events([]) would succeed but drop state
+    (e.g. inactive). We widen to full history instead.
+    """
+    tracker = DialogueStateTracker.from_events(
+        "some-conversation-ID",
+        [
+            SessionStarted(),
+            UserUttered("hello"),
+            ConversationInactive(),
+        ],
+    )
+
+    latest_tracker = get_latest_replay_safe_session_tracker(
+        tracker, start_session_after_expiry=False
+    )
+
+    assert len(latest_tracker.events) == 3
+    assert latest_tracker.inactive
+
+
+def test_latest_replay_safe_session_tracker_returns_latest_session_when_valid():
+    """Happy path: latest session slice is valid and returned without widening."""
+    tracker = DialogueStateTracker.from_events(
+        "some-conversation-ID",
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            UserUttered("old session"),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            UserUttered("new session"),
+        ],
+    )
+
+    latest_tracker = get_latest_replay_safe_session_tracker(
+        tracker, start_session_after_expiry=True
+    )
+
+    # Only the last two events (from the second action_session_start onwards).
+    assert len(latest_tracker.events) == 2
+    events = list(latest_tracker.events)
+    assert isinstance(events[0], ActionExecuted)
+    assert events[0].action_name == ACTION_SESSION_START_NAME
+    assert isinstance(events[1], UserUttered)
+    assert events[1].text == "new session"
+
+
+def test_latest_replay_safe_session_tracker_returns_original_when_all_attempts_fail():
+    """If every reconstruction attempt raises, the original tracker is returned."""
+    tracker = DialogueStateTracker.from_events(
+        "some-conversation-ID",
+        [UserUttered("hello")],
+    )
+
+    with patch(
+        "rasa.shared.core.trackers._try_reconstruct_tracker_from_events",
+        return_value=None,
+    ):
+        result = get_latest_replay_safe_session_tracker(
+            tracker, start_session_after_expiry=True
+        )
+
+    assert result is tracker
+
+
+def test_latest_replay_safe_session_tracker_no_inactive_returns_full_history():
+    """With no ConversationInactive, start_session_after_expiry=False returns all events."""
+    tracker = DialogueStateTracker.from_events(
+        "some-conversation-ID",
+        [
+            UserUttered("hello"),
+            BotUttered("hi"),
+        ],
+    )
+
+    latest_tracker = get_latest_replay_safe_session_tracker(
+        tracker, start_session_after_expiry=False
+    )
+
+    assert len(latest_tracker.events) == 2
+
+
+def test_latest_replay_safe_session_tracker_uses_last_inactive_as_boundary():
+    """With multiple ConversationInactive events, boundary is after the last one."""
+    tracker = DialogueStateTracker.from_events(
+        "some-conversation-ID",
+        [
+            UserUttered("first session"),
+            ConversationInactive(),
+            UserUttered("second session"),
+            ConversationInactive(),
+            UserUttered("third session"),
+        ],
+    )
+
+    latest_tracker = get_latest_replay_safe_session_tracker(
+        tracker, start_session_after_expiry=False
+    )
+
+    # Only the event after the last ConversationInactive.
+    assert len(latest_tracker.events) == 1
+    last_user_uttered = next(iter(latest_tracker.events))
+    assert isinstance(last_user_uttered, UserUttered)
+    assert last_user_uttered.text == "third session"
 
 
 def test_policy_predictions_dont_change_persistence():

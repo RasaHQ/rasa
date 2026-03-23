@@ -28,6 +28,8 @@ from typing import (
 )
 
 import structlog
+from jsonpatch import JsonPatchException
+from jsonpointer import JsonPointerException
 
 import rasa.shared.utils.io
 from rasa.constants import USER_ID
@@ -57,6 +59,7 @@ from rasa.shared.core.events import (
     ActionReverted,
     ActiveLoop,
     BotUttered,
+    ConversationInactive,
     ConversationResumed,
     DefinePrevUserUtteredFeaturization,
     DialogueStackUpdated,
@@ -1595,6 +1598,16 @@ def get_trackers_for_conversation_sessions(
     Returns:
         The trackers split by conversation sessions.
     """
+    rasa.shared.utils.io.raise_deprecation_warning(
+        "`get_trackers_for_conversation_sessions` is deprecated "
+        "and will be removed in Rasa 4.0. "
+        "Do not use this helper function internally any longer as "
+        "it can raise JsonPointerException or JsonPatchException "
+        "when the tracker contains stack events with cross-session "
+        "json patch dependencies. "
+        "Use `get_latest_replay_safe_session_tracker` instead."
+    )
+
     split_conversations = events.split_events(
         tracker.events,
         ActionExecuted,
@@ -1613,3 +1626,118 @@ def get_trackers_for_conversation_sessions(
         )
         for evts in split_conversations
     ]
+
+
+def _session_start_event_indices(events_: List[Event]) -> List[int]:
+    return [
+        i
+        for i, event in enumerate(events_)
+        if isinstance(event, ActionExecuted)
+        and event.action_name == ACTION_SESSION_START_NAME
+    ]
+
+
+def _conversation_inactive_event_indices(events_: List[Event]) -> List[int]:
+    return [
+        i for i, event in enumerate(events_) if isinstance(event, ConversationInactive)
+    ]
+
+
+def _try_reconstruct_tracker_from_events(
+    base_tracker: DialogueStateTracker, events_: List[Event]
+) -> Optional[DialogueStateTracker]:
+    try:
+        return DialogueStateTracker.from_events(
+            sender_id=base_tracker.sender_id,
+            evts=events_,
+            slots=base_tracker.slots.values(),
+            max_event_history=base_tracker._max_event_history,
+            sender_source=base_tracker.sender_source,
+            user_id=base_tracker.user_id,
+        )
+    except (JsonPatchException, JsonPointerException) as exc:
+        structlogger.debug(
+            "rasa.shared.core.trackers.try_reconstruct_tracker_from_events.failed",
+            error=str(exc),
+        )
+        return None
+
+
+def get_latest_replay_safe_session_tracker(
+    tracker: DialogueStateTracker,
+    start_session_after_expiry: bool,
+) -> DialogueStateTracker:
+    """Returns the latest logical session tracker that can be replayed safely.
+
+    The function prefers the newest session boundary by configured session mode.
+    If replay of that slice fails due to dialogue stack patch dependencies, it
+    progressively widens the prefix and allows older-session context to be included.
+
+    When ``start_session_after_expiry`` is True, session boundaries are
+    ``ActionExecuted(action_session_start)`` events — the same action the
+    :class:`~rasa.core.processor.MessageProcessor` runs when a new session starts.
+
+    Args:
+        tracker: Full tracker (all sessions) to slice.
+        start_session_after_expiry: When True, slice from the last
+            ``action_session_start`` action; when False, prefer boundaries after
+            :class:`ConversationInactive` (the inactive event is the last event of the
+            pre-inactivity segment; replay starts at the following index). Widening
+            falls back to full history only — no ``action_session_start``-based
+            prefixes in this mode, so session-start actions stay in the old segment.
+
+    Returns:
+        A newly-constructed :class:`DialogueStateTracker` built from the
+        replay-safe event slice on success. When **every** reconstruction candidate
+        fails (all raised :class:`jsonpatch.JsonPointerException` or
+        :class:`jsonpatch.JsonPatchException`), returns the original ``tracker``
+        argument **by identity** (not a copy). Callers that need to detect this
+        all-failed case MUST use an ``is`` identity check — equality is not
+        sufficient. This contract is relied upon by
+        :meth:`~rasa.core.tracker_stores.sql_tracker_store.SQLTrackerStore._additional_events`
+        for its two-phase fetch optimisation.
+    """
+    events_ = list(tracker.events)
+    if not events_:
+        return tracker
+
+    if start_session_after_expiry:
+        starts = _session_start_event_indices(events_)
+        preferred_start = starts[-1] if starts else 0
+        candidate_starts = [preferred_start] + [
+            idx for idx in reversed(starts) if idx < preferred_start
+        ]
+    else:
+        # ConversationInactive marks end of the active phase; it belongs to the
+        # "old" segment — the replay slice starts at the next event (not at the
+        # inactive event itself). Do not mix in action_session_start indices here:
+        # those actions are part of the pre-inactivity history when they occur
+        # before this boundary; widening uses full history (0) only.
+        inactive_indices = _conversation_inactive_event_indices(events_)
+        preferred_start = inactive_indices[-1] + 1 if inactive_indices else 0
+        candidate_starts = [preferred_start]
+
+    # Always try full tracker reconstruction as last attempt.
+    candidate_starts.append(0)
+
+    # keep insertion order while removing duplicates
+    deduplicated_candidate_starts = list(dict.fromkeys(candidate_starts))
+    for start_idx in deduplicated_candidate_starts:
+        sliced_events = events_[start_idx:]
+        # When the last event is ConversationInactive, preferred_start is len(events)
+        # and the slice is empty; from_events([]) would succeed but lose inactive
+        # (and all) state — skip so we widen to full history (or other candidates).
+        if not sliced_events:
+            continue
+        reconstructed = _try_reconstruct_tracker_from_events(tracker, sliced_events)
+        if reconstructed is not None:
+            if start_idx != preferred_start:
+                structlogger.debug(
+                    "trackers.latest_replay_safe_session_tracker.widened_prefix",
+                    start_idx=start_idx,
+                    preferred_start=preferred_start,
+                    start_session_after_expiry=start_session_after_expiry,
+                )
+            return reconstructed
+
+    return tracker

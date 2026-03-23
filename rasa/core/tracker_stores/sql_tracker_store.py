@@ -22,6 +22,8 @@ from typing import (
 
 import sqlalchemy as sa
 import structlog
+from jsonpatch import JsonPatchException
+from jsonpointer import JsonPointerException
 
 import rasa.shared
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS, USER_ID
@@ -44,9 +46,13 @@ from rasa.core.tracker_stores.tracker_store import (
     TrackerStore,
     validate_port,
 )
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event, SessionStarted
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.events import ActionExecuted, Event
+from rasa.shared.core.trackers import (
+    DialogueStateTracker,
+    get_latest_replay_safe_session_tracker,
+)
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
@@ -189,7 +195,18 @@ def ensure_schema_exists(session: "Session") -> None:
 
 
 class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
-    """Store which can save and retrieve trackers from an SQL database."""
+    """Store which can save and retrieve trackers from an SQL database.
+
+    Latest-session retrieval and incremental saves align on the same session
+    boundary as other tracker stores: ``ActionExecuted(action_session_start)``.
+    That action is always run by :class:`~rasa.core.processor.MessageProcessor`
+    when a new session starts (empty conversation or session expiry with
+    ``start_session_after_expiry``), so it is a stable marker in persisted
+    histories. ``SessionStarted`` is still emitted by the default
+    :class:`~rasa.core.actions.action.ActionSessionStart` implementation but can
+    be omitted by custom session-start actions; using ``action_session_start``
+    avoids depending on that optional event for slicing.
+    """
 
     from sqlalchemy.orm import DeclarativeBase
 
@@ -340,7 +357,23 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             event_info=f"Connection to SQL database '{db}' successful.",
         )
 
+        # Cached result of Inspector.has_table("users"). None means "not yet resolved".
+        # The schema is stable after startup, so this is safe to cache for the
+        # lifetime of the instance.
+        self._has_users_table: Optional[bool] = None
         super().__init__(domain, event_broker, **kwargs)
+
+    @property
+    def _users_table_exists(self) -> bool:
+        """Return whether the ``users`` table exists in the database.
+
+        The result is cached on first access because the schema is stable after startup.
+        Two concurrent workers racing on initialisation both derive the same idempotent
+        answer; no lock is needed.
+        """
+        if self._has_users_table is None:
+            self._has_users_table = sa.inspect(self.engine).has_table("users")
+        return self._has_users_table
 
     def _create_tables(
         self,
@@ -572,8 +605,22 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         )
 
     async def retrieve(self, sender_id: str) -> Optional[DialogueStateTracker]:
-        """Retrieves tracker for the latest conversation session."""
-        return await self._retrieve(sender_id, fetch_events_from_all_sessions=False)
+        """Retrieves tracker for the latest conversation session.
+
+        The latest session is the replay-safe slice from the last
+        ``action_session_start`` action (see
+        :func:`get_latest_replay_safe_session_tracker`).
+        """
+        tracker = await self._retrieve(sender_id, fetch_events_from_all_sessions=True)
+        if tracker is None:
+            return None
+
+        return get_latest_replay_safe_session_tracker(
+            tracker,
+            start_session_after_expiry=(
+                self.domain.session_config.start_session_after_expiry
+            ),
+        )
 
     async def retrieve_full_tracker(
         self, conversation_id: str
@@ -618,10 +665,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                     sender_id, events, self.domain.slots
                 )
 
-                from sqlalchemy.engine import Inspector
-
-                inspector = Inspector.from_engine(self.engine)
-                if inspector.has_table("users"):
+                if self._users_table_exists:
                     user_mapping = (
                         session.query(self.SQLUser.user_id)
                         .filter(self.SQLUser.sender_id == sender_id)
@@ -656,17 +700,20 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             sender_id: Sender id whose conversation events should be retrieved.
             fetch_events_from_all_sessions: Whether to fetch events from all
                 conversation sessions. If `False`, only fetch events from the
-                latest conversation session.
+                latest session (at or after the latest ``action_session_start``
+                timestamp).
 
         Returns:
             Query to get the conversation events.
         """
-        # Subquery to find the timestamp of the latest `SessionStarted` event
+        # Subquery: timestamp of the latest ``action_session_start`` action
+        # (aligns with :func:`get_latest_replay_safe_session_tracker` boundary).
         session_start_sub_query = (
             session.query(sa.func.max(self.SQLEvent.timestamp).label("session_start"))
             .filter(
                 self.SQLEvent.sender_id == sender_id,
-                self.SQLEvent.type_name == SessionStarted.type_name,
+                self.SQLEvent.type_name == ActionExecuted.type_name,
+                self.SQLEvent.action_name == ACTION_SESSION_START_NAME,
             )
             .subquery()
         )
@@ -676,8 +723,8 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         )
         if not fetch_events_from_all_sessions:
             event_query = event_query.filter(
-                # Find events after the latest `SessionStarted` event or return all
-                # events
+                # Events at or after the latest ``action_session_start``, or all events
+                # if none exist.
                 sa.or_(
                     self.SQLEvent.timestamp >= session_start_sub_query.c.session_start,
                     session_start_sub_query.c.session_start.is_(None),
@@ -743,16 +790,135 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             ),
         )
 
+    def _build_stored_tracker(
+        self,
+        session: "Session",
+        sender_id: str,
+        serialised_rows: list,
+    ) -> DialogueStateTracker:
+        """Reconstruct a :class:`DialogueStateTracker` from raw SQL event rows.
+
+        JSON-decodes each row, builds the tracker via
+        :meth:`~rasa.shared.core.trackers.DialogueStateTracker.from_dict`, and
+        attaches any ``user_id`` found in the users table.
+
+        Args:
+            session: Active database session (used for the users-table lookup).
+            sender_id: Conversation sender ID.
+            serialised_rows: Raw :class:`SQLEvent` ORM rows whose ``.data`` field
+                contains the JSON-serialised event.
+
+        Returns:
+            Reconstructed tracker, with ``user_id`` set if a mapping exists.
+        """
+        events = [json.loads(row.data) for row in serialised_rows]
+        stored_tracker = DialogueStateTracker.from_dict(
+            sender_id, events, self.domain.slots
+        )
+        if self._users_table_exists:
+            user_mapping = (
+                session.query(self.SQLUser.user_id)
+                .filter(self.SQLUser.sender_id == sender_id)
+                .one_or_none()
+            )
+            if user_mapping:
+                stored_tracker.user_id = user_mapping[0]
+        return stored_tracker
+
     def _additional_events(
         self, session: "Session", tracker: DialogueStateTracker
     ) -> Iterator:
-        """Return events from the tracker which aren't currently stored."""
-        number_of_events_since_last_session = self._event_query(
-            session, tracker.sender_id, fetch_events_from_all_sessions=False
-        ).count()
+        """Return events from the tracker which aren't currently stored.
 
+        The offset into ``tracker.events`` matches the length of the tracker
+        returned by :meth:`retrieve` (replay-safe latest session, using the
+        ``action_session_start`` boundary), not the raw SQL row count for the
+        timestamp filter (which can differ when timestamps collide).
+
+        Uses a **two-phase fetch** to minimise DB I/O:
+
+        * **Phase 1 (fast path):** fetches only the latest session's events
+          (``fetch_events_from_all_sessions=False``). Sufficient for the vast
+          majority of conversations.
+        * **Phase 2 (fallback):** triggered only when
+          :func:`~rasa.shared.core.trackers.get_latest_replay_safe_session_tracker`
+          exhausts all reconstruction candidates with the session-only view —
+          which happens when a second session holds ``DialogueStackUpdated`` events
+          that reference frames added in an earlier session. Re-fetches full
+          history and repeats reconstruction.
+
+        The ``domain.is_empty()`` early-exit path still uses the full-history fetch
+        because it needs the raw persisted-row count, not a replay-safe slice.
+        """
+        # --- Early exit: domain-less operation ---
+        # Needs the raw count of all persisted events so that newly arrived events
+        # are appended rather than re-written (no replay-safe slicing here).
+        if self.domain.is_empty():
+            all_rows = self._event_query(
+                session, tracker.sender_id, fetch_events_from_all_sessions=True
+            ).all()
+            offset = len(all_rows)
+            return itertools.islice(tracker.events, offset, len(tracker.events))
+
+        # --- Phase 1: session-only fetch (fast path) ---
+        session_rows = self._event_query(
+            session, tracker.sender_id, fetch_events_from_all_sessions=False
+        ).all()
+
+        if not session_rows:
+            # No events stored at all — this is the first save.
+            return itertools.islice(tracker.events, 0, len(tracker.events))
+
+        start_session_after_expiry = (
+            self.domain.session_config.start_session_after_expiry
+        )
+        try:
+            stored_tracker = self._build_stored_tracker(
+                session, tracker.sender_id, session_rows
+            )
+            sliced = get_latest_replay_safe_session_tracker(
+                stored_tracker, start_session_after_expiry=start_session_after_expiry
+            )
+        except (JsonPatchException, JsonPointerException):
+            # The session-only view triggered an unrecoverable patch failure during
+            # tracker reconstruction (e.g. a second session replaces a frame that was
+            # only added in the first session). Fall through to Phase 2.
+            sliced = None
+            stored_tracker = None
+
+        # Detect Phase 1 success:
+        # - sliced is not None (no exception) AND
+        # - sliced is a newly-constructed tracker (not the same object as
+        #   stored_tracker, which is returned by
+        #   get_latest_replay_safe_session_tracker only when every
+        #   reconstruction candidate failed).
+        if sliced is not None and sliced is not stored_tracker:
+            return itertools.islice(
+                tracker.events, len(sliced.events), len(tracker.events)
+            )
+
+        # --- Phase 2: full-history fallback ---
+        # Session-only view insufficient (cross-session dialogue-stack dependencies).
+        structlogger.debug(
+            "sql_tracker_store._additional_events.widening_to_full_history",
+            sender_id=tracker.sender_id,
+            event_info=(
+                "Session-only fetch insufficient for replay-safe slicing; "
+                "falling back to full history fetch."
+            ),
+        )
+        all_rows = self._event_query(
+            session, tracker.sender_id, fetch_events_from_all_sessions=True
+        ).all()
+        stored_tracker_full = self._build_stored_tracker(
+            session, tracker.sender_id, all_rows
+        )
+        sliced_full = get_latest_replay_safe_session_tracker(
+            stored_tracker_full,
+            start_session_after_expiry=start_session_after_expiry,
+        )
         return itertools.islice(
-            tracker.events, number_of_events_since_last_session, len(tracker.events)
+            tracker.events, len(sliced_full.events), len(tracker.events)
         )
 
     def _upsert_user_mapping(
@@ -988,13 +1154,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         Returns:
             List of trackers associated with the user_id.
         """
-        from sqlalchemy.engine import Inspector
-
-        # Check if users table exists
-        inspector = Inspector.from_engine(self.engine)
-        has_users_table = inspector.has_table("users")
-
-        if not has_users_table:
+        if not self._users_table_exists:
             structlogger.warning(
                 "sql_tracker_store.get_trackers_by_user_id.no_users_table",
                 event_info=(

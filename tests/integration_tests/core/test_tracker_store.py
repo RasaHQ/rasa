@@ -16,6 +16,8 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
+    ConversationInactive,
+    DialogueStackUpdated,
     Event,
     SessionStarted,
     UserUttered,
@@ -214,13 +216,73 @@ async def test_postgres_tracker_store_retrieve(
     tracker = await tracker_store.retrieve(sender_id)
     assert tracker is not None
 
-    # the retrieved tracker with the latest session would not contain
-    # `action_session_start` event because the SQLTrackerStore filters
-    # only the events after `session_started` event
-
-    assert list(tracker.events) == events_after_restart[1:]
+    # Latest session begins at the last ``action_session_start`` (inclusive).
+    assert list(tracker.events) == events_after_restart
 
     tracker_store.engine.dispose()
+
+
+@pytest.mark.sequential
+@pytest.mark.timeout(10, func_only=True)
+async def test_postgres_tracker_store_retrieve_widens_prefix_for_stack_integrity_true_mode(
+    postgres_tracker_store: SQLTrackerStore,
+) -> None:
+    """Replay-safe widening across action_session_start (start_session_after_expiry True)."""
+    sender_id = f"it_postgres_widen_true_{uuid.uuid4().hex}"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "old", "flow_id": "foo", "step_id": "OLD", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+    await postgres_tracker_store.save(tracker)
+
+    retrieved = await postgres_tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 4
+    assert retrieved.stack.frames[0].frame_id == "old"
+    assert retrieved.stack.frames[0].step_id == "SECOND"
+
+
+@pytest.mark.sequential
+@pytest.mark.timeout(10, func_only=True)
+async def test_postgres_tracker_store_retrieve_widens_prefix_for_stack_integrity_false_mode(
+    postgres_tracker_store: SQLTrackerStore,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Replay-safe boundary after ConversationInactive (start_session_after_expiry False)."""
+    false_domain = Domain.from_dict(
+        {"session_config": {"start_session_after_expiry": False}}
+    )
+    monkeypatch.setattr(postgres_tracker_store, "domain", false_domain)
+    sender_id = f"it_postgres_widen_false_{uuid.uuid4().hex}"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ConversationInactive(),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "AFTER_INACTIVE"}]'
+            ),
+        ],
+    )
+    await postgres_tracker_store.save(tracker)
+
+    retrieved = await postgres_tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 3
+    assert retrieved.stack.frames[0].step_id == "AFTER_INACTIVE"
 
 
 @pytest.mark.sequential
@@ -544,6 +606,64 @@ async def test_redis_tracker_store_retrieve(
 
     tracker = await redis_tracker_store.retrieve(sender_id)
     assert list(tracker.events) == events_after_restart
+
+
+async def test_redis_tracker_store_retrieve_widens_prefix_for_stack_integrity_true_mode(
+    redis_tracker_store: RedisTrackerStore,
+) -> None:
+    """Replay-safe widening across action_session_start boundaries (integration)."""
+    sender_id = f"it_redis_widen_true_{uuid.uuid4().hex}"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+    await redis_tracker_store.save(tracker)
+
+    retrieved = await redis_tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 4
+    assert retrieved.stack.frames[0].step_id == "SECOND"
+
+
+async def test_redis_tracker_store_retrieve_widens_prefix_for_stack_integrity_false_mode(
+    redis_tracker_store: RedisTrackerStore,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Widening when latest boundary is after ConversationInactive (integration)."""
+    false_domain = Domain.from_dict(
+        {"session_config": {"start_session_after_expiry": False}}
+    )
+    monkeypatch.setattr(redis_tracker_store, "domain", false_domain)
+    sender_id = f"it_redis_widen_false_{uuid.uuid4().hex}"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ConversationInactive(),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "AFTER_INACTIVE"}]'
+            ),
+        ],
+    )
+    await redis_tracker_store.save(tracker)
+
+    retrieved = await redis_tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 3
+    assert retrieved.stack.frames[0].step_id == "AFTER_INACTIVE"
 
 
 async def test_redis_tracker_store_delete(

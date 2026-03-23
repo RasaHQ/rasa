@@ -13,10 +13,13 @@ from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core.tracker_stores.dynamo_tracker_store import DynamoTrackerStore
 from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.shared.constants import DEFAULT_SENDER_ID, DEFAULT_USER_ID
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
+    ConversationInactive,
+    DialogueStackUpdated,
     Restarted,
     SessionStarted,
     SlotSet,
@@ -177,6 +180,60 @@ async def test_dynamo_tracker_store_update_tracker(mock_dynamodb: Any) -> None:
     # Then
     updated_tracker = await tracker_store.retrieve(sender_id)
     assert updated_tracker == new_tracker
+
+
+async def test_dynamo_tracker_store_retrieve_widens_prefix_for_stack_integrity_true_mode(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    tracker_store = DynamoTrackerStore(test_domain)
+    sender_id = "dynamo_widen_true"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    retrieved = await tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 4
+    assert retrieved.stack.frames[0].step_id == "SECOND"
+
+
+async def test_dynamo_tracker_store_retrieve_widens_prefix_for_stack_integrity_false_mode(
+    mock_dynamodb: Any,
+) -> None:
+    domain = Domain.from_dict({"session_config": {"start_session_after_expiry": False}})
+    tracker_store = DynamoTrackerStore(domain)
+    sender_id = "dynamo_widen_false"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ConversationInactive(),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "AFTER_INACTIVE"}]'
+            ),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    retrieved = await tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 3
+    assert retrieved.stack.frames[0].step_id == "AFTER_INACTIVE"
 
 
 async def test_dynamo_tracker_store_save_single_user_uttered(
@@ -761,7 +818,7 @@ async def test_get_trackers_by_user_id_with_gsi(
 async def test_get_trackers_by_user_id_with_gsi_no_matching_trackers(
     test_domain: Domain, mock_dynamodb: Any
 ) -> None:
-    """Test get_trackers_by_user_id with GSI returns empty list when no trackers match."""  # noqa: E501
+    """Test get_trackers_by_user_id with GSI returns empty list when no trackers match."""
     # Given
     user_id = "user_123"
     conversation_id = uuid.uuid4().hex
@@ -1187,7 +1244,6 @@ async def test_dynamo_pagination_very_large_limit(
 
 
 @pytest.mark.asyncio
-@mock_aws
 async def test_dynamo_negative_skip_and_limit_ignored(
     test_domain: Domain, mock_dynamodb: Any
 ) -> None:

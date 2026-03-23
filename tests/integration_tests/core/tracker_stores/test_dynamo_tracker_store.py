@@ -4,11 +4,20 @@ import uuid
 from typing import Any, List
 
 import pytest
+from pytest import MonkeyPatch
 from structlog.testing import capture_logs
 
 from rasa.core.tracker_stores.dynamo_tracker_store import DynamoTrackerStore
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event, SessionStarted, UserUttered
+from rasa.shared.core.events import (
+    ActionExecuted,
+    ConversationInactive,
+    DialogueStackUpdated,
+    Event,
+    SessionStarted,
+    UserUttered,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.integration_tests.core.conftest import (
     assert_all_trackers_have_properties,
@@ -179,6 +188,64 @@ async def test_dynamo_tracker_store_retrieve(
     # `action_session_start` event because the DynamoTrackerStore filters
     # only the events after `session_started` event
     assert list(tracker.events) == events_after_restart
+
+
+async def test_dynamo_tracker_store_retrieve_widens_prefix_for_stack_integrity_true_mode(
+    dynamo_tracker_store: DynamoTrackerStore,
+) -> None:
+    """Replay-safe widening across action_session_start boundaries (integration)."""
+    sender_id = f"it_dynamo_widen_true_{uuid.uuid4().hex}"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+    await dynamo_tracker_store.save(tracker)
+
+    retrieved = await dynamo_tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 4
+    assert retrieved.stack.frames[0].step_id == "SECOND"
+
+
+async def test_dynamo_tracker_store_retrieve_widens_prefix_for_stack_integrity_false_mode(
+    dynamo_tracker_store: DynamoTrackerStore,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Widening when latest boundary is after ConversationInactive (integration)."""
+    false_domain = Domain.from_dict(
+        {"session_config": {"start_session_after_expiry": False}}
+    )
+    monkeypatch.setattr(dynamo_tracker_store, "domain", false_domain)
+    sender_id = f"it_dynamo_widen_false_{uuid.uuid4().hex}"
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ConversationInactive(),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "AFTER_INACTIVE"}]'
+            ),
+        ],
+    )
+    await dynamo_tracker_store.save(tracker)
+
+    retrieved = await dynamo_tracker_store.retrieve(sender_id)
+
+    assert retrieved is not None
+    assert len(retrieved.events) == 3
+    assert retrieved.stack.frames[0].step_id == "AFTER_INACTIVE"
 
 
 async def test_dynamo_tracker_store_delete(

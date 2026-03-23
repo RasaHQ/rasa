@@ -1,4 +1,4 @@
-# file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests. # noqa: E501
+# file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests.
 
 import json
 import uuid
@@ -31,6 +31,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
+    ConversationInactive,
     DialogueStackUpdated,
     Event,
     Restarted,
@@ -394,6 +395,36 @@ async def test_fail_safe_tracker_store_retrieve_full_tracker_with_exception() ->
         assert len(logs) == 1
 
 
+async def test_fail_safe_tracker_store_error_logs_exc_info():
+    """on_tracker_store_error must use exc_info (not exec_info) so tracebacks are captured."""
+    exception = Exception("save error")
+    mocked_tracker_store = MagicMock()
+    mocked_tracker_store.save = AsyncMock(side_effect=exception)
+    mocked_tracker_store.domain = Domain.empty()
+    mocked_tracker_store.event_broker = None
+
+    fallback_tracker_store = MagicMock()
+    fallback_tracker_store.save = AsyncMock()
+
+    tracker_store = FailSafeTrackerStore(
+        mocked_tracker_store, None, fallback_tracker_store
+    )
+
+    with capture_logs() as caplog:
+        await tracker_store.save(None)
+
+    error_logs = [
+        log
+        for log in caplog
+        if log.get("event") == "fail_safe_tracker_store.tracker_store_error"
+    ]
+    assert len(error_logs) == 1
+    # exc_info must be present so structlog renders the traceback correctly.
+    assert error_logs[0].get("exc_info") == exception
+    # The old typo must not appear.
+    assert "exec_info" not in error_logs[0]
+
+
 async def test_in_memory_tracker_store_retrieve_full_tracker(
     domain: Domain,
     tracker_with_restarted_event: DialogueStateTracker,
@@ -450,10 +481,10 @@ async def test_tracker_store_retrieve_stack_events():
         "test_patterns",
         [
             DialogueStackUpdated(
-                update='[{"op": "add", "path": "/0", "value": {"frame_id": "PWF4YX9P", "flow_id": "list_contacts", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'  # noqa: E501
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "PWF4YX9P", "flow_id": "list_contacts", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
             ),
             DialogueStackUpdated(
-                update='[{"op": "add", "path": "/0/previous_flow_name", "value": "list your contacts"}, {"op": "replace", "path": "/0/type", "value": "pattern_completed"}]'  # noqa: E501
+                update='[{"op": "add", "path": "/0/previous_flow_name", "value": "list your contacts"}, {"op": "replace", "path": "/0/type", "value": "pattern_completed"}]'
             ),
         ],
     )
@@ -463,6 +494,56 @@ async def test_tracker_store_retrieve_stack_events():
     retrieved_tracker = await tracker_store.retrieve_full_tracker(tracker.sender_id)
 
     assert retrieved_tracker == tracker
+
+
+async def test_in_memory_retrieve_widens_prefix_for_stack_integrity_true_mode() -> None:
+    tracker_store = InMemoryTrackerStore(domain=Domain.empty())
+    tracker = DialogueStateTracker.from_events(
+        "test_retrieve_widen_true",
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+            ),
+        ],
+    )
+
+    await tracker_store.save(tracker)
+    retrieved_tracker = await tracker_store.retrieve(tracker.sender_id)
+
+    assert retrieved_tracker is not None
+    assert len(retrieved_tracker.events) == 4
+    assert retrieved_tracker.stack.frames[0].step_id == "SECOND"
+
+
+async def test_in_memory_retrieve_widens_prefix_for_stack_integrity_false_mode() -> (
+    None
+):
+    domain = Domain.from_dict({"session_config": {"start_session_after_expiry": False}})
+    tracker_store = InMemoryTrackerStore(domain=domain)
+    tracker = DialogueStateTracker.from_events(
+        "test_retrieve_widen_false",
+        [
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+            ),
+            ConversationInactive(),
+            DialogueStackUpdated(
+                update='[{"op": "replace", "path": "/0/step_id", "value": "AFTER_INACTIVE"}]'
+            ),
+        ],
+    )
+
+    await tracker_store.save(tracker)
+    retrieved_tracker = await tracker_store.retrieve(tracker.sender_id)
+
+    assert retrieved_tracker is not None
+    assert len(retrieved_tracker.events) == 3
+    assert retrieved_tracker.stack.frames[0].step_id == "AFTER_INACTIVE"
 
 
 async def test_in_memory_tracker_store_delete() -> None:
