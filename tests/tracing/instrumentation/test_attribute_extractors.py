@@ -6,9 +6,15 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from rasa.agents.core.types import ProtocolType
 from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps.call import CallFlowStep
+from rasa.tracing.constants import (
+    AGENT_NAME_ATTRIBUTE_NAME,
+    EXECUTION_CONTEXT_ATTRIBUTE_NAME,
+    PROTOCOL_TYPE_ATTRIBUTE_NAME,
+)
 from rasa.tracing.instrumentation.attribute_extractors import (
     extract_attrs_for_datetime_configuration,
     extract_attrs_for_enterprise_search_invoke_llm,
@@ -329,6 +335,8 @@ def test_extract_attrs_for_mcp_agent_llm_call_includes_datetime_config() -> None
 
     # Given
     component = Mock(spec=MCPBaseAgent)
+    component._name = "test-mcp-agent"
+    component.protocol_type = ProtocolType.MCP_OPEN
     component._include_date_time = True
     component._timezone = "Asia/Singapore"
     # Set up llm_client as a mock with config attribute
@@ -368,6 +376,9 @@ def test_extract_attrs_for_mcp_agent_llm_call_includes_datetime_config() -> None
         assert result["include_date_time"] == "True"
         assert result["timezone"] == "Asia/Singapore"
         assert result["prompt_messages_count"] == 1
+        assert result[AGENT_NAME_ATTRIBUTE_NAME] == "test-mcp-agent"
+        assert result[EXECUTION_CONTEXT_ATTRIBUTE_NAME] == "agent"
+        assert result[PROTOCOL_TYPE_ATTRIBUTE_NAME] == str(ProtocolType.MCP_OPEN)
 
 
 @pytest.mark.parametrize(

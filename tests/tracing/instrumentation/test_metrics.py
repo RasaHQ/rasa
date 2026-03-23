@@ -7,6 +7,7 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from rasa.tracing.constants import (
+    AGENT_NAME_ATTRIBUTE_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
@@ -14,6 +15,7 @@ from rasa.tracing.constants import (
     ENTERPRISE_SEARCH_POLICY_CPU_USAGE_METRIC_NAME,
     ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME,
     ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    EXECUTION_CONTEXT_ATTRIBUTE_NAME,
     LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
     LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
@@ -22,6 +24,7 @@ from rasa.tracing.constants import (
     MULTI_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
+    PROTOCOL_TYPE_ATTRIBUTE_NAME,
     RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME,
     RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
@@ -33,6 +36,7 @@ from rasa.tracing.constants import (
     SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
 )
 from rasa.tracing.instrumentation.metrics import (
+    _mcp_agent_llm_call_metric_attributes,
     record_callable_duration_metrics,
     record_llm_based_component_cpu_usage,
     record_llm_based_component_memory_usage,
@@ -885,3 +889,32 @@ def test_record_callable_duration_metrics_endpoint_config_url_valid_string(
     assert url is not None, "url attribute should never be None in metrics"
     assert isinstance(url, str), "url attribute should be a string"
     assert url == test_url, f"Expected url to be '{test_url}', got: {url}"
+
+
+def test_mcp_agent_llm_call_metric_attributes_includes_call_dimensions() -> None:
+    """MCP LLM histograms only attach agent, execution context, and protocol."""
+    attrs: Dict[str, Any] = {
+        AGENT_NAME_ATTRIBUTE_NAME: "booking_agent",
+        EXECUTION_CONTEXT_ATTRIBUTE_NAME: "agent",
+        PROTOCOL_TYPE_ATTRIBUTE_NAME: "ProtocolType.MCP_TASK",
+        "llm_model": "gpt-4o",
+        "llm_type": "openai",
+    }
+    assert _mcp_agent_llm_call_metric_attributes(attrs) == {
+        AGENT_NAME_ATTRIBUTE_NAME: "booking_agent",
+        EXECUTION_CONTEXT_ATTRIBUTE_NAME: "agent",
+        PROTOCOL_TYPE_ATTRIBUTE_NAME: "ProtocolType.MCP_TASK",
+    }
+
+
+def test_mcp_agent_llm_call_metric_attributes_omits_none() -> None:
+    """Unset agent name is omitted from MCP LLM metric attributes."""
+    attrs: Dict[str, Any] = {
+        AGENT_NAME_ATTRIBUTE_NAME: None,
+        EXECUTION_CONTEXT_ATTRIBUTE_NAME: "agent",
+        PROTOCOL_TYPE_ATTRIBUTE_NAME: "ProtocolType.MCP_OPEN",
+    }
+    assert _mcp_agent_llm_call_metric_attributes(attrs) == {
+        EXECUTION_CONTEXT_ATTRIBUTE_NAME: "agent",
+        PROTOCOL_TYPE_ATTRIBUTE_NAME: "ProtocolType.MCP_OPEN",
+    }

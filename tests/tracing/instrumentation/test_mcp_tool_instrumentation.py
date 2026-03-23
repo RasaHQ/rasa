@@ -13,6 +13,7 @@ from rasa.shared.core.events import SessionStarted, SlotSet
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps import CallFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.tracing.constants import EXECUTION_CONTEXT_ATTRIBUTE_NAME
 from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 
@@ -109,7 +110,7 @@ async def test_tracing_mcp_tool_execution(
     assert tool_span.attributes is not None
     assert "tool_id" in tool_span.attributes
     assert "tool_input_arguments" in tool_span.attributes
-    assert tool_span.attributes["execution_context"] == "flow"
+    assert tool_span.attributes[EXECUTION_CONTEXT_ATTRIBUTE_NAME] == "flow"
 
 
 @pytest.mark.asyncio

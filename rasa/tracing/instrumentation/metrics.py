@@ -14,6 +14,7 @@ from rasa.dialogue_understanding.generator import (
     SingleStepLLMCommandGenerator,
 )
 from rasa.tracing.constants import (
+    AGENT_NAME_ATTRIBUTE_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
@@ -23,6 +24,7 @@ from rasa.tracing.constants import (
     ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
     ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME,
     ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    EXECUTION_CONTEXT_ATTRIBUTE_NAME,
     INTENTLESS_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
     LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
@@ -37,6 +39,7 @@ from rasa.tracing.constants import (
     MULTI_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
+    PROTOCOL_TYPE_ATTRIBUTE_NAME,
     RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME,
     RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
@@ -51,6 +54,19 @@ from rasa.tracing.constants import (
 )
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 from rasa.utils.endpoints import EndpointConfig
+
+
+def _mcp_agent_llm_call_metric_attributes(attrs: Dict[str, Any]) -> Dict[str, str]:
+    """Histogram attributes from MCP `send_message` span (pre-tool / pre-outcome)."""
+    return {
+        k: str(v)
+        for k in (
+            AGENT_NAME_ATTRIBUTE_NAME,
+            EXECUTION_CONTEXT_ATTRIBUTE_NAME,
+            PROTOCOL_TYPE_ATTRIBUTE_NAME,
+        )
+        if (v := attrs.get(k)) is not None
+    }
 
 
 def record_llm_based_component_cpu_usage(
@@ -129,9 +145,13 @@ def record_llm_based_component_prompt_token(
     except ValueError:
         return None
 
-    metric_instrument.record(
-        amount=prompt_tokens_len,
-    )
+    if metric_name == MCP_AGENT_LLM_PROMPT_TOKEN_USAGE_METRIC_NAME:
+        metric_instrument.record(
+            amount=prompt_tokens_len,
+            attributes=_mcp_agent_llm_call_metric_attributes(attributes),
+        )
+    else:
+        metric_instrument.record(amount=prompt_tokens_len)
 
     return None
 
@@ -395,6 +415,7 @@ def record_callable_duration_metrics(
         metric_instrument = instrument_provider.get_instrument(
             MCP_AGENT_LLM_RESPONSE_DURATION_METRIC_NAME
         )
+        attributes = _mcp_agent_llm_call_metric_attributes(kwargs)
 
     if not metric_instrument:
         return None

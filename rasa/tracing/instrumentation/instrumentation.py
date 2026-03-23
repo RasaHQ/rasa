@@ -71,7 +71,10 @@ from rasa.shared.nlu.constants import SET_SLOT_COMMAND
 from rasa.shared.nlu.training_data.message import Message
 from rasa.tracing.constants import (
     AGENT_EXECUTION_DURATION_METRIC_NAME,
+    AGENT_NAME_ATTRIBUTE_NAME,
+    EXECUTION_CONTEXT_ATTRIBUTE_NAME,
     MCP_TOOL_EXECUTION_DURATION_METRIC_NAME,
+    PROTOCOL_TYPE_ATTRIBUTE_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
     TOOL_OUTPUT_VALUE_MAX_LENGTH,
 )
@@ -961,7 +964,7 @@ def _instrument_mcp_agent_get_available_tools_response_capture(
 
                 span.set_attributes(
                     {
-                        "agent_name": self._name,
+                        AGENT_NAME_ATTRIBUTE_NAME: self._name,
                         "agent_id": str(
                             make_agent_identifier(self._name, self.protocol_type)
                         ),
@@ -1397,8 +1400,8 @@ def _instrument_call_agent_with_retry(
         cancellation_token: Optional[CancellationToken] = None,
     ) -> Any:
         agent_input_attrs = {
-            "agent_name": agent_name,
-            "protocol_type": str(protocol_type),
+            AGENT_NAME_ATTRIBUTE_NAME: agent_name,
+            PROTOCOL_TYPE_ATTRIBUTE_NAME: str(protocol_type),
             "max_retries": max_retries,
             "agent_input_id": agent_input.id,
             "agent_input_user_message": agent_input.user_message,
@@ -1452,8 +1455,8 @@ def _instrument_call_agent_with_retry(
                     )
                 else:
                     agent_metric_attrs = {
-                        "agent_name": agent_name,
-                        "protocol_type": str(protocol_type),
+                        AGENT_NAME_ATTRIBUTE_NAME: agent_name,
+                        PROTOCOL_TYPE_ATTRIBUTE_NAME: str(protocol_type),
                         "status": str(result.status),
                     }
                     agent_metric.record(
@@ -1507,7 +1510,7 @@ def _instrument_execute_mcp_tool_call(
         tool_input_attrs = {
             "tool_id": step.call,
             "mcp_server": step.mcp_server or "unknown",
-            "execution_context": "flow",
+            EXECUTION_CONTEXT_ATTRIBUTE_NAME: "flow",
             "tool_input_mapping": (
                 json.dumps(step.mapping["input"])
                 if step.mapping and "input" in step.mapping
@@ -1570,7 +1573,7 @@ def _instrument_execute_mcp_tool_call(
                     tool_metric_attrs = {
                         "tool_id": step.call,
                         "mcp_server": step.mcp_server or "unknown",
-                        "execution_context": "flow",
+                        EXECUTION_CONTEXT_ATTRIBUTE_NAME: "flow",
                         "success": success,
                     }
                     tool_metric.record(amount=duration_ns, attributes=tool_metric_attrs)
@@ -1618,9 +1621,9 @@ def _instrument_execute_tool_call(
         tool_input_attrs = {
             "tool_name": tool_name,
             "tool_arguments": json.dumps(arguments, sort_keys=True),
-            "agent_name": getattr(self, "_name", None),
-            "protocol_type": str(self.protocol_type),
-            "execution_context": "agent",
+            AGENT_NAME_ATTRIBUTE_NAME: getattr(self, "_name", None),
+            PROTOCOL_TYPE_ATTRIBUTE_NAME: str(self.protocol_type),
+            EXECUTION_CONTEXT_ATTRIBUTE_NAME: "agent",
         }
 
         span_name = f"{agent_class.__name__}._execute_tool_call"
@@ -1660,8 +1663,9 @@ def _instrument_execute_tool_call(
                 if tool_metric:
                     tool_metric_attrs = {
                         "tool_name": tool_name,
-                        "agent_name": getattr(self, "_name", None),
-                        "execution_context": "agent",
+                        AGENT_NAME_ATTRIBUTE_NAME: getattr(self, "_name", None),
+                        EXECUTION_CONTEXT_ATTRIBUTE_NAME: "agent",
+                        PROTOCOL_TYPE_ATTRIBUTE_NAME: str(self.protocol_type),
                         "success": "false" if result.is_error else "true",
                     }
                     tool_metric.record(amount=duration_ns, attributes=tool_metric_attrs)

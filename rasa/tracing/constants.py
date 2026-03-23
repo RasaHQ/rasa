@@ -10,6 +10,10 @@ ENDPOINTS_OTLP_BACKEND_TYPE = "otlp"
 # tracing attributes
 PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME = "len_prompt_tokens"
 REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME = "request_body_size_in_bytes"
+AGENT_NAME_ATTRIBUTE_NAME = "agent_name"
+EXECUTION_CONTEXT_ATTRIBUTE_NAME = "execution_context"
+LLM_MODEL_ATTRIBUTE_NAME = "llm_model"
+PROTOCOL_TYPE_ATTRIBUTE_NAME = "protocol_type"
 
 # Tool output value truncation
 # Truncate slot values to prevent excessive memory usage in traces

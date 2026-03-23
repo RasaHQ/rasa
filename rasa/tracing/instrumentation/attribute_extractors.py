@@ -94,8 +94,12 @@ from rasa.shared.utils.llm import (
 )
 from rasa.shared.utils.tiktoken_utils import resolve_tiktoken_encode
 from rasa.tracing.constants import (
+    AGENT_NAME_ATTRIBUTE_NAME,
     ENABLE_TRACING_DEBUGGING_ENV_VAR_NAME,
+    EXECUTION_CONTEXT_ATTRIBUTE_NAME,
+    LLM_MODEL_ATTRIBUTE_NAME,
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
+    PROTOCOL_TYPE_ATTRIBUTE_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
 
@@ -390,7 +394,7 @@ def extract_llm_config(
     attributes = {
         "class_name": self.__class__.__name__,
         # llm client attributes
-        "llm_model": str(llm_property.get(MODEL_CONFIG_KEY)),
+        LLM_MODEL_ATTRIBUTE_NAME: str(llm_property.get(MODEL_CONFIG_KEY)),
         "llm_type": str(llm_property.get(PROVIDER_CONFIG_KEY)),
         "llm_model_group_id": str(llm_property.get(MODEL_GROUP_ID_CONFIG_KEY)),
         "llm_temperature": str(llm_property.get("temperature")),
@@ -575,7 +579,7 @@ def extract_attrs_for_a2a_agent_perform_health_check(
     # A2A agents don't have config in the same way as LLM components,
     # but we can include basic agent info for consistency
     if is_api_health_check_enabled():
-        attrs["agent_name"] = getattr(self, "_name", "unknown")
+        attrs[AGENT_NAME_ATTRIBUTE_NAME] = getattr(self, "_name", "unknown")
         agent_url = "unknown"
         if hasattr(self, "agent_card") and self.agent_card:
             agent_url = str(getattr(self.agent_card, "url", "unknown"))
@@ -1066,7 +1070,7 @@ def extend_attributes_with_prompt_tokens_length(
 
     len_prompt_tokens = compute_prompt_tokens_length(
         model_type=attributes["llm_type"],
-        model_name=attributes["llm_model"],
+        model_name=attributes[LLM_MODEL_ATTRIBUTE_NAME],
         prompt=llm_input.prompt,
     )
 
@@ -1135,6 +1139,9 @@ def extract_attrs_for_mcp_agent_llm_call(
     attributes.update(
         {
             "prompt_messages_count": len(messages),
+            AGENT_NAME_ATTRIBUTE_NAME: getattr(self, "_name", None),
+            EXECUTION_CONTEXT_ATTRIBUTE_NAME: "agent",
+            PROTOCOL_TYPE_ATTRIBUTE_NAME: str(self.protocol_type),
             **extract_attrs_for_datetime_configuration(self),
         }
     )
@@ -1160,7 +1167,7 @@ def extend_attributes_with_prompt_tokens_length_for_mcp_agent(
         if content:
             message_tokens = compute_prompt_tokens_length(
                 model_type=attributes["llm_type"],
-                model_name=attributes["llm_model"],
+                model_name=attributes[LLM_MODEL_ATTRIBUTE_NAME],
                 prompt=content,
             )
             if message_tokens is not None:

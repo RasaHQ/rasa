@@ -9,10 +9,15 @@ from _pytest.fixtures import FixtureRequest
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
-from rasa.agents.core.types import AgentStatus
+from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.protocol.mcp.mcp_base_agent import DEFAULT_LLM_CONFIG
 from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentOutput, AgentToolSchema
 from rasa.core.channels import OutputChannel
+from rasa.tracing.constants import (
+    AGENT_NAME_ATTRIBUTE_NAME,
+    EXECUTION_CONTEXT_ATTRIBUTE_NAME,
+    PROTOCOL_TYPE_ATTRIBUTE_NAME,
+)
 from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.instrumentation.attribute_extractors import (
     extract_attrs_for_mcp_agent_llm_call,
@@ -55,6 +60,8 @@ def mock_agent_with_config() -> Mock:
     agent: Mock = Mock()
     agent.__class__.__name__ = "MCPOpenAgent"
     agent.llm_client.config = DEFAULT_LLM_CONFIG
+    agent._name = "mock_open_agent"
+    agent.protocol_type = ProtocolType.MCP_OPEN
     return agent
 
 
@@ -109,6 +116,10 @@ def test_extract_attrs_basic_functionality(
     agent.__class__.__name__ = agent_type
     agent.llm_config = llm_config
     agent.llm_client.config = expected_config
+    agent._name = "parametrized_mcp_agent"
+    agent.protocol_type = (
+        ProtocolType.MCP_TASK if "Task" in agent_type else ProtocolType.MCP_OPEN
+    )
     agent_input = request.getfixturevalue(agent_input_fixture)
 
     with patch(
@@ -121,6 +132,9 @@ def test_extract_attrs_basic_functionality(
     assert "llm_model" in result
     assert "llm_temperature" in result
     assert "llm_type" in result
+    assert result[AGENT_NAME_ATTRIBUTE_NAME] == "parametrized_mcp_agent"
+    assert result[EXECUTION_CONTEXT_ATTRIBUTE_NAME] == "agent"
+    assert result[PROTOCOL_TYPE_ATTRIBUTE_NAME] == str(agent.protocol_type)
     mock_extract_llm.assert_called_once_with(agent, default_llm_config=expected_config)
 
 
@@ -166,6 +180,9 @@ def test_prompt_and_token_attributes(
     assert result["prompt_messages_count"] == expected_message_count
     assert "len_prompt_tokens" in result
     assert result["len_prompt_tokens"] == expected_total_tokens
+    assert result[AGENT_NAME_ATTRIBUTE_NAME] == "mock_open_agent"
+    assert result[EXECUTION_CONTEXT_ATTRIBUTE_NAME] == "agent"
+    assert result[PROTOCOL_TYPE_ATTRIBUTE_NAME] == str(ProtocolType.MCP_OPEN)
     # Note: prompt_messages content is not traced to avoid PII issues
     assert mock_compute_tokens.call_count == len(expected_token_counts)
 
@@ -271,6 +288,11 @@ async def test_agent_llm_response_capture_in_span(
     assert "llm_model" in technical_span.attributes
     assert "llm_type" in technical_span.attributes
     assert "prompt_messages_count" in technical_span.attributes
+    assert technical_span.attributes[AGENT_NAME_ATTRIBUTE_NAME] == "MockMCPOpenAgent"
+    assert technical_span.attributes[EXECUTION_CONTEXT_ATTRIBUTE_NAME] == "agent"
+    assert technical_span.attributes[PROTOCOL_TYPE_ATTRIBUTE_NAME] == str(
+        ProtocolType.MCP_OPEN
+    )
 
     if should_have_response_attrs:
         assert response_span is not None, "Response capture span not found"
@@ -334,7 +356,7 @@ async def test_get_available_tools_tracing(
 
     tools_span = captured_spans[-1]
     assert tools_span.name == "MockMCPOpenAgent.get_available_tools"
-    assert tools_span.attributes["agent_name"] == "test_mcp_agent"
+    assert tools_span.attributes[AGENT_NAME_ATTRIBUTE_NAME] == "test_mcp_agent"
     assert tools_span.attributes["total_available_tools_count"] == 2
 
     # Verify tools JSON structure

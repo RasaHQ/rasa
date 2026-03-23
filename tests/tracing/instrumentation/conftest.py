@@ -1163,6 +1163,7 @@ class MockMCPOpenAgent(MCPOpenAgent):
     def __init__(self) -> None:
         from rasa.agents.protocol.mcp.mcp_base_agent import DEFAULT_LLM_CONFIG
 
+        self._name = "MockMCPOpenAgent"
         self.llm_client = Mock()
         self.llm_client.config = DEFAULT_LLM_CONFIG
         self.build_messages_for_llm_request = Mock()
