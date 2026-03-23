@@ -130,5 +130,5 @@ def test_inspect_nextgen_sets_inspector_connector(
 
     inspect(args)
 
-    assert args.connector == "rasa.core.channels.inspector.InspectorInputChannel"
+    assert args.connector == "inspector"
     mock_rasa_run.assert_called_once_with(**vars(args))

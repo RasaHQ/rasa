@@ -98,7 +98,7 @@ def inspect(args: argparse.Namespace) -> None:
     if args.voice:
         args.connector = "browser_audio"
     elif args.nextgen:
-        args.connector = "rasa.core.channels.inspector.InspectorInputChannel"
+        args.connector = "inspector"
     else:
         args.connector = "socketio"
     args.enable_api = True
