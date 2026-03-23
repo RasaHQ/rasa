@@ -58,11 +58,13 @@ vi.mock("../stores/project/actions", () => ({
 
 const mockLogError = vi.fn();
 const mockTrack = vi.fn();
+const mockShowToast = vi.fn();
 
 vi.mock("../InspectorContext", () => ({
   useInspectorContext: () => ({
     logError: mockLogError,
     track: mockTrack,
+    showToast: mockShowToast,
   }),
 }));
 
@@ -495,6 +497,89 @@ describe("useBotConnection", () => {
       );
 
       expect(result.current.waitingForUserInput).toBe(false);
+    });
+  });
+
+  describe("disconnect during voice call", () => {
+    it("calls onVoiceErrorRef with connection_lost when disconnected during voice", async () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: true,
+        }),
+      );
+
+      act(() => {
+        result.current.setUrl("https://test.example.com");
+      });
+
+      let voicePromise: Promise<void>;
+      act(() => {
+        voicePromise = result.current.startVoiceStreaming();
+      });
+
+      act(() => {
+        lastSocket.handlers["connect"]?.();
+      });
+
+      act(() => {
+        lastSocket.handlers["session_confirm"]?.();
+      });
+
+      await act(async () => {
+        await voicePromise;
+      });
+
+      const handler = vi.fn();
+      result.current.onVoiceErrorRef.current = handler;
+
+      act(() => {
+        lastSocket.handlers["disconnect"]?.("transport close", {});
+      });
+
+      expect(handler).toHaveBeenCalledWith({
+        error: "connection_lost",
+        message: "Server connection lost during voice call",
+      });
+    });
+
+    it("does not call onVoiceErrorRef on disconnect when in text mode, shows toast instead", () => {
+      const { result } = renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: true,
+        }),
+      );
+
+      act(() => {
+        result.current.setUrl("https://test.example.com");
+      });
+
+      act(() => {
+        lastSocket.handlers["connect"]?.();
+      });
+
+      act(() => {
+        lastSocket.handlers["session_confirm"]?.();
+      });
+
+      const handler = vi.fn();
+      result.current.onVoiceErrorRef.current = handler;
+
+      act(() => {
+        lastSocket.handlers["disconnect"]?.("transport close", {});
+      });
+
+      expect(handler).not.toHaveBeenCalled();
+      expect(mockShowToast).toHaveBeenCalledWith({
+        title: "Server disconnected",
+        description: "Trying to reconnect...",
+        type: "error",
+      });
     });
   });
 

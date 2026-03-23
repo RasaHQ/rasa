@@ -345,11 +345,18 @@ export function useBotConnection({
       });
 
       socket.current?.on("disconnect", (reason, details) => {
-        showToast({
-          title: "Server disconnected",
-          description: "Trying to reconnect...",
-          type: "error",
-        });
+        if (activeModalityRef.current === "voice") {
+          onVoiceErrorRef.current?.({
+            error: "connection_lost",
+            message: "Server connection lost during voice call",
+          });
+        } else {
+          showToast({
+            title: "Server disconnected",
+            description: "Trying to reconnect...",
+            type: "error",
+          });
+        }
         if (!socket.current?.active) {
           disableChat();
           logError(reason, {
@@ -379,6 +386,12 @@ export function useBotConnection({
       });
 
       socket.current?.io.on("reconnect_failed", () => {
+        if (activeModalityRef.current === "voice") {
+          onVoiceErrorRef.current?.({
+            error: "connection_lost",
+            message: "Server connection lost during voice call",
+          });
+        }
         const errorDescription = `websocket wasn't able to reconnect ${socketReconnectAttempts ? `within ${socketReconnectAttempts} attempts` : ""}`
         showToast({
           title: "Reconnect failed",

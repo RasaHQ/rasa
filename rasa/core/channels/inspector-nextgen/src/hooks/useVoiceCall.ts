@@ -100,13 +100,22 @@ export const useVoiceCall = ({
   }, [stopVoiceCall]);
 
   useEffect(() => {
-    onVoiceErrorRef.current = () => {
-      showToast({
-        title: "Voice isn't set up yet",
-        description: "To test in voice, add your Voice API keys and complete the voice configuration.",
-        type: "warning",
-        closable: true,
-      });
+    onVoiceErrorRef.current = (err) => {
+      if (err?.error === "connection_lost") {
+        showToast({
+          title: "Voice call ended",
+          description: "The server connection was lost.",
+          type: "error",
+          duration: 5000,
+        });
+      } else {
+        showToast({
+          title: "Voice isn't set up yet",
+          description: "To test in voice, add your Voice API keys and complete the voice configuration.",
+          type: "warning",
+          closable: true,
+        });
+      }
       void stopVoiceCall();
     };
     return () => {

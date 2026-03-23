@@ -286,6 +286,39 @@ describe("useVoiceCall", () => {
       expect(stopVoiceStreaming).toHaveBeenCalled();
     });
 
+    it("should stop voice call and show connection lost toast on server disconnect", async () => {
+      const connectionLostError = {
+        message: "Server connection lost during voice call",
+        error: "connection_lost",
+      };
+
+      const { result } = renderHook(() =>
+        useVoiceCall({ startVoiceStreaming, stopVoiceStreaming, onVoiceErrorRef, voiceFeaturesEnabled: true }),
+      );
+
+      await act(async () => {
+        await result.current.startVoiceCall();
+      });
+      expect(result.current.voiceCallState).toBe("active");
+
+      act(() => {
+        onVoiceErrorRef.current!(connectionLostError);
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      await act(async () => {});
+
+      expect(result.current.voiceCallState).toBe("inactive");
+      expect(result.current.callDuration).toBe("00:00");
+      expect(mockShowToast).toHaveBeenCalledWith({
+        title: "Voice call ended",
+        description: "The server connection was lost.",
+        type: "error",
+        duration: 5000,
+      });
+      expect(stopVoiceStreaming).toHaveBeenCalled();
+    });
+
     it("should not start timer if error occurs", async () => {
       startVoiceStreaming.mockRejectedValueOnce(new Error("Failed"));
 
