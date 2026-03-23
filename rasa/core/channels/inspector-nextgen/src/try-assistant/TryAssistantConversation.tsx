@@ -1,9 +1,6 @@
 import { useEffect, useRef } from "react";
+import { Box } from "@chakra-ui/react";
 import type { Conversation, ConversationEventAction, UnionEventType } from "../types";
-import {
-  ScrollContainer,
-  ScrollContent,
-} from "../VerticalScroll";
 import { ConversationSession } from "./ConversationSession";
 
 interface Props {
@@ -33,18 +30,26 @@ export const TryAssistantConversation = ({
 }: Props) => {
   const scrollToHighlightedMessageRef = useRef<HTMLDivElement>(null);
 
-  //If there is no utterance to scroll to, scroll to the last header/utterance
   const lastConversation = conversationList[conversationList.length - 1];
   const lastEventId =
     lastConversation?.events[lastConversation.events.length - 1]?.id;
+  const lastConversationId = lastConversation?.id;
 
-  // scrolls to the last event in the conversation, also triggers when
-  // inspectorMode is toggled since that changes the number of events in the
-  // conversation list and we need to scroll to the bottom again.
-
+  // When a new conversation starts (restart), reset scroll positions on all
+  // scrollable ancestors so stale offsets don't clip the fresh content.
   useEffect(() => {
-    // The setTimeout is needed to make the `scrollIntoView` happen at
-    // the next tick. Without it, `scrollIntoView` doesn't seem to work
+    let el = scrollToHighlightedMessageRef.current?.parentElement;
+    while (el) {
+      if (el.scrollTop !== 0) {
+        el.scrollTop = 0;
+      }
+      el = el.parentElement;
+    }
+  }, [lastConversationId]);
+
+  // Scroll to the last event in the conversation. Also triggers when
+  // inspectorMode is toggled since that changes the number of visible events.
+  useEffect(() => {
     setTimeout(() => {
       scrollToHighlightedMessageRef.current?.scrollIntoView?.({
         behavior: "smooth",
@@ -60,33 +65,31 @@ export const TryAssistantConversation = ({
   );
 
   return (
-    <ScrollContainer data-testid="assistant-chat">
-      <ScrollContent withSpacing={false}>
-        {nonEmptyConversationList.map((conversation, index) => (
-          <ConversationSession
-            interactive={index === nonEmptyConversationList.length - 1}
-            key={conversation.id}
-            conversation={conversation}
-            onQuickReply={onQuickReply}
-            assistantVersion={conversationAssistant[conversation.id]}
-            selectable={true}
-            onSelect={onSelect}
-            replayConversation={replayConversation}
-            selectedElementId={selectedElementId}
-            inspectorMode={inspectorMode}
-            waitingForResponse={
-              index === nonEmptyConversationList.length - 1 &&
-              waitingForResponse && nonEmptyConversationList[index].totalNumberOfUserMessages > 0
-            }
-            replayingConversation={
-              index === nonEmptyConversationList.length - 1 &&
-              replayingConversation
-            }
-            conversationEventActions={conversationEventActions}
-          />
-        ))}
-        <div ref={scrollToHighlightedMessageRef} />
-      </ScrollContent>
-    </ScrollContainer>
+    <Box data-testid="assistant-chat">
+      {nonEmptyConversationList.map((conversation, index) => (
+        <ConversationSession
+          interactive={index === nonEmptyConversationList.length - 1}
+          key={conversation.id}
+          conversation={conversation}
+          onQuickReply={onQuickReply}
+          assistantVersion={conversationAssistant[conversation.id]}
+          selectable={true}
+          onSelect={onSelect}
+          replayConversation={replayConversation}
+          selectedElementId={selectedElementId}
+          inspectorMode={inspectorMode}
+          waitingForResponse={
+            index === nonEmptyConversationList.length - 1 &&
+            waitingForResponse && nonEmptyConversationList[index].totalNumberOfUserMessages > 0
+          }
+          replayingConversation={
+            index === nonEmptyConversationList.length - 1 &&
+            replayingConversation
+          }
+          conversationEventActions={conversationEventActions}
+        />
+      ))}
+      <div ref={scrollToHighlightedMessageRef} />
+    </Box>
   );
 };

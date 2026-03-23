@@ -4,11 +4,6 @@ import { renderWithProviders } from "../tests/utils";
 import { UtteranceType, type Conversation } from "../types";
 import { TryAssistantConversation } from "./TryAssistantConversation";
 
-vi.mock("../VerticalScroll", () => ({
-  ScrollContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  ScrollContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
-
 vi.mock("./ConversationSession", () => ({
   ConversationSession: ({ waitingForResponse, ...props }: Record<string, unknown>) => (
     <div
