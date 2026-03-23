@@ -15,7 +15,6 @@ from rasa.shared.core.slots import (
     InvalidSlotConfigError,
     InvalidSlotTypeException,
     InvalidSlotValueError,
-    LanguageSlot,
     ListSlot,
     Slot,
     StrictCategoricalSlot,
@@ -687,58 +686,3 @@ class TestStrictCategoricalSlot(SlotTestCollection):
         slot.value = "1"
         slot.value = None
         assert slot.value is None
-
-
-class TestLanguageSlot:
-    @pytest.fixture()
-    def language_slot(self) -> LanguageSlot:
-        return LanguageSlot(
-            "language",
-            mappings=[],
-            values=["en", "de", "it"],
-            initial_value="en",
-        )
-
-    def test_cannot_reset_to_none_once_set(self, language_slot: LanguageSlot) -> None:
-        """Once the language slot has a value it must not be reset to None."""
-        language_slot.value = "de"
-        with pytest.raises(InvalidSlotValueError):
-            language_slot.value = None
-
-    def test_can_be_set_to_none_when_unset(self) -> None:
-        """Setting None on an unset language slot is allowed (initial state)."""
-        slot = LanguageSlot("language", mappings=[], values=["en", "de"])
-        slot.value = None
-        assert slot.value is None
-
-    def test_invalid_value_raises_error(self, language_slot: LanguageSlot) -> None:
-        """Values not in the allowed list must be rejected."""
-        with pytest.raises(InvalidSlotValueError):
-            language_slot.value = "fr"
-
-    def test_valid_value_case_insensitive(self, language_slot: LanguageSlot) -> None:
-        """Valid values are accepted regardless of case and normalised."""
-        language_slot.value = "DE"
-        assert language_slot.value == "de"
-
-    def test_reset_after_set_goes_to_initial_value(
-        self, language_slot: LanguageSlot
-    ) -> None:
-        """reset() must not raise and must restore the slot to initial_value."""
-        language_slot.value = "de"
-        language_slot.reset()  # should not raise InvalidSlotConfigError
-        assert language_slot.value == language_slot.initial_value
-        assert not language_slot.has_been_set
-
-    def test_reset_when_initial_value_is_none_does_not_raise(self) -> None:
-        """reset() must succeed even when initial_value is None.
-
-        This covers the case where no primary language is configured, which
-        means the LanguageSlot starts with initial_value=None.  The tracker's
-        _reset_slots calls slot.reset() unconditionally.
-        """
-        slot = LanguageSlot("language", mappings=[], values=["en", "de"])
-        slot.value = "en"
-        slot.reset()  # should not raise despite initial_value being None
-        assert slot.value is None
-        assert not slot.has_been_set

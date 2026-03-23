@@ -290,7 +290,7 @@ nlu-files:
 
 policy-files:
   - rasa/core/policies/**
-  - rasa/shared/core/policies/**
+  - rasa/shared/core/**
   - tests/core/policies/**
 
 custom-action-files:

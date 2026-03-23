@@ -70,7 +70,7 @@ from rasa.shared.core.events import (
     UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.slots import AnySlot, LanguageSlot, Slot
+from rasa.shared.core.slots import AnySlot, Slot, StrictCategoricalSlot
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
@@ -1419,10 +1419,10 @@ class DialogueStateTracker:
 
         language_slot = self.slots[LANGUAGE_SLOT]
 
-        if not isinstance(language_slot, LanguageSlot):
+        if not isinstance(language_slot, StrictCategoricalSlot):
             raise RasaException(
                 f"The slot '{LANGUAGE_SLOT}' must be of type "
-                f"'{LanguageSlot.type_name}'. "
+                f"'{StrictCategoricalSlot.type_name}'. "
                 f"Please update the slot configuration accordingly."
             )
 

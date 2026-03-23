@@ -92,9 +92,9 @@ from rasa.shared.core.slots import (
     BooleanSlot,
     CategoricalSlot,
     FloatSlot,
-    LanguageSlot,
     ListSlot,
     Slot,
+    StrictCategoricalSlot,
     TextSlot,
 )
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
@@ -3529,7 +3529,7 @@ def _make_tracker_with_language_slot(
     if primary_language not in all_values:
         all_values.append(primary_language)
 
-    slot = LanguageSlot(
+    slot = StrictCategoricalSlot(
         "language",
         mappings=[],
         values=all_values,
@@ -3569,7 +3569,7 @@ def test_default_language_raises_when_no_primary_configured():
     """Regression: previously all languages were is_default=False, causing this
     to raise even when languages were properly configured."""
     # Simulate the old broken state: slot with no initial_value (None)
-    slot = LanguageSlot(
+    slot = StrictCategoricalSlot(
         "language",
         mappings=[],
         values=["de", "en"],
@@ -3578,3 +3578,16 @@ def test_default_language_raises_when_no_primary_configured():
     tracker = DialogueStateTracker("test", slots=[slot])
     with pytest.raises(Exception):
         _ = tracker.default_language
+
+
+def test_default_language_when_language_slot_explicitly_set_to_none():
+    """default_language must return the primary language even when the language slot
+    has been explicitly set to None (e.g. via a SlotSet event with value None),
+    rather than raising an error or returning None."""
+    tracker = _make_tracker_with_language_slot(
+        primary_language="en", additional_languages=["de"]
+    )
+    # Explicitly set the slot value to None (not a reset — a deliberate SlotSet to None)
+    tracker.update(SlotSet("language", None))
+    assert tracker.default_language.code == "en"
+    assert tracker.default_language.is_default is True

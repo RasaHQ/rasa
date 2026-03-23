@@ -25,7 +25,7 @@ from rasa.shared.core.events import (
     DialogueStackUpdated,
     FlowCompleted,
 )
-from rasa.shared.core.slots import LanguageSlot
+from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import filter_logs, flows_from_str
 
@@ -206,7 +206,7 @@ def test_clarify_command_uses_localized_flow_name(monkeypatch: pytest.MonkeyPatc
     # Create a tracker with a language slot set to German language.
     language = Language.from_language_code("de", is_default=True)
     slots = [
-        LanguageSlot(
+        StrictCategoricalSlot(
             "language", [], initial_value=language.code, values=[language.code]
         )
     ]

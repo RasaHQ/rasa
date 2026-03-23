@@ -24,7 +24,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
-from rasa.shared.core.slots import LanguageSlot
+from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
     KEY_COMPONENT_NAME,
@@ -170,7 +170,7 @@ def set_mock_openai_api_key(monkeypatch: MonkeyPatch) -> None:
 def tracker_with_language(monkeypatch: MonkeyPatch) -> DialogueStateTracker:
     language = Language.from_language_code("es", is_default=True)
     slots = [
-        LanguageSlot(
+        StrictCategoricalSlot(
             name="language",
             mappings=[{}],
             initial_value=language.code,

@@ -24,7 +24,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.engine.language import Language
 from rasa.shared.core.events import AgentCancelled, DialogueStackUpdated, FlowCancelled
-from rasa.shared.core.slots import LanguageSlot
+from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import flows_from_str
 
@@ -507,7 +507,7 @@ def test_cancel_flow_command_uses_localized_flow_name(monkeypatch: pytest.Monkey
     # Create a tracker with a language slot set to German language.
     language = Language.from_language_code("de", is_default=True)
     slots = [
-        LanguageSlot(
+        StrictCategoricalSlot(
             "language", [], initial_value=language.code, values=[language.code]
         )
     ]

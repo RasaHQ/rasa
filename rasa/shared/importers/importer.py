@@ -33,7 +33,7 @@ from rasa.shared.core.domain import (
 )
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.slots import LanguageSlot
+from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES
@@ -569,7 +569,7 @@ class LanguageImporter(PassThroughImporter):
 
         # Prepare the serialized representation of the language slot
         serialized_slot: Dict[Text, Any] = {
-            "type": LanguageSlot.type_name,
+            "type": StrictCategoricalSlot.type_name,
             "initial_value": language,
             "values": values,
             "mappings": [],
