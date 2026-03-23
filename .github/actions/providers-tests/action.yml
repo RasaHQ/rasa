@@ -343,7 +343,7 @@ runs:
       if: ${{ inputs.provider == 'openai' && inputs.train-and-test == 'compact' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST  }}
       run: |
         : Verify correct default model used for OpenAI provider by CompactLLMCommandGenerator
-        grep -i '"model": "gpt-4o-2024-11-20"' model-training-log.txt
+        grep -i '"model": "gpt-5.1-2025-11-13"' model-training-log.txt
       shell: bash
 
     - name: Get multi-deployments endpoints file

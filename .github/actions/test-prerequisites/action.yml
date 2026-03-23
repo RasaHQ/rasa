@@ -84,12 +84,19 @@ runs:
       if: ${{ inputs.LOAD_CACHE == 'true' }}
       env:
         RASA_INSTALL_GROUP: ${{ inputs.RASA_INSTALL_GROUP }}
+        PYTHON_VERSION: ${{ inputs.PYTHON_VERSION }}
       run: |
         if poetry run which pytest >/dev/null 2>&1; then
           echo "Venv already has pytest, skipping install."
           exit 0
         fi
         echo "Venv missing pytest (empty or recreated), running install..."
+        # Only voice unit tests use 3.13; they need install-channels only (TensorFlow has no 3.13 wheels)
+        if [[ "${PYTHON_VERSION}" == "3.13" && "${RASA_INSTALL_GROUP}" == "full" ]]; then
+          make install-channels | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          exit 0
+        fi
         if [[ "${RASA_INSTALL_GROUP}" == "default" ]]; then
           make install | tee .output
         elif [[ "${RASA_INSTALL_GROUP}" == "anonymisation" ]]; then

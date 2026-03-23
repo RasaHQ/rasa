@@ -307,23 +307,23 @@ class _BaseLiteLLMClient:
             choices=[choice.message.content for choice in response.choices],
             model=response.model,
         )
+        # Keep usage available and normalized even when LiteLLM omits usage.
+        formatted_response.usage = LLMUsage(0, 0)
         if (
             response.model_extra
             and (usage := response.model_extra.get("usage")) is not None
         ):
-            # We use `.get()` for accessing litellm.utils.Usage attributes.
-            # litellm.utils.Usage does not set the attributes if
-            # `prompt_tokens` or `completion_tokens` are absent (None).
+            prompt_tokens_raw = getattr(usage, "prompt_tokens", None)
             prompt_tokens = (
-                num_tokens
-                if isinstance(num_tokens := usage.get("prompt_tokens", 0), (int, float))
+                int(prompt_tokens_raw)
+                if isinstance(prompt_tokens_raw, (int, float))
                 else 0
             )
+
+            completion_tokens_raw = getattr(usage, "completion_tokens", None)
             completion_tokens = (
-                num_tokens
-                if isinstance(
-                    num_tokens := usage.get("completion_tokens", 0), (int, float)
-                )
+                int(completion_tokens_raw)
+                if isinstance(completion_tokens_raw, (int, float))
                 else 0
             )
             formatted_response.usage = LLMUsage(prompt_tokens, completion_tokens)

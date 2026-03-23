@@ -216,7 +216,7 @@ jinja2 = "~3.1.6"
 dnspython = "~2.8.0"
 wheel = ">=0.46.3"
 certifi = ">=2025.11.12,<2025.12.0"
-openai = ">=2.8.0,<3.0.0"  # required by litellm >= 1.81.15
+openai = ">=2.29.0,<3.0.0"
 cryptography = "~46.0.5"
 jsonpatch = "^1.33"
 importlib-resources = "^6.5.2"
@@ -235,7 +235,7 @@ qdrant-client = "~1.15.1"
 psutil = "^5.9.5"
 tenacity = "~8.4.1"  # pinned down because of langchain
 types-protobuf = "4.25.0.20240417"
-litellm = "~1.81.15"
+litellm = "~1.82.4"
 openpyxl = "^3.1.5"
 diskcache = "~5.6.3"
 safetensors = "~0.7.0"  # required by calm assistant
@@ -255,7 +255,7 @@ types-cachetools = "~6.2.0.20250827"
 pep440-version-utils = "~1.2.0"
 werkzeug = "^3.1.5"
 keras = "~3.12.1"
-openai-agents = "~0.9.2"
+openai-agents = "~0.12.5"
 
 # --------------------------------------------------------------------------------------
 # NON-OPTIONAL DEPENDENCIES WITH ADDITIONAL REQUIREMENTS

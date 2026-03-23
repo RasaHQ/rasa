@@ -457,8 +457,10 @@ class TestBaseLLMClient:
     async def test_acompletion_timeout_enforcement(
         self, client: TestLiteLLMClient, monkeypatch: MonkeyPatch
     ):
-        """Test that timeout error message correctly shows
-        'time taken' is equivalent to 'timeout value' defined in 'endpoints.yml'."""
+        """Test timeout message uses the configured timeout value.
+
+        "time taken" should match "timeout value" from `endpoints.yml`.
+        """
         import asyncio
         from unittest.mock import PropertyMock
 
