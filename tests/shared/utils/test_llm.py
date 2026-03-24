@@ -105,6 +105,7 @@ from rasa.shared.utils.llm import (
     get_prompt_template,
     get_provider_from_config,
     get_system_default_prompts,
+    invoke_llm_and_send_non_streaming_response,
     llm_client_factory,
     llm_factory,
     llm_router_factory,
@@ -698,6 +699,51 @@ async def test_acompletion_with_streaming_skips_chunks_with_no_content_or_tools(
     assert response.choices == ["Hi!"]
     # Only 2 content chunks sent (empty one skipped)
     assert mock_channel.send_response_chunk.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_invoke_llm_and_send_non_streaming_skips_whitespace_only():
+    """Whitespace-only choices are not sent (matches MCP strip behavior)."""
+    llm_response = LLMResponse(id="gen-1", created=1, choices=["  \n\n  "], model="m")
+    mock_client = MagicMock(spec=LLMClient)
+    mock_client.acompletion = AsyncMock(return_value=llm_response)
+    mock_channel = MagicMock()
+    mock_channel.send_text_message = AsyncMock(return_value=None)
+
+    result = await invoke_llm_and_send_non_streaming_response(
+        mock_client,
+        mock_channel,
+        "user_1",
+        messages=[{"role": "user", "content": "hi"}],
+        tools=[],
+        metadata={},
+    )
+
+    assert result is llm_response
+    mock_channel.send_text_message.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_invoke_llm_and_send_non_streaming_sends_stripped_text():
+    mock_client = MagicMock(spec=LLMClient)
+    mock_client.acompletion = AsyncMock(
+        return_value=LLMResponse(
+            id="gen-1", created=1, choices=["  hello  "], model="m"
+        )
+    )
+    mock_channel = MagicMock()
+    mock_channel.send_text_message = AsyncMock(return_value=None)
+
+    await invoke_llm_and_send_non_streaming_response(
+        mock_client,
+        mock_channel,
+        "user_1",
+        messages=[{"role": "user", "content": "hi"}],
+        tools=[],
+        metadata={},
+    )
+
+    mock_channel.send_text_message.assert_called_once_with("user_1", "hello")
 
 
 def test_tracker_as_readable_transcript_with_buttons(domain: Domain):

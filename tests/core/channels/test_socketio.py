@@ -72,6 +72,89 @@ async def test_socketio_handles_buttons_with_payload(socketio_output: SocketIOOu
     socketio_output.sio_server.emit.assert_has_calls(expected_calls, any_order=False)
 
 
+async def test_socketio_send_text_message_skips_empty_paragraphs(
+    socketio_output: SocketIOOutput,
+):
+    """Consecutive blank lines yield an empty split segment; it must not be emitted."""
+    await socketio_output.send_text_message("recipient_id", "alpha\n\n\n\nbeta")
+
+    assert socketio_output.sio_server.emit.call_count == 2
+    socketio_output.sio_server.emit.assert_has_calls(
+        [
+            call("bot", {"text": "alpha"}, room="recipient_id"),
+            call("bot", {"text": "beta"}, room="recipient_id"),
+        ],
+        any_order=False,
+    )
+
+
+async def test_socketio_send_text_message_whitespace_only_sends_nothing(
+    socketio_output: SocketIOOutput,
+):
+    await socketio_output.send_text_message("recipient_id", "   \n\n   ")
+
+    socketio_output.sio_server.emit.assert_not_called()
+
+
+async def test_socketio_send_text_message_preserves_paragraph_whitespace(
+    socketio_output: SocketIOOutput,
+):
+    """Strip only detects empty segments; non-empty parts are sent unsplit."""
+    await socketio_output.send_text_message("recipient_id", "a \n\n b \n\nc")
+
+    assert socketio_output.sio_server.emit.call_count == 3
+    socketio_output.sio_server.emit.assert_has_calls(
+        [
+            call("bot", {"text": "a "}, room="recipient_id"),
+            call("bot", {"text": " b "}, room="recipient_id"),
+            call("bot", {"text": "c"}, room="recipient_id"),
+        ],
+        any_order=False,
+    )
+
+
+async def test_socketio_send_text_with_buttons_whitespace_only_no_emit(
+    socketio_output: SocketIOOutput,
+):
+    await socketio_output.send_text_with_buttons(
+        "recipient_id",
+        "   \n\n   ",
+        [],
+    )
+    socketio_output.sio_server.emit.assert_not_called()
+
+
+async def test_socketio_send_text_with_buttons_skips_empty_paragraphs_keeps_buttons(
+    socketio_output: SocketIOOutput,
+):
+    await socketio_output.send_text_with_buttons(
+        "recipient_id",
+        "first\n\n\n\nsecond",
+        [{"title": "Pick", "payload": "/intent"}],
+    )
+    assert socketio_output.sio_server.emit.call_count == 2
+    socketio_output.sio_server.emit.assert_has_calls(
+        [
+            call("bot", {"text": "first", "quick_replies": []}, room="recipient_id"),
+            call(
+                "bot",
+                {
+                    "text": "second",
+                    "quick_replies": [
+                        {
+                            "content_type": "text",
+                            "title": "Pick",
+                            "payload": "/intent",
+                        }
+                    ],
+                },
+                room="recipient_id",
+            ),
+        ],
+        any_order=False,
+    )
+
+
 # =============================================================================
 # on_disconnect_callback tests
 # =============================================================================

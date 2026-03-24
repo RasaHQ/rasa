@@ -114,8 +114,15 @@ class SocketIOOutput(OutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
-        """Send a message through this channel."""
+        """Send a message through this channel.
+
+        Splits on blank lines after ``text.strip()`` (same as other channels).
+        Skips segments that are empty when stripped, but sends each non-empty
+        segment unchanged so intra-paragraph spaces are preserved.
+        """
         for message_part in text.strip().split("\n\n"):
+            if not message_part.strip():
+                continue
             await self._send_message(recipient_id, {"text": message_part})
 
     async def send_image_url(
@@ -133,10 +140,13 @@ class SocketIOOutput(OutputChannel):
         **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
-        # split text and create a message for each text fragment
-        # the `or` makes sure there is at least one message we can attach the quick
-        # replies to
-        message_parts = text.strip().split("\n\n") or [text]
+        # One message per non-empty paragraph (split on blank lines after strip).
+        raw_parts = text.strip().split("\n\n")
+        message_parts = [p for p in raw_parts if p.strip()]
+        if not message_parts:
+            message_parts = [text.strip() or ""] if buttons else []
+        if not message_parts:
+            return
         messages: List[Dict[Text, Any]] = [
             {"text": message, "quick_replies": []} for message in message_parts
         ]

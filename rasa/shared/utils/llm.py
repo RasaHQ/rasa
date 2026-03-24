@@ -432,7 +432,8 @@ async def invoke_llm_and_send_non_streaming_response(
 
     Used when the output channel does not support streaming. Calls
     ``acompletion`` directly to obtain the complete response in one shot,
-    then delivers the content via ``send_text_message``.
+    then delivers the content via ``send_text_message``. Leading/trailing
+    whitespace on the choice is stripped; nothing is sent if the result is empty.
 
     Args:
         llm_client: The LLM client to use for completion.
@@ -453,8 +454,10 @@ async def invoke_llm_and_send_non_streaming_response(
     llm_content = (
         llm_response.choices[0] if llm_response and llm_response.choices else None
     )
-    if llm_content:
-        await output_channel.send_text_message(recipient_id, llm_content)
+    if llm_content is not None and isinstance(llm_content, str):
+        stripped = llm_content.strip()
+        if stripped:
+            await output_channel.send_text_message(recipient_id, stripped)
 
     return llm_response
 
