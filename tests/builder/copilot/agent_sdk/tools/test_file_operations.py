@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from agents.tool_context import ToolContext
 
 from rasa.builder.copilot.agent_sdk.tools.file_operations import (
     get_file_content,
@@ -23,6 +24,16 @@ from rasa.builder.copilot.mcp_server.models import (
     UpdateFilesResponse,
     WriteFileResponse,
 )
+
+
+def _make_tool_context(tool_name: str = "test_tool") -> ToolContext:
+    """Create a minimal ToolContext for testing on_invoke_tool calls."""
+    return ToolContext(
+        context=None,
+        tool_name=tool_name,
+        tool_call_id="test_call_id",
+        tool_arguments="{}",
+    )
 
 
 class TestListFiles:
@@ -341,7 +352,8 @@ class TestFunctionToolWrappers:
     async def test_list_project_files(self, project_folder: Path):
         """Test list_project_files wrapper gets project folder from env."""
         # FunctionTool.on_invoke_tool takes (ctx, input) where input is JSON string
-        result = await list_project_files.on_invoke_tool(None, "{}")
+        ctx = _make_tool_context("list_project_files")
+        result = await list_project_files.on_invoke_tool(ctx, "{}")
 
         assert result.success is True
         assert "domain.yml" in result.files
@@ -349,8 +361,9 @@ class TestFunctionToolWrappers:
     @pytest.mark.asyncio
     async def test_read_project_files(self, project_folder: Path):
         """Test read_project_files wrapper."""
+        ctx = _make_tool_context("read_project_files")
         result = await read_project_files.on_invoke_tool(
-            None, '{"exclude_docs": true, "allowed_extensions": "yml"}'
+            ctx, '{"exclude_docs": true, "allowed_extensions": "yml"}'
         )
 
         assert result.count >= 1
@@ -359,8 +372,9 @@ class TestFunctionToolWrappers:
     @pytest.mark.asyncio
     async def test_get_project_file(self, project_folder: Path):
         """Test get_project_file wrapper."""
+        ctx = _make_tool_context("get_project_file")
         result = await get_project_file.on_invoke_tool(
-            None, '{"file_path": "domain.yml"}'
+            ctx, '{"file_path": "domain.yml"}'
         )
 
         assert result.exists is True
@@ -369,8 +383,9 @@ class TestFunctionToolWrappers:
     @pytest.mark.asyncio
     async def test_write_project_file(self, project_folder: Path):
         """Test write_project_file wrapper."""
+        ctx = _make_tool_context("write_project_file")
         result = await write_project_file.on_invoke_tool(
-            None, '{"file_path": "new_file.yml", "content": "test content"}'
+            ctx, '{"file_path": "new_file.yml", "content": "test content"}'
         )
 
         assert result.success is True
@@ -380,11 +395,12 @@ class TestFunctionToolWrappers:
     async def test_update_multiple_files_success(self, project_folder: Path):
         """Test update_multiple_files wrapper with valid JSON."""
         # The files_json parameter itself is a JSON string
+        ctx = _make_tool_context("update_multiple_files")
         input_json = (
             '{"files_json": "{\\"file1.yml\\": \\"content1\\", '
             '\\"file2.yml\\": \\"content2\\"}"}'
         )
-        result = await update_multiple_files.on_invoke_tool(None, input_json)
+        result = await update_multiple_files.on_invoke_tool(ctx, input_json)
 
         assert result.success is True
         assert "file1.yml" in result.updated
@@ -393,8 +409,9 @@ class TestFunctionToolWrappers:
     @pytest.mark.asyncio
     async def test_update_multiple_files_invalid_json(self, project_folder: Path):
         """Test update_multiple_files wrapper with invalid JSON."""
+        ctx = _make_tool_context("update_multiple_files")
         result = await update_multiple_files.on_invoke_tool(
-            None, '{"files_json": "not valid json"}'
+            ctx, '{"files_json": "not valid json"}'
         )
 
         assert result.success is False
@@ -404,8 +421,9 @@ class TestFunctionToolWrappers:
     async def test_update_multiple_files_invalid_format(self, project_folder: Path):
         """Test update_multiple_files wrapper with wrong data structure."""
         # Valid JSON but wrong format (array instead of dict)
+        ctx = _make_tool_context("update_multiple_files")
         result = await update_multiple_files.on_invoke_tool(
-            None, '{"files_json": "[\\"file1.yml\\", \\"file2.yml\\"]"}'
+            ctx, '{"files_json": "[\\"file1.yml\\", \\"file2.yml\\"]"}'
         )
 
         assert result.success is False
@@ -422,7 +440,8 @@ class TestFunctionToolWrappers:
         )
 
         # on_invoke_tool catches exceptions and returns error as string
-        result = await list_project_files.on_invoke_tool(None, "{}")
+        ctx = _make_tool_context("list_project_files")
+        result = await list_project_files.on_invoke_tool(ctx, "{}")
 
         assert isinstance(result, str)
         assert "project folder" in result.lower()
