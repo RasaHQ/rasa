@@ -6,11 +6,11 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Text, Tuple, Union
 
 import numpy as np
 import scipy.sparse
-from safetensors.numpy import load_file, save_file
 
 import rasa.shared.nlu.training_data.util
 import rasa.shared.utils.io
 from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
+from rasa.shared.utils.safetensors_io import safetensors_numpy_load_save
 
 
 @dataclass
@@ -72,6 +72,7 @@ def save_features(
         metadata[key] = feature_metadata_list
 
     # Save tensors
+    _, save_file = safetensors_numpy_load_save()
     save_file(tensors_to_save, file_name)
 
     return metadata
@@ -90,6 +91,7 @@ def load_features(
         Dictionary mapping strings to lists of Features objects
     """
     # Load tensors
+    load_file, _ = safetensors_numpy_load_save()
     tensors = load_file(filename)
 
     # Reconstruct the features dictionary
@@ -365,7 +367,7 @@ class Features:
         sequence dimension.
 
         Args:
-          features: Non-empty list of Features  of the same type and level that
+          features_list: Non-empty list of Features of the same type and level that
             describe the same attribute.
           expected_origins: The expected origins of the given features. This method
             will check that the origin information of each feature is as expected, i.e.

@@ -1,10 +1,19 @@
+import builtins
+import json
+from pathlib import Path
+from typing import Any, Optional, Tuple
+
 import numpy as np
+import pytest
 import scipy.sparse
 
+from rasa.exceptions import MissingDependencyException
 from rasa.utils.tensorflow.feature_array import (
     _deserialize_nested_data,
     _recursive_serialize,
     _serialize_nested_data,
+    deserialize_nested_feature_arrays,
+    serialize_nested_feature_arrays,
 )
 from rasa.utils.tensorflow.model_data import RasaModelData
 
@@ -195,3 +204,48 @@ def test_serialize_and_deserialize_model_data(model_data: RasaModelData):
             actual_data["entities"]["tag_ids"][0][i]
             == loaded_data["entities"]["tag_ids"][0][i]
         ).all()
+
+
+def _block_safetensors_numpy_import(monkeypatch: pytest.MonkeyPatch) -> None:
+    real_import = builtins.__import__
+
+    def fake_import(
+        name: str,
+        globals_: Optional[dict] = None,
+        locals_: Optional[dict] = None,
+        fromlist: Tuple[Any, ...] = (),
+        level: int = 0,
+    ):
+        if name == "safetensors.numpy":
+            raise ImportError("simulated missing safetensors")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+
+def test_serialize_nested_feature_arrays_raises_when_safetensors_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _block_safetensors_numpy_import(monkeypatch)
+    data_path = str(tmp_path / "data.st")
+    meta_path = str(tmp_path / "meta.json")
+    with pytest.raises(MissingDependencyException) as exc_info:
+        serialize_nested_feature_arrays({}, data_path, meta_path)
+    msg = str(exc_info.value)
+    assert "safetensors" in msg
+    assert "rasa-pro[nlu]" in msg
+
+
+def test_deserialize_nested_feature_arrays_raises_when_safetensors_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _block_safetensors_numpy_import(monkeypatch)
+    meta_path = tmp_path / "meta.json"
+    data_path = tmp_path / "data.st"
+    meta_path.write_text(json.dumps([]), encoding="utf-8")
+    data_path.write_bytes(b"")
+    with pytest.raises(MissingDependencyException) as exc_info:
+        deserialize_nested_feature_arrays(str(data_path), str(meta_path))
+    msg = str(exc_info.value)
+    assert "safetensors" in msg
+    assert "rasa-pro[nlu]" in msg

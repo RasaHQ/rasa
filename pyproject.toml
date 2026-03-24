@@ -195,7 +195,6 @@ python-dateutil = "~2.8.2"
 protobuf = "~5.29.6"
 setuptools = "~80.10.2"
 ujson = ">=5.8,<6.0"
-regex = "~2024.7.24" # required by litellm + whitespacetokenizer
 sentry-sdk = "~2.43.0"
 aio-pika = ">=9.5.8,<9.6.0"
 typing-extensions = ">=4.7.1,<5.0.0"
@@ -238,7 +237,6 @@ types-protobuf = "4.25.0.20240417"
 litellm = "~1.82.4"
 openpyxl = "^3.1.5"
 diskcache = "~5.6.3"
-safetensors = "~0.7.0"  # required by calm assistant
 dask = "~2024.8.0"  # later versions drop python 3.9 support
 numpy = "~2.1.3"  # langchain-community (>=0.3.29,<0.4.0) requires numpy (>=2.1.0) for python_version>='3.13'
 scikit-learn = "~1.6.1"
@@ -254,7 +252,6 @@ pymongo = "~4.15.5"
 types-cachetools = "~6.2.0.20250827"
 pep440-version-utils = "~1.2.0"
 werkzeug = "^3.1.5"
-keras = "~3.12.1"
 openai-agents = "~0.12.5"
 
 # --------------------------------------------------------------------------------------
@@ -391,9 +388,21 @@ optional = true
 version = "~0.5.0"
 optional = true
 
+[tool.poetry.dependencies.regex]
+version = "~2024.7.24"  # WhitespaceTokenizer; optional to avoid forcing install without NLU
+optional = true
+
+[tool.poetry.dependencies.safetensors]
+version = "~0.7.0"  # NLU feature persistence, nested feature arrays, UnexpecTEDIntentPolicy
+optional = true
+
 # --------------------------------------------------------------------------------------
 # OPTIONAL DEPENDENCIES FOR TENSORFLOW-RELATED PACKAGES
 # --------------------------------------------------------------------------------------
+
+[tool.poetry.dependencies.keras]
+version = "~3.12.1"  # Keras 3 base class for RasaModel; TensorFlow also requires keras>=3.5
+optional = true
 
 [tool.poetry.dependencies.tensorflow]
 version = "~2.19.0" # compatible with protobuf <6.0.0dev
@@ -453,6 +462,7 @@ full = [
     "sentencepiece",
     "gitpython",
     "tensorflow",
+    "keras",
     "tensorflow-text",
     "tensorflow-hub",
     "tensorflow-io-gcs-filesystem",
@@ -462,6 +472,8 @@ full = [
     "skops",
     "mitie",
     "sklearn-crfsuite",
+    "regex",
+    "safetensors",
     "gliner",
     "onnxruntime",
     "fbmessenger",
@@ -481,6 +493,7 @@ pii = ["gliner", "onnxruntime"]
 nlu = [
     "transformers",
     "tensorflow",
+    "keras",
     "spacy",
     "tensorflow-text",
     "tensorflow-hub",
@@ -492,6 +505,8 @@ nlu = [
     "mitie",
     "jieba",
     "sklearn-crfsuite",
+    "regex",
+    "safetensors",
 ]
 # required for channel connector
  channels = [

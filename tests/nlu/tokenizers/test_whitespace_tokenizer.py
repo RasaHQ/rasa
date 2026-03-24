@@ -1,8 +1,10 @@
-from typing import Dict, Optional
+import builtins
+from typing import Any, Dict, Optional, Tuple
 
 import pytest
 
 import rasa.shared.utils.io
+from rasa.exceptions import MissingDependencyException
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT, INTENT, TEXT
@@ -219,3 +221,30 @@ def test_whitespace_processing_with_attribute():
     tokens_text = message.get(TOKENS_NAMES[TEXT])
     assert [t.text for t in tokens_action_text] == expected_action_tokens_text
     assert [t.text for t in tokens_text] == expected_action_tokens_text
+
+
+def test_whitespace_tokenize_raises_when_regex_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_import = builtins.__import__
+
+    def fake_import(
+        name: str,
+        globals_: Optional[dict] = None,
+        locals_: Optional[dict] = None,
+        fromlist: Tuple[Any, ...] = (),
+        level: int = 0,
+    ):
+        if name == "regex":
+            raise ImportError("simulated missing regex")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    tokenizer = create_whitespace_tokenizer()
+    message = Message(data={TEXT: "hello world"})
+    with pytest.raises(MissingDependencyException) as exc_info:
+        tokenizer.tokenize(message, TEXT)
+    msg = str(exc_info.value)
+    assert "WhitespaceTokenizer" in msg
+    assert "regex" in msg
+    assert "rasa-pro[nlu]" in msg

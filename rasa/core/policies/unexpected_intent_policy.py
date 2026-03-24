@@ -55,6 +55,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.utils import common
 from rasa.shared.utils.io import raise_deprecation_warning
+from rasa.shared.utils.safetensors_io import safetensors_numpy_load_save
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.constants import (
@@ -890,7 +891,13 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         """
         super().persist_model_utilities(model_path)
 
-        from safetensors.numpy import save_file
+        _, save_file = safetensors_numpy_load_save(
+            missing_dependency_message=(
+                "UnexpecTEDIntentPolicy persistence requires safetensors. "
+                "Install the NLU extra: pip install 'rasa-pro[nlu]' OR "
+                "poetry add 'rasa-pro[nlu]'"
+            )
+        )
 
         save_file(
             {str(k): np.array(v) for k, v in self.label_quantiles.items()},
@@ -906,7 +913,13 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         """
         model_utilties = super()._load_model_utilities(model_path)
 
-        from safetensors.numpy import load_file
+        load_file, _ = safetensors_numpy_load_save(
+            missing_dependency_message=(
+                "UnexpecTEDIntentPolicy requires safetensors to load model utilities. "
+                "Install the NLU extra: pip install 'rasa-pro[nlu]' OR "
+                "poetry add 'rasa-pro[nlu]'"
+            )
+        )
 
         loaded_label_quantiles = load_file(
             model_path / f"{cls._metadata_filename()}.label_quantiles.st"

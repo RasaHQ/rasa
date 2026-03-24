@@ -1,3 +1,4 @@
+import builtins
 import json
 import logging
 from pathlib import Path
@@ -23,7 +24,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     IntentMaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
 )
-from rasa.core.policies.ted_policy import PREDICTION_FEATURES
+from rasa.core.policies.ted_policy import PREDICTION_FEATURES, TEDPolicy
 from rasa.core.policies.unexpected_intent_policy import (
     RankingCandidateMetadata,
     UnexpecTEDIntentPolicy,
@@ -31,6 +32,7 @@ from rasa.core.policies.unexpected_intent_policy import (
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.exceptions import MissingDependencyException
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
@@ -1280,3 +1282,77 @@ def test_train_with_e2e_data(
             policy.train(trackers_for_training, domain, precomputations=None)
     else:
         policy.train(trackers_for_training, domain, precomputations=None)
+
+
+def test_unexpected_intent_persist_model_utilities_requires_safetensors(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+) -> None:
+    real_import = builtins.__import__
+
+    def fake_import(
+        name: str,
+        globals_: Optional[dict] = None,
+        locals_: Optional[dict] = None,
+        fromlist: tuple = (),
+        level: int = 0,
+    ):
+        if name == "safetensors.numpy":
+            raise ImportError("simulated missing safetensors")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    def _ted_persist_noop(self, model_path: Path) -> None:
+        return None
+
+    monkeypatch.setattr(TEDPolicy, "persist_model_utilities", _ted_persist_noop)
+
+    policy = UnexpecTEDIntentPolicy(
+        UnexpecTEDIntentPolicy.get_default_config(),
+        default_model_storage,
+        Resource("TEDPolicy"),
+        default_execution_context,
+        RasaModel(),
+        label_quantiles={0: [0.1, 0.5, 0.9]},
+    )
+    with pytest.raises(MissingDependencyException) as exc_info:
+        policy.persist_model_utilities(tmp_path)
+    msg = str(exc_info.value)
+    assert "UnexpecTEDIntentPolicy persistence" in msg
+    assert "rasa-pro[nlu]" in msg
+
+
+def test_unexpected_intent_load_model_utilities_requires_safetensors(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    real_import = builtins.__import__
+
+    def fake_import(
+        name: str,
+        globals_: Optional[dict] = None,
+        locals_: Optional[dict] = None,
+        fromlist: tuple = (),
+        level: int = 0,
+    ):
+        if name == "safetensors.numpy":
+            raise ImportError("simulated missing safetensors")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    def _ted_load_empty(cls: Type[TEDPolicy], model_path: Path) -> Dict:
+        return {}
+
+    monkeypatch.setattr(
+        TEDPolicy, "_load_model_utilities", classmethod(_ted_load_empty)
+    )
+
+    with pytest.raises(MissingDependencyException) as exc_info:
+        UnexpecTEDIntentPolicy._load_model_utilities(tmp_path)
+    msg = str(exc_info.value)
+    assert "UnexpecTEDIntentPolicy requires safetensors" in msg
+    assert "rasa-pro[nlu]" in msg

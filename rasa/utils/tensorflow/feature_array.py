@@ -2,9 +2,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import scipy.sparse
-from safetensors.numpy import load_file, save_file
 
 import rasa.shared.utils.io
+from rasa.shared.utils.safetensors_io import safetensors_numpy_load_save
 
 
 def _recursive_serialize(
@@ -92,6 +92,7 @@ def serialize_nested_feature_arrays(
     _serialize_nested_data(nested_feature_array, "component", data_dict, metadata)
 
     # Save serialized data and metadata
+    _, save_file = safetensors_numpy_load_save()
     save_file(data_dict, data_filename)
     rasa.shared.utils.io.dump_obj_as_json_to_file(metadata_filename, metadata)
 
@@ -162,6 +163,7 @@ def deserialize_nested_feature_arrays(
     data_filename: str, metadata_filename: str
 ) -> Dict[str, Dict[str, List["FeatureArray"]]]:
     metadata = rasa.shared.utils.io.read_json_file(metadata_filename)
+    load_file, _ = safetensors_numpy_load_save()
     data_dict = load_file(data_filename)
 
     return _deserialize_nested_data(metadata, data_dict)

@@ -1,3 +1,4 @@
+import builtins
 import itertools
 import os
 import tempfile
@@ -8,6 +9,7 @@ import numpy as np
 import pytest
 import scipy.sparse
 
+from rasa.exceptions import MissingDependencyException
 from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
@@ -216,6 +218,7 @@ def _generate_feature_list_and_modifications(
     is_sparse: bool, type: Text, number: int
 ) -> Tuple[List[Features], List[Dict[Text, Any]]]:
     """Creates a list of features with the required properties and some modifications.
+
     The modifications are given by a list of kwargs dictionaries that can be used to
     instantiate `Features` that differ from the aforementioned list of features in
     exactly one property (i.e. type, sequence length (if the given `type` is
@@ -678,3 +681,52 @@ def test_end_to_end(safe_tensors_tmp_file: str):
     assert loaded_dict["group1"][0].type == "dense"
     assert loaded_dict["group1"][1].type == "sparse"
     assert loaded_dict["group2"][0].origin == ["origin3", "origin4"]
+
+
+def test_save_features_raises_when_safetensors_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    dense_features: Features,
+) -> None:
+    real_import = builtins.__import__
+
+    def fake_import(
+        name: str,
+        globals_: Optional[dict] = None,
+        locals_: Optional[dict] = None,
+        fromlist: Tuple[Any, ...] = (),
+        level: int = 0,
+    ):
+        if name == "safetensors.numpy":
+            raise ImportError("simulated missing safetensors")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    with pytest.raises(MissingDependencyException) as exc_info:
+        save_features({"k": [dense_features]}, "/tmp/should_not_be_written.st")
+    msg = str(exc_info.value)
+    assert "safetensors" in msg
+    assert "rasa-pro[nlu]" in msg
+
+
+def test_load_features_raises_when_safetensors_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_import = builtins.__import__
+
+    def fake_import(
+        name: str,
+        globals_: Optional[dict] = None,
+        locals_: Optional[dict] = None,
+        fromlist: Tuple[Any, ...] = (),
+        level: int = 0,
+    ):
+        if name == "safetensors.numpy":
+            raise ImportError("simulated missing safetensors")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    with pytest.raises(MissingDependencyException) as exc_info:
+        load_features("any.st", {})
+    msg = str(exc_info.value)
+    assert "safetensors" in msg
+    assert "rasa-pro[nlu]" in msg

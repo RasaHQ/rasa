@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Text
 
-import regex
-
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.engine.graph import ExecutionContext
@@ -63,6 +61,17 @@ class WhitespaceTokenizer(Tokenizer):
         return cls(config)
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
+        try:
+            import regex
+        except ImportError:
+            from rasa.exceptions import MissingDependencyException
+
+            raise MissingDependencyException(
+                "WhitespaceTokenizer requires the 'regex' package. "
+                "Install the NLU extra: pip install 'rasa-pro[nlu]' OR "
+                "poetry add 'rasa-pro[nlu]'"
+            ) from None
+
         original_text = message.get(attribute)
         text = rasa.utils.io.remove_emojis(original_text)
         # we need to use regex instead of re, because of
