@@ -45,6 +45,7 @@ from rasa.shared.utils.constants import (
     LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
     LOG_COMPONENT_SOURCE_METHOD_INIT,
 )
+from rasa.shared.utils.health_check.health_check import HealthCheckPhase
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
@@ -157,6 +158,7 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
             DEFAULT_LLM_CONFIG,
             "llm_based_router.train",
             LLMBasedRouter.__name__,
+            phase=HealthCheckPhase.TRAIN,
         )
 
         self.persist()
@@ -179,6 +181,7 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
             DEFAULT_LLM_CONFIG,
             "llm_based_router.load",
             LLMBasedRouter.__name__,
+            phase=HealthCheckPhase.INFERENCE,
         )
 
         prompt_template = None

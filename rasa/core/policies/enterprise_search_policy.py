@@ -102,6 +102,7 @@ from rasa.shared.utils.datetime_utils import resolve_datetime
 from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
 )
+from rasa.shared.utils.health_check.health_check import HealthCheckPhase
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
@@ -357,6 +358,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             self.embeddings_config,
             "enterprise_search_policy.train",
             use_generative_llm=self.use_llm,
+            phase=HealthCheckPhase.TRAIN,
         )
 
         # telemetry call to track training start
@@ -996,6 +998,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             parsed_config.embeddings_config,
             "enterprise_search_policy.load",
             use_generative_llm=parsed_config.use_generative_llm,
+            phase=HealthCheckPhase.INFERENCE,
         )
 
         prompt_template = cls._load_prompt_template(model_storage, resource)
@@ -1306,6 +1309,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         embeddings_config: Dict[Text, Any],
         log_source_method: str,
         use_generative_llm: bool = True,
+        phase: HealthCheckPhase = HealthCheckPhase.TRAIN,
     ) -> None:
         """Perform the health checks using resolved LLM and embeddings configurations.
         Resolved means the configuration is either:
@@ -1321,6 +1325,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             log_source_method: The method health checks has been called from.
             use_generative_llm: Whether to perform LLM health checks. If False,
                 only embeddings health checks are performed.
+            phase: Whether this check runs during training or inference.
 
         """
         # Only perform LLM health checks if use_generative_llm is True
@@ -1330,6 +1335,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 DEFAULT_LLM_CONFIG,
                 log_source_method,
                 EnterpriseSearchPolicy.__name__,
+                phase=phase,
             )
         cls.perform_embeddings_health_check(
             embeddings_config,

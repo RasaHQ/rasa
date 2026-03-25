@@ -68,6 +68,7 @@ from rasa.shared.utils.datetime_utils import (
     resolve_datetime,
     validate_datetime_configuration,
 )
+from rasa.shared.utils.health_check.health_check import HealthCheckPhase
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     LLMInput,
@@ -184,6 +185,7 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
             cls.get_default_llm_config(),
             "llm_based_command_generator.load",
             cls.__name__,
+            phase=HealthCheckPhase.INFERENCE,
         )
 
         # load prompt template from the model storage.

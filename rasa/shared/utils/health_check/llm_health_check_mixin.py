@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 from typing import Any, Dict, Optional
+
+from rasa.shared.utils.health_check.health_check import HealthCheckPhase
 
 
 class LLMHealthCheckMixin:
@@ -15,6 +19,7 @@ class LLMHealthCheckMixin:
         default_llm_config: Dict[str, Any],
         log_source_method: str,
         log_source_component: str,
+        phase: HealthCheckPhase = HealthCheckPhase.TRAIN,
     ) -> None:
         """Wraps the `perform_llm_health_check` function to enable
         tracing and instrumentation.
@@ -28,4 +33,5 @@ class LLMHealthCheckMixin:
             default_llm_config,
             log_source_method,
             log_source_component,
+            phase=phase,
         )

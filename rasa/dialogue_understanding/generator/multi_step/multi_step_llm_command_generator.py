@@ -56,6 +56,7 @@ from rasa.shared.utils.constants import (
     LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
     LOG_COMPONENT_SOURCE_METHOD_INIT,
 )
+from rasa.shared.utils.health_check.health_check import HealthCheckPhase
 from rasa.shared.utils.io import deep_container_fingerprint, raise_deprecation_warning
 from rasa.shared.utils.llm import (
     LLMInput,
@@ -171,6 +172,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             DEFAULT_LLM_CONFIG,
             "multi_step_llm_command_generator.load",
             MultiStepLLMCommandGenerator.__name__,
+            phase=HealthCheckPhase.INFERENCE,
         )
 
         prompts = cls._load_prompt_templates(model_storage, resource)

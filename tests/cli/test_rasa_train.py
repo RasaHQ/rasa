@@ -830,7 +830,10 @@ def test_train_check_nlg_endpoint_validity_api_type(
         expected_error_code = "validation.component.api_type_config_key_invalid"
         assert expected_error_code in captured.out
     else:
-        _check_nlg_endpoint_validity(endpoint=endpoint_path)
+        with patch(
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request",
+        ):
+            _check_nlg_endpoint_validity(endpoint=endpoint_path)
 
 
 def test_training_logs_domain_correctly_when_using_domain_dir(

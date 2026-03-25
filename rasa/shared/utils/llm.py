@@ -16,6 +16,7 @@ from typing import (
     Literal,
     Optional,
     Text,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -34,6 +35,8 @@ from rasa.core.channels.voice_stream.tts.config import StreamingConfig
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import (
+    ANTHROPIC_PROVIDER,
+    AWS_BEDROCK_PROVIDER,
     BUTTONS,
     CONFIG_NAME_KEY,
     CONFIG_PIPELINE_KEY,
@@ -133,6 +136,34 @@ REASONING_EFFORT_CONFIG_KEY = "reasoning_effort"
 REASONING_EFFORT_NONE = "none"
 
 REASONING_EFFORT_MINIMAL = "minimal"
+
+REASONING_EFFORT_LOW = "low"
+
+REASONING_EFFORT_HIGH = "high"
+
+# Order matters: more-specific prefixes must come *before* shorter ones so that
+# e.g. "gpt-5.1-codex-mini" is matched before "gpt-5.1" and "gpt-5-mini"
+# is matched before "gpt-5".
+_REASONING_EFFORT_LOWEST_BY_MODEL_PREFIX: List[Tuple[str, str]] = [
+    # GPT-5.4 series
+    ("gpt-5.4-mini", REASONING_EFFORT_NONE),
+    ("gpt-5.4-nano", REASONING_EFFORT_NONE),
+    ("gpt-5.4", REASONING_EFFORT_NONE),
+    # GPT-5.2 series
+    ("gpt-5.2-pro", REASONING_EFFORT_LOW),
+    ("gpt-5.2", REASONING_EFFORT_NONE),
+    # GPT-5.1 series
+    ("gpt-5.1-codex-max", REASONING_EFFORT_LOW),
+    ("gpt-5.1-codex-mini", REASONING_EFFORT_LOW),
+    ("gpt-5.1-codex", REASONING_EFFORT_LOW),
+    ("gpt-5.1", REASONING_EFFORT_NONE),
+    # GPT-5 series
+    ("gpt-5-codex", REASONING_EFFORT_LOW),
+    ("gpt-5-pro", REASONING_EFFORT_HIGH),
+    ("gpt-5-mini", REASONING_EFFORT_MINIMAL),
+    ("gpt-5-nano", REASONING_EFFORT_MINIMAL),
+    ("gpt-5", REASONING_EFFORT_MINIMAL),  # should be last to avoid prefix collisions
+]
 
 DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
 
@@ -698,7 +729,14 @@ def _combine_single_model_configs(
         )
         # Checks for deprecated keys, resolves aliases and returns a valid config.
         # This is done to ensure that the custom config is valid.
-        return client_config_clazz.from_dict(deepcopy(custom_config)).to_dict()
+        resolved_custom_config = client_config_clazz.from_dict(
+            deepcopy(custom_config)
+        ).to_dict()
+        return _apply_default_reasoning_effort(
+            custom_config=custom_config,
+            default_config=default_config,
+            merged_config=resolved_custom_config,
+        )
 
     # If the provider is the same in both configs
     # OR provider is not specified in the custom config
@@ -711,39 +749,220 @@ def _combine_single_model_configs(
         default_config_provider
     )
     resolved_merged_config = default_config_clazz.from_dict(merged_config).to_dict()
-    return _sanitize_default_reasoning_effort_override(
+    return _apply_default_reasoning_effort(
         custom_config=custom_config,
         default_config=default_config,
         merged_config=resolved_merged_config,
     )
 
 
-def _sanitize_default_reasoning_effort_override(
+def _apply_default_reasoning_effort(
     custom_config: Dict[str, Any],
     default_config: Dict[str, Any],
     merged_config: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """Drop default `reasoning_effort` when model is changed by user.
+    """Apply the appropriate default ``reasoning_effort`` to the merged config.
 
-    If a user explicitly sets `reasoning_effort`, keep it for any model/provider.
+    If a user explicitly sets ``reasoning_effort``, keep it for any model/provider.
+    Otherwise, check LiteLLM metadata to determine whether the model supports
+    ``reasoning_effort`` and whether it accepts ``none`` specifically.  When
+    LiteLLM metadata is not available, fall back to a local model-family prefix map
+    that maps known model variants to their lowest supported value.
     """
-    if REASONING_EFFORT_CONFIG_KEY not in merged_config:
-        return merged_config
-
     if REASONING_EFFORT_CONFIG_KEY in custom_config:
+        # User intent wins: never rewrite explicit `reasoning_effort`.
         return merged_config
 
-    default_model = default_config.get(MODEL_CONFIG_KEY) or default_config.get(
-        MODEL_NAME_CONFIG_KEY
+    provider, model_identifier = _resolve_provider_and_model_identifier(merged_config)
+    default_reasoning_effort = _resolve_default_reasoning_effort(
+        custom_config=custom_config,
+        default_config=default_config,
+        provider=provider,
+        model_identifier=model_identifier,
     )
-    custom_model = custom_config.get(MODEL_CONFIG_KEY) or custom_config.get(
-        MODEL_NAME_CONFIG_KEY
-    )
+    if default_reasoning_effort is None:
+        had_reasoning_effort = merged_config.pop(REASONING_EFFORT_CONFIG_KEY, None)
+        if had_reasoning_effort is not None:
+            structlogger.debug(
+                "utils.llm.reasoning_effort.not_applied",
+                event_info=(
+                    "No default reasoning_effort could be determined "
+                    "for this model/provider; the parameter will not "
+                    "be included in the final config."
+                ),
+                model=model_identifier,
+                provider=provider,
+            )
+        return merged_config
 
-    if custom_model is not None and custom_model != default_model:
-        merged_config.pop(REASONING_EFFORT_CONFIG_KEY, None)
-
+    if merged_config.get(REASONING_EFFORT_CONFIG_KEY) != default_reasoning_effort:
+        structlogger.debug(
+            "utils.llm.reasoning_effort.applied_default",
+            reasoning_effort=default_reasoning_effort,
+            model=model_identifier,
+            provider=provider,
+        )
+    merged_config[REASONING_EFFORT_CONFIG_KEY] = default_reasoning_effort
     return merged_config
+
+
+def _resolve_effort_for_known_model(
+    provider: Optional[str], model_identifier: str
+) -> Optional[str]:
+    """Return the lowest appropriate reasoning_effort for a known model identifier.
+
+    This is the shared two-step lookup used both at config-merge time
+    (``_resolve_default_reasoning_effort``) and at runtime when
+    ``AzureOpenAILLMClient`` resolves a deployment-only Azure model from the
+    first API response:
+
+    1. Query LiteLLM capability metadata — the most up-to-date source.
+    2. Fall back to the local GPT-5-family prefix map when LiteLLM has
+       no information for the model yet.
+
+    Returns ``None`` when the model is confirmed not to support
+    ``reasoning_effort`` or when neither source has an entry for it.
+    """
+    (
+        supports_reasoning_effort,
+        litellm_effort,
+    ) = _get_litellm_reasoning_effort_capability(provider, model_identifier)
+    if supports_reasoning_effort is False:
+        return None
+
+    return litellm_effort or _get_fallback_reasoning_effort_default(
+        provider, model_identifier
+    )
+
+
+def _resolve_default_reasoning_effort(
+    custom_config: Dict[str, Any],
+    default_config: Dict[str, Any],
+    provider: Optional[str],
+    model_identifier: Optional[str],
+) -> Optional[str]:
+    """Infer the lowest supported reasoning effort from model capabilities."""
+    # Step 1: figure out provider/model identity from the merged config.
+    if model_identifier is None:
+        # Model identity is unknown at config-merge time (e.g. Azure deployment-only
+        # config).  For Azure, AzureOpenAILLMClient will self-heal on the first API
+        # response by reading response.model and setting reasoning_effort then.
+        return None
+
+    if _is_claude_model_on_anthropic_or_bedrock(provider, model_identifier):
+        return None
+
+    # Prefer the model name from custom/default configs for the fallback lookup so
+    # that the most specific identifier available is used (merged_config may contain
+    # an alias or a resolved variant that differs slightly from what the user typed).
+    custom_model = _extract_model_identifier_for_reasoning(custom_config)
+    default_model = _extract_model_identifier_for_reasoning(default_config)
+    candidate_model = custom_model or default_model or model_identifier
+
+    return _resolve_effort_for_known_model(provider, candidate_model)
+
+
+def _resolve_provider_and_model_identifier(
+    config: Dict[str, Any],
+) -> Tuple[Optional[str], Optional[str]]:
+    """Resolve provider and model identifier for reasoning-effort handling."""
+    return get_provider_from_config(config), _extract_model_identifier_for_reasoning(
+        config
+    )
+
+
+def _extract_model_identifier_for_reasoning(config: Dict[str, Any]) -> Optional[str]:
+    """Get model identifier from `model` or `model_name`.
+
+    Returns None for deployment-only Azure configs (no explicit model key).
+    In that case reasoning_effort is resolved lazily by AzureOpenAILLMClient
+    after the first API response reveals the actual model name.
+    """
+    model = config.get(MODEL_CONFIG_KEY) or config.get(MODEL_NAME_CONFIG_KEY)
+    if isinstance(model, str) and model:
+        return model
+
+    return None
+
+
+def _get_litellm_reasoning_effort_capability(
+    provider: Optional[str], model_identifier: str
+) -> Tuple[Optional[bool], Optional[str]]:
+    """Return (supports_reasoning_effort, lowest_default_from_litellm)."""
+    import litellm
+
+    try:
+        supported_params = litellm.get_supported_openai_params(
+            model=model_identifier,
+            custom_llm_provider=provider,
+        )
+    except Exception as exc:
+        structlogger.debug(
+            "utils.llm.reasoning_effort.supported_params_lookup_failed",
+            model=model_identifier,
+            provider=provider,
+            error=repr(exc),
+        )
+        supported_params = None
+
+    supports_reasoning_effort: Optional[bool] = None
+    if isinstance(supported_params, list):
+        # Treat this as the strongest signal for whether the param is accepted.
+        supports_reasoning_effort = REASONING_EFFORT_CONFIG_KEY in supported_params
+
+    if supports_reasoning_effort is False:
+        # Not a reasoning model according to LiteLLM, return
+        return False, None
+
+    try:
+        model_info = litellm.get_model_info(
+            model=model_identifier,
+            custom_llm_provider=provider,
+        )
+    except Exception as exc:
+        structlogger.debug(
+            "utils.llm.reasoning_effort.model_info_lookup_failed",
+            model=model_identifier,
+            provider=provider,
+            error=repr(exc),
+        )
+        return True, None
+
+    if model_info.get("supports_none_reasoning_effort"):
+        # If `none` is supported, it is the lowest setting we can safely apply.
+        return True, REASONING_EFFORT_NONE
+
+    return True, None
+
+
+def _get_fallback_reasoning_effort_default(
+    provider: Optional[str], model_identifier: str
+) -> Optional[str]:
+    """Get lowest supported reasoning effort from local fallback map."""
+    if provider not in {OPENAI_PROVIDER, AZURE_OPENAI_PROVIDER}:
+        return None
+
+    normalized_model = model_identifier.lower()
+
+    for model_prefix, default_value in _REASONING_EFFORT_LOWEST_BY_MODEL_PREFIX:
+        if normalized_model.startswith(model_prefix):
+            return default_value
+
+    return None
+
+
+def _is_claude_model_on_anthropic_or_bedrock(
+    provider: Optional[str], model_identifier: str
+) -> bool:
+    """Return True for Anthropic/Bedrock Claude models.
+
+    Claude models do not use `reasoning_effort`; we therefore avoid setting defaults
+    unless the user explicitly configured the field.
+    """
+    if provider not in {ANTHROPIC_PROVIDER, AWS_BEDROCK_PROVIDER}:
+        return False
+
+    return "claude" in model_identifier.lower()
 
 
 def get_provider_from_config(config: dict) -> Optional[str]:

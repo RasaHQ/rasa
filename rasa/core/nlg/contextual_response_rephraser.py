@@ -44,6 +44,7 @@ from rasa.shared.utils.constants import (
     LANGFUSE_METADATA_TAGS,
     LOG_COMPONENT_SOURCE_METHOD_INIT,
 )
+from rasa.shared.utils.health_check.health_check import HealthCheckPhase
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
@@ -171,6 +172,7 @@ class ContextualResponseRephraser(
             DEFAULT_LLM_CONFIG,
             "contextual_response_rephraser.init",
             ContextualResponseRephraser.__name__,
+            phase=HealthCheckPhase.INFERENCE,
         )
 
     @classmethod

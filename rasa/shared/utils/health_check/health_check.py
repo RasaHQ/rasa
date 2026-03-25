@@ -1,10 +1,8 @@
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from enum import Enum
+from typing import Any, Dict, Iterator, Optional
 
 from rasa.exceptions import HealthCheckError
-
-if TYPE_CHECKING:
-    pass
 from rasa.shared.constants import (
     LLM_API_HEALTH_CHECK_DEFAULT_VALUE,
     LLM_API_HEALTH_CHECK_ENV_VAR,
@@ -13,7 +11,24 @@ from rasa.shared.constants import (
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
-from rasa.shared.utils.llm import embedder_factory, llm_factory, structlogger
+from rasa.shared.utils.llm import (
+    REASONING_EFFORT_CONFIG_KEY,
+    embedder_factory,
+    llm_factory,
+    structlogger,
+)
+
+
+class HealthCheckPhase(Enum):
+    """Distinguishes training from inference in health check calls.
+
+    During inference, certain providers (e.g. Azure deployment-only) require
+    a probe API call to resolve the underlying model even when the general
+    health check is disabled.
+    """
+
+    TRAIN = "train"
+    INFERENCE = "inference"
 
 
 def try_instantiate_llm_client(
@@ -64,6 +79,7 @@ def perform_llm_health_check(
     default_config: Dict[str, Any],
     log_source_function: str,
     log_source_component: str,
+    phase: HealthCheckPhase = HealthCheckPhase.TRAIN,
 ) -> None:
     """Try to instantiate the LLM Client to validate the provided config.
 
@@ -71,45 +87,57 @@ def perform_llm_health_check(
     to the LLM API. If config contains multiple models, perform a test call for each
     model in the model group.
 
+    During inference, a probe call is also made for Azure deployment-only clients
+    even when the health check is disabled, so that the underlying model name
+    can be resolved and ``reasoning_effort`` set correctly before the first real
+    user message.
+
     This method supports both single model configurations and model group configurations
     (configs that have the `models` key).
     """
-    # Instantiate the LLM client or Router LLM client to validate the provided config.
+    # Instantiate the LLM client or Router LLM client to validate the config.
     llm_client = try_instantiate_llm_client(
         custom_config, default_config, log_source_function, log_source_component
     )
 
     if is_api_health_check_enabled():
-        if (
-            custom_config
-            and MODELS_CONFIG_KEY in custom_config
-            and len(custom_config[MODELS_CONFIG_KEY]) > 1
+        for client in _iter_individual_clients(
+            custom_config,
+            default_config,
+            llm_client,
+            log_source_function,
+            log_source_component,
         ):
-            # If the config uses a router, instantiate the LLM client for each model
-            # in the model group. This is required to perform a test api call for each
-            # model in the group.
-            # Note: The Router LLM client is not used here as we need to perform a test
-            # api call and not load balance the requests.
-            for model_config in custom_config[MODELS_CONFIG_KEY]:
-                llm_client = try_instantiate_llm_client(
-                    model_config,
-                    default_config,
-                    log_source_function,
-                    log_source_component,
+            send_test_llm_api_request(client, log_source_function, log_source_component)
+        return
+
+    # HC is disabled — only probe Azure deployment-only during inference.
+    probed = False
+    if phase == HealthCheckPhase.INFERENCE:
+        for client in _iter_individual_clients(
+            custom_config,
+            default_config,
+            llm_client,
+            log_source_function,
+            log_source_component,
+        ):
+            if _needs_model_probe(client):
+                structlogger.warning(
+                    f"{log_source_function}.perform_llm_health_check"
+                    f".azure_deployment_probe",
+                    event_info=(
+                        "Health check is disabled, but making a probe "
+                        "call for Azure deployment-only config to "
+                        "resolve the underlying model name and set "
+                        "the appropriate default reasoning_effort."
+                    ),
                 )
                 send_test_llm_api_request(
-                    llm_client, log_source_function, log_source_component
+                    client, log_source_function, log_source_component
                 )
-        else:
-            # Make a test api call to perform a health check for the LLM client.
-            # LLM config from config file and model group config from endpoint config
-            # without router are handled here.
-            send_test_llm_api_request(
-                llm_client,
-                log_source_function,
-                log_source_component,
-            )
-    else:
+                probed = True
+
+    if not probed:
         structlogger.warning(
             f"{log_source_function}.perform_llm_health_check.disabled",
             event_info=(
@@ -119,7 +147,60 @@ def perform_llm_health_check(
                 f"environments."
             ),
         )
-        return None
+
+
+def _iter_individual_clients(
+    custom_config: Optional[Dict[str, Any]],
+    default_config: Dict[str, Any],
+    llm_client: LLMClient,
+    log_source_function: str,
+    log_source_component: str,
+) -> Iterator[LLMClient]:
+    """Yield one ``LLMClient`` per model entry.
+
+    For router / model-group configs (``models`` key with >1 entry) a
+    fresh client is instantiated for each entry so that health-check and
+    probe calls target each model individually instead of being
+    load-balanced by the router.
+
+    For single-model or single-entry model-group configs, the
+    already-instantiated *llm_client* is yielded as-is.
+    """
+    is_router = (
+        custom_config
+        and MODELS_CONFIG_KEY in custom_config
+        and len(custom_config[MODELS_CONFIG_KEY]) > 1
+    )
+    if is_router:
+        assert custom_config is not None  # narrowing for mypy
+        for model_config in custom_config[MODELS_CONFIG_KEY]:
+            yield try_instantiate_llm_client(
+                model_config,
+                default_config,
+                log_source_function,
+                log_source_component,
+            )
+    else:
+        yield llm_client
+
+
+def _needs_model_probe(llm_client: LLMClient) -> bool:
+    """True if the client needs a probe call to discover its model name.
+
+    Currently this applies only to Azure deployment-only configurations
+    where no explicit ``model`` was provided *and* ``reasoning_effort``
+    has not already been set by the user.  When the user has explicitly
+    configured ``reasoning_effort``, there is nothing to auto-resolve so
+    the extra API call is skipped.
+    """
+    from rasa.shared.providers.llm.azure_openai_llm_client import (
+        AzureOpenAILLMClient,
+    )
+
+    if isinstance(llm_client, AzureOpenAILLMClient) and llm_client._is_deployment_only:
+        return REASONING_EFFORT_CONFIG_KEY not in llm_client._extra_parameters
+
+    return False
 
 
 def perform_embeddings_health_check(

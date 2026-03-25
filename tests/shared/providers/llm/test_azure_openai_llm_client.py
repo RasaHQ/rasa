@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 import structlog
 from pytest import MonkeyPatch
@@ -9,16 +11,25 @@ from rasa.shared.constants import (
     AZURE_API_KEY_ENV_VAR,
     AZURE_API_TYPE_ENV_VAR,
     AZURE_API_VERSION_ENV_VAR,
+    AZURE_OPENAI_PROVIDER,
     OPENAI_API_BASE_ENV_VAR,
     OPENAI_API_KEY_ENV_VAR,
     OPENAI_API_TYPE_ENV_VAR,
     OPENAI_API_VERSION_ENV_VAR,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
+from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.providers.llm.azure_openai_llm_client import (
     AzureOpenAILLMClient,
 )
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.utils.llm import (
+    REASONING_EFFORT_CONFIG_KEY,
+    REASONING_EFFORT_HIGH,
+    REASONING_EFFORT_MINIMAL,
+    REASONING_EFFORT_NONE,
+)
 from tests.utilities import filter_logs
 
 
@@ -441,3 +452,315 @@ class TestAzureOpenAILLMClient:
 
         with pytest.raises(ProviderClientValidationError):
             client._resolve_api_key_env_var()
+
+
+# ============================================================================
+# Deployment-only model resolution tests
+# ============================================================================
+
+
+def _make_deployment_only_client() -> AzureOpenAILLMClient:
+    """Return a deployment-only AzureOpenAILLMClient (no `model` set)."""
+    return AzureOpenAILLMClient(
+        deployment="my-deployment",
+        api_base="https://my.api.base.com",
+        api_version="2025-01-01",
+        api_key="${AZURE_API_KEY}",
+    )
+
+
+def _make_client_with_model(model: str = "gpt-5.1-2025-11-13") -> AzureOpenAILLMClient:
+    """Return an AzureOpenAILLMClient with an explicit model name."""
+    return AzureOpenAILLMClient(
+        deployment="my-deployment",
+        model=model,
+        api_base="https://my.api.base.com",
+        api_version="2025-01-01",
+        api_key="${AZURE_API_KEY}",
+    )
+
+
+class TestAzureDeploymentModelResolution:
+    """Tests for lazy model resolution in deployment-only Azure configs."""
+
+    def test_is_deployment_only_true_when_no_model(self) -> None:
+        client = _make_deployment_only_client()
+        assert client._is_deployment_only is True
+
+    def test_is_deployment_only_false_when_model_set(self) -> None:
+        client = _make_client_with_model()
+        assert client._is_deployment_only is False
+
+    def test_on_model_resolved_sets_reasoning_effort_for_gpt51(self) -> None:
+        client = _make_deployment_only_client()
+        with patch(
+            "rasa.shared.utils.llm._get_litellm_reasoning_effort_capability",
+            return_value=(None, None),
+        ):
+            client._on_model_resolved("gpt-5.1-2025-11-13")
+
+        assert client._resolved_model == "gpt-5.1-2025-11-13"
+        assert (
+            client._extra_parameters[REASONING_EFFORT_CONFIG_KEY]
+            == REASONING_EFFORT_NONE
+        )
+        # allowed_openai_params is NOT stored in _extra_parameters; it is
+        # injected on every call via _completion_fn_args instead.
+        assert "allowed_openai_params" not in client._extra_parameters
+
+    def test_on_model_resolved_sets_reasoning_effort_for_gpt5_mini(self) -> None:
+        client = _make_deployment_only_client()
+        with patch(
+            "rasa.shared.utils.llm._get_litellm_reasoning_effort_capability",
+            return_value=(None, None),
+        ):
+            client._on_model_resolved("gpt-5-mini-2025-08-07")
+
+        assert client._resolved_model == "gpt-5-mini-2025-08-07"
+        assert (
+            client._extra_parameters[REASONING_EFFORT_CONFIG_KEY]
+            == REASONING_EFFORT_MINIMAL
+        )
+
+    def test_on_model_resolved_no_reasoning_effort_for_gpt4o(self) -> None:
+        # gpt-4o is not in the fallback map -> no reasoning_effort injected
+        client = _make_deployment_only_client()
+        with patch(
+            "rasa.shared.utils.llm._get_litellm_reasoning_effort_capability",
+            return_value=(None, None),
+        ):
+            client._on_model_resolved("gpt-4o-2024-11-20")
+
+        assert client._resolved_model == "gpt-4o-2024-11-20"
+        assert REASONING_EFFORT_CONFIG_KEY not in client._extra_parameters
+
+    def test_on_model_resolved_does_not_override_user_set_reasoning_effort(
+        self,
+    ) -> None:
+        # User explicitly set reasoning_effort; _on_model_resolved must not
+        # change it.  allowed_openai_params is handled by _completion_fn_args
+        # on every call, so it is not stored in _extra_parameters here.
+        client = _make_deployment_only_client()
+        client._extra_parameters[REASONING_EFFORT_CONFIG_KEY] = REASONING_EFFORT_HIGH
+
+        with patch(
+            "rasa.shared.utils.llm._get_litellm_reasoning_effort_capability",
+            return_value=(None, None),
+        ):
+            client._on_model_resolved("gpt-5.1-2025-11-13")
+
+        assert (
+            client._extra_parameters[REASONING_EFFORT_CONFIG_KEY]
+            == REASONING_EFFORT_HIGH
+        )
+        assert "allowed_openai_params" not in client._extra_parameters
+
+    def test_on_model_resolved_is_idempotent(self) -> None:
+        # Calling twice with the same model must not change anything.
+        client = _make_deployment_only_client()
+        client._on_model_resolved("gpt-5.1-2025-11-13")
+        effort_after_first = client._extra_parameters.get(REASONING_EFFORT_CONFIG_KEY)
+
+        client._on_model_resolved("gpt-5.1-2025-11-13")
+
+        assert client._resolved_model == "gpt-5.1-2025-11-13"
+        assert (
+            client._extra_parameters.get(REASONING_EFFORT_CONFIG_KEY)
+            == effort_after_first
+        )
+
+    def test_on_model_resolved_second_call_is_ignored(self) -> None:
+        # A second call with a different model name should be silently ignored.
+        client = _make_deployment_only_client()
+        client._on_model_resolved("gpt-5.1-2025-11-13")
+        first_effort = client._extra_parameters.get(REASONING_EFFORT_CONFIG_KEY)
+
+        client._on_model_resolved("gpt-5-mini-2025-08-07")
+
+        # Should still have the value from the first call
+        assert client._extra_parameters.get(REASONING_EFFORT_CONFIG_KEY) == first_effort
+
+    def test_format_response_triggers_model_resolution(self) -> None:
+        client = _make_deployment_only_client()
+        assert client._resolved_model is None
+
+        fake_response = LLMResponse(
+            id="r1",
+            created=0,
+            choices=["hello"],
+            model="gpt-5.1-2025-11-13",
+        )
+        with patch.object(
+            _BaseLiteLLMClient,
+            "_format_response",
+            return_value=fake_response,
+        ):
+            result = client._format_response(MagicMock())
+
+        assert result.model == "gpt-5.1-2025-11-13"
+        assert client._resolved_model == "gpt-5.1-2025-11-13"
+        assert (
+            client._extra_parameters.get(REASONING_EFFORT_CONFIG_KEY)
+            == REASONING_EFFORT_NONE
+        )
+
+    def test_format_response_skips_resolution_when_model_set(self) -> None:
+        # When the client already has an explicit model, _on_model_resolved
+        # must NOT be triggered (it's not a deployment-only config).
+        client = _make_client_with_model("gpt-5.1-2025-11-13")
+
+        fake_response = LLMResponse(
+            id="r2",
+            created=0,
+            choices=["hello"],
+            model="gpt-5.1-2025-11-13",
+        )
+        with patch.object(
+            _BaseLiteLLMClient,
+            "_format_response",
+            return_value=fake_response,
+        ):
+            client._format_response(MagicMock())
+
+        # _resolved_model should remain None because _is_deployment_only is False
+        assert client._resolved_model is None
+
+    def test_completion_fn_args_adds_allowed_openai_params_for_deployment_only(
+        self,
+    ) -> None:
+        # When reasoning_effort is present for a deployment-only config,
+        # _completion_fn_args must add it to allowed_openai_params so LiteLLM
+        # forwards it without raising UnsupportedParamsError — including on the
+        # very first call, before _on_model_resolved has fired.
+        client = _make_deployment_only_client()
+        client._extra_parameters[REASONING_EFFORT_CONFIG_KEY] = REASONING_EFFORT_HIGH
+
+        fn_args = client._completion_fn_args
+
+        assert REASONING_EFFORT_CONFIG_KEY in fn_args.get("allowed_openai_params", [])
+
+    def test_completion_fn_args_merges_with_existing_allowed_params(self) -> None:
+        # Pre-existing allowed_openai_params entries must be preserved.
+        client = _make_deployment_only_client()
+        client._extra_parameters[REASONING_EFFORT_CONFIG_KEY] = REASONING_EFFORT_NONE
+        client._extra_parameters["allowed_openai_params"] = ["stream"]
+
+        fn_args = client._completion_fn_args
+
+        allowed = fn_args.get("allowed_openai_params", [])
+        assert "stream" in allowed
+        assert REASONING_EFFORT_CONFIG_KEY in allowed
+
+    def test_completion_fn_args_no_allowed_params_when_no_reasoning_effort(
+        self,
+    ) -> None:
+        # If reasoning_effort is absent, allowed_openai_params must not be
+        # injected for it.
+        client = _make_deployment_only_client()
+
+        fn_args = client._completion_fn_args
+
+        assert REASONING_EFFORT_CONFIG_KEY not in fn_args.get(
+            "allowed_openai_params", []
+        )
+
+    def test_completion_fn_args_no_allowed_params_when_model_set(self) -> None:
+        # Non-deployment-only configs must not get allowed_openai_params
+        # injected for reasoning_effort.
+        client = _make_client_with_model()
+        client._extra_parameters[REASONING_EFFORT_CONFIG_KEY] = REASONING_EFFORT_NONE
+
+        fn_args = client._completion_fn_args
+
+        assert REASONING_EFFORT_CONFIG_KEY not in fn_args.get(
+            "allowed_openai_params", []
+        )
+
+    def test_completion_fn_args_includes_allowed_params_after_auto_injection(
+        self,
+    ) -> None:
+        # End-to-end probe path: _on_model_resolved injects reasoning_effort, then
+        # _completion_fn_args must include allowed_openai_params on the next call.
+        client = _make_deployment_only_client()
+        client._on_model_resolved("gpt-5.1-2025-11-13")
+
+        fn_args = client._completion_fn_args
+
+        assert REASONING_EFFORT_CONFIG_KEY in fn_args
+        assert REASONING_EFFORT_CONFIG_KEY in fn_args.get("allowed_openai_params", [])
+
+    def test_format_response_stream_triggers_model_resolution(self) -> None:
+        """Streaming path must also resolve the model name."""
+        client = _make_deployment_only_client()
+        assert client._resolved_model is None
+
+        fake_chunk = LLMResponse(
+            id="r-stream",
+            created=0,
+            choices=["hi"],
+            model="gpt-5.1-2025-11-13",
+        )
+        with patch.object(
+            _BaseLiteLLMClient,
+            "_format_response_stream",
+            return_value=fake_chunk,
+        ):
+            result = client._format_response_stream(MagicMock())
+
+        assert result.model == "gpt-5.1-2025-11-13"
+        assert client._resolved_model == "gpt-5.1-2025-11-13"
+        assert (
+            client._extra_parameters.get(REASONING_EFFORT_CONFIG_KEY)
+            == REASONING_EFFORT_NONE
+        )
+
+    def test_format_response_stream_skips_resolution_when_model_set(self) -> None:
+        """Streaming path must not resolve when an explicit model is set."""
+        client = _make_client_with_model("gpt-5.1-2025-11-13")
+
+        fake_chunk = LLMResponse(
+            id="r-stream-2",
+            created=0,
+            choices=["hi"],
+            model="gpt-5.1-2025-11-13",
+        )
+        with patch.object(
+            _BaseLiteLLMClient,
+            "_format_response_stream",
+            return_value=fake_chunk,
+        ):
+            client._format_response_stream(MagicMock())
+
+        assert client._resolved_model is None
+
+    def test_format_response_skips_resolution_when_model_is_empty(self) -> None:
+        # If the API response contains an empty model string, _on_model_resolved
+        # must not be called (guard against partial/malformed responses).
+        client = _make_deployment_only_client()
+
+        fake_response = LLMResponse(
+            id="r3",
+            created=0,
+            choices=["hello"],
+            model="",  # empty
+        )
+        with patch.object(
+            _BaseLiteLLMClient,
+            "_format_response",
+            return_value=fake_response,
+        ):
+            client._format_response(MagicMock())
+
+        assert client._resolved_model is None
+        assert REASONING_EFFORT_CONFIG_KEY not in client._extra_parameters
+
+    def test_on_model_resolved_provider_used_is_azure(self) -> None:
+        # The fallback map is queried with AZURE_OPENAI_PROVIDER.
+        # Verify the correct provider constant is passed by checking that
+        # gpt-5.1 (which is in the map for both openai and azure) resolves.
+        from rasa.shared.utils.llm import _get_fallback_reasoning_effort_default
+
+        effort = _get_fallback_reasoning_effort_default(
+            AZURE_OPENAI_PROVIDER, "gpt-5.1-2025-11-13"
+        )
+        assert effort == REASONING_EFFORT_NONE

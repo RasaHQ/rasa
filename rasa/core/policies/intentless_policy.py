@@ -69,6 +69,7 @@ from rasa.shared.utils.constants import (
 from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
 )
+from rasa.shared.utils.health_check.health_check import HealthCheckPhase
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.io import deep_container_fingerprint, raise_deprecation_warning
 from rasa.shared.utils.llm import (
@@ -516,7 +517,11 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
             can load the policy from the resource.
         """
         # Perform health checks of both LLM and embeddings client configs
-        self._perform_health_checks(self.config, "intentless_policy.train")
+        self._perform_health_checks(
+            self.config,
+            "intentless_policy.train",
+            phase=HealthCheckPhase.TRAIN,
+        )
 
         responses = filter_responses_for_intentless_policy(
             responses, forms, flows or FlowsList([])
@@ -964,7 +969,11 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
     ) -> "IntentlessPolicy":
         """Loads a trained policy (see parent class for full docstring)."""
         # Perform health checks of both LLM and embeddings client configs
-        cls._perform_health_checks(config, "intentless_policy.load")
+        cls._perform_health_checks(
+            config,
+            "intentless_policy.load",
+            phase=HealthCheckPhase.INFERENCE,
+        )
 
         responses_docsearch = None
         samples_docsearch = None
@@ -1021,7 +1030,10 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
 
     @classmethod
     def _perform_health_checks(
-        cls, config: Dict[Text, Any], log_source_method: str
+        cls,
+        config: Dict[Text, Any],
+        log_source_method: str,
+        phase: HealthCheckPhase = HealthCheckPhase.TRAIN,
     ) -> None:
         # Perform health check of the LLM client config
         llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY, {}))
@@ -1030,6 +1042,7 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
             DEFAULT_LLM_CONFIG,
             log_source_method,
             IntentlessPolicy.__name__,
+            phase=phase,
         )
 
         # Perform health check of the embeddings client config

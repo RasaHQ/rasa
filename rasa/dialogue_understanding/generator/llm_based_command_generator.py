@@ -50,6 +50,7 @@ from rasa.shared.utils.constants import (
     LANGFUSE_METADATA_SESSION_ID,
     LANGFUSE_METADATA_TAGS,
 )
+from rasa.shared.utils.health_check.health_check import HealthCheckPhase
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     LLMInput,
@@ -194,6 +195,7 @@ class LLMBasedCommandGenerator(
             self.get_default_llm_config(),
             "llm_based_command_generator.train",
             LLMBasedCommandGenerator.__name__,
+            phase=HealthCheckPhase.TRAIN,
         )
 
         if (

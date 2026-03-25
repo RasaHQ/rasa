@@ -89,9 +89,12 @@ from rasa.shared.utils.common import all_subclasses
 from rasa.shared.utils.llm import (
     ERROR_PLACEHOLDER,
     REASONING_EFFORT_CONFIG_KEY,
+    REASONING_EFFORT_MINIMAL,
+    REASONING_EFFORT_NONE,
     SystemPrompts,
     _get_enterprise_search_prompt,
     _get_llm_command_generator_config,
+    _resolve_effort_for_known_model,
     acompletion_with_streaming,
     allowed_values_for_slot,
     assemble_tool_calls,
@@ -3136,91 +3139,182 @@ def test_combine_custom_and_default_config_combining_model_group_configuration()
     assert combined_config == expected_model_group_config
 
 
-def test_combine_custom_and_default_config_keeps_reasoning_effort_for_gpt_5() -> None:
-    default_config = {
-        "provider": "openai",
-        "model": "gpt-5.1-2025-11-13",
-        REASONING_EFFORT_CONFIG_KEY: "none",
-        "temperature": 1.0,
-        "max_completion_tokens": 256,
-        "timeout": 7,
-    }
-    custom_config = {"model": "gpt-5.1-2025-11-13"}
-
-    combined_config = combine_custom_and_default_config(custom_config, default_config)
-
-    assert combined_config["reasoning_effort"] == "none"
+_REASONING_EFFORT_DEFAULT_CONFIG = {
+    "provider": "openai",
+    "model": "gpt-5.1-2025-11-13",
+    REASONING_EFFORT_CONFIG_KEY: REASONING_EFFORT_NONE,
+    "temperature": 1.0,
+    "max_completion_tokens": 256,
+    "timeout": 7,
+}
 
 
-def test_combine_custom_and_default_config_drops_reasoning_effort_for_older_model() -> (
-    None
-):
-    default_config = {
-        "provider": "openai",
-        "model": "gpt-5.1-2025-11-13",
-        REASONING_EFFORT_CONFIG_KEY: "none",
-        "temperature": 1.0,
-        "max_completion_tokens": 256,
-        "timeout": 7,
-    }
-    custom_config = {"model": "gpt-4o-2024-11-20"}
+@pytest.mark.parametrize(
+    "custom_config, expected_effort",
+    [
+        # --- auto-resolved from model name ---
+        pytest.param(
+            {"model": "gpt-5.1-2025-11-13"},
+            REASONING_EFFORT_NONE,
+            id="gpt-5.1-keeps-none",
+        ),
+        pytest.param(
+            {"model": "gpt-5-mini-2025-08-07"},
+            REASONING_EFFORT_MINIMAL,
+            id="gpt-5-mini-gets-minimal",
+        ),
+        pytest.param(
+            {"model": "gpt-4o-2024-11-20"},
+            None,
+            id="gpt-4o-drops-effort",
+        ),
+        pytest.param(
+            {"model_name": "gpt-4o-2024-11-20"},
+            None,
+            id="model-name-alias-drops-effort",
+        ),
+        # --- user explicitly sets reasoning_effort (always preserved) ---
+        pytest.param(
+            {"model": "gpt-4o-2024-11-20", "reasoning_effort": "minimal"},
+            REASONING_EFFORT_MINIMAL,
+            id="manual-effort-kept-for-older-model",
+        ),
+        pytest.param(
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+                "reasoning_effort": "minimal",
+            },
+            REASONING_EFFORT_MINIMAL,
+            id="manual-effort-kept-on-provider-change",
+        ),
+        # --- Claude on Anthropic / Bedrock (no auto-effort) ---
+        pytest.param(
+            {"provider": "anthropic", "model": "claude-sonnet-4-5-20250929"},
+            None,
+            id="anthropic-claude-drops-effort",
+        ),
+        pytest.param(
+            {
+                "provider": "bedrock",
+                "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+            },
+            None,
+            id="bedrock-claude-drops-effort",
+        ),
+        pytest.param(
+            {
+                "provider": "bedrock",
+                "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+                REASONING_EFFORT_CONFIG_KEY: REASONING_EFFORT_MINIMAL,
+            },
+            REASONING_EFFORT_MINIMAL,
+            id="bedrock-claude-manual-effort-kept",
+        ),
+        pytest.param(
+            {
+                "provider": "anthropic",
+                "model": "claude-sonnet-4-5-20250929",
+                REASONING_EFFORT_CONFIG_KEY: REASONING_EFFORT_MINIMAL,
+            },
+            REASONING_EFFORT_MINIMAL,
+            id="anthropic-claude-manual-effort-kept",
+        ),
+        # --- Azure deployment-only (model unknown at merge time) ---
+        pytest.param(
+            {
+                "provider": "azure",
+                "deployment": "my-deployment",
+                "api_base": "https://example.openai.azure.com",
+                "api_version": "2025-01-01-preview",
+            },
+            None,
+            id="azure-deployment-only-deferred",
+        ),
+        pytest.param(
+            {
+                "provider": "azure",
+                "deployment": "azure/gpt5_series/my-deployment",
+                "api_base": "https://example.openai.azure.com",
+                "api_version": "2025-01-01-preview",
+            },
+            None,
+            id="azure-gpt5-series-deployment-deferred",
+        ),
+    ],
+)
+@patch(
+    "rasa.shared.utils.llm._get_litellm_reasoning_effort_capability",
+    return_value=(None, None),
+)
+def test_reasoning_effort_after_config_merge(
+    _mock_litellm: MagicMock,
+    custom_config: dict,
+    expected_effort: Optional[str],
+) -> None:
+    combined = combine_custom_and_default_config(
+        custom_config, _REASONING_EFFORT_DEFAULT_CONFIG
+    )
+    if expected_effort is None:
+        assert REASONING_EFFORT_CONFIG_KEY not in combined
+    else:
+        assert combined[REASONING_EFFORT_CONFIG_KEY] == expected_effort
 
-    combined_config = combine_custom_and_default_config(custom_config, default_config)
 
-    assert "reasoning_effort" not in combined_config
-
-
-def test_drops_reasoning_effort_for_model_name_alias_override() -> None:
-    default_config = {
-        "provider": "openai",
-        "model": "gpt-5.1-2025-11-13",
-        "reasoning_effort": "none",
-        "temperature": 1.0,
-        "max_completion_tokens": 256,
-        "timeout": 7,
-    }
-    custom_config = {"model_name": "gpt-4o-2024-11-20"}
-
-    combined_config = combine_custom_and_default_config(custom_config, default_config)
-
-    assert "reasoning_effort" not in combined_config
-
-
-def test_combine_custom_and_default_config_keeps_manual_reasoning_effort() -> None:
-    default_config = {
-        "provider": "openai",
-        "model": "gpt-5.1-2025-11-13",
-        "reasoning_effort": "none",
-        "temperature": 1.0,
-        "max_completion_tokens": 256,
-        "timeout": 7,
-    }
-    custom_config = {"model": "gpt-4o-2024-11-20", "reasoning_effort": "minimal"}
-
-    combined_config = combine_custom_and_default_config(custom_config, default_config)
-
-    assert combined_config["reasoning_effort"] == "minimal"
-
-
-def test_keeps_manual_reasoning_effort_on_provider_change() -> None:
-    default_config = {
-        "provider": "openai",
-        "model": "gpt-5.1-2025-11-13",
-        "reasoning_effort": "none",
-        "temperature": 1.0,
-        "max_completion_tokens": 256,
-        "timeout": 7,
-    }
-    custom_config = {
-        "provider": "self-hosted",
-        "model": "some_model",
-        "api_base": "http://localhost:8000",
-        "reasoning_effort": "minimal",
-    }
-
-    combined_config = combine_custom_and_default_config(custom_config, default_config)
-
-    assert combined_config["reasoning_effort"] == "minimal"
+@pytest.mark.parametrize(
+    "provider, model, expected",
+    [
+        pytest.param(
+            "openai",
+            "gpt-5.1-2025-11-13",
+            REASONING_EFFORT_NONE,
+            id="openai-gpt-5.1",
+        ),
+        pytest.param(
+            "azure",
+            "gpt-5.1-2025-11-13",
+            REASONING_EFFORT_NONE,
+            id="azure-gpt-5.1",
+        ),
+        pytest.param(
+            "openai",
+            "gpt-5-mini-2025-08-07",
+            REASONING_EFFORT_MINIMAL,
+            id="openai-gpt-5-mini",
+        ),
+        pytest.param(
+            "azure",
+            "gpt-5-mini-2025-08-07",
+            REASONING_EFFORT_MINIMAL,
+            id="azure-gpt-5-mini",
+        ),
+        pytest.param(
+            "openai",
+            "gpt-4o-2024-11-20",
+            None,
+            id="openai-gpt-4o-no-effort",
+        ),
+        pytest.param(
+            "anthropic",
+            "claude-3-opus-20240229",
+            None,
+            id="anthropic-claude-no-effort",
+        ),
+    ],
+)
+@patch(
+    "rasa.shared.utils.llm._get_litellm_reasoning_effort_capability",
+    return_value=(None, None),
+)
+def test_resolve_effort_for_known_model(
+    _mock_litellm: MagicMock,
+    provider: str,
+    model: str,
+    expected: Optional[str],
+) -> None:
+    result = _resolve_effort_for_known_model(provider, model)
+    assert result == expected
 
 
 def test_resolve_llm_config_with_invalid_model_group_id(

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import threading
 from typing import Any, Dict, Optional
 
 import structlog
@@ -32,9 +33,16 @@ from rasa.shared.providers.constants import (
     LITE_LLM_AZURE_AD_TOKEN,
 )
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import raise_deprecation_warning
 
 structlogger = structlog.get_logger()
+
+# LiteLLM / OpenAI parameter names used for deployment-only Azure handling.
+# Defined here as module-level constants to avoid a circular import
+# (llm.py → mappings.py → this file) in _completion_fn_args.
+_REASONING_EFFORT_PARAM = "reasoning_effort"
+_ALLOWED_OPENAI_PARAMS = "allowed_openai_params"
 
 AZURE_CLIENT_ID = "AZURE_CLIENT_ID"
 AZURE_CLIENT_SECRET = "AZURE_CLIENT_SECRET"
@@ -90,6 +98,9 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
         self._deployment = deployment
         self._model = model
         self._extra_parameters = kwargs or {}
+        # Set once the first API response reveals the underlying model name.
+        self._resolved_model: Optional[str] = None
+        self._resolve_lock = threading.Lock()
 
         # Set api_base with the following priority:
         # parameter -> Azure Env Var -> (deprecated) OpenAI Env Var
@@ -341,6 +352,27 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
                 **auth_parameter,
             }
         )
+
+        # For deployment-only Azure configs LiteLLM cannot validate
+        # reasoning_effort against a known model, so it raises
+        # UnsupportedParamsError (drop_params=False by default).
+        # Listing the param in allowed_openai_params bypasses that check and
+        # tells LiteLLM to forward it as-is.  We do this on every call so it
+        # covers both the first call (before _on_model_resolved fires) and
+        # subsequent calls — regardless of whether the value was set
+        # explicitly by the user or auto-injected after probing.
+        if self._is_deployment_only and _REASONING_EFFORT_PARAM in fn_args:
+            raw = fn_args.get(_ALLOWED_OPENAI_PARAMS)
+            if isinstance(raw, list):
+                existing = list(raw)
+            elif isinstance(raw, str):
+                existing = [raw]
+            else:
+                existing = []
+            if _REASONING_EFFORT_PARAM not in existing:
+                existing.append(_REASONING_EFFORT_PARAM)
+            fn_args[_ALLOWED_OPENAI_PARAMS] = existing
+
         return fn_args
 
     def validate_client_setup(self) -> None:
@@ -351,3 +383,94 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             api_version=self.api_version,
             deployment=self.deployment,
         )
+
+    @property
+    def _is_deployment_only(self) -> bool:
+        """True when a deployment is configured but no explicit model name is set.
+
+        In this case the underlying model family is unknown until the first API
+        response comes back with `response.model`.
+        """
+        return bool(self._deployment) and not bool(self._model)
+
+    def _on_model_resolved(self, model: str) -> None:
+        """Update reasoning_effort once the real Azure model name is known.
+
+        Called lazily from ``_format_response`` on the first successful API
+        response for deployment-only configs.  The response always contains the
+        actual model name (e.g. ``gpt-5.1-2025-11-13``), which we use to pick
+        the lowest appropriate ``reasoning_effort`` for all subsequent calls.
+
+        If ``LLM_API_HEALTH_CHECK`` is enabled, this is triggered during
+        training (``rasa train``) via the health-check probe call.  Otherwise
+        it fires on the first real inference request.
+
+        The method is idempotent: after the model name is stored the first time,
+        repeated calls are no-ops.
+        """
+        if self._resolved_model is not None:
+            return
+
+        if not model:
+            return
+
+        with self._resolve_lock:
+            if self._resolved_model is not None:
+                return
+
+            self._resolved_model = model
+
+            # Deferred import to avoid a circular dependency at module load
+            # time: llm.py --> mappings.py --> azure_openai_llm_client.py
+            from rasa.shared.utils.llm import (
+                REASONING_EFFORT_CONFIG_KEY,
+                _resolve_effort_for_known_model,
+            )
+
+            if REASONING_EFFORT_CONFIG_KEY not in self._extra_parameters:
+                # Auto-inject the lowest appropriate reasoning_effort using
+                # the same two-step resolution (LiteLLM metadata → local
+                # prefix-map fallback) as the static config-merge path.
+                effort = _resolve_effort_for_known_model(AZURE_OPENAI_PROVIDER, model)
+                if effort is not None:
+                    self._extra_parameters[REASONING_EFFORT_CONFIG_KEY] = effort
+            # Note: allowed_openai_params is not set here.
+            # _completion_fn_args injects it on every call for
+            # deployment-only configs, which also covers the first call
+            # (before this method runs) when the user has explicitly
+            # pre-set reasoning_effort in their config.
+
+        structlogger.debug(
+            "azure_openai_llm_client.deployment_model_resolved",
+            deployment=self._deployment,
+            resolved_model=model,
+            reasoning_effort=self._extra_parameters.get(REASONING_EFFORT_CONFIG_KEY),
+        )
+
+    def _format_response(self, response: Any) -> LLMResponse:
+        """Parse the LiteLLM response, resolving the model for deployment-only configs.
+
+        For deployment-only Azure configurations the underlying model name is
+        not known until the API responds.  On the first successful call we
+        extract ``response.model`` and call ``_on_model_resolved`` so that all
+        subsequent completion calls automatically carry the correct
+        ``reasoning_effort`` value.
+        """
+        llm_response = super()._format_response(response)
+        self._try_resolve_model(llm_response)
+        return llm_response
+
+    def _format_response_stream(self, response: Any) -> LLMResponse:
+        """Parse a streaming chunk, also triggering model resolution.
+
+        Streaming responses carry the model name in every chunk, so we
+        use the first one to resolve just like the non-streaming path.
+        """
+        llm_response = super()._format_response_stream(response)
+        self._try_resolve_model(llm_response)
+        return llm_response
+
+    def _try_resolve_model(self, llm_response: LLMResponse) -> None:
+        """Call ``_on_model_resolved`` once the API reveals the model name."""
+        if self._is_deployment_only and llm_response.model:
+            self._on_model_resolved(llm_response.model)

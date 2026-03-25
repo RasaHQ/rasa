@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from rasa.agents.schemas import AgentInput
     from rasa.core.agent import Agent
     from rasa.core.channels import OutputChannel
+    from rasa.shared.utils.health_check.health_check import HealthCheckPhase
 
 from numpy import ndarray
 from rasa_sdk.grpc_py import action_webhook_pb2
@@ -552,6 +553,7 @@ def extract_attrs_for_performing_health_check(
     default_config: Dict[str, Any],
     log_source_method: str,
     log_source_component: str,
+    phase: Optional["HealthCheckPhase"] = None,
 ) -> Dict[str, Any]:
     attrs = {
         "api_health_check_enabled": is_api_health_check_enabled(),
