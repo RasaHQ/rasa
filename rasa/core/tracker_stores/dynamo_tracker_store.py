@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
 import os
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Text
 
 import structlog
 from boto3.dynamodb.conditions import Key
+from botocore.config import Config
+from botocore.exceptions import ClientError
 
 import rasa.utils
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS, USER_ID
@@ -17,11 +20,53 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.json_utils import (
+    replace_floats_with_decimals,
+)
 
 structlogger = structlog.get_logger(__name__)
 
 if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
+
+
+def _deduplicate_events(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Remove duplicate events that may have been appended more than once.
+
+    Duplicate events arise when ``save()`` is called more than once for the
+    same tracker turn (e.g. due to a retry or a race condition during load
+    testing).  Replaying such events causes ``jsonpatch`` to attempt
+    operations on fields that were already mutated by the first replay
+    (e.g. removing ``frame_type`` that was already removed), which raises a
+    ``JsonPatchConflict``.
+
+    Each event is uniquely identified by its full serialised form.  Using the
+    complete dict — rather than just ``(event_type, timestamp)`` — is
+    necessary because multiple events can legitimately share the same
+    timestamp (e.g. several slot-reset events emitted in the same batch each
+    have distinct ``name`` fields).
+
+    Args:
+        events: Ordered list of event dicts as returned by DynamoDB after
+            float conversion.
+
+    Returns:
+        The same list with consecutive or non-consecutive duplicate entries
+        removed, preserving the original order of first occurrence.
+    """
+    seen: set = set()
+    deduped: List[Dict[str, Any]] = []
+    for event in events:
+        try:
+            key = json.dumps(event, sort_keys=True, default=str)
+        except (TypeError, ValueError):
+            # Unserializable event — keep it to avoid silently dropping data.
+            deduped.append(event)
+            continue
+        if key not in seen:
+            seen.add(key)
+            deduped.append(event)
+    return deduped
 
 
 class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
@@ -49,6 +94,12 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
         import boto3
 
         self.client = boto3.client("dynamodb", region_name=region)
+        max_pool_connections = kwargs.pop("max_pool_connections", 50)
+        self._dynamo = boto3.resource(
+            "dynamodb",
+            region_name=region,
+            config=Config(max_pool_connections=max_pool_connections),
+        )
         self.region = region
         self.table_name = table_name
         self.db = self.get_or_create_table(table_name)
@@ -63,9 +114,6 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
         Global Secondary Indexes (GSIs) must be created manually. See
         `get_trackers_by_user_id` docstring for GSI creation instructions.
         """
-        import boto3
-
-        dynamo = boto3.resource("dynamodb", region_name=self.region)
         try:
             self.client.describe_table(TableName=table_name)
         except self.client.exceptions.ResourceNotFoundException:
@@ -94,7 +142,7 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
                     "Write capacity units: 5"
                 )
 
-            table = dynamo.create_table(
+            table = self._dynamo.create_table(
                 TableName=self.table_name,
                 KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"}],
                 AttributeDefinitions=[
@@ -106,46 +154,90 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
             # Wait until the table exists.
             table.meta.client.get_waiter("table_exists").wait(TableName=table_name)
         else:
-            table = dynamo.Table(table_name)
+            table = self._dynamo.Table(table_name)
 
         return table
 
     async def save(self, tracker: DialogueStateTracker) -> None:
-        """Saves the current conversation state."""
+        """Saves the current conversation state.
+
+        On the first save for a given ``sender_id`` (new item), the full tracker
+        is written via ``put_item`` so that all events — including those before the
+        latest ``UserUttered`` — are persisted.  A ``last_event_timestamp``
+        attribute is included so that any duplicate first-save call is rejected by
+        the idempotent ``update_item`` path below.
+
+        On subsequent saves, only the new last-turn events (from the latest
+        ``UserUttered`` timestamp onwards) are appended via a conditional
+        ``update_item``.  The condition rejects duplicates atomically:
+        the append is allowed only when the stored ``last_event_timestamp``
+        precedes the first event being appended.
+
+        If there are no last-turn events (empty turn), the full tracker is
+        stored unconditionally via ``put_item`` — this handles the edge case of
+        a tracker with no ``UserUttered`` events at all.
+        """
         await self.stream_events(tracker)
 
         # Ensure conversation_started_timestamp is set (for backward compatibility)
         tracker.ensure_conversation_started_timestamp()
 
         serialized = self.serialise_tracker(tracker)
-
-        full_tracker = await self.retrieve_full_tracker(tracker.sender_id)
-        if full_tracker is None:
-            self.db.put_item(Item=serialized)
-            return None
-
-        # return the latest events since the last user message
-        new_tracker = DialogueStateTracker.from_dict(
-            serialized["sender_id"],
-            events_as_dict=serialized["events"],
-            user_id=serialized.get(USER_ID),
+        new_events = tracker.get_last_turn_events()
+        new_serialized_events = replace_floats_with_decimals(
+            [event.as_dict() for event in new_events]
         )
-        new_events = new_tracker.get_last_turn_events()
-        new_serialized_events = [event.as_dict() for event in new_events]
 
-        # we need to save the full tracker if it is a new tracker
-        # without events following a user message
+        # No last-turn events — store the full tracker as-is
         if not new_serialized_events:
             self.db.put_item(Item=serialized)
             return None
 
-        # append new events to the existing tracker
+        first_new_timestamp = new_serialized_events[0]["timestamp"]
+        last_new_timestamp = new_serialized_events[-1]["timestamp"]
+
+        # For a brand-new item, write the complete tracker (all events) so that
+        # events before the first UserUttered are persisted.  We include
+        # last_event_timestamp to enable idempotency on duplicate first-save calls.
+        full_item = {**serialized, "last_event_timestamp": last_new_timestamp}
+        try:
+            self.db.put_item(
+                Item=full_item,
+                ConditionExpression="attribute_not_exists(sender_id)",
+            )
+            return None
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                structlogger.debug(
+                    "rasa.core.tracker_stores.dynamo_tracker_store.save.item_already_exists",
+                    sender_id=tracker.sender_id,
+                    event_info=(
+                        "Tracker item already exists: another process has saved "
+                        "this tracker since it was last read. "
+                        "Attempting to append only new last-turn events."
+                    ),
+                )
+            else:
+                raise error
+
+        # Item exists: append only new last-turn events idempotently.
+        # Guard against duplicate appends caused by retries or concurrent saves.
+        # DynamoDB evaluates the condition atomically, so this is race-condition-safe
+        # without a read-before-write.  The condition allows the write only when:
+        #  - the item has no last_event_timestamp yet (legacy item without it), OR
+        #  - the stored last_event_timestamp precedes the first new event
+        #    (i.e. these events belong to a later turn than what is stored).
+        # A duplicate save for the same turn is rejected because last_event_timestamp
+        # would already be >= first_new_timestamp.
         update_expression = (
             "SET events = list_append(if_not_exists(events, :empty_list), :events)"
+            ", last_event_timestamp = :last_event_timestamp"
         )
         expression_attribute_values: Dict[str, Any] = {
             ":events": new_serialized_events,
             ":empty_list": [],
+            ":last_event_timestamp": last_new_timestamp,
+            ":first_new_timestamp": first_new_timestamp,
         }
 
         # If user_id exists on tracker, ensure it's set in DynamoDB for GSI queries
@@ -170,12 +262,32 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
                 str(tracker.conversation_started_timestamp)
             )
 
-        self.db.update_item(
-            Key={"sender_id": tracker.sender_id},
-            UpdateExpression=update_expression,
-            ExpressionAttributeValues=expression_attribute_values,
-            ReturnValues="UPDATED_NEW",
+        condition_expression = (
+            "attribute_not_exists(last_event_timestamp) OR "
+            "last_event_timestamp < :first_new_timestamp"
         )
+
+        try:
+            self.db.update_item(
+                Key={"sender_id": tracker.sender_id},
+                UpdateExpression=update_expression,
+                ExpressionAttributeValues=expression_attribute_values,
+                ConditionExpression=condition_expression,
+                ReturnValues="UPDATED_NEW",
+            )
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                structlogger.warning(
+                    "rasa.core.tracker_stores.dynamo_tracker_store.save.duplicate_events_skipped",
+                    sender_id=tracker.sender_id,
+                    first_new_timestamp=float(first_new_timestamp),
+                    event_info=(
+                        "Skipped duplicate event append: these turn events are "
+                        "already stored (duplicate save call detected)."
+                    ),
+                )
+            else:
+                raise error
         return None
 
     async def delete(self, sender_id: Text) -> None:
@@ -204,7 +316,7 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
 
         DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s.
         """
-        return rasa.utils.json_utils.replace_floats_with_decimals(
+        return replace_floats_with_decimals(
             SerializedTrackerAsDict.serialise_tracker(tracker)
         )
 
@@ -252,6 +364,8 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
                     dialogue["events"]
                 )
                 events_with_floats.extend(events)
+
+        events_with_floats = _deduplicate_events(events_with_floats)
 
         if self.domain is None:
             slots = []
@@ -315,10 +429,26 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
         trackers = []
         for item in items:
             sender_id = item.get("sender_id")
-            if sender_id:
-                tracker = await self.retrieve_full_tracker(sender_id)
-                if tracker is not None:
-                    trackers.append(tracker)
+            user_id = item.get(USER_ID)
+
+            events_with_floats: List[Dict[str, Any]] = []
+            if sender_id and item.get("events"):
+                events = rasa.utils.json_utils.replace_decimals_with_floats(
+                    item["events"]
+                )
+                events_with_floats = _deduplicate_events(events)
+
+            if self.domain is None:
+                slots = []
+            else:
+                slots = self.domain.slots
+
+            tracker = DialogueStateTracker.from_dict(
+                sender_id, events_with_floats, slots, user_id=user_id
+            )
+            if tracker is not None:
+                trackers.append(tracker)
+
         return trackers
 
     async def get_trackers_by_user_id(
@@ -358,21 +488,20 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
             List of trackers associated with the user_id, sorted by
             (conversation_started_timestamp, sender_id).
         """
-        # Try to use GSI for efficient querying
         try:
             # GSI name convention: user_id-index
             # The GSI sorts by conversation_started_timestamp, but we need to
             # sort by (timestamp, sender_id) for consistent ordering. We fetch
             # all items, sort in-memory, then apply pagination.
             gsi_name = "user_id-index"
-            query_kwargs = {
+            query_kwargs: Dict[str, Any] = {
                 "IndexName": gsi_name,
                 "KeyConditionExpression": Key(USER_ID).eq(user_id),
                 "ScanIndexForward": True,  # Sort ascending by sort key
             }
 
-            # Fetch ALL matching items (don't apply Limit here)
-            # We need all items to sort correctly by (timestamp, sender_id)
+            # Fetch ALL matching items (don't apply Limit here).
+            # We need all items to sort correctly by (timestamp, sender_id).
             response = self.db.query(**query_kwargs)
 
             trackers = []
@@ -381,7 +510,6 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
                 await self._process_dynamodb_items(response.get("Items", []))
             )
 
-            # Handle pagination to fetch all remaining items
             while "LastEvaluatedKey" in response:
                 query_kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
                 response = self.db.query(**query_kwargs)
@@ -391,10 +519,9 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
                 trackers.extend(new_trackers)
 
             # Sort by (conversation_started_timestamp, sender_id) to ensure
-            # consistent ordering even when multiple trackers share the same timestamp
+            # consistent ordering even when multiple trackers share the same timestamp.
             trackers.sort(key=self._sort_key)
 
-            # Apply pagination after sorting
             return self._apply_pagination(trackers, skip, limit)
 
         except self.client.exceptions.ResourceNotFoundException:

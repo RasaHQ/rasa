@@ -2,15 +2,20 @@ import os
 import time
 import uuid
 from typing import Any, Optional, Text
+from unittest.mock import patch
 
 import boto3
 import pytest
+from botocore.exceptions import ClientError
 from moto import mock_aws
 from pytest import MonkeyPatch
 from structlog.testing import capture_logs
 
 from rasa.constants import ENV_SANIC_WORKERS
-from rasa.core.tracker_stores.dynamo_tracker_store import DynamoTrackerStore
+from rasa.core.tracker_stores.dynamo_tracker_store import (
+    DynamoTrackerStore,
+    _deduplicate_events,
+)
 from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.shared.constants import DEFAULT_SENDER_ID, DEFAULT_USER_ID
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
@@ -83,6 +88,86 @@ async def test_dynamo_tracker_floats(test_domain: Domain, mock_dynamodb: Any) ->
     retrieved_timestamp = tracker.events[0].timestamp
     assert isinstance(retrieved_timestamp, float)
     assert retrieved_timestamp == timestamp
+
+
+@pytest.mark.asyncio
+async def test_dynamo_save_put_item_non_conditional_client_error_is_reraised(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """Non-ConditionalCheckFailedException from put_item on new item is re-raised.
+
+    The save path calls ``put_item`` with ``attribute_not_exists(sender_id)`` for
+    new items.  A ``ConditionalCheckFailedException`` is swallowed (item already
+    exists — fall through to update).  Any other ``ClientError`` (e.g.
+    ``ProvisionedThroughputExceededException``) must propagate to the caller.
+    """
+    tracker_store = DynamoTrackerStore(test_domain)
+    tracker = DialogueStateTracker.from_events(
+        "test_sender",
+        [SessionStarted(), UserUttered("hello")],
+        slots=test_domain.slots,
+    )
+
+    throughput_error = ClientError(
+        error_response={
+            "Error": {
+                "Code": "ProvisionedThroughputExceededException",
+                "Message": "Rate exceeded",
+            }
+        },
+        operation_name="PutItem",
+    )
+
+    with patch.object(tracker_store.db, "put_item", side_effect=throughput_error):
+        with pytest.raises(ClientError) as exc_info:
+            await tracker_store.save(tracker)
+
+    assert (
+        exc_info.value.response["Error"]["Code"]
+        == "ProvisionedThroughputExceededException"
+    )
+
+
+@pytest.mark.asyncio
+async def test_dynamo_save_update_item_non_conditional_client_error_is_reraised(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """Non-ConditionalCheckFailedException from update_item on existing item is re-raised.
+
+    After the first ``put_item`` succeeds (item exists), subsequent saves call
+    ``update_item`` to append new events.  A ``ConditionalCheckFailedException``
+    is swallowed (duplicate event — already stored).  Any other ``ClientError``
+    must propagate to the caller.
+    """
+    tracker_store = DynamoTrackerStore(test_domain)
+    tracker = DialogueStateTracker.from_events(
+        "test_sender",
+        [SessionStarted(), UserUttered("hello")],
+        slots=test_domain.slots,
+    )
+    # First save succeeds — item now exists in the table.
+    await tracker_store.save(tracker)
+
+    tracker.update(UserUttered("world"))
+
+    throughput_error = ClientError(
+        error_response={
+            "Error": {
+                "Code": "ProvisionedThroughputExceededException",
+                "Message": "Rate exceeded",
+            }
+        },
+        operation_name="UpdateItem",
+    )
+
+    with patch.object(tracker_store.db, "update_item", side_effect=throughput_error):
+        with pytest.raises(ClientError) as exc_info:
+            await tracker_store.save(tracker)
+
+    assert (
+        exc_info.value.response["Error"]["Code"]
+        == "ProvisionedThroughputExceededException"
+    )
 
 
 def test_dynamo_tracker_create_table_multiple_sanic_workers_error(
@@ -305,6 +390,69 @@ async def test_dynamo_tracker_store_save_multiple_turns(
     assert retrieved_tracker.current_state(
         EventVerbosity.APPLIED
     ) == tracker.current_state(EventVerbosity.APPLIED)
+
+
+@pytest.mark.asyncio
+async def test_dynamo_tracker_store_save_is_idempotent(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """Calling save() twice for the same turn does not duplicate events.
+
+    This covers the race-condition / retry scenario where a duplicate save call
+    would previously append the same last-turn events a second time, causing
+    JsonPatchConflict errors during replay.
+    """
+    conversation_id = uuid.uuid4().hex
+    tracker_store = DynamoTrackerStore(test_domain)
+
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            ActionExecuted("action_session_start"),
+            SessionStarted(),
+            SlotSet("session_started_metadata", {}),
+            ActionExecuted("action_listen"),
+            UserUttered("hello"),
+            BotUttered("hi there"),
+            ActionExecuted("action_listen"),
+        ],
+        slots=test_domain.slots,
+        domain=test_domain,
+    )
+
+    # Simulate a duplicate save (retry / race condition).
+    await tracker_store.save(tracker)
+    events_after_first_save = len(
+        tracker_store.db.get_item(Key={"sender_id": conversation_id})
+        .get("Item", {})
+        .get("events", [])
+    )
+
+    with capture_logs() as caplog:
+        await tracker_store.save(tracker)
+        debug_log = filter_logs(
+            caplog,
+            "rasa.core.tracker_stores.dynamo_tracker_store.save.item_already_exists",
+            "debug",
+        )
+        assert len(debug_log) == 1
+        warning_log = filter_logs(
+            caplog,
+            "rasa.core.tracker_stores.dynamo_tracker_store.save.duplicate_events_skipped",
+        )
+        assert len(warning_log) == 1
+
+    # The raw event count in DynamoDB must not grow on the duplicate save.
+    item = tracker_store.db.get_item(Key={"sender_id": conversation_id}).get("Item", {})
+    events_after_second_save = len(item.get("events", []))
+    assert (
+        events_after_second_save == events_after_first_save
+    ), "Duplicate save() appended events a second time — idempotency broken."
+
+    # The retrieved tracker state must be consistent (not corrupted by a double-append).
+    retrieved = await tracker_store.retrieve(conversation_id)
+    assert retrieved is not None
+    assert retrieved.latest_message.text == "hello"
 
 
 async def test_dynamo_tracker_store_save_multiple_sessions(
@@ -1263,3 +1411,132 @@ async def test_dynamo_negative_skip_and_limit_ignored(
     # Then: Should return all trackers (both negative values ignored)
     assert len(trackers) == 5
     assert_all_trackers_have_user_id(trackers, user_id)
+
+
+# ---------------------------------------------------------------------------
+# _deduplicate_events unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_deduplicate_events_no_duplicates() -> None:
+    """Events without duplicates are returned unchanged."""
+    events = [
+        {"event": "user", "timestamp": 1.0, "text": "hello"},
+        {"event": "bot", "timestamp": 2.0, "text": "hi"},
+        {"event": "slot", "timestamp": 3.0, "name": "x", "value": 1},
+    ]
+    assert _deduplicate_events(events) == events
+
+
+def test_deduplicate_events_exact_duplicates_removed() -> None:
+    """Exact duplicate events are collapsed to a single occurrence."""
+    event = {"event": "user", "timestamp": 1.0, "text": "hello"}
+    assert _deduplicate_events([event, event]) == [event]
+
+
+def test_deduplicate_events_preserves_first_occurrence_order() -> None:
+    """First occurrence of each event is kept; later duplicates are dropped."""
+    a = {"event": "user", "timestamp": 1.0, "text": "a"}
+    b = {"event": "bot", "timestamp": 2.0, "text": "b"}
+    result = _deduplicate_events([a, b, a, b])
+    assert result == [a, b]
+
+
+def test_deduplicate_events_same_timestamp_different_slot_names_kept() -> None:
+    """Multiple slot events at the same timestamp with different names are all kept."""
+    slot1 = {"event": "slot", "timestamp": 1.0, "name": "full_name", "value": None}
+    slot2 = {"event": "slot", "timestamp": 1.0, "name": "email", "value": None}
+    slot3 = {"event": "slot", "timestamp": 1.0, "name": "phone", "value": None}
+    result = _deduplicate_events([slot1, slot2, slot3])
+    assert result == [slot1, slot2, slot3]
+
+
+def test_deduplicate_events_duplicate_block_at_end_removed() -> None:
+    """A duplicate block appended at the end (e.g. due to a double save) is stripped."""
+    turn1 = [
+        {"event": "user", "timestamp": 1.0, "text": "hi"},
+        {"event": "bot", "timestamp": 1.1, "text": "hello"},
+    ]
+    turn2 = [
+        {"event": "user", "timestamp": 2.0, "text": "bye"},
+        {"event": "bot", "timestamp": 2.1, "text": "goodbye"},
+    ]
+    # Simulate save() called twice for turn2 — turn2 events appear twice.
+    duplicated = turn1 + turn2 + turn2
+    result = _deduplicate_events(duplicated)
+    assert result == turn1 + turn2
+
+
+def test_deduplicate_events_empty_list() -> None:
+    """Empty input returns empty output."""
+    assert _deduplicate_events([]) == []
+
+
+@pytest.mark.asyncio
+async def test_retrieve_deduplicates_events_in_dynamodb(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """Retrieving a tracker whose DynamoDB record has duplicate events succeeds.
+
+    This reproduces the bug where load-test seeding called save() twice for the
+    same turn, causing a JsonPatchConflict when replaying stack-update events.
+    """
+    conversation_id = uuid.uuid4().hex
+    tracker_store = DynamoTrackerStore(test_domain)
+
+    # Build a tracker with a stack operation that removes a field.
+    # The patch below first adds a regular flow frame (which has frame_type),
+    # then converts it to a pattern_completed frame by removing frame_type and
+    # adding previous_flow_name.  This mirrors the exact patch shape that
+    # triggers the bug in production.
+    add_patch = '[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+    remove_frame_type_patch = (
+        '[{"op": "remove", "path": "/0/frame_type"},'
+        ' {"op": "add", "path": "/0/previous_flow_name", "value": "foo"},'
+        ' {"op": "replace", "path": "/0/flow_id", "value": "pattern_completed"},'
+        ' {"op": "replace", "path": "/0/frame_id", "value": "NRQPGMKX"},'
+        ' {"op": "replace", "path": "/0/step_id", "value": "START"},'
+        ' {"op": "replace", "path": "/0/type", "value": "pattern_completed"}]'
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            ActionExecuted("action_session_start"),
+            SessionStarted(),
+            ActionExecuted("action_listen"),
+            UserUttered("start"),
+            DialogueStackUpdated(update=add_patch),
+            UserUttered("done"),
+            DialogueStackUpdated(update=remove_frame_type_patch),
+        ],
+        slots=test_domain.slots,
+        domain=test_domain,
+    )
+
+    # Store the full tracker directly (bypassing the save() partial-turn
+    # optimisation) so that all events land in DynamoDB.
+    serialized = DynamoTrackerStore.serialise_tracker(tracker)
+    tracker_store.db.put_item(Item=serialized)
+
+    # Manually inject duplicate events into DynamoDB to reproduce the bug.
+    # save() called twice for the same turn appends the last-turn events twice.
+    item = tracker_store.db.get_item(Key={"sender_id": conversation_id}).get("Item", {})
+    original_events = item.get("events", [])
+    # Find the index of the second (last) UserUttered event and duplicate from there.
+    last_user_idx = max(
+        i for i, e in enumerate(original_events) if e.get("event") == "user"
+    )
+    duplicated_events = original_events + original_events[last_user_idx:]
+    tracker_store.db.update_item(
+        Key={"sender_id": conversation_id},
+        UpdateExpression="SET events = :events",
+        ExpressionAttributeValues={":events": duplicated_events},
+    )
+
+    # When: retrieve must not raise JsonPatchConflict
+    retrieved = await tracker_store.retrieve_full_tracker(conversation_id)
+
+    # Then: tracker is valid and matches the original
+    assert retrieved is not None
+    assert retrieved.sender_id == conversation_id
