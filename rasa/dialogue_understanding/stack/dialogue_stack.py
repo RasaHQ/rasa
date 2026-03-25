@@ -253,13 +253,17 @@ class DialogueStack:
             return stack_frames[0]
         return None
 
+    def find_agent_stack_frames_for_flow(self, flow_id: str) -> List[AgentStackFrame]:
+        """Return all agent stack frames for the given flow, top to bottom."""
+        return self._find_agent_frame_by_predicate(
+            lambda frame: frame.flow_id == flow_id
+        )
+
     def find_active_agent_stack_frame_for_flow(
         self, flow_id: str
     ) -> Optional[AgentStackFrame]:
         """Get the agent stack frame of a specific flow."""
-        stack_frames = self._find_agent_frame_by_predicate(
-            lambda frame: frame.flow_id == flow_id
-        )
+        stack_frames = self.find_agent_stack_frames_for_flow(flow_id)
         for stack_frame in stack_frames:
             if stack_frame.state == AgentState.WAITING_FOR_INPUT:
                 return stack_frame

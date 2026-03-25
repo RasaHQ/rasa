@@ -74,6 +74,8 @@ from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.flows.steps import (
     CallFlowStep,
 )
+from rasa.shared.core.flows.steps.constants import END_STEP
+from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 from rasa.shared.core.slots import CategoricalSlot, Slot
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.utils.llm import tracker_as_readable_transcript
@@ -627,6 +629,20 @@ def _handle_agent_cancelled(
     return ContinueFlowWithNextStep(events=final_events)
 
 
+def _mark_canceled_frames_ended(stack: DialogueStack) -> None:
+    """Mark flow frames that were canceled as ended (END_STEP). Skips agent frames."""
+    from rasa.dialogue_understanding.commands import CancelFlowCommand
+
+    canceled_frame_ids = CancelFlowCommand.select_canceled_frames(stack)
+    for frame in stack.frames:
+        if (
+            frame.frame_id in canceled_frame_ids
+            and isinstance(frame, BaseFlowStackFrame)
+            and not isinstance(frame, AgentStackFrame)
+        ):
+            frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
+
+
 def _handle_agent_fatal_error(
     output: AgentOutput,
     final_events: List[Event],
@@ -636,6 +652,11 @@ def _handle_agent_fatal_error(
     tracker: DialogueStateTracker,
 ) -> FlowStepResult:
     """Handle fatal error from agent execution.
+
+    Cancels all agents of the failing step's flow (same flow) and ends that flow
+    for tracking. Agents belonging to other flows are left on the stack (e.g. when
+    the user digressed to this flow). No cancel-pattern frame is pushed so the user
+    only sees the internal error message, not a "flow cancelled" utterance.
 
     Args:
         output: The agent output containing error information
@@ -658,25 +679,35 @@ def _handle_agent_fatal_error(
         flow_id=step.flow_id,
         error_message=output.error_message,
     )
-    # remove the agent stack frame
-    remove_agent_stack_frame(stack, step.call)
-    final_events.append(
-        AgentCancelled(
-            agent_id=step.call, flow_id=step.flow_id, reason=output.error_message
+
+    # Cancel all agents of this flow; leave agents from other flows on the stack.
+    canceled_agent_ids = set()
+    for frame in stack.find_agent_stack_frames_for_flow(step.flow_id):
+        remove_agent_stack_frame(stack, frame.agent_id)
+        canceled_agent_ids.add(frame.agent_id)
+        final_events.append(
+            AgentCancelled(
+                agent_id=frame.agent_id,
+                flow_id=step.flow_id,
+                reason=output.error_message,
+            )
         )
-    )
+    # If the failing agent was never on the stack (e.g. started then failed immediately
+    # before INPUT_REQUIRED), final_events already has AgentStarted; still emit
+    # AgentCancelled so the event stream records the cancellation.
+    if step.call not in canceled_agent_ids:
+        final_events.append(
+            AgentCancelled(
+                agent_id=step.call,
+                flow_id=step.flow_id,
+                reason=output.error_message,
+            )
+        )
 
-    # cancel the current active flow:
-    # push the cancel pattern stack frame and add the flow cancelled event
-    cancel_pattern_stack_frame, flow_cancelled_event = _cancel_flow(
-        stack, flows, tracker, step
-    )
-    if cancel_pattern_stack_frame:
-        stack.push(cancel_pattern_stack_frame)
-    if flow_cancelled_event:
-        final_events.append(flow_cancelled_event)
+    # Mark the current flow as ended (no cancel pattern).
+    _mark_canceled_frames_ended(stack)
+    final_events.append(FlowCancelled(step.flow_id, step.id))
 
-    # push the internal error pattern stack frame
     stack.push(InternalErrorPatternFlowStackFrame())
     return ContinueFlowWithNextStep(events=final_events)
 

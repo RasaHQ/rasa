@@ -891,9 +891,10 @@ async def test_run_agent_fatal_error(
 
     # Assertions
     assert isinstance(flow_step_result, ContinueFlowWithNextStep)
-    # Top frame should be an InternalErrorPatternFlowStackFrame
+    # Top frame should be an InternalErrorPatternFlowStackFrame only (no cancel
+    # pattern - user sees only internal error message, not "flow cancelled")
     assert isinstance(stack.frames[-1], InternalErrorPatternFlowStackFrame)
-    assert isinstance(stack.frames[-2], CancelPatternFlowStackFrame)
+    assert not any(isinstance(f, CancelPatternFlowStackFrame) for f in stack.frames)
     # No retries should be made in case of fatal error
     assert mock_run_agent.call_count == 1
     # If the AgentStackFrame was on the stack, it should be removed
@@ -2096,7 +2097,12 @@ def test_handle_agent_fatal_error() -> None:
         isinstance(e, AgentCancelled) and e.agent_id == "test_agent"
         for e in result.events
     )
+    assert any(
+        isinstance(e, FlowCancelled) and e.flow_id == "test_flow" for e in result.events
+    )
     assert isinstance(stack.frames[-1], InternalErrorPatternFlowStackFrame)
+    # No cancel pattern - user sees only internal error, not "flow cancelled"
+    assert not any(isinstance(f, CancelPatternFlowStackFrame) for f in stack.frames)
     # AgentStackFrame should be removed from stack
     assert not any(isinstance(frame, AgentStackFrame) for frame in stack.frames)
 
@@ -2214,6 +2220,117 @@ async def test_run_agent_cancelled_is_silent(
     # Stack is empty — both agent and flow frames removed
     assert len(stack.frames) == 0
     assert mock_run_agent.call_count == 1
+
+
+def test_handle_agent_fatal_error_cancels_all_agents_in_same_flow() -> None:
+    """When an agent in a flow fails, all agents of that flow are cancelled."""
+    output = AgentOutput(
+        id="agent_a",
+        status=AgentStatus.FATAL_ERROR,
+        error_message="Fatal error occurred",
+    )
+    final_events = []
+    # Same flow: user flow -> Agent B -> Agent A (A on top, fails)
+    user_frame = UserFlowStackFrame(
+        flow_id="flow_x", step_id="step_1", frame_id="flow_x_frame"
+    )
+    agent_b_frame = AgentStackFrame(
+        frame_id="agent_b_frame",
+        flow_id="flow_x",
+        agent_id="agent_b",
+        state=AgentState.WAITING_FOR_INPUT,
+    )
+    agent_a_frame = AgentStackFrame(
+        frame_id="agent_a_frame",
+        flow_id="flow_x",
+        agent_id="agent_a",
+        state=AgentState.WAITING_FOR_INPUT,
+    )
+    stack = DialogueStack(frames=[user_frame, agent_b_frame, agent_a_frame])
+    step = CallFlowStep(
+        custom_id="call_a",
+        idx=0,
+        description="Call agent A",
+        call="agent_a",
+        next=FlowStepLinks(links=[]),
+        flow_id="flow_x",
+        metadata={},
+    )
+    flows = FlowsList([Flow(id="flow_x")])
+    tracker = DialogueStateTracker.from_events("test", [])
+
+    result = _handle_agent_fatal_error(
+        output, final_events, stack, step, flows, tracker
+    )
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+    cancelled_agents = [
+        e.agent_id for e in result.events if isinstance(e, AgentCancelled)
+    ]
+    assert set(cancelled_agents) == {
+        "agent_a",
+        "agent_b",
+    }, "All agents in the same flow should be cancelled"
+    assert not any(
+        isinstance(frame, AgentStackFrame) for frame in stack.frames
+    ), "All agents of the flow should be removed from the stack"
+
+
+def test_handle_agent_fatal_error_cancels_only_failing_agent_when_digressed() -> None:
+    """When user digresses to different flow - Agent A fails, only A is cancelled."""
+    output = AgentOutput(
+        id="agent_a",
+        status=AgentStatus.FATAL_ERROR,
+        error_message="Fatal error occurred",
+    )
+    final_events = []
+    # Different flows: flow_y with Agent B, then user digressed to flow_x with Agent A
+    user_flow_y = UserFlowStackFrame(
+        flow_id="flow_y", step_id="step_1", frame_id="flow_y_frame"
+    )
+    agent_b_frame = AgentStackFrame(
+        frame_id="agent_b_frame",
+        flow_id="flow_y",
+        agent_id="agent_b",
+        state=AgentState.WAITING_FOR_INPUT,
+    )
+    user_flow_x = UserFlowStackFrame(
+        flow_id="flow_x", step_id="step_1", frame_id="flow_x_frame"
+    )
+    agent_a_frame = AgentStackFrame(
+        frame_id="agent_a_frame",
+        flow_id="flow_x",
+        agent_id="agent_a",
+        state=AgentState.WAITING_FOR_INPUT,
+    )
+    stack = DialogueStack(
+        frames=[user_flow_y, agent_b_frame, user_flow_x, agent_a_frame]
+    )
+    step = CallFlowStep(
+        custom_id="call_a",
+        idx=0,
+        description="Call agent A",
+        call="agent_a",
+        next=FlowStepLinks(links=[]),
+        flow_id="flow_x",
+        metadata={},
+    )
+    flows = FlowsList([Flow(id="flow_x"), Flow(id="flow_y")])
+    tracker = DialogueStateTracker.from_events("test", [])
+
+    result = _handle_agent_fatal_error(
+        output, final_events, stack, step, flows, tracker
+    )
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+    cancelled_agents = [
+        e.agent_id for e in result.events if isinstance(e, AgentCancelled)
+    ]
+    assert cancelled_agents == [
+        "agent_a"
+    ], "Only the failing agent (flow_x) should be cancelled"
+    agent_frames_left = [f for f in stack.frames if isinstance(f, AgentStackFrame)]
+    assert len(agent_frames_left) == 1 and agent_frames_left[0].agent_id == "agent_b"
 
 
 def test_handle_agent_unknown_status() -> None:
