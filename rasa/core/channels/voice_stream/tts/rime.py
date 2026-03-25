@@ -1,3 +1,4 @@
+import audioop
 import base64
 import os
 from typing import Any, AsyncIterator, List, Optional
@@ -10,6 +11,7 @@ from aiohttp import ClientTimeout
 
 from rasa.core.channels.voice_stream.audio_bytes import (
     L16_24KHZ,
+    L16_48KHZ,
     MULAW_8KHZ,
     AudioFormat,
     RasaAudioBytes,
@@ -83,6 +85,13 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         config: Optional[RimeTTSConfig] = None,
         additional_languages: Optional[List[str]] = None,
     ):
+        if format == L16_48KHZ:
+            structlogger.warning(
+                "rime_tts.audio_format_sample_rate",
+                message="RimeTTS does not support 48KHz sample rate. "
+                "Rime will produce 24KHz audio which we upscale to 48KHz.",
+            )
+
         super().__init__(rasa_language, format, config, additional_languages or [])
         timeout = ClientTimeout(total=self.config.timeout)
         # Have to create this class-shared session lazily at run time otherwise
@@ -94,7 +103,13 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         """Build WebSocket URL with query parameters for Rime TTS."""
         base_url = self.config.endpoint
 
+        sample_rate = self.audio_format.sample_rate
+
         if self.audio_format is L16_24KHZ:
+            encoding = "pcm"
+        # we will transcode audio from 44100 to 48000 when we receive it
+        elif self.audio_format is L16_48KHZ:
+            sample_rate = 24000
             encoding = "pcm"
         elif self.audio_format is MULAW_8KHZ:
             encoding = "mulaw"
@@ -110,7 +125,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
             "modelId": self.config.model_id,
             "lang": self.current_language_config.engine_language_key,
             "audioFormat": encoding,
-            "samplingRate": self.audio_format.sample_rate,
+            "samplingRate": sample_rate,
         }
 
         # Add optional parameters
@@ -120,7 +135,8 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         if self.config.segment is not None:
             query_params["segment"] = self.config.segment
 
-        return f"{base_url}?{urlencode(query_params)}"
+        url = f"{base_url}?{urlencode(query_params)}"
+        return url
 
     @staticmethod
     def get_request_headers() -> dict[str, str]:
@@ -220,8 +236,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
                     # Audio data chunk - decode base64 and yield
                     base64_audio = data.get("data")
                     if base64_audio:
-                        audio_bytes = base64.b64decode(base64_audio)
-                        yield self.engine_bytes_to_rasa_audio_bytes(audio_bytes)
+                        yield self.engine_bytes_to_rasa_audio_bytes(base64_audio)
 
                 elif msg_type == "done":
                     # All audio has been sent, stop streaming
@@ -246,6 +261,30 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
             structlogger.error("rime.stream_audio.error", error=str(e))
             raise TTSError(f"Error during audio streaming: {e}")
 
+    def transcode_audio(self, audio_bytes: bytes) -> bytes:
+        if self.audio_format.sample_rate <= 24000:
+            return audio_bytes
+
+        # 16-bit audio
+        input_sample_width = self.audio_format.bit_depth // 8
+        # Mono
+        input_channels = self.audio_format.channels
+        # Input sample rate, it is fixed to 24000 for L16_48KHz as temporary workaround
+        input_rate = 24000
+        # Desired output sample rate
+        output_rate = self.audio_format.sample_rate
+
+        converted_audio, state = audioop.ratecv(
+            audio_bytes,
+            input_sample_width,
+            input_channels,
+            input_rate,
+            output_rate,
+            None,
+        )
+
+        return converted_audio
+
     async def synthesize(
         self, text: str, config: Optional[RimeTTSConfig] = None
     ) -> AsyncIterator[RasaAudioBytes]:
@@ -261,7 +300,8 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
 
     def engine_bytes_to_rasa_audio_bytes(self, chunk: bytes) -> RasaAudioBytes:
         """Convert the generated TTS audio bytes into rasa audio bytes."""
-        return RasaAudioBytes(chunk, format=self.audio_format)
+        audio_bytes = self.transcode_audio(base64.b64decode(chunk))
+        return RasaAudioBytes(audio_bytes, format=self.audio_format)
 
     @staticmethod
     def get_default_config(rasa_language: str) -> RimeTTSConfig:
