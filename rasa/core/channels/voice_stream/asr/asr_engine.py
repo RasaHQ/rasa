@@ -191,6 +191,15 @@ class ASREngineConfig(BaseModel):
                 f"These must match 'language' and 'additional_languages' in config.yml."
             )
 
+        missing_keys = allowed_languages - language_map_keys
+        if missing_keys:
+            logger.warning(
+                "asr_engine_config.missing_language_map_keys",
+                message="language_map is "
+                f"missing key(s): {', '.join(sorted(missing_keys))}. "
+                "These must match 'language' and 'additional_languages' in config.yml.",
+            )
+
 
 class ASREngine(Generic[T]):
     config: T

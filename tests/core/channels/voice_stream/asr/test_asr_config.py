@@ -1,4 +1,5 @@
 import pytest
+import structlog
 
 from rasa.core.channels.voice_stream.asr.asr_engine import (
     ASREngineConfig,
@@ -139,3 +140,114 @@ def test_asr_config_raises_when_deprecated_fields_and_language_map_both_set(kwar
         ValidationError, match="language.*model.*language_map|language_map"
     ):
         ASREngineConfig(**kwargs)
+
+
+def test_asr_validate_language_map_keys_warns_when_additional_language_missing():
+    cfg = ASREngineConfig(language_map={"en": ASRLanguageMapEntry(language="en-US")})
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys("en", additional_languages=["de"])
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "asr_engine_config.missing_language_map_keys"
+    ]
+    assert len(warning_events) == 1
+    assert "de" in warning_events[0]["message"]
+
+
+def test_asr_validate_language_map_keys_warns_for_each_missing_additional_language():
+    cfg = ASREngineConfig(language_map={"en": ASRLanguageMapEntry(language="en-US")})
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys("en", additional_languages=["de", "fr"])
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "asr_engine_config.missing_language_map_keys"
+    ]
+    assert len(warning_events) == 1
+    assert "de" in warning_events[0]["message"]
+    assert "fr" in warning_events[0]["message"]
+
+
+def test_asr_validate_language_map_keys_no_warning_when_all_keys_present():
+    cfg = ASREngineConfig(
+        language_map={
+            "en": ASRLanguageMapEntry(language="en-US"),
+            "de": ASRLanguageMapEntry(language="de-DE"),
+        }
+    )
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys("en", additional_languages=["de"])
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "asr_engine_config.missing_language_map_keys"
+    ]
+    assert warning_events == []
+
+
+def test_asr_validate_language_map_keys_warns_only_for_absent_additional_languages():
+    cfg = ASREngineConfig(
+        language_map={
+            "en": ASRLanguageMapEntry(language="en-US"),
+            "de": ASRLanguageMapEntry(language="de-DE"),
+        }
+    )
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys("en", additional_languages=["de", "fr"])
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "asr_engine_config.missing_language_map_keys"
+    ]
+    assert len(warning_events) == 1
+    assert "fr" in warning_events[0]["message"]
+    assert "de" not in warning_events[0]["message"]
+
+
+def test_asr_validate_language_map_keys_no_warning_when_no_additional_languages():
+    """No warning when additional_languages is None and rasa_language is present."""
+    cfg = ASREngineConfig(language_map={"en": ASRLanguageMapEntry(language="en-US")})
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys("en", additional_languages=None)
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "asr_engine_config.missing_language_map_keys"
+    ]
+    assert warning_events == []
+
+
+def test_asr_validate_language_map_keys_no_warning_when_additional_languages_empty():
+    """No warning when additional_languages is an
+    empty list and rasa_language is present."""
+    cfg = ASREngineConfig(language_map={"en": ASRLanguageMapEntry(language="en-US")})
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys("en", additional_languages=[])
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "asr_engine_config.missing_language_map_keys"
+    ]
+    assert warning_events == []
+
+
+def test_asr_validate_language_map_keys_rasa_language_not_in_map_raises_error():
+    """ASRConfigError is raised when rasa_language is absent from language_map."""
+    from rasa.core.channels.voice_stream.asr.asr_engine import ASRConfigError
+
+    cfg = ASREngineConfig(language_map={"de": ASRLanguageMapEntry(language="de-DE")})
+    with pytest.raises(ASRConfigError, match="not found in language_map"):
+        cfg.validate_language_map_keys("en")

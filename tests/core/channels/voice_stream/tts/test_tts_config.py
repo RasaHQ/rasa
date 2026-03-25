@@ -1,4 +1,5 @@
 import pytest
+import structlog
 
 from rasa.core.channels.voice_stream.tts.tts_engine import (
     TTSEngineConfig,
@@ -145,3 +146,125 @@ def test_tts_deepgram_config_defaults():
     assert cfg.language_map is not None
     assert "en" in cfg.language_map
     assert cfg.language_map["en"].model is not None
+
+
+def test_tts_validate_language_map_keys_warns_when_additional_language_missing():
+    """Tests that warning is raised when additional language keys are missing."""
+    cfg = TTSEngineConfig(
+        language_map={"en": TTSLanguageMapEntry(language="en-US", voice="Jenny")}
+    )
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys(rasa_language="en", additional_languages=["de"])
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "tts_engine_config.missing_language_map_keys"
+    ]
+    assert len(warning_events) == 1
+    assert "de" in warning_events[0]["message"]
+
+
+def test_tts_validate_language_map_keys_warns_for_each_missing_additional_language():
+    """Tests that warning is raised when additional language keys are missing."""
+    cfg = TTSEngineConfig(
+        language_map={"en": TTSLanguageMapEntry(language="en-US", voice="Jenny")}
+    )
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys(
+            rasa_language="en", additional_languages=["de", "fr"]
+        )
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "tts_engine_config.missing_language_map_keys"
+    ]
+    assert len(warning_events) == 1
+    assert "de" in warning_events[0]["message"]
+    assert "fr" in warning_events[0]["message"]
+
+
+def test_tts_validate_language_map_keys_no_warning_when_all_keys_present():
+    """Tests that there is no warning when all keys are present."""
+    cfg = TTSEngineConfig(
+        language_map={
+            "en": TTSLanguageMapEntry(language="en-US", voice="Jenny"),
+            "de": TTSLanguageMapEntry(language="de-DE", voice="Hedda"),
+        }
+    )
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys(rasa_language="en", additional_languages=["de"])
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "tts_engine_config.missing_language_map_keys"
+    ]
+    assert warning_events == []
+
+
+def test_tts_validate_language_map_keys_no_warning_when_no_additional_languages():
+    """Tests that there is no warning when all keys are present."""
+    cfg = TTSEngineConfig(
+        language_map={
+            "en": TTSLanguageMapEntry(language="en-US", voice="Jenny"),
+        }
+    )
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys(rasa_language="en", additional_languages=None)
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "tts_engine_config.missing_language_map_keys"
+    ]
+    assert warning_events == []
+
+
+def test_tts_validate_language_map_keys_no_warning_when_empty_additional_languages():
+    """Tests that there is no warning when all keys are present."""
+    cfg = TTSEngineConfig(
+        language_map={
+            "en": TTSLanguageMapEntry(language="en-US", voice="Jenny"),
+        }
+    )
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys(rasa_language="en", additional_languages=[])
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "tts_engine_config.missing_language_map_keys"
+    ]
+    assert warning_events == []
+
+
+def test_tts_validate_language_map_keys_warns_only_for_absent_additional_languages():
+    """Tests that warning is raised when absent additional language keys are missing."""
+    cfg = TTSEngineConfig(
+        language_map={
+            "en": TTSLanguageMapEntry(language="en-US", voice="Jenny"),
+            "de": TTSLanguageMapEntry(language="de-DE", voice="Hedda"),
+        }
+    )
+    with structlog.testing.capture_logs() as cap:
+        cfg.validate_language_map_keys(
+            rasa_language="en", additional_languages=["de", "fr"]
+        )
+
+    warning_events = [
+        log
+        for log in cap
+        if log.get("log_level") == "warning"
+        and log.get("event") == "tts_engine_config.missing_language_map_keys"
+    ]
+    assert len(warning_events) == 1
+    assert "fr" in warning_events[0]["message"]
+    assert "de" not in warning_events[0]["message"]
+    assert "en" not in warning_events[0]["message"]

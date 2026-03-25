@@ -212,7 +212,16 @@ class TTSEngineConfig(BaseModel):
             raise TTSConfigError(
                 f"language_map contains invalid language keys: {sorted(invalid_keys)}. "
                 f"Allowed languages are: {sorted(allowed_languages)}. "
-                f"These must match 'language' and 'additional_languages' in config.yml."
+                "These must match 'language' and 'additional_languages' in config.yml."
+            )
+
+        missing_keys = allowed_languages - language_map_keys
+        if missing_keys:
+            logger.warning(
+                "tts_engine_config.missing_language_map_keys",
+                message="language_map is "
+                f"missing key(s): {', '.join(sorted(missing_keys))}. "
+                "These must match 'language' and 'additional_languages' in config.yml.",
             )
 
 
