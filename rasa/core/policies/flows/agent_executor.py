@@ -185,6 +185,51 @@ def remove_agent_stack_frame(stack: DialogueStack, agent_id: str) -> None:
             break
 
 
+def _tracker_has_prior_agent_completed(
+    tracker: DialogueStateTracker, agent_id: str, flow_id: str
+) -> bool:
+    """Return True if a completed run for this agent/flow is already on the tracker."""
+    return any(
+        isinstance(e, AgentCompleted)
+        and e.agent_id == agent_id
+        and e.flow_id == flow_id
+        for e in tracker.events
+    )
+
+
+def _effective_agent_restart(
+    stack: DialogueStack,
+    step: CallFlowStep,
+    tracker: DialogueStateTracker,
+    agent_stack_frame: Optional[AgentStackFrame],
+) -> bool:
+    """Whether this call should reset exit_if slots and mark the agent as restarted.
+
+    Yes after a ``restart agent`` command or when the same agent/flow already finished
+    once in this tracker. No while the user is still in the middle of the same agent
+    turn (waiting for the next message).
+    """
+    # If the agent stack frame is a restart, we need to reset the exit_if slots
+    if agent_stack_frame is not None and agent_stack_frame.is_restart:
+        return True
+
+    # If the user is still in the middle of the same agent turn,
+    # we don't need to reset the exit_if slots
+    active = stack.find_active_agent_frame()
+    continuing_non_restart = (
+        active is not None
+        and active.agent_id == step.call
+        and active.flow_id == step.flow_id
+        and not active.is_restart
+    )
+    if continuing_non_restart:
+        return False
+
+    # If the agent/flow already finished once in this tracker,
+    # we need to reset the exit_if slots
+    return _tracker_has_prior_agent_completed(tracker, step.call, step.flow_id)
+
+
 async def run_agent(
     initial_events: List[Event],
     stack: DialogueStack,
@@ -223,7 +268,9 @@ async def run_agent(
 
         # Reinvoke the agent with resume context; events are still submitted.
         final_events.append(AgentResumed(agent_id=step.call, flow_id=step.flow_id))
-        agent_input = _prepare_agent_input(agent_stack_frame, step, tracker, slots)
+        agent_input = _prepare_agent_input(
+            agent_stack_frame, step, tracker, slots, restarted=False
+        )
         last_request = (agent_stack_frame.metadata or {}).get(
             AGENT_METADATA_AGENT_RESPONSE_KEY, ""
         ) or ""
@@ -237,15 +284,18 @@ async def run_agent(
             }
         )
     else:
-        # Reset the slots covered by the exit_if
-        # Code smell: this is a temporary fix and will be addressed in ENG-2148
-        if step.exit_if and agent_stack_frame and agent_stack_frame.is_restart:
-            # when restarting an agent, we need to reset the slots covered by the
-            # exit_if condition so that the agent can run again.
+        # Reset exit_if slots when explicitly restarting or re-entering after a prior
+        # completed run.
+        effective_restart = _effective_agent_restart(
+            stack, step, tracker, agent_stack_frame
+        )
+        if step.exit_if and effective_restart:
             _reset_slots_covered_by_exit_if(step.exit_if, tracker)
 
         # generate the agent input
-        agent_input = _prepare_agent_input(agent_stack_frame, step, tracker, slots)
+        agent_input = _prepare_agent_input(
+            agent_stack_frame, step, tracker, slots, restarted=effective_restart
+        )
 
         # add the AgentStarted event to the list of final events
         final_events.append(AgentStarted(step.call, step.flow_id))
@@ -731,6 +781,7 @@ def _prepare_agent_input(
     step: CallFlowStep,
     tracker: DialogueStateTracker,
     slots: List[Slot],
+    restarted: bool = False,
 ) -> AgentInput:
     """Prepare the agent input data.
 
@@ -739,6 +790,7 @@ def _prepare_agent_input(
         step: The flow step that called the agent
         tracker: The dialogue state tracker
         slots: List of slot definitions
+        restarted: When True, set restarted metadata for agents (e.g. MCP).
 
     Returns:
         AgentInput object ready for agent execution
@@ -755,8 +807,7 @@ def _prepare_agent_input(
     if step.exit_if:
         agent_input_metadata[AGENT_METADATA_EXIT_IF_KEY] = step.exit_if
 
-    is_restart = agent_stack_frame is not None and agent_stack_frame.is_restart
-    if is_restart:
+    if restarted:
         agent_input_metadata[AGENT_METADATA_RESTARTED_KEY] = True
 
     agent_input_metadata[AGENT_METADATA_SENDER_ID_KEY] = tracker.sender_id

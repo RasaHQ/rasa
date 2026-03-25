@@ -45,6 +45,7 @@ from rasa.core.policies.flows.agent_executor import (
     _prepare_agent_input,
     _prepare_slots_for_agent,
     _reset_slots_covered_by_exit_if,
+    _tracker_has_prior_agent_completed,
     _update_agent_events,
     _update_agent_input_metadata_with_events,
     remove_agent_stack_frame,
@@ -555,6 +556,165 @@ async def test_run_agent_restart_resets_exit_if_slots_before_agent_call(
     ]
     # Verify that restarted flag is set when agent is restarted
     assert agent_input.metadata.get(AGENT_METADATA_RESTARTED_KEY) is True
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_run_agent_reentry_after_completed_resets_exit_if_slots(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """Prior AgentCompleted + fresh stack entry clears exit_if slots (ENG-2710)."""
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+              exit_if:
+                - slots.amount > 0
+                - slots.done is True
+                - slots.budget < 50000
+        """
+    )
+    slot_defs = [
+        FloatSlot("amount", []),
+        BooleanSlot("done", []),
+        FloatSlot("budget", []),
+        TextSlot("other_slot", []),
+    ]
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+    events = [
+        AgentStarted("car-research", "my_flow"),
+        AgentCompleted("car-research", "my_flow"),
+        SlotSet("amount", 1000),
+        SlotSet("done", True),
+        SlotSet("budget", 30000),
+        SlotSet("other_slot", "should_not_be_reset"),
+    ]
+    tracker = DialogueStateTracker.from_events("test", events)
+    tracker.update_stack(stack)
+
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    mock_run_agent.return_value = AgentOutput(
+        id="car-research",
+        status=AgentStatus.COMPLETED,
+        response_message=None,
+        events=[],
+    )
+
+    await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=slot_defs,
+        flows=flows,
+    )
+
+    assert mock_run_agent.call_count >= 1
+    agent_input = mock_run_agent.call_args.kwargs["context"]
+    assert agent_input is not None
+    by_name = {s.name: s.value for s in agent_input.slots}
+    assert by_name.get("amount") is None
+    assert by_name.get("done") is None
+    assert by_name.get("budget") is None
+    assert by_name.get("other_slot") == "should_not_be_reset"
+    assert agent_input.metadata.get(AGENT_METADATA_RESTARTED_KEY) is True
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_run_agent_input_required_continuation_does_not_reset_exit_if_slots(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """Do not reset exit_if slots when continuing INPUT_REQUIRED after a prior run."""
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+              exit_if:
+                - slots.amount > 0
+        """
+    )
+    slot_defs = [FloatSlot("amount", []), TextSlot("other_slot", [])]
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="user-frame"
+    )
+    waiting_frame = AgentStackFrame(
+        frame_id="agent-waiting",
+        flow_id="my_flow",
+        step_id="my-call-step",
+        agent_id="car-research",
+        state=AgentState.WAITING_FOR_INPUT,
+        is_restart=False,
+    )
+    stack = DialogueStack(frames=[user_stack_frame, waiting_frame])
+    events = [
+        AgentStarted("car-research", "my_flow"),
+        AgentCompleted("car-research", "my_flow"),
+        SlotSet("amount", 4242),
+        SlotSet("other_slot", "keep_me"),
+    ]
+    tracker = DialogueStateTracker.from_events("test", events)
+    tracker.update_stack(stack)
+
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    mock_run_agent.return_value = AgentOutput(
+        id="car-research",
+        status=AgentStatus.COMPLETED,
+        response_message=None,
+        events=[],
+    )
+
+    await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=slot_defs,
+        flows=flows,
+    )
+
+    agent_input = mock_run_agent.call_args.kwargs["context"]
+    assert agent_input is not None
+    by_name = {s.name: s.value for s in agent_input.slots}
+    assert by_name.get("amount") == 4242
+    assert by_name.get("other_slot") == "keep_me"
+    assert agent_input.metadata.get(AGENT_METADATA_RESTARTED_KEY) is None
+
+
+def test_tracker_has_prior_agent_completed() -> None:
+    """_tracker_has_prior_agent_completed detects completed runs for agent/flow pair."""
+    tracker = DialogueStateTracker.from_events(
+        "s",
+        [
+            AgentStarted("a1", "f1"),
+            AgentCompleted("a1", "f1"),
+        ],
+    )
+    assert _tracker_has_prior_agent_completed(tracker, "a1", "f1") is True
+    assert _tracker_has_prior_agent_completed(tracker, "other", "f1") is False
+    assert _tracker_has_prior_agent_completed(tracker, "a1", "other") is False
+
+    empty = DialogueStateTracker.from_events("s", [])
+    assert _tracker_has_prior_agent_completed(empty, "a1", "f1") is False
 
 
 @pytest.mark.asyncio
