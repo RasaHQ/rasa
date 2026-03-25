@@ -9,6 +9,9 @@ on:
   # Scan changed files in PRs (diff-aware scanning):
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   semgrep:
     # User-definable name of this GitHub Actions job:

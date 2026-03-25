@@ -3,8 +3,14 @@ name: Capture Rasa Pro installation time
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   check_poetry_lock:
+    permissions:
+      contents: read  # for dorny/paths-filter to fetch a list of changed files
+      pull-requests: read  # for dorny/paths-filter to read pull requests
     name: Detect changes in poetry.lock
     runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}

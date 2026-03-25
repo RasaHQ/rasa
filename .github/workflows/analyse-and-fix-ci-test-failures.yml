@@ -6,6 +6,9 @@ on:
     pull_request_review_comment:
       types: [created]
 
+permissions:
+  contents: read
+
 jobs:
     analyse-and-fix-ci-test-failures:
         if: | # Trigger on PR review and standalone comments (from human authors only, not from bots), if comment body invokes `@claude`.

@@ -7,6 +7,9 @@ on:
     paths:
       - '**/*.py'
 
+permissions:
+  contents: read
+
 jobs:
   semgrep:
     name: PII Detection with Semgrep

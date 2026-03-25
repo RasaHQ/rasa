@@ -14,7 +14,7 @@ runs:
   using: "composite"
   steps:
     - name: Install kubectl
-      uses: azure/setup-kubectl@v4.0.0
+      uses: azure/setup-kubectl@3e0aec4d80787158d308d7b364cb1b702e7feb7f # v4.0.0
 
     - name: Force stop current deployment
       shell: bash

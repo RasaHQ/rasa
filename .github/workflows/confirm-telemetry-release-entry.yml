@@ -6,6 +6,9 @@ on:
   workflow_dispatch:
 
 
+permissions:
+  contents: read
+
 jobs:
   run_metabase_query:
     name: Query Metabase

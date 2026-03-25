@@ -21,6 +21,9 @@ env:
   GCP_LOCATION: europe-west3
   NPM_REPOSITORY: rasa-inspector
 
+permissions:
+  contents: read
+
 jobs:
   publish-npm:
     name: Publish Rasa Inspector to Artifact Registry
