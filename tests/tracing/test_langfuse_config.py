@@ -748,16 +748,24 @@ def test_configure_litellm_callback() -> None:
     try:
         import litellm
 
-        # Save original value
-        original_callback = getattr(litellm, "success_callback", None)
+        from rasa.tracing.rasa_langfuse_otel_logger import RasaLangfuseOtelLogger
+
+        # Save original values
+        original_success = getattr(litellm, "success_callback", None)
+        original_async_success = getattr(litellm, "_async_success_callback", None)
 
         _configure_litellm_callback()
 
-        assert litellm.success_callback == ["langfuse_otel"]
+        assert len(litellm.success_callback) == 1
+        assert isinstance(litellm.success_callback[0], RasaLangfuseOtelLogger)
+        assert litellm.success_callback[0].callback_name == "langfuse_otel"
+        assert litellm._async_success_callback == litellm.success_callback
 
-        # Restore original value
-        if original_callback is not None:
-            litellm.success_callback = original_callback
+        # Restore original values
+        if original_success is not None:
+            litellm.success_callback = original_success
+        if original_async_success is not None:
+            litellm._async_success_callback = original_async_success
     except ImportError:
         pytest.skip("litellm not installed")
 

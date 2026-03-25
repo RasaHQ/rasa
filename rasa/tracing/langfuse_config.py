@@ -282,9 +282,19 @@ def _configure_litellm_callback() -> None:
     """Configure LiteLLM to use Langfuse as a callback."""
     import litellm
 
+    from rasa.tracing.rasa_langfuse_otel_logger import build_rasa_langfuse_otel_logger
+
     # LiteLLM will automatically trace LLM calls to langfuse if these environment
-    # variables are set and the callback is configured
-    litellm.success_callback = ["langfuse_otel"]
+    # variables are set and the callback is configured. We pass a Rasa-owned
+    # LangfuseOtelLogger subclass so assistant text is not dropped when tool
+    # calls are present (see rasa.tracing.rasa_langfuse_otel_logger).
+    #
+    # Async completions use ``litellm._async_success_callback``; string callbacks
+    # are duplicated there by LiteLLM during ``function_setup``, but a concrete
+    # logger instance must be registered on both lists explicitly.
+    _logger = build_rasa_langfuse_otel_logger()
+    litellm.success_callback = [_logger]
+    litellm._async_success_callback = [_logger]
 
 
 def _validate_langfuse_config(config_values: Dict[str, Any]) -> None:
