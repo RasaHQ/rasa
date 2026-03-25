@@ -628,7 +628,7 @@ async def test_processor_force_slot_filling_non_from_text(
     "start_session_after_expiry,expected_session_started_count",
     [(True, 2), (False, 1)],
 )
-async def test_processor_handles_expired_session_does_not_start_new_session(
+async def test_processor_handles_expired_session_depends_on_session_config(
     default_agent: Agent,
     monkeypatch: MonkeyPatch,
     start_session_after_expiry: bool,
@@ -649,6 +649,8 @@ async def test_processor_handles_expired_session_does_not_start_new_session(
 
     # Simulate session expiration
     monkeypatch.setattr(processor, "_has_session_expired", lambda _: True)
+    tracker.update(ConversationInactive())
+    await processor.save_tracker(tracker)
 
     await _resume_with_user_message(processor)
 
@@ -983,7 +985,11 @@ async def test_session_id_preserved_across_tracker_store_roundtrip(
     for event in tracker.events:
         assert event.metadata.get(METADATA_SESSION_ID) == first_session_id
 
+    # simulate session expiry
     monkeypatch.setattr(processor, "_has_session_expired", lambda _: True)
+    tracker.update(ConversationInactive())
+    await processor.save_tracker(tracker)
+
     await processor.handle_message(UserMessage("/greet", channel, sender_id))
 
     tracker = await processor.tracker_store.retrieve_full_tracker(sender_id)
@@ -1014,7 +1020,12 @@ async def test_session_id_replay_preserves_original_metadata(
     sender_id = uuid.uuid4().hex
 
     await processor.handle_message(UserMessage("/greet", channel, sender_id))
+    # simulate session expiry
     monkeypatch.setattr(processor, "_has_session_expired", lambda _: True)
+    tracker = await processor.tracker_store.retrieve_full_tracker(sender_id)
+    tracker.update(ConversationInactive())
+    await processor.save_tracker(tracker)
+
     await processor.handle_message(UserMessage("/greet", channel, sender_id))
 
     tracker = await processor.tracker_store.retrieve_full_tracker(sender_id)

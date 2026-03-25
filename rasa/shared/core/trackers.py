@@ -948,32 +948,41 @@ class DialogueStateTracker:
         return False
 
     def has_session_started_for_current_message(self) -> bool:
-        """Checks if a session was already started for the current user message.
+        """Checks if a session has already been started in the current sub-session.
 
-        Scans backwards through events looking for a SessionStarted or
-        ActionExecuted(action_session_start) between the previous UserUttered and
-        the current one. Both event types are checked because custom overrides of
-        action_session_start may not emit SessionStarted.
+        A sub-session spans from the last ``ActionExecuted(action_session_start)``
+        event to the end of the tracker's history.  The method returns ``True`` if
+        a ``SessionStarted`` or ``ActionExecuted(action_session_start)`` event is
+        found in that span, indicating the session should not be started again.
+
+        Returns ``False`` if a ``ConversationInactive`` or ``Restarted`` event is
+        encountered first — these signal that a new session start is legitimately
+        required (e.g. after a timer-triggered inactivity event).
         """
-        found_current_message = False
+        if self.inactive or self.terminated:
+            return False
 
-        for event in reversed(self.events):
-            if isinstance(event, UserUttered):
-                if found_current_message:
-                    # Crossed into the previous message without finding a session start
-                    return False
-                found_current_message = True
-            elif not found_current_message and (
-                isinstance(event, ActionExecuted)
-                and event.action_name == ACTION_LISTEN_NAME
-            ):
-                # session expired and MessageProcessor ran action_session_start.
-                return False
-            elif found_current_message and (
-                isinstance(event, SessionStarted)
-                or self._is_action_session_start(event)
+        if not self.events:
+            return False
+
+        if not self.latest_message:
+            return False
+
+        sub_sessions = events.split_events(
+            self.events,
+            ActionExecuted,
+            {"action_name": ACTION_SESSION_START_NAME},
+            include_splitting_event=True,
+        )
+
+        latest_session = sub_sessions[-1]
+        for event in reversed(latest_session):
+            if isinstance(event, SessionStarted) or self._is_action_session_start(
+                event
             ):
                 return True
+            if isinstance(event, ConversationInactive) or isinstance(event, Restarted):
+                return False
 
         return False
 

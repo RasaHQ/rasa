@@ -8,7 +8,6 @@ from unittest.mock import AsyncMock, MagicMock, Mock
 import aiohttp
 import freezegun
 import pytest
-import structlog.testing
 from aioresponses import aioresponses
 from jsonschema import ValidationError
 from pytest import CaptureFixture, LogCaptureFixture, MonkeyPatch
@@ -92,6 +91,7 @@ from rasa.shared.core.events import (
     AgentUttered,
     AllSlotsReset,
     BotUttered,
+    ConversationInactive,
     ConversationPaused,
     ConversationResumed,
     DefinePrevUserUtteredFeaturization,
@@ -117,7 +117,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.conftest import with_session_ids
-from tests.utilities import filter_logs, json_of_latest_request, latest_request
+from tests.utilities import json_of_latest_request, latest_request
 
 
 @pytest.fixture(autouse=True)
@@ -1100,17 +1100,20 @@ async def test_action_session_start_without_slots(
         ],
     ],
 )
-async def test_action_session_start_is_noop_when_session_already_started(
+async def test_action_session_start_raises_rejection_when_session_active_in_sub_session(
     default_channel: CollectingOutputChannel,
     template_nlg: TemplatedNaturalLanguageGenerator,
     domain: Domain,
     events_before_user_message: List[Event],
 ):
-    """Test that ActionSessionStart is a no-op if session was already started.
+    """Test that ActionSessionStart raises ActionExecutionRejection
+    if active in sub-session.
 
-    When MessageProcessor already started the session before the current
-    UserUttered, action_session_start should return no events to prevent
-    double execution.
+    When a session was already started at any point in the current sub-session
+    (since the last ActionExecuted(action_session_start)), the action raises
+    ActionExecutionRejection regardless of how many turns have passed.  This
+    covers both "started for the current message" and "started earlier in the
+    sub-session" — they are equivalent under the new implementation.
     """
     tracker = DialogueStateTracker.from_events(
         "test",
@@ -1118,55 +1121,36 @@ async def test_action_session_start_is_noop_when_session_already_started(
         + [UserUttered("/session_start", {"name": "session_start"})],
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        result = await ActionSessionStart().run(
-            default_channel, template_nlg, tracker, domain
-        )
-
-    assert result == []
-    logs = filter_logs(
-        caplog,
-        "action.run.session_start.skipped",
-        "debug",
-    )
-    assert len(logs) == 1
-    assert (
-        "Session was already started for the current message. " in logs[0]["event_info"]
-    )
-    assert "Skipping execution of action_session_start." in logs[0]["event_info"]
+    with pytest.raises(ActionExecutionRejection):
+        await ActionSessionStart().run(default_channel, template_nlg, tracker, domain)
 
 
-async def test_action_session_start_runs_when_session_not_started_for_current_message(
+@pytest.mark.asyncio
+async def test_remote_action_session_start_raises_rejection_when_session_active(
     default_channel: CollectingOutputChannel,
     template_nlg: TemplatedNaturalLanguageGenerator,
     domain: Domain,
-):
-    """Test that ActionSessionStart runs when no session was started for this message.
+) -> None:
+    """Test that RemoteAction named action_session_start raises
+    ActionExecutionRejection.
 
-    When the user explicitly sends /session_start on an existing session (not expired),
-    there is no SessionStarted or ActionExecuted(action_session_start) immediately
-    before the current UserUttered, so the action should proceed normally.
+    When a custom (remote) action_session_start is predicted but the session was
+    already started in the current sub-session, RemoteAction.run must raise
+    ActionExecutionRejection before making any HTTP call to the action server.
     """
     tracker = DialogueStateTracker.from_events(
         "test",
         evts=[
-            # Previous session (old)
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("hello", {"name": "greet"}),
-            ActionExecuted("utter_greet"),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            # User explicitly sends /session_start (no new SessionStarted before this)
-            UserUttered("/session_start", {"name": "session_start"}),
+            UserUttered("/greet", {"name": "greet"}),
         ],
     )
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = RemoteAction(ACTION_SESSION_START_NAME, endpoint)
 
-    result = await ActionSessionStart().run(
-        default_channel, template_nlg, tracker, domain
-    )
-
-    assert result == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
+    with pytest.raises(ActionExecutionRejection):
+        await remote_action.run(default_channel, template_nlg, tracker, domain)
 
 
 @pytest.mark.parametrize(
@@ -1205,6 +1189,7 @@ async def test_action_session_start_runs_on_session_expiry(
             UserUttered("hello", {"name": "greet"}),
             ActionExecuted("utter_greet"),
             ActionExecuted(ACTION_LISTEN_NAME),
+            ConversationInactive(),
             # Session expired. MessageProcessor is running action_session_start
             # now, before the new UserUttered has been appended.
         ],
@@ -1244,6 +1229,7 @@ async def test_action_session_start_runs_when_start_session_after_expiry_is_fals
             UserUttered("hello", {"name": "greet"}),
             ActionExecuted("utter_greet"),
             ActionExecuted(ACTION_LISTEN_NAME),
+            ConversationInactive(),
             # Session expired but start_session_after_expiry=False, so no new
             # action_session_start from MessageProcessor before this message.
             UserUttered("/session_start", {"name": "session_start"}),

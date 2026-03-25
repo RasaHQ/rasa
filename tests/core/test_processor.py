@@ -1270,6 +1270,9 @@ async def test_handle_message_with_session_start_expiry_starts_new_session(
     }
 
     # patch processor so expiry would be detected
+    tracker = await default_processor.get_tracker(sender_id)
+    tracker.update(ConversationInactive())
+    await default_processor.save_tracker(tracker)
     monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
 
     slot_2 = {entity: "post-session start hello"}
@@ -1314,6 +1317,7 @@ async def test_handle_message_with_session_start_expiry_starts_new_session(
                 },
             ),
             ActionExecuted(ACTION_LISTEN_NAME, confidence=1.0),
+            ConversationInactive(),
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
             # the initial SlotSet is reapplied after the SessionStarted sequence
@@ -1354,7 +1358,7 @@ async def test_handle_message_with_session_start_expiry_starts_new_session(
     session_id_1 = actual_events[1].metadata.get(
         METADATA_SESSION_ID
     )  # First SessionStarted
-    session_id_2 = actual_events[10].metadata.get(
+    session_id_2 = actual_events[11].metadata.get(
         METADATA_SESSION_ID
     )  # Second SessionStarted
 
@@ -1366,8 +1370,8 @@ async def test_handle_message_with_session_start_expiry_starts_new_session(
 
     # Apply session_ids separately for each session
     # First session: events 0-8, Second session: events 9 onwards
-    expected = with_session_ids(with_assistant[:9], session_id_1) + with_session_ids(
-        with_assistant[9:], session_id_2
+    expected = with_session_ids(with_assistant[:10], session_id_1) + with_session_ids(
+        with_assistant[10:], session_id_2
     )
     assert actual_events == expected
 

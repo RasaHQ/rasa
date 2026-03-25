@@ -63,6 +63,7 @@ from rasa.shared.constants import (
     RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
 )
 from rasa.shared.core.constants import (
+    ACTION_SESSION_START_NAME,
     GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE,
     SILENCE_TIMEOUT_CHANNEL_KEY,
     SILENCE_TIMEOUT_SLOT,
@@ -3560,3 +3561,223 @@ async def test_executor_exits_gracefully_when_tracker_is_terminated():
 
     assert selection.action_name == "action_listen"
     assert selection.score == 1.0
+
+
+# ---------------------------------------------------------------------------
+# action_session_start skip-in-flow tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_run_step_skips_action_session_start_when_session_already_started():
+    """run_step returns ContinueFlowWithNextStep (no pause) when action_session_start
+    is the current step and the session was already started for this message."""
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow with action_session_start step
+            steps:
+            - id: session_step
+              action: action_session_start
+            - id: next_step
+              action: utter_greet
+        """
+    )
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("session_step")
+
+    tracker.has_session_started_for_current_message = Mock(return_value=True)
+
+    result = await flow_executor.run_step(
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions=[ACTION_SESSION_START_NAME, "utter_greet"],
+        flows=flows,
+        previous_step_id=START_STEP,
+        slots=[],
+    )
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+
+
+@pytest.mark.asyncio
+async def test_run_step_does_not_skip_action_session_start_when_session_not_started():
+    """run_step returns PauseFlowReturnPrediction (normal path) when
+    action_session_start is the current step but the session has not
+    been started yet for this message."""
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow with action_session_start step
+            steps:
+            - id: session_step
+              action: action_session_start
+        """
+    )
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("session_step")
+
+    tracker.has_session_started_for_current_message = Mock(return_value=False)
+
+    result = await flow_executor.run_step(
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions=[ACTION_SESSION_START_NAME],
+        flows=flows,
+        previous_step_id=START_STEP,
+        slots=[],
+    )
+
+    assert isinstance(result, PauseFlowReturnPrediction)
+    assert result.action_prediction.action_name == ACTION_SESSION_START_NAME
+
+
+@pytest.mark.asyncio
+async def test_advance_flows_skips_action_session_start_and_returns_next_action():
+    """advance_flows_until_next_action skips an action_session_start step when the
+    session is already started and returns the next flow step's action instead of
+    falling back to action_listen."""
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow starting with action_session_start
+            steps:
+            - id: session_step
+              action: action_session_start
+            - id: greet_step
+              action: utter_greet
+        """
+    )
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(
+                flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+            )
+        ]
+    )
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker.update_stack(stack)
+
+    # Simulate: session was already started for the current message.
+    tracker.has_session_started_for_current_message = Mock(return_value=True)
+
+    available_actions = [ACTION_SESSION_START_NAME, "utter_greet"]
+    prediction = await flow_executor.advance_flows_until_next_action(
+        tracker, available_actions, flows, slots=[]
+    )
+
+    assert prediction.action_name == "utter_greet", (
+        "Expected flow to skip action_session_start and advance to utter_greet, "
+        f"but got '{prediction.action_name}'"
+    )
+
+
+@pytest.mark.asyncio
+async def test_run_step_does_not_skip_non_session_start_action_when_session_started():
+    """run_step does not skip a regular action even when session is already started.
+
+    The skip guard is specifically scoped to action_session_start. Any other
+    ActionFlowStep must still produce a PauseFlowReturnPrediction regardless of
+    the session state.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow with a regular action step
+            steps:
+            - id: greet_step
+              action: utter_greet
+        """
+    )
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("greet_step")
+
+    # Session is already started — must NOT affect non-session-start steps.
+    tracker.has_session_started_for_current_message = Mock(return_value=True)
+
+    result = await flow_executor.run_step(
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions=["utter_greet"],
+        flows=flows,
+        previous_step_id=START_STEP,
+        slots=[],
+    )
+
+    assert isinstance(result, PauseFlowReturnPrediction)
+    assert result.action_prediction.action_name == "utter_greet"
+
+
+@pytest.mark.asyncio
+async def test_advance_flows_with_only_action_session_start_step_skips_and_ends():
+    """advance_flows_until_next_action returns action_listen when a flow
+    contains only an action_session_start step and that step is skipped
+    due to session already started.
+
+    The flow should complete gracefully (via EndFlowStep) rather than stalling.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: single-step flow with action_session_start
+            steps:
+            - id: session_step
+              action: action_session_start
+
+          pattern_completed:
+             description: wraps up a completed user flow
+             steps:
+                - action: utter_what_else_can_i_do
+        """
+    )
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(
+                flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+            )
+        ]
+    )
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker.update_stack(stack)
+
+    tracker.has_session_started_for_current_message = Mock(return_value=True)
+
+    available_actions = [ACTION_SESSION_START_NAME, "action_listen"]
+    prediction = await flow_executor.advance_flows_until_next_action(
+        tracker, available_actions, flows, slots=[]
+    )
+
+    # Flow ends with no real action to predict → falls back to action_listen.
+    assert prediction.action_name == "action_listen", (
+        "Expected action_listen after flow ends with only a skipped "
+        f"action_session_start step, but got '{prediction.action_name}'"
+    )

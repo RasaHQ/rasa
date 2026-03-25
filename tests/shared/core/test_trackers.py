@@ -500,6 +500,114 @@ def test_session_start(domain: Domain):
     assert len(tracker.events) == 1
 
 
+def test_has_session_started_for_current_message_multi_turn(domain: Domain) -> None:
+    """Session started before the first user message still applies to later turns."""
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+            BotUttered("hey"),
+            UserUttered("bye"),
+        ],
+    )
+    assert tracker.has_session_started_for_current_message() is True
+
+
+def test_has_session_started_for_current_message_no_session_yet(domain: Domain) -> None:
+    tracker = DialogueStateTracker.from_events("default", [UserUttered("hi")])
+    assert tracker.has_session_started_for_current_message() is False
+
+
+def test_has_session_started_for_current_message_after_session_ended(
+    domain: Domain,
+) -> None:
+    """Latest user message is not covered by a session start after SessionEnded."""
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SessionStarted(),
+            UserUttered("hi"),
+            SessionEnded(),
+        ],
+    )
+    # from_events stops at SessionEnded (terminated); append like a loaded event log.
+    tracker.events.append(UserUttered("later"))
+    assert tracker.has_session_started_for_current_message() is False
+
+
+def test_has_session_started_for_current_message_empty_tracker() -> None:
+    """Returns False when the tracker has no events at all."""
+    tracker = DialogueStateTracker.from_events("default", [])
+    assert tracker.has_session_started_for_current_message() is False
+
+
+def test_has_session_started_for_current_message_inactive_tracker() -> None:
+    """Returns False (via inactive guard) when the tracker is in inactive state.
+
+    A ConversationInactive event marks the tracker as inactive. Even though a
+    SessionStarted is in history, the early `self.inactive` check prevents True.
+    """
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            ConversationInactive(),
+        ],
+    )
+    assert tracker.inactive is True
+    assert tracker.has_session_started_for_current_message() is False
+
+
+def test_has_session_started_for_current_message_custom_action_no_session_started_event() -> (
+    None
+):
+    """Returns True when ActionExecuted(action_session_start) is in the sub-session
+    but no SessionStarted event was emitted (custom action that skips SessionStarted).
+    """
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            # Custom action_session_start that did not emit SessionStarted
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("hi"),
+        ],
+    )
+    assert tracker.has_session_started_for_current_message() is True
+
+
+def test_has_session_started_for_current_message_checks_only_latest_sub_session() -> (
+    None
+):
+    """Returns True based only on the latest sub-session; ignores earlier sub-sessions.
+
+    The first sub-session contains a ConversationInactive which would cause an early
+    return False if it were scanned. The latest sub-session has a fresh SessionStarted,
+    so the method must return True — confirming it only scans the latest sub-session.
+    """
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            # First sub-session (must be ignored)
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            ConversationInactive(),
+            # Latest sub-session — fresh session, no ConversationInactive
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("bye"),
+        ],
+    )
+    assert tracker.has_session_started_for_current_message() is True
+
+
 def test_revert_action_event(domain: Domain):
     tracker = DialogueStateTracker("default", domain.slots)
     # the retrieved tracker should be empty

@@ -66,6 +66,7 @@ from rasa.dialogue_understanding.utils import assemble_options_string
 from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
     GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE,
     SILENCE_TIMEOUT_CHANNEL_KEY,
     SILENCE_TIMEOUT_SLOT,
@@ -821,6 +822,22 @@ async def run_step(
     elif isinstance(step, ActionFlowStep):
         if not step.action:
             raise FlowException(f"Action not specified for step {step}")
+        # If action_session_start is a flow step but the session was already
+        # started for the current message, skip it silently rather than
+        # predicting it.  Without this guard the action would be predicted
+        # (confidence 1.0) and then rejected at execution time; the ensemble
+        # zeroes its confidence, FlowPolicy falls back to action_listen, and
+        # the flow stalls until the next user message.
+        if (
+            step.action == ACTION_SESSION_START_NAME
+            and tracker.has_session_started_for_current_message()
+        ):
+            structlogger.debug(
+                "flow.step.run.action.session_start.skip",
+                step_id=step.id,
+                flow_id=step.flow_id,
+            )
+            return ContinueFlowWithNextStep(events=initial_events)
         return _run_action_step(available_actions, initial_events, stack, step)
 
     elif isinstance(step, LinkFlowStep):

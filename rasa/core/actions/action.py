@@ -8,6 +8,8 @@ from jsonschema import Draft202012Validator
 
 import rasa.core
 import rasa.shared.utils.io
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
+from rasa.core.actions.constants import SESSION_START_REJECTION_MESSAGE
 from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
     NoEndpointCustomActionExecutor,
@@ -711,13 +713,13 @@ class ActionSessionStart(Action):
         # MessageProcessor), skip to prevent double execution.
         if tracker.has_session_started_for_current_message():
             structlogger.debug(
-                "action.run.session_start.skipped",
-                event_info=(
-                    "Session was already started for the current message. "
-                    "Skipping execution of action_session_start."
-                ),
+                "rasa.core.actions.actions.ActionSessionStart.skip_execution.session_already_started",
+                event_info=SESSION_START_REJECTION_MESSAGE,
             )
-            return []
+            raise ActionExecutionRejection(
+                self.name(),
+                SESSION_START_REJECTION_MESSAGE,
+            )
 
         _events: List[Event] = [SessionStarted()]
 
@@ -952,6 +954,20 @@ class RemoteAction(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
+        # If the session was already started for this message (e.g. by
+        # MessageProcessor), skip to prevent double execution.
+        if (
+            self.name() == ACTION_SESSION_START_NAME
+            and tracker.has_session_started_for_current_message()
+        ):
+            structlogger.debug(
+                "rasa.core.actions.actions.RemoteAction.skip_action_session_start_execution.session_already_started"
+            )
+            raise ActionExecutionRejection(
+                self.name(),
+                SESSION_START_REJECTION_MESSAGE,
+            )
+
         response = await self.executor.run(
             domain=domain,
             tracker=tracker,
