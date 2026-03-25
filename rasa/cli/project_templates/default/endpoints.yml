@@ -72,7 +72,3 @@ model_groups:
         model: gpt-5.1-2025-11-13
         reasoning_effort: "none"
         timeout: 15
-  - id: openai-embeddings
-    models:
-      - provider: openai
-        model: text-embedding-3-large
