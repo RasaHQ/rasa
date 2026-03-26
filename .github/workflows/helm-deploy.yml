@@ -58,7 +58,6 @@ jobs:
     env:
       RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-private-dev
       RASA_PRO_HELM_REPO: oci://europe-west3-docker.pkg.dev/rasa-releases/helm-charts/rasa
-      PULUMI_ACCESS_TOKEN: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.PULUMI_COMPONENTS_GITHUB_TOKEN }}
       AWS_REGION: eu-west-1
       RASA_PRO_HELM_VERSION: 1.2.3
@@ -148,6 +147,12 @@ jobs:
       - name: Pulumi
         uses: pulumi/actions@8582a9e8cc630786854029b4e09281acd6794b58 #v6.6.1
 
+      - name: Authenticate with Pulumi Cloud
+        uses: pulumi/auth-actions@80dec0d5e009a11565cbf87d9ef9103fc7d24198 # v1.0.0
+        with:
+          organization: rasa
+          requested-token-type: urn:pulumi:token-type:access_token:organization
+
       - name: Prepare pulumi configuration
         working-directory: ./infrastructure/eks-helm
         run: |
@@ -214,7 +219,6 @@ jobs:
       UNIQUE_IDENTIFIER: ${{ needs.build-train-deploy.outputs.unique_identifier }}
       AWS_REGION: eu-west-1
       CI_CLUSTER_NAME: rasa-pro-ci-cluster
-      PULUMI_ACCESS_TOKEN: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.PULUMI_COMPONENTS_GITHUB_TOKEN }}
 
     steps:
@@ -236,6 +240,12 @@ jobs:
 
       - name: Pulumi
         uses: pulumi/actions@8582a9e8cc630786854029b4e09281acd6794b58 #v6.6.1
+
+      - name: Authenticate with Pulumi Cloud
+        uses: pulumi/auth-actions@80dec0d5e009a11565cbf87d9ef9103fc7d24198 # v1.0.0
+        with:
+          organization: rasa
+          requested-token-type: urn:pulumi:token-type:access_token:organization
 
       - name: Clean everything up
         working-directory: ./infrastructure/eks-helm
