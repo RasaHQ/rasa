@@ -1138,6 +1138,23 @@ def track_model_training(
     )
 
 
+def _redact_mcp_server_meta_map_static_for_telemetry(
+    server_dump: Dict[str, Any],
+) -> None:
+    """Replace meta_map.static values with key names only (avoid leaking secrets).
+
+    Mutates only ``server_dump`` (the dict from ``model_dump``), not the
+    original ``MCPServerConfig`` instance.
+    """
+    meta_map = server_dump.get("meta_map")
+    if meta_map is None:
+        return
+    static = meta_map.get("static")
+    if static is not None:
+        meta_map["static_keys"] = list(static.keys())
+        del meta_map["static"]
+
+
 def _collect_agent_configuration(flows: FlowsList) -> Dict[str, Any]:
     agent_data: Dict[str, Any] = {}
 
@@ -1187,9 +1204,11 @@ def _collect_agent_configuration(flows: FlowsList) -> Dict[str, Any]:
 
     # dump mcp_servers and agents as json and exclude any values that are None
     if mcp_servers:
-        agent_data["mcp_servers"] = [
-            mcp_server.model_dump(exclude_none=True) for mcp_server in mcp_servers
-        ]
+        agent_data["mcp_servers"] = []
+        for mcp_server in mcp_servers:
+            dumped = mcp_server.model_dump(exclude_none=True)
+            _redact_mcp_server_meta_map_static_for_telemetry(dumped)
+            agent_data["mcp_servers"].append(dumped)
     if agents:
         agent_data["agents"] = [
             {agent_name: agent_info.model_dump(exclude_none=True)}

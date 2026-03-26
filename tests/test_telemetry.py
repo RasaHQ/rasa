@@ -25,7 +25,7 @@ from rasa.core.available_agents import (
     ProtocolConfig,
 )
 from rasa.core.brokers.kafka import KafkaEventBroker
-from rasa.core.config.available_endpoints import MCPServerConfig
+from rasa.core.config.available_endpoints import MCPMetaMapConfig, MCPServerConfig
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG as LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG,
 )
@@ -2207,6 +2207,38 @@ def test_collect_agent_configuration_mcp_servers_serialization():
         assert mcp_server_data["name"] == "test_server"
         assert mcp_server_data["url"] == "http://localhost:8000"
         assert mcp_server_data["additional_params"] == {}
+
+
+def test_collect_agent_configuration_mcp_servers_meta_map_static_keys_only():
+    """Telemetry must not include meta_map.static values, only key names."""
+    flows = FlowsList([])
+
+    mock_mcp_server = MCPServerConfig(
+        name="test_server",
+        url="http://localhost:8000",
+        type="http",
+        meta_map=MCPMetaMapConfig(
+            static={"api_version": "v2", "source": "rasa_agent"},
+            from_slots=None,
+        ),
+    )
+
+    with (
+        patch(
+            "rasa.core.config.configuration.Configuration.get_instance"
+        ) as mock_config,
+    ):
+        mock_config.return_value.available_agents.agents = {}
+        mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
+
+        result = telemetry._collect_agent_configuration(flows)
+
+    mcp_server_data = result["mcp_servers"][0]
+    meta_map = mcp_server_data["meta_map"]
+    assert meta_map["static_keys"] == ["api_version", "source"]
+    assert "static" not in meta_map
+    assert "v2" not in json.dumps(mcp_server_data)
+    assert "rasa_agent" not in json.dumps(mcp_server_data)
 
 
 def test_collect_agent_configuration_agents_serialization():
