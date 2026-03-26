@@ -308,6 +308,15 @@ class OutputChannel:
         """
         pass
 
+    def note_last_streamed_bot_message_was_filler(self, was_filler: bool) -> None:
+        """Record whether the last streamed bot audio was a filler-style message.
+
+        Voice channels use this to choose pacing before the next bot utterance
+        (e.g. a longer gap after filler, shorter between consecutive replies).
+        Default implementation is a no-op.
+        """
+        pass
+
     def _is_duplicate_of_last_streamed_response(self, text: str) -> bool:
         """Return True if *text* matches the last streamed response.
 

@@ -544,7 +544,13 @@ class MCPTaskAgent(MCPBaseAgent):
                         tool_results,
                     )
 
-                if llm_response.tool_calls and bot_uttered:
+                # Record the filler message if it is present
+                is_filler = self._is_filler_bot_utterance(llm_response, bot_uttered)
+                if output_channel:
+                    output_channel.note_last_streamed_bot_message_was_filler(is_filler)
+
+                if is_filler:
+                    # Record the filler message as a BotUttered event.
                     self._record_filler_bot_uttered(bot_uttered, generated_events)
 
                 if llm_response.tool_calls:

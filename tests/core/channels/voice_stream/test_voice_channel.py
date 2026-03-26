@@ -592,6 +592,7 @@ def stub_output_channel(mulaw_format) -> StubVoiceOutputChannel:
         tts_cache={},
         audio_format=mulaw_format,
         min_delay_between_bot_messages_seconds=1.5,
+        min_delay_after_filler_seconds=1.5,
     )
 
 
@@ -638,7 +639,8 @@ async def test_apply_pacing_delay_streams_silence_when_seconds_positive(
 async def test_apply_min_delay_between_messages_does_nothing_when_min_delay_zero(
     stub_output_channel: StubVoiceOutputChannel,
 ) -> None:
-    """When min_delay_between_bot_messages_seconds <= 0, no pacing delay is applied."""
+    """When both pacing delays <= 0, no pacing delay is applied."""
+    stub_output_channel.min_delay_after_filler_seconds = 0
     stub_output_channel.min_delay_between_bot_messages_seconds = 0
     stub_output_channel._last_bot_message_end_time = time.monotonic()
     with patch.object(
@@ -685,6 +687,7 @@ async def test_apply_min_delay_between_messages_calls_apply_pacing_delay_and_res
     stub_output_channel: StubVoiceOutputChannel,
 ) -> None:
     """apply_pacing_delay is called and _last_bot_message_end_time reset."""
+    stub_output_channel.note_last_streamed_bot_message_was_filler(True)
     stub_output_channel._last_bot_message_end_time = time.monotonic() - 0.5
     with patch.object(
         stub_output_channel,
@@ -696,6 +699,48 @@ async def test_apply_min_delay_between_messages_calls_apply_pacing_delay_and_res
         awaited_seconds = mock_apply.await_args[0][1]
         assert 0.9 <= awaited_seconds <= 1.1
     assert stub_output_channel._last_bot_message_end_time is None
+
+
+@pytest.mark.parametrize(
+    (
+        "was_filler",
+        "min_between",
+        "min_after_filler",
+        "elapsed",
+        "expected_low",
+        "expected_high",
+    ),
+    [
+        (False, 0.5, 2.0, 0.1, 0.35, 0.45),
+        (True, 0.4, 2.5, 0.1, 2.35, 2.45),
+    ],
+    ids=[
+        "after_non_filler_uses_min_between",
+        "after_filler_uses_min_after_filler",
+    ],
+)
+async def test_apply_min_delay_between_messages_depends_on_filler_flag(
+    stub_output_channel: StubVoiceOutputChannel,
+    was_filler: bool,
+    min_between: float,
+    min_after_filler: float,
+    elapsed: float,
+    expected_low: float,
+    expected_high: float,
+) -> None:
+    stub_output_channel.min_delay_between_bot_messages_seconds = min_between
+    stub_output_channel.min_delay_after_filler_seconds = min_after_filler
+    stub_output_channel.note_last_streamed_bot_message_was_filler(was_filler)
+    stub_output_channel._last_bot_message_end_time = time.monotonic() - elapsed
+    with patch.object(
+        stub_output_channel,
+        "apply_pacing_delay",
+        new_callable=AsyncMock,
+    ) as mock_apply:
+        await stub_output_channel._apply_min_delay_between_messages("recipient_1")
+        mock_apply.assert_awaited_once()
+        awaited_seconds = mock_apply.await_args[0][1]
+    assert expected_low <= awaited_seconds <= expected_high
 
 
 @pytest.fixture

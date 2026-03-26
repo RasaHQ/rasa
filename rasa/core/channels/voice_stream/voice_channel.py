@@ -82,7 +82,8 @@ logger = structlog.get_logger(__name__)
 
 # define constants for the voice channel
 DEFAULT_INTERRUPTION_MIN_WORDS = 3
-DEFAULT_MIN_DELAY_BETWEEN_BOT_MESSAGES_SECONDS = 2
+DEFAULT_MIN_DELAY_BETWEEN_BOT_MESSAGES_SECONDS = 1
+DEFAULT_MIN_DELAY_AFTER_FILLER_BOT_MESSAGES_SECONDS = 2
 
 
 @dataclass
@@ -216,6 +217,9 @@ class VoiceOutputChannel(OutputChannel):
         min_delay_between_bot_messages_seconds: float = (
             DEFAULT_MIN_DELAY_BETWEEN_BOT_MESSAGES_SECONDS
         ),
+        min_delay_after_filler_seconds: float = (
+            DEFAULT_MIN_DELAY_AFTER_FILLER_BOT_MESSAGES_SECONDS
+        ),
     ):
         super().__init__()
         self.voice_websocket = voice_websocket
@@ -226,6 +230,7 @@ class VoiceOutputChannel(OutputChannel):
         self.min_delay_between_bot_messages_seconds = (
             min_delay_between_bot_messages_seconds
         )
+        self.min_delay_after_filler_seconds = min_delay_after_filler_seconds
 
         self.latest_message_id: Optional[str] = None
 
@@ -236,7 +241,14 @@ class VoiceOutputChannel(OutputChannel):
         # enforce a minimum pacing gap before the next bot message.
         self._last_bot_message_end_time: Optional[float] = None
 
+        # Set by ReAct agents after each streamed LLM reply (see OutputChannel hook).
+        self._last_completed_bot_message_was_filler: bool = False
+
         self.stream_interrupted = False
+
+    def note_last_streamed_bot_message_was_filler(self, was_filler: bool) -> None:
+        """Store filler classification for the next inter-message pacing decision."""
+        self._last_completed_bot_message_was_filler = was_filler
 
     @property
     def supports_streaming(self) -> bool:
@@ -461,27 +473,27 @@ class VoiceOutputChannel(OutputChannel):
     async def _apply_min_delay_between_messages(self, recipient_id: str) -> None:
         """Enforce minimum delay between consecutive bot messages.
 
-        If the last bot message ended recently and
-        min_delay_between_bot_messages_seconds is set, sends silence for the
-        remainder of the gap. Works for any consecutive pair (filler or not).
-        Resets _last_bot_message_end_time.
+        Uses a longer gap after a filler message (see
+        :meth:`note_last_streamed_bot_message_was_filler`) and a shorter gap
+        between other consecutive utterances. Resets ``_last_bot_message_end_time``.
         """
-        if (
-            self.min_delay_between_bot_messages_seconds <= 0
-            or self._last_bot_message_end_time is None
-        ):
+        min_gap_seconds = (
+            self.min_delay_after_filler_seconds
+            if self._last_completed_bot_message_was_filler
+            else self.min_delay_between_bot_messages_seconds
+        )
+        if min_gap_seconds <= 0 or self._last_bot_message_end_time is None:
             self._last_bot_message_end_time = None
             return
 
         elapsed = time.monotonic() - self._last_bot_message_end_time
-        wait_seconds = self.min_delay_between_bot_messages_seconds - elapsed
+        wait_seconds = min_gap_seconds - elapsed
         if wait_seconds > 0:
             logger.debug(
                 "voice_channel.apply_min_delay_between_messages",
                 wait_seconds=wait_seconds,
-                min_delay_between_bot_messages_seconds=(
-                    self.min_delay_between_bot_messages_seconds
-                ),
+                min_gap_seconds=min_gap_seconds,
+                after_filler=self._last_completed_bot_message_was_filler,
             )
             await self.apply_pacing_delay(recipient_id, wait_seconds)
         self._last_bot_message_end_time = None

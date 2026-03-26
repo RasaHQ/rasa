@@ -1391,6 +1391,18 @@ class MCPBaseAgent(AgentProtocol):
     # Output Creation Helpers
     # ============================================================================
 
+    def _is_filler_bot_utterance(
+        self,
+        llm_response: LLMResponse,
+        bot_uttered: Optional[BotUttered],
+    ) -> bool:
+        """Whether streamed assistant text should be recorded as a filler message."""
+        return (
+            bot_uttered is not None
+            and self._enable_filler_messages
+            and bool(llm_response.tool_calls)
+        )
+
     def _record_input_required_bot_uttered(
         self,
         bot_uttered: Optional[BotUttered],
@@ -1407,17 +1419,16 @@ class MCPBaseAgent(AgentProtocol):
 
     def _record_filler_bot_uttered(
         self,
-        bot_uttered: Optional[BotUttered],
+        bot_uttered: BotUttered,
         generated_events: List[Event],
     ) -> None:
         """If filler enabled and bot_uttered set, mark as filler and append
         to generated_events.
         """
-        if bot_uttered and self._enable_filler_messages:
-            bot_uttered.metadata[BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY] = (
-                BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE
-            )
-            generated_events.append(bot_uttered)
+        bot_uttered.metadata[BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY] = (
+            BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE
+        )
+        generated_events.append(bot_uttered)
 
     def _create_recoverable_error_output(
         self,

@@ -2375,3 +2375,64 @@ class TestMCPBaseAgentBuildMessagesContinued(TestMCPBaseAgent):
         assert result.is_error is True
         assert "timed out after" in result.error_message
         assert "0.2 seconds" in result.error_message
+
+    @pytest.mark.parametrize(
+        (
+            "enable_filler",
+            "tool_calls_mode",
+            "include_bot_uttered",
+            "expected",
+        ),
+        [
+            (True, "lookup", True, True),
+            (True, "lookup", False, False),
+            (False, "lookup", True, False),
+            (True, "missing", True, False),
+            (True, "empty", True, False),
+        ],
+        ids=[
+            "tools_and_filler_enabled",
+            "no_bot_uttered",
+            "filler_messages_disabled",
+            "tool_calls_none",
+            "tool_calls_empty",
+        ],
+    )
+    def test_is_filler_bot_utterance(
+        self,
+        monkeypatch: MonkeyPatch,
+        enable_filler: bool,
+        tool_calls_mode: str,
+        include_bot_uttered: bool,
+        expected: bool,
+    ) -> None:
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key is filler tests")
+        agent = MockMCPBaseAgentImpl(
+            name="test",
+            description="d",
+            protocol_type=ProtocolConfig.RASA,
+            server_configs=[],
+            enable_filler_messages=enable_filler,
+        )
+        if tool_calls_mode == "lookup":
+            llm_response = LLMResponse(
+                id="rid",
+                created=0,
+                choices=["ok"],
+                model="m",
+                tool_calls=[
+                    LLMToolCall(id="id-lookup", tool_name="lookup", tool_args={})
+                ],
+            )
+        elif tool_calls_mode == "missing":
+            llm_response = LLMResponse(
+                id="1", created=0, choices=["hi"], model="m", tool_calls=None
+            )
+        else:
+            llm_response = LLMResponse(
+                id="1", created=0, choices=["hi"], model="m", tool_calls=[]
+            )
+        bot_uttered: Optional[BotUttered] = (
+            BotUttered(text="One moment.") if include_bot_uttered else None
+        )
+        assert agent._is_filler_bot_utterance(llm_response, bot_uttered) is expected

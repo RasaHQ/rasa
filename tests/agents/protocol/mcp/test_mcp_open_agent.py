@@ -1,7 +1,7 @@
 """Unit tests for MCPOpenAgent."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 from unittest.mock import AsyncMock, MagicMock, patch
 from zoneinfo import ZoneInfo
 
@@ -12,7 +12,7 @@ from rasa.agents.constants import (
     AGENT_METADATA_MODEL_ID_KEY,
     AGENT_METADATA_SENDER_ID_KEY,
 )
-from rasa.agents.protocol.mcp.mcp_open_agent import MCPOpenAgent
+from rasa.agents.protocol.mcp.mcp_open_agent import KEY_TASK_COMPLETED, MCPOpenAgent
 from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentToolResult
 from rasa.core.available_agents import (
     AgentConfig,
@@ -36,6 +36,21 @@ from rasa.shared.exceptions import (
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
 
 
+@pytest.fixture
+def mcp_open_agent(monkeypatch: pytest.MonkeyPatch) -> MCPOpenAgent:
+    """Fixture for creating an MCPOpenAgent instance."""
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_mcp_open_agent")
+    return MCPOpenAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_open_agent",
+                description="A test open agent for unit testing",
+                protocol=ProtocolConfig.RASA,
+            )
+        )
+    )
+
+
 class TestMCPOpenAgent:
     """Test cases for MCPOpenAgent."""
 
@@ -57,20 +72,6 @@ class TestMCPOpenAgent:
             events=[],
             metadata={"key": "value", "nested": {"data": "test"}},
             timestamp="2024-01-15T10:30:00Z",
-        )
-
-    @pytest.fixture
-    def mcp_open_agent(self, monkeypatch: pytest.MonkeyPatch) -> MCPOpenAgent:
-        """Fixture for creating an MCPOpenAgent instance."""
-        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_mcp_open_agent")
-        return MCPOpenAgent.from_config(
-            AgentConfig(
-                agent=AgentInfo(
-                    name="test_open_agent",
-                    description="A test open agent for unit testing",
-                    protocol=ProtocolConfig.RASA,
-                )
-            )
         )
 
     @pytest.fixture
@@ -1473,3 +1474,42 @@ class TestMCPOpenAgent:
             assert call_args is not None
             assert "metadata" in call_args.kwargs
             assert call_args.kwargs["metadata"] == expected_metadata
+
+
+class TestMCPOpenAgentIsFillerBotUtterance:
+    """Tests for :meth:`MCPOpenAgent._is_filler_bot_utterance`."""
+
+    @pytest.mark.parametrize(
+        ("tool_names", "expected"),
+        [
+            (("weather", KEY_TASK_COMPLETED), False),
+            ((KEY_TASK_COMPLETED,), False),
+            (("weather",), True),
+        ],
+        ids=[
+            "task_completed_with_other_tool",
+            "task_completed_only",
+            "regular_tool_without_task_completed",
+        ],
+    )
+    def test_is_filler_bot_utterance(
+        self,
+        mcp_open_agent: MCPOpenAgent,
+        tool_names: Tuple[str, ...],
+        expected: bool,
+    ) -> None:
+        llm_response = LLMResponse(
+            id="rid",
+            created=0,
+            choices=["ok"],
+            model="m",
+            tool_calls=[
+                LLMToolCall(id=f"id-{n}", tool_name=n, tool_args={}) for n in tool_names
+            ],
+        )
+        assert (
+            mcp_open_agent._is_filler_bot_utterance(
+                llm_response, BotUttered(text="Streamed.")
+            )
+            is expected
+        )

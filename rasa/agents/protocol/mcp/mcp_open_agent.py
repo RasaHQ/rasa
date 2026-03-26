@@ -218,6 +218,19 @@ class MCPOpenAgent(MCPBaseAgent):
             return True
         return False
 
+    def _is_filler_bot_utterance(
+        self,
+        llm_response: LLMResponse,
+        bot_uttered: Optional[BotUttered],
+    ) -> bool:
+        """Whether streamed assistant text should be recorded as a filler message."""
+        return (
+            bot_uttered is not None
+            and self._enable_filler_messages
+            and bool(llm_response.tool_calls)
+            and not self._is_task_completed_tool_call_present(llm_response)
+        )
+
     async def send_message(
         self, agent_input: AgentInput, output_channel: Optional[OutputChannel] = None
     ) -> AgentOutput:
@@ -358,12 +371,13 @@ class MCPOpenAgent(MCPBaseAgent):
                         tool_results,
                     )
 
-                if (
-                    llm_response.tool_calls
-                    and bot_uttered
-                    and not self._is_task_completed_tool_call_present(llm_response)
-                ):
-                    # Record the acknowledgement response as a BotUttered event.
+                # Record the filler message if it is present
+                is_filler = self._is_filler_bot_utterance(llm_response, bot_uttered)
+                if output_channel:
+                    output_channel.note_last_streamed_bot_message_was_filler(is_filler)
+
+                if is_filler:
+                    # Record the filler message as a BotUttered event.
                     self._record_filler_bot_uttered(bot_uttered, generated_events)
 
                 if llm_response.tool_calls:
