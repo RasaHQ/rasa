@@ -4,13 +4,11 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write # for dorny/paths-filter to fetch a list of changed files
+  pull-requests: read # for dorny/paths-filter to read pull requests
 
 jobs:
   check_poetry_lock:
-    permissions:
-      contents: read  # for dorny/paths-filter to fetch a list of changed files
-      pull-requests: read  # for dorny/paths-filter to read pull requests
     name: Detect changes in poetry.lock
     runs-on: warp-ubuntu-latest-x64-2x
     if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
@@ -32,7 +30,7 @@ jobs:
     if: ${{ needs.check_poetry_lock.outputs.lock_file == 'true' && github.event.pull_request.user.login != 'dependabot[bot]' }}
     steps:
       - name: Trigger installation workflow
-        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0  #v3.0.0
+        uses: peter-evans/repository-dispatch@8ec09df4ca6646768b4a7c64aab583d4df092581  #v4.0.1
         with:
           event-type: trigger-installation-performance
           client-payload: '{"branch": "${{ github.head_ref }}", "pr_number": "${{ github.event.pull_request.number }}"}'

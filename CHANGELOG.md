@@ -10,6 +10,335 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.16.0] - 2026-03-26
+                        
+Rasa Pro 3.16.0 (2026-03-26)                             
+### Deprecations and Removals
+- [#4646](https://github.com/rasahq/rasa-private/issues/4646): Remove `HumanHandoff` command from the codebase and default prompt templates.
+- [#4766](https://github.com/rasahq/rasa-private/issues/4766): Remove generic `process_output` method from `AgentProtocol`. In ReAct / MCP agents, use `process_tool_output` for
+  tool-result-based post-processing. In `A2AAgent`, use `process_agent_output` method.
+
+### Features
+- [#2677](https://github.com/rasahq/rasa-private/issues/2677): Added `max_polling_time` and `polling_initial_delay` to A2A agent configuration so polling parameters can be set per agent. Defaults remain 60 seconds and 0.5 seconds respectively when not set.
+
+  To override polling for an A2A agent, set the options in the agent's configuration:
+
+  ```yaml
+  agent:
+    name: my_agent
+    protocol: A2A
+    # ...
+
+  configuration:
+    agent_card: "https://example.com/agent-card.json"
+    max_polling_time: 120        # max total polling time in seconds (default: 60)
+    polling_initial_delay: 1.0   # initial delay before first poll in seconds (default: 0.5)
+    # ... other configuration (timeout, max_retries, etc.)
+  ```
+- [#4400](https://github.com/rasahq/rasa-private/issues/4400): Added filler message support for ReAct agents via a new `enable_filler_messages` config flag. Filler messages are **enabled by default** and are streamed to the user before tool execution, with streaming capability determined by a new `supports_streaming` property on `OutputChannel`.
+
+  To disable filler messages for an agent, set `enable_filler_messages: false` in the agent's configuration:
+
+  ```yaml
+  agent:
+    name: my_agent
+    # ...
+
+  configuration:
+    enable_filler_messages: false
+    # ... other configuration (llm, timeout, etc.)
+  ```
+- [#4402](https://github.com/rasahq/rasa-private/issues/4402): Implements user-scoped tracker querying and durable conversation metadata across all tracker stores.
+  Persists `user_id` and `conversation_started_timestamp` in the tracker object to use for querying and ordering:
+      - serialisation now omits null user_id
+      - deserialisation handles `JSONDecodeError`
+      - Ensures `conversation_started_timestamp` backfilled on save/update for backward compatibility
+
+  Summary of tracker store changes for user-scoped retrieval of conversation trackers:
+  - SQL: introduces users table (sender_id→user_id, timestamp) with upsert per dialect; JOIN-based retrieval and DB-level ordering/pagination; cleanup on delete
+  - Redis: maintains secondary index user_trackers:{user_id} (Sorted Set) for O(1) lookup; batch mget, robust deserialisation, index cleanup
+  - Mongo: creates indices on user_id and (conversation_started_timestamp, sender_id); aggregation pipeline for ordering/pagination; restores user_id
+  - Dynamo: saves user_id and conversation_started_timestamp (Decimal) in update_item; GSI support (user_id-index with sort on conversation_started_timestamp) with full-scan fallback
+- [#4415](https://github.com/rasahq/rasa-private/issues/4415): Added optional `user_id` parameter to `DialogueStateTracker` to enable associating multiple conversations with a single end user.
+- [#4458](https://github.com/rasahq/rasa-private/issues/4458): Implemented conversation lifecycle management with `ConversationInactive` and enhanced `SessionEnded` events.
+  Conversations can now be marked as inactive (resumable via user message or `ConversationResumed` event) or terminated (permanently ended, blocking all further updates).
+
+  Added a new `session_config` option `start_session_after_expiry` that controls what happens when a session expires (based on `session_expiration_time`).
+  - When `true` (default), Rasa emits a `SessionStarted` event and starts a new session, ensuring backward compatibility.
+  - When `false`, expired sessions simply continue without automatically starting a new session.
+- [#4463](https://github.com/rasahq/rasa-private/issues/4463): Add REST API endpoint `/users/{user_id}/trackers` to retrieve all conversations for a given user.
+
+  This admin endpoint provides user-scoped tracker querying with:
+  - **Authentication**: Requires token or JWT authentication
+  - **Pagination**: Supports `limit` and `offset` query parameters for efficient pagination
+  - **Event verbosity**: Configurable via `include_events` query parameter (NONE, APPLIED, AFTER_RESTART, ALL)
+  - **Error handling**: Proper validation and HTTP status codes for invalid inputs
+  - **Performance**: Database-level sorting and pagination for efficient queries with 1000+ conversations
+
+  **Important**: This is an **admin endpoint** that should be used as a proxy or in a backend service to manage what data is exposed to the client. Direct client access should be avoided to maintain security and control over sensitive user data.
+
+  Example usage:
+  ```bash
+  GET /users/{user_id}/trackers?limit=50&offset=0
+  ```
+
+  Response format:
+  ```json
+  {
+    "conversations": [...],
+    "limit": 50,
+    "offset": 0
+  }
+  ```
+- [#4479](https://github.com/rasahq/rasa-private/issues/4479): Implemented Multilingual Voice AI Agents. The configuration of Automatic Speech Recognition (ASR) and Text to Speech (TTS) changes through the conversation based on the value of built-in `language` slot. For each ASR and TTS Engine, users can configure the language, model or voice to be used for each value of `language` slot.
+  In case of ASR Engines, reconfiguration requires a websocket reconnect. Rasa manages that on the fly to ensure that no speech is lost.
+  The signature of certain methods in classes `ASR_Engine` and `TTS_Engine` have also changed. These methods are, __init__ and from_config_dict.
+- [#4510](https://github.com/rasahq/rasa-private/issues/4510): Implemented session-scoped conversations. Each conversation session now has a unique `session_id` (UUID v4) that is automatically generated and attached to all events within that session. This enables better tracking and analytics of user sessions. Session IDs are automatically generated on session start or resume events and propagated to event metadata.
+
+  Added `current_session_id` field to DialogueStateTracker. The session ID is automatically:
+  - Generated as a UUID4 when a new session starts or resumes. Generation triggers include:
+      - Brand new conversations (first event on a tracker)
+      - SlotSet for session metadata slot
+      - `action_session_start` or `SessionStarted` events
+      - `ConversationResumed` after inactivity
+      - `UserUttered` reactivating an inactive conversation
+
+  Added `session_id` to event metadata. The generated ID is automatically included in the metadata of all events created during a conversation session.
+- [#4527](https://github.com/rasahq/rasa-private/issues/4527): Add `timer_store` configuration to `endpoints.yml` to enable configurable background session timer storage.
+- [#4563](https://github.com/rasahq/rasa-private/issues/4563): Add MCP `_meta` parameter support so you can pass user-specific data to MCP servers without exposing it to the LLM.
+
+  - **Configuration:** Optional `meta_map` per MCP server in `endpoints.yml` with:
+    - **`static`**: Fixed key-value pairs always sent in `_meta`
+    - **`from_slots`**: Slot-to-mcp key mappings; slot values are sent under the given param in `_meta`
+  - **Execution:** Both flow-based and agent-based MCP tool calls build and send `_meta` when `meta_map` is configured. A compatibility layer supports current MCP SDK versions that do not expose `meta` on `call_tool`.
+  - **Agent-based calls:** For `from_slots`, values are read from agent input only when the slot is present; slots that have been removed from agent input will not appear in `_meta`.
+
+  Example `endpoints.yml`:
+
+  ```yaml
+  mcp_servers:
+    - name: internal_api_server
+      url: http://internal-api:8000/mcp/
+      type: http
+      meta_map:
+        static:
+          api_version: "v2"
+          source: "rasa_agent"
+        from_slots:
+          - slot: user_id
+            param: user_id
+          - slot: role
+            param: user_role
+  ```
+
+  This replaces the need to override private Rasa methods (e.g. `execute_mcp_tool`, `send_message`) to inject auth or context into MCP requests.
+- [#4574](https://github.com/rasahq/rasa-private/issues/4574): Implemented Session Timer System for automatic session expiration. Conversations are now automatically marked as inactive after a configurable timeout period, supporting both single-instance and horizontally-scaled deployments.
+  - Timers are scheduled when a session starts and reset on each user message
+  - When a timer expires, a `ConversationInactive` event is emitted
+  - Race condition handling ensures correct behavior in multi-pod deployments
+  - Redis-backed storage enables timer persistence across restarts
+  - Automatic recovery of expired timers on server startup
+  - Fallback to in-memory storage during Redis outages
+  - `SessionTimerStore` / `SessionTimerManager` abstract base classes
+  - `InMemorySessionTimerStore` / `InMemorySessionTimerManager` for single-instance deployments
+  - `RedisSessionTimerStore` / `RedisSessionTimerManager` for distributed deployments
+- [#4617](https://github.com/rasahq/rasa-private/issues/4617): Implemented out-of-the-box collection of customer satisfaction.
+  - Added built-in `pattern_customer_satisfaction` for CSAT collection.
+  - The pattern is triggered automatically via a link from `pattern_completed` when users decline to continue the conversation.
+  - It collects a `csat_score` slot (categorical: `satisfied`/`unsatisfied`) and responds with appropriate thank-you messages.
+  - The pattern, its responses (`utter_ask_csat_score`, `utter_csat_thank_you_satisfied` and `utter_csat_thank_you_unsatisfied`) and when the pattern is triggered are all fully customizable.
+- [#4628](https://github.com/rasahq/rasa-private/issues/4628): Handle `SessionEnded` events returned from custom actions gracefully by stopping the prediction loop and flow executor when the conversation is terminated.
+- [#4679](https://github.com/rasahq/rasa-private/issues/4679): Added the system action `action_handoff_metric` to mark conversations as "not contained" for containment metrics. Any conversation that includes this action emits an `ActionExecuted` Kafka event and is counted as not contained. The action is a no-op; no user-visible behavior or migration is required.
+
+  Updated the default `pattern_human_handoff` flow to run `action_handoff_metric` before `utter_human_handoff_not_available`, so existing assistants automatically emit the metric when the human handoff pattern is used. If you have overridden `pattern_human_handoff` in your flows, you can add a step `action: action_handoff_metric` at the start of that flow to include those conversations in containment metrics.
+- [#4705](https://github.com/rasahq/rasa-private/issues/4705): Add support for multiple Audio Formats in Rasa. These are G.711 μ-law (legacy) along with Linear PCM 24kHz and Linear PCM 48kHz.
+- [#4720](https://github.com/rasahq/rasa-private/issues/4720): Extended support for Audio Formats, 
+  Updated Azure and Deepgram Automatic Speech Recognition (ASR) to support multiple audio formats. G.711 μ-law, Linear PCM 24kHz and Linear 48kHz.
+  Updated Azure, Deepgram, and Cartesia Text to Speech (TTS) to support the same audio formats. Rime TTS only supports G.711 μ-law and Linear PCM 24kHz.
+  Updated Jambonz and Audiocodes Stream Channel to use Linear PCM 24kHz audio when sending or receiving audio from the platform.
+- [#4727](https://github.com/rasahq/rasa-private/issues/4727): Add prompt templates and the corresponding model mapping for GPT-5.1 and GPT-5.2.
+- [#4733](https://github.com/rasahq/rasa-private/issues/4733): Update default models for LLM-based components: `CompactLLMCommandGenerator`, `SearchReadyLLMCommandGenerator`,
+  `LLMBasedCommandGenerator`, `ContextualResponseRephraser` and `MCPBaseAgent` will use `gpt-5.1-2025-11-13`;
+  `EnterpriseSearchPolicy`, `LLMBasedRouter`, `ConversationRephraser` and `IntentlessPolicy` will use
+  `gpt-5-mini-2025-08-07`.
+- [#4735](https://github.com/rasahq/rasa-private/issues/4735): Browser Audio channel uses Linear PCM 48kHz audio with ASR and TTS components. The sample rate of this encoding can be configured with `sample_rate` property of the channel. Supported values in kHz are 8000, 24000 and 48000
+  Voice Inspector has been updated to receive and play Linear PCM at any of the supported sample rates. The sample rate is sent to the Voice Inspector in a handshake message.
+- [#4737](https://github.com/rasahq/rasa-private/issues/4737): ReAct agent now uses the streaming LLM API and consumes the response incrementally instead of buffering the full stream. Content tokens are delivered to the user in real time when the channel supports streaming. Tool calls are executed after the stream segment completes and their results are sent in one shot. This reduces perceived latency.
+- [#4738](https://github.com/rasahq/rasa-private/issues/4738): Voice channels enforce two type of minimum gaps between bot audio: a shorter gap for regular back-to-back utterances, and a longer gap following filler messages (e.g., when streaming assistant text alongside tool calls from ReAct-style agents). After each message is sent, when the next message arrives, the channel checks the time since the last message was sent against the configured minimum delay. If more time is needed, generates silence audio for that duration, sends the silence to the stream, and then sends the next message. Consecutive turns are therefore naturally spaced.
+- [#4748](https://github.com/rasahq/rasa-private/issues/4748): Add prompt templates and the corresponding model mapping for Claude Sonnet 4.5 and Claude Sonnet 4.6.
+- [#4766](https://github.com/rasahq/rasa-private/issues/4766): Add public method `process_tool_output()` in `MCPBaseAgent` for implementing custom post-processing logic based on the
+  tool results in each iteration.
+- [#4850](https://github.com/rasahq/rasa-private/issues/4850): Support metadata pass-through in A2AAgent so that specialized data can be passed to the agent's backend via `AgentInput.metadata` without being processed by the LLM. The metadata is forwarded to the `Message` sent to the A2A server.
+- [#4851](https://github.com/rasahq/rasa-private/issues/4851): * Add graceful cancellation of long-running A2A agent operations (both polling and streaming). When
+    `ConversationInactive` event is added to the tracker after `session_expiration_time` minutes while an A2A task is in
+    progress, the operation is now cancelled promptly instead of running until timeout. **Note**: This is a model breaking
+    change. Please retrain your model.
+  * Introduce a public method `Agent.cancel_background_tasks(sender_id)` that can be used to explicitly trigger the
+    cancellation of the background A2A processing (both streaming and polling) from other components (e.g. from custom
+    channels).
+  * Add a new POST `/cancel_background_tasks/<sender_id>` endpoint in the REST channel that allows frontends and external
+    systems to explicitly cancel background processing for a conversation.
+  * Closing the Inspector browser tab now automatically cancels any in-flight A2A operations for that conversation.
+- [#4867](https://github.com/rasahq/rasa-private/issues/4867): `AgentInput.metadata` is now propagated to custom tool execution. Tool executors receive `(args, context)`, where `args` contains the LLM-generated tool parameters and `context` is an `AgentToolContext`. The request metadata is available via `context.metadata` and it can be set by the agent in the `process_input` method using the `AgentInput.metadata` attribute.
+
+### Improvements
+- [#2666](https://github.com/rasahq/rasa-private/issues/2666): The continue-interrupted pattern is now triggered after a knowledge (e.g. EnterpriseSearch) answer, so users are asked if they want to resume previously interrupted flows when returning from a search.
+- [#2667](https://github.com/rasahq/rasa-private/issues/2667): When an agent was interrupted and then resumed, it now gets reinvoked with the current context and a system instruction that it was interrupted and may use the new context or ask again. Previously, the agent only repeated its last message and did not run again.
+- [#3679](https://github.com/rasahq/rasa-private/issues/3679): Add `SessionPaused` event which purpose is to be triggered by external systems
+  when a session is paused. 
+  It has the following properties:
+  * `event` - which is always set to `session_paused`
+  * `reason` - which describes why the session was paused
+  * `timestamp` - (optional) Unix timestamp, which indicates when the session was paused
+
+  If `timestamp` is not provided, the current Unix timestamp of the Rasa Pro server
+  will be used.
+
+  This event can be used to notify pipelines bout the pause state of a session, 
+  allowing them to take appropriate actions based on the session's status.
+
+  To use this event, external systems should trigger it when a session is paused, via
+  `POST` `conversations/<sender id>/tracker/events`.
+
+  Example of the payload for the POST request:
+  ```json
+  {"event": "session_paused", "timestamp": 1761232628.512342, "reason": "Widget closed"}
+  ```
+- [#4230](https://github.com/rasahq/rasa-private/issues/4230): Refactor Copilot response handling to support structured streaming from the agent SDK copilot and improve text content processing. The new implementation properly segments text content parts into start, delta, and end events, handles controlled predictions, and fixes buffer handling issues in the legacy copilot handler.
+- [#4477](https://github.com/rasahq/rasa-private/issues/4477): Events streamed to the event broker now include `user_id` in the message payload alongside `sender_id`.
+  This allows downstream consumers to identify the end user associated with each conversation event.
+- [#4637](https://github.com/rasahq/rasa-private/issues/4637): Add support to stream audio chunks from Azure Speech Service via websocket.
+  Rasa will use streaming via websocket when response does not contain any SSML tags.
+  If response contains any SSML tag, Rasa will default to use HTTPS to create audio chunks from Azure Speech Services.
+  Improve interruption handling by:
+  * stopping stream from Azure Speech Services when interruption happens
+  * stopping to send audio chunks from Rasa to external voice service when interruption happens
+- [#4641](https://github.com/rasahq/rasa-private/issues/4641): Improve `action_session_start` execution to ensure it runs only once (coordinating calls from the `MessageProcessor` and the `FlowPolicy` when it triggers `pattern_session_start`).
+- [#4721](https://github.com/rasahq/rasa-private/issues/4721): Update eligibility and session-splitting logic for privacy cron jobs in line with the new session management improvements.
+  - when USER_CHAT_INACTIVITY_IN_MINUTES is unset, “new” trackers are processed based on ConversationInactive/SessionEnded
+  events and session_id grouping (with a grace period of min_after_session_end), while “legacy” trackers without session_id
+  fall back to a fixed 30min + min_after_session_end threshold.
+  - when the env var is set, time-based behavior remains but is now deprecated and applied per session.
+
+  SQL tracker store: `update()` now supports a content-only path when the timestamp-based delete removes no rows
+  (e.g. anonymization: same timestamps, content changed). In that case, the store either updates existing event rows
+  in place where content differs or performs a full replace if event counts differ, so anonymized content is persisted
+  correctly in a single atomic transaction.
+
+  Anonymization cron job: the privacy manager now uses `update(updated_tracker)` for anonymization instead of delete-then-save.
+  SQL tracker store behavior is aligned with MongoDB, Redis and DynamoDB (overwrite semantics), and anonymization with SQL
+  completes in one atomic operation without a separate delete/save sequence.
+- [#4723](https://github.com/rasahq/rasa-private/issues/4723): Cancel timer unconditionally when a `SessionEnded` event is appended via the REST API, regardless of whether `execute_side_effects` is requested.
+- [#4749](https://github.com/rasahq/rasa-private/issues/4749): Add `model_name` to event metadata.
+- [#4756](https://github.com/rasahq/rasa-private/issues/4756): Add `tool_timeout` for MCP/ReAct agents configuration to configure tool-call timeout in seconds.
+- [#4809](https://github.com/rasahq/rasa-private/issues/4809): Enabled deletion of a Studio assistant during upload.
+  Introduced a new `--dangerously-delete-existing` flag to `rasa studio upload`. When set, any existing Studio assistant with the same name is deleted before the upload proceeds, with no interactive confirmation.
+- [#4873](https://github.com/rasahq/rasa-private/issues/4873): Added logic for signaling interruptions in tts streaming. Sendind a variation of clear command to stop streaming audio and clear the buffer to prepare for the next response.
+- [#4881](https://github.com/rasahq/rasa-private/issues/4881): Added a warning log when `carry_over_slots_to_new_session` and `start_session_after_expiry` are both set to `false` in the domain session config, as `carry_over_slots_to_new_session` has no effect when no session boundary is created on expiry.
+- [#4883](https://github.com/rasahq/rasa-private/issues/4883): Use the prompt template for `gpt-5.1-2025-11-13` as new default prompt template in the `CompactLLMCommandGenerator` and `SearchReadyLLMCommandGenerator`.
+- [#4990](https://github.com/rasahq/rasa-private/issues/4990): SQL and Mongo tracker stores now slice the latest conversation session using the same boundary as other tracker stores:
+  `ActionExecuted(action_session_start)`. That action is always executed by the message processor when a new session starts,
+  while `SessionStarted` may be omitted by a custom action-session-start action. Incremental save offsets and SQL partial-fetch queries
+  were updated to match this boundary.
+- [#5000](https://github.com/rasahq/rasa-private/issues/5000): Add normalization of `AgentOutput.events` so entries from ReAct/A2A customizations may be either Rasa `Event` instances or serialized event dicts; dicts are parsed into proper events before flow handling (e.g. stack metadata attachment), and invalid entries are dropped with structured error logs.
+- [#5009](https://github.com/rasahq/rasa-private/issues/5009): Declared `safetensors` and `keras` as optional NLU extras (`pip install 'rasa-pro[nlu]'` or `full`), so minimal installs no longer pull them in directly. `regex` is also declared optional and listed under those extras for consistency with `WhitespaceTokenizer`, but it remains installed on most minimal installs because the base dependency `tiktoken` (used by the LLM stack) depends on `regex`.
+
+  The affected code paths lazy-import `safetensors` and `regex`; if either package is not installed, they raise `MissingDependencyException` with install instructions. `keras` is only pulled in for the TensorFlow model stack (`rasa.utils.tensorflow.models`), so it is optional for the same minimal-install story as `safetensors`.
+- [#5018](https://github.com/rasahq/rasa-private/issues/5018): Improved sub-agent call steps that use `exit_if`: when the same ReAct agent runs again in one conversation, slots named in `exit_if` are cleared so a new run does not reuse values from the last finished run. Ongoing multi-turn agent sessions (waiting for the next user message) are unchanged.
+- [#5026](https://github.com/rasahq/rasa-private/issues/5026): Two improvements to `DynamoTrackerStore`:
+
+  - **Idempotent `save()`**: concurrent or retried saves no longer produce duplicate events. New conversations are written via `put_item` with `attribute_not_exists(sender_id)`, ensuring the full tracker is stored exactly once. Subsequent saves append only new last-turn events via a conditional `update_item` guarded by `last_event_timestamp`, which atomically rejects any append whose events are already stored — without requiring a read-before-write.
+  - **Reused boto3 resource**: `boto3.resource("dynamodb")` is now instantiated once in `__init__` as `self._dynamo` and shared across all methods, eliminating repeated resource construction per call. The connection pool size is configurable via the `max_pool_connections` constructor argument (default: 50) to prevent urllib3 pool saturation under concurrent load.
+- [#5041](https://github.com/rasahq/rasa-private/issues/5041): The `GET /users/{user_id}/trackers` endpoint no longer replays conversation history
+  through `DialogueStateTracker.from_dict()` and `current_state()` on every request.
+  Each tracker store now implements `get_serialized_trackers_by_user_id()`, which returns
+  serialized event dicts directly from storage without event replay.
+
+  Additional store-specific improvements included with this change:
+
+  - **SQL**: replaced an N+1 query loop (one `retrieve_full_tracker` call per conversation)
+    with two bulk queries — one paginated `users` table query and one `events IN (...)`
+    fetch — eliminating query count growth with conversation volume.
+  - **Redis**: orphaned sorted-set index entries are now removed in a single batched `ZREM`
+    call instead of one call per orphan.
+  - **All stores**: `current_session_id` is now derived consistently from the last event's
+    metadata rather than from stored state, correctly returning `None` when the last event
+    is `ConversationInactive`.
+
+### Bugfixes
+- [#2673](https://github.com/rasahq/rasa-private/issues/2673): Restarted task-oriented ReAct agents no longer exit immediately. When an agent is restarted, the previous run's user/assistant messages are now marked in the conversation so the model does not set slots from them; the system prompt instructs the agent to treat the current interaction as a fresh start for slot collection.
+- [#4064](https://github.com/rasahq/rasa-private/issues/4064): Fix potential Tensor shape mismatch error in `TEDPolicy` and `DIETClassifier`.
+- [#4085](https://github.com/rasahq/rasa-private/issues/4085): Fix bug with the missing `language_data` module by installing `langcodes` with the `data` extra dependency.
+- [#4125](https://github.com/rasahq/rasa-private/issues/4125): Fixed `language` parameter in RimeTTS configuration to be passed correctly to the Rime API.
+  Temporarily changed RimeTTS to non-streaming input mode as a workaround for a Rime API bug that impacts conversation experience; audio is now generated from the complete response at once.
+- [#4165](https://github.com/rasahq/rasa-private/issues/4165): Update `mcp` version to `~1.23.0` to address security vulnerability CVE-2025-66416.
+- [#4168](https://github.com/rasahq/rasa-private/issues/4168): Fix bug in `CommandPayloadReader` where regex matching did not account for list slots, leading to incorrect parsing of slot keys and values. Now, slot names and values are correctly extracted even if a list is provided.
+- [#4169](https://github.com/rasahq/rasa-private/issues/4169): Previously, `DialogueStateTracker.has_coexistence_routing_slot` could incorrectly return `True` when the tracker was created without domain slots (i.e., using `AnySlotDict`), because `AnySlotDict` pretends all slots exist. Now, the property returns False in that case, so the routing slot is only considered present if it is actually defined in the domain.
+- [#4174](https://github.com/rasahq/rasa-private/issues/4174): Fix LLM prompt template loading to raise an error instead of just printing a warning when a custom prompt file is missing or cannot be read.
+- [#4177](https://github.com/rasahq/rasa-private/issues/4177): Fix `AttributeError: 'str' object has no attribute 'pop'` when using `KnowledgeAnswerCommand` with tracing enabled.
+- [#4178](https://github.com/rasahq/rasa-private/issues/4178): Fix `UnboundLocalError` in `E2ETestRunner._handle_fail_diff` that caused e2e tests to crash when processing `slot_was_not_set` assertion failures.
+- [#4184](https://github.com/rasahq/rasa-private/issues/4184): Fixed button payloads with nested parentheses (e.g., `/SetSlots(slot=value)`) not being parsed correctly in `rasa shell`.
+  The payload was incorrectly stripped of its `/SetSlots` prefix, causing it to be treated as text instead of a slot-setting command.
+- [#4187](https://github.com/rasahq/rasa-private/issues/4187): Add missing deprecation warning for legacy `RASA_PRO_LICENSE` environment variable.
+  Update license validation error messages to reference the actual environment variable used.
+- [#4189](https://github.com/rasahq/rasa-private/issues/4189): Include response button titles in conversation history in prompts of LLM based components.
+- [#4268](https://github.com/rasahq/rasa-private/issues/4268): Fixed e2e test coverage report to correctly track coverage per flow. Each flow now appears as a separate entry with accurate coverage percentages. Additionally, `call`/`link` steps and `collect` steps with prefilled slots are now properly marked as visited.
+- [#4291](https://github.com/rasahq/rasa-private/issues/4291): Fix DUT fails with AttributeError when running with custom CommandGenerator
+- [#4421](https://github.com/rasahq/rasa-private/issues/4421): Fix OAuth2AuthStrategy to use URL-encoded parameters with Basic Authentication to fetch access token
+- [#4621](https://github.com/rasahq/rasa-private/issues/4621): Remove config file content from endpoint read success logs to prevent sensitive data exposure.
+- [#4717](https://github.com/rasahq/rasa-private/issues/4717): The MCP task agent now includes slot changes in the agent output when the state is `INPUT_REQUIRED` or when max iterations is reached. Previously, slots set via set_slot tools were updated in memory but not forwarded in the output, so they were not persisted until exit conditions were met.
+- [#4721](https://github.com/rasahq/rasa-private/issues/4721): Fix race conditions in PII cron jobs by requiring a LockStore for BackgroundPrivacyManager and acquiring a per-sender_id
+  lock while anonymization/deletion jobs read-modify-write trackers.
+- [#4734](https://github.com/rasahq/rasa-private/issues/4734): Rasa needs to check if it is in listening mode before it triggers the silence timeout watcher.
+  Silence timeout watcher will be triggered if all are true:
+  * User is not speaking
+  * Bot is not speaking
+  * Rasa is in listening mode
+
+  If any of the conditions above are not true, Rasa will cancel the silence timeout watcher.
+- [#4770](https://github.com/rasahq/rasa-private/issues/4770): Channel specific silence_timeout can now be set in credentials file. Fixes the type error. If silence_timeout is not set the channel will use global value.
+- [#4859](https://github.com/rasahq/rasa-private/issues/4859): Stop silence timeout immediately when interruption is detected.
+- [#4869](https://github.com/rasahq/rasa-private/issues/4869): When an A2A task has status `input_required`, Rasa now populates `AgentOutput.structured_results` from both `task.artifacts` and DataParts in `task.status.message.parts`. Previously only the text message was returned and structured data was omitted, so clients can now process artifact data when the agent is waiting for user input.
+- [#4888](https://github.com/rasahq/rasa-private/issues/4888): Fix PII redaction of user or bot messages when slot values do not match the original message text. 
+  This can occur when the original messages are multi-line or TTS-style bot read-backs.
+- [#4904](https://github.com/rasahq/rasa-private/issues/4904): Update setuptools to 80.10.2 to address vulnerability https://osv.dev/vulnerability/DEBIAN-CVE-2026-23949.
+  Replaced randomname with duoname (no dependencies) library.
+- [#4911](https://github.com/rasahq/rasa-private/issues/4911): Fixed the backend tracing wrapper (e.g., Jaeger or OTLP) around send_message to correctly forward the output_channel argument to the underlying implementation.
+- [#4916](https://github.com/rasahq/rasa-private/issues/4916): When an agent or MCP tool call returns a fatal error (e.g. internal server error), the user no longer receives two bot messages. Previously both the internal error message ("Sorry, I am having trouble with that...") and the flow-cancelled message ("Okay, stopping...") were shown. Now only the internal error message is shown; the cancel pattern is not pushed for system-initiated failures, so the flow is still marked ended for tracking but the confusing cancel utterance is omitted.
+- [#4958](https://github.com/rasahq/rasa-private/issues/4958): Add rephrase endpoint validation by treating defaults-only misconfiguration as warning and user-defined rephrase misconfiguration as error.
+- [#4986](https://github.com/rasahq/rasa-private/issues/4986): Issue a warning when ASR and TTS `language_map` is missing languages from `additional_language` property read from `config.yml`.
+- [#4990](https://github.com/rasahq/rasa-private/issues/4990): Fixed replay-safe latest-session handling for all built-in tracker stores.
+  Tracker store `retrieve` method uses `get_latest_replay_safe_session_tracker`, widening the replay prefix when stack patches
+  cannot be applied on the latest-session slice alone.
+- [#4993](https://github.com/rasahq/rasa-private/issues/4993): Fixed `default_language` raising `RasaException("No default language configured")` even when `language:` was properly set in `config.yml`. It happened when the `langauge` slot was reset (set to `None`).
+- [#4998](https://github.com/rasahq/rasa-private/issues/4998): Improved OpenTelemetry histograms for MCP agent LLM usage: `mcp_agent_llm_prompt_token_usage` and `mcp_agent_llm_response_duration` now record a consistent, call-scoped set of attributes (`agent_name`, `execution_context`, and `protocol_type`), making metrics easier to aggregate.
+- [#5011](https://github.com/rasahq/rasa-private/issues/5011): Fixes Implemented:
+
+  1. Both default and customized `action_session_start` now raise a Rasa exception when the session is already started for the current message.
+  This exception is caught and handled by `MessageProcessor` which appends `ActionExecutionRejected` event and continues processing the message.
+  This ensures that the message processing flow is not interrupted by the exception and allows for proper handling of the session start action.
+  This change was required to avoid generating new session ids when this action is executed multiple times in the same time-bound tracker session.
+
+  2. Fix conversation stalling when a flow contains an explicit `action_session_start` step and the session is already started for the current message.
+  - The root cause explanation: The attempt to execute `action_session_start` a 2nd time for an existing session is rejected.
+  The action execution rejection propagates to the DefaultPolicyPredictionEnsemble, which zeroes out
+  action_session_start's confidence across all policy predictions. Since FlowPolicy only
+  predicted that one action (with confidence 1.0), zeroing it leaves only the default
+  action_listen at 0.0.
+  - The fix: detect this condition in FlowPolicy and skip the step immediately, letting FlowPolicy
+  continue the loop and return the actual next flow step's action.
+- [#5014](https://github.com/rasahq/rasa-private/issues/5014): Fixed empty assistant bubbles in Socket.IO channels (including Inspector) when the model returned whitespace-only or paragraph-only text. Non-streaming LLM responses are now stripped before send and blank segments from `\n\n` splitting are no longer emitted.
+- [#5026](https://github.com/rasahq/rasa-private/issues/5026): Fixed three bugs in `DynamoTrackerStore`:
+
+  - **`JsonPatchConflict` on tracker retrieval**: duplicate events appended by concurrent or retried `save()` calls caused `jsonpatch` to attempt operations on already-mutated dialogue stack fields (e.g. removing `frame_type` a second time), raising an unhandled exception. Duplicate events are now removed on load via `_deduplicate_events()`, which deduplicates by full event content to safely handle multiple legitimate events sharing the same timestamp.
+  - **Event accumulation across trackers in `get_trackers_by_user_id`**: `events_with_floats` was declared outside the per-item loop in `_process_dynamodb_items`, causing each reconstructed tracker to accumulate all preceding trackers' events. Each tracker now gets its own isolated events list.
+  - **Pre-`UserUttered` events lost on first save**: `save()` only appended last-turn events (from the latest `UserUttered` timestamp onwards), so events emitted before the first user message — such as `action_session_start`, `session_started`, and initial `slot` events — were never persisted for new conversations. First saves now use `put_item` to store the complete tracker state.
+- [#5028](https://github.com/rasahq/rasa-private/issues/5028): Upgrade `langsmith` dependency to 0.6.3 to address CVE-2026-25528.
+
+### Miscellaneous internal changes
+- [#3690](https://github.com/rasahq/rasa-private/issues/3690), [#4072](https://github.com/rasahq/rasa-private/issues/4072), [#4206](https://github.com/rasahq/rasa-private/issues/4206), [#4391](https://github.com/rasahq/rasa-private/issues/4391), [#4432](https://github.com/rasahq/rasa-private/issues/4432), [#4434](https://github.com/rasahq/rasa-private/issues/4434), [#4482](https://github.com/rasahq/rasa-private/issues/4482), [#4483](https://github.com/rasahq/rasa-private/issues/4483), [#4501](https://github.com/rasahq/rasa-private/issues/4501), [#4505](https://github.com/rasahq/rasa-private/issues/4505), [#4521](https://github.com/rasahq/rasa-private/issues/4521), [#4530](https://github.com/rasahq/rasa-private/issues/4530), [#4538](https://github.com/rasahq/rasa-private/issues/4538), [#4564](https://github.com/rasahq/rasa-private/issues/4564), [#4591](https://github.com/rasahq/rasa-private/issues/4591), [#4630](https://github.com/rasahq/rasa-private/issues/4630), [#4643](https://github.com/rasahq/rasa-private/issues/4643), [#4647](https://github.com/rasahq/rasa-private/issues/4647), [#4666](https://github.com/rasahq/rasa-private/issues/4666), [#4723](https://github.com/rasahq/rasa-private/issues/4723), [#4731](https://github.com/rasahq/rasa-private/issues/4731), [#4742](https://github.com/rasahq/rasa-private/issues/4742), [#4827](https://github.com/rasahq/rasa-private/issues/4827), [#4899](https://github.com/rasahq/rasa-private/issues/4899)
+
+
 ## [3.15.17] - 2026-03-11
                          
 Rasa Pro 3.15.17 (2026-03-11)                              

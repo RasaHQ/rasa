@@ -7559,15 +7559,15 @@ prompt_toolkit = ">=2.0,<4.0"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.16.0rc2"
+version = "3.16.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 optional = false
 python-versions = "<3.14,>3.9"
 groups = ["main"]
 markers = "(sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" or python_version >= \"3.12\") and (sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" and sys_platform != \"darwin\" or platform_machine == \"arm64\" or python_version >= \"3.12\")"
 files = [
-    {file = "rasa_sdk-3.16.0rc2-py3-none-any.whl", hash = "sha256:e3440509f3c95b6fb52dce7c8f7b9c7209e3f41d59a885e7207bc7939c4aba6e"},
-    {file = "rasa_sdk-3.16.0rc2.tar.gz", hash = "sha256:27c700ab4d191bec8c95392f42dd341cd9376b6adb170adca9bca4e2b895ec32"},
+    {file = "rasa_sdk-3.16.0-py3-none-any.whl", hash = "sha256:f42cbdc919d5b9bd8867e8e50072653832c0769bd45085f69e515ac988526b62"},
+    {file = "rasa_sdk-3.16.0.tar.gz", hash = "sha256:56d61c6b32ab2f8eab06db14d477f4ff73c2b945483c8d75c3947e12d5b1de38"},
 ]
 
 [package.dependencies]
@@ -11325,4 +11325,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10.0,<3.14"
-content-hash = "87585ce1510c7cad58a63dfb1c97d185fd70b6f7492443737c453278baa89dd8"
+content-hash = "d7de819811011ff188e0d0d43d4579d029edc6ef9d55ca720ce73113361b3af0"
