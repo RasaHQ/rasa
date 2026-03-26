@@ -314,13 +314,14 @@ async def test_dynamo_get_trackers_by_user_id(
 
     # Verify results - check both user_id and conversation_started_timestamp
     assert len(trackers) == 2
-    sender_ids = {tracker.sender_id for tracker in trackers}
+    sender_ids = {tracker["sender_id"] for tracker in trackers}
     assert sender_id_1 in sender_ids
     assert sender_id_2 in sender_ids
     assert_all_trackers_have_properties(trackers, user_id)
 
-    assert trackers[0].conversation_started_timestamp == timestamp1
-    assert trackers[1].conversation_started_timestamp == timestamp2
+    tracker_dict = {t["sender_id"]: t for t in trackers}
+    assert tracker_dict[sender_id_1]["conversation_started_timestamp"] == timestamp1
+    assert tracker_dict[sender_id_2]["conversation_started_timestamp"] == timestamp2
 
 
 async def test_dynamo_get_trackers_by_user_id_with_limit(
@@ -339,7 +340,9 @@ async def test_dynamo_get_trackers_by_user_id_with_limit(
 
     assert len(trackers) == 5
     assert_all_trackers_have_properties(trackers, user_id)
-    assert trackers == saved_trackers[:5]
+    assert [t["sender_id"] for t in trackers] == [
+        t.sender_id for t in saved_trackers[:5]
+    ]
 
 
 async def test_dynamo_get_trackers_by_user_id_with_skip(
@@ -358,7 +361,9 @@ async def test_dynamo_get_trackers_by_user_id_with_skip(
 
     assert len(trackers) == 7  # 10 total - 3 skipped
     assert_all_trackers_have_properties(trackers, user_id)
-    assert trackers == saved_trackers[3:]
+    assert [t["sender_id"] for t in trackers] == [
+        t.sender_id for t in saved_trackers[3:]
+    ]
 
 
 async def test_dynamo_get_trackers_by_user_id_with_skip_and_limit(
@@ -379,7 +384,9 @@ async def test_dynamo_get_trackers_by_user_id_with_skip_and_limit(
     assert len(trackers) == 3
     assert_all_trackers_have_properties(trackers, user_id)
 
-    assert trackers == saved_trackers[2:5]
+    assert [t["sender_id"] for t in trackers] == [
+        t.sender_id for t in saved_trackers[2:5]
+    ]
 
 
 async def test_dynamo_get_trackers_by_user_id_no_matches(
@@ -416,12 +423,14 @@ async def test_dynamo_conversation_started_timestamp_backward_compatibility(
     # Save should populate the timestamp
     await dynamo_tracker_store_with_gsi.save(tracker)
 
-    # Retrieve and verify both properties
+    # Retrieve and verify both properties (retrieve() returns DialogueStateTracker)
     retrieved = await dynamo_tracker_store_with_gsi.retrieve(sender_id)
     assert retrieved is not None
-    assert_tracker_properties(retrieved, user_id, sender_id, expected_timestamp)
+    assert retrieved.user_id == user_id
+    assert retrieved.sender_id == sender_id
+    assert retrieved.conversation_started_timestamp == expected_timestamp
 
-    # Also verify via get_trackers_by_user_id
+    # Also verify via get_trackers_by_user_id (returns serialized dicts)
     trackers = await dynamo_tracker_store_with_gsi.get_trackers_by_user_id(user_id)
     assert len(trackers) == 1
     assert_tracker_properties(trackers[0], user_id, sender_id, expected_timestamp)
@@ -454,9 +463,9 @@ async def test_dynamo_get_trackers_by_user_id_sorted_by_timestamp(
 
     # Verify sorting (should be sorted by conversation_started_timestamp)
     timestamps = [
-        t.conversation_started_timestamp
+        t["conversation_started_timestamp"]
         for t in trackers
-        if t.conversation_started_timestamp
+        if t["conversation_started_timestamp"]
     ]
     # Verify timestamps are in ascending order
     assert timestamps == sorted(timestamps)
@@ -507,7 +516,7 @@ async def test_dynamo_get_trackers_by_user_id_filters_by_user_id(
 
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 0

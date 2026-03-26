@@ -772,9 +772,8 @@ async def test_redis_tracker_store_get_trackers_by_user_id(
 
     # Then
     assert len(trackers) == 2
-    assert {t.sender_id for t in trackers} == {"sender1", "sender2"}
-    for tracker in trackers:
-        assert tracker.user_id == user_id
+    assert {t["sender_id"] for t in trackers} == {"sender1", "sender2"}
+    assert all(t["user_id"] == user_id for t in trackers)
 
 
 async def test_redis_tracker_store_get_trackers_by_user_id_no_matches(
@@ -816,8 +815,8 @@ async def test_redis_tracker_store_get_trackers_by_user_id_filters_no_user_id(
 
     # Then
     assert len(trackers) == 1
-    assert trackers[0].sender_id == "sender1"
-    assert trackers[0].user_id == user_id
+    assert trackers[0]["sender_id"] == "sender1"
+    assert trackers[0]["user_id"] == user_id
 
 
 async def test_redis_tracker_store_get_trackers_by_user_id_save_sets_user_id(
@@ -881,10 +880,12 @@ async def test_redis_tracker_store_get_trackers_by_user_id_with_limit(
 
     # Then
     assert len(trackers) == 5
-    for tracker in trackers:
-        assert tracker.user_id == user_id
+    assert all(t["user_id"] == user_id for t in trackers)
 
-    assert trackers == sorted(saved_trackers, key=sort_key)[:5]
+    expected_sender_ids = [t.sender_id for t in sorted(saved_trackers, key=sort_key)][
+        :5
+    ]
+    assert [t["sender_id"] for t in trackers] == expected_sender_ids
 
 
 async def test_redis_tracker_store_get_trackers_by_user_id_with_skip(
@@ -905,10 +906,12 @@ async def test_redis_tracker_store_get_trackers_by_user_id_with_skip(
 
     # Then
     assert len(trackers) == 7  # 10 total - 3 skipped
-    for tracker in trackers:
-        assert tracker.user_id == user_id
+    assert all(t["user_id"] == user_id for t in trackers)
 
-    assert trackers == sorted(saved_trackers, key=sort_key)[3:]
+    expected_sender_ids = [t.sender_id for t in sorted(saved_trackers, key=sort_key)][
+        3:
+    ]
+    assert [t["sender_id"] for t in trackers] == expected_sender_ids
 
 
 async def test_redis_tracker_store_get_trackers_by_user_id_with_skip_and_limit(
@@ -931,8 +934,10 @@ async def test_redis_tracker_store_get_trackers_by_user_id_with_skip_and_limit(
     assert len(trackers) == 3
     assert_all_trackers_have_user_id(trackers, user_id)
 
-    saved_trackers_sorted = sorted(saved_trackers, key=sort_key)
-    assert trackers == saved_trackers_sorted[2:5]
+    expected_sender_ids = [t.sender_id for t in sorted(saved_trackers, key=sort_key)][
+        2:5
+    ]
+    assert [t["sender_id"] for t in trackers] == expected_sender_ids
 
 
 async def test_redis_tracker_store_get_trackers_by_user_id_deserialization_error(
@@ -961,9 +966,9 @@ async def test_redis_tracker_store_get_trackers_by_user_id_deserialization_error
         # Verify error was logged
         logs = filter_logs(
             caplog,
-            event="redis_tracker_store.get_trackers_by_user_id.deserialization_failed",
+            event="redis_tracker_store.get_serialized_trackers_by_user_id.deserialization_failed",
             log_level="error",
-            log_message_parts=["Failed to deserialize tracker for sender_id 'sender2'"],
+            log_message_parts=["Failed to parse JSON for sender_id 'sender2'"],
         )
         assert len(logs) == 1
 
@@ -1005,13 +1010,13 @@ async def test_redis_sorting_by_sender_id_when_timestamps_identical(
 
     # Should be sorted by sender_id when timestamps are identical
     assert len(trackers) == 3
-    assert trackers[0].sender_id == "sender_a"
-    assert trackers[1].sender_id == "sender_b"
-    assert trackers[2].sender_id == "sender_c"
+    assert trackers[0]["sender_id"] == "sender_a"
+    assert trackers[1]["sender_id"] == "sender_b"
+    assert trackers[2]["sender_id"] == "sender_c"
 
     # All should have same timestamp
     for tracker in trackers:
-        assert tracker.conversation_started_timestamp == timestamp
+        assert tracker["conversation_started_timestamp"] == timestamp
 
 
 @pytest.mark.asyncio
@@ -1138,7 +1143,7 @@ async def test_redis_expired_members_are_cleaned_up_on_retrieval(
     assert sender_id_expired not in members
     # Only valid tracker should be returned
     assert len(trackers) == 1
-    assert trackers[0].sender_id == sender_id_valid
+    assert trackers[0]["sender_id"] == sender_id_valid
 
 
 @pytest.mark.asyncio
@@ -1161,8 +1166,8 @@ async def test_redis_expired_members_not_returned(domain: Domain) -> None:
 
     # Then: Only non-expired tracker should be returned
     assert len(trackers) == 1
-    assert trackers[0].sender_id == sender_id_valid
-    assert trackers[0].user_id == user_id
+    assert trackers[0]["sender_id"] == sender_id_valid
+    assert trackers[0]["user_id"] == user_id
 
 
 @pytest.mark.asyncio
@@ -1270,7 +1275,8 @@ async def test_redis_cleanup_logs_when_expired_members_removed(
         logs = filter_logs(
             caplog,
             event=(
-                "redis_tracker_store.get_trackers_by_user_id." "cleaned_expired_members"
+                "redis_tracker_store.get_serialized_trackers_by_user_id."
+                "cleaned_expired_members"
             ),
             log_level="debug",
             log_message_parts=["Cleaned up 1 expired sender_ids"],
@@ -1295,3 +1301,132 @@ async def test_redis_negative_skip_and_limit_ignored(domain: Domain) -> None:
     # Then: Should return all trackers (both negative values ignored)
     assert len(trackers) == 5
     assert_all_trackers_have_user_id(trackers, user_id)
+
+
+def test_get_user_trackers_key_custom_prefix_returns_bare_key(domain: Domain) -> None:
+    """When key_prefix doesn't contain 'tracker:' the key has no namespace."""
+    tracker_store = MockedRedisTrackerStore(domain)
+    tracker_store.key_prefix = (
+        "myapp:"  # doesn't contain DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+    )
+    key = tracker_store._get_user_trackers_key("user_123")
+    assert key == "user_trackers:user_123"
+
+
+@pytest.mark.asyncio
+async def test_redis_malformed_json_value_is_skipped(domain: Domain) -> None:
+    """When an MGET value is malformed JSON, it is logged and excluded from results."""
+    tracker_store = MockedRedisTrackerStore(domain)
+    user_id = "user_json_err"
+    sender_id = "sender_bad_json"
+
+    # Add entry to the sorted set manually (score=+inf → never expires)
+    user_trackers_key = tracker_store._get_user_trackers_key(user_id)
+    tracker_store.red.zadd(user_trackers_key, {sender_id: float("inf")})
+
+    # Store invalid JSON bytes at the tracker key
+    tracker_store.red.set(tracker_store.key_prefix + sender_id, b"not-json{{{{")
+
+    with capture_logs() as caplog:
+        trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    assert trackers == []
+    logs = filter_logs(
+        caplog,
+        event=(
+            "redis_tracker_store."
+            "get_serialized_trackers_by_user_id.deserialization_failed"
+        ),
+        log_level="error",
+    )
+    assert len(logs) == 1
+
+
+@pytest.mark.asyncio
+async def test_redis_user_id_mismatch_tracker_is_excluded(domain: Domain) -> None:
+    """A tracker whose stored user_id differs from the requested user_id is silently
+    excluded from results."""
+    tracker_store = MockedRedisTrackerStore(domain)
+    owner_user_id = "user_owner"
+    other_user_id = "user_other"
+    sender_id = "sender_shared"
+
+    # Persist tracker owned by owner_user_id
+    await create_tracker_with_user_id(tracker_store, sender_id, owner_user_id)
+
+    # Inject the sender into other_user_id's sorted set (simulates a stale index)
+    other_key = tracker_store._get_user_trackers_key(other_user_id)
+    tracker_store.red.zadd(other_key, {sender_id: float("inf")})
+
+    # Querying as other_user_id should return nothing
+    trackers = await tracker_store.get_trackers_by_user_id(other_user_id)
+    assert trackers == []
+
+
+@pytest.mark.asyncio
+async def test_redis_orphaned_sorted_set_entry_is_batch_zremoved(
+    domain: Domain,
+) -> None:
+    """When an MGET value is None (key deleted without index cleanup), the orphaned
+    sorted-set entry is removed via a single batched ZREM call."""
+    tracker_store = MockedRedisTrackerStore(domain)
+    user_id = "user_orphan"
+    sender_valid = "sender_valid"
+    sender_orphan = "sender_orphan"
+
+    # Create a live tracker
+    await create_tracker_with_user_id(tracker_store, sender_valid, user_id)
+
+    # Add an orphaned entry: sorted-set entry exists but the Redis key does not
+    user_trackers_key = tracker_store._get_user_trackers_key(user_id)
+    tracker_store.red.zadd(user_trackers_key, {sender_orphan: float("inf")})
+    # Deliberately do NOT store any Redis key for sender_orphan
+
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    # Only the live tracker should be returned
+    assert len(trackers) == 1
+    assert trackers[0]["sender_id"] == sender_valid
+
+    # Orphaned entry should have been removed from the sorted set
+    remaining = get_sorted_set_members(tracker_store, user_id)
+    assert sender_orphan not in remaining
+    assert sender_valid in remaining
+
+
+@pytest.mark.asyncio
+async def test_redis_cluster_uses_mget_nonatomic(domain: Domain) -> None:
+    """When self.red is a RedisCluster instance, mget_nonatomic is used instead of
+    mget to fetch all tracker blobs in a single round trip."""
+    import json as _json
+
+    import redis as _redis
+
+    tracker_store = MockedRedisTrackerStore(domain)
+    user_id = "user_cluster"
+    sender_id = "sender_cluster"
+
+    # Build a minimal valid serialized tracker dict
+    tracker_blob = _json.dumps(
+        {
+            "user_id": user_id,
+            "conversation_started_timestamp": 1_700_000_000.0,
+            "events": [],
+        }
+    )
+
+    # Replace self.red with a MagicMock that reports as a RedisCluster.
+    # Configure every Redis method called by get_serialized_trackers_by_user_id
+    # so that comparisons and iterations work correctly.
+    mock_cluster = MagicMock(spec=_redis.RedisCluster)
+    mock_cluster.zremrangebyscore.return_value = 0  # no expired members to clean
+    mock_cluster.zrangebyscore.return_value = [sender_id.encode()]
+    mock_cluster.mget_nonatomic.return_value = [tracker_blob]
+
+    tracker_store.red = mock_cluster
+
+    trackers = await tracker_store.get_trackers_by_user_id(user_id)
+
+    assert len(trackers) == 1
+    assert trackers[0]["sender_id"] == sender_id
+    mock_cluster.mget_nonatomic.assert_called_once()

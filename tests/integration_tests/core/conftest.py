@@ -2,7 +2,7 @@ import os
 import random
 import time
 import uuid
-from typing import Iterator, List, Optional, Text
+from typing import Any, Dict, Iterator, List, Optional, Text
 
 import pytest
 import sqlalchemy as sa
@@ -223,23 +223,23 @@ async def create_multiple_trackers_with_user_id(
 
 
 def assert_tracker_properties(
-    tracker: DialogueStateTracker,
+    tracker: Dict[str, Any],
     expected_user_id: str,
     expected_sender_id: Optional[str] = None,
     expected_timestamp: Optional[float] = None,
 ) -> None:
-    """Assert tracker has correct user_id and conversation_started_timestamp."""
-    assert tracker.user_id == expected_user_id
-    assert tracker.conversation_started_timestamp is not None
+    """Assert serialized tracker dict has correct user_id and conversation_started_timestamp."""  # noqa: E501
+    assert tracker["user_id"] == expected_user_id
+    assert tracker["conversation_started_timestamp"] is not None
     if expected_sender_id is not None:
-        assert tracker.sender_id == expected_sender_id
+        assert tracker["sender_id"] == expected_sender_id
     if expected_timestamp is not None:
-        assert tracker.conversation_started_timestamp == expected_timestamp
+        assert tracker["conversation_started_timestamp"] == expected_timestamp
 
 
 def assert_all_trackers_have_properties(
-    trackers: List[DialogueStateTracker], user_id: str
+    trackers: List[Dict[str, Any]], user_id: str
 ) -> None:
-    """Assert all trackers have correct user_id and conversation_started_timestamp."""
+    """Assert all serialized tracker dicts have correct user_id and conversation_started_timestamp."""  # noqa: E501
     for tracker in trackers:
         assert_tracker_properties(tracker, user_id)

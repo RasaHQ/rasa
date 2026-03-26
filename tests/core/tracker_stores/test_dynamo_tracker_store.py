@@ -35,7 +35,6 @@ from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig
 from tests.core.tracker_stores.conftest import (
     _saved_tracker_with_multiple_session_starts,
-    assert_all_trackers_have_user_id,
     create_multiple_trackers_with_user_id,
     create_tracker_with_user_id,
     create_trackers_with_same_timestamp,
@@ -660,18 +659,18 @@ async def test_get_trackers_by_user_id_with_scanning_fallback(
 
         # Then
         assert len(retrieved_trackers) == 2
-        sender_ids = {tracker.sender_id for tracker in retrieved_trackers}
+        sender_ids = {t["sender_id"] for t in retrieved_trackers}
         assert conversation_id_1 in sender_ids
         assert conversation_id_2 in sender_ids
         assert conversation_id_3 not in sender_ids
 
         # Verify all trackers have correct user_id
-        assert_all_trackers_have_user_id(retrieved_trackers, user_id)
+        assert all(t["user_id"] == user_id for t in retrieved_trackers)
 
         # Verify fallback log message
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 1
@@ -701,7 +700,7 @@ async def test_get_trackers_by_user_id_no_matching_trackers_scanning_fallback(
         assert len(trackers) == 0
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 1
@@ -742,10 +741,10 @@ async def test_get_trackers_by_user_id_filters_trackers_without_user_id_scanning
 
         # Then
         assert len(trackers) == 1
-        assert trackers[0].sender_id == conversation_id_1
+        assert trackers[0]["sender_id"] == conversation_id_1
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 1
@@ -788,12 +787,12 @@ async def test_get_trackers_by_user_id_save_sets_user_id_scanning_fallback(
 
         # Then
         assert len(trackers) == 1
-        assert trackers[0].sender_id == conversation_id
-        assert trackers[0].user_id == user_id
+        assert trackers[0]["sender_id"] == conversation_id
+        assert trackers[0]["user_id"] == user_id
 
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 1
@@ -832,11 +831,11 @@ async def test_get_trackers_by_user_id_update_sets_user_id_scanning_fallback(
 
         # Then
         assert len(trackers) == 1
-        assert trackers[0].sender_id == conversation_id
-        assert trackers[0].user_id == user_id
+        assert trackers[0]["sender_id"] == conversation_id
+        assert trackers[0]["user_id"] == user_id
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 1
@@ -946,17 +945,17 @@ async def test_get_trackers_by_user_id_with_gsi(
 
         # Then
         assert len(trackers) == 2
-        sender_ids = {tracker.sender_id for tracker in trackers}
+        sender_ids = {tracker["sender_id"] for tracker in trackers}
         assert conversation_id_1 in sender_ids
         assert conversation_id_2 in sender_ids
         assert conversation_id_3 not in sender_ids
 
         # Verify all trackers have correct user_id
-        assert_all_trackers_have_user_id(trackers, user_id)
+        assert all(t["user_id"] == user_id for t in trackers)
 
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 0
@@ -994,7 +993,7 @@ async def test_get_trackers_by_user_id_with_gsi_no_matching_trackers(
         # Verify GSI was used (no fallback log)
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 0
@@ -1029,13 +1028,13 @@ async def test_get_trackers_by_user_id_with_gsi_filters_trackers_without_user_id
 
         # Then
         assert len(trackers) == 1
-        assert trackers[0].sender_id == conversation_id_1
-        assert trackers[0].user_id == user_id
+        assert trackers[0]["sender_id"] == conversation_id_1
+        assert trackers[0]["user_id"] == user_id
 
         # Verify GSI was used
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 0
@@ -1073,13 +1072,13 @@ async def test_get_trackers_by_user_id_with_gsi_save_sets_user_id(
 
         # Then
         assert len(trackers) == 1
-        assert trackers[0].sender_id == conversation_id
-        assert trackers[0].user_id == user_id
+        assert trackers[0]["sender_id"] == conversation_id
+        assert trackers[0]["user_id"] == user_id
 
         # Verify GSI was used
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 0
@@ -1119,13 +1118,13 @@ async def test_get_trackers_by_user_id_with_gsi_update_sets_user_id(
 
         # Then
         assert len(trackers) == 1
-        assert trackers[0].sender_id == conversation_id
-        assert trackers[0].user_id == user_id
+        assert trackers[0]["sender_id"] == conversation_id
+        assert trackers[0]["user_id"] == user_id
 
         # Verify GSI was used
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 0
@@ -1153,16 +1152,16 @@ async def test_get_trackers_by_user_id_with_gsi_pagination(
 
         # Then
         assert len(trackers) == 40
-        retrieved_ids = {tracker.sender_id for tracker in trackers}
+        retrieved_ids = {tracker["sender_id"] for tracker in trackers}
         assert retrieved_ids == conversation_ids
 
         # Verify all trackers have correct user_id
-        assert_all_trackers_have_user_id(trackers, user_id)
+        assert all(t["user_id"] == user_id for t in trackers)
 
         # Verify GSI was used
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 0
@@ -1189,12 +1188,12 @@ async def test_get_trackers_by_user_id_with_gsi_limit(
 
         # Then
         assert len(trackers) == 5
-        assert_all_trackers_have_user_id(trackers, user_id)
+        assert all(t["user_id"] == user_id for t in trackers)
 
         # Verify GSI was used
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 0
@@ -1221,12 +1220,12 @@ async def test_get_trackers_by_user_id_with_gsi_skip(
 
         # Then
         assert len(trackers) == 7  # 10 total - 3 skipped
-        assert_all_trackers_have_user_id(trackers, user_id)
+        assert all(t["user_id"] == user_id for t in trackers)
 
         # Verify GSI was used
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 0
@@ -1255,13 +1254,14 @@ async def test_get_trackers_by_user_id_with_gsi_skip_and_limit(
         assert len(trackers) == 3
 
         saved_trackers_sorted = sorted(saved_trackers, key=sort_key)
-        assert (
-            trackers == saved_trackers_sorted[2:5]
-        ), "Retrieved trackers should match expected order"
-        assert_all_trackers_have_user_id(trackers, user_id)
+        expected_sender_ids = [t.sender_id for t in saved_trackers_sorted[2:5]]
+        assert [
+            t["sender_id"] for t in trackers
+        ] == expected_sender_ids, "Retrieved trackers should match expected order"
+        assert all(t["user_id"] == user_id for t in trackers)
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 0
@@ -1289,15 +1289,16 @@ async def test_get_trackers_by_user_id_scanning_fallback_with_pagination(
         assert len(trackers) == 3
 
         saved_trackers_sorted = sorted(saved_trackers, key=sort_key)
-        assert (
-            trackers == saved_trackers_sorted[2:5]
-        ), "Retrieved trackers should match expected order"
-        assert_all_trackers_have_user_id(trackers, user_id)
+        expected_sender_ids = [t.sender_id for t in saved_trackers_sorted[2:5]]
+        assert [
+            t["sender_id"] for t in trackers
+        ] == expected_sender_ids, "Retrieved trackers should match expected order"
+        assert all(t["user_id"] == user_id for t in trackers)
 
         # Verify fallback log message
         logs = filter_logs(
             caplog,
-            event="dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
+            event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
             log_level="debug",
         )
         assert len(logs) == 1
@@ -1344,13 +1345,13 @@ async def test_dynamo_sorting_by_sender_id_when_timestamps_identical(
 
     # Should be sorted by sender_id when timestamps are identical
     assert len(trackers) == 3
-    assert trackers[0].sender_id == "sender_a"
-    assert trackers[1].sender_id == "sender_b"
-    assert trackers[2].sender_id == "sender_c"
+    assert trackers[0]["sender_id"] == "sender_a"
+    assert trackers[1]["sender_id"] == "sender_b"
+    assert trackers[2]["sender_id"] == "sender_c"
 
     # All should have same timestamp
     for tracker in trackers:
-        assert tracker.conversation_started_timestamp == timestamp
+        assert tracker["conversation_started_timestamp"] == timestamp
 
 
 @pytest.mark.asyncio
@@ -1410,7 +1411,7 @@ async def test_dynamo_negative_skip_and_limit_ignored(
 
     # Then: Should return all trackers (both negative values ignored)
     assert len(trackers) == 5
-    assert_all_trackers_have_user_id(trackers, user_id)
+    assert all(t["user_id"] == user_id for t in trackers)
 
 
 # ---------------------------------------------------------------------------
@@ -1540,3 +1541,323 @@ async def test_retrieve_deduplicates_events_in_dynamodb(
     # Then: tracker is valid and matches the original
     assert retrieved is not None
     assert retrieved.sender_id == conversation_id
+
+
+# ---------------------------------------------------------------------------
+# get_serialized_trackers_by_user_id tests
+# ---------------------------------------------------------------------------
+
+
+def _assert_serialized_tracker_format(
+    tracker_dict: dict, expected_sender_id: str, expected_user_id: str
+) -> None:
+    """Assert a serialized tracker dict has the expected events-centric format."""
+    assert tracker_dict["sender_id"] == expected_sender_id
+    assert tracker_dict["user_id"] == expected_user_id
+    assert isinstance(tracker_dict["events"], list)
+    assert len(tracker_dict["events"]) > 0
+    assert "conversation_started_timestamp" in tracker_dict
+    assert "current_session_id" in tracker_dict
+
+
+@pytest.mark.asyncio
+async def test_get_serialized_trackers_by_user_id_with_gsi(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """GSI path returns correct events-centric dicts filtered by user_id."""
+    user_id = "user_123"
+    conversation_id_1 = uuid.uuid4().hex
+    conversation_id_2 = uuid.uuid4().hex
+    conversation_id_3 = uuid.uuid4().hex
+
+    tracker_store = DynamoTrackerStore(test_domain)
+    create_user_id_gsi(tracker_store)
+
+    await create_tracker_with_user_id(
+        tracker_store, conversation_id_1, user_id, domain=test_domain
+    )
+    await create_tracker_with_user_id(
+        tracker_store, conversation_id_2, user_id, domain=test_domain
+    )
+    await create_tracker_with_user_id(
+        tracker_store, conversation_id_3, "user_456", domain=test_domain
+    )
+
+    with capture_logs() as caplog:
+        result = await tracker_store.get_serialized_trackers_by_user_id(user_id)
+
+    assert len(result) == 2
+    sender_ids = {t["sender_id"] for t in result}
+    assert conversation_id_1 in sender_ids
+    assert conversation_id_2 in sender_ids
+    assert conversation_id_3 not in sender_ids
+    for t in result:
+        _assert_serialized_tracker_format(t, t["sender_id"], user_id)
+    logs = filter_logs(
+        caplog,
+        event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
+        log_level="debug",
+    )
+    assert len(logs) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_serialized_trackers_by_user_id_with_gsi_no_matching_trackers(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """GSI path returns empty list when no trackers match the user_id."""
+    tracker_store = DynamoTrackerStore(test_domain)
+    create_user_id_gsi(tracker_store)
+
+    tracker = DialogueStateTracker.from_events(
+        uuid.uuid4().hex,
+        [SessionStarted(), UserUttered("Hello")],
+        slots=test_domain.slots,
+        domain=test_domain,
+        user_id="user_456",
+    )
+    await tracker_store.save(tracker)
+
+    result = await tracker_store.get_serialized_trackers_by_user_id("user_123")
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_get_serialized_trackers_by_user_id_with_gsi_skip_and_limit(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """GSI path respects skip and limit pagination parameters."""
+    user_id = "user_123"
+    tracker_store = DynamoTrackerStore(test_domain)
+    create_user_id_gsi(tracker_store)
+
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 10, domain=test_domain
+    )
+
+    result = await tracker_store.get_serialized_trackers_by_user_id(
+        user_id, skip=2, limit=3
+    )
+
+    assert len(result) == 3
+    for t in result:
+        assert t["user_id"] == user_id
+        assert isinstance(t["events"], list)
+
+
+@pytest.mark.asyncio
+async def test_get_serialized_trackers_by_user_id_scanning_fallback(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """Fallback scan path returns correct dicts when GSI is unavailable."""
+    user_id = "user_123"
+    conversation_id = uuid.uuid4().hex
+    tracker_store = DynamoTrackerStore(test_domain)  # no GSI created
+
+    await create_tracker_with_user_id(
+        tracker_store, conversation_id, user_id, domain=test_domain
+    )
+
+    with capture_logs() as caplog:
+        result = await tracker_store.get_serialized_trackers_by_user_id(user_id)
+
+    assert len(result) == 1
+    _assert_serialized_tracker_format(result[0], conversation_id, user_id)
+    logs = filter_logs(
+        caplog,
+        event="dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
+        log_level="debug",
+    )
+    assert len(logs) == 1
+
+
+@pytest.mark.asyncio
+async def test_get_serialized_trackers_by_user_id_scanning_fallback_with_pagination(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """Fallback scan path respects skip and limit pagination."""
+    user_id = "user_123"
+    tracker_store = DynamoTrackerStore(test_domain)
+
+    await create_multiple_trackers_with_user_id(
+        tracker_store, user_id, 10, domain=test_domain
+    )
+
+    result = await tracker_store.get_serialized_trackers_by_user_id(
+        user_id, skip=2, limit=3
+    )
+
+    assert len(result) == 3
+    for t in result:
+        assert t["user_id"] == user_id
+        assert isinstance(t["events"], list)
+
+
+@pytest.mark.asyncio
+async def test_get_serialized_trackers_by_user_id_events_are_plain_dicts(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """Events in the response are plain dicts, not Event objects, and have no Decimals."""
+    user_id = "user_123"
+    conversation_id = uuid.uuid4().hex
+    tracker_store = DynamoTrackerStore(test_domain)
+    create_user_id_gsi(tracker_store)
+
+    await create_tracker_with_user_id(
+        tracker_store, conversation_id, user_id, domain=test_domain
+    )
+
+    result = await tracker_store.get_serialized_trackers_by_user_id(user_id)
+
+    assert len(result) == 1
+    for event in result[0]["events"]:
+        assert isinstance(event, dict)
+        # Timestamps must be float, not Decimal (Decimal would break JSON serialization)
+        if "timestamp" in event:
+            assert isinstance(event["timestamp"], float)
+
+
+@pytest.mark.asyncio
+async def test_dynamo_get_or_create_table_reuses_existing_table(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """When the DynamoDB table already exists, get_or_create_table returns it without
+    creating a new one (exercises the else branch of the try/except)."""
+    store1 = DynamoTrackerStore(test_domain)
+    # Second store creation finds the table that store1 already created
+    store2 = DynamoTrackerStore(test_domain)
+    assert store2.db is not None
+    assert store2.table_name == store1.table_name
+
+
+@pytest.mark.asyncio
+async def test_dynamo_keys_pagination_follows_last_evaluated_key(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """keys() issues additional scans when DynamoDB returns a LastEvaluatedKey."""
+    tracker_store = DynamoTrackerStore(test_domain)
+
+    first_page = {
+        "Items": [{"sender_id": "sender_page_1"}],
+        "LastEvaluatedKey": {"sender_id": "sender_page_1"},
+    }
+    second_page = {"Items": [{"sender_id": "sender_page_2"}]}
+
+    with patch.object(tracker_store.db, "scan", side_effect=[first_page, second_page]):
+        keys = list(await tracker_store.keys())
+
+    assert set(keys) == {"sender_page_1", "sender_page_2"}
+
+
+def test_items_to_serialized_skips_items_without_sender_id(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """_items_to_serialized silently skips DynamoDB items that have no sender_id."""
+    tracker_store = DynamoTrackerStore(test_domain)
+    items = [
+        {"user_id": "user_no_sender", "events": []},  # missing sender_id
+        {
+            "sender_id": "valid_sender",
+            "user_id": "user_no_sender",
+            "events": [],
+            "conversation_started_timestamp": 1_700_000_000.0,
+        },
+    ]
+    result = tracker_store._items_to_serialized(items)
+
+    assert len(result) == 1
+    assert result[0]["sender_id"] == "valid_sender"
+
+
+@pytest.mark.asyncio
+async def test_dynamo_get_serialized_trackers_gsi_pagination(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """get_serialized_trackers_by_user_id() follows GSI LastEvaluatedKey across pages."""
+    user_id = "user_gsi_paginate"
+    sender_1 = "sender_gsi_p1"
+    sender_2 = "sender_gsi_p2"
+
+    tracker_store = DynamoTrackerStore(test_domain)
+    create_user_id_gsi(tracker_store)
+
+    def _make_item(sid: str, ts: float) -> dict:
+        return {
+            "sender_id": sid,
+            "user_id": user_id,
+            "conversation_started_timestamp": ts,
+            "events": [],
+        }
+
+    first_page = {
+        "Items": [_make_item(sender_1, 1_700_000_001.0)],
+        "LastEvaluatedKey": {"sender_id": sender_1, "user_id": user_id},
+    }
+    second_page = {"Items": [_make_item(sender_2, 1_700_000_002.0)]}
+
+    with patch.object(tracker_store.db, "query", side_effect=[first_page, second_page]):
+        result = await tracker_store.get_serialized_trackers_by_user_id(user_id)
+
+    assert len(result) == 2
+    assert {t["sender_id"] for t in result} == {sender_1, sender_2}
+
+
+@pytest.mark.asyncio
+async def test_dynamo_generic_gsi_exception_triggers_scan_fallback(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """A generic Exception from db.query (not ResourceNotFoundException) is caught,
+    logged, and control falls through to the scan-based fallback."""
+    user_id = "user_exc_fallback"
+    tracker_store = DynamoTrackerStore(test_domain)
+    create_user_id_gsi(tracker_store)
+
+    with patch.object(
+        tracker_store.db, "query", side_effect=RuntimeError("transient error")
+    ):
+        with capture_logs() as caplog:
+            result = await tracker_store.get_serialized_trackers_by_user_id(user_id)
+
+    # Scan found nothing — the important assertion is that it didn't raise
+    assert result == []
+    logs = filter_logs(
+        caplog,
+        event=(
+            "dynamo_tracker_store."
+            "get_serialized_trackers_by_user_id.gsi_query_failed"
+        ),
+        log_level="debug",
+    )
+    assert len(logs) == 1
+
+
+@pytest.mark.asyncio
+async def test_dynamo_fallback_scan_pagination_follows_last_evaluated_key(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    """_fallback_get_serialized_trackers_by_user_id follows LastEvaluatedKey across
+    scan pages."""
+    user_id = "user_scan_paginate"
+    tracker_store = DynamoTrackerStore(test_domain)
+
+    def _make_item(sid: str, ts: float) -> dict:
+        return {
+            "sender_id": sid,
+            "user_id": user_id,
+            "events": [],
+            "conversation_started_timestamp": ts,
+        }
+
+    first_page = {
+        "Items": [_make_item("scan_s1", 1_700_000_001.0)],
+        "LastEvaluatedKey": {"sender_id": "scan_s1"},
+    }
+    second_page = {"Items": [_make_item("scan_s2", 1_700_000_002.0)]}
+
+    with patch.object(tracker_store.db, "scan", side_effect=[first_page, second_page]):
+        result = await tracker_store._fallback_get_serialized_trackers_by_user_id(
+            user_id
+        )
+
+    assert len(result) == 2
+    assert {t["sender_id"] for t in result} == {"scan_s1", "scan_s2"}

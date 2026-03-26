@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
 
@@ -189,18 +189,18 @@ async def create_multiple_trackers_with_user_id(
 
 
 def assert_tracker_has_user_id(
-    tracker: DialogueStateTracker, sender_id: str, user_id: Optional[str]
+    tracker: Dict[str, Any], sender_id: str, user_id: Optional[str]
 ) -> None:
-    """Assert tracker has correct sender_id and user_id.
+    """Assert a serialized tracker dict has the correct sender_id and user_id.
 
     Args:
-        tracker: Tracker to assert on.
+        tracker: Serialized tracker dict returned by get_trackers_by_user_id.
         sender_id: Expected sender ID.
         user_id: Expected user ID (can be None).
     """
     assert tracker is not None
-    assert tracker.sender_id == sender_id
-    assert tracker.user_id == user_id
+    assert tracker["sender_id"] == sender_id
+    assert tracker["user_id"] == user_id
 
 
 async def create_tracker_with_explicit_timestamp(
@@ -357,9 +357,7 @@ async def old_tracker_gets_timestamp_on_update(
     assert final.conversation_started_timestamp == final.events[0].timestamp
 
 
-def assert_all_trackers_have_user_id(
-    trackers: List[DialogueStateTracker], user_id: str
-) -> None:
+def assert_all_trackers_have_user_id(trackers: List[Dict], user_id: str) -> None:
     """Assert all trackers in a list have the specified user_id.
 
     Args:
@@ -367,7 +365,7 @@ def assert_all_trackers_have_user_id(
         user_id: Expected user ID.
     """
     for tracker in trackers:
-        assert tracker.user_id == user_id
+        assert tracker["user_id"] == user_id
 
 
 async def assert_pagination_results(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional, Text
@@ -9,6 +10,7 @@ import structlog
 from pydantic import ValidationError
 
 import rasa.shared
+from rasa.constants import USER_ID
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
     SupportedServiceType,
@@ -395,39 +397,42 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
             first_event_timestamp=first_event_timestamp,
         )
 
-    async def get_trackers_by_user_id(
+    async def get_serialized_trackers_by_user_id(
         self,
         user_id: str,
         limit: Optional[int] = None,
         skip: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
-        """Retrieves all trackers for a given user_id using efficient secondary index.
+    ) -> List[Dict[str, Any]]:
+        """Returns serialized tracker dicts for a given user_id without event replay.
 
-        Uses a Redis Sorted Set (user_trackers:{user_id}) to store all sender_ids for a
-        user with per-member expiration timestamps, enabling O(1) lookup instead of
-        scanning all keys.
+        Looks up the ``user_trackers:{user_id}`` sorted set to find all non-expired
+        sender_ids, fetches their raw JSON blobs in a single ``MGET``, parses each
+        blob with ``json.loads`` (skipping ``DialogueStateTracker.from_dict`` and
+        ``current_state()`` entirely), removes orphaned index entries in batch, and
+        returns the 5 endpoint fields sorted by conversation start timestamp then
+        sender_id.
 
         Args:
             user_id: User ID to fetch trackers for.
-            limit: Optional maximum number of trackers to return. If None, returns all
-                matching trackers.
-            skip: Optional number of trackers to skip before returning results. If None,
+            limit: Maximum number of trackers to return. ``None`` returns all.
+            skip: Number of trackers to skip before returning results. ``None``
                 starts from the beginning.
 
         Returns:
-            List of trackers associated with the user_id.
+            List of dicts, each containing ``sender_id``, ``events``,
+            ``user_id``, ``conversation_started_timestamp``, and
+            ``current_session_id``.
         """
-        # Get all non-expired sender_ids for this user from the secondary index
         user_trackers_key = self._get_user_trackers_key(user_id)
         current_time = time.time()
 
-        # Clean up expired members (score <= current_time) first
+        # Eagerly remove members whose TTL has elapsed
         expired_count = self.red.zremrangebyscore(
             user_trackers_key, min="-inf", max=current_time
         )
         if expired_count > 0:
             structlogger.debug(
-                "redis_tracker_store.get_trackers_by_user_id.cleaned_expired_members",
+                "redis_tracker_store.get_serialized_trackers_by_user_id.cleaned_expired_members",
                 event_info=(
                     f"Cleaned up {expired_count} expired sender_ids from index "
                     f"for user_id '{user_id}'."
@@ -442,64 +447,94 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         if not sender_ids:
             structlogger.debug(
-                "redis_tracker_store.get_trackers_by_user_id.no_senders_for_user_id",
+                "redis_tracker_store.get_serialized_trackers_by_user_id.no_senders_for_user_id",
                 event_info=f"No sender_ids found for user_id '{user_id}'.",
             )
             return []
 
-        # Convert set members to strings if needed
         conversation_ids = self._decode_sender_ids(sender_ids)
-
-        # Build tracker keys
-        keys = [self.key_prefix + sender_id for sender_id in conversation_ids]
-
+        keys = [self.key_prefix + sid for sid in conversation_ids]
         if not keys:
             return []
 
-        # Fetch all trackers in batch
+        # Single round-trip to fetch all raw JSON blobs
         if isinstance(self.red, redis.RedisCluster):
             # Background context: https://redis.readthedocs.io/en/stable/clustering.html#multi-key-commands
             values = self.red.mget_nonatomic(keys)  # type: ignore[no-untyped-call]
         else:
             values = self.red.mget(keys)
 
-        # Deserialize trackers
-        trackers = self._retrieve_trackers_by_user_id(
+        trackers = self._deserialize_raw_values(
             conversation_ids, user_trackers_key, values, user_id
         )
 
-        # Sort by timestamp, then sender_id
-        trackers.sort(key=self._sort_key)
+        trackers.sort(key=self._sort_key_serialized)
+        return self._apply_pagination_serialized(trackers, skip, limit)
 
-        return self._apply_pagination(trackers, skip, limit)
-
-    def _retrieve_trackers_by_user_id(
+    def _deserialize_raw_values(
         self,
         conversation_ids: List[str],
         user_trackers_key: str,
         values: List[Optional[str]],
         user_id: str,
-    ) -> List[DialogueStateTracker]:
-        """Helper method to retrieve trackers by user_id from given keys and values."""
-        trackers = []
+    ) -> List[Dict[str, Any]]:
+        """Parse raw Redis JSON blobs into serialized tracker dicts.
+
+        Orphaned index entries (value is ``None`` — key was deleted without
+        cleaning the sorted set) are removed from the index in a single
+        ``ZREM`` call. Blobs whose ``user_id`` field does not match are
+        silently skipped. Malformed JSON is logged and skipped.
+
+        Args:
+            conversation_ids: Ordered list of sender_ids matching ``values``.
+            user_trackers_key: Redis key of the user's sorted-set index, used
+                for orphan cleanup.
+            values: Raw Redis values returned by ``MGET``, one per sender_id.
+            user_id: Expected user_id; blobs that don't match are dropped.
+
+        Returns:
+            List of serialized tracker dicts with the 5 endpoint fields.
+        """
+        result = []
+        orphaned = []
+
         for sender_id, value in zip(conversation_ids, values):
             if value is None:
-                # Tracker was deleted but index wasn't cleaned up - remove from index
-                self.red.zrem(user_trackers_key, sender_id)
+                # Key was deleted without cleaning the sorted-set index
+                orphaned.append(sender_id)
                 continue
 
             try:
-                tracker = self.deserialise_tracker(sender_id, value)
-                if tracker and tracker.user_id == user_id:
-                    trackers.append(tracker)
-            except TrackerDeserialisationException:
+                raw = json.loads(value)
+            except (json.JSONDecodeError, TypeError):
                 structlogger.error(
-                    "redis_tracker_store.get_trackers_by_user_id.deserialization_failed",
+                    "redis_tracker_store.get_serialized_trackers_by_user_id.deserialization_failed",
                     event_info=(
-                        f"Failed to deserialize tracker for sender_id "
-                        f"'{sender_id}'. Skipping."
+                        f"Failed to parse JSON for sender_id '{sender_id}'. Skipping."
                     ),
                 )
                 continue
 
-        return trackers
+            # Guard against index entries that belong to a different user
+            if raw.get(USER_ID) != user_id:
+                continue
+
+            raw_ts = raw.get("conversation_started_timestamp")
+            events = raw.get("events") or []
+            result.append(
+                {
+                    "sender_id": sender_id,
+                    "events": events,
+                    USER_ID: raw.get(USER_ID),
+                    "conversation_started_timestamp": float(raw_ts)
+                    if raw_ts is not None
+                    else None,
+                    "current_session_id": self._current_session_id_from_events(events),
+                }
+            )
+
+        # Batch-remove orphaned entries in one ZREM call
+        if orphaned:
+            self.red.zrem(user_trackers_key, *orphaned)
+
+        return result

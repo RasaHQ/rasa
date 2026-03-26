@@ -28,7 +28,6 @@ from tests.core.conftest import MockedMongoTrackerStore
 from tests.core.tracker_stores.conftest import (
     _saved_tracker_with_multiple_session_starts,
     assert_all_trackers_have_user_id,
-    assert_tracker_has_user_id,
     create_multiple_trackers_with_user_id,
     create_tracker_with_partially_saved_events,
     create_tracker_with_user_id,
@@ -573,15 +572,14 @@ async def test_mongo_tracker_store_get_trackers_by_user_id(domain: Domain) -> No
 
     # Then
     assert len(trackers) == 2
-    sender_ids = {tracker.sender_id for tracker in trackers}
+    sender_ids = {tracker["sender_id"] for tracker in trackers}
     assert "sender1" in sender_ids
     assert "sender2" in sender_ids
     assert "sender3" not in sender_ids
     assert "sender4" not in sender_ids
 
     # Verify all trackers have correct user_id
-    for tracker in trackers:
-        assert tracker.user_id == user_id
+    assert all(tracker["user_id"] == user_id for tracker in trackers)
 
 
 @pytest.mark.asyncio
@@ -625,7 +623,8 @@ async def test_mongo_tracker_store_get_trackers_by_user_id_filters_no_user_id(
 
     # Then
     assert len(trackers) == 1
-    assert_tracker_has_user_id(trackers[0], "sender1", user_id)
+    assert trackers[0]["sender_id"] == "sender1"
+    assert trackers[0]["user_id"] == user_id
 
 
 @pytest.mark.asyncio
@@ -646,7 +645,8 @@ async def test_mongo_tracker_store_get_trackers_by_user_id_save_sets_user_id(
 
     # Then
     assert len(trackers) == 1
-    assert_tracker_has_user_id(trackers[0], conversation_id, user_id)
+    assert trackers[0]["sender_id"] == conversation_id
+    assert trackers[0]["user_id"] == user_id
 
 
 @pytest.mark.asyncio
@@ -673,7 +673,8 @@ async def test_mongo_tracker_store_get_trackers_by_user_id_update_sets_user_id(
 
     # Then
     assert len(trackers) == 1
-    assert_tracker_has_user_id(trackers[0], conversation_id, user_id)
+    assert trackers[0]["sender_id"] == conversation_id
+    assert trackers[0]["user_id"] == user_id
 
 
 @pytest.mark.asyncio
@@ -702,12 +703,11 @@ async def test_mongo_tracker_store_get_trackers_by_user_id_multiple_trackers(
 
     # Then
     assert len(trackers) == 50
-    retrieved_ids = {tracker.sender_id for tracker in trackers}
+    retrieved_ids = {tracker["sender_id"] for tracker in trackers}
     assert retrieved_ids == set(conversation_ids)
 
     # Verify all trackers have correct user_id
-    for tracker in trackers:
-        assert tracker.user_id == user_id
+    assert all(tracker["user_id"] == user_id for tracker in trackers)
 
 
 @pytest.mark.asyncio
@@ -735,8 +735,7 @@ async def test_mongo_tracker_store_get_trackers_by_user_id_with_limit(
 
     # Then
     assert len(trackers) == 5
-    for tracker in trackers:
-        assert tracker.user_id == user_id
+    assert all(tracker["user_id"] == user_id for tracker in trackers)
 
 
 @pytest.mark.asyncio
@@ -768,7 +767,13 @@ async def test_mongo_tracker_store_get_trackers_by_user_id_with_skip(
     # Then
     assert len(trackers) == 7  # 10 total - 3 skipped
     assert_all_trackers_have_user_id(trackers, user_id)
-    assert trackers == saved_trackers[3:]
+    # Compare sender_ids (trackers are sorted by timestamp then sender_id)
+    from tests.core.tracker_stores.conftest import sort_key
+
+    expected_sender_ids = [t.sender_id for t in sorted(saved_trackers, key=sort_key)][
+        3:
+    ]
+    assert [t["sender_id"] for t in trackers] == expected_sender_ids
 
 
 @pytest.mark.asyncio
@@ -790,8 +795,14 @@ async def test_mongo_tracker_store_get_trackers_by_user_id_with_limit_and_skip(
 
     # Then
     assert len(trackers) == 3
-    assert trackers == saved_trackers[2:5]
     assert_all_trackers_have_user_id(trackers, user_id)
+    # Compare sender_ids after sorting saved trackers the same way MongoDB does
+    from tests.core.tracker_stores.conftest import sort_key
+
+    expected_sender_ids = [t.sender_id for t in sorted(saved_trackers, key=sort_key)][
+        2:5
+    ]
+    assert [t["sender_id"] for t in trackers] == expected_sender_ids
 
 
 # Backward compatibility tests for conversation_started_timestamp
@@ -831,13 +842,13 @@ async def test_mongo_sorting_by_sender_id_when_timestamps_identical(
 
     # Should be sorted by sender_id when timestamps are identical
     assert len(trackers) == 3
-    assert trackers[0].sender_id == "sender_a"
-    assert trackers[1].sender_id == "sender_b"
-    assert trackers[2].sender_id == "sender_c"
+    assert trackers[0]["sender_id"] == "sender_a"
+    assert trackers[1]["sender_id"] == "sender_b"
+    assert trackers[2]["sender_id"] == "sender_c"
 
     # All should have same timestamp
     for tracker in trackers:
-        assert tracker.conversation_started_timestamp == timestamp
+        assert tracker["conversation_started_timestamp"] == timestamp
 
 
 @pytest.mark.asyncio
@@ -891,3 +902,72 @@ async def test_mongo_negative_skip_and_limit_ignored(domain: Domain) -> None:
     # Then: Should return all trackers (both negative values ignored)
     assert len(trackers) == 5
     assert_all_trackers_have_user_id(trackers, user_id)
+
+
+def test_ensure_indices_creates_user_id_and_compound_index(domain: Domain) -> None:
+    """_ensure_indices() creates the sparse user_id index and the compound
+    (conversation_started_timestamp, sender_id) index without raising.
+
+    MockedMongoTrackerStore skips the real constructor, so _ensure_indices() is
+    never called automatically — we invoke it explicitly here.
+    """
+    tracker_store = MockedMongoTrackerStore(domain)
+
+    # Must not raise; mongomock supports create_index.
+    tracker_store._ensure_indices()
+
+    index_info = tracker_store.conversations.index_information()
+    index_keys = {
+        tuple((field, direction) for field, direction in spec["key"])
+        for spec in index_info.values()
+    }
+
+    # Sparse single-field index on user_id (USER_ID == "user_id")
+    assert (
+        ("user_id", 1),
+    ) in index_keys, "Expected sparse single-field index on 'user_id'"
+
+    # Compound index on (conversation_started_timestamp, sender_id)
+    assert (
+        (("conversation_started_timestamp", 1), ("sender_id", 1)) in index_keys
+    ), "Expected compound index on (conversation_started_timestamp, sender_id)"
+
+
+@pytest.mark.asyncio
+async def test_get_serialized_trackers_by_user_id_skips_doc_without_sender_id(
+    domain: Domain,
+) -> None:
+    """get_serialized_trackers_by_user_id skips aggregation results that have no
+    sender_id (line 372).
+
+    A document matching the user_id filter but lacking a sender_id field must be
+    silently skipped; the method must return only the well-formed document.
+    """
+    from rasa.constants import USER_ID as USER_ID_FIELD
+
+    tracker_store = MockedMongoTrackerStore(domain)
+    user_id = DEFAULT_USER_ID
+
+    # Insert a well-formed document.
+    tracker_store.conversations.insert_one(
+        {
+            "sender_id": "valid_sender",
+            USER_ID_FIELD: user_id,
+            "events": [{"event": "user", "text": "hi", "timestamp": 1.0}],
+            "conversation_started_timestamp": 1.0,
+        }
+    )
+    # Insert a malformed document: has user_id but no sender_id.
+    tracker_store.conversations.insert_one(
+        {
+            USER_ID_FIELD: user_id,
+            "events": [{"event": "user", "text": "orphan", "timestamp": 2.0}],
+            "conversation_started_timestamp": 2.0,
+        }
+    )
+
+    result = await tracker_store.get_serialized_trackers_by_user_id(user_id)
+
+    # Only the document with a sender_id must appear.
+    assert len(result) == 1
+    assert result[0]["sender_id"] == "valid_sender"

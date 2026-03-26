@@ -1132,31 +1132,38 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             event_info=event_info,
         )
 
-    async def get_trackers_by_user_id(
+    async def get_serialized_trackers_by_user_id(
         self,
         user_id: str,
         limit: Optional[int] = None,
         skip: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
-        """Retrieves all trackers for a given user_id using efficient JOIN query.
+    ) -> List[Dict[str, Any]]:
+        """Returns serialized tracker dicts for a given user_id without event replay.
 
-        This method uses the users table for efficient querying.
-        If the users table doesn't exist or is empty, it logs a warning and
-        returns an empty list.
+        Eliminates the N+1 query pattern of the previous implementation by fetching
+        all events for all matching conversations in a single bulk query, then grouping
+        them in Python. Sorting and pagination are applied at the database level on the
+        ``users`` query before event rows are fetched.
+
+        If the ``users`` table does not exist a warning is logged and an empty list is
+        returned.
 
         Args:
             user_id: User ID to fetch trackers for.
-            limit: Optional maximum number of trackers to return. If None, returns all
-                matching trackers.
-            skip: Optional number of trackers to skip before returning results. If None,
+            limit: Maximum number of trackers to return. ``None`` returns all.
+            skip: Number of trackers to skip before returning results. ``None``
                 starts from the beginning.
 
         Returns:
-            List of trackers associated with the user_id.
+            List of dicts, each containing ``sender_id``, ``events``,
+            ``user_id``, ``conversation_started_timestamp``, and
+            ``current_session_id`` (``None`` when the last event is
+            ``ConversationInactive``, otherwise derived from the last event's
+            ``metadata["session_id"]``).
         """
         if not self._users_table_exists:
             structlogger.warning(
-                "sql_tracker_store.get_trackers_by_user_id.no_users_table",
+                "sql_tracker_store.get_serialized_trackers_by_user_id.no_users_table",
                 event_info=(
                     "Users table does not exist. To enable efficient "
                     "querying by user_id, please ensure the users "
@@ -1166,43 +1173,170 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             )
             return []
 
-        # Use efficient JOIN query with users table
         with self.session_scope() as session:
-            # Query sender_ids with conversation_started_timestamp for efficient
-            # sorting. Sort by conversation_started_timestamp (if available) then
-            # sender_id at database level. Use COALESCE to handle NULL values
-            # (treat NULL as 0.0 for sorting)
-            query = (
-                session.query(
-                    self.SQLUser.sender_id,
-                )
-                .filter(self.SQLUser.user_id == user_id)
-                .order_by(
-                    # Sort by conversation_started_timestamp (NULLS treated as
-                    # 0.0), then sender_id
-                    sa.func.coalesce(
-                        self.SQLUser.conversation_started_timestamp, 0.0
-                    ).asc(),
-                    self.SQLUser.sender_id.asc(),
-                )
+            user_rows = self._query_user_rows(session, user_id, skip, limit)
+            if not user_rows:
+                return []
+            ordered_sender_ids = [row[0] for row in user_rows]
+            timestamps: Dict[str, Optional[float]] = {
+                row[0]: row[1] for row in user_rows
+            }
+            event_rows = self._bulk_fetch_event_rows(session, ordered_sender_ids)
+
+        events_by_sender = self._group_events_by_sender(ordered_sender_ids, event_rows)
+
+        return self._build_serialized_tracker_dicts(
+            ordered_sender_ids, timestamps, events_by_sender, user_id
+        )
+
+    def _query_user_rows(
+        self,
+        session: "Session",
+        user_id: str,
+        skip: Optional[int],
+        limit: Optional[int],
+    ) -> List[Any]:
+        """Query the ``users`` table for paginated, ordered sender_ids.
+
+        Fetches ``(sender_id, conversation_started_timestamp)`` rows for the given
+        ``user_id``, sorted by ``COALESCE(conversation_started_timestamp, 0)`` then
+        ``sender_id`` to produce a stable, deterministic conversation ordering.
+        Pagination is applied at the database level via ``OFFSET`` and ``LIMIT``.
+
+        Args:
+            session: Active SQLAlchemy session.
+            user_id: User whose conversations are being fetched.
+            skip: Number of rows to skip (``OFFSET``).
+                Ignored when ``None`` or ``<= 0``.
+            limit: Maximum rows to return (``LIMIT``).
+                Ignored when ``None`` or ``<= 0``.
+
+        Returns:
+            List of ``(sender_id, conversation_started_timestamp)`` row tuples in
+            conversation order.
+        """
+        query = (
+            session.query(
+                self.SQLUser.sender_id,
+                self.SQLUser.conversation_started_timestamp,
             )
+            .filter(self.SQLUser.user_id == user_id)
+            .order_by(
+                sa.func.coalesce(
+                    self.SQLUser.conversation_started_timestamp, 0.0
+                ).asc(),
+                self.SQLUser.sender_id.asc(),
+            )
+        )
 
-            # Apply pagination at database level for efficiency
-            if skip is not None and skip > 0:
-                query = query.offset(skip)
-            if limit is not None and limit > 0:
-                query = query.limit(limit)
+        if skip is not None and skip > 0:
+            query = query.offset(skip)
+        if limit is not None and limit > 0:
+            query = query.limit(limit)
 
-            sender_ids = [row[0] for row in query.all()]
+        return query.all()
 
-        # Retrieve trackers for matching sender_ids
-        trackers = []
-        for sender_id in sender_ids:
-            tracker = await self.retrieve_full_tracker(sender_id)
-            if tracker is not None:
-                trackers.append(tracker)
+    def _bulk_fetch_event_rows(
+        self,
+        session: "Session",
+        sender_ids: List[str],
+    ) -> List[Any]:
+        """Fetch all event rows for the given sender_ids in a single query.
 
-        return trackers
+        Returns ``(sender_id, data)`` rows ordered by ``sender_id`` then ``id``
+        to preserve insertion order within each conversation.
+
+        Args:
+            session: Active SQLAlchemy session.
+            sender_ids: Sender IDs whose events should be fetched.
+
+        Returns:
+            List of ``(sender_id, data)`` row tuples.
+        """
+        return (
+            session.query(
+                self.SQLEvent.sender_id,
+                self.SQLEvent.data,
+            )
+            .filter(self.SQLEvent.sender_id.in_(sender_ids))
+            .order_by(self.SQLEvent.sender_id, self.SQLEvent.id)
+            .all()
+        )
+
+    def _group_events_by_sender(
+        self,
+        ordered_sender_ids: List[str],
+        event_rows: List[Any],
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """Parse and bucket event rows by sender_id.
+
+        Pre-keys the result dict from ``ordered_sender_ids`` so that the
+        conversation order established by :meth:`_query_user_rows` is preserved
+        regardless of the order rows arrive from the database. Malformed JSON
+        blobs are skipped with a warning rather than raising.
+
+        Args:
+            ordered_sender_ids: Conversation-ordered list of sender_ids; determines
+                the keys and their insertion order in the returned dict.
+            event_rows: ``(sender_id, data)`` rows as returned by
+                :meth:`_bulk_fetch_event_rows`.
+
+        Returns:
+            Dict mapping each sender_id to its list of parsed event dicts.
+        """
+        events_by_sender: Dict[str, List[Dict[str, Any]]] = {
+            sid: [] for sid in ordered_sender_ids
+        }
+        for sender_id, data in event_rows:
+            if sender_id not in events_by_sender:
+                continue
+            try:
+                events_by_sender[sender_id].append(json.loads(data))
+            except (json.JSONDecodeError, TypeError):
+                structlogger.warning(
+                    "sql_tracker_store.get_serialized_trackers_by_user_id.bad_event_data",
+                    event_info=(
+                        f"Skipping malformed event JSON for sender_id '{sender_id}'."
+                    ),
+                )
+        return events_by_sender
+
+    def _build_serialized_tracker_dicts(
+        self,
+        ordered_sender_ids: List[str],
+        timestamps: Dict[str, Optional[float]],
+        events_by_sender: Dict[str, List[Dict[str, Any]]],
+        user_id: str,
+    ) -> List[Dict[str, Any]]:
+        """Assemble the final serialized tracker dicts in conversation order.
+
+        Args:
+            ordered_sender_ids: Conversation-ordered list of sender_ids.
+            timestamps: Maps each sender_id to its ``conversation_started_timestamp``
+                (may be ``None`` for legacy conversations).
+            events_by_sender: Maps each sender_id to its parsed event list.
+            user_id: User ID to embed in each dict.
+
+        Returns:
+            List of serialized tracker dicts, one per conversation, in the order
+            defined by ``ordered_sender_ids``.
+        """
+        result = []
+        for sender_id in ordered_sender_ids:
+            raw_ts = timestamps[sender_id]
+            events = events_by_sender[sender_id]
+            result.append(
+                {
+                    "sender_id": sender_id,
+                    "events": events,
+                    USER_ID: user_id,
+                    "conversation_started_timestamp": float(raw_ts)
+                    if raw_ts is not None
+                    else None,
+                    "current_session_id": self._current_session_id_from_events(events),
+                }
+            )
+        return result
 
     def _generic_upsert(
         self,

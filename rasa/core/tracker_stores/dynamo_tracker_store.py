@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Text
 
 import structlog
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
@@ -415,148 +415,54 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
             sender_id=tracker.sender_id,
         )
 
-    async def _process_dynamodb_items(
-        self, items: List[Dict[str, Any]]
-    ) -> List[DialogueStateTracker]:
-        """Process DynamoDB items and convert them to trackers.
+    def _items_to_serialized(self, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Convert DynamoDB items to serialized tracker dicts without event replay.
+
+        Applies Decimal-to-float conversion on the events list and deduplication,
+        then assembles the target events-centric dict format. No
+        ``DialogueStateTracker.from_dict()`` call is made.
 
         Args:
-            items: List of DynamoDB items from query response.
+            items: DynamoDB item dicts as returned by a query or scan.
 
         Returns:
-            List of trackers reconstructed from DynamoDB items.
+            List of serialized tracker dicts ready to be returned by the API.
         """
-        trackers = []
+        result = []
         for item in items:
             sender_id = item.get("sender_id")
-            user_id = item.get(USER_ID)
-
-            events_with_floats: List[Dict[str, Any]] = []
-            if sender_id and item.get("events"):
-                events = rasa.utils.json_utils.replace_decimals_with_floats(
-                    item["events"]
-                )
-                events_with_floats = _deduplicate_events(events)
-
-            if self.domain is None:
-                slots = []
-            else:
-                slots = self.domain.slots
-
-            tracker = DialogueStateTracker.from_dict(
-                sender_id, events_with_floats, slots, user_id=user_id
+            if not sender_id:
+                continue
+            raw_events = item.get("events") or []
+            events = _deduplicate_events(
+                rasa.utils.json_utils.replace_decimals_with_floats(raw_events)
             )
-            if tracker is not None:
-                trackers.append(tracker)
+            raw_ts = item.get("conversation_started_timestamp")
+            result.append(
+                {
+                    "sender_id": sender_id,
+                    "events": events,
+                    USER_ID: item.get(USER_ID),
+                    "conversation_started_timestamp": float(raw_ts)
+                    if raw_ts is not None
+                    else None,
+                    "current_session_id": self._current_session_id_from_events(events),
+                }
+            )
+        return result
 
-        return trackers
-
-    async def get_trackers_by_user_id(
+    async def get_serialized_trackers_by_user_id(
         self,
         user_id: str,
         limit: Optional[int] = None,
         skip: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
-        """Retrieves all trackers for a given user_id.
+    ) -> List[Dict[str, Any]]:
+        """Retrieves serialized trackers for a given user_id without event replay.
 
-        Uses a Global Secondary Index (GSI) on user_id for efficient querying.
-        Fetches all matching items from the GSI, then sorts in-memory by
-        (conversation_started_timestamp, sender_id) to ensure consistent ordering
-        even when multiple trackers share the same timestamp. Pagination (skip/limit)
-        is applied after sorting.
-
-        The GSI sorts by conversation_started_timestamp only, but doesn't guarantee
-        ordering by sender_id within the same timestamp. To ensure correct pagination
-        results, we fetch all items, sort by (timestamp, sender_id), then apply
-        pagination.
-
-        To enable efficient querying, create a GSI with:
-        - Partition key: `user_id` (String)
-        - Sort key: `conversation_started_timestamp` (Number)
-        - Index name: `user_id-index`
-
-        Falls back to scanning all trackers if GSI is not available.
-
-        Args:
-            user_id: User ID to fetch trackers for.
-            limit: Optional maximum number of trackers to return. If None, returns all
-                matching trackers. Useful for pagination.
-            skip: Optional number of trackers to skip before returning results.
-                If None, starts from the beginning. Applied in-memory after sorting.
-
-        Returns:
-            List of trackers associated with the user_id, sorted by
-            (conversation_started_timestamp, sender_id).
-        """
-        try:
-            # GSI name convention: user_id-index
-            # The GSI sorts by conversation_started_timestamp, but we need to
-            # sort by (timestamp, sender_id) for consistent ordering. We fetch
-            # all items, sort in-memory, then apply pagination.
-            gsi_name = "user_id-index"
-            query_kwargs: Dict[str, Any] = {
-                "IndexName": gsi_name,
-                "KeyConditionExpression": Key(USER_ID).eq(user_id),
-                "ScanIndexForward": True,  # Sort ascending by sort key
-            }
-
-            # Fetch ALL matching items (don't apply Limit here).
-            # We need all items to sort correctly by (timestamp, sender_id).
-            response = self.db.query(**query_kwargs)
-
-            trackers = []
-            # Process first page of results
-            trackers.extend(
-                await self._process_dynamodb_items(response.get("Items", []))
-            )
-
-            while "LastEvaluatedKey" in response:
-                query_kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
-                response = self.db.query(**query_kwargs)
-                new_trackers = await self._process_dynamodb_items(
-                    response.get("Items", [])
-                )
-                trackers.extend(new_trackers)
-
-            # Sort by (conversation_started_timestamp, sender_id) to ensure
-            # consistent ordering even when multiple trackers share the same timestamp.
-            trackers.sort(key=self._sort_key)
-
-            return self._apply_pagination(trackers, skip, limit)
-
-        except self.client.exceptions.ResourceNotFoundException:
-            # GSI doesn't exist, fall back to scanning all trackers
-            structlogger.debug(
-                "dynamo_tracker_store.get_trackers_by_user_id.gsi_not_found",
-                event_info=(
-                    "GSI 'user_id-index' not found. "
-                    "Falling back to scanning all trackers. "
-                    "Consider creating a GSI on user_id for better performance."
-                ),
-            )
-        except Exception as exc:
-            # Any other error (e.g., user_id attribute doesn't exist in items)
-            structlogger.debug(
-                "dynamo_tracker_store.get_trackers_by_user_id.gsi_query_failed",
-                event_info=(
-                    f"Failed to query GSI: {exc}. "
-                    f"Falling back to scanning all trackers."
-                ),
-            )
-
-        return await self._fallback_get_trackers_by_user_id(
-            user_id,
-            limit,
-            skip,
-        )
-
-    async def _fallback_get_trackers_by_user_id(
-        self,
-        user_id: str,
-        limit: Optional[int] = None,
-        skip: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
-        """Fallback method to retrieve trackers by scanning all items.
+        Uses the same GSI path as :meth:`get_trackers_by_user_id` but returns
+        raw event-centric dicts instead of reconstructed
+        :class:`~rasa.shared.core.trackers.DialogueStateTracker` objects.
+        Falls back to a full-table scan when the GSI is unavailable.
 
         Args:
             user_id: User ID to fetch trackers for.
@@ -564,14 +470,77 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
             skip: Optional number of trackers to skip before returning results.
 
         Returns:
-            List of trackers associated with the user_id.
+            List of serialized tracker dicts sorted by
+            ``(conversation_started_timestamp, sender_id)``.
         """
-        trackers = []
-        sender_ids = await self.keys()
-        for sender_id in sender_ids:
-            tracker = await self.retrieve_full_tracker(sender_id)
-            if tracker is not None and tracker.user_id == user_id:
-                trackers.append(tracker)
+        try:
+            gsi_name = "user_id-index"
+            query_kwargs: Dict[str, Any] = {
+                "IndexName": gsi_name,
+                "KeyConditionExpression": Key(USER_ID).eq(user_id),
+                "ScanIndexForward": True,
+            }
 
-        trackers.sort(key=self._sort_key)
-        return self._apply_pagination(trackers, skip, limit)
+            response = self.db.query(**query_kwargs)
+            serialized: List[Dict[str, Any]] = self._items_to_serialized(
+                response.get("Items", [])
+            )
+
+            while "LastEvaluatedKey" in response:
+                query_kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
+                response = self.db.query(**query_kwargs)
+                serialized.extend(self._items_to_serialized(response.get("Items", [])))
+
+            serialized.sort(key=self._sort_key_serialized)
+            return self._apply_pagination_serialized(serialized, skip, limit)
+
+        except self.client.exceptions.ResourceNotFoundException:
+            structlogger.debug(
+                "dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_not_found",
+                event_info=(
+                    "GSI 'user_id-index' not found. "
+                    "Falling back to scanning all trackers."
+                ),
+            )
+        except Exception as exc:
+            structlogger.debug(
+                "dynamo_tracker_store.get_serialized_trackers_by_user_id.gsi_query_failed",
+                event_info=f"Failed to query GSI: {exc}. Falling back to scan.",
+            )
+
+        return await self._fallback_get_serialized_trackers_by_user_id(
+            user_id, limit, skip
+        )
+
+    async def _fallback_get_serialized_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Scan-based fallback for :meth:`get_serialized_trackers_by_user_id`.
+
+        Used when the GSI is unavailable. Scans all items and filters by
+        ``user_id`` in Python.
+
+        Args:
+            user_id: User ID to filter by.
+            limit: Optional maximum number of trackers to return.
+            skip: Optional number of trackers to skip.
+
+        Returns:
+            List of serialized tracker dicts for the given user_id.
+        """
+        scan_kwargs: Dict[str, Any] = {
+            "FilterExpression": Attr(USER_ID).eq(user_id),
+        }
+        response = self.db.scan(**scan_kwargs)
+        all_items = response.get("Items", [])
+        while "LastEvaluatedKey" in response:
+            scan_kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
+            response = self.db.scan(**scan_kwargs)
+            all_items.extend(response.get("Items", []))
+
+        serialized = self._items_to_serialized(all_items)
+        serialized.sort(key=self._sort_key_serialized)
+        return self._apply_pagination_serialized(serialized, skip, limit)

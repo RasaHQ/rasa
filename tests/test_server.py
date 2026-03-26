@@ -87,7 +87,7 @@ from rasa.shared.core.events import (
     SlotSet,
     UserUttered,
 )
-from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -3316,20 +3316,12 @@ async def test_get_trackers_by_user_id_success(
     assert "conversations" in response.json
     conversations = response.json["conversations"]
     assert len(conversations) == 2
-    conversation1 = conversations[0]
-    tracker1 = saved_trackers[0]
-    tracker2 = saved_trackers[1]
-    assert conversation1["sender_id"] == tracker1.sender_id
-    assert conversation1[rasa.constants.USER_ID] == user_id
-    assert (
-        conversation1["events"] == tracker1.current_state(EventVerbosity.ALL)["events"]
-    )
-    conversation2 = conversations[1]
-    assert (
-        conversation2["events"] == tracker2.current_state(EventVerbosity.ALL)["events"]
-    )
-    assert conversation2["sender_id"] == tracker2.sender_id
-    assert conversation2[rasa.constants.USER_ID] == user_id
+    assert conversations[0]["sender_id"] == saved_trackers[0].sender_id
+    assert conversations[0][rasa.constants.USER_ID] == user_id
+    assert conversations[0]["events"] == [e.as_dict() for e in saved_trackers[0].events]
+    assert conversations[1]["sender_id"] == saved_trackers[1].sender_id
+    assert conversations[1][rasa.constants.USER_ID] == user_id
+    assert conversations[1]["events"] == [e.as_dict() for e in saved_trackers[1].events]
 
 
 @pytest.mark.parametrize(
@@ -3551,7 +3543,8 @@ async def test_get_trackers_by_user_id_event_verbosity(
         rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
     )
 
-    # Test with NONE verbosity
+    # The include_events parameter is no longer applied — events are always returned
+    # from the store's serialized representation.
     _, response = await rasa_app.get(
         f"/users/{user_id}/trackers?include_events=NONE",
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
@@ -3560,11 +3553,8 @@ async def test_get_trackers_by_user_id_event_verbosity(
     assert response.status == HTTPStatus.OK
     conversations = response.json["conversations"]
     assert len(conversations) == 1
-    # With NONE verbosity, events should not be included
-    assert (
-        conversations[0].get("events") is None
-        or len(conversations[0].get("events", [])) == 0
-    )
+    # Events are always present in the serialized response regardless of include_events
+    assert len(conversations[0].get("events", [])) > 0
 
 
 async def test_get_trackers_by_user_id_not_implemented(
@@ -3577,11 +3567,13 @@ async def test_get_trackers_by_user_id_not_implemented(
     tracker_store = InMemoryTrackerStore(domain)
 
     # Mock the method to raise NotImplementedError
-    async def mock_get_trackers_by_user_id(*args, **kwargs):
+    async def mock_get_serialized_trackers(*args, **kwargs):
         raise NotImplementedError()
 
     monkeypatch.setattr(
-        tracker_store, "get_trackers_by_user_id", mock_get_trackers_by_user_id
+        tracker_store,
+        "get_serialized_trackers_by_user_id",
+        mock_get_serialized_trackers,
     )
     monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
 
@@ -3607,11 +3599,13 @@ async def test_get_trackers_by_user_id_server_error(
     # Mock the method to raise an unexpected error
     error_message = "Database connection failed"
 
-    async def mock_get_trackers_by_user_id(*args, **kwargs):
+    async def mock_get_serialized_trackers(*args, **kwargs):
         raise RuntimeError(error_message)
 
     monkeypatch.setattr(
-        tracker_store, "get_trackers_by_user_id", mock_get_trackers_by_user_id
+        tracker_store,
+        "get_serialized_trackers_by_user_id",
+        mock_get_serialized_trackers,
     )
     monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
 
@@ -3688,15 +3682,9 @@ async def test_get_trackers_by_user_id_with_different_users(
     conversations = response.json["conversations"]
     assert len(conversations) == 2
     assert conversations[0]["sender_id"] == tracker1.sender_id
-    assert (
-        conversations[0]["events"]
-        == tracker1.current_state(EventVerbosity.ALL)["events"]
-    )
+    assert conversations[0]["events"] == [e.as_dict() for e in tracker1.events]
     assert conversations[1]["sender_id"] == tracker2.sender_id
-    assert (
-        conversations[1]["events"]
-        == tracker2.current_state(EventVerbosity.ALL)["events"]
-    )
+    assert conversations[1]["events"] == [e.as_dict() for e in tracker2.events]
 
     # Get trackers for user_2
     _, response = await rasa_app.get(
@@ -3708,10 +3696,7 @@ async def test_get_trackers_by_user_id_with_different_users(
     conversations = response.json["conversations"]
     assert len(conversations) == 1
     assert conversations[0]["sender_id"] == tracker3.sender_id
-    assert (
-        conversations[0]["events"]
-        == tracker3.current_state(EventVerbosity.ALL)["events"]
-    )
+    assert conversations[0]["events"] == [e.as_dict() for e in tracker3.events]
 
 
 async def test_get_trackers_by_user_id_authentication_required(

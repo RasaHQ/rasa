@@ -1262,9 +1262,8 @@ async def test_sql_tracker_store_get_trackers_by_user_id(
 
     # Then
     assert len(trackers) == 2
-    assert {t.sender_id for t in trackers} == {"sender1", "sender2"}
-    for tracker in trackers:
-        assert tracker.user_id == user_id
+    assert {t["sender_id"] for t in trackers} == {"sender1", "sender2"}
+    assert all(t["user_id"] == user_id for t in trackers)
 
 
 async def test_sql_tracker_store_get_trackers_by_user_id_no_matches(
@@ -1306,8 +1305,8 @@ async def test_sql_tracker_store_get_trackers_by_user_id_filters_no_user_id(
 
     # Then
     assert len(trackers) == 1
-    assert trackers[0].sender_id == "sender1"
-    assert trackers[0].user_id == user_id
+    assert trackers[0]["sender_id"] == "sender1"
+    assert trackers[0]["user_id"] == user_id
 
 
 async def test_sql_tracker_store_get_trackers_by_user_id_save_sets_user_id(
@@ -1372,7 +1371,13 @@ async def test_sql_tracker_store_get_trackers_by_user_id_with_limit(
     # Then
     assert len(trackers) == 5
     assert_all_trackers_have_user_id(trackers, user_id)
-    assert trackers == saved_trackers[:5]
+    # SQL sorts by (coalesce(ts, 0), sender_id) which matches creation order here
+    from tests.core.tracker_stores.conftest import sort_key
+
+    expected_sender_ids = [t.sender_id for t in sorted(saved_trackers, key=sort_key)][
+        :5
+    ]
+    assert [t["sender_id"] for t in trackers] == expected_sender_ids
 
 
 async def test_sql_tracker_store_get_trackers_by_user_id_with_skip(
@@ -1394,7 +1399,12 @@ async def test_sql_tracker_store_get_trackers_by_user_id_with_skip(
     # Then
     assert len(trackers) == 7  # 10 total - 3 skipped
     assert_all_trackers_have_user_id(trackers, user_id)
-    assert trackers == saved_trackers[3:]
+    from tests.core.tracker_stores.conftest import sort_key
+
+    expected_sender_ids = [t.sender_id for t in sorted(saved_trackers, key=sort_key)][
+        3:
+    ]
+    assert [t["sender_id"] for t in trackers] == expected_sender_ids
 
 
 async def test_sql_tracker_store_get_trackers_by_user_id_with_skip_and_limit(
@@ -1425,7 +1435,10 @@ async def test_sql_tracker_store_get_trackers_by_user_id_with_skip_and_limit(
     # Then
     assert len(trackers) == 3
     assert_all_trackers_have_user_id(trackers, user_id)
-    assert trackers == saved_trackers[2:5]
+    # saved_trackers were created with explicit delays so timestamps are distinct;
+    # DB sort order (ts asc, sender_id asc) matches creation order
+    expected_sender_ids = [t.sender_id for t in saved_trackers][2:5]
+    assert [t["sender_id"] for t in trackers] == expected_sender_ids
 
 
 async def test_sql_tracker_store_get_trackers_by_user_id_no_users_table(
@@ -1456,7 +1469,7 @@ async def test_sql_tracker_store_get_trackers_by_user_id_no_users_table(
         # Verify warning was logged
         logs = filter_logs(
             caplog,
-            event="sql_tracker_store.get_trackers_by_user_id.no_users_table",
+            event="sql_tracker_store.get_serialized_trackers_by_user_id.no_users_table",
             log_level="warning",
         )
         assert len(logs) == 1
@@ -1512,7 +1525,9 @@ async def test_sql_tracker_store_anonymous_user_not_in_users_table(
 
     # Verify tracker still exists in events
     retrieved = await tracker_store.retrieve(sender_id)
-    assert_tracker_has_user_id(retrieved, sender_id, None)
+    assert retrieved is not None
+    assert retrieved.sender_id == sender_id
+    assert retrieved.user_id is None
 
 
 async def test_sql_tracker_store_retrieve_gets_user_id_from_users_table(
@@ -1534,7 +1549,9 @@ async def test_sql_tracker_store_retrieve_gets_user_id_from_users_table(
     retrieved_tracker = await tracker_store.retrieve(sender_id)
 
     # Then - tracker should have user_id set from users table
-    assert_tracker_has_user_id(retrieved_tracker, sender_id, user_id)
+    assert retrieved_tracker is not None
+    assert retrieved_tracker.sender_id == sender_id
+    assert retrieved_tracker.user_id == user_id
 
 
 async def test_sql_tracker_store_retrieve_full_tracker_gets_user_id_from_users_table(
@@ -1563,7 +1580,9 @@ async def test_sql_tracker_store_retrieve_full_tracker_gets_user_id_from_users_t
     retrieved_tracker = await tracker_store.retrieve_full_tracker(sender_id)
 
     # Then - tracker should have user_id set from users table
-    assert_tracker_has_user_id(retrieved_tracker, sender_id, user_id)
+    assert retrieved_tracker is not None
+    assert retrieved_tracker.sender_id == sender_id
+    assert retrieved_tracker.user_id == user_id
 
 
 async def test_sql_tracker_store_retrieve_handles_missing_user_id_in_users_table(
@@ -1585,7 +1604,9 @@ async def test_sql_tracker_store_retrieve_handles_missing_user_id_in_users_table
     retrieved_tracker = await tracker_store.retrieve(sender_id)
 
     # Then - tracker should be retrieved successfully but user_id should be None
-    assert_tracker_has_user_id(retrieved_tracker, sender_id, None)
+    assert retrieved_tracker is not None
+    assert retrieved_tracker.sender_id == sender_id
+    assert retrieved_tracker.user_id is None
 
 
 # Backward compatibility tests for conversation_started_timestamp
@@ -1625,13 +1646,13 @@ async def test_sql_sorting_by_sender_id_when_timestamps_identical(
 
     # Should be sorted by sender_id when timestamps are identical
     assert len(trackers) == 3
-    assert trackers[0].sender_id == "sender_a"
-    assert trackers[1].sender_id == "sender_b"
-    assert trackers[2].sender_id == "sender_c"
+    assert trackers[0]["sender_id"] == "sender_a"
+    assert trackers[1]["sender_id"] == "sender_b"
+    assert trackers[2]["sender_id"] == "sender_c"
 
     # All should have same timestamp
     for tracker in trackers:
-        assert tracker.conversation_started_timestamp == timestamp
+        assert tracker["conversation_started_timestamp"] == timestamp
 
 
 @pytest.mark.asyncio
@@ -1750,16 +1771,26 @@ async def test_sql_additional_events_falls_back_to_full_history_for_stack_deps()
     sender_id = f"fallback_sender_{uuid.uuid4().hex}"
 
     # Build a two-session tracker where session 2 depends on session 1's stack frame.
+    # Use explicit, well-separated timestamps so MAX(session_start timestamp) always
+    # resolves to the *second* session start.  Without this, both ActionExecuted
+    # events can share the same time.time() value in fast test execution, causing
+    # _event_query(fetch_events_from_all_sessions=False) to accidentally include
+    # session-1 events via the timestamp >= MAX filter — which lets Phase 1 succeed
+    # and prevents the fallback from being triggered, making the test flaky.
+    t_s1_start, t_s1_event = 1_000_000.0, 1_000_001.0
+    t_s2_start, t_s2_event = 2_000_000.0, 2_000_001.0
     tracker = DialogueStateTracker.from_events(
         sender_id,
         [
-            ActionExecuted(ACTION_SESSION_START_NAME),
+            ActionExecuted(ACTION_SESSION_START_NAME, timestamp=t_s1_start),
             DialogueStackUpdated(
-                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "f1", "flow_id": "foo", "step_id": "START", "frame_type": "regular", "type": "flow"}}]',
+                timestamp=t_s1_event,
             ),
-            ActionExecuted(ACTION_SESSION_START_NAME),
+            ActionExecuted(ACTION_SESSION_START_NAME, timestamp=t_s2_start),
             DialogueStackUpdated(
-                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]'
+                update='[{"op": "replace", "path": "/0/step_id", "value": "SECOND"}]',
+                timestamp=t_s2_event,
             ),
         ],
     )

@@ -226,3 +226,5 @@ CLASSIFIER_NAME_FALLBACK = "FallbackClassifier"
 POLICIES_THAT_EXTRACT_ENTITIES = {"TEDPolicy"}
 
 ERROR_CODE_KEY = "error_code"
+EVENT_KEY = "event"
+METADATA_KEY = "metadata"

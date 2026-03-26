@@ -878,7 +878,6 @@ def create_app(
         Query Parameters:
             limit: Maximum number of trackers to return (for pagination).
             offset: Number of trackers to skip (for pagination).
-            include_events: Event verbosity (NONE, APPLIED, AFTER_RESTART, ALL).
 
         Returns:
             JSON response with:
@@ -894,21 +893,14 @@ def create_app(
         valid_user_id = _validate_user_id(user_id)
         limit, offset = _parse_pagination_query_params(request)
 
-        # we use ALL as default event verbosity to allow
-        # the full conversation history retrieval to be
-        # displayed to end users wanting to resume a past conversation
-        verbosity = event_verbosity_parameter(request, EventVerbosity.ALL)
-
         try:
-            # Retrieve trackers from tracker store
-            trackers = await app.ctx.agent.tracker_store.get_trackers_by_user_id(
-                valid_user_id, limit=limit, skip=offset
+            # Retrieve serialized trackers directly from tracker store —
+            # no event replay or current_state() call needed.
+            serialized_trackers = (
+                await app.ctx.agent.tracker_store.get_trackers_by_user_id(
+                    valid_user_id, limit=limit, skip=offset
+                )
             )
-
-            # Serialize trackers
-            serialized_trackers = [
-                tracker.current_state(verbosity) for tracker in trackers
-            ]
 
             # Build response
             response_data = _build_user_query_response(
@@ -916,7 +908,8 @@ def create_app(
             )
 
             logger.debug(
-                f"Retrieved {len(trackers)} trackers for user {valid_user_id}."
+                f"Retrieved {len(serialized_trackers)} trackers "
+                f"for user {valid_user_id}."
             )
 
             return response.json(response_data)

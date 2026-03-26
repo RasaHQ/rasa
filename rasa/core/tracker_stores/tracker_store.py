@@ -26,16 +26,17 @@ import rasa.utils.json_utils
 from rasa.constants import USER_ID
 from rasa.core.brokers.broker import EventBroker
 from rasa.plugin import plugin_manager
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, EVENT_KEY, METADATA_KEY
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event
+from rasa.shared.core.events import ConversationInactive, Event
 from rasa.shared.core.trackers import (
     ActionExecuted,
     DialogueStateTracker,
     TrackerEventDiffEngine,
 )
 from rasa.shared.exceptions import ConnectionException, RasaException
+from rasa.shared.nlu.constants import METADATA_SESSION_ID
 from rasa.utils.endpoints import EndpointConfig
 
 structlogger = structlog.get_logger(__name__)
@@ -84,8 +85,10 @@ class SerializedTrackerAsText(SerializedTrackerRepresentation[Text]):
     def serialise_tracker(tracker: DialogueStateTracker) -> Text:
         """Serializes the tracker, returns representation of the tracker."""
         dialogue = tracker.as_dialogue()
+        dialogue_dict = dialogue.as_dict()
+        dialogue_dict["sender_id"] = tracker.sender_id
 
-        return json.dumps(dialogue.as_dict())
+        return json.dumps(dialogue_dict)
 
 
 class SerializedTrackerAsDict(SerializedTrackerRepresentation[Dict]):
@@ -311,48 +314,6 @@ class TrackerStore:
             return tracker.events[0].timestamp
         return None
 
-    def _sort_key(self, tracker: DialogueStateTracker) -> Tuple[float, str]:
-        """Sorting key for trackers based on first event timestamp or sender_id.
-
-        Sort by first event timestamp (if available) then sender_id
-        for consistent ordering. This mimics MongoDB's _id sorting
-        which includes timestamp information.
-        If no events exist, fall back to sender_id only.
-
-        Args:
-            tracker: Tracker to generate sort key for.
-
-        Returns:
-            Tuple of (timestamp, sender_id) for sorting.
-        """
-        if tracker.conversation_started_timestamp is not None:
-            return tracker.conversation_started_timestamp, tracker.sender_id
-        if tracker.events:
-            return tracker.events[0].timestamp, tracker.sender_id
-        return 0.0, tracker.sender_id
-
-    def _apply_pagination(
-        self,
-        trackers: List[DialogueStateTracker],
-        skip: Optional[int],
-        limit: Optional[int],
-    ) -> List[DialogueStateTracker]:
-        """Apply skip and limit pagination to trackers list.
-
-        Args:
-            trackers: List of trackers to paginate.
-            skip: Optional number of trackers to skip.
-            limit: Optional maximum number of trackers to return.
-
-        Returns:
-            Paginated list of trackers.
-        """
-        if skip is not None and skip > 0:
-            trackers = trackers[skip:]
-        if limit is not None and limit > 0:
-            trackers = trackers[:limit]
-        return trackers
-
     async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
@@ -443,10 +404,11 @@ class TrackerStore:
         user_id: str,
         limit: Optional[int] = None,
         skip: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
-        """Retrieves all trackers for a given user_id.
+    ) -> List[Dict[str, Any]]:
+        """Retrieves serialized trackers for a given user_id.
 
-        This method will be overridden by the specific tracker store.
+        Delegates to :meth:`get_serialized_trackers_by_user_id`, which each
+        subclass must implement. Subclasses do not need to override this method.
 
         Args:
             user_id: User ID to fetch trackers for.
@@ -456,9 +418,115 @@ class TrackerStore:
                 starts from the beginning. Useful for pagination.
 
         Returns:
-            List of trackers associated with the user_id.
+            List of serialized tracker dicts associated with the user_id.
+        """
+        return await self.get_serialized_trackers_by_user_id(
+            user_id, limit=limit, skip=skip
+        )
+
+    async def get_serialized_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Retrieves serialized trackers for a given user_id without event replay.
+
+        Returns tracker data directly from the store in events-centric format,
+        skipping ``DialogueStateTracker.from_dict()`` and ``current_state()``
+        reconstruction. This is significantly faster than
+        :meth:`get_trackers_by_user_id` because no event replay is performed.
+
+        Each returned dict has the shape::
+
+            {
+                "sender_id": str,
+                "events": List[Dict],
+                "user_id": Optional[str],
+                "conversation_started_timestamp": Optional[float],
+                "current_session_id": Optional[str],
+            }
+
+        Args:
+            user_id: User ID to fetch trackers for.
+            limit: Optional maximum number of trackers to return.
+            skip: Optional number of trackers to skip before returning results.
+
+        Returns:
+            List of serialized tracker dicts associated with the user_id.
         """
         raise NotImplementedError()
+
+    def _sort_key_serialized(self, tracker_dict: Dict[str, Any]) -> Tuple[float, str]:
+        """Sorting key for serialized tracker dicts.
+
+        Mirrors :meth:`_sort_key` but operates on raw dicts instead of tracker
+        objects, avoiding event replay.
+
+        Args:
+            tracker_dict: Serialized tracker dict with ``sender_id``,
+                ``conversation_started_timestamp``, and ``events`` keys.
+
+        Returns:
+            Tuple of (timestamp, sender_id) for consistent ordering.
+        """
+        sender_id = tracker_dict.get("sender_id", "")
+        timestamp = tracker_dict.get("conversation_started_timestamp")
+        if timestamp is not None:
+            return float(timestamp), sender_id
+        events = tracker_dict.get("events") or []
+        if events:
+            return float(events[0].get("timestamp", 0.0)), sender_id
+        return 0.0, sender_id
+
+    def _apply_pagination_serialized(
+        self,
+        trackers: List[Dict[str, Any]],
+        skip: Optional[int],
+        limit: Optional[int],
+    ) -> List[Dict[str, Any]]:
+        """Apply skip/limit pagination to a list of serialized tracker dicts.
+
+        Args:
+            trackers: List of serialized tracker dicts to paginate.
+            skip: Optional number of items to skip.
+            limit: Optional maximum number of items to return.
+
+        Returns:
+            Paginated list of serialized tracker dicts.
+        """
+        if skip is not None and skip > 0:
+            trackers = trackers[skip:]
+        if limit is not None and limit > 0:
+            trackers = trackers[:limit]
+        return trackers
+
+    @staticmethod
+    def _current_session_id_from_events(
+        events: List[Dict[str, Any]],
+    ) -> Optional[str]:
+        """Derive ``current_session_id`` from a serialized event list without replay.
+
+        The session ID is injected into every event's ``metadata["session_id"]``
+        as events are applied to the tracker.  When the last event is a
+        ``ConversationInactive`` (type_name ``"inactive"``), the session has ended
+        and the conversation is inactive, so ``None`` is returned.  Otherwise the
+        ``session_id`` from the last event's metadata is used.
+
+        Args:
+            events: List of serialized event dicts (each having at minimum a
+                ``"event"`` type-name key and an optional ``"metadata"`` dict).
+
+        Returns:
+            The active session ID string, or ``None`` if the conversation is
+            inactive or no events carry a session ID.
+        """
+        if not events:
+            return None
+        last_event = events[-1]
+        if last_event.get(EVENT_KEY) == ConversationInactive.type_name:
+            return None
+        return last_event.get(METADATA_KEY, {}).get(METADATA_SESSION_ID)
 
     async def count_conversations(self, after_timestamp: float = 0.0) -> int:
         """Returns the number of conversations that have occurred after a timestamp.
@@ -616,33 +684,50 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
         """
         await self.save(tracker)
 
-    async def get_trackers_by_user_id(
+    async def get_serialized_trackers_by_user_id(
         self,
         user_id: str,
         limit: Optional[int] = None,
         skip: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
-        """Retrieves all trackers for a given user_id.
+    ) -> List[Dict[str, Any]]:
+        """Returns serialized tracker dicts for a given user_id without event replay.
+
+        Iterates the in-memory store, parses each JSON blob, filters by ``user_id``,
+        then sorts and paginates using the base-class helpers.
 
         Args:
             user_id: User ID to fetch trackers for.
-            limit: Optional maximum number of trackers to return. If None, returns all
-                matching trackers.
-            skip: Optional number of trackers to skip before returning results. If None,
-                starts from the beginning.
+            limit: Maximum number of trackers to return. ``None`` returns all.
+            skip: Number of trackers to skip. ``None`` starts from the beginning.
 
         Returns:
-            List of trackers associated with the user_id.
+            List of dicts, each containing ``sender_id``, ``events``,
+            ``user_id``, ``conversation_started_timestamp``, and
+            ``current_session_id``.
         """
-        trackers = []
-        for sender_id in self.store.keys():
-            tracker = await self.retrieve_full_tracker(sender_id)
-            if tracker is not None and tracker.user_id == user_id:
-                trackers.append(tracker)
-
-        trackers.sort(key=self._sort_key)
-
-        return self._apply_pagination(trackers, skip, limit)
+        result = []
+        for sender_id, raw in self.store.items():
+            try:
+                blob = json.loads(raw)
+            except (JSONDecodeError, TypeError):
+                continue
+            if blob.get(USER_ID) != user_id:
+                continue
+            events = blob.get("events") or []
+            raw_ts = blob.get("conversation_started_timestamp")
+            result.append(
+                {
+                    "sender_id": sender_id,
+                    "events": events,
+                    USER_ID: user_id,
+                    "conversation_started_timestamp": float(raw_ts)
+                    if raw_ts is not None
+                    else None,
+                    "current_session_id": self._current_session_id_from_events(events),
+                }
+            )
+        result.sort(key=self._sort_key_serialized)
+        return self._apply_pagination_serialized(result, skip, limit)
 
 
 def validate_port(port: Any) -> Optional[int]:
@@ -810,7 +895,7 @@ class FailSafeTrackerStore(TrackerStore):
         user_id: str,
         limit: Optional[int] = None,
         skip: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
+    ) -> List[Dict[str, Any]]:
         """Calls `get_trackers_by_user_id` method of primary tracker store."""
         try:
             return await self._tracker_store.get_trackers_by_user_id(
@@ -819,6 +904,32 @@ class FailSafeTrackerStore(TrackerStore):
         except Exception as e:
             self.on_tracker_store_error(e)
             return await self.fallback_tracker_store.get_trackers_by_user_id(
+                user_id, limit=limit, skip=skip
+            )
+
+    async def get_serialized_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Delegates to primary tracker store; falls back on error.
+
+        Args:
+            user_id: User ID to fetch trackers for.
+            limit: Optional maximum number of trackers to return.
+            skip: Optional number of trackers to skip.
+
+        Returns:
+            List of serialized tracker dicts.
+        """
+        try:
+            return await self._tracker_store.get_serialized_trackers_by_user_id(
+                user_id, limit=limit, skip=skip
+            )
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            return await self.fallback_tracker_store.get_serialized_trackers_by_user_id(
                 user_id, limit=limit, skip=skip
             )
 
@@ -1017,9 +1128,30 @@ class AwaitableTrackerStore(TrackerStore):
         user_id: str,
         limit: Optional[int] = None,
         skip: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
+    ) -> List[Dict[str, Any]]:
         """Wrapper to call `get_trackers_by_user_id` method of primary tracker store."""
         result = self._tracker_store.get_trackers_by_user_id(
+            user_id, limit=limit, skip=skip
+        )
+        return await result if isawaitable(result) else result
+
+    async def get_serialized_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Delegates to the wrapped tracker store.
+
+        Args:
+            user_id: User ID to fetch trackers for.
+            limit: Optional maximum number of trackers to return.
+            skip: Optional number of trackers to skip.
+
+        Returns:
+            List of serialized tracker dicts.
+        """
+        result = self._tracker_store.get_serialized_trackers_by_user_id(
             user_id, limit=limit, skip=skip
         )
         return await result if isawaitable(result) else result

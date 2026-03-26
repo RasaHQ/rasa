@@ -1,5 +1,5 @@
 import logging
-from typing import Iterable, List, Optional, Text
+from typing import Any, Dict, Iterable, List, Optional, Text
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.secrets_manager.secret_manager import EndpointResolver
@@ -194,7 +194,7 @@ class AuthRetryTrackerStore(TrackerStore):
         user_id: str,
         limit: Optional[int] = None,
         skip: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
+    ) -> List[Dict[str, Any]]:
         """Retries retrieving trackers by user_id if it fails."""
         # add + 1 to retries because the retries are additional to the first attempt
         for _ in range(self.retries + 1):
@@ -214,6 +214,43 @@ class AuthRetryTrackerStore(TrackerStore):
         # user_id is a random identifier and should not contain sensitive information
         logger.error(
             f"Failed to retrieve trackers for user_id {user_id} "
+            f"after {self.retries} retries."
+        )
+        return []
+
+    async def get_serialized_trackers_by_user_id(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        skip: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Retries retrieving serialized trackers by user_id if it fails.
+
+        Args:
+            user_id: User ID to fetch trackers for.
+            limit: Optional maximum number of trackers to return.
+            skip: Optional number of trackers to skip.
+
+        Returns:
+            List of serialized tracker dicts, or empty list after exhausting retries.
+        """
+        for _ in range(self.retries + 1):
+            try:
+                return await self._tracker_store.get_serialized_trackers_by_user_id(
+                    user_id, limit=limit, skip=skip
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to retrieve serialized trackers for user_id {user_id}. "
+                    f"Retrying...",
+                    exc_info=e,
+                )
+                self._tracker_store = self.recreate_tracker_store(
+                    self.domain, self.event_broker
+                )
+
+        logger.error(
+            f"Failed to retrieve serialized trackers for user_id {user_id} "
             f"after {self.retries} retries."
         )
         return []

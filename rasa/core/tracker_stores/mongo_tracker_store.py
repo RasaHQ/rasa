@@ -310,37 +310,32 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             first_event_timestamp=first_event_timestamp,
         )
 
-    async def get_trackers_by_user_id(
+    async def get_serialized_trackers_by_user_id(
         self,
         user_id: str,
         limit: Optional[int] = None,
         skip: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
-        """Retrieves all trackers for a given user_id.
+    ) -> List[Dict[str, Any]]:
+        """Returns serialized tracker dicts for a given user_id without event replay.
 
-        Uses MongoDB query to efficiently find trackers by user_id,
-        leveraging the user_id index for optimal performance.
-
-        Note: MongoDB cursors automatically batch results, but all matching
-        trackers are loaded into memory. For users with a very large number
-        of conversations (thousands), use the limit parameter for pagination.
+        Queries MongoDB using an aggregation pipeline that sorts by
+        ``conversation_started_timestamp`` (falling back to the first event's
+        timestamp for legacy documents), applies skip/limit at the database level,
+        and returns raw document fields — bypassing ``DialogueStateTracker.from_dict``
+        and ``current_state()`` entirely.
 
         Args:
             user_id: User ID to fetch trackers for.
-            limit: Optional maximum number of trackers to return. If None, returns all
-                matching trackers. Useful for pagination.
-            skip: Optional number of trackers to skip before returning results. If None,
-                starts from the beginning. Useful for pagination.
+            limit: Maximum number of trackers to return. ``None`` returns all.
+            skip: Number of trackers to skip before returning results. ``None``
+                starts from the beginning.
 
         Returns:
-            List of trackers associated with the user_id.
+            List of dicts, each containing ``sender_id``, ``events``,
+            ``user_id``, ``conversation_started_timestamp``, and
+            ``current_session_id``.
         """
-        trackers = []
-        # Use MongoDB aggregation pipeline to efficiently sort by
-        # conversation_started_timestamp. This handles both documents with
-        # conversation_started_timestamp field (new) and documents without it
-        # (old) by extracting from events[0].timestamp
-        pipeline = [
+        pipeline: List[Dict[str, Any]] = [
             {"$match": {USER_ID: user_id}},
             {
                 "$addFields": {
@@ -355,34 +350,39 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             {"$sort": {"sort_timestamp": 1, "sender_id": 1}},
         ]
 
-        # Apply skip and limit at the database level for efficiency
         if skip is not None and skip > 0:
             pipeline.append({"$skip": skip})
         if limit is not None and limit > 0:
             pipeline.append({"$limit": limit})
 
-        # Remove the temporary sort_timestamp field before returning
-        pipeline.append({"$project": {"sort_timestamp": 0}})
+        # Drop the temporary sort field; keep only the fields the endpoint needs
+        pipeline.append(
+            {
+                "$project": {
+                    "sort_timestamp": 0,
+                    "_id": 0,
+                }
+            }
+        )
 
-        # Execute aggregation pipeline
+        result = []
         for doc in self.conversations.aggregate(pipeline):
             sender_id = doc.get("sender_id")
             if not sender_id:
                 continue
 
-            # Reconstruct tracker from the MongoDB document
+            raw_ts = doc.get("conversation_started_timestamp")
             events = self._events_from_serialized_tracker(doc)
-            # Get conversation_started_timestamp from document if available
-            # DialogueStateTracker.from_dict() will extract from events if not provided
-            conversation_started_timestamp = doc.get("conversation_started_timestamp")
-            tracker = DialogueStateTracker.from_dict(
-                sender_id,
-                events,
-                self.domain.slots,
-                # user_id should be present as we queried by it
-                user_id=doc.get(USER_ID),
-                conversation_started_timestamp=conversation_started_timestamp,
+            result.append(
+                {
+                    "sender_id": sender_id,
+                    "events": events,
+                    USER_ID: doc.get(USER_ID),
+                    "conversation_started_timestamp": float(raw_ts)
+                    if raw_ts is not None
+                    else None,
+                    "current_session_id": self._current_session_id_from_events(events),
+                }
             )
-            trackers.append(tracker)
 
-        return trackers
+        return result

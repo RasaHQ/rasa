@@ -642,7 +642,7 @@ async def test_in_memory_tracker_store_get_trackers_by_user_id(
 
     # Then
     assert len(trackers) == 2
-    sender_ids = {tracker.sender_id for tracker in trackers}
+    sender_ids = {tracker.get("sender_id") for tracker in trackers}
     assert "sender1" in sender_ids
     assert "sender2" in sender_ids
     assert "sender3" not in sender_ids
@@ -650,7 +650,7 @@ async def test_in_memory_tracker_store_get_trackers_by_user_id(
 
     # Verify all trackers have correct user_id
     for tracker in trackers:
-        assert tracker.user_id == user_id
+        assert tracker["user_id"] == user_id
 
 
 @pytest.mark.asyncio
@@ -698,7 +698,10 @@ async def test_in_memory_tracker_store_get_trackers_by_user_id_with_pagination(
     # Test limit and skip together
     trackers = await tracker_store.get_trackers_by_user_id(user_id, skip=2, limit=3)
     assert len(trackers) == 3
-    assert trackers == saved_trackers[2:5]
+    assert [t["sender_id"] for t in trackers] == [
+        saved_trackers[i].sender_id for i in range(2, 5)
+    ]
+    assert all(t["user_id"] == user_id for t in trackers)
 
     # Test backward compatibility (no pagination params)
     trackers = await tracker_store.get_trackers_by_user_id(user_id)
@@ -1162,13 +1165,13 @@ async def test_in_memory_sorting_by_sender_id_when_timestamps_identical(
 
     # Should be sorted by sender_id when timestamps are identical
     assert len(trackers) == 3
-    assert trackers[0].sender_id == "sender_a"
-    assert trackers[1].sender_id == "sender_b"
-    assert trackers[2].sender_id == "sender_c"
+    assert trackers[0]["sender_id"] == "sender_a"
+    assert trackers[1]["sender_id"] == "sender_b"
+    assert trackers[2]["sender_id"] == "sender_c"
 
     # All should have same timestamp
     for tracker in trackers:
-        assert tracker.conversation_started_timestamp == timestamp
+        assert tracker["conversation_started_timestamp"] == timestamp
 
 
 @pytest.mark.asyncio
@@ -1230,3 +1233,54 @@ async def test_in_memory_negative_skip_and_limit_ignored(
     # Then: Should return all trackers (both negative values ignored)
     assert len(trackers) == 5
     assert_all_trackers_have_user_id(trackers, user_id)
+
+
+def test_sort_key_serialized_no_timestamp_uses_first_event_timestamp(
+    test_domain: Domain,
+) -> None:
+    """_sort_key_serialized falls back to the first event's timestamp when
+    conversation_started_timestamp is absent."""
+    store = InMemoryTrackerStore(test_domain)
+    tracker_dict = {
+        "sender_id": "sender_a",
+        "events": [{"event": "user", "timestamp": 1_700_000_000.0}],
+    }
+    key = store._sort_key_serialized(tracker_dict)
+    assert key == (1_700_000_000.0, "sender_a")
+
+
+def test_sort_key_serialized_no_timestamp_no_events_returns_zero(
+    test_domain: Domain,
+) -> None:
+    """_sort_key_serialized returns (0.0, sender_id) when there is no timestamp
+    and no events."""
+    store = InMemoryTrackerStore(test_domain)
+    tracker_dict = {"sender_id": "sender_b", "events": []}
+    key = store._sort_key_serialized(tracker_dict)
+    assert key == (0.0, "sender_b")
+
+
+def test_sort_key_serialized_none_events_key_returns_zero(
+    test_domain: Domain,
+) -> None:
+    """_sort_key_serialized treats a missing 'events' key the same as an empty list."""
+    store = InMemoryTrackerStore(test_domain)
+    tracker_dict = {"sender_id": "sender_c"}
+    key = store._sort_key_serialized(tracker_dict)
+    assert key == (0.0, "sender_c")
+
+
+def test_current_session_id_from_events_empty_list_returns_none() -> None:
+    """_current_session_id_from_events returns None for an empty event list."""
+    result = TrackerStore._current_session_id_from_events([])
+    assert result is None
+
+
+def test_current_session_id_from_events_inactive_last_event_returns_none() -> None:
+    """_current_session_id_from_events returns None when the last event is 'inactive'."""
+    events = [
+        {"event": "user", "metadata": {"session_id": "sess_abc"}},
+        {"event": "inactive"},
+    ]
+    result = TrackerStore._current_session_id_from_events(events)
+    assert result is None
