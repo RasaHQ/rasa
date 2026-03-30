@@ -1,7 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { v4 as uuid } from "uuid";
 import { useBotConnection } from "./hooks/useBotConnection";
 import { InspectorContextProvider } from "./InspectorContext";
+import {
+  initInspectorStore,
+  inspectorStore,
+  type InspectorStoreState,
+} from "./store";
 import { Toaster } from "./Toaster";
 import { TryAssistant } from "./try-assistant/TryAssistant";
 import type {
@@ -31,43 +36,51 @@ type Props = {
   socketReconnectAttempts?: number;
 };
 
-export const Inspector = ({ track, logError, showToast, onboardingTooltips, socketReconnectAttempts, ...rest }: Props) => (
-  <InspectorContextProvider track={track} logError={logError} showToast={showToast} onboardingTooltips={onboardingTooltips} socketReconnectAttempts={socketReconnectAttempts}>
+export const Inspector = ({
+  track,
+  logError,
+  showToast,
+  onboardingTooltips,
+  socketReconnectAttempts,
+  ...rest
+}: Props) => (
+  <InspectorContextProvider
+    track={track}
+    logError={logError}
+    showToast={showToast}
+    onboardingTooltips={onboardingTooltips}
+    socketReconnectAttempts={socketReconnectAttempts}
+  >
     <InspectorContent {...rest} />
     {!showToast && <Toaster />}
   </InspectorContextProvider>
 );
 
-const InspectorContent = (props: Omit<Props, "track" | "logError" | "onboardingTooltips">) => {
+const InspectorContent = (
+  props: Omit<Props, "track" | "logError" | "onboardingTooltips">,
+) => {
   const {
     projectUrl,
-    botDataEndpoint,
-    conversationEventActions,
     singleSessionMode,
     projectId,
-    initialInspectMode = false,
     onSessionStart,
     onReconnectError,
-    onInspectModeChange,
     onMessageSent,
-    voiceFeaturesEnabled = true,
   } = props;
-  const [inspectMode, setInspectMode] = useState<boolean>(initialInspectMode);
-  const {
-    sendMessage,
-    setUrl,
-    startNewConversation,
-    conversationList,
-    inputDisabled,
-    sessionId,
-    stack,
-    replayingConversation,
-    waitingForUserInput,
-    replayConversation,
-    startVoiceStreaming,
-    stopVoiceStreaming,
-    onVoiceErrorRef,
-  } = useBotConnection({
+
+  const initialized = useRef<boolean>(null);
+  if (initialized.current === null) {
+    initialized.current = true;
+    initInspectorStore({
+      projectUrl,
+      botDataEndpoint: props.botDataEndpoint,
+      conversationEventActions: props.conversationEventActions ?? [],
+      voiceFeaturesEnabled: props.voiceFeaturesEnabled ?? true,
+      inspectMode: props.initialInspectMode ?? false,
+    });
+  }
+
+  useBotConnection({
     projectId: projectId ?? uuid(),
     useMemoryOnly: singleSessionMode ?? false,
     onSessionStart,
@@ -76,30 +89,24 @@ const InspectorContent = (props: Omit<Props, "track" | "logError" | "onboardingT
   });
 
   useEffect(() => {
-    onInspectModeChange?.(inspectMode);
-  }, [inspectMode, onInspectModeChange]);
+    const updates: Partial<InspectorStoreState> = {};
 
-  return (
-    <TryAssistant
-      projectUrl={projectUrl}
-      flowView={inspectMode}
-      setFlowView={setInspectMode}
-      sendMessage={sendMessage}
-      setUrl={setUrl}
-      startNewConversation={startNewConversation}
-      conversationList={conversationList}
-      inputDisabled={inputDisabled}
-      sessionId={sessionId}
-      stack={stack}
-      replayingConversation={replayingConversation}
-      waitingForUserInput={waitingForUserInput}
-      replayConversation={replayConversation}
-      conversationEventActions={conversationEventActions}
-      botDataEndpoint={botDataEndpoint}
-      startVoiceStreaming={startVoiceStreaming}
-      stopVoiceStreaming={stopVoiceStreaming}
-      onVoiceErrorRef={onVoiceErrorRef}
-      voiceFeaturesEnabled={voiceFeaturesEnabled}
-    />
-  );
-}
+    if (projectUrl) updates.projectUrl = projectUrl;
+    if (props.botDataEndpoint) updates.botDataEndpoint = props.botDataEndpoint;
+    if (props.conversationEventActions)
+      updates.conversationEventActions = props.conversationEventActions;
+    if (typeof props.voiceFeaturesEnabled === "boolean")
+      updates.voiceFeaturesEnabled = props.voiceFeaturesEnabled;
+
+    if (Object.keys(updates).length > 0) {
+      inspectorStore.setState((prev) => ({ ...prev, ...updates }));
+    }
+  }, [
+    projectUrl,
+    props.botDataEndpoint,
+    props.conversationEventActions,
+    props.voiceFeaturesEnabled,
+  ]);
+
+  return <TryAssistant onInspectModeChange={props.onInspectModeChange} />;
+};

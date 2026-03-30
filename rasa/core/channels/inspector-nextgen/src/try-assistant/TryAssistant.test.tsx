@@ -1,15 +1,12 @@
 import { describe, it, vi, expect, beforeEach } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "../tests/utils";
 import { TryAssistant } from "./TryAssistant";
-import type { VoiceErrorHandler } from "../types";
 
-vi.mock("@tanstack/react-store", async () => {
-  const actual = await vi.importActual("@tanstack/react-store");
-  return { ...actual, useStore: vi.fn(() => "mock-url") };
-});
+vi.mock("../hooks/useConversationData", () => ({
+  useConversationData: vi.fn(),
+}));
 
-// Mock children components
 vi.mock("../LoadingSpinner", () => ({
   LoadingSpinner: () => <div data-testid="spinner" />,
 }));
@@ -27,49 +24,35 @@ vi.mock("./FlowSection", () => ({
 }));
 
 describe("TryAssistant", () => {
-  const baseProps = {
-    flowView: false,
-    sendMessage: vi.fn(),
-    setUrl: vi.fn(),
-    startNewConversation: vi.fn(),
-    conversationList: [],
-    inputDisabled: false,
-    sessionId: "sess-1",
-    stack: [],
-    replayingConversation: false,
-    waitingForUserInput: true,
-    replayConversation: vi.fn(),
-    projectUrl: "mock-url",
-    conversationEventActions: [],
-    setFlowView: vi.fn(),
-    botDataEndpoint: "/data",
-    startVoiceStreaming: vi.fn(),
-    stopVoiceStreaming: vi.fn(),
-    onVoiceErrorRef: { current: null } as { current: VoiceErrorHandler },
-    voiceFeaturesEnabled: true,
-  } satisfies Parameters<typeof TryAssistant>[0];
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("renders chat section and doesn't render spinner or flow section by default", () => {
-    renderWithProviders(<TryAssistant {...baseProps} />);
+    renderWithProviders(<TryAssistant />, {
+      initialStoreState: { inspectMode: false },
+    });
     expect(screen.getByTestId("chat-section")).toBeInTheDocument();
     expect(screen.queryByTestId("spinner")).not.toBeInTheDocument();
     expect(screen.queryByTestId("flow-section")).not.toBeInTheDocument();
   });
 
-  it("renders flow section if flowView is true", () => {
-    renderWithProviders(<TryAssistant {...baseProps} flowView={true} />);
+  it("renders flow section if inspectMode is true in the store", () => {
+    renderWithProviders(<TryAssistant />, {
+      initialStoreState: { inspectMode: true },
+    });
     expect(screen.getByTestId("flow-section")).toBeInTheDocument();
   });
 
-  it("calls setUrl with projectUrl in useEffect", () => {
+  it("calls onInspectModeChange when inspectMode is set in store", async () => {
+    const onInspectModeChange = vi.fn();
     renderWithProviders(
-      <TryAssistant {...baseProps} setUrl={baseProps.setUrl} />,
+      <TryAssistant onInspectModeChange={onInspectModeChange} />,
+      { initialStoreState: { inspectMode: true } },
     );
-    expect(baseProps.setUrl).toHaveBeenCalledWith("mock-url");
+    await waitFor(() => {
+      expect(onInspectModeChange).toHaveBeenCalledWith(true);
+    });
   });
 
   it("when selectedElement is undefined, shows latestStack", () => {
@@ -79,14 +62,13 @@ describe("TryAssistant", () => {
       stepId: "s",
       ended: true,
     };
-    renderWithProviders(
-      <TryAssistant
-        {...baseProps}
-        flowView
-        stack={[latestStack]}
-        conversationList={[]}
-      />,
-    );
+    renderWithProviders(<TryAssistant />, {
+      initialStoreState: {
+        inspectMode: true,
+        stack: [latestStack],
+        conversationList: [],
+      },
+    });
     const flow = screen.getByTestId("flow-section");
     const props = JSON.parse(flow.dataset.props ?? "{}") as {
       stackToShow: typeof latestStack;

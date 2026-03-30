@@ -7,22 +7,28 @@ import {
 } from "@testing-library/react";
 import React from "react";
 import { vi } from "vitest";
+import { initInspectorStore, type InspectorStoreState } from "../store";
 
 export function renderWithProviders(
   children: React.ReactElement,
-  options?: Omit<RenderOptions, "queries">,
+  options?: Omit<RenderOptions, "queries"> & {
+    initialStoreState?: Partial<InspectorStoreState>;
+  },
 ): RenderResult {
   const queryClient = new QueryClient();
+  const { initialStoreState, ...renderOptions } = options ?? {};
+
+  initInspectorStore(initialStoreState);
 
   const Providers = ({ children }: { children: React.ReactNode }) => {
     return (
-      <QueryClientProvider client={queryClient} >
+      <QueryClientProvider client={queryClient}>
         <ChakraProvider value={defaultSystem}>{children}</ChakraProvider>
       </QueryClientProvider>
     );
   };
 
-  return render(children, { wrapper: Providers, ...options });
+  return render(children, { wrapper: Providers, ...renderOptions });
 }
 
 export const defaultAnalyticsMock = {
@@ -44,4 +50,3 @@ export const defaultAnalyticsMock = {
     utm_content: "join_community",
   },
 };
-

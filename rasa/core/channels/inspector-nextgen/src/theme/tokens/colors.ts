@@ -8,6 +8,7 @@ export const colors = {
     500: { value: "#CED5E7" },
     600: { value: "#9DA6BE" },
     700: { value: "#6B7694" },
+    800: { value: "#2C3951" },
   },
   rasawebNeutral: {
     50: { value: "#FDF9F3" },
@@ -28,6 +29,11 @@ export const colors = {
   },
   rasawebYellow: {
     400: { value: "#EAB308" },
+    900: { value: "#806908" },
+  },
+  rasaYellow: {
+    50: { value: "#FFF8E0" },
+    500: { value: "#F3C30E" },
     900: { value: "#806908" },
   },
   rasawebDeepPurple: {
@@ -53,6 +59,8 @@ export const colors = {
     600: { value: "#2563EB" },
   },
   rasaGreen: {
+    50: { value: "#D4FAED" },
+    700: { value: "#07895D" },
     800: { value: "#2B8F5A" },
   },
   rasaPink: {

@@ -1,6 +1,7 @@
 export * from "./api";
 export * from "./conversation";
 export * from "./flow";
+export * from "./inspector";
 import type { RasaProError } from "./conversation";
 
 export enum PlaceholderImage {

@@ -30,6 +30,7 @@ const App = () => {
         <Flex css={containerCss}>
           <Flex css={contentCss}>
             <Inspector
+              // SWI-1127: Port should not be hardcoded, but taken from args (--port)
               projectUrl="http://localhost:5005"
               botDataEndpoint="/data"
               singleSessionMode

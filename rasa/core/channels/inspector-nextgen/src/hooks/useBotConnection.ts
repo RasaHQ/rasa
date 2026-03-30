@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { io, type Socket } from "socket.io-client";
 import { v4 as uuid } from "uuid";
 import {
@@ -33,6 +40,7 @@ import {
   stopMicrophoneStream,
 } from "../utils/voice/audiostream";
 import { SocketTimeoutError, SocketUnavailableError } from "../errors";
+import { inspectorStore, useInspectorStore } from "../store";
 
 const REACT_APP_SESSION_HISTORY_KEY = "rasa_session_history";
 
@@ -121,11 +129,9 @@ export function useBotConnection({
   onMessageSent?: (message: string) => void;
   useMemoryOnly?: boolean;
 }) {
-  const { logError, showToast, socketReconnectAttempts, track } = useInspectorContext();
+  const { logError, showToast, socketReconnectAttempts, track } =
+    useInspectorContext();
   const [localStorageHistory, setLocalStorageHistory] =
-    // TODO: update useLocalStorage to deal with `undefined | null` keys
-    // and avoid keys like `rasa_session_history_undefined`;
-    // TODO: load projectId from the store instead of the params
     useLocalStorage<ConversationHistory>(
       `${REACT_APP_SESSION_HISTORY_KEY}_${projectId}`,
       {},
@@ -145,9 +151,13 @@ export function useBotConnection({
     ((value: void) => void) | undefined
   >(undefined);
 
+  const logErrorRef = useRef(logError);
   const onReconnectErrorRef = useRef(onReconnectError);
   const onSessionStartRef = useRef(onSessionStart);
   const onMessageSentRef = useRef(onMessageSent);
+  useEffect(() => {
+    logErrorRef.current = logError;
+  }, [logError]);
   useEffect(() => {
     onReconnectErrorRef.current = onReconnectError;
   }, [onReconnectError]);
@@ -158,7 +168,6 @@ export function useBotConnection({
     onMessageSentRef.current = onMessageSent;
   }, [onMessageSent]);
 
-  // Select appropriate storage based on parameter
   const [conversationHistory, setConversationHistory] = useMemoryOnly
     ? [memoryHistory, setMemoryHistory]
     : [localStorageHistory, setLocalStorageHistory];
@@ -170,14 +179,21 @@ export function useBotConnection({
     reviewed: false,
     totalNumberOfUserMessages: 0,
   });
-  // Track modality for the is_voice parameter in session_request
   const activeModalityRef = useRef<"text" | "voice">("text");
   const [sessionId, setSessionId] = useState(uuid());
   const [url, setUrl] = useState("");
-  const [error, setError] = useState<
-    ModelServiceError | RasaProError | undefined
-  >(undefined);
+  const [, setError] = useState<ModelServiceError | RasaProError | undefined>(
+    undefined,
+  );
   const onVoiceErrorRef = useRef<((err: RasaProError) => void) | null>(null);
+  const projectUrl = useInspectorStore((s) => s.projectUrl);
+
+  useEffect(() => {
+    if (projectUrl) {
+      setUrl(projectUrl);
+    }
+  }, [projectUrl]);
+
   const socket = useRef<Socket>(undefined);
   const audioQueueRef = useRef<AudioQueue>(undefined);
   const microphoneStreamRef =
@@ -245,7 +261,6 @@ export function useBotConnection({
       ...conversationHistory,
       [conversation.id]: conversation,
     });
-    //Next line added because linter requires both setConversationHistory and conversationHistory to be in the deps
     //eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversation]);
 
@@ -280,7 +295,7 @@ export function useBotConnection({
             try {
               addDataToAudioQueue(audioQueueRef.current)(data);
             } catch (error) {
-              logError(error, {
+              logErrorRef.current(error, {
                 tags: {
                   component: "useBotConnection",
                   action: "bot_message",
@@ -289,7 +304,7 @@ export function useBotConnection({
               });
             }
           } else {
-            logError(
+            logErrorRef.current(
               `Unexpected typeof bot_message data. Got: ${typeof data}, expected: string.`,
               {
                 tags: {
@@ -303,7 +318,6 @@ export function useBotConnection({
             );
           }
         }
-
       });
 
       socket.current?.on("session_confirm", () => {
@@ -335,7 +349,7 @@ export function useBotConnection({
       });
 
       socket.current?.on("voice_error", (error) => {
-        logError(error, {
+        logErrorRef.current(error, {
           tags: {
             component: "useBotConnection",
             action: "voice_error",
@@ -359,7 +373,7 @@ export function useBotConnection({
         }
         if (!socket.current?.active) {
           disableChat();
-          logError(reason, {
+          logErrorRef.current(reason, {
             tags: {
               component: "useBotConnection",
               action: "disconnect",
@@ -377,7 +391,7 @@ export function useBotConnection({
         });
         disableChat();
         onReconnectErrorRef?.current?.(error);
-        logError(error, {
+        logErrorRef.current(error, {
           tags: {
             component: "useBotConnection",
             action: "reconnect_error",
@@ -392,7 +406,7 @@ export function useBotConnection({
             message: "Server connection lost during voice call",
           });
         }
-        const errorDescription = `websocket wasn't able to reconnect ${socketReconnectAttempts ? `within ${socketReconnectAttempts} attempts` : ""}`
+        const errorDescription = `websocket wasn't able to reconnect ${socketReconnectAttempts ? `within ${socketReconnectAttempts} attempts` : ""}`;
         showToast({
           title: "Reconnect failed",
           description: errorDescription,
@@ -400,15 +414,12 @@ export function useBotConnection({
         });
         disableChat();
         onReconnectErrorRef?.current?.(new Error("Reconnect failed"));
-        logError(
-          errorDescription,
-          {
-            tags: {
-              component: "useBotConnection",
-              action: "reconnect_failed",
-            },
+        logError(errorDescription, {
+          tags: {
+            component: "useBotConnection",
+            action: "reconnect_failed",
           },
-        );
+        });
       });
 
       socket.current?.on("tracker", (response: TrackerResponseData) => {
@@ -454,16 +465,18 @@ export function useBotConnection({
       };
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [url, sessionId, sendMessage, logError, showToast, socketReconnectAttempts]);
+  }, [
+    url,
+    sessionId,
+    sendMessage,
+    logError,
+    showToast,
+    socketReconnectAttempts,
+  ]);
 
   useEffect(() => {
     onSessionStartRef?.current?.(sessionId);
   }, [sessionId]);
-
-  const reset = () => {
-    setUrl("");
-    startNewConversation();
-  };
 
   const startNewConversation = useCallback((): string => {
     setInputDisabled(true);
@@ -507,15 +520,15 @@ export function useBotConnection({
     if (socket.current) {
       const audioQueue = createAudioQueue(socket.current);
       audioQueueRef.current = audioQueue;
-      await setupAudioPlayback(socket.current, logError, audioQueue);
+      await setupAudioPlayback(socket.current, logErrorRef.current, audioQueue);
       microphoneStreamRef.current = await streamMicrophoneToServer(
         socket.current,
-        logError,
+        logErrorRef.current,
       );
     } else {
       throw new SocketUnavailableError();
     }
-  }, [startNewConversation, logError]);
+  }, [startNewConversation]);
 
   const stopVoiceStreaming = useCallback(async () => {
     if (activeModalityRef.current !== "voice") {
@@ -525,7 +538,7 @@ export function useBotConnection({
     try {
       await stopMicrophoneStream(microphoneStreamRef.current);
     } catch (error) {
-      logError(error, {
+      logErrorRef.current(error, {
         tags: {
           component: "useBotConnection",
           action: "stopMicrophoneStream",
@@ -535,7 +548,7 @@ export function useBotConnection({
     try {
       await stopAudioPlayback(audioQueueRef.current);
     } catch (error) {
-      logError(error, {
+      logErrorRef.current(error, {
         tags: {
           component: "useBotConnection",
           action: "stopAudioPlayback",
@@ -546,7 +559,7 @@ export function useBotConnection({
       audioQueueRef.current = undefined;
       startNewConversation();
     }
-  }, [startNewConversation, logError]);
+  }, [startNewConversation]);
 
   const replayConversation = useCallback(
     (events: UnionEventType[]) => {
@@ -570,25 +583,73 @@ export function useBotConnection({
     [conversationHistory],
   );
 
-  return {
+  // --- Sync state and actions to the store ---
+
+  const setUrlAction = useCallback((newUrl: string) => setUrl(newUrl), []);
+
+  // Initial sync via layout effect: runs synchronously after render but
+  // before the browser paints, so children see real values on first paint.
+  const initialSyncDone = useRef(false);
+  useLayoutEffect(() => {
+    if (initialSyncDone.current) return;
+    initialSyncDone.current = true;
+    inspectorStore.setState((prev) => ({
+      ...prev,
+      sessionId,
+      conversationList,
+      stack,
+      inputDisabled,
+      replayingConversation,
+      waitingForUserInput,
+      slots,
+      slotRelatedEvents,
+      sendMessage,
+      startNewConversation,
+      replayConversation,
+      setUrl: setUrlAction,
+      startVoiceStreaming,
+      stopVoiceStreaming,
+      onVoiceErrorRef,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Ongoing sync: pushes updates whenever local state or actions change.
+  useEffect(() => {
+    inspectorStore.setState((prev) => ({
+      ...prev,
+      sessionId,
+      conversationList,
+      stack,
+      inputDisabled,
+      replayingConversation,
+      waitingForUserInput,
+      slots,
+      slotRelatedEvents,
+      sendMessage,
+      startNewConversation,
+      replayConversation,
+      setUrl: setUrlAction,
+      startVoiceStreaming,
+      stopVoiceStreaming,
+      onVoiceErrorRef,
+    }));
+  }, [
+    sessionId,
     conversationList,
     stack,
     inputDisabled,
-    sessionId,
-    slots,
-    slotRelatedEvents,
     replayingConversation,
     waitingForUserInput,
-    error,
     onVoiceErrorRef,
     setUrl,
-    reset,
+    slots,
+    slotRelatedEvents,
     sendMessage,
-    replayConversation,
-    setInputDisabled,
     startNewConversation,
+    replayConversation,
+    setUrlAction,
     startVoiceStreaming,
     stopVoiceStreaming,
-    cleanup,
-  };
+  ]);
 }

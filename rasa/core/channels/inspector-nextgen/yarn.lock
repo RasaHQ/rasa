@@ -1129,6 +1129,19 @@
   dependencies:
     "@tanstack/query-core" "5.90.20"
 
+"@tanstack/react-store@^0.9.2":
+  version "0.9.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-store/-/react-store-0.9.2.tgz#c0383c50c9e7fa7c3816a32931659de7e22f90ec"
+  integrity sha512-Vt5usJE5sHG/cMechQfmwvwne6ktGCELe89Lmvoxe3LKRoFrhPa8OCKWs0NliG8HTJElEIj7PLtaBQIcux5pAQ==
+  dependencies:
+    "@tanstack/store" "0.9.2"
+    use-sync-external-store "^1.6.0"
+
+"@tanstack/store@0.9.2", "@tanstack/store@^0.9.2":
+  version "0.9.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/store/-/store-0.9.2.tgz#9857f02e7d0f71695cc8ee351ae14b8285a4962e"
+  integrity sha512-K013lUJEFJK2ofFQ/hZKJUmCnpcV00ebLyOyFOWQvyQHUOZp/iYO84BM6aOGiV81JzwbX0APTVmW8YI7yiG5oA==
+
 "@testing-library/dom@^10.4.1":
   version "10.4.1"
   resolved "https://registry.yarnpkg.com/@testing-library/dom/-/dom-10.4.1.tgz#d444f8a889e9a46e9a3b4f3b88e0fcb3efb6cf95"
@@ -5894,7 +5907,7 @@ uri-js@^4.2.2:
   dependencies:
     punycode "^2.1.0"
 
-use-sync-external-store@^1.2.2:
+use-sync-external-store@^1.2.2, use-sync-external-store@^1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.6.0.tgz#b174bfa65cb2b526732d9f2ac0a408027876f32d"
   integrity sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==

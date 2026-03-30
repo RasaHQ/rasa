@@ -13,6 +13,7 @@ import { useParams } from "react-router-dom";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { REACT_APP_SESSION_HISTORY_KEY } from "../constants";
 import { SocketTimeoutError } from "../errors";
+import { initInspectorStore, inspectorStore } from "../store";
 
 vi.mock("react-router-dom", () => ({
   useParams: vi.fn(),
@@ -87,6 +88,7 @@ describe("useBotConnection", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    initInspectorStore();
     (useParams as MockedUseParams).mockReturnValue({
       projectId: "test-project",
     });
@@ -131,44 +133,42 @@ describe("useBotConnection", () => {
     );
   });
 
-  it("returns initial state with input disabled and valid sessionId", () => {
-    const { result } = renderHook(() => useBotConnection({
+  it("syncs initial state to the store with input disabled", () => {
+    renderHook(() => useBotConnection({
       projectId: "test-project",
       onSessionStart: vi.fn(),
       onReconnectError: vi.fn(),
       useMemoryOnly: false,
     }));
 
-    expect(result.current.inputDisabled).toBe(true);
-    expect(result.current.sessionId).toBeDefined();
-    expect(typeof result.current.sessionId).toBe("string");
-    expect(result.current.sessionId.length).toBeGreaterThan(0);
-    expect(result.current.conversationList).toEqual([]);
-    expect(result.current.error).toBeUndefined();
+    const state = inspectorStore.state;
+    expect(state.inputDisabled).toBe(true);
+    expect(state.sessionId).toBeDefined();
+    expect(typeof state.sessionId).toBe("string");
+    expect(state.sessionId.length).toBeGreaterThan(0);
+    expect(state.conversationList).toEqual([]);
   });
 
-  it("startNewConversation returns new sessionId and updates sessionId", () => {
-    const { result } = renderHook(() => useBotConnection({
+  it("startNewConversation updates sessionId in store", () => {
+    renderHook(() => useBotConnection({
       projectId: "test-project",
       onSessionStart: vi.fn(),
       onReconnectError: vi.fn(),
       useMemoryOnly: false,
     }));
 
-    const initialSessionId = result.current.sessionId;
-    let newSessionId: string | undefined;
+    const initialSessionId = inspectorStore.state.sessionId;
 
     act(() => {
-      newSessionId = result.current.startNewConversation();
+      inspectorStore.state.startNewConversation();
     });
 
-    expect(newSessionId).toBeDefined();
-    expect(newSessionId).not.toBe(initialSessionId);
-    expect(result.current.sessionId).toBe(newSessionId);
+    expect(inspectorStore.state.sessionId).toBeDefined();
+    expect(inspectorStore.state.sessionId).not.toBe(initialSessionId);
   });
 
   it("startNewConversation clears stack, slots, and slotRelatedEvents", () => {
-    const { result } = renderHook(() => useBotConnection({
+    renderHook(() => useBotConnection({
       projectId: "test-project",
       onSessionStart: vi.fn(),
       onReconnectError: vi.fn(),
@@ -176,7 +176,7 @@ describe("useBotConnection", () => {
     }));
 
     act(() => {
-      result.current.setUrl("https://test.example.com");
+      inspectorStore.state.setUrl("https://test.example.com");
     });
 
     act(() => {
@@ -185,28 +185,28 @@ describe("useBotConnection", () => {
 
     act(() => {
       lastSocket.handlers["tracker"]?.({
-        sender_id: result.current.sessionId,
+        sender_id: inspectorStore.state.sessionId,
         events: [],
         slots: [{ name: "some_slot", value: "some_value" }],
         stack: [{ frame_id: "f1", flow_id: "my_flow", step_id: "s1", collect: undefined, utter: undefined }],
       });
     });
 
-    expect(result.current.stack).toHaveLength(1);
-    expect(result.current.slots).toHaveLength(1);
+    expect(inspectorStore.state.stack).toHaveLength(1);
+    expect(inspectorStore.state.slots).toHaveLength(1);
 
     act(() => {
-      result.current.startNewConversation();
+      inspectorStore.state.startNewConversation();
     });
 
-    expect(result.current.stack).toEqual([]);
-    expect(result.current.slots).toEqual([]);
-    expect(result.current.slotRelatedEvents).toEqual([]);
+    expect(inspectorStore.state.stack).toEqual([]);
+    expect(inspectorStore.state.slots).toEqual([]);
+    expect(inspectorStore.state.slotRelatedEvents).toEqual([]);
   });
 
   describe("session_start message behavior", () => {
     it("sends /session_start on session_confirm when in text modality", () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -216,7 +216,7 @@ describe("useBotConnection", () => {
       );
 
       act(() => {
-        result.current.setUrl("https://test.example.com");
+        inspectorStore.state.setUrl("https://test.example.com");
       });
 
       act(() => {
@@ -229,12 +229,12 @@ describe("useBotConnection", () => {
 
       expect(lastSocket.emit).toHaveBeenCalledWith("user_message", {
         message: "/session_start",
-        session_id: result.current.sessionId,
+        session_id: inspectorStore.state.sessionId,
       });
     });
 
     it("does not send /session_start on session_confirm when in voice modality", async () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -244,12 +244,12 @@ describe("useBotConnection", () => {
       );
 
       act(() => {
-        result.current.setUrl("https://test.example.com");
+        inspectorStore.state.setUrl("https://test.example.com");
       });
 
       let voicePromise: Promise<void>;
       act(() => {
-        voicePromise = result.current.startVoiceStreaming();
+        voicePromise = inspectorStore.state.startVoiceStreaming();
       });
 
       act(() => {
@@ -273,7 +273,7 @@ describe("useBotConnection", () => {
 
   describe("voice_error event", () => {
     it("calls onVoiceErrorRef callback when voice_error event is received", () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -283,11 +283,11 @@ describe("useBotConnection", () => {
       );
 
       act(() => {
-        result.current.setUrl("https://test.example.com");
+        inspectorStore.state.setUrl("https://test.example.com");
       });
 
       const handler = vi.fn();
-      result.current.onVoiceErrorRef.current = handler;
+      inspectorStore.state.onVoiceErrorRef.current = handler;
 
       const voiceErrorPayload = {
         message: "Voice streaming failed",
@@ -303,7 +303,7 @@ describe("useBotConnection", () => {
     });
 
     it("does not throw when onVoiceErrorRef.current is null", () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -313,10 +313,10 @@ describe("useBotConnection", () => {
       );
 
       act(() => {
-        result.current.setUrl("https://test.example.com");
+        inspectorStore.state.setUrl("https://test.example.com");
       });
 
-      expect(result.current.onVoiceErrorRef.current).toBeNull();
+      expect(inspectorStore.state.onVoiceErrorRef.current).toBeNull();
 
       expect(() => {
         act(() => {
@@ -341,7 +341,7 @@ describe("useBotConnection", () => {
     }
 
     it("returns true when last action is action_agent_request_user_input", () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -350,20 +350,20 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
-        sendTracker(result.current.sessionId, [
+        sendTracker(inspectorStore.state.sessionId, [
           { event: "action", name: "action_agent_request_user_input", timestamp: 1 },
         ]),
       );
 
-      expect(result.current.waitingForUserInput).toBe(true);
+      expect(inspectorStore.state.waitingForUserInput).toBe(true);
     });
 
     it("returns true when action_agent_request_user_input is followed by an empty bot utterance", () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -372,21 +372,21 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
-        sendTracker(result.current.sessionId, [
+        sendTracker(inspectorStore.state.sessionId, [
           { event: "action", name: "action_agent_request_user_input", timestamp: 1 },
           { event: "bot", timestamp: 2 },
         ]),
       );
 
-      expect(result.current.waitingForUserInput).toBe(true);
+      expect(inspectorStore.state.waitingForUserInput).toBe(true);
     });
 
     it("returns true for action_listen (standard flow)", () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -395,20 +395,20 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
-        sendTracker(result.current.sessionId, [
+        sendTracker(inspectorStore.state.sessionId, [
           { event: "action", name: "action_listen", timestamp: 1 },
         ]),
       );
 
-      expect(result.current.waitingForUserInput).toBe(true);
+      expect(inspectorStore.state.waitingForUserInput).toBe(true);
     });
 
     it("returns false when action_listen follows agent_started (sub-agent still working)", () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -417,21 +417,21 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
-        sendTracker(result.current.sessionId, [
+        sendTracker(inspectorStore.state.sessionId, [
           { event: "agent_started", timestamp: 1 },
           { event: "action", name: "action_listen", timestamp: 2 },
         ]),
       );
 
-      expect(result.current.waitingForUserInput).toBe(false);
+      expect(inspectorStore.state.waitingForUserInput).toBe(false);
     });
 
     it("returns true when action_listen follows agent_completed (sub-agent done)", () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -440,22 +440,22 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
-        sendTracker(result.current.sessionId, [
+        sendTracker(inspectorStore.state.sessionId, [
           { event: "agent_started", timestamp: 1 },
           { event: "agent_completed", timestamp: 2 },
           { event: "action", name: "action_listen", timestamp: 3 },
         ]),
       );
 
-      expect(result.current.waitingForUserInput).toBe(true);
+      expect(inspectorStore.state.waitingForUserInput).toBe(true);
     });
 
     it("returns false when user message follows action_listen (bot is processing)", () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -464,21 +464,21 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
-        sendTracker(result.current.sessionId, [
+        sendTracker(inspectorStore.state.sessionId, [
           { event: "action", name: "action_listen", timestamp: 1 },
           { event: "user", text: "find flights", timestamp: 2 },
         ]),
       );
 
-      expect(result.current.waitingForUserInput).toBe(false);
+      expect(inspectorStore.state.waitingForUserInput).toBe(false);
     });
 
     it("returns false when last action is not a listen/request action", () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -487,22 +487,22 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => result.current.setUrl("https://test.example.com"));
+      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
-        sendTracker(result.current.sessionId, [
+        sendTracker(inspectorStore.state.sessionId, [
           { event: "action", name: "action_some_custom", timestamp: 1 },
         ]),
       );
 
-      expect(result.current.waitingForUserInput).toBe(false);
+      expect(inspectorStore.state.waitingForUserInput).toBe(false);
     });
   });
 
   describe("disconnect during voice call", () => {
     it("calls onVoiceErrorRef with connection_lost when disconnected during voice", async () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -512,12 +512,12 @@ describe("useBotConnection", () => {
       );
 
       act(() => {
-        result.current.setUrl("https://test.example.com");
+        inspectorStore.state.setUrl("https://test.example.com");
       });
 
       let voicePromise: Promise<void>;
       act(() => {
-        voicePromise = result.current.startVoiceStreaming();
+        voicePromise = inspectorStore.state.startVoiceStreaming();
       });
 
       act(() => {
@@ -533,7 +533,7 @@ describe("useBotConnection", () => {
       });
 
       const handler = vi.fn();
-      result.current.onVoiceErrorRef.current = handler;
+      inspectorStore.state.onVoiceErrorRef.current = handler;
 
       act(() => {
         lastSocket.handlers["disconnect"]?.("transport close", {});
@@ -546,7 +546,7 @@ describe("useBotConnection", () => {
     });
 
     it("does not call onVoiceErrorRef on disconnect when in text mode, shows toast instead", () => {
-      const { result } = renderHook(() =>
+      renderHook(() =>
         useBotConnection({
           projectId: "test-project",
           onSessionStart: vi.fn(),
@@ -556,7 +556,7 @@ describe("useBotConnection", () => {
       );
 
       act(() => {
-        result.current.setUrl("https://test.example.com");
+        inspectorStore.state.setUrl("https://test.example.com");
       });
 
       act(() => {
@@ -568,7 +568,7 @@ describe("useBotConnection", () => {
       });
 
       const handler = vi.fn();
-      result.current.onVoiceErrorRef.current = handler;
+      inspectorStore.state.onVoiceErrorRef.current = handler;
 
       act(() => {
         lastSocket.handlers["disconnect"]?.("transport close", {});
@@ -590,7 +590,7 @@ describe("useBotConnection", () => {
 
     it("startVoiceStreaming throws SocketTimeoutError when session_confirm does not arrive within 10s", async () => {
       vi.useFakeTimers();
-      const { result } = renderHook(() => useBotConnection({
+      renderHook(() => useBotConnection({
         projectId: "test-project",
         onSessionStart: vi.fn(),
         onReconnectError: vi.fn(),
@@ -598,12 +598,12 @@ describe("useBotConnection", () => {
       }));
 
       act(() => {
-        result.current.setUrl("https://test.example.com");
+        inspectorStore.state.setUrl("https://test.example.com");
       });
 
       let voicePromise: Promise<void>;
       act(() => {
-        voicePromise = result.current.startVoiceStreaming();
+        voicePromise = inspectorStore.state.startVoiceStreaming();
       });
 
       await act(async () => {
@@ -613,7 +613,7 @@ describe("useBotConnection", () => {
     });
 
     it("startVoiceStreaming after session_confirm calls setupAudioPlayback and streamMicrophoneToServer", async () => {
-      const { result } = renderHook(() => useBotConnection({
+      renderHook(() => useBotConnection({
         projectId: "test-project",
         onSessionStart: vi.fn(),
         onReconnectError: vi.fn(),
@@ -621,12 +621,12 @@ describe("useBotConnection", () => {
       }));
 
       act(() => {
-        result.current.setUrl("https://test.example.com");
+        inspectorStore.state.setUrl("https://test.example.com");
       });
 
       let voicePromise: Promise<void>;
       act(() => {
-        voicePromise = result.current.startVoiceStreaming();
+        voicePromise = inspectorStore.state.startVoiceStreaming();
       });
 
       act(() => {
@@ -643,7 +643,7 @@ describe("useBotConnection", () => {
     });
 
     it("stopVoiceStreaming calls stopMicrophoneStream, stopAudioPlayback and startNewConversation", async () => {
-      const { result } = renderHook(() => useBotConnection({
+      renderHook(() => useBotConnection({
         projectId: "test-project",
         onSessionStart: vi.fn(),
         onReconnectError: vi.fn(),
@@ -651,12 +651,12 @@ describe("useBotConnection", () => {
       }));
 
       act(() => {
-        result.current.setUrl("https://test.example.com");
+        inspectorStore.state.setUrl("https://test.example.com");
       });
 
       let voicePromise: Promise<void>;
       act(() => {
-        voicePromise = result.current.startVoiceStreaming();
+        voicePromise = inspectorStore.state.startVoiceStreaming();
       });
 
       act(() => {
@@ -666,15 +666,15 @@ describe("useBotConnection", () => {
         await voicePromise;
       });
 
-      const sessionIdAfterStart = result.current.sessionId;
+      const sessionIdAfterStart = inspectorStore.state.sessionId;
 
       await act(async () => {
-        await result.current.stopVoiceStreaming();
+        await inspectorStore.state.stopVoiceStreaming();
       });
 
       expect(mockStopMicrophoneStream).toHaveBeenCalled();
       expect(mockStopAudioPlayback).toHaveBeenCalled();
-      expect(result.current.sessionId).not.toBe(sessionIdAfterStart);
+      expect(inspectorStore.state.sessionId).not.toBe(sessionIdAfterStart);
     });
   });
 });

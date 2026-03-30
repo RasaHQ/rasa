@@ -286,3 +286,74 @@ export const stopVoiceCallAndAssertInactive = async (page: Page) => {
     await actions.inspector.assertions(page).assertVoiceStartButtonVisible();
   });
 };
+
+export const switchToHistoryView = async (page: Page) => {
+  await test.step("Switch to History view", async () => {
+    await actions.inspector.actions(page).switchToHistoryView();
+  });
+};
+
+export const switchToActiveFlowView = async (page: Page) => {
+  await test.step("Switch to Active Flow view", async () => {
+    await actions.inspector.actions(page).switchToActiveFlowView();
+  });
+};
+
+export const assertHistoryPlaceholder = async (page: Page) => {
+  await test.step("Assert history placeholder is visible", async () => {
+    await actions.inspector
+      .assertions(page)
+      .assertHistoryPlaceholderVisible();
+  });
+};
+
+export const assertFlowTimelineVisible = async (page: Page) => {
+  await test.step("Assert flow timeline is visible", async () => {
+    await actions.inspector.assertions(page).assertFlowTimelineVisible();
+  });
+};
+
+export const assertFlowTimelineItemCount = async (
+  page: Page,
+  count: number,
+) => {
+  await test.step(`Assert flow timeline has ${count} entries`, async () => {
+    await actions.inspector
+      .assertions(page)
+      .assertFlowTimelineItemCount(count);
+  });
+};
+
+export const assertFlowTimelineItemVisible = async (
+  page: Page,
+  flowName: string,
+) => {
+  await test.step(`Assert flow "${flowName}" in timeline`, async () => {
+    await actions.inspector
+      .assertions(page)
+      .assertFlowTimelineItemVisible(flowName);
+  });
+};
+
+export const assertFlowTimelineItemNotVisible = async (
+  page: Page,
+  flowName: string,
+) => {
+  await test.step(`Assert flow "${flowName}" not in timeline`, async () => {
+    await actions.inspector
+      .assertions(page)
+      .assertFlowTimelineItemNotVisible(flowName);
+  });
+};
+
+export const assertFlowTimelineItemHasStatus = async (
+  page: Page,
+  flowName: string,
+  status: string,
+) => {
+  await test.step(`Assert flow "${flowName}" has status "${status}"`, async () => {
+    await actions.inspector
+      .assertions(page)
+      .assertFlowTimelineItemHasStatus(flowName, status);
+  });
+};

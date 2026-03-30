@@ -1,16 +1,16 @@
 import { Box } from "@chakra-ui/react";
 import { ReactFlow } from "reactflow";
-import { StartNode } from "./nodes/StartNode";
-import { StartAloneNode } from "./nodes/StartAloneNode";
-import { StandardNode } from "./nodes/StandardNode";
-import { EndNode } from "./nodes/EndNode";
-import { AddEdge } from "./edges/AddEdge";
-import { useCanvasContext } from "../CanvasContext";
 import "reactflow/dist/style.css";
-import { CanvasFlowTitle } from "./CanvasFlowTitle";
-import { CustomEdge } from "./edges/CustomEdge";
+import { useCanvasContext } from "../CanvasContext";
+import { InspectorViewHeader } from "../components/InspectorViewHeader";
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from "../constants";
 import { BottomControls } from "./BottomControls";
+import { AddEdge } from "./edges/AddEdge";
+import { CustomEdge } from "./edges/CustomEdge";
+import { EndNode } from "./nodes/EndNode";
+import { StandardNode } from "./nodes/StandardNode";
+import { StartAloneNode } from "./nodes/StartAloneNode";
+import { StartNode } from "./nodes/StartNode";
 
 const nodeTypes = {
   standard: StandardNode,
@@ -88,8 +88,8 @@ export const Canvas = () => {
         minZoom={0.1}
         maxZoom={5}
       />
-      <CanvasFlowTitle flowName={flowName} />
       <BottomControls />
+      <InspectorViewHeader title="Current flow: " text={flowName} sticky />
     </Box>
   );
 };

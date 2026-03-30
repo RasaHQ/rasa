@@ -1,126 +1,48 @@
 import { Box, Flex } from "@chakra-ui/react";
-import { type RefObject, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useConversationData } from "../hooks/useConversationData";
+import type { UnionEventType } from "../types";
+import { InspectorView } from "../types/inspector";
 import {
-  type Conversation,
-  type ConversationEventAction,
-  type Stack,
-  type UnionEventType,
-  type VoiceErrorHandler,
-} from "../types";
+  useInspectorStore,
+  selectStackToShow,
+  selectConversationForSelectedElement,
+  toggleSelectedElement,
+  clearSelectedElement,
+} from "../store";
 import { ChatSection } from "./ChatSection";
 import { EventDetails } from "./EventDetails";
 import { FlowSection } from "./FlowSection";
+import { HistorySection } from "./HistorySection";
+import { MemorySection } from "./MemorySection";
 
 type Props = {
-  flowView: boolean;
-  sendMessage: (message: string) => void;
-  setUrl: (url: string) => void;
-  startNewConversation: () => void;
-  conversationList: Conversation[];
-  inputDisabled: boolean;
-  sessionId: string;
-  stack: Stack[];
-  replayingConversation: boolean;
-  waitingForUserInput: boolean;
-  replayConversation: (events: UnionEventType[]) => void;
-  projectUrl: string;
-  conversationEventActions?: ConversationEventAction[];
-  setFlowView: (flowView: boolean) => void;
-  botDataEndpoint: string;
-  startVoiceStreaming: () => Promise<void>;
-  stopVoiceStreaming: () => Promise<void>;
-  onVoiceErrorRef: RefObject<VoiceErrorHandler>;
-  voiceFeaturesEnabled: boolean;
+  onInspectModeChange?: (inspectMode: boolean) => void;
 };
 
-export function TryAssistant({
-  flowView,
-  sendMessage,
-  setUrl,
-  startNewConversation,
-  conversationList,
-  inputDisabled,
-  sessionId,
-  stack,
-  replayingConversation,
-  waitingForUserInput,
-  replayConversation,
-  projectUrl,
-  setFlowView,
-  conversationEventActions,
-  botDataEndpoint,
-  startVoiceStreaming,
-  stopVoiceStreaming,
-  onVoiceErrorRef,
-  voiceFeaturesEnabled,
-}: Readonly<Props>) {
-  const { flows, isLoading: flowsLoading, error: flowsError } = useConversationData(projectUrl, botDataEndpoint);
+export function TryAssistant({ onInspectModeChange }: Readonly<Props>) {
+  const flowView = useInspectorStore((s) => s.inspectMode);
+  const inspectorView = useInspectorStore((s) => s.inspectorView);
+  const selectedElement = useInspectorStore((s) => s.selectedElement);
+  const conversationList = useInspectorStore((s) => s.conversationList);
+  const flows = useInspectorStore((s) => s.flows);
+  const flowsLoading = useInspectorStore((s) => s.flowsLoading);
+  const flowsError = useInspectorStore((s) => s.flowsError);
+  const stackToShow = useInspectorStore(selectStackToShow);
+  const conversationForSelectedElement = useInspectorStore(
+    selectConversationForSelectedElement,
+  );
 
-  const allowedPatterns = ["pattern_session_start", "pattern_completed"];
+  useConversationData();
 
-  const isUserVisibleFrame = (frame: Stack) => {
-    return (
-      !frame.flowId?.startsWith("pattern_") ||
-      allowedPatterns.includes(frame.flowId)
-    );
-  };
+  useEffect(() => {
+    onInspectModeChange?.(flowView);
+  }, [flowView, onInspectModeChange]);
 
-  const latestStack = stack.slice().reverse().find(isUserVisibleFrame);
-
-  const [selectedElement, setSelectedElement] = useState<UnionEventType>();
-  const conversationForSelectedElement = selectedElement?.id
-    ? conversationList.find((conversation) =>
-      conversation.events.some((event) => event?.id === selectedElement.id),
-    )
-    : undefined;
-
-  const stackToShow: Stack | undefined = useMemo(() => {
-    if (
-      selectedElement?.metadata?.flow_id &&
-      selectedElement?.metadata?.step_id
-    ) {
-      return {
-        frameId: selectedElement.id,
-        flowId: selectedElement.metadata.flow_id,
-        stepId: selectedElement.metadata.step_id,
-        ended: false,
-      };
-    }
-    return latestStack;
-  }, [selectedElement, latestStack]);
-
-  const handleMessageSubmit = (message: string) => {
-    setSelectedElement(undefined);
-    sendMessage(message);
-  };
-
-  const handleSelect = (selection: UnionEventType) => {
-    if (selection.id === selectedElement?.id) {
-      setSelectedElement(undefined);
-    } else {
-      setSelectedElement(selection);
-    }
-  };
-
-  const handleNewConversation = () => {
-    setSelectedElement(undefined);
-    startNewConversation();
-  };
-
-  const replayConversationUntilSelectedElement = (eventId: string) => {
-    const conversation = conversationList.find((conversation) =>
-      conversation.events.some((event) => event?.id === eventId),
-    );
-    if (!conversation) {
-      return;
-    }
-    const eventsUntilSelectedElement = conversation?.events.slice(
-      0,
-      conversation.events.findIndex((event) => event.id === eventId) + 1,
-    );
-    replayConversation(eventsUntilSelectedElement);
-  };
+  const handleSelect = useCallback(
+    (selection: UnionEventType) => toggleSelectedElement(selection),
+    [],
+  );
 
   const separatorColor = "rasaNeutral.400";
   const canvasSx = {
@@ -128,36 +50,10 @@ export function TryAssistant({
     borderColor: separatorColor,
   };
 
-  useEffect(() => {
-    if (projectUrl) {
-      setUrl(projectUrl);
-    }
-  }, [projectUrl, setUrl]);
-
   return (
     <Flex flexGrow="1" data-testid="try-assistant-container">
       <Box flexBasis={flowView ? "50%" : "100%"}>
-        <ChatSection
-          inspectorMode={flowView}
-          sessionId={sessionId}
-          replayConversation={replayConversationUntilSelectedElement}
-          conversationAssistants={{}}
-          conversationList={conversationList}
-          handleMessageSubmit={handleMessageSubmit}
-          handleSelect={handleSelect}
-          selectedElement={selectedElement}
-          inputDisabled={inputDisabled}
-          waitingForResponse={!waitingForUserInput && !inputDisabled}
-          replayingConversation={replayingConversation}
-          onNewConversation={handleNewConversation}
-          conversationEventActions={conversationEventActions}
-          setFlowView={setFlowView}
-          flowView={flowView}
-          startVoiceStreaming={startVoiceStreaming}
-          stopVoiceStreaming={stopVoiceStreaming}
-          onVoiceErrorRef={onVoiceErrorRef}
-          voiceFeaturesEnabled={voiceFeaturesEnabled}
-        />
+        <ChatSection handleSelect={handleSelect} />
       </Box>
       {flowView && (
         <Box
@@ -168,18 +64,26 @@ export function TryAssistant({
           {selectedElement ? (
             <EventDetails
               event={selectedElement}
-              onClose={() => setSelectedElement(undefined)}
+              onClose={clearSelectedElement}
               flows={flows}
             />
           ) : (
-            <FlowSection
-              stackToShow={stackToShow}
-              conversationList={conversationList}
-              conversationForSelectedElement={conversationForSelectedElement}
-              flows={flows}
-              flowsLoading={flowsLoading}
-              flowsError={flowsError}
-            />
+            <>
+              {inspectorView === InspectorView.ActiveFlow && (
+                <FlowSection
+                  stackToShow={stackToShow}
+                  conversationList={conversationList}
+                  conversationForSelectedElement={
+                    conversationForSelectedElement
+                  }
+                  flows={flows}
+                  flowsLoading={flowsLoading}
+                  flowsError={flowsError}
+                />
+              )}
+              {inspectorView === InspectorView.History && <HistorySection />}
+              {inspectorView === InspectorView.Memory && <MemorySection />}
+            </>
           )}
         </Box>
       )}

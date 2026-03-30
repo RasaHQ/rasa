@@ -41,6 +41,17 @@ const getLocators = (page: Page) => {
     downloadButton: page.getByTestId("download-button"),
     downloadE2e: page.getByTestId("download-e2e"),
     downloadConversation: page.getByTestId("download-conversation"),
+    viewMenuButton: page.getByTestId("show-button"),
+    viewMenuActiveFlow: page.getByTestId("view-menu-active-flow"),
+    viewMenuHistory: page.getByTestId("view-menu-flow-history"),
+    viewMenuMemory: page.getByTestId("view-menu-memory"),
+    flowTimeline: inspectorCanvas.getByTestId("flow-timeline"),
+    flowTimelineItem: inspectorCanvas.getByTestId("flow-timeline-item"),
+    flowTimelineItemByName: (name: string) =>
+      inspectorCanvas.getByTestId("flow-timeline-item").filter({ hasText: name }),
+    historyPlaceholder: inspectorCanvas.getByText(
+      "Conversation history will be shown here.",
+    ),
   };
 };
 
@@ -105,6 +116,21 @@ export const actions = (page: Page) => {
     },
     clickDownloadConversation: async () => {
       await locators.downloadConversation.click();
+    },
+    openViewMenu: async () => {
+      await locators.viewMenuButton.click();
+    },
+    switchToHistoryView: async () => {
+      await locators.viewMenuButton.click();
+      await locators.viewMenuHistory.click();
+    },
+    switchToActiveFlowView: async () => {
+      await locators.viewMenuButton.click();
+      await locators.viewMenuActiveFlow.click();
+    },
+    switchToMemoryView: async () => {
+      await locators.viewMenuButton.click();
+      await locators.viewMenuMemory.click();
     },
   };
 };
@@ -295,6 +321,51 @@ export const assertions = (page: Page) => {
         locators.canvas,
         "Flow canvas should be visible",
       ).toBeVisible();
+    },
+    assertHistoryPlaceholderVisible: async () => {
+      await expect(
+        locators.historyPlaceholder,
+        "History placeholder should be visible when no flows have run",
+      ).toBeVisible();
+    },
+    assertFlowTimelineVisible: async () => {
+      await expect(
+        locators.flowTimeline,
+        "Flow timeline should be visible",
+      ).toBeVisible({ timeout: 10000 });
+    },
+    assertFlowTimelineHidden: async () => {
+      await expect(
+        locators.flowTimeline,
+        "Flow timeline should not be visible",
+      ).toBeHidden();
+    },
+    assertFlowTimelineItemCount: async (count: number) => {
+      await expect(
+        locators.flowTimelineItem,
+        `Flow timeline should have ${count} entries`,
+      ).toHaveCount(count, { timeout: 10000 });
+    },
+    assertFlowTimelineItemVisible: async (flowName: string) => {
+      await expect(
+        locators.flowTimelineItemByName(flowName),
+        `Flow timeline entry "${flowName}" should be visible`,
+      ).toBeVisible({ timeout: 10000 });
+    },
+    assertFlowTimelineItemNotVisible: async (flowName: string) => {
+      await expect(
+        locators.flowTimelineItemByName(flowName),
+        `Flow timeline entry "${flowName}" should not be visible`,
+      ).toBeHidden({ timeout: 10000 });
+    },
+    assertFlowTimelineItemHasStatus: async (
+      flowName: string,
+      status: string,
+    ) => {
+      await expect(
+        locators.flowTimelineItemByName(flowName),
+        `Flow timeline entry "${flowName}" should show status "${status}"`,
+      ).toContainText(status);
     },
     assertEventDetailsPanelContainsText: async (text: string) => {
       await expect(

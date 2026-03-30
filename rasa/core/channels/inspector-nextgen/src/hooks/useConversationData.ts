@@ -1,18 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { getBotData } from "../api";
 import type { Flow, BotData } from "../types";
 import { createFlowNodesFromFlowSteps } from "../utils/flow-import";
+import { inspectorStore, useInspectorStore } from "../store";
 
-export const useConversationData = (
-  projectUrl: string,
-  botDataEndpoint: string,
-) => {
+export const useConversationData = () => {
+  const projectUrl = useInspectorStore((s) => s.projectUrl);
+  const botDataEndpoint = useInspectorStore((s) => s.botDataEndpoint);
+
   const {
     data: botData,
     isLoading,
     error,
-    refetch,
   } = useQuery<BotData, Error>({
     queryKey: ["botData", projectUrl],
     queryFn: () => getBotData({ projectUrl, botDataEndpoint }),
@@ -41,10 +41,12 @@ export const useConversationData = (
     return allFlows;
   }, [botData?.flows]);
 
-  return {
-    flows,
-    isLoading,
-    error,
-    refetch,
-  };
+  useEffect(() => {
+    inspectorStore.setState((prev) => ({
+      ...prev,
+      flows,
+      flowsLoading: isLoading,
+      flowsError: error,
+    }));
+  }, [flows, isLoading, error]);
 };

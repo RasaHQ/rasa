@@ -57,9 +57,8 @@ export const ActionEvent = forwardRef<HTMLDivElement | null, ActionEventProps>(
     };
 
     const errorIconSx = {
-      mr: "0.5rem",
       color: "#A72E2C",
-      ml: "0.5rem",
+      marginLeft: "0.25rem",
     };
 
     const actionNameSx = {
