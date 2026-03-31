@@ -38,7 +38,7 @@ def _get_pyproject_toml_content(project_id: str) -> str:
         version = "0.1.0"
         description = "Add your description for your Rasa bot here"
         readme = "README.md"
-        dependencies = ["rasa-pro>=3.15"]
+        dependencies = ["rasa-pro>=3.16"]
         requires-python = ">={sys.version_info.major}.{sys.version_info.minor}"
         """
     )
