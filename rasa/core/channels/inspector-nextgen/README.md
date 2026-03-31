@@ -8,33 +8,38 @@ Important: This inspector app supersedes the old inspector UI. Please use this w
 
 ## Prerequisites
 
-- **Node.js**: Version **20.19.2**
+- **Node.js**: Version **24** (pinned in `.nvmrc`; same major as the [hello](https://github.com/RasaHQ/hello) repo).
   - [How to install Node.js](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs)
-  - Recommended: Use [nvm](https://github.com/nvm-sh/nvm) for version management.
-- **yarn** version 1.x ([installation guide](https://classic.yarnpkg.com/lang/en/docs/install/))
+  - Recommended: [nvm](https://github.com/nvm-sh/nvm). From this directory, run **`nvm use`** so your shell uses the Node version in `.nvmrc` (install it first with `nvm install` if needed).
+- **Yarn 4** via **Corepack** (bundled with Node). Run `corepack enable` once on your machine; the exact Yarn version comes from `packageManager` in `package.json`.
 - a `rasa` executable
 - a running action server (optional, for advanced use)
 
-### .npmrc requirement
+### Font Awesome authentication
 
-You must create a `.npmrc` file (in the root or current directory). This is required for accessing private Font Awesome packages, without which dependencies will not install. **Do not commit this file!**
+Private `@fortawesome/pro-*` packages need a Font Awesome npm token ([1Password](https://start.1password.com/open/i?a=W24ZYFDBGZGZHLMYCC2N4UXVNU&v=xc7iwzjpenftpm2g3mhh4iwdoi&i=nm7y66c6v5fmlj4kqrf3623vei&h=team-rasa-1password-com.1password.com)).
 
-Example `.npmrc` (replace `TOKEN` with your actual font awesome token, available from [1Password](https://start.1password.com/open/i?a=W24ZYFDBGZGZHLMYCC2N4UXVNU&v=xc7iwzjpenftpm2g3mhh4iwdoi&i=nm7y66c6v5fmlj4kqrf3623vei&h=team-rasa-1password-com.1password.com)):
+**Local development:** copy `.env.example` to **`.env`** in this directory (gitignored) and set `FONTAWESOME_NPM_AUTH_TOKEN`. Yarn loads `.env` via `injectEnvironmentFiles` in `.yarnrc.yml` — do not commit `.env`.
 
-```
-@fortawesome:registry=https://npm.fontawesome.com/
-//npm.fontawesome.com/:_authToken=TOKEN
-```
+**CI:** the same variable is set from GitHub Actions secrets (`FONTAWESOME_NPM_AUTH_TOKEN`), not from a file.
 
 ---
 
 ## Installation
 
-In the `/rasa/core/channels/inspector-nextgen` directory:
+In the `rasa/core/channels/inspector-nextgen` directory, ensure **Node 24** is active (see `.nvmrc`). With [nvm](https://github.com/nvm-sh/nvm), run **`nvm use`** here whenever you open a new shell (`nvm install` first if that version is not installed yet). Then:
 
 ```
+nvm use
+corepack enable
 yarn install
 ```
+
+If you do not use nvm, use another tool or install Node 24 manually, then run `corepack enable` and `yarn install`.
+
+`corepack enable` is only needed once per machine.
+
+Repository pre-commit hooks run `yarn lint`, `yarn test`, and `yarn build` here; use **`nvm use`** (if applicable), then `yarn install`, so those commands run on Node 24 with Yarn 4.
 
 ## Development Workflow
 

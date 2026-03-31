@@ -15,6 +15,10 @@ runs:
       with:
         node-version-file: "${{ inputs.WORKING_DIRECTORY }}/.nvmrc"
 
+    - name: Enable Corepack
+      shell: bash
+      run: corepack enable
+
     - name: Cache node modules
       uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
       id: yarn-cache
@@ -28,7 +32,4 @@ runs:
       env:
         FONTAWESOME_NPM_AUTH_TOKEN: ${{ inputs.FONTAWESOME_NPM_AUTH_TOKEN }}
       working-directory: ${{ inputs.WORKING_DIRECTORY }}
-      run: |
-        npm config set "@fortawesome:registry" https://npm.fontawesome.com/
-        npm config set "//npm.fontawesome.com/:_authToken" ${FONTAWESOME_NPM_AUTH_TOKEN}
-        yarn install --frozen-lockfile
+      run: yarn install --immutable
