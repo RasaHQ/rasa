@@ -20,10 +20,12 @@ from rasa.builder.copilot.models import (
     UsageStatistics,
 )
 from rasa.builder.copilot.response_handling.constants import (
+    COPILOT_INTRODUCTION_RESPONSE_KEY,
     EXCEPTION_RESPONSE,
     GOODBYE_FALLBACK_RESPONSE_KEY,
     GREETING_FALLBACK_RESPONSE_KEY,
     OUT_OF_SCOPE_RESPONSE_KEY,
+    RASA_INTRODUCTION_RESPONSE_KEY,
     ROLEPLAY_RESPONSE_KEY,
     UNCLEAR_INPUT_RESPONSE_KEY,
 )
@@ -88,6 +90,16 @@ class TestMessageClassifierResponseHandler:
                 ResponseCategory.UNCLEAR_INPUT_DETECTION,
                 "asdfkjh",
                 UNCLEAR_INPUT_RESPONSE_KEY,
+            ),
+            (
+                ResponseCategory.RASA_INTRODUCTION_DETECTION,
+                "What is Rasa?",
+                RASA_INTRODUCTION_RESPONSE_KEY,
+            ),
+            (
+                ResponseCategory.COPILOT_INTRODUCTION_DETECTION,
+                "How can you help me?",
+                COPILOT_INTRODUCTION_RESPONSE_KEY,
             ),
         ],
     )

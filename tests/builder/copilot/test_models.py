@@ -748,6 +748,8 @@ class TestControlledPredictionContent:
             ResponseCategory.UNCLEAR_INPUT_DETECTION,
             ResponseCategory.ERROR_FALLBACK,
             ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
+            ResponseCategory.RASA_INTRODUCTION_DETECTION,
+            ResponseCategory.COPILOT_INTRODUCTION_DETECTION,
         ]
 
         for category in valid_categories:

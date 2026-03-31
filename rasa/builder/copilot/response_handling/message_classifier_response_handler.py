@@ -41,12 +41,14 @@ from rasa.builder.copilot.response_handling.base_copilot_response_handler import
     BaseCopilotResponseHandler,
 )
 from rasa.builder.copilot.response_handling.constants import (
+    COPILOT_INTRODUCTION_RESPONSE_KEY,
     ERROR_FALLBACK_RESPONSE_KEY,
     EXCEPTION_RESPONSE,
     GOODBYE_FALLBACK_RESPONSE_KEY,
     GREETING_FALLBACK_RESPONSE_KEY,
     KNOWLEDGE_BASE_ACCESS_REQUESTED_RESPONSE_KEY,
     OUT_OF_SCOPE_RESPONSE_KEY,
+    RASA_INTRODUCTION_RESPONSE_KEY,
     ROLEPLAY_RESPONSE_KEY,
     UNCLEAR_INPUT_RESPONSE_KEY,
 )
@@ -275,6 +277,12 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
                 KNOWLEDGE_BASE_ACCESS_REQUESTED_RESPONSE_KEY
             ),
             ResponseCategory.ERROR_FALLBACK: ERROR_FALLBACK_RESPONSE_KEY,
+            ResponseCategory.RASA_INTRODUCTION_DETECTION: (
+                RASA_INTRODUCTION_RESPONSE_KEY
+            ),
+            ResponseCategory.COPILOT_INTRODUCTION_DETECTION: (
+                COPILOT_INTRODUCTION_RESPONSE_KEY
+            ),
         }
 
         response_key = category_to_response_key.get(self._response_category)
@@ -304,6 +312,7 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
         try:
             yield CopilotTextStartContent()
 
+            # Stream LLM responses token by token
             if self._response_category == ResponseCategory.GREETING_DETECTION:
                 async for token in self._stream_greeting():
                     yield token
@@ -314,7 +323,9 @@ class MessageClassifierResponseHandler(BaseCopilotResponseHandler):
                 # Template responses (out-of-scope, roleplay, etc.) - yield as complete
                 if self._response_content is None:
                     self._generate_template_response()
-                assert self._response_content is not None
+                assert (
+                    self._response_content is not None
+                ), "Response content must be set"
                 yield self._response_content
 
             yield CopilotTextEndContent()

@@ -16,6 +16,8 @@ ROLEPLAY_PREDICTION = "[ROLEPLAY_REQUEST_DETECTED]"
 OUT_OF_SCOPE_PREDICTION = "[OUT_OF_SCOPE_REQUEST_DETECTED]"
 ERROR_FALLBACK_PREDICTION = "[ERROR_FALLBACK]"
 KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION = "[NO_KNOWLEDGE_BASE_ACCESS]"
+RASA_INTRODUCTION_PREDICTION = "[RASA_INTRODUCTION_DETECTION]"
+COPILOT_INTRODUCTION_PREDICTION = "[COPILOT_INTRODUCTION_DETECTION]"
 
 # Response template keys (used to fetch responses from YAML)
 GREETING_FALLBACK_RESPONSE_KEY = "greeting_fallback_response"
@@ -27,6 +29,8 @@ ERROR_FALLBACK_RESPONSE_KEY = "error_fallback_response"
 KNOWLEDGE_BASE_ACCESS_REQUESTED_RESPONSE_KEY = (
     "knowledge_base_access_requested_response"
 )
+RASA_INTRODUCTION_RESPONSE_KEY = "rasa_introduction_response"
+COPILOT_INTRODUCTION_RESPONSE_KEY = "copilot_introduction_response"
 
 # Load predefined for controlled predictions from YAML
 _handler_responses = copilot_handler_default_responses()
@@ -78,6 +82,8 @@ CONTROLLED_PREDICTION_CATEGORIES: Set[ResponseCategory] = {
     ResponseCategory.UNCLEAR_INPUT_DETECTION,
     ResponseCategory.ERROR_FALLBACK,
     ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
+    ResponseCategory.RASA_INTRODUCTION_DETECTION,
+    ResponseCategory.COPILOT_INTRODUCTION_DETECTION,
 }
 
 # Primary text categories for legacy handler

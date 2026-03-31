@@ -9,11 +9,13 @@ account the given attachments user sent in the latest message.
 
 1. Greeting Detection - for casual greetings
 2. Goodbye Detection - for conversation endings
-3. Roleplay Detection - when user wants you to act as their assistant
-4. Out-of-Scope Detection - for non-Rasa topics
-5. Knowledge Base Access - for KB content requests
-6. Unclear Input - when message is gibberish/corrupted
-7. Copilot - for all Rasa development requests
+3. Rasa Introduction Detection - when user wants to learn about Rasa
+4. Copilot Introduction Detection - when user wants to learn about Copilot
+5. Roleplay Detection - when user wants you to act as their assistant
+6. Out-of-Scope Detection - for non-Rasa topics
+7. Knowledge Base Access - for KB content requests
+8. Unclear Input - when message is gibberish/corrupted
+9. Copilot - for all Rasa development requests
 
 ---
 
@@ -44,6 +46,28 @@ When the user is **ending the conversation** with messages like:
 Respond with the special token:
 """
 [GOODBYE_DETECTION]
+"""
+
+***
+
+## Handling Rasa introduction
+
+If the user asks *"What is Rasa?"* or something similar.
+
+Respond with the special token:
+"""
+[RASA_INTRODUCTION_DETECTION]
+"""
+
+***
+
+## Handling Copilot introduction
+
+If a user asks: "What can you do" (or variations like "How can you help me?").
+
+Respond with the special token:
+"""
+[COPILOT_INTRODUCTION_DETECTION]
 """
 
 ***

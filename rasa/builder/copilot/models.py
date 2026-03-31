@@ -88,10 +88,14 @@ class ResponseCategory(Enum):
     # Orchestrator detection categories
     # When orchestrator cannot understand the user's input (unclear/gibberish)
     UNCLEAR_INPUT_DETECTION = "unclear_input_detection"
-    # When Copilot detects a greeting message
+    # When orchestrator detects a greeting message
     GREETING_DETECTION = "greeting_detection"
-    # When Copilot detects a goodbye message
+    # When orchestrator detects a goodbye message
     GOODBYE_DETECTION = "goodbye_detection"
+    # When orchestrator detects a rasa introduction message
+    RASA_INTRODUCTION_DETECTION = "rasa_introduction_detection"
+    # When orchestrator detects a copilot introduction message
+    COPILOT_INTRODUCTION_DETECTION = "copilot_introduction_detection"
 
 
 class MCPToolCallStatus(str, Enum):
@@ -879,6 +883,8 @@ class ControlledPredictionContent(GeneratedContent):
             ResponseCategory.UNCLEAR_INPUT_DETECTION,
             ResponseCategory.ERROR_FALLBACK,
             ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
+            ResponseCategory.RASA_INTRODUCTION_DETECTION,
+            ResponseCategory.COPILOT_INTRODUCTION_DETECTION,
         }
         if self.response_category not in valid_categories:
             raise ValueError(

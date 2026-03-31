@@ -72,6 +72,8 @@ class MessageClassifier:
         ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
         ResponseCategory.UNCLEAR_INPUT_DETECTION,
         ResponseCategory.COPILOT,
+        ResponseCategory.RASA_INTRODUCTION_DETECTION,
+        ResponseCategory.COPILOT_INTRODUCTION_DETECTION,
     ]
 
     # Map classifier tokens to ResponseCategory

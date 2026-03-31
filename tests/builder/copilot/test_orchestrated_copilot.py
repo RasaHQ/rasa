@@ -76,6 +76,12 @@ class TestOrchestratedCopilot:
             (ResponseCategory.GOODBYE_DETECTION, "bye", False),
             (ResponseCategory.ROLEPLAY_DETECTION, "I want to book a flight", False),
             (ResponseCategory.UNCLEAR_INPUT_DETECTION, "asdfkjh", False),
+            (ResponseCategory.RASA_INTRODUCTION_DETECTION, "What is Rasa?", False),
+            (
+                ResponseCategory.COPILOT_INTRODUCTION_DETECTION,
+                "How you can help me?",
+                False,
+            ),
         ],
     )
     async def test_classifier_categories(
@@ -116,6 +122,8 @@ class TestOrchestratedCopilot:
             ResponseCategory.OUT_OF_SCOPE_DETECTION,
             ResponseCategory.ROLEPLAY_DETECTION,
             ResponseCategory.UNCLEAR_INPUT_DETECTION,
+            ResponseCategory.RASA_INTRODUCTION_DETECTION,
+            ResponseCategory.COPILOT_INTRODUCTION_DETECTION,
         ],
     )
     async def test_generate_response_uses_orchestrated_handler(

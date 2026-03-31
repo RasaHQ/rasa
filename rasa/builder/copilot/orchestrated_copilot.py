@@ -129,11 +129,11 @@ class OrchestratedCopilot(BaseCopilot):
 
         if classifier_result.requires_full_copilot:
             return await self._handle_full_copilot(context)
-        else:
-            return self._handle_orchestrated_response(
-                classifier_result.category,
-                user_message,
-            )
+
+        return self._handle_orchestrated_response(
+            classifier_result.category,
+            user_message,
+        )
 
     async def _handle_full_copilot(
         self,

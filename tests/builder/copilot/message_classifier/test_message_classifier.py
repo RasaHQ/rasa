@@ -99,6 +99,20 @@ class TestMessageClassifier:
                 False,
             ),
             (
+                "[RASA_INTRODUCTION_DETECTION]",
+                "What is Rasa?",
+                ResponseCategory.RASA_INTRODUCTION_DETECTION,
+                15,
+                False,
+            ),
+            (
+                "[COPILOT_INTRODUCTION_DETECTION]",
+                "How you can help me?",
+                ResponseCategory.COPILOT_INTRODUCTION_DETECTION,
+                15,
+                False,
+            ),
+            (
                 "[KNOWLEDGE_BASE_ACCESS_REQUESTED]",
                 "Show me the knowledge base",
                 ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
@@ -177,6 +191,8 @@ class TestMessageClassifier:
             ResponseCategory.OUT_OF_SCOPE_DETECTION,
             ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
             ResponseCategory.UNCLEAR_INPUT_DETECTION,
+            ResponseCategory.RASA_INTRODUCTION_DETECTION,
+            ResponseCategory.COPILOT_INTRODUCTION_DETECTION,
             ResponseCategory.COPILOT,
         }
 

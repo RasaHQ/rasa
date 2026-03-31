@@ -138,6 +138,7 @@ class CodeEvidence(BaseEvidence):
             use_only_files_referenced_in_response: If True, only use files referenced
                 in the response. If False, use all files provided in the dataset entry
                 contex. Default is False.
+
         Returns:
             List of CodeEvidence instances from the dataset entry's relevant code.
         """

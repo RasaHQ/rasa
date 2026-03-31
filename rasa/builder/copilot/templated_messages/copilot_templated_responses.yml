@@ -17,6 +17,19 @@ responses:
     I'm not quite sure what you're asking. Could you rephrase your question or provide
     more details? I'm here to help you build and improve your Rasa assistant.
 
+  rasa_introduction_response: |
+    Rasa is a leading platform for generative conversational AI, designed to help
+    enterprises build and operate advanced AI assistants at scale.
+
+    How can I assist you in exploring your assistant?
+
+  copilot_introduction_response: |
+    I can help you understand how your assistant works, explain Rasa concepts, and guide you
+    through troubleshooting or improving your project. You can ask me things like:
+    - How does my assistant know what skills it has?
+    - What triggers this greeting?
+    - Help me add another banking skill to my assistant.
+
   error_fallback_response: |
     Your project ran into an error, but I'm not sure what caused it. Take a look at the
     logs for the full details.
