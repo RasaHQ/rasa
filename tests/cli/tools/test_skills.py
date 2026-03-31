@@ -2,11 +2,13 @@
 
 import argparse
 import json
+from io import StringIO
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+from rich.console import Console
 
 from rasa.cli.tools.constants import (
     TOOLS_CONFIG_DIR,
@@ -140,6 +142,31 @@ class TestInstallAgentSkills:
         assert not (tmp_path / ".cursor").exists()
         assert not (tmp_path / ".github").exists()
         assert not (tmp_path / ".claude").exists()
+
+    def test_success_message_shows_install_path(
+        self, tmp_path: Path, fake_github: None, monkeypatch: Any
+    ) -> None:
+        wide_console = Console(file=StringIO(), width=500)
+        monkeypatch.setattr("rasa.cli.tools.skills.console", wide_console)
+
+        install_agent_skills(tmp_path, ["cursor"], non_interactive=True)
+
+        output = wide_console.file.getvalue()
+        assert "Installed to:" in output
+        assert ".cursor/skills" in output
+
+    def test_success_message_shows_multiple_install_paths(
+        self, tmp_path: Path, fake_github: None, monkeypatch: Any
+    ) -> None:
+        wide_console = Console(file=StringIO(), width=500)
+        monkeypatch.setattr("rasa.cli.tools.skills.console", wide_console)
+
+        install_agent_skills(tmp_path, ["cursor", "claude"], non_interactive=True)
+
+        output = wide_console.file.getvalue()
+        assert "Installed to:" in output
+        assert ".cursor/skills" in output
+        assert ".claude/skills" in output
 
     def test_network_failure_writes_nothing(
         self, tmp_path: Path, monkeypatch: Any

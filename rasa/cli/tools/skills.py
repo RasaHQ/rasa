@@ -135,9 +135,11 @@ def install_agent_skills(
     )
     _write_skills_to_disk(skills_to_install, destinations, incompatible_names)
 
+    installed_dirs = "\n".join(f"  • {dest_dir}" for dest_dir in destinations.values())
     console.print(
         Panel(
-            "[bold green]Agent skills installed successfully.[/bold green]",
+            "[bold green]Agent skills installed successfully.[/bold green]\n\n"
+            f"Installed to:\n{installed_dirs}",
             border_style="green",
             expand=False,
         )
