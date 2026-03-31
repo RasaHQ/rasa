@@ -3085,11 +3085,17 @@ jobs:
       ) }}
     steps:
       - name: Restore checked-out code
+        id: restore-code
         uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
         with:
           path: ${{ github.workspace }}
           key: rasa-private-code-${{ github.ref }}-${{ github.sha }}
-          fail-on-cache-miss: true
+
+      - name: Check out code (fallback when cache is missing)
+        if: ${{ steps.restore-code.outputs.cache-hit != 'true' }}
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis, removing this messes with PR analysis
 
       - name: Download test reports
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
