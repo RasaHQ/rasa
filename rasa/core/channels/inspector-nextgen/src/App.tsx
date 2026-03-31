@@ -6,6 +6,11 @@ import { system } from './theme';
 
 const App = () => {
   const queryClient = new QueryClient();
+  // Inspector build is served from the Rasa server, so window.location.origin
+  // already contains the correct host and specified --port 5007 e.g. http://localhost:5007.
+  // Breaks in dev mode as origin is Vite dev server e.g. http://localhost:5173.
+  // Therefore in dev mode default to hardcoded http://localhost:5005.
+  const projectUrl = import.meta.env.DEV ? "http://localhost:5005" : window.location.origin;
   const containerCss = {
     background: `url(${Background})`,
     backgroundSize: "cover",
@@ -30,8 +35,7 @@ const App = () => {
         <Flex css={containerCss}>
           <Flex css={contentCss}>
             <Inspector
-              // SWI-1127: Port should not be hardcoded, but taken from args (--port)
-              projectUrl="http://localhost:5005"
+              projectUrl={projectUrl}
               botDataEndpoint="/data"
               singleSessionMode
             />
