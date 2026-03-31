@@ -177,6 +177,7 @@ export type Stack = {
 export type SlotState = {
   name: string;
   value: unknown;
+  event?: ConversationEvent;
 };
 
 export type MessageIntent = {

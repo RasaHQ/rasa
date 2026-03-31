@@ -115,6 +115,17 @@ export const assertConversationEventVisible = async (
   });
 };
 
+export const assertSlotEventVisible = async (
+  page: Page, 
+  slotName: string,
+) => {
+  await test.step(`Assert slot event for ${slotName} are visible`, async () => {
+    await actions.inspector
+      .assertions(page)
+      .assertSlotEventVisible(slotName);
+  });
+};
+
 export const assertFlowNodeVisible = async (page: Page, nodeName: string) => {
   await test.step(`Assert flow node "${nodeName}" is visible`, async () => {
     await actions.inspector.assertions(page).assertFlowNodeVisible(nodeName);
@@ -293,6 +304,12 @@ export const switchToHistoryView = async (page: Page) => {
   });
 };
 
+export const switchToMemoryView = async (page: Page) => {
+  await test.step("Switch to Memory view", async () => {
+    await actions.inspector.actions(page).switchToMemoryView();
+  });
+};
+
 export const switchToActiveFlowView = async (page: Page) => {
   await test.step("Switch to Active Flow view", async () => {
     await actions.inspector.actions(page).switchToActiveFlowView();
@@ -310,6 +327,56 @@ export const assertHistoryPlaceholder = async (page: Page) => {
 export const assertFlowTimelineVisible = async (page: Page) => {
   await test.step("Assert flow timeline is visible", async () => {
     await actions.inspector.assertions(page).assertFlowTimelineVisible();
+  });
+};
+
+export const assertCollectedSlotsVisible = async (page: Page) => {
+  await test.step("Assert collected slots are visible", async () => {
+    await actions.inspector.assertions(page).assertCollectedSlotsVisible();
+  });
+};
+
+export const assertCollectedSystemSlotsVisible = async (page: Page) => {
+  await test.step("Assert collected system slots are visible", async () => {
+    await actions.inspector.assertions(page).assertCollectedSystemSlotsVisible();
+  });
+};
+
+export const assertCollectedSessionSlotsVisible = async (page: Page) => {
+  await test.step("Assert collected session slots are visible", async () => {
+    await actions.inspector.assertions(page).assertCollectedSessionSlotsVisible();
+  });
+};
+
+export const assertCollectedCurrentFlowSlotsVisible = async (page: Page) => {
+  await test.step("Assert collected current flow slots are visible", async () => {
+    await actions.inspector.assertions(page).assertCollectedCurrentFlowSlotsVisible();
+  });
+};
+
+export const assertCollectedSlotVisible = async (page: Page, section:string, slotName: string, slotValue?: string) => {
+  await test.step(`Assert collected slot "${slotName}" is visible`, async () => {
+    await actions.inspector.assertions(page).assertCollectedSlotVisible(section, slotName, slotValue);
+  });
+};
+
+export const assertCollectedSlotNotVisible = async (page: Page, section:string, slotName: string) => {
+  await test.step(`Assert collected slot "${slotName}" is not visible`, async () => {
+    await actions.inspector.assertions(page).assertCollectedSlotNotVisible(section, slotName);
+  });
+};
+
+export const clickCollectedSlot = async (
+  page: Page,
+  section: string,
+  slotName: string,
+) => {
+  await test.step(`Assert collected slot "${slotName}" is visible`, async () => {
+    await actions.inspector.assertions(page).assertCollectedSlotVisible(section, slotName);
+  });
+
+  await test.step(`Click collected slot "${slotName}"`, async () => {
+    await actions.inspector.actions(page).clickCollectedSlot(section, slotName);
   });
 };
 

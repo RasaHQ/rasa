@@ -6,6 +6,7 @@ const getLocators = (page: Page) => {
   const inspectorCanvas = page.getByTestId("inspector-canvas");
   const conversationEvents = page.getByTestId("conversation-events");
   const assistantInput = page.getByTestId("assistant-input");
+  const collectedSlotsSection = (section: string) => inspectorCanvas.getByTestId(`${section}-section`);
   return {
     inspectToggle: page.getByTestId("inspect-toggle"),
     restartConversation: page.getByTestId("restart-conversation"),
@@ -52,6 +53,7 @@ const getLocators = (page: Page) => {
     historyPlaceholder: inspectorCanvas.getByText(
       "Conversation history will be shown here.",
     ),
+    collectedSlot: (section: string, slotName: string) => collectedSlotsSection(section).getByTestId(`slot-${slotName}`),
   };
 };
 
@@ -131,6 +133,9 @@ export const actions = (page: Page) => {
     switchToMemoryView: async () => {
       await locators.viewMenuButton.click();
       await locators.viewMenuMemory.click();
+    },
+    clickCollectedSlot: async (section: string, slotName: string) => {
+      await locators.collectedSlot(section, slotName).click();
     },
   };
 };
@@ -334,6 +339,61 @@ export const assertions = (page: Page) => {
         "Flow timeline should be visible",
       ).toBeVisible({ timeout: 10000 });
     },
+    assertCollectedSlotsVisible: async () => {
+      await expect(
+        locators.inspectorCanvas.getByRole("heading", { name: "Collected slots" }),
+        "Collected slots panel should be visible in Memory view",
+      ).toBeVisible();
+    },
+    assertCollectedSystemSlotsVisible: async () => {
+      await expect(
+        locators.inspectorCanvas.getByRole("heading", { name: "System" }),
+        "System slots panel should be visible in Memory view",
+      ).toBeVisible();
+      await expect(
+        locators.inspectorCanvas.getByTestId("System-section"),
+        "System slots section should be visible in Memory view",
+      ).toBeVisible();
+    },
+    assertCollectedSessionSlotsVisible: async () => {
+      await expect(
+        locators.inspectorCanvas.getByRole("heading", { name: "Session" }),
+        "Session slots panel should be visible in Memory view",
+      ).toBeVisible();
+      await expect(
+        locators.inspectorCanvas.getByTestId("Session-section"),
+        "Session slots section should be visible in Memory view",
+      ).toBeVisible();
+    },
+    assertCollectedCurrentFlowSlotsVisible: async () => {
+      await expect(
+        locators.inspectorCanvas.getByRole("heading", { name: "Current flow" }),
+        "Current flow slots panel should be visible in Memory view",
+      ).toBeVisible();
+      await expect(
+        locators.inspectorCanvas.getByTestId("Current flow-section"),
+        "Current flow slots section should be visible in Memory view",
+      ).toBeVisible();
+
+    },
+    assertCollectedSlotVisible: async (section: string, slotName: string, slotValue?: string) => {
+      await expect(
+        locators.collectedSlot(section, slotName),
+        `Slot name "${slotName}" should be visible in Memory view`,
+      ).toBeVisible();
+      if (slotValue !== undefined) {
+        await expect(
+          locators.collectedSlot(section, slotName).getByTestId(`slot-value`),
+          `Slot value "${slotValue}" should be visible in Memory view`,
+        ).toContainText(slotValue);
+      }
+    },
+    assertCollectedSlotNotVisible: async (section: string, slotName: string) => {
+      await expect(
+        locators.collectedSlot(section, slotName),
+        `Slot name "${slotName}" should be hidden in Memory view`,
+      ).toBeHidden();
+    },
     assertFlowTimelineHidden: async () => {
       await expect(
         locators.flowTimeline,
@@ -444,6 +504,20 @@ export const assertions = (page: Page) => {
         locators.inputField,
         "Input should be enabled when voice is inactive",
       ).toBeEnabled();
+    },
+    assertSlotEventVisible: async (slotName: string) => {
+      await expect(
+        locators.inspectorCanvas.getByRole("heading", { name: "Slot event" }),
+        "Slot event heading should be visible",
+      ).toBeVisible();
+      await expect(
+        locators.eventSlotOrFlowName,
+        `Slot "${slotName}" should be visible`,
+      ).toContainText(slotName);
+      await expect(
+        locators.eventSlotValue,
+        "Slot value should be visible",
+      ).toBeVisible();
     },
   };
 };

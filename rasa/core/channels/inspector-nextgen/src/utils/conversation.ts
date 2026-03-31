@@ -117,6 +117,100 @@ export const flowStepTrail = (
   return activeSteps;
 };
 
+export function extractSlotEventsForFlow(
+  events: ConversationEvent[],
+  flowName: string
+): ConversationEvent[] {
+  const activeFlows: string[] = [];
+  const result: ConversationEvent[] = [];
+
+  for (const event of events) {
+    switch (event.conversationEventType) {
+      case ConversationEventType.FlowStarted: {
+        if (event.flowId) {
+          // Mark flow as active by pushing it on the stack
+          activeFlows.push(event.flowId);
+        }
+        break;
+      }
+
+      case ConversationEventType.FlowCompleted:
+      case ConversationEventType.FlowCancelled: {
+        // Attempt to pop if the top of the stack matches the flow that ended
+        const endedFlow = event.metadata.flow_id;
+        if (endedFlow && activeFlows[activeFlows.length - 1] === endedFlow) {
+          activeFlows.pop();
+        }
+        break;
+      }
+
+      case ConversationEventType.Slot: {
+        // If the currently active flow (top of stack) is the flowName we want
+        // then this slot belongs to that flow
+        if (activeFlows[activeFlows.length - 1] === flowName) {
+          result.push(event);
+        }
+        break;
+      }
+
+      default:
+        break;
+    }
+  }
+
+  return result;
+}
+
+export function extractSlotEventsForSession(
+  events: ConversationEvent[]
+): ConversationEvent[] {
+  const sessionStartIndex = events.findLastIndex(
+    (event) =>
+      event.conversationEventType === ConversationEventType.SessionStarted
+  );
+
+  if (sessionStartIndex === -1) {
+    return [];
+  }
+
+  return events.filter(
+    (event, index) =>
+      index >= sessionStartIndex &&
+      event.conversationEventType === ConversationEventType.Slot
+  );
+}
+
+export function formatSlots(
+  slotEvents: ConversationEvent[]
+): { name: string; value: unknown, event: ConversationEvent }[] {
+  const slotMap = new Map<string, { value: unknown, event: ConversationEvent }>();
+
+  slotEvents.forEach((event) => {
+    if (event.name) {
+      slotMap.set(event.name, { value: event.slotValue, event });
+
+    }
+  });
+
+  return Array.from(slotMap.entries()).map(([name, { value, event }]) => ({
+    name,
+    value,
+    event,
+  }));
+}
+
+export const isSystemSlotEvent = (slotName: string) =>
+  [
+    "silence_timeout",
+    "consecutive_silence_timeouts",
+    "session_started_metadata",
+    "flow_hashes",
+    "requested_slot",
+    "confirm_correction",
+    "language",
+    "max_clarification_options",
+  ].includes(slotName);
+
 export const getSlotRelatedEvents = (
   events: UnionEventType[],
 ): ConversationEvent[] => {
