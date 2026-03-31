@@ -108,7 +108,7 @@ Python-style tags (PEP 440) are normalized to semver before publish (e.g. `3.16.
 
 To install `@rasahq/rasa-inspector` from GCP Artifact Registry in your own project, configure npm to use the registry for the `@rasahq` scope and authenticate.
 
-#### One-time: set up `.npmrc` for Artifact Registry
+#### One-time: set up the registry and GCP token
 
 1. **Authenticate with Google Cloud** (if not already done):
 
@@ -116,28 +116,21 @@ To install `@rasahq/rasa-inspector` from GCP Artifact Registry in your own proje
    gcloud auth login
    ```
 
-2. **Append the Artifact Registry npm config to your `.npmrc`** (run from your project root; this adds registry and auth settings for `@rasahq`):
+2. **Set the registry for the `@rasahq` scope** in your project's `.npmrc` (registry URL only, no credentials):
 
-   ```bash
-   gcloud artifacts print-settings npm \
-     --project=rasa-releases \
-     --repository=rasa-inspector \
-     --location=europe-west3 \
-     --scope=@rasahq \
-     >> .npmrc
+   ```
+   @rasahq:registry=https://europe-west3-npm.pkg.dev/rasa-releases/rasa-inspector/
    ```
 
-   See [Artifact Registry Node.js authentication](https://docs.cloud.google.com/artifact-registry/docs/nodejs/authentication) for more options (e.g. CI with a service account).
-
-3. **Refresh the registry token** so npm can access the registry:
+3. **Export a GCP access token** as an environment variable before installing:
 
    ```bash
-   npx google-artifactregistry-auth --repo-config=./.npmrc --credential-config=./.npmrc
+   export NPM_CONFIG_//europe-west3-npm.pkg.dev/rasa-releases/rasa-inspector/:_authToken=$(gcloud auth print-access-token)
    ```
 
-   Re-run this command if your credentials expire.
+   Add this to your shell profile (e.g. `~/.zshrc` or `~/.bashrc`), or re-run it when the token expires (tokens are valid for ~1 hour).
 
-**Note:** Do not commit `.npmrc` if it contains credentials. Add `.npmrc` to `.gitignore` in projects where you use it.
+   See [Artifact Registry Node.js authentication](https://docs.cloud.google.com/artifact-registry/docs/nodejs/authentication) for CI/service account options.
 
 #### Install the package
 

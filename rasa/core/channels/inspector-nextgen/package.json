@@ -30,6 +30,9 @@
   "exports": {
     ".": {
       "import": "./src/Inspector.tsx"
+    },
+    "./types": {
+      "import": "./src/types/index.ts"
     }
   },
   "dependencies": {
