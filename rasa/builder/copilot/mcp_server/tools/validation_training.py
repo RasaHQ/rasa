@@ -87,6 +87,7 @@ async def validate_assistant_project(project_folder: str) -> ValidationResponse:
     try:
         # Lazy import heavy Rasa modules only when needed
         from rasa.builder.validation_service import validate_project
+        from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
         from rasa.shared.importers.importer import TrainingDataImporter
 
         structlogger.info(
@@ -117,23 +118,15 @@ async def validate_assistant_project(project_folder: str) -> ValidationResponse:
             args={},
         )
 
-        # Run validation
-        result = await validate_project(importer)
+        # Run validation with the project's endpoints configuration.
+        endpoints_file = project_path / DEFAULT_ENDPOINTS_PATH
+        validate_project(importer, endpoints_path=endpoints_file)
 
-        if result is None:
-            # Validation passed
-            return ValidationResponse(
-                success=True,
-                errors=None,
-                message="Validation passed successfully",
-            )
-        else:
-            # Validation failed with message
-            return ValidationResponse(
-                success=False,
-                errors=[ValidationErrorDetail(message=result)],
-                message="Validation failed",
-            )
+        return ValidationResponse(
+            success=True,
+            errors=None,
+            message="Validation passed successfully",
+        )
 
     except RasaValidationError as e:
         # Extract validation logs for detailed error info

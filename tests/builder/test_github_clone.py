@@ -403,7 +403,7 @@ class TestRunGitHubToBotJob:
                 # Mock validate_project
                 with patch(
                     "rasa.builder.jobs.validate_project",
-                    new=AsyncMock(return_value=None),
+                    new=Mock(return_value=None),
                 ):
                     # Mock train_and_load_and_link_agent
                     with patch(

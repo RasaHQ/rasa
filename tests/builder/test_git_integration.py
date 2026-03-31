@@ -53,9 +53,7 @@ class TestGitIntegration:
 
         with (
             patch("rasa.builder.jobs.push_job_status_event", new_callable=AsyncMock),
-            patch(
-                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
-            ) as mock_validate,
+            patch("rasa.builder.jobs.validate_project") as mock_validate,
             patch(
                 "rasa.builder.job_helpers.train_and_load_agent",
                 new_callable=AsyncMock,
@@ -119,9 +117,7 @@ class TestGitIntegration:
                 "rasa.builder.jobs.push_job_status_event", new_callable=AsyncMock
             ) as mock_push_event_jobs,
             patch("rasa.builder.jobs.update_agent"),
-            patch(
-                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
-            ) as mock_validate,
+            patch("rasa.builder.jobs.validate_project") as mock_validate,
             patch.object(
                 mock_app.ctx.project_generator,
                 "get_training_input",
@@ -230,9 +226,7 @@ class TestGitIntegration:
             patch(
                 "rasa.builder.job_helpers.push_job_status_event", new_callable=AsyncMock
             ),
-            patch(
-                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
-            ) as mock_validate,
+            patch("rasa.builder.jobs.validate_project") as mock_validate,
             patch(
                 "rasa.builder.jobs.load_or_train_agent_for_commit",
                 new_callable=AsyncMock,

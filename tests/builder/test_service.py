@@ -507,9 +507,7 @@ class TestFilesEndpointIntegration:
         sanic_app.ctx.project_generator = real_pg
 
         with (
-            patch(
-                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
-            ) as mock_validate,
+            patch("rasa.builder.jobs.validate_project") as mock_validate,
             patch(
                 "rasa.builder.job_helpers.train_and_load_agent",
                 new_callable=AsyncMock,
@@ -570,9 +568,7 @@ class TestFilesEndpointIntegration:
         sanic_app.ctx.project_generator = real_pg
 
         with (
-            patch(
-                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
-            ) as mock_validate,
+            patch("rasa.builder.jobs.validate_project") as mock_validate,
             patch(
                 "rasa.builder.job_helpers.train_and_load_agent",
                 new_callable=AsyncMock,

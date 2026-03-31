@@ -119,7 +119,7 @@ class TestRunReplaceAllFilesJob:
         )
 
         # Setup mocks using monkeypatch
-        mock_validate = AsyncMock()
+        mock_validate = Mock()
         mock_train = AsyncMock()
         mock_link_model = AsyncMock()
         mock_update_agent = MagicMock()
@@ -143,7 +143,10 @@ class TestRunReplaceAllFilesJob:
         mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
             sample_bot_files, DEFAULT_COMMIT_INFO
         )
-        mock_validate.assert_called_once_with(mock_training_input.importer)
+        mock_validate.assert_called_once_with(
+            mock_training_input.importer,
+            endpoints_path=mock_training_input.endpoints_file,
+        )
         mock_train.assert_called_once_with(
             mock_training_input, role="user", action="edit"
         )
@@ -182,7 +185,7 @@ class TestRunReplaceAllFilesJob:
         ]
 
         # Setup mocks using monkeypatch
-        mock_validate = AsyncMock()
+        mock_validate = Mock()
         mock_validate.side_effect = validation_error
         mock_copilot_analysis = AsyncMock()
         monkeypatch.setattr(
@@ -209,7 +212,10 @@ class TestRunReplaceAllFilesJob:
         mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
             sample_bot_files, DEFAULT_COMMIT_INFO
         )
-        mock_validate.assert_called_once_with(mock_training_input.importer)
+        mock_validate.assert_called_once_with(
+            mock_training_input.importer,
+            endpoints_path=mock_training_input.endpoints_file,
+        )
 
         # Check that the job ended with validation error status (with copilot job ID)
         assert job.status == JobStatus.validation_error.value
@@ -242,7 +248,7 @@ class TestRunReplaceAllFilesJob:
         training_error = TrainingError("Training failed")
 
         # Setup mocks using monkeypatch
-        mock_validate = AsyncMock()
+        mock_validate = Mock()
         mock_train = AsyncMock()
 
         mock_validate.return_value = None  # No validation error
@@ -265,7 +271,10 @@ class TestRunReplaceAllFilesJob:
         mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
             sample_bot_files, DEFAULT_COMMIT_INFO
         )
-        mock_validate.assert_called_once_with(mock_training_input.importer)
+        mock_validate.assert_called_once_with(
+            mock_training_input.importer,
+            endpoints_path=mock_training_input.endpoints_file,
+        )
         mock_train.assert_called_once_with(
             mock_training_input, role="user", action="edit"
         )
@@ -339,7 +348,7 @@ class TestRunReplaceAllFilesJob:
         )
 
         # Setup mocks using monkeypatch
-        mock_validate = AsyncMock(return_value=None)
+        mock_validate = Mock(return_value=None)
         mock_train = AsyncMock(return_value=MagicMock())
         mock_link_model = AsyncMock()
         mock_update_agent = MagicMock()
@@ -400,7 +409,7 @@ class TestRunReplaceAllFilesJob:
         # Setup mocks
         mock_push_job_status_event = AsyncMock()
         mock_push_error_and_start_copilot = AsyncMock()
-        mock_validate = AsyncMock()
+        mock_validate = Mock()
         mock_train = AsyncMock()
         mock_link_model = AsyncMock()
         mock_update_agent = MagicMock()
@@ -1346,9 +1355,7 @@ class TestCopilotTrainingSuccessJob:
         self.mock_train.side_effect = TrainingError("Training failed")
 
         with (
-            patch(
-                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
-            ) as mock_validate,
+            patch("rasa.builder.jobs.validate_project") as mock_validate,
         ):
             mock_validate.return_value = None  # No validation error
 

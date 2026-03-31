@@ -2,7 +2,8 @@
 
 import sys
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, Optional
+from pathlib import Path
+from typing import Any, Dict, Generator
 
 import structlog
 
@@ -32,24 +33,27 @@ def _mock_sys_exit() -> Generator[Dict[str, bool], Any, None]:
         sys.exit = original_exit
 
 
-async def validate_project(importer: TrainingDataImporter) -> Optional[str]:
+def validate_project(importer: TrainingDataImporter, endpoints_path: Path) -> None:
     """Validate a Rasa project.
 
     Args:
-        importer: Training data importer with domain, flows, and config
-
-    Returns:
-        None if validation passes, error message if validation fails.
+        importer: Training data importer with domain, flows, and config.
+        endpoints_path: Path to project endpoints config. Validation reads
+            endpoints from this file so endpoint-dependent checks (for example
+            response rephrasing) run against the same runtime configuration
+            used for training.
 
     Raises:
-        ValidationError: If validation fails
+        ValidationError: If validation fails.
     """
     with capture_validation_logs() as captured_logs:
         try:
             with _mock_sys_exit() as exit_tracker:
                 from rasa.core.config.configuration import Configuration
 
-                Configuration.initialise_empty()
+                # Always initialize endpoints explicitly for this validation run.
+                # `initialise_empty()` does not reset an existing singleton.
+                Configuration.initialise_endpoints(endpoints_path=endpoints_path)
                 Configuration.initialise_sub_agents(sub_agents_path=None)
 
                 validate_files(
@@ -71,7 +75,6 @@ async def validate_project(importer: TrainingDataImporter) -> Optional[str]:
                     )
 
                 structlogger.info("validation.success")
-                return None
 
         except ValidationError:
             raise

@@ -588,10 +588,7 @@ class ProjectGenerator:
     async def _validate_generated_project(self) -> None:
         """Validate the generated project using the validation service."""
         importer = self._create_importer()
-        validation_error = await validate_project(importer)
-
-        if validation_error:
-            raise ValidationError(validation_error)
+        validate_project(importer, endpoints_path=self._get_endpoints_file())
 
     def _get_endpoints_file(self) -> Path:
         """Get the endpoints file."""
@@ -967,7 +964,7 @@ class ProjectGenerator:
 
         Args:
             prompt: The text prompt to send to the model
-            max_tokens: Maximum tokens to generate
+            max_completion_tokens: Maximum tokens to generate
 
         Returns:
             Chat Completion response

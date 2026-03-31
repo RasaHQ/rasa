@@ -52,6 +52,8 @@ class TestValidateAssistantProject:
     @pytest.mark.asyncio
     async def test_validate_project_with_errors(self, project_folder: Path):
         """Test validation with errors."""
+        from rasa.builder.exceptions import ValidationError as RasaValidationError
+
         with (
             patch("rasa.builder.validation_service.validate_project") as mock_validate,
             patch(
@@ -59,7 +61,9 @@ class TestValidateAssistantProject:
             ) as mock_importer,
         ):
             mock_importer.load_from_config.return_value = MagicMock()
-            mock_validate.return_value = "Domain missing required slots"
+            mock_validate.side_effect = RasaValidationError(
+                "Domain missing required slots"
+            )
 
             result = await validate_assistant_project(str(project_folder))
 

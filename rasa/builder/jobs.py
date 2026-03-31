@@ -449,9 +449,9 @@ async def run_github_to_bot_job(
         # 4. Validating
         await push_job_status_event(job, JobStatus.validating)
         training_input = project_generator.get_training_input()
-        validation_error = await validate_project(training_input.importer)
-        if validation_error:
-            raise ValidationError(validation_error)
+        validate_project(
+            training_input.importer, endpoints_path=training_input.endpoints_file
+        )
         await push_job_status_event(job, JobStatus.validation_success)
 
         # 5. Training
@@ -566,9 +566,9 @@ async def run_replace_all_files_job(
         # Validating
         await push_job_status_event(job, JobStatus.validating)
         training_input = project_generator.get_training_input()
-        validation_error = await validate_project(training_input.importer)
-        if validation_error:
-            raise ValidationError(validation_error)
+        validate_project(
+            training_input.importer, endpoints_path=training_input.endpoints_file
+        )
         await push_job_status_event(job, JobStatus.validation_success)
 
         # Training
@@ -1176,9 +1176,9 @@ async def run_rollback_job(
         # 2. Validating (ok if fails)
         await push_job_status_event(job, JobStatus.validating)
         training_input = project_generator.get_training_input()
-        validation_error = await validate_project(training_input.importer)
-        if validation_error:
-            raise ValidationError(validation_error)
+        validate_project(
+            training_input.importer, endpoints_path=training_input.endpoints_file
+        )
         await push_job_status_event(job, JobStatus.validation_success)
         structlogger.info(
             "bot_builder_service.rollback.validation_success",
