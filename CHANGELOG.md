@@ -56,7 +56,7 @@ Rasa Pro 3.16.0 (2026-03-26)
 
   Summary of tracker store changes for user-scoped retrieval of conversation trackers:
   - SQL: introduces users table (sender_id→user_id, timestamp) with upsert per dialect; JOIN-based retrieval and DB-level ordering/pagination; cleanup on delete
-  - Redis: maintains secondary index user_trackers:{user_id} (Sorted Set) for O(1) lookup; batch mget, robust deserialisation, index cleanup
+  - Redis: maintains secondary index `user_trackers:\{user_id\}` (Sorted Set) for O(1) lookup; batch mget, robust deserialisation, index cleanup
   - Mongo: creates indices on user_id and (conversation_started_timestamp, sender_id); aggregation pipeline for ordering/pagination; restores user_id
   - Dynamo: saves user_id and conversation_started_timestamp (Decimal) in update_item; GSI support (user_id-index with sort on conversation_started_timestamp) with full-scan fallback
 - [#4415](https://github.com/rasahq/rasa-private/issues/4415): Added optional `user_id` parameter to `DialogueStateTracker` to enable associating multiple conversations with a single end user.
@@ -7594,7 +7594,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   training a model using YAML training data.
   See the [API documentation](/reference/api/pro/http-api) for more information.
 - [#6374](https://github.com/rasahq/rasa/issues/6374): Added a YAML schema and a writer for 2.0 Training Core data.
-- [#6404](https://github.com/rasahq/rasa/issues/6404): Users can now use the ``rasa data convert {nlu|core} -f yaml`` command to convert training data from Markdown format to YAML format.
+- [#6404](https://github.com/rasahq/rasa/issues/6404): Users can now use the ``rasa data convert \{nlu|core\} -f yaml`` command to convert training data from Markdown format to YAML format.
 - [#6536](https://github.com/rasahq/rasa/issues/6536): Add option `use_lemma` to `CountVectorsFeaturizer`. By default it is set to `True`.
 
   `use_lemma` indicates whether the featurizer should use the lemma of a word for counting (if available) or not.
