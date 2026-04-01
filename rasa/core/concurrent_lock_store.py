@@ -232,8 +232,17 @@ class ConcurrentRedisLockStore(LockStore):
                 ticket = Ticket.from_dict(json.loads(serialised_ticket))
                 tickets.appendleft(ticket)
 
-        tickets = deque(sorted(tickets, key=lambda x: x.number))
+        if not tickets:
+            structlogger.debug(
+                "concurrent_redis_lock_store.get_lock_key_not_found",
+                event_info=(
+                    f"The lock store does not contain any key-value "
+                    f"items for conversation '{conversation_id}'. "
+                ),
+            )
+            return None
 
+        tickets = deque(sorted(tickets, key=lambda x: x.number))
         return ConcurrentTicketLock(conversation_id, tickets)
 
     def delete_lock(self, conversation_id: Text) -> None:
@@ -259,7 +268,21 @@ class ConcurrentRedisLockStore(LockStore):
 
     def save_lock(self, lock: TicketLock) -> None:
         """Commit individual tickets and last issued ticket number to storage."""
+        if not lock.tickets:
+            structlogger.debug(
+                "concurrent_redis_lock_store.save_lock_skipped.no_tickets",
+                event_info=(
+                    f"No tickets to persist for conversation "
+                    f"'{lock.conversation_id}'. Skipping save."
+                ),
+            )
+            return None
+
         last_issued_ticket = lock.tickets[-1]
+        ttl = int(last_issued_ticket.expires - time.time())
+        if ttl <= 0:
+            return None
+
         serialised_ticket = last_issued_ticket.dumps()
         key = (
             self.key_prefix
@@ -267,9 +290,7 @@ class ConcurrentRedisLockStore(LockStore):
             + ":"
             + str(last_issued_ticket.number)
         )
-        self.red.set(
-            name=key, value=serialised_ticket, ex=int(last_issued_ticket.expires)
-        )
+        self.red.set(name=key, value=serialised_ticket, ex=ttl)
 
     def increment_ticket_number(self, lock: TicketLock) -> int:
         """Uses Redis atomic transaction to increment ticket number."""
@@ -289,3 +310,8 @@ class ConcurrentRedisLockStore(LockStore):
         """
         ticket_key = self.key_prefix + conversation_id + ":" + str(ticket_number)
         self.red.delete(ticket_key)
+
+    @staticmethod
+    def create_lock(conversation_id: Text) -> TicketLock:
+        """Create a new `ConcurrentTicketLock` for `conversation_id`."""
+        return ConcurrentTicketLock(conversation_id)

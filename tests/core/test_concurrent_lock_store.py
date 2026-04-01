@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 from typing import List, Optional, Union
 from unittest.mock import MagicMock, Mock, patch
@@ -11,6 +12,7 @@ import rasa.utils.endpoints
 from rasa.core.concurrent_lock_store import (
     DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX,
     ConcurrentRedisLockStore,
+    ConcurrentTicketLock,
 )
 from rasa.core.constants import (
     ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME,
@@ -469,3 +471,130 @@ def test_create_concurrent_redis_lock_store_with_iam_disabled(
     assert isinstance(lock_store, ConcurrentRedisLockStore)
     mock_redis.assert_called_once()
     assert mock_redis.call_args[1].get("credential_provider") is None
+
+
+def _make_lock_store_with_mock_redis() -> tuple[ConcurrentRedisLockStore, Mock]:
+    """Return a ConcurrentRedisLockStore wired to a fresh Mock Redis client."""
+    mock_redis = Mock()
+    endpoint_config = Mock()
+    endpoint_config.kwargs = {}
+
+    with patch(
+        "rasa.core.redis_connection_factory.RedisConnectionFactory.create_connection",
+        return_value=mock_redis,
+    ):
+        lock_store = ConcurrentRedisLockStore(endpoint_config)
+
+    return lock_store, mock_redis
+
+
+def test_get_lock_returns_none_when_no_keys_in_redis() -> None:
+    """get_lock() must return None when Redis has no matching ticket keys.
+
+    Reproduces Bug 1 from the multi-replica IndexError: when all tickets have
+    expired their Redis TTLs the key scan returns an empty list. Before the fix,
+    get_lock() returned an empty ConcurrentTicketLock instead of None, which
+    caused update_lock() → save_lock() → tickets[-1] to raise IndexError.
+    """
+    lock_store, mock_redis = _make_lock_store_with_mock_redis()
+    mock_redis.keys.return_value = []
+
+    result = lock_store.get_lock("conversation_no_tickets")
+
+    assert result is None
+
+
+def test_save_lock_is_noop_when_tickets_empty() -> None:
+    """save_lock() must not call Redis SET and must log a debug event when the
+    lock's tickets deque is empty.
+
+    Reproduces Bug 3: the unconditional tickets[-1] access raised IndexError
+    when called on a lock with an empty deque. After the fix the method exits
+    early, leaving Redis untouched.
+    """
+    lock_store, mock_redis = _make_lock_store_with_mock_redis()
+    empty_lock = ConcurrentTicketLock("conversation_no_tickets")
+
+    with structlog.testing.capture_logs() as caplog:
+        lock_store.save_lock(empty_lock)
+
+    mock_redis.set.assert_not_called()
+
+    debug_logs = filter_logs(
+        caplog,
+        "concurrent_redis_lock_store.save_lock_skipped.no_tickets",
+        "debug",
+    )
+    assert len(debug_logs) == 1
+    assert "conversation_no_tickets" in debug_logs[0]["event_info"]
+
+
+def test_update_lock_skips_save_when_all_tickets_expired() -> None:
+    """update_lock() must not invoke save_lock() when get_lock() returns None.
+
+    This is the end-to-end guard against the IndexError crash path: once all
+    per-conversation ticket keys have expired from Redis, the next retry cycle
+    in _acquire_lock calls update_lock(), which should silently short-circuit
+    rather than forwarding an empty lock to save_lock().
+    """
+    lock_store, mock_redis = _make_lock_store_with_mock_redis()
+    mock_redis.keys.return_value = []
+
+    with patch.object(lock_store, "save_lock") as mock_save_lock:
+        with structlog.testing.capture_logs() as caplog:
+            lock_store.update_lock("conversation_no_tickets")
+
+        debug_logs = filter_logs(
+            caplog,
+            "concurrent_redis_lock_store.get_lock_key_not_found",
+            "debug",
+        )
+        assert len(debug_logs) == 1
+        assert "conversation_no_tickets" in debug_logs[0]["event_info"]
+
+    mock_save_lock.assert_not_called()
+
+
+def test_save_lock_uses_relative_ttl() -> None:
+    """save_lock() must pass a relative TTL in seconds to redis.set(), not the
+    absolute epoch timestamp stored in Ticket.expires.
+
+    Ticket.expires is set as time.time() + lifetime (an absolute epoch value).
+    Passing it directly as ex= would give Redis a TTL of ~55 years. The fix
+    computes ex = int(expires - time.time()) so the key expires at the correct
+    wall-clock time.
+    """
+    lock_store, mock_redis = _make_lock_store_with_mock_redis()
+    lifetime = 60
+    lock = ConcurrentTicketLock("conv_ttl_test")
+    lock.concurrent_issue_ticket(lifetime, ticket_number=1)
+
+    lock_store.save_lock(lock)
+
+    assert mock_redis.set.call_count == 1
+    call_kwargs = mock_redis.set.call_args[1]
+    actual_ttl = call_kwargs["ex"]
+
+    assert actual_ttl > 0, "TTL must be positive"
+    assert actual_ttl <= lifetime, "TTL must not exceed the original lifetime"
+    assert (
+        actual_ttl < 1_000_000
+    ), "TTL must be a relative duration in seconds, not an absolute epoch timestamp"
+
+
+def test_save_lock_skips_write_for_already_expired_ticket() -> None:
+    """save_lock() must not call redis.set() when the ticket's TTL has already
+    elapsed (expires is in the past).
+
+    This prevents writing a key with a zero or negative TTL which would either
+    error or immediately expire in Redis.
+    """
+    from rasa.core.lock import Ticket
+
+    lock_store, mock_redis = _make_lock_store_with_mock_redis()
+    lock = ConcurrentTicketLock("conv_expired_ticket")
+    lock.tickets.append(Ticket(number=1, expires=time.time() - 1.0))
+
+    lock_store.save_lock(lock)
+
+    mock_redis.set.assert_not_called()

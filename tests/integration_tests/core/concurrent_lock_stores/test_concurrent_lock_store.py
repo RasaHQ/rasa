@@ -2,7 +2,6 @@ import asyncio
 import multiprocessing.pool
 import os
 import time
-from collections import deque
 from pathlib import Path
 from typing import Iterator
 
@@ -13,6 +12,7 @@ from rasa.core.channels import UserMessage
 from rasa.core.concurrent_lock_store import (
     LAST_ISSUED_TICKET_NUMBER_SUFFIX,
     ConcurrentRedisLockStore,
+    ConcurrentTicketLock,
 )
 from rasa.core.lock_store import LockStore
 from rasa.utils.endpoints import EndpointConfig
@@ -170,7 +170,7 @@ def test_concurrent_serve_ticket(
     concurrent_redis_lock_store.finish_serving(conversation_id, ticket_2)
 
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
-    assert not lock.is_someone_waiting()
+    assert lock is None
 
 
 # noinspection PyProtectedMember
@@ -207,9 +207,9 @@ def test_concurrent_get_lock(
 ) -> None:
     conversation_id = "my id 3"
 
+    # initially there is no ticket stored
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
-    assert lock is not None
-    assert lock.tickets == deque()
+    assert lock is None
 
     # issue several tickets
     for _ in range(5):
@@ -241,8 +241,7 @@ def test_concurrent_delete_lock_success(
         assert len(logs) == 1
 
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
-    assert lock is not None
-    assert len(lock.tickets) == 0
+    assert lock is None
 
 
 @pytest.mark.concurrent_lock_store
@@ -265,8 +264,11 @@ def test_concurrent_increment_ticket_number_and_save_lock(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
 ) -> None:
     conversation_id = "my id 5"
-    lock = concurrent_redis_lock_store.get_lock(conversation_id)
-    assert lock is not None
+    initial_lock = concurrent_redis_lock_store.get_lock(conversation_id)
+    assert initial_lock is None
+
+    lock = concurrent_redis_lock_store.get_or_create_lock(conversation_id)
+    assert isinstance(lock, ConcurrentTicketLock)
     assert len(lock.tickets) == 0
 
     total_issued_tickets = 3
