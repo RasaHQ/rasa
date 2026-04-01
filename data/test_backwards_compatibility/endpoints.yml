@@ -22,3 +22,8 @@ tracker_store:
     port: 6379
     db: 0
     use_ssl: false
+
+nlg:
+  type: rephrase
+  llm:
+    model_group: openai_llm

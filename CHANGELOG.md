@@ -10,6 +10,20 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.16.1] - 2026-04-01
+                        
+Rasa Pro 3.16.1 (2026-04-01)                             
+### Bugfixes
+- [#5061](https://github.com/rasahq/rasa-private/issues/5061): Fixed three bugs in `ConcurrentRedisLockStore` that caused an `IndexError: deque index out of range` crash in the PII anonymization and deletion cron jobs under multi-replica deployments.
+
+  - `get_lock()` now returns `None` when no ticket keys exist in Redis (all tickets had expired), instead of returning an empty `ConcurrentTicketLock` object that caused downstream callers to crash.
+  - `save_lock()` now skips the Redis write when the ticket has already expired (TTL ≤ 0), preventing a `ResponseError` from Redis.
+  - `save_lock()` previously passed the absolute epoch expiry timestamp as the Redis `EX` TTL, resulting in ticket keys that effectively never expired (~55 years). The TTL is now correctly computed as a relative duration in seconds.
+
+### Miscellaneous internal changes
+- [#5077](https://github.com/rasahq/rasa-private/issues/5077)
+
+
 ## [3.16.0] - 2026-03-26
                         
 Rasa Pro 3.16.0 (2026-03-26)                             
