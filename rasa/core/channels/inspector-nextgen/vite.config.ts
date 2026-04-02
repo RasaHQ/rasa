@@ -10,5 +10,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./vitest.setup.ts",
     exclude: ["e2e/*", "node_modules/*"],
+    coverage: {
+      reporter: ["text", "lcov"],
+      reportsDirectory: "./coverage",
+    },
   },
 })

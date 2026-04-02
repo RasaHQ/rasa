@@ -19,7 +19,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:e2e": "yarn workspace inspector-e2e e2e",
     "test:e2e:watch": "yarn workspace inspector-e2e e2e:watch",
     "test:e2e:debug": "yarn workspace inspector-e2e e2e:debug",
