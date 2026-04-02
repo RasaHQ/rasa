@@ -10,6 +10,15 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.16.2] - 2026-04-02
+                        
+Rasa Pro 3.16.2 (2026-04-02)                             
+### Bugfixes
+- [#5109](https://github.com/rasahq/rasa-private/issues/5109): Fixed correction reset when a user answers the active collect slot and corrects another slot in the same turn.
+
+  `CorrectSlotsCommand.create_correction_frame` no longer chooses the reset step only from slots in the correction payload. It also considers the current collect-information step and picks the earlier collect step in flow order, so the stack resets to the question currently being asked instead of jumping ahead to a later slot’s collect step (which skipped validation for the new value on the active slot).
+
+
 ## [3.16.1] - 2026-04-01
                         
 Rasa Pro 3.16.1 (2026-04-01)                             
