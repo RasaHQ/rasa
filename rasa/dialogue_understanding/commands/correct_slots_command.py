@@ -124,6 +124,36 @@ class CorrectSlotsCommand(Command):
 
         return None
 
+    @staticmethod
+    def _index_of_collect_step_in_flow(
+        flow_id: str, step_id: str, all_flows: FlowsList
+    ) -> Optional[int]:
+        flow = all_flows.flow_by_id(flow_id)
+        if flow is None:
+            return None
+        for i, step in enumerate(flow.get_collect_steps()):
+            if step.id == step_id:
+                return i
+        return None
+
+    @classmethod
+    def earlier_collect_step_in_flow(
+        cls,
+        first: FlowStepWithFlowReference,
+        second: FlowStepWithFlowReference,
+        all_flows: FlowsList,
+    ) -> FlowStepWithFlowReference:
+        """Return whichever collect step appears earlier in the given user flow."""
+        if first.flow_id != second.flow_id:
+            return first
+        i1 = cls._index_of_collect_step_in_flow(first.flow_id, first.step.id, all_flows)
+        i2 = cls._index_of_collect_step_in_flow(
+            second.flow_id, second.step.id, all_flows
+        )
+        if i1 is None or i2 is None:
+            return first
+        return first if i1 <= i2 else second
+
     def corrected_slots_dict(self, tracker: DialogueStateTracker) -> Dict[str, Any]:
         """Returns the slots that should be corrected.
 
@@ -231,6 +261,29 @@ class CorrectSlotsCommand(Command):
         earliest_collect = cls.find_earliest_updated_collect_info(
             proposed_slots, all_flows, tracker
         )
+
+        # User may answer the active collect slot (often via SetSlot in the same turn)
+        # while also correcting another slot. Only considering corrected slots would
+        # reset to that other slot's collect step and skip validation for the question
+        # currently being asked (e.g. counterparty invalid → user sends 405 + booking).
+        if proposed_slots:
+            from rasa.dialogue_understanding.processor.command_processor import (
+                get_current_collect_step,
+            )
+
+            current_collect_step = get_current_collect_step(tracker.stack, all_flows)
+            if current_collect_step is not None and len(tracker.stack.frames) >= 2:
+                parent_frame = tracker.stack.frames[-2]
+                if isinstance(parent_frame, BaseFlowStackFrame):
+                    current_ref = FlowStepWithFlowReference(
+                        current_collect_step, parent_frame.flow_id
+                    )
+                    if earliest_collect is None:
+                        earliest_collect = current_ref
+                    elif current_ref.flow_id == earliest_collect.flow_id:
+                        earliest_collect = cls.earlier_collect_step_in_flow(
+                            earliest_collect, current_ref, all_flows
+                        )
 
         return CorrectionPatternFlowStackFrame(
             is_reset_only=is_reset_only,

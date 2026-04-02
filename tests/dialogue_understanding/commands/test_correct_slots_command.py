@@ -26,6 +26,7 @@ from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.events import DialogueStackUpdated, Event, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.flow import Flow
+from rasa.shared.core.flows.flow_step import FlowStepWithFlowReference
 from rasa.shared.core.flows.steps import CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
@@ -1315,6 +1316,134 @@ def test_find_earliest_updated_collect_info(
         assert step.step.id == expected_step_id
     else:
         assert step is None
+
+
+def test_create_correction_frame_prefers_active_collect_over_later_corrected_slot():
+    """Correcting bar while collecting foo must reset to foo (validate foo first)."""
+    all_flows = flows_from_str_including_defaults(
+        """
+        flows:
+          my_flow:
+            description: test
+            steps:
+            - id: collect_foo
+              collect: foo
+              next: collect_bar
+            - id: collect_bar
+              collect: bar
+        """
+    )
+    tracker = DialogueStateTracker.from_events(
+        "t", evts=[SlotSet("foo", "a"), SlotSet("bar", "b")]
+    )
+    user_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="collect_foo", frame_id="uf"
+    )
+    pattern = CollectInformationPatternFlowStackFrame(collect="foo", frame_id="pf")
+    tracker.update_stack(DialogueStack(frames=[user_frame, pattern]))
+
+    proposed = {"bar": {"value": "b2", "filled_by": None}}
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="bar", value="b2", filled_by=None)]
+    )
+    frame = command.create_correction_frame(proposed, all_flows, tracker)
+    assert frame is not None
+    assert frame.reset_flow_id == "my_flow"
+    assert frame.reset_step_id == "collect_foo"
+
+
+def test_create_correction_frame_prefers_earlier_current_collect_with_stack_history():
+    """Same scenario but with stack history so find_earliest_updated_collect_info
+    returns a non-None value (collect_bar). The fix must still pick collect_foo."""
+    all_flows = flows_from_str_including_defaults(
+        """
+        flows:
+          my_flow:
+            description: test
+            steps:
+            - id: collect_foo
+              collect: foo
+              next: collect_bar
+            - id: collect_bar
+              collect: bar
+        """
+    )
+    tracker = DialogueStateTracker.from_events("t", evts=[])
+    update_tracker_with_path_through_flow(
+        tracker, "my_flow", ["collect_foo", "collect_bar"], frame_id="uf"
+    )
+    user_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="collect_foo", frame_id="uf"
+    )
+    pattern = CollectInformationPatternFlowStackFrame(collect="foo", frame_id="pf")
+    tracker.update_stack(DialogueStack(frames=[user_frame, pattern]))
+
+    proposed = {"bar": {"value": "b2", "filled_by": None}}
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="bar", value="b2", filled_by=None)]
+    )
+    frame = command.create_correction_frame(proposed, all_flows, tracker)
+    assert frame is not None
+    assert frame.reset_flow_id == "my_flow"
+    assert frame.reset_step_id == "collect_foo"
+
+
+def test_create_correction_frame_keeps_earlier_corrected_slot_when_current_is_later():
+    """Correcting foo (earlier) while collecting bar (later) must keep foo as reset."""
+    all_flows = flows_from_str_including_defaults(
+        """
+        flows:
+          my_flow:
+            description: test
+            steps:
+            - id: collect_foo
+              collect: foo
+              next: collect_bar
+            - id: collect_bar
+              collect: bar
+        """
+    )
+    tracker = DialogueStateTracker.from_events("t", evts=[])
+    update_tracker_with_path_through_flow(
+        tracker, "my_flow", ["collect_foo", "collect_bar"], frame_id="uf"
+    )
+    user_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="collect_bar", frame_id="uf"
+    )
+    pattern = CollectInformationPatternFlowStackFrame(collect="bar", frame_id="pf")
+    tracker.update_stack(DialogueStack(frames=[user_frame, pattern]))
+
+    proposed = {"foo": {"value": "f2", "filled_by": None}}
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="foo", value="f2", filled_by=None)]
+    )
+    frame = command.create_correction_frame(proposed, all_flows, tracker)
+    assert frame is not None
+    assert frame.reset_flow_id == "my_flow"
+    assert frame.reset_step_id == "collect_foo"
+
+
+def test_earlier_collect_step_in_flow_returns_second_when_it_is_earlier():
+    """Verify earlier_collect_step_in_flow can actually return the second argument."""
+    all_flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: test
+            steps:
+            - id: collect_a
+              collect: a
+              next: collect_c
+            - id: collect_c
+              collect: c
+        """
+    )
+    flow = all_flows.flow_by_id("my_flow")
+    steps = flow.get_collect_steps()
+    first = FlowStepWithFlowReference(steps[1], "my_flow")
+    second = FlowStepWithFlowReference(steps[0], "my_flow")
+    result = CorrectSlotsCommand.earlier_collect_step_in_flow(first, second, all_flows)
+    assert result.step.id == "collect_a"
 
 
 @pytest.mark.parametrize(
