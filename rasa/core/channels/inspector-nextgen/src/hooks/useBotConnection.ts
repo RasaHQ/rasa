@@ -195,12 +195,13 @@ export function useBotConnection({
   }, [projectUrl]);
 
   const socket = useRef<Socket>(undefined);
+  const sampleRateRef = useRef<number>(48000);
   const audioQueueRef = useRef<AudioQueue>(undefined);
   const microphoneStreamRef =
     useRef<
       ReturnType<typeof streamMicrophoneToServer> extends Promise<infer T>
-        ? T
-        : never
+      ? T
+      : never
     >(undefined);
   const [conversation, setConversation] = useState<Conversation>(
     initialConversationState(sessionId),
@@ -208,9 +209,9 @@ export function useBotConnection({
   const [stack, setStack] = useState<Stack[]>([]);
   const [initialTrackerData, setInitialTrackerData] = useState<
     | {
-        sender_id: string;
-        events: (RawEvent | undefined)[];
-      }
+      sender_id: string;
+      events: (RawEvent | undefined)[];
+    }
     | undefined
   >(undefined);
   const [inputDisabled, setInputDisabled] = useState(true);
@@ -320,28 +321,37 @@ export function useBotConnection({
         }
       });
 
-      socket.current?.on("session_confirm", () => {
-        setInputDisabled(false);
-        setError(undefined);
-        if (socketReadyPromiseResolveRef.current) {
-          socketReadyPromiseResolveRef.current();
-          socketReadyPromiseResolveRef.current = undefined;
-        }
-        if (initialTrackerDataRef.current) {
-          setInitialTrackerData(undefined);
-          socket.current?.emit("update_tracker", initialTrackerDataRef.current);
-          return;
-        }
+      socket.current?.on(
+        "session_confirm",
+        (data: string | { session_id: string; sample_rate: number }) => {
+          if (typeof data === "object" && data !== null && "sample_rate" in data) {
+            sampleRateRef.current = data.sample_rate;
+          }
+          setInputDisabled(false);
+          setError(undefined);
+          if (socketReadyPromiseResolveRef.current) {
+            socketReadyPromiseResolveRef.current();
+            socketReadyPromiseResolveRef.current = undefined;
+          }
+          if (initialTrackerDataRef.current) {
+            setInitialTrackerData(undefined);
+            socket.current?.emit(
+              "update_tracker",
+              initialTrackerDataRef.current,
+            );
+            return;
+          }
 
-        if (activeModalityRef.current === "text") {
-          sendMessage(SESSION_START_MESSAGE);
-        }
-        // quick fix for new sessions after reconnecting, needs more attention in the future
-        setConversation({
-          ...conversation,
-          startDate: new Date().toISOString(),
-        });
-      });
+          if (activeModalityRef.current === "text") {
+            sendMessage(SESSION_START_MESSAGE);
+          }
+          // quick fix for new sessions after reconnecting, needs more attention in the future
+          setConversation({
+            ...conversation,
+            startDate: new Date().toISOString(),
+          });
+        },
+      );
 
       socket.current?.on("error", (error) => {
         setError(error as RasaProError);
@@ -518,12 +528,14 @@ export function useBotConnection({
     }
 
     if (socket.current) {
+      const sr = sampleRateRef.current;
       const audioQueue = createAudioQueue(socket.current);
       audioQueueRef.current = audioQueue;
-      await setupAudioPlayback(socket.current, logErrorRef.current, audioQueue);
+      await setupAudioPlayback(socket.current, logErrorRef.current, sr, audioQueue);
       microphoneStreamRef.current = await streamMicrophoneToServer(
         socket.current,
         logErrorRef.current,
+        sr,
       );
     } else {
       throw new SocketUnavailableError();

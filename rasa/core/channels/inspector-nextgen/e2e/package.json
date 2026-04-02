@@ -12,7 +12,6 @@
     "report": "playwright show-report"
   },
   "devDependencies": {
-    "@playwright/cli": "0.1.0",
     "@playwright/test": "1.58.2",
     "@types/node": "24.0.10",
     "dd-trace": "5.82.0",

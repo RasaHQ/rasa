@@ -23,7 +23,18 @@ vi.mock("../hooks/useLocalStorage", () => ({
   useLocalStorage: vi.fn(),
 }));
 
-const mockCreateAudioQueue = vi.fn(() => ({ buffer: [], socket: {} }));
+const mockCreateAudioQueue = vi.fn(() => ({
+  marks: [],
+  queuedSamples: 0,
+  socket: {},
+  enqueue: vi.fn(),
+  onSamplesPlayed: vi.fn(),
+  attachPlaybackNode: vi.fn(),
+  addMarker: vi.fn(),
+  reduceMarkers: vi.fn(),
+  popMarkers: vi.fn(),
+  clear: vi.fn(),
+}));
 const mockSetupAudioPlayback = vi.fn().mockResolvedValue(undefined);
 const mockStopAudioPlayback = vi.fn().mockResolvedValue(undefined);
 const mockStreamMicrophoneToServer = vi.fn().mockResolvedValue(undefined);
@@ -32,14 +43,14 @@ const mockAddDataToAudioQueue = vi.fn(() => vi.fn());
 
 vi.mock("../utils/voice/audiostream", () => ({
   createAudioQueue: () => mockCreateAudioQueue(),
-  setupAudioPlayback: (): Promise<void> =>
-    mockSetupAudioPlayback() as Promise<void>,
-  stopAudioPlayback: (): Promise<void> =>
-    mockStopAudioPlayback() as Promise<void>,
-  streamMicrophoneToServer: (): Promise<void> =>
-    mockStreamMicrophoneToServer() as Promise<void>,
-  stopMicrophoneStream: (): Promise<void> =>
-    mockStopMicrophoneStream() as Promise<void>,
+  setupAudioPlayback: (...args: unknown[]): Promise<void> =>
+    mockSetupAudioPlayback(...args) as Promise<void>,
+  stopAudioPlayback: (...args: unknown[]): Promise<void> =>
+    mockStopAudioPlayback(...args) as Promise<void>,
+  streamMicrophoneToServer: (...args: unknown[]): Promise<void> =>
+    mockStreamMicrophoneToServer(...args) as Promise<void>,
+  stopMicrophoneStream: (...args: unknown[]): Promise<void> =>
+    mockStopMicrophoneStream(...args) as Promise<void>,
   addDataToAudioQueue: (): ReturnType<typeof mockAddDataToAudioQueue> =>
     mockAddDataToAudioQueue(),
 }));
@@ -257,7 +268,7 @@ describe("useBotConnection", () => {
       });
 
       act(() => {
-        lastSocket.handlers["session_confirm"]?.();
+        lastSocket.handlers["session_confirm"]?.({ session_id: "test-session", sample_rate: 48000 });
       });
 
       await act(async () => {
@@ -612,7 +623,7 @@ describe("useBotConnection", () => {
       });
     });
 
-    it("startVoiceStreaming after session_confirm calls setupAudioPlayback and streamMicrophoneToServer", async () => {
+    it("startVoiceStreaming after session_confirm calls setupAudioPlayback and streamMicrophoneToServer with sample_rate", async () => {
       renderHook(() => useBotConnection({
         projectId: "test-project",
         onSessionStart: vi.fn(),
@@ -630,7 +641,7 @@ describe("useBotConnection", () => {
       });
 
       act(() => {
-        lastSocket.handlers["session_confirm"]?.();
+        lastSocket.handlers["session_confirm"]?.({ session_id: "test-session", sample_rate: 48000 });
       });
 
       await act(async () => {
@@ -638,8 +649,17 @@ describe("useBotConnection", () => {
       });
 
       expect(mockCreateAudioQueue).toHaveBeenCalled();
-      expect(mockSetupAudioPlayback).toHaveBeenCalled();
-      expect(mockStreamMicrophoneToServer).toHaveBeenCalled();
+      expect(mockSetupAudioPlayback).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        48000,
+        expect.anything(),
+      );
+      expect(mockStreamMicrophoneToServer).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        48000,
+      );
     });
 
     it("stopVoiceStreaming calls stopMicrophoneStream, stopAudioPlayback and startNewConversation", async () => {
@@ -660,7 +680,7 @@ describe("useBotConnection", () => {
       });
 
       act(() => {
-        lastSocket.handlers["session_confirm"]?.();
+        lastSocket.handlers["session_confirm"]?.({ session_id: "test-session", sample_rate: 48000 });
       });
       await act(async () => {
         await voicePromise;

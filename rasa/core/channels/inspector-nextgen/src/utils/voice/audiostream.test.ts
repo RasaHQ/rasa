@@ -5,6 +5,7 @@ import {
   streamMicrophoneToServer,
   stopMicrophoneStream,
   addDataToAudioQueue,
+  createAudioQueue,
   type AudioQueue,
 } from "./audiostream";
 import { type Socket } from "socket.io-client";
@@ -32,7 +33,7 @@ const createMockSocket = (): Socket => {
 // Mock Web Audio API
 class MockAudioContext {
   state: AudioContextState = "running";
-  sampleRate = 8000;
+  sampleRate = 48000;
   destination = {};
   audioWorklet = {
     addModule: vi.fn().mockResolvedValue(undefined),
@@ -47,6 +48,8 @@ class MockAudioContext {
 }
 
 class MockAudioWorkletNode {
+  static instances: MockAudioWorkletNode[] = [];
+
   port = {
     onmessage: null as ((event: MessageEvent) => void) | null,
     postMessage: vi.fn(),
@@ -54,6 +57,10 @@ class MockAudioWorkletNode {
 
   connect = vi.fn();
   disconnect = vi.fn();
+
+  constructor() {
+    MockAudioWorkletNode.instances.push(this);
+  }
 }
 
 class MockMediaStream {
@@ -62,6 +69,7 @@ class MockMediaStream {
 
 // Setup global mocks
 beforeEach(() => {
+  MockAudioWorkletNode.instances = [];
   globalThis.AudioContext = MockAudioContext as never;
   globalThis.AudioWorkletNode = MockAudioWorkletNode as never;
   globalThis.navigator = {
@@ -71,14 +79,21 @@ beforeEach(() => {
   } as never;
 });
 
+/** Helper: get the playback worklet node created by setupAudioPlayback. */
+const getPlaybackNode = (): MockAudioWorkletNode => {
+  const node = MockAudioWorkletNode.instances[
+    MockAudioWorkletNode.instances.length - 1
+  ];
+  expect(node).toBeDefined();
+  return node;
+};
+
 describe("audiostream", () => {
   describe("utility functions", () => {
     it("converts ArrayBuffer to base64 and back", () => {
-      // Create test data
       const originalData = new Uint8Array([1, 2, 3, 4, 5]);
       const arrayBuffer = originalData.buffer;
 
-      // Convert to base64
       let binary = "";
       const bytes = new Uint8Array(arrayBuffer);
       for (let i = 0; i < bytes.byteLength; i++) {
@@ -86,7 +101,6 @@ describe("audiostream", () => {
       }
       const base64 = globalThis.btoa(binary);
 
-      // Convert back to ArrayBuffer
       const binaryString = globalThis.atob(base64);
       const len = binaryString.length;
       const resultBytes = new Uint8Array(len);
@@ -97,25 +111,24 @@ describe("audiostream", () => {
       expect(resultBytes).toEqual(originalData);
     });
 
-    it("converts Float32Array to Int32Array using MAX_INT32_VALUE", () => {
-      const MAX_INT32_VALUE = 0x7fffffff;
+    it("converts Float32Array to Int16Array using MAX_INT16_VALUE", () => {
+      const MAX_INT16_VALUE = 0x7fff;
       const floatArray = new Float32Array([0.5, -0.5, 0, 1, -1]);
-      const intArray = Int32Array.from(floatArray, (x) => x * MAX_INT32_VALUE);
+      const intArray = Int16Array.from(floatArray, (x) => x * MAX_INT16_VALUE);
 
-      // Note: Int32Array automatically truncates decimal values
-      expect(intArray[0]).toBe(Math.trunc(0.5 * MAX_INT32_VALUE));
-      expect(intArray[1]).toBe(Math.trunc(-0.5 * MAX_INT32_VALUE));
+      expect(intArray[0]).toBe(Math.trunc(0.5 * MAX_INT16_VALUE));
+      expect(intArray[1]).toBe(Math.trunc(-0.5 * MAX_INT16_VALUE));
       expect(intArray[2]).toBe(0);
-      expect(intArray[3]).toBe(MAX_INT32_VALUE);
-      expect(intArray[4]).toBe(-MAX_INT32_VALUE);
+      expect(intArray[3]).toBe(MAX_INT16_VALUE);
+      expect(intArray[4]).toBe(-MAX_INT16_VALUE);
     });
 
-    it("converts Int32Array to Float32Array using MAX_INT32_VALUE", () => {
-      const MAX_INT32_VALUE = 0x7fffffff;
-      const intArray = new Int32Array([MAX_INT32_VALUE, -MAX_INT32_VALUE, 0]);
+    it("converts Int16Array to Float32Array using MAX_INT16_VALUE", () => {
+      const MAX_INT16_VALUE = 0x7fff;
+      const intArray = new Int16Array([MAX_INT16_VALUE, -MAX_INT16_VALUE, 0]);
       const floatArray = Float32Array.from(
         intArray,
-        (x) => x / MAX_INT32_VALUE,
+        (x) => x / MAX_INT16_VALUE,
       );
 
       expect(floatArray[0]).toBeCloseTo(1, 5);
@@ -132,11 +145,14 @@ describe("audiostream", () => {
       mockSocket = createMockSocket();
     });
 
-    it("creates AudioQueue with empty buffer and marks", async () => {
-      const audioQueue = await setupAudioPlayback(mockSocket, mockLogError);
+    it("creates AudioQueue with zero queuedSamples and empty marks", async () => {
+      const audioQueue = await setupAudioPlayback(
+        mockSocket,
+        mockLogError,
+        48000,
+      );
 
-      expect(audioQueue.buffer).toBeInstanceOf(Float32Array);
-      expect(audioQueue.buffer.length).toBe(0);
+      expect(audioQueue.queuedSamples).toBe(0);
       expect(audioQueue.marks).toEqual([]);
       expect(audioQueue.socket).toBe(mockSocket);
     });
@@ -145,16 +161,16 @@ describe("audiostream", () => {
       const mockConstructor = vi.fn(() => new MockAudioContext());
       globalThis.AudioContext = mockConstructor as never;
 
-      await setupAudioPlayback(mockSocket, mockLogError);
+      await setupAudioPlayback(mockSocket, mockLogError, 48000);
 
-      expect(mockConstructor).toHaveBeenCalledWith({ sampleRate: 8000 });
+      expect(mockConstructor).toHaveBeenCalledWith({ sampleRate: 48000 });
     });
 
     it("adds audio worklet module", async () => {
       const mockContext = new MockAudioContext();
       globalThis.AudioContext = vi.fn(() => mockContext) as never;
 
-      await setupAudioPlayback(mockSocket, mockLogError);
+      await setupAudioPlayback(mockSocket, mockLogError, 48000);
 
       expect(mockContext.audioWorklet.addModule).toHaveBeenCalledWith(
         "mock-playback-processor-url",
@@ -168,7 +184,7 @@ describe("audiostream", () => {
         .fn()
         .mockReturnValue(suspendedContext) as never;
 
-      await setupAudioPlayback(mockSocket, mockLogError);
+      await setupAudioPlayback(mockSocket, mockLogError, 48000);
 
       expect(suspendedContext.resume).toHaveBeenCalledTimes(1);
     });
@@ -180,9 +196,27 @@ describe("audiostream", () => {
         .fn()
         .mockReturnValue(runningContext) as never;
 
-      await setupAudioPlayback(mockSocket, mockLogError);
+      await setupAudioPlayback(mockSocket, mockLogError, 48000);
 
       expect(runningContext.resume).not.toHaveBeenCalled();
+    });
+
+    it("flushes pending audio when worklet attaches", async () => {
+      const queue = createAudioQueue(mockSocket);
+      queue.enqueue(new Float32Array([1, 2, 3]));
+      queue.enqueue(new Float32Array([4, 5]));
+
+      await setupAudioPlayback(mockSocket, mockLogError, 48000, queue);
+
+      const node = getPlaybackNode();
+      expect(node.port.postMessage).toHaveBeenCalledTimes(2);
+      /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+      expect(node.port.postMessage).toHaveBeenCalledWith(
+        { type: "audio", data: expect.any(Float32Array) },
+        expect.any(Array),
+      );
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+      expect(queue.queuedSamples).toBe(5);
     });
   });
 
@@ -193,20 +227,29 @@ describe("audiostream", () => {
     beforeEach(async () => {
       vi.clearAllMocks();
       mockSocket = createMockSocket();
-      audioQueue = await setupAudioPlayback(mockSocket, mockLogError);
+      audioQueue = await setupAudioPlayback(mockSocket, mockLogError, 48000);
     });
 
-    it("clears audio queue buffer and marks", async () => {
-      audioQueue.write(new Float32Array([1, 2, 3, 4, 5]));
+    it("clears audio queue queuedSamples and marks", async () => {
+      audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
       audioQueue.addMarker("marker1");
       audioQueue.addMarker("marker2");
-      expect(audioQueue.length()).toBe(5);
+      expect(audioQueue.queuedSamples).toBe(5);
       expect(audioQueue.marks.length).toBe(2);
 
       await stopAudioPlayback(audioQueue);
 
-      expect(audioQueue.length()).toBe(0);
+      expect(audioQueue.queuedSamples).toBe(0);
       expect(audioQueue.marks.length).toBe(0);
+    });
+
+    it("sends clear message to worklet", async () => {
+      const node = getPlaybackNode();
+      node.port.postMessage.mockClear();
+
+      await stopAudioPlayback(audioQueue);
+
+      expect(node.port.postMessage).toHaveBeenCalledWith({ type: "clear" });
     });
 
     it("handles undefined audioQueue gracefully", async () => {
@@ -233,9 +276,9 @@ describe("audiostream", () => {
         mockStream as never,
       );
 
-      await streamMicrophoneToServer(mockSocket, mockLogError);
+      await streamMicrophoneToServer(mockSocket, mockLogError, 48000);
 
-      expect(mockConstructor).toHaveBeenCalledWith({ sampleRate: 8000 });
+      expect(mockConstructor).toHaveBeenCalledWith({ sampleRate: 48000 });
     });
 
     it("requests microphone access with correct audio options", async () => {
@@ -244,7 +287,7 @@ describe("audiostream", () => {
         mockStream as never,
       );
 
-      await streamMicrophoneToServer(mockSocket, mockLogError);
+      await streamMicrophoneToServer(mockSocket, mockLogError, 48000);
 
       expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith({
         audio: {
@@ -264,7 +307,7 @@ describe("audiostream", () => {
         mockStream as never,
       );
 
-      await streamMicrophoneToServer(mockSocket, mockLogError);
+      await streamMicrophoneToServer(mockSocket, mockLogError, 48000);
 
       expect(mockContext.audioWorklet.addModule).toHaveBeenCalledWith(
         "mock-microphone-processor-url",
@@ -275,9 +318,9 @@ describe("audiostream", () => {
       const error = new Error("Permission denied");
       vi.mocked(navigator.mediaDevices.getUserMedia).mockRejectedValue(error);
 
-      await expect(streamMicrophoneToServer(mockSocket, mockLogError)).rejects.toThrow(
-        "Permission denied",
-      );
+      await expect(
+        streamMicrophoneToServer(mockSocket, mockLogError, 48000),
+      ).rejects.toThrow("Permission denied");
     });
 
     it("closes AudioContext when getUserMedia rejects to prevent leak", async () => {
@@ -287,9 +330,9 @@ describe("audiostream", () => {
       const error = new Error("Permission denied");
       vi.mocked(navigator.mediaDevices.getUserMedia).mockRejectedValue(error);
 
-      await expect(streamMicrophoneToServer(mockSocket, mockLogError)).rejects.toThrow(
-        "Permission denied",
-      );
+      await expect(
+        streamMicrophoneToServer(mockSocket, mockLogError, 48000),
+      ).rejects.toThrow("Permission denied");
 
       expect(mockContext.close).toHaveBeenCalledTimes(1);
     });
@@ -306,9 +349,9 @@ describe("audiostream", () => {
         new Error("Failed to load worklet"),
       );
 
-      await expect(streamMicrophoneToServer(mockSocket, mockLogError)).rejects.toThrow(
-        "Failed to load worklet",
-      );
+      await expect(
+        streamMicrophoneToServer(mockSocket, mockLogError, 48000),
+      ).rejects.toThrow("Failed to load worklet");
 
       expect(mockContext.close).toHaveBeenCalledTimes(1);
     });
@@ -319,7 +362,11 @@ describe("audiostream", () => {
         mockStream as never,
       );
 
-      const result = await streamMicrophoneToServer(mockSocket, mockLogError);
+      const result = await streamMicrophoneToServer(
+        mockSocket,
+        mockLogError,
+        48000,
+      );
 
       expect(result).toBeDefined();
       expect(result?.audioContext).toBeInstanceOf(MockAudioContext);
@@ -344,7 +391,11 @@ describe("audiostream", () => {
         mockStream as never,
       );
 
-      const microphoneStream = await streamMicrophoneToServer(mockSocket, mockLogError);
+      const microphoneStream = await streamMicrophoneToServer(
+        mockSocket,
+        mockLogError,
+        48000,
+      );
       await stopMicrophoneStream(microphoneStream);
 
       const tracks = mockStream.getTracks();
@@ -360,7 +411,11 @@ describe("audiostream", () => {
         mockStream as never,
       );
 
-      const microphoneStream = await streamMicrophoneToServer(mockSocket, mockLogError);
+      const microphoneStream = await streamMicrophoneToServer(
+        mockSocket,
+        mockLogError,
+        48000,
+      );
       const audioContext =
         microphoneStream?.audioContext as unknown as MockAudioContext;
 
@@ -376,7 +431,11 @@ describe("audiostream", () => {
         mockStream as never,
       );
 
-      const microphoneStream = await streamMicrophoneToServer(mockSocket, mockLogError);
+      const microphoneStream = await streamMicrophoneToServer(
+        mockSocket,
+        mockLogError,
+        48000,
+      );
       const audioContext =
         microphoneStream?.audioContext as unknown as MockAudioContext;
       audioContext.state = "closed";
@@ -395,117 +454,135 @@ describe("audiostream", () => {
 
     beforeEach(async () => {
       vi.clearAllMocks();
+      MockAudioWorkletNode.instances = [];
       mockSocket = createMockSocket();
-      audioQueue = await setupAudioPlayback(mockSocket, mockLogError);
+      audioQueue = await setupAudioPlayback(mockSocket, mockLogError, 48000);
     });
 
     /* eslint-disable @typescript-eslint/unbound-method */
 
-    describe("write", () => {
-      it("appends new audio to empty buffer", () => {
-        const newAudio = new Float32Array([1, 2, 3]);
-        audioQueue.write(newAudio);
+    describe("enqueue", () => {
+      it("pushes audio to worklet and updates queuedSamples", () => {
+        const node = getPlaybackNode();
+        node.port.postMessage.mockClear();
 
-        expect(audioQueue.length()).toBe(3);
-        expect(audioQueue.buffer).toEqual(new Float32Array([1, 2, 3]));
+        audioQueue.enqueue(new Float32Array([1, 2, 3]));
+
+        expect(audioQueue.queuedSamples).toBe(3);
+        /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+        expect(node.port.postMessage).toHaveBeenCalledWith(
+          { type: "audio", data: expect.any(Float32Array) },
+          expect.any(Array),
+        );
+        /* eslint-enable @typescript-eslint/no-unsafe-assignment */
       });
 
-      it("appends new audio to existing buffer", () => {
-        audioQueue.write(new Float32Array([1, 2, 3]));
-        audioQueue.write(new Float32Array([4, 5]));
+      it("accumulates queuedSamples across multiple enqueues", () => {
+        audioQueue.enqueue(new Float32Array([1, 2, 3]));
+        audioQueue.enqueue(new Float32Array([4, 5]));
 
-        expect(audioQueue.length()).toBe(5);
-        expect(audioQueue.buffer).toEqual(new Float32Array([1, 2, 3, 4, 5]));
+        expect(audioQueue.queuedSamples).toBe(5);
       });
 
       it("handles empty audio array", () => {
-        audioQueue.write(new Float32Array([1, 2]));
-        audioQueue.write(new Float32Array([]));
+        audioQueue.enqueue(new Float32Array([1, 2]));
+        audioQueue.enqueue(new Float32Array([]));
 
-        expect(audioQueue.length()).toBe(2);
-        expect(audioQueue.buffer).toEqual(new Float32Array([1, 2]));
+        expect(audioQueue.queuedSamples).toBe(2);
+      });
+
+      it("buffers audio before playback node is attached", () => {
+        const earlyQueue = createAudioQueue(mockSocket);
+        earlyQueue.enqueue(new Float32Array([1, 2, 3]));
+        earlyQueue.enqueue(new Float32Array([4, 5]));
+
+        expect(earlyQueue.queuedSamples).toBe(5);
       });
     });
 
-    describe("read", () => {
-      it("reads requested number of samples from buffer", () => {
-        audioQueue.write(new Float32Array([1, 2, 3, 4, 5]));
+    describe("onSamplesPlayed", () => {
+      it("decrements queuedSamples", () => {
+        audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
 
-        const samples = audioQueue.read(3);
+        audioQueue.onSamplesPlayed(3);
 
-        expect(samples).toEqual(new Float32Array([1, 2, 3]));
-        expect(audioQueue.length()).toBe(2);
-        expect(audioQueue.buffer).toEqual(new Float32Array([4, 5]));
+        expect(audioQueue.queuedSamples).toBe(2);
       });
 
-      it("reads all samples when requested more than available", () => {
-        audioQueue.write(new Float32Array([1, 2, 3]));
+      it("does not go below zero", () => {
+        audioQueue.enqueue(new Float32Array([1, 2]));
 
-        const samples = audioQueue.read(10);
+        audioQueue.onSamplesPlayed(10);
 
-        expect(samples).toEqual(new Float32Array([1, 2, 3]));
-        expect(audioQueue.length()).toBe(0);
+        expect(audioQueue.queuedSamples).toBe(0);
       });
 
-      it("returns empty array when buffer is empty", () => {
-        const samples = audioQueue.read(5);
+      it("ignores non-positive values", () => {
+        audioQueue.enqueue(new Float32Array([1, 2, 3]));
 
-        expect(samples).toEqual(new Float32Array([]));
-        expect(audioQueue.length()).toBe(0);
-      });
-    });
+        audioQueue.onSamplesPlayed(0);
+        audioQueue.onSamplesPlayed(-1);
 
-    describe("length", () => {
-      it("returns 0 for empty buffer", () => {
-        expect(audioQueue.length()).toBe(0);
+        expect(audioQueue.queuedSamples).toBe(3);
       });
 
-      it("returns correct length after write", () => {
-        audioQueue.write(new Float32Array([1, 2, 3, 4, 5]));
+      it("reduces and pops markers", () => {
+        audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
+        audioQueue.addMarker("marker1");
 
-        expect(audioQueue.length()).toBe(5);
-      });
+        audioQueue.onSamplesPlayed(5);
 
-      it("returns updated length after read", () => {
-        audioQueue.write(new Float32Array([1, 2, 3, 4, 5]));
-        audioQueue.read(2);
-
-        expect(audioQueue.length()).toBe(3);
+        expect(mockSocket.emit).toHaveBeenCalledWith("user_message", {
+          marker: "marker1",
+        });
+        expect(audioQueue.marks).toHaveLength(0);
       });
     });
 
     describe("markers", () => {
       describe("addMarker", () => {
-        it("adds marker with current buffer length as bytesToGo", () => {
-          audioQueue.write(new Float32Array([1, 2, 3, 4, 5]));
+        it("adds marker with current queuedSamples as bytesToGo", () => {
+          audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
           audioQueue.addMarker("marker1");
 
           expect(audioQueue.marks).toHaveLength(1);
-          expect(audioQueue.marks[0]).toEqual({ id: "marker1", bytesToGo: 5 });
+          expect(audioQueue.marks[0]).toEqual({
+            id: "marker1",
+            bytesToGo: 5,
+          });
         });
 
         it("adds multiple markers with correct bytesToGo", () => {
-          audioQueue.write(new Float32Array([1, 2, 3]));
+          audioQueue.enqueue(new Float32Array([1, 2, 3]));
           audioQueue.addMarker("marker1");
 
-          audioQueue.write(new Float32Array([4, 5]));
+          audioQueue.enqueue(new Float32Array([4, 5]));
           audioQueue.addMarker("marker2");
 
           expect(audioQueue.marks).toHaveLength(2);
-          expect(audioQueue.marks[0]).toEqual({ id: "marker1", bytesToGo: 3 });
-          expect(audioQueue.marks[1]).toEqual({ id: "marker2", bytesToGo: 5 });
+          expect(audioQueue.marks[0]).toEqual({
+            id: "marker1",
+            bytesToGo: 3,
+          });
+          expect(audioQueue.marks[1]).toEqual({
+            id: "marker2",
+            bytesToGo: 5,
+          });
         });
 
-        it("adds marker with 0 bytesToGo when buffer is empty", () => {
+        it("adds marker with 0 bytesToGo when queue is empty", () => {
           audioQueue.addMarker("marker1");
 
-          expect(audioQueue.marks[0]).toEqual({ id: "marker1", bytesToGo: 0 });
+          expect(audioQueue.marks[0]).toEqual({
+            id: "marker1",
+            bytesToGo: 0,
+          });
         });
       });
 
       describe("reduceMarkers", () => {
         it("reduces bytesToGo for all markers", () => {
-          audioQueue.write(new Float32Array([1, 2, 3, 4, 5]));
+          audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
           audioQueue.addMarker("marker1");
           audioQueue.addMarker("marker2");
 
@@ -516,7 +593,7 @@ describe("audiostream", () => {
         });
 
         it("allows bytesToGo to become negative", () => {
-          audioQueue.write(new Float32Array([1, 2]));
+          audioQueue.enqueue(new Float32Array([1, 2]));
           audioQueue.addMarker("marker1");
 
           audioQueue.reduceMarkers(5);
@@ -551,7 +628,7 @@ describe("audiostream", () => {
         });
 
         it("keeps markers with positive bytesToGo", () => {
-          audioQueue.write(new Float32Array([1, 2, 3, 4, 5]));
+          audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
           audioQueue.addMarker("marker1");
           audioQueue.addMarker("marker2");
 
@@ -563,9 +640,9 @@ describe("audiostream", () => {
         });
 
         it("pops only markers with bytesToGo <= 0", () => {
-          audioQueue.write(new Float32Array([1, 2, 3, 4, 5]));
+          audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
           audioQueue.addMarker("marker1");
-          audioQueue.write(new Float32Array([6, 7, 8]));
+          audioQueue.enqueue(new Float32Array([6, 7, 8]));
           audioQueue.addMarker("marker2");
 
           audioQueue.reduceMarkers(6);
@@ -580,12 +657,12 @@ describe("audiostream", () => {
         });
       });
 
-      describe("read with markers", () => {
-        it("reduces markers and pops them when reading", () => {
-          audioQueue.write(new Float32Array([1, 2, 3, 4, 5]));
+      describe("onSamplesPlayed with markers", () => {
+        it("reduces markers and pops them when samples are played", () => {
+          audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
           audioQueue.addMarker("marker1");
 
-          audioQueue.read(5);
+          audioQueue.onSamplesPlayed(5);
 
           expect(mockSocket.emit).toHaveBeenCalledWith("user_message", {
             marker: "marker1",
@@ -596,21 +673,30 @@ describe("audiostream", () => {
     });
 
     describe("clear", () => {
-      it("clears buffer and marks", () => {
-        audioQueue.write(new Float32Array([1, 2, 3, 4, 5]));
+      it("resets queuedSamples and marks", () => {
+        audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
         audioQueue.addMarker("marker1");
         audioQueue.addMarker("marker2");
 
         audioQueue.clear();
 
-        expect(audioQueue.length()).toBe(0);
+        expect(audioQueue.queuedSamples).toBe(0);
         expect(audioQueue.marks).toHaveLength(0);
       });
 
-      it("handles already empty buffer and marks", () => {
+      it("sends clear message to worklet", () => {
+        const node = getPlaybackNode();
+        node.port.postMessage.mockClear();
+
         audioQueue.clear();
 
-        expect(audioQueue.length()).toBe(0);
+        expect(node.port.postMessage).toHaveBeenCalledWith({ type: "clear" });
+      });
+
+      it("handles already empty queue", () => {
+        audioQueue.clear();
+
+        expect(audioQueue.queuedSamples).toBe(0);
         expect(audioQueue.marks).toHaveLength(0);
       });
     });
@@ -625,21 +711,25 @@ describe("audiostream", () => {
 
     beforeEach(async () => {
       vi.clearAllMocks();
+      MockAudioWorkletNode.instances = [];
       mockSocket = createMockSocket();
-      audioQueue = await setupAudioPlayback(mockSocket, mockLogError);
+      audioQueue = await setupAudioPlayback(mockSocket, mockLogError, 48000);
       addData = addDataToAudioQueue(audioQueue);
     });
 
     describe("audio data", () => {
       it("adds audio data to queue", () => {
         const audioData = new Float32Array([0.5, -0.5, 0.25]);
-        const MAX_INT32_VALUE = 0x7fffffff;
-        const intArray = Int32Array.from(audioData, (x) => x * MAX_INT32_VALUE);
+        const MAX_INT16_VALUE = 0x7fff;
+        const intArray = Int16Array.from(
+          audioData,
+          (x) => x * MAX_INT16_VALUE,
+        );
         const base64Audio = Buffer.from(intArray.buffer).toString("base64");
 
         addData(JSON.stringify({ audio: base64Audio }));
 
-        expect(audioQueue.length()).toBeGreaterThan(0);
+        expect(audioQueue.queuedSamples).toBeGreaterThan(0);
       });
 
       it("throws on invalid base64 audio data", () => {
@@ -671,12 +761,12 @@ describe("audiostream", () => {
 
     describe("interruptPlayback", () => {
       it("clears audio queue on interrupt", () => {
-        audioQueue.write(new Float32Array([1, 2, 3, 4, 5]));
+        audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
         audioQueue.addMarker("marker1");
 
         addData(JSON.stringify({ interruptPlayback: true }));
 
-        expect(audioQueue.length()).toBe(0);
+        expect(audioQueue.queuedSamples).toBe(0);
         expect(audioQueue.marks).toHaveLength(0);
       });
     });

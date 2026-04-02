@@ -18,6 +18,7 @@ from rasa.core.channels.inspector import (
     tracker_as_dump,
 )
 from rasa.core.channels.voice_stream.voice_channel import (
+    DEFAULT_INTERRUPTION_MIN_WORDS,
     ContinueConversationAction,
     EndConversationAction,
     NewAudioAction,
@@ -234,6 +235,29 @@ def test_inspector_from_credentials_uses_defaults() -> None:
     assert input_channel.asr_config == {"name": "deepgram"}
     assert input_channel.tts_config == {"name": "deepgram"}
     assert input_channel.voice_channel_name == "browser_audio"
+    assert input_channel.interruption_config.enabled is True
+    assert input_channel.interruption_config.min_words == DEFAULT_INTERRUPTION_MIN_WORDS
+
+
+def test_inspector_respects_explicit_interruptions_config() -> None:
+    """Test that explicit interruptions config overrides the default."""
+    credentials = {
+        "interruptions": {"enabled": False},
+    }
+    input_channel = InspectorInputChannel.from_credentials(credentials)
+
+    assert input_channel.interruption_config.enabled is False
+
+
+def test_inspector_respects_custom_interruptions_min_words() -> None:
+    """Test that custom min_words is respected in interruptions config."""
+    credentials = {
+        "interruptions": {"enabled": True, "min_words": 5},
+    }
+    input_channel = InspectorInputChannel.from_credentials(credentials)
+
+    assert input_channel.interruption_config.enabled is True
+    assert input_channel.interruption_config.min_words == 5
 
 
 def test_inspector_channel_defaults_to_browser_audio() -> None:

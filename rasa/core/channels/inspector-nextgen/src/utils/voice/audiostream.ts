@@ -3,14 +3,6 @@ import playbackProcessorUrl from "./playback-processor.ts?worker&url";
 import microphoneProcessorUrl from "./microphone-processor.ts?worker&url";
 import type { LogErrorFn } from "../../types";
 
-// Buffer size for audio worklet processing
-// 128 samples = 16ms @ 8kHz sample rate (optimal for low latency)
-const bufferSize = 128;
-
-// Sample rate optimized for voice (8kHz = telephone quality)
-// Lower rate reduces bandwidth while maintaining intelligibility
-const sampleRate = 8000;
-
 // Audio options for microphone
 const audioOptions = {
   audio: {
@@ -40,14 +32,14 @@ const base64ToArrayBuffer = (s: string): ArrayBuffer => {
   return bytes.buffer;
 };
 
-const MAX_INT32_VALUE = 0x7fffffff;
+const MAX_INT16_VALUE = 0x7fff;
 
-const floatToIntArray = (arr: Float32Array): Int32Array => {
-  return Int32Array.from(arr, (x) => x * MAX_INT32_VALUE);
+const floatToInt16Array = (arr: Float32Array): Int16Array => {
+  return Int16Array.from(arr, (x) => x * MAX_INT16_VALUE);
 };
 
-const intToFloatArray = (arr: Int32Array): Float32Array => {
-  return Float32Array.from(arr, (x) => x / MAX_INT32_VALUE);
+const int16ToFloatArray = (arr: Int16Array): Float32Array => {
+  return Float32Array.from(arr, (x) => x / MAX_INT16_VALUE);
 };
 
 interface Mark {
@@ -56,56 +48,76 @@ interface Mark {
 }
 
 export interface AudioQueue {
-  buffer: Float32Array;
   marks: Array<Mark>;
+  queuedSamples: number;
   socket: Socket;
-  write: (newAudio: Float32Array) => void;
-  read: (nSamples: number) => Float32Array;
-  length: () => number;
+  enqueue: (newAudio: Float32Array) => void;
+  onSamplesPlayed: (samplesPlayed: number) => void;
+  attachPlaybackNode: (node: AudioWorkletNode) => void;
   addMarker: (id: string) => void;
-  reduceMarkers: (bytesRead: number) => void;
+  reduceMarkers: (samplesPlayed: number) => void;
   popMarkers: () => void;
   clear: () => void;
 }
 
+/**
+ * Creates an AudioQueue that pushes audio directly to the playback worklet.
+ *
+ * Before a playback node is attached (via `attachPlaybackNode`), audio is
+ * buffered internally so early bot messages are not lost.
+ */
 export const createAudioQueue = (socket: Socket): AudioQueue => {
-  return {
-    buffer: new Float32Array(0),
+  let playbackNode: AudioWorkletNode | undefined;
+  const pendingChunks: Float32Array[] = [];
+
+  const pushToWorklet = (audio: Float32Array) => {
+    playbackNode!.port.postMessage(
+      { type: "audio", data: audio },
+      [audio.buffer],
+    );
+  };
+
+  const queue: AudioQueue = {
     marks: new Array<Mark>(),
+    queuedSamples: 0,
     socket,
 
-    write: function (newAudio: Float32Array) {
-      const currentQLength = this.buffer.length;
-      const newBuffer = new Float32Array(currentQLength + newAudio.length);
-      newBuffer.set(this.buffer, 0);
-      newBuffer.set(newAudio, currentQLength);
-      this.buffer = newBuffer;
+    enqueue(newAudio: Float32Array) {
+      this.queuedSamples += newAudio.length;
+      if (playbackNode) {
+        pushToWorklet(newAudio);
+      } else {
+        pendingChunks.push(newAudio);
+      }
     },
 
-    read: function (nSamples: number) {
-      const samplesToPlay = this.buffer.subarray(0, nSamples);
-      this.buffer = this.buffer.subarray(nSamples, this.buffer.length);
-      this.reduceMarkers(samplesToPlay.length);
+    onSamplesPlayed(samplesPlayed: number) {
+      if (samplesPlayed <= 0) return;
+      this.queuedSamples = Math.max(0, this.queuedSamples - samplesPlayed);
+      this.reduceMarkers(samplesPlayed);
       this.popMarkers();
-      return samplesToPlay;
     },
 
-    length: function () {
-      return this.buffer.length;
+    attachPlaybackNode(node: AudioWorkletNode) {
+      playbackNode = node;
+      for (const chunk of pendingChunks) {
+        pushToWorklet(chunk);
+      }
+      pendingChunks.length = 0;
     },
 
-    addMarker: function (id: string) {
-      this.marks.push({ id, bytesToGo: this.length() });
+    addMarker(id: string) {
+      this.marks.push({ id, bytesToGo: this.queuedSamples });
     },
 
-    reduceMarkers: function (bytesRead: number) {
-      this.marks = this.marks.map((m) => {
-        return { id: m.id, bytesToGo: m.bytesToGo - bytesRead };
-      });
+    reduceMarkers(samplesPlayed: number) {
+      this.marks = this.marks.map((m) => ({
+        id: m.id,
+        bytesToGo: m.bytesToGo - samplesPlayed,
+      }));
     },
 
-    popMarkers: function () {
-      // marks are ordered
+    popMarkers() {
       let popUpTo = 0;
       while (popUpTo < this.marks.length) {
         if (this.marks[popUpTo].bytesToGo <= 0) {
@@ -121,11 +133,18 @@ export const createAudioQueue = (socket: Socket): AudioQueue => {
       });
     },
 
-    clear: function () {
-      this.buffer = new Float32Array(0);
+    clear() {
+      this.queuedSamples = 0;
       this.marks = [];
+      if (playbackNode) {
+        playbackNode.port.postMessage({ type: "clear" });
+      } else {
+        pendingChunks.length = 0;
+      }
     },
   };
+
+  return queue;
 };
 
 interface MicrophoneStream {
@@ -137,14 +156,11 @@ interface MicrophoneStream {
 
 /**
  * Streams microphone audio to server via WebSocket.
- *
- * @param socket - Connected Socket.IO socket instance
- * @returns MicrophoneStream object for cleanup, or undefined if permission denied
- * @throws Error if microphone is not available or readable
  */
 export const streamMicrophoneToServer = async (
   socket: Socket,
   logError: LogErrorFn,
+  sampleRate: number,
 ): Promise<MicrophoneStream | undefined> => {
   const audioContext = new AudioContext({ sampleRate });
 
@@ -161,7 +177,7 @@ export const streamMicrophoneToServer = async (
       if (event.data instanceof Float32Array) {
         const audioData = event.data;
         socket.emit("user_message", {
-          audio: arrayBufferToBase64(floatToIntArray(audioData).buffer),
+          audio: arrayBufferToBase64(floatToInt16Array(audioData).buffer),
         });
       } else {
         logError(`Received unexpected data type from microphone-processor`, {
@@ -191,8 +207,6 @@ export const streamMicrophoneToServer = async (
     if (audioContext.state !== "closed") {
       await audioContext.close();
     }
-    // this error can be thrown if the microphone permission is denied
-    // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia#exceptions
     logError(err, {
       tags: {
         component: "streamMicrophoneToServer",
@@ -205,9 +219,6 @@ export const streamMicrophoneToServer = async (
 
 /**
  * Stops microphone audio streaming and cleans up resources.
- *
- * @param microphoneStream - MicrophoneStream object to stop, or undefined
- * @returns Promise that resolves when cleanup is complete
  */
 export const stopMicrophoneStream = async (
   microphoneStream: MicrophoneStream | undefined,
@@ -231,13 +242,15 @@ let globalAudioOutputContext: AudioContext | undefined;
 let globalPlaybackNode: AudioWorkletNode | undefined;
 
 /**
- * Sets up audio playback with worklet. Accepts optional existingQueue so the
- * caller can create and assign it earlier, allowing bot_message to buffer data
- * while the worklet loads.
+ * Sets up push-based audio playback with a worklet-side RingBuffer.
+ *
+ * Accepts an optional `existingQueue` so the caller can create and assign it
+ * earlier, allowing bot_message events to buffer data while the worklet loads.
  */
 export const setupAudioPlayback = async (
   socket: Socket,
-  logError: LogErrorFn,
+  _logError: LogErrorFn,
+  sampleRate: number,
   existingQueue?: AudioQueue,
 ): Promise<AudioQueue> => {
   const audioQueue = existingQueue ?? createAudioQueue(socket);
@@ -262,31 +275,13 @@ export const setupAudioPlayback = async (
     "playback-processor",
   );
 
-  globalPlaybackNode.port.onmessage = (event: MessageEvent) => {
-    if (event.data === "need-more-data") {
-      const audioData = audioQueue.length()
-        ? audioQueue.read(bufferSize)
-        : new Float32Array(bufferSize);
+  audioQueue.attachPlaybackNode(globalPlaybackNode);
 
-      if (!(audioData instanceof Float32Array)) {
-        logError("audioData is invalid, sending silence.", {
-          tags: {
-            component: "setupAudioPlayback",
-            action: "globalPlaybackNode.port.onmessage",
-          },
-          extra: {
-            data:
-              typeof audioData === "object" ? JSON.stringify(audioData) : null,
-          },
-        });
-        globalPlaybackNode?.port.postMessage(new Float32Array(bufferSize));
-      } else if (audioData.length === bufferSize) {
-        globalPlaybackNode?.port.postMessage(audioData);
-      } else {
-        const padded = new Float32Array(bufferSize);
-        padded.set(audioData);
-        globalPlaybackNode?.port.postMessage(padded);
-      }
+  globalPlaybackNode.port.onmessage = (
+    event: MessageEvent<{ type: string; samples: number }>,
+  ) => {
+    if (event.data.type === "played-samples") {
+      audioQueue.onSamplesPlayed(event.data.samples);
     }
   };
 
@@ -300,17 +295,16 @@ export const stopAudioPlayback = async (
 ): Promise<void> => {
   if (!audioQueue) return;
 
-  // Clear the audio buffer
   audioQueue.clear();
 
   if (globalPlaybackNode) {
     globalPlaybackNode.disconnect();
-    globalPlaybackNode = undefined; // Clear reference
+    globalPlaybackNode = undefined;
   }
 
   if (globalAudioOutputContext && globalAudioOutputContext.state !== "closed") {
     await globalAudioOutputContext.close();
-    globalAudioOutputContext = undefined; // Clear reference
+    globalAudioOutputContext = undefined;
   }
 };
 
@@ -332,9 +326,9 @@ export const addDataToAudioQueue =
 
     if (parsedData["audio"] && typeof parsedData["audio"] === "string") {
       const audioBytes = base64ToArrayBuffer(parsedData["audio"]);
-      const int32Data = new Int32Array(audioBytes);
-      const audioData = intToFloatArray(int32Data);
-      audioQueue.write(audioData);
+      const int16Data = new Int16Array(audioBytes);
+      const audioData = int16ToFloatArray(int16Data);
+      audioQueue.enqueue(audioData);
     } else if (
       parsedData["marker"] &&
       typeof parsedData["marker"] === "string"

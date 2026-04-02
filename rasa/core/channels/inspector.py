@@ -26,7 +26,12 @@ import structlog
 from rasa.core.channels import UserMessage
 from rasa.core.channels.socketio import SocketBlueprint, SocketIOInput, SocketIOOutput
 from rasa.core.channels.voice_ready.utils import CallParameters
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import (
+    L16_24KHZ,
+    L16_48KHZ,
+    MULAW_8KHZ,
+    RasaAudioBytes,
+)
 from rasa.core.channels.voice_stream.call_state import (
     BotIsSpeaking,
     BotStoppedSpeaking,
@@ -57,6 +62,13 @@ if TYPE_CHECKING:
 
 
 structlogger = structlog.get_logger()
+
+DEFAULT_SAMPLE_RATE = 48000
+_SAMPLE_RATE_TO_FORMAT = {
+    8000: MULAW_8KHZ,
+    24000: L16_24KHZ,
+    48000: L16_48KHZ,
+}
 
 
 def tracker_as_dump(tracker: "DialogueStateTracker") -> Dict[str, Any]:
@@ -192,6 +204,7 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
         voice_channel: Optional[str] = None,
         text_channel: Optional[str] = None,
         silence_timeout: Optional[Union[float, int]] = None,
+        sample_rate: int = DEFAULT_SAMPLE_RATE,
         **kwargs: Any,
     ) -> None:
         """Creates a `InspectorInputChannel` object."""
@@ -207,13 +220,19 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
 
         SocketIOInput.__init__(self, **socketio_kwargs)
 
+        interruption_config = {"enabled": True}
+        if interruptions is not None:
+            interruption_config = interruptions
+
         VoiceInputChannel.__init__(
             self,
             server_url=server_url,
             asr_config=asr_config if asr_config is not None else {"name": "deepgram"},
             tts_config=tts_config if tts_config is not None else {"name": "deepgram"},
-            interruptions=interruptions,
+            interruptions=interruption_config,
         )
+
+        self.audio_format = _SAMPLE_RATE_TO_FORMAT[sample_rate]
 
         self.voice_channel_name = voice_channel or self.DEFAULT_VOICE_CHANNEL_NAME
         self.text_channel_name = text_channel or self.DEFAULT_TEXT_CHANNEL_NAME
@@ -234,6 +253,14 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
             return cls()
         new_creds = repack_voice_credentials(credentials)
         new_creds = {k: v for k, v in new_creds.items() if v is not None}
+        if (
+            new_creds.get("sample_rate") is not None
+            and new_creds["sample_rate"] not in _SAMPLE_RATE_TO_FORMAT
+        ):
+            raise ValueError(
+                f"Unsupported sample rate: {new_creds['sample_rate']}. "
+                f"Supported rates are: {list(_SAMPLE_RATE_TO_FORMAT.keys())}"
+            )
         return cls(**new_creds)
 
     def get_output_channel(
@@ -333,6 +360,35 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
             room=room,
         )
 
+    async def handle_session_request(
+        self, sid: Text, data: Optional[Dict] = None
+    ) -> None:
+        """Override to include sample_rate in session_confirm payload."""
+        import inspect as _inspect
+
+        if data is None:
+            data = {}
+        if "session_id" not in data or data["session_id"] is None:
+            data["session_id"] = uuid.uuid4().hex
+        if self.session_persistence:
+            if _inspect.iscoroutinefunction(self.sio_server.enter_room):  # type: ignore[union-attr]
+                await self.sio_server.enter_room(sid, data["session_id"])  # type: ignore[union-attr]
+            else:
+                self.sio_server.enter_room(sid, data["session_id"])  # type: ignore[union-attr]
+        await self.sio_server.emit(  # type: ignore[union-attr]
+            "session_confirm",
+            {
+                "session_id": data["session_id"],
+                "sample_rate": self.audio_format.sample_rate,
+            },
+            room=sid,
+        )
+        structlogger.debug(
+            "inspector.handle_session_request",
+            message=f"User {sid} connected to inspector endpoint.",
+            sample_rate=self.audio_format.sample_rate,
+        )
+
     async def handle_tracker_update(self, sid: str, data: Dict) -> None:
         from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -391,9 +447,13 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
         """Voice method to convert channel bytes to RasaAudioBytes."""
-        return RasaAudioBytes(
-            audioop.lin2ulaw(input_bytes, 4), format=self.audio_format
-        )
+        if self.audio_format == MULAW_8KHZ:
+            transcoded = audioop.lin2ulaw(input_bytes, 2)
+        elif self.audio_format in (L16_24KHZ, L16_48KHZ):
+            transcoded = input_bytes
+        else:
+            raise ValueError(f"Unsupported audio format: {self.audio_format}")
+        return RasaAudioBytes(transcoded, format=self.audio_format)
 
     async def collect_call_parameters(
         self,
@@ -633,7 +693,12 @@ class InspectorVoiceOutputChannel(VoiceOutputChannel):
     def rasa_audio_bytes_to_channel_bytes(
         self, rasa_audio_bytes: RasaAudioBytes
     ) -> bytes:
-        return audioop.ulaw2lin(rasa_audio_bytes.data, 4)
+        if self.audio_format == MULAW_8KHZ:
+            return audioop.ulaw2lin(rasa_audio_bytes.data, 2)
+        elif self.audio_format in (L16_24KHZ, L16_48KHZ):
+            return rasa_audio_bytes.data
+        else:
+            raise ValueError(f"Unsupported audio format: {self.audio_format}")
 
     def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
         return json.dumps({"audio": base64.b64encode(channel_bytes).decode("utf-8")})
