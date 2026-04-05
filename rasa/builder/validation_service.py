@@ -79,27 +79,29 @@ def validate_project(importer: TrainingDataImporter, endpoints_path: Path) -> No
         except ValidationError:
             raise
 
-        except Exception as e:
-            error_msg = f"Validation failed with exception: {e}"
-
-            error_logs = [
-                log for log in captured_logs if log.get("log_level") != "debug"
-            ]
-
-            structlogger.error(
-                "validation.failed.exception", error=str(e), validation_logs=error_logs
-            )
-            raise ValidationError(error_msg, validation_logs=error_logs)
-
-        except SystemExit as e:
-            error_logs = [
-                log for log in captured_logs if log.get("log_level") != "debug"
-            ]
-
-            structlogger.error(
-                "validation.failed.sys_exit",
-                error_logs=error_logs,
-            )
-            raise ValidationError(
-                f"SystemExit during validation: {e}", validation_logs=error_logs
-            )
+        except BaseException as e:
+            if isinstance(e, KeyboardInterrupt):
+                raise
+            if isinstance(e, SystemExit):
+                error_logs = [
+                    log for log in captured_logs if log.get("log_level") != "debug"
+                ]
+                structlogger.error(
+                    "validation.failed.sys_exit",
+                    error_logs=error_logs,
+                )
+                raise ValidationError(
+                    f"SystemExit during validation: {e}", validation_logs=error_logs
+                )
+            if isinstance(e, Exception):
+                error_msg = f"Validation failed with exception: {e}"
+                error_logs = [
+                    log for log in captured_logs if log.get("log_level") != "debug"
+                ]
+                structlogger.error(
+                    "validation.failed.exception",
+                    error=str(e),
+                    validation_logs=error_logs,
+                )
+                raise ValidationError(error_msg, validation_logs=error_logs)
+            raise

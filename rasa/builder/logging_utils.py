@@ -60,7 +60,7 @@ def _try_to_extract_event_dict_json(event_dict: MutableMapping[str, Any]) -> str
 
 
 def collecting_logs_processor(
-    logger: Any, log_level: str, event_dict: MutableMapping[str, Any]
+    _logger: Any, log_level: str, event_dict: MutableMapping[str, Any]
 ) -> MutableMapping[str, Any]:
     """Structlog processor that collects recent log entries.
 
@@ -81,7 +81,7 @@ def collecting_logs_processor(
 
 
 def collecting_validation_logs_processor(
-    logger: Any, method_name: str, event_dict: MutableMapping[str, Any]
+    _logger: Any, method_name: str, event_dict: MutableMapping[str, Any]
 ) -> MutableMapping[str, Any]:
     """Structlog processor that captures validation logs in context variable storage.
 
@@ -89,7 +89,7 @@ def collecting_validation_logs_processor(
     Uses contextvars for async-safe log capture across async tasks.
 
     Args:
-        logger: The structlog logger instance
+        _logger: The structlog logger instance
         method_name: The logging method name (e.g., "error", "warning", "info", "debug")
         event_dict: The event dictionary containing log data
 
@@ -132,7 +132,7 @@ def capture_validation_logs() -> Generator[List[Dict[str, Any]], Any, None]:
 
 
 def attach_request_id_processor(
-    logger: Any, log_level: str, event_dict: MutableMapping[str, Any]
+    _logger: Any, _log_level: str, event_dict: MutableMapping[str, Any]
 ) -> MutableMapping[str, Any]:
     """Structlog processor that attaches the request id to the event dict.
 
@@ -141,10 +141,10 @@ def attach_request_id_processor(
     try:
         request = Request.get_current()
         event_dict["correlation_id"] = request.ctx.correlation_id
-        return event_dict
     except Exception:
-        # there is no request context, so we don't attach the request id
-        return event_dict
+        # No request context; leave event_dict unchanged (no correlation_id).
+        pass
+    return event_dict
 
 
 def get_recent_logs() -> str:

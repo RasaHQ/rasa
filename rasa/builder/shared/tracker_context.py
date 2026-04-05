@@ -145,6 +145,45 @@ class TrackerContext(BaseModel):
             current_state=current_state,
         )
 
+    @staticmethod
+    def _append_turn_if_nonempty(
+        conversation_turns: List[AssistantConversationTurn],
+        user_message: Optional[UserMessage],
+        assistant_messages: List[AssistantMessage],
+        context_events: List[TrackerEvent],
+    ) -> None:
+        if not (user_message or assistant_messages or context_events):
+            return
+        conversation_turns.append(
+            AssistantConversationTurn(
+                user_message=user_message,
+                assistant_messages=assistant_messages,
+                context_events=context_events,
+            )
+        )
+
+    @classmethod
+    def _append_context_event_if_any(
+        cls,
+        event: Any,
+        current_context_events: List[TrackerEvent],
+    ) -> None:
+        context_event = cls._process_tracker_event(event)
+        if context_event:
+            current_context_events.append(context_event)
+
+    @classmethod
+    def _user_message_from_uttered(cls, event: UserUttered) -> UserMessage:
+        predicted_commands = (
+            [command.get("command") for command in event.commands]
+            if event.commands
+            else []
+        )
+        return UserMessage(
+            text=event.text or "",
+            predicted_commands=predicted_commands,
+        )
+
     @classmethod
     def _build_conversation_turns(
         cls, tracker: DialogueStateTracker
@@ -157,52 +196,24 @@ class TrackerContext(BaseModel):
 
         for event in tracker.applied_events():
             if isinstance(event, UserUttered):
-                # Save previous turn if exists and has content. A new turn starts with a
-                # user message. However, since it's possible that "turn" started with an
-                # assistant message, we save that turn without the user message.
-                if (
-                    current_user_message
-                    or current_assistant_messages
-                    or current_context_events
-                ):
-                    conversation_turns.append(
-                        AssistantConversationTurn(
-                            user_message=current_user_message,
-                            assistant_messages=current_assistant_messages,
-                            context_events=current_context_events,
-                        )
-                    )
+                cls._append_turn_if_nonempty(
+                    conversation_turns,
+                    current_user_message,
+                    current_assistant_messages,
+                    current_context_events,
+                )
                 current_assistant_messages = []
                 current_context_events = []
+                current_user_message = cls._user_message_from_uttered(event)
 
-                # Start new turn
-
-                # Fetch the predicted commands for the user message
-                predicted_commands = (
-                    [command.get("command") for command in event.commands]
-                    if event.commands
-                    else []
-                )
-
-                current_user_message = UserMessage(
-                    text=event.text or "",
-                    predicted_commands=predicted_commands,
-                )
-
-            # Assistant conversation turn can have multiple messages from the assistant
             elif isinstance(event, BotUttered):
                 current_assistant_messages.append(
                     AssistantMessage(text=event.text or "")
                 )
 
-            # Handle non-user and non-assistant events. These are useful for more
-            # adding context to the conversation turn.
             else:
-                context_event = cls._process_tracker_event(event)
-                if context_event:
-                    current_context_events.append(context_event)
+                cls._append_context_event_if_any(event, current_context_events)
 
-        # Add the final turn if there is one
         if current_user_message or current_assistant_messages:
             conversation_turns.append(
                 AssistantConversationTurn(

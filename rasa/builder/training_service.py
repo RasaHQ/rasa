@@ -67,10 +67,14 @@ async def train_and_load_agent(input: TrainingInput, role: str, action: str) -> 
 
     except (TrainingError, AgentLoadError):
         raise
-    except Exception as e:
-        raise TrainingError(f"Unexpected error during training: {e}")
-    except SystemExit as e:
-        raise TrainingError(f"SystemExit during training: {e}")
+    except BaseException as e:
+        if isinstance(e, KeyboardInterrupt):
+            raise
+        if isinstance(e, SystemExit):
+            raise TrainingError(f"SystemExit during training: {e}")
+        if isinstance(e, Exception):
+            raise TrainingError(f"Unexpected error during training: {e}")
+        raise
 
 
 async def try_load_existing_agent(

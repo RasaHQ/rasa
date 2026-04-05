@@ -1587,7 +1587,7 @@ class CopilotGenerationContext(BaseModel):
     a tuple for the non-streaming data.
     """
 
-    # TODO: (agent-sdk) this should be removed once the LegacyCopilot is removed
+    # TODO: (agent-sdk) remove once LegacyCopilot is removed
     # this is not needed by the agent copilot, as that will retrieve docs using
     # a tool call.
     relevant_documents: List["Document"] = Field(

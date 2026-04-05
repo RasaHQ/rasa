@@ -360,7 +360,7 @@ class CopilotResponseEvaluatorLangfuseRunner:
         # Add timestamp prefix to filename
         current_date = datetime.now().strftime("%Y%m%d_%H%M%S")
         timestamped_filename = (
-            f"{current_date}_" f"{COPILOT_RESPONSE_EVALUATION_YAML_OUTPUT_FILENAME}"
+            f"{current_date}_{COPILOT_RESPONSE_EVALUATION_YAML_OUTPUT_FILENAME}"
         )
         output_path = self._output_dir / timestamped_filename
 

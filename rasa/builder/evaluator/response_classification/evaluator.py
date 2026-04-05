@@ -69,6 +69,34 @@ class ResponseClassificationEvaluator:
         self._support_per_class = {clazz: 0 for clazz in self._classes}
         self._evaluated = False
 
+    def _accumulate_counts_for_result(self, result: ClassificationResult) -> None:
+        if result.expected in self._support_per_class:
+            self._support_per_class[result.expected] += 1
+
+        for clazz in self._classes:
+            if result.prediction == clazz and result.expected == clazz:
+                self._true_positives_per_class[clazz] += 1
+            elif result.prediction == clazz and result.expected != clazz:
+                self._false_positives_per_class[clazz] += 1
+            elif result.prediction != clazz and result.expected == clazz:
+                self._false_negatives_per_class[clazz] += 1
+
+    def _evaluate_single_result(self, result: ClassificationResult) -> None:
+        if result.expected not in self._classes:
+            structlogger.warning(
+                "evaluator.response_classification_evaluator"
+                ".evaluate.class_not_recognized",
+                event_info=(
+                    f"Class '{result.expected}' is not recognized. "
+                    f"Skipping evaluation for this class."
+                ),
+                expected_class=result.expected,
+                classes=self._classes,
+            )
+            return
+
+        self._accumulate_counts_for_result(result)
+
     def evaluate(self, item_results: List[ClassificationResult]) -> MetricsSummary:
         """Evaluate the classifier on the given item results."""
         if self._evaluated:
@@ -79,34 +107,7 @@ class ResponseClassificationEvaluator:
             self.reset()
 
         for result in item_results:
-            # Skip and raise a warning if the class is not in the list of classes
-            if result.expected not in self._classes:
-                structlogger.warning(
-                    "evaluator.response_classification_evaluator"
-                    ".evaluate.class_not_recognized",
-                    event_info=(
-                        f"Class '{result.expected}' is not recognized. "
-                        f"Skipping evaluation for this class."
-                    ),
-                    expected_class=result.expected,
-                    classes=self._classes,
-                )
-                continue
-
-            # Update support for the expected class
-            if result.expected in self._support_per_class:
-                self._support_per_class[result.expected] += 1
-
-            # Calculate TP, FP, FN per class
-            for clazz in self._classes:
-                if result.prediction == clazz and result.expected == clazz:
-                    self._true_positives_per_class[clazz] += 1
-
-                elif result.prediction == clazz and result.expected != clazz:
-                    self._false_positives_per_class[clazz] += 1
-
-                elif result.prediction != clazz and result.expected == clazz:
-                    self._false_negatives_per_class[clazz] += 1
+            self._evaluate_single_result(result)
 
         self._evaluated = True
         return self._get_metrics_summary()

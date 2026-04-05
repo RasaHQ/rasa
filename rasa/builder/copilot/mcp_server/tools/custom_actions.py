@@ -106,6 +106,22 @@ def _detect_actions_module_from_endpoints(project_path: Path) -> Optional[str]:
     return None
 
 
+def _string_literal_from_ast_expr(expr: ast.expr) -> Optional[str]:
+    if isinstance(expr, ast.Constant) and isinstance(expr.value, str):
+        return expr.value
+    return None
+
+
+def _extract_string_from_name_function(name_fn: ast.FunctionDef) -> Optional[str]:
+    for stmt in ast.walk(name_fn):
+        if not isinstance(stmt, ast.Return) or not stmt.value:
+            continue
+        s = _string_literal_from_ast_expr(stmt.value)
+        if s is not None:
+            return s
+    return None
+
+
 def _extract_action_name_from_method(class_node: ast.ClassDef) -> Optional[str]:
     """Try to extract the action name from the name() method.
 
@@ -119,15 +135,7 @@ def _extract_action_name_from_method(class_node: ast.ClassDef) -> Optional[str]:
     """
     for item in class_node.body:
         if isinstance(item, ast.FunctionDef) and item.name == "name":
-            # Look for a return statement with a string literal
-            for stmt in ast.walk(item):
-                if isinstance(stmt, ast.Return) and stmt.value:
-                    # Handle string literal (ast.Constant in Python 3.8+)
-                    if isinstance(stmt.value, ast.Constant) and isinstance(
-                        stmt.value.value, str
-                    ):
-                        return stmt.value.value
-                    # Handle f-string or other expressions - can't easily extract
+            return _extract_string_from_name_function(item)
     return None
 
 

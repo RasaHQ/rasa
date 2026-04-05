@@ -14,6 +14,8 @@ from rasa.builder.evaluator.dataset.models import DatasetEntry
 
 structlogger = structlog.get_logger()
 
+EVIDENCE_TYPE_DESCRIPTION = "Type of evidence"
+
 
 class BaseEvidence(BaseModel, ABC):
     """Base model for evidence."""
@@ -23,7 +25,7 @@ class BaseEvidence(BaseModel, ABC):
         description="Unique identifier for the evidence",
         frozen=True,
     )
-    type: str = Field(..., description="Type of evidence", frozen=True)
+    type: str = Field(..., description=EVIDENCE_TYPE_DESCRIPTION, frozen=True)
     metadata: Dict[str, Any] = Field(
         default_factory=dict,
         description="Additional metadata",
@@ -41,7 +43,7 @@ class DocumentationEvidence(BaseEvidence):
     type: Literal["documentation_evidence"] = Field(
         default=DOCUMENTATION_EVIDENCE_TYPE,
         pattern=f"^{DOCUMENTATION_EVIDENCE_TYPE}",
-        description="Type of evidence",
+        description=EVIDENCE_TYPE_DESCRIPTION,
     )
     url: Optional[str] = Field(
         None,
@@ -117,7 +119,7 @@ class CodeEvidence(BaseEvidence):
     type: Literal["code_evidence"] = Field(
         default=CODE_EVIDENCE_TYPE,
         pattern=f"^{CODE_EVIDENCE_TYPE}",
-        description="Type of evidence",
+        description=EVIDENCE_TYPE_DESCRIPTION,
     )
     file_path: str = Field(..., description="Path to the code file")
     file_content: str = Field(..., description="Content of the code file")

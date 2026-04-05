@@ -5,8 +5,9 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, computed_field, validator
 
-# Common field description constant
+# Common field description constants
 ERROR_FIELD_DESCRIPTION = "Error message if failed"
+SUCCESS_FIELD_DESCRIPTION = "Whether the operation succeeded"
 
 
 class FileUpdate(BaseModel):
@@ -143,7 +144,7 @@ class DocumentSearchResponse(BaseModel):
 class FileListResponse(BaseModel):
     """Response from listing project files."""
 
-    success: bool = Field(description="Whether the operation succeeded")
+    success: bool = Field(description=SUCCESS_FIELD_DESCRIPTION)
     tree: Optional[str] = Field(default=None, description="Visual tree representation")
     files: List[str] = Field(default_factory=list, description="List of file paths")
     count: int = Field(default=0, description="Number of files")
@@ -175,7 +176,7 @@ class ReadFilesResponse(BaseModel):
 class WriteFileResponse(BaseModel):
     """Response from writing a file."""
 
-    success: bool = Field(description="Whether the write succeeded")
+    success: bool = Field(description=SUCCESS_FIELD_DESCRIPTION)
     file_path: str = Field(description="Path to the file")
     message: str = Field(description="Status message")
 
@@ -190,7 +191,7 @@ class FileUpdateFailure(BaseModel):
 class UpdateFilesResponse(BaseModel):
     """Response from updating multiple files."""
 
-    success: bool = Field(description="Whether all updates succeeded")
+    success: bool = Field(description=SUCCESS_FIELD_DESCRIPTION)
     updated: List[str] = Field(default_factory=list, description="Files updated")
     failed: List[FileUpdateFailure] = Field(
         default_factory=list, description="Files that failed"
@@ -211,7 +212,7 @@ class ValidationErrorDetail(BaseModel):
 class ValidationResponse(BaseModel):
     """Response from project validation."""
 
-    success: bool = Field(description="Whether validation passed")
+    success: bool = Field(description=SUCCESS_FIELD_DESCRIPTION)
     errors: Optional[List[ValidationErrorDetail]] = Field(
         default=None, description="List of validation errors"
     )
@@ -221,7 +222,7 @@ class ValidationResponse(BaseModel):
 class TrainingResponse(BaseModel):
     """Response from model training."""
 
-    success: bool = Field(description="Whether training succeeded")
+    success: bool = Field(description=SUCCESS_FIELD_DESCRIPTION)
     model_path: Optional[str] = Field(default=None, description="Path to trained model")
     message: str = Field(description="Training status message")
     agent_reloaded: Optional[bool] = Field(
@@ -263,7 +264,7 @@ class TrackerContextOutput(BaseModel):
 class TalkToAssistantResponse(BaseModel):
     """Response from talking to the assistant."""
 
-    success: bool = Field(description="Whether the conversation succeeded")
+    success: bool = Field(description=SUCCESS_FIELD_DESCRIPTION)
     session_id: str = Field(description="Unique session ID for this conversation")
     message_count: int = Field(description="Number of messages sent")
     conversation: List[ConversationTurn] = Field(
@@ -342,7 +343,7 @@ class FlowInfo(BaseModel):
 class ListFlowsResponse(BaseModel):
     """Response from listing project flows."""
 
-    success: bool = Field(description="Whether the operation succeeded")
+    success: bool = Field(description=SUCCESS_FIELD_DESCRIPTION)
     flows: List[FlowInfo] = Field(
         default_factory=list, description="List of flows in the project"
     )
@@ -366,7 +367,7 @@ class SlotInfo(BaseModel):
     definition: Optional[Dict[str, Any]] = Field(
         default=None,
         description=(
-            "Full slot definition (type, mappings, etc.) " "when returned by get_slot"
+            "Full slot definition (type, mappings, etc.) when returned by get_slot"
         ),
     )
 
@@ -374,7 +375,7 @@ class SlotInfo(BaseModel):
 class ListSlotsResponse(BaseModel):
     """Response from listing project slots."""
 
-    success: bool = Field(description="Whether the operation succeeded")
+    success: bool = Field(description=SUCCESS_FIELD_DESCRIPTION)
     slots: List[SlotInfo] = Field(
         default_factory=list, description="List of slots in the domain"
     )
@@ -397,8 +398,7 @@ class ResponseInfo(BaseModel):
     definition: Optional[List[Dict[str, Any]]] = Field(
         default=None,
         description=(
-            "Full response definition (list of variants) "
-            "when returned by get_response"
+            "Full response definition (list of variants) when returned by get_response"
         ),
     )
 
@@ -406,7 +406,7 @@ class ResponseInfo(BaseModel):
 class ListResponsesResponse(BaseModel):
     """Response from listing project responses."""
 
-    success: bool = Field(description="Whether the operation succeeded")
+    success: bool = Field(description=SUCCESS_FIELD_DESCRIPTION)
     responses: List[ResponseInfo] = Field(
         default_factory=list, description="List of responses in the domain"
     )
@@ -452,7 +452,7 @@ class GetResponseResponse(BaseModel):
 class ListCustomActionsResponse(BaseModel):
     """Response from listing custom actions in the domain."""
 
-    success: bool = Field(description="Whether the operation succeeded")
+    success: bool = Field(description=SUCCESS_FIELD_DESCRIPTION)
     actions: List[CustomActionInfo] = Field(
         default_factory=list, description="List of custom actions in the domain"
     )
@@ -468,7 +468,7 @@ class ListCustomActionsResponse(BaseModel):
 class ListDefaultActionsResponse(BaseModel):
     """Response from listing default/built-in action names."""
 
-    success: bool = Field(description="Whether the operation succeeded")
+    success: bool = Field(description=SUCCESS_FIELD_DESCRIPTION)
     actions: List[str] = Field(
         default_factory=list,
         description="List of default action names provided by Rasa",

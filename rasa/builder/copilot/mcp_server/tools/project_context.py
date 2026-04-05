@@ -308,6 +308,40 @@ async def list_project_custom_actions(
         )
 
 
+def _action_name_from_domain_entry(action_entry: object) -> Optional[str]:
+    """Resolve an action name from a domain.yml actions list entry.
+
+    Entries may be plain strings or single-key dicts (e.g. mapping to channel config).
+
+    Args:
+        action_entry: One element from the domain ``actions`` list.
+
+    Returns:
+        The action name, or ``None`` if the entry cannot be interpreted as a name.
+    """
+    if isinstance(action_entry, str):
+        return action_entry
+    if isinstance(action_entry, dict) and action_entry:
+        return next(iter(action_entry.keys()))
+    return None
+
+
+def _is_user_registered_custom_action(action_name: str) -> bool:
+    """Return True if ``action_name`` is a user custom action, not built-in or utter.
+
+    Args:
+        action_name: Declared action name from domain configuration.
+
+    Returns:
+        ``True`` if the name should be listed as a custom action for the project.
+    """
+    if action_name in DEFAULT_ACTION_NAMES:
+        return False
+    if action_name.startswith(UTTER_PREFIX):
+        return False
+    return True
+
+
 def _extract_actions_from_file(
     project_path: Path, yaml_file: Path
 ) -> List[CustomActionInfo]:
@@ -333,25 +367,14 @@ def _extract_actions_from_file(
 
         file_path = str(yaml_file.relative_to(project_path))
         for action_entry in actions_data:
-            # Actions can be strings ("action_foo") or dicts ({"action_foo": {...}})
-            action_name = None
-            if isinstance(action_entry, str):
-                action_name = action_entry
-            elif isinstance(action_entry, dict):
-                action_name = next(iter(action_entry.keys())) if action_entry else None
-
-            if action_name:
-                # Filter out built-in actions and utter_ responses
-                is_builtin = action_name in DEFAULT_ACTION_NAMES
-                is_response = action_name.startswith(UTTER_PREFIX)
-
-                if not is_builtin and not is_response:
-                    actions.append(
-                        CustomActionInfo(
-                            name=action_name,
-                            file_path=file_path,
-                        )
+            action_name = _action_name_from_domain_entry(action_entry)
+            if action_name and _is_user_registered_custom_action(action_name):
+                actions.append(
+                    CustomActionInfo(
+                        name=action_name,
+                        file_path=file_path,
                     )
+                )
 
     except Exception as file_error:
         structlogger.warning(
@@ -360,6 +383,50 @@ def _extract_actions_from_file(
             error=str(file_error),
         )
     return actions
+
+
+def _find_flow_in_file(
+    yaml_file: Path, project_path: Path, lookup: str
+) -> Optional[FlowInfo]:
+    """Load one YAML file and return flow info if ``lookup`` matches id or flow name.
+
+    Args:
+        yaml_file: Path to a flows YAML file under the project.
+        project_path: Resolved project root (for relative ``file_path`` in the result).
+        lookup: Flow id (YAML key) or trimmed flow name to match.
+
+    Returns:
+        ``FlowInfo`` when a match exists, otherwise ``None``. Parse errors are logged
+        and treated as no match.
+    """
+    try:
+        content = read_yaml_file(yaml_file)
+        if not content or not isinstance(content, dict) or KEY_FLOWS not in content:
+            return None
+
+        flows_data = content.get(KEY_FLOWS, {})
+        if not isinstance(flows_data, dict):
+            return None
+
+        for flow_id_key, flow_data in flows_data.items():
+            if not isinstance(flow_data, dict):
+                continue
+
+            flow_name_stripped = (flow_data.get(KEY_NAME) or "").strip()
+            if lookup == flow_id_key or lookup == flow_name_stripped:
+                return FlowInfo(
+                    id=flow_id_key,
+                    name=flow_data.get(KEY_NAME),
+                    file_path=str(yaml_file.relative_to(project_path)),
+                    definition=flow_data,
+                )
+    except Exception as file_error:
+        structlogger.warning(
+            "mcp_server.tools.get_project_flow.file_parse_error",
+            file=str(yaml_file),
+            error=str(file_error),
+        )
+    return None
 
 
 async def get_project_flow(
@@ -385,49 +452,10 @@ async def get_project_flow(
 
     lookup = flow_id.strip()
     try:
-        # Iterate over the flow YAML files
         project_path = Path(project_folder).resolve()
         for yaml_file in _get_flow_yaml_files(project_path, data_folder):
-            try:
-                # Load the YAML file
-                content = read_yaml_file(yaml_file)
-                if (
-                    not content
-                    or not isinstance(content, dict)
-                    or KEY_FLOWS not in content
-                ):
-                    continue
-
-                # Get the flows data
-                flows_data = content.get(KEY_FLOWS, {})
-                if not isinstance(flows_data, dict):
-                    continue
-
-                # Iterate over the flows data
-                for flow_id_key, flow_data in flows_data.items():
-                    if not isinstance(flow_data, dict):
-                        continue
-
-                    # Check if the flow ID or name matches the lookup
-                    flow_name_stripped = (flow_data.get(KEY_NAME) or "").strip()
-                    if lookup == flow_id_key or lookup == flow_name_stripped:
-                        return GetFlowResponse(
-                            success=True,
-                            flow=FlowInfo(
-                                id=flow_id_key,
-                                name=flow_data.get(KEY_NAME),
-                                file_path=str(yaml_file.relative_to(project_path)),
-                                definition=flow_data,
-                            ),
-                        )
-
-            except Exception as file_error:
-                structlogger.warning(
-                    "mcp_server.tools.get_project_flow.file_parse_error",
-                    file=str(yaml_file),
-                    error=str(file_error),
-                )
-                continue
+            if flow := _find_flow_in_file(yaml_file, project_path, lookup):
+                return GetFlowResponse(success=True, flow=flow)
 
         return GetFlowResponse(
             success=False,
@@ -444,6 +472,49 @@ async def get_project_flow(
             success=False,
             error=f"Failed to get flow: {e!s}",
         )
+
+
+def _find_slot_in_file(
+    yaml_file: Path, project_path: Path, lookup: str
+) -> Optional[SlotInfo]:
+    """Load one domain YAML file and return slot info if ``lookup`` matches a slot key.
+
+    Args:
+        yaml_file: Path to a domain YAML file.
+        project_path: Resolved project root (for relative ``file_path`` in the result).
+        lookup: Slot name to find.
+
+    Returns:
+        ``SlotInfo`` when a matching slot exists, otherwise ``None``. Parse errors are
+        logged and treated as no match.
+    """
+    try:
+        content = read_yaml_file(yaml_file)
+        if not isinstance(content, dict) or KEY_SLOTS not in content:
+            return None
+
+        slots_data = content.get(KEY_SLOTS, {})
+        if not isinstance(slots_data, dict):
+            return None
+
+        for slot_key, slot_config in slots_data.items():
+            if not isinstance(slot_config, dict):
+                continue
+
+            if lookup == slot_key:
+                return SlotInfo(
+                    name=slot_key,
+                    type=slot_config.get("type", AnySlot.type_name),
+                    file_path=str(yaml_file.relative_to(project_path)),
+                    definition=slot_config,
+                )
+    except Exception as file_error:
+        structlogger.warning(
+            "mcp_server.tools.get_project_slot.file_parse_error",
+            file=str(yaml_file),
+            error=str(file_error),
+        )
+    return None
 
 
 async def get_project_slot(
@@ -469,43 +540,10 @@ async def get_project_slot(
 
     lookup = slot_name.strip()
     try:
-        # Iterate over the domain YAML files
         project_path = Path(project_folder).resolve()
         for yaml_file in _get_domain_yaml_files(project_path, domain_folder):
-            try:
-                # Load the YAML file
-                content = read_yaml_file(yaml_file)
-                if not isinstance(content, dict) or KEY_SLOTS not in content:
-                    continue
-
-                # Get the slots data
-                slots_data = content.get(KEY_SLOTS, {})
-                if not isinstance(slots_data, dict):
-                    continue
-
-                # Check if the slot name matches the lookup
-                for slot_key, slot_config in slots_data.items():
-                    if not isinstance(slot_config, dict):
-                        continue
-
-                    if lookup == slot_key:
-                        return GetSlotResponse(
-                            success=True,
-                            slot=SlotInfo(
-                                name=slot_key,
-                                type=slot_config.get("type", AnySlot.type_name),
-                                file_path=str(yaml_file.relative_to(project_path)),
-                                definition=slot_config,
-                            ),
-                        )
-
-            except Exception as file_error:
-                structlogger.warning(
-                    "mcp_server.tools.get_project_slot.file_parse_error",
-                    file=str(yaml_file),
-                    error=str(file_error),
-                )
-                continue
+            if slot := _find_slot_in_file(yaml_file, project_path, lookup):
+                return GetSlotResponse(success=True, slot=slot)
 
         return GetSlotResponse(
             success=False,

@@ -287,27 +287,33 @@ class AgentCopilot(BaseCopilot):
         self, messages: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Convert Chat Completions format to Responses API format."""
-        converted = []
-        for msg in messages:
-            role = msg.get("role")
-            content = msg.get("content")
+        return [self._convert_one_message_to_responses_api_format(m) for m in messages]
 
-            if isinstance(content, str):
-                # Simple string content is fine as-is
-                converted.append(msg)
-            elif isinstance(content, list):
-                new_content = []
-                for item in content:
-                    if item.get("type") == "text":
-                        # user → input_text, assistant → output_text
-                        new_type = "input_text" if role == "user" else "output_text"
-                        new_content.append({"type": new_type, "text": item["text"]})
-                    else:
-                        new_content.append(item)
-                converted.append({"role": role, "content": new_content})
+    def _convert_one_message_to_responses_api_format(
+        self, msg: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        role = msg.get("role")
+        content = msg.get("content")
+
+        if isinstance(content, str):
+            return msg
+        if isinstance(content, list):
+            new_content = self._convert_content_list_for_responses_api(role, content)
+            return {"role": role, "content": new_content}
+        return msg
+
+    @staticmethod
+    def _convert_content_list_for_responses_api(
+        role: Any, content: List[Any]
+    ) -> List[Dict[str, Any]]:
+        new_content: List[Dict[str, Any]] = []
+        for item in content:
+            if item.get("type") == "text":
+                new_type = "input_text" if role == "user" else "output_text"
+                new_content.append({"type": new_type, "text": item["text"]})
             else:
-                converted.append(msg)
-        return converted
+                new_content.append(item)
+        return new_content
 
     @AgentCopilotLangfuseTelemetry.trace_streaming_generation
     async def _stream_response(

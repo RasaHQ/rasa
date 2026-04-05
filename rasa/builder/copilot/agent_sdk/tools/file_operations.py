@@ -13,7 +13,7 @@ This module contains:
 
 import json
 from pathlib import Path
-from typing import Annotated, Dict, List, Optional
+from typing import Annotated, Dict, List, Optional, Tuple
 
 import structlog
 from agents import function_tool
@@ -55,6 +55,58 @@ structlogger = structlog.get_logger()
 # ============================================================================
 
 
+def _organize_files_by_directory(
+    file_paths: List[str],
+) -> Tuple[Dict[str, List[str]], List[str]]:
+    file_tree: Dict[str, List[str]] = {}
+    root_files: List[str] = []
+
+    for file_path in sorted(file_paths):
+        if "/" in file_path:
+            parts = file_path.split("/")
+            directory = parts[0]
+            filename = "/".join(parts[1:])
+
+            if directory not in file_tree:
+                file_tree[directory] = []
+            file_tree[directory].append(filename)
+        else:
+            root_files.append(file_path)
+
+    return file_tree, root_files
+
+
+def _tree_prefix(is_last_dir: bool, is_last_file: bool) -> str:
+    if is_last_dir:
+        return "    └──" if is_last_file else "    ├──"
+    return "│   └──" if is_last_file else "│   ├──"
+
+
+def _build_file_tree_view(
+    file_tree: Dict[str, List[str]], root_files: List[str]
+) -> str:
+    tree_lines = []
+    tree_lines.append("Project Structure:")
+    tree_lines.append(".")
+
+    for f in root_files:
+        tree_lines.append(f"├── {f}")
+
+    dirs = sorted(file_tree.keys())
+    for i, directory in enumerate(dirs):
+        is_last_dir = i == len(dirs) - 1
+        prefix = "└──" if is_last_dir else "├──"
+        tree_lines.append(f"{prefix} {directory}/")
+
+        files_in_dir = sorted(file_tree[directory])
+        for j, f in enumerate(files_in_dir):
+            is_last_file = j == len(files_in_dir) - 1
+            file_prefix = _tree_prefix(is_last_dir, is_last_file)
+            tree_lines.append(f"{file_prefix} {f}")
+
+    return "\n".join(tree_lines)
+
+
 async def list_files(project_folder: str) -> FileListResponse:
     """List all bot project files with directory structure.
 
@@ -73,50 +125,8 @@ async def list_files(project_folder: str) -> FileListResponse:
             str(file_path.relative_to(project_path)) for file_path in all_files
         ]
 
-        # Organize files by directory
-        file_tree: Dict[str, List[str]] = {}
-        root_files: List[str] = []
-
-        for file_path in sorted(all_file_paths):
-            if "/" in file_path:
-                # File in a subdirectory
-                parts = file_path.split("/")
-                directory = parts[0]
-                filename = "/".join(parts[1:])
-
-                if directory not in file_tree:
-                    file_tree[directory] = []
-                file_tree[directory].append(filename)
-            else:
-                # Root level file
-                root_files.append(file_path)
-
-        # Build a human-readable tree structure
-        tree_lines = []
-        tree_lines.append("Project Structure:")
-        tree_lines.append(".")
-
-        # Add root files
-        for f in root_files:
-            tree_lines.append(f"├── {f}")
-
-        # Add directories and their contents
-        dirs = sorted(file_tree.keys())
-        for i, directory in enumerate(dirs):
-            is_last_dir = i == len(dirs) - 1
-            prefix = "└──" if is_last_dir else "├──"
-            tree_lines.append(f"{prefix} {directory}/")
-
-            files_in_dir = sorted(file_tree[directory])
-            for j, f in enumerate(files_in_dir):
-                is_last_file = j == len(files_in_dir) - 1
-                if is_last_dir:
-                    file_prefix = "    └──" if is_last_file else "    ├──"
-                else:
-                    file_prefix = "│   └──" if is_last_file else "│   ├──"
-                tree_lines.append(f"{file_prefix} {f}")
-
-        tree_view = "\n".join(tree_lines)
+        file_tree, root_files = _organize_files_by_directory(all_file_paths)
+        tree_view = _build_file_tree_view(file_tree, root_files)
 
         return FileListResponse(
             success=True,

@@ -1,16 +1,7 @@
 import datetime as dt
 import os
 import uuid
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Iterable,
-    Optional,
-    Sequence,
-)
-
-if TYPE_CHECKING:
-    pass
+from typing import Any, Iterable, Optional, Sequence
 
 import structlog
 
@@ -77,7 +68,7 @@ class CopilotSegmentTelemetry:
         """Initialize Telemetry instance."""
         self._project_id = project_id
         self._user_id = user_id
-        # TODO Load prompt version
+        # TODO: load prompt version from config or metadata when available.
         self._prompt_version = "1"
 
     def log_user_turn(self, text: str) -> None:
@@ -134,7 +125,7 @@ class CopilotSegmentTelemetry:
         """
         structlogger.debug("builder.telemetry.log_copilot_turn", text=text)
 
-        # FIXME: Temporarily remove the system_message from telemetry payload.
+        # FIXME: Temporarily omit system_message from the Segment telemetry payload.
         # Reason: It often exceeds Segment payload size limits, causing the request
         # to be rejected and the event to be absent in Segment. Instead, temporarily
         # log the system_message so it's visible in Grafana.

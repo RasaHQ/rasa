@@ -1,6 +1,6 @@
 import asyncio
 import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 import structlog
 
@@ -24,10 +24,6 @@ from rasa.builder.shared.tracker_context import (
     AssistantConversationTurn,
     TrackerContext,
 )
-
-if TYPE_CHECKING:
-    pass
-
 
 structlogger = structlog.get_logger()
 

@@ -209,7 +209,7 @@ class CommitDiffWithContentsResponse(BaseModel):
     files: Dict[str, CommitFileContents] = Field(
         ...,
         description=(
-            "Dictionary mapping file paths to their original and " "modified contents"
+            "Dictionary mapping file paths to their original and modified contents"
         ),
     )
 

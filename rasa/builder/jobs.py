@@ -1235,7 +1235,7 @@ async def run_rollback_job(
 
 
 async def run_copilot_template_prompt_job(
-    app: "Sanic",
+    _app: "Sanic",
     job: JobInfo,
     template_name: Optional[ProjectTemplateName] = None,
     custom_prompt: Optional[str] = None,
@@ -1247,7 +1247,7 @@ async def run_copilot_template_prompt_job(
     to history separately after template initialization.
 
     Args:
-        app: The Sanic application instance.
+        _app: The Sanic application instance (unused, kept for caller API compat).
         job: The job information instance.
         template_name: Optional template name to get the prompt for.
         custom_prompt: Optional custom prompt by user.

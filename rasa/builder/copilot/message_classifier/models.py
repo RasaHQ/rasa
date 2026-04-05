@@ -1,13 +1,8 @@
 """Pydantic models for the Copilot Orchestrator."""
 
-from typing import TYPE_CHECKING
-
 from pydantic import BaseModel
 
 from rasa.builder.copilot.models import ResponseCategory, UsageStatistics
-
-if TYPE_CHECKING:
-    pass
 
 
 class MessageClassifierResult(BaseModel):

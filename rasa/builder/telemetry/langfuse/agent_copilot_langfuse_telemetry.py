@@ -191,7 +191,7 @@ class AgentCopilotLangfuseTelemetry:
             structlogger.error(
                 "agent_copilot_langfuse_telemetry.error_parsing_text_content_part_event",
                 event_info=(
-                    "Error parsing text content part event. " "Returning empty info."
+                    "Error parsing text content part event. Returning empty info."
                 ),
                 error=e,
                 event_data=event.data,

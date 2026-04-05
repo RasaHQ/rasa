@@ -5,7 +5,7 @@ implementations.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import structlog
 
@@ -28,7 +28,7 @@ structlogger = structlog.get_logger()
 async def run_copilot_task(
     *,
     item: ExperimentItem,
-    **kwargs: Dict[str, Any],
+    **_kwargs: Any,
 ) -> Optional[CopilotRunResult]:
     """Copilot task function that processes each dataset item.
 

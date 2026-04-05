@@ -516,6 +516,49 @@ class SQLiteCopilotHistoryStore(CopilotHistoryStore):
             )
 
 
+def _build_message_content_from_optional_parts(
+    plan: Optional[List[TodoItem]],
+    text: Optional[str],
+    references: Optional[List[ReferenceEntry]],
+    commit: Optional[Dict[str, Any]],
+    logs: Optional[List[LogContent]],
+) -> List[ContentBlock]:
+    message_content: List[ContentBlock] = []
+
+    if plan:
+        plan_tasks = [item.model_dump() for item in plan]
+        message_content.append(PlanContent(type="plan", tasks=plan_tasks))
+
+    if text:
+        message_content.append(TextContent(type="text", text=text))
+
+    if references:
+        reference_items = [
+            ReferenceItem(index=ref.index, title=ref.title, url=ref.url)
+            for ref in references
+        ]
+        message_content.append(
+            ReferencesContent(type="references", references=reference_items)
+        )
+
+    if commit:
+        message_content.append(CommitContent(type="commit", commit=commit))
+
+    if logs:
+        log_items = [
+            LogItem(
+                type="log",
+                content=log.content,
+                context=log.context,
+                metadata=log.metadata or {},
+            )
+            for log in logs
+        ]
+        message_content.append(LogsContent(type="logs", logs=log_items))
+
+    return message_content
+
+
 async def persist_copilot_message_to_history(
     content: Optional[List[ContentBlock]] = None,
     text: Optional[str] = None,
@@ -551,47 +594,12 @@ async def persist_copilot_message_to_history(
 
         conversation_key = ConversationKey(chat_id=chat_id)
 
-        # Build content blocks
         if content:
             message_content = content
         else:
-            message_content = []
-
-            # Add plan as a content block if provided (at the start)
-            if plan:
-                plan_tasks = [item.model_dump() for item in plan]
-                message_content.append(PlanContent(type="plan", tasks=plan_tasks))
-
-            # Add text content
-            if text:
-                message_content.append(TextContent(type="text", text=text))
-
-            # Add references as a content block if provided
-            if references:
-                reference_items = [
-                    ReferenceItem(index=ref.index, title=ref.title, url=ref.url)
-                    for ref in references
-                ]
-                message_content.append(
-                    ReferencesContent(type="references", references=reference_items)
-                )
-
-            # Add commit as a content block if provided
-            if commit:
-                message_content.append(CommitContent(type="commit", commit=commit))
-
-            # Add logs
-            if logs:
-                log_items = [
-                    LogItem(
-                        type="log",
-                        content=log.content,
-                        context=log.context,
-                        metadata=log.metadata or {},
-                    )
-                    for log in logs
-                ]
-                message_content.append(LogsContent(type="logs", logs=log_items))
+            message_content = _build_message_content_from_optional_parts(
+                plan, text, references, commit, logs
+            )
 
         copilot_message = CopilotChatMessage(
             role="copilot",

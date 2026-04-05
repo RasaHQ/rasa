@@ -118,8 +118,20 @@ anonymization_db
 deletion_db
 **/.npmrc
 scripts/use-venv.sh
+.scannerwork/
 
 # Snyk Security Extension - AI Rules (auto-generated)
 .cursor/rules/snyk_rules.mdc
 .agents
 .github/workflows/.claude/
+
+# IDE/Agent auto-generated config (user-specific)
+.mcp.json
+.vscode/mcp.json
+.cursor/mcp.json
+.cursor/rules/
+
+# Agent skills (installed by rasa tools / IDEs; remove these lines to commit skills)
+.claude/skills/
+.cursor/skills/
+.github/skills/

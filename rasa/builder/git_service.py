@@ -413,8 +413,7 @@ class GitService:
             original: str | None = ""
             modified: str | None = ""
 
-            # If no parent (initial commit), treat all files as added
-            if not parent_sha:
+            if not parent_sha or status == "A":
                 modified = await self._git_show(commit_sha, path)
                 original = self._derive_empty_diff_counterpart(modified)
             elif status.startswith("R"):  # rename
@@ -430,9 +429,6 @@ class GitService:
             elif status == "D":  # deleted
                 original = await self._git_show(parent_sha, old_path)
                 modified = self._derive_empty_diff_counterpart(original)
-            elif status == "A":  # added
-                modified = await self._git_show(commit_sha, path)
-                original = self._derive_empty_diff_counterpart(modified)
             elif status == "M":  # modified
                 original = await self._git_show(parent_sha, old_path)
                 modified = await self._git_show(commit_sha, path)

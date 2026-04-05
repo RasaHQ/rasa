@@ -1,4 +1,4 @@
-"""ContextVar-based storage for TODO planning state.
+"""ContextVar-based storage for task-list planning state.
 
 This module provides async-safe request-scoped storage for the copilot's
 task planning state. Using ContextVar ensures that concurrent requests
@@ -64,7 +64,7 @@ def _get_container() -> PlanContainer:
 
 
 def get_current_plan() -> List[TodoItem]:
-    """Get the current TODO plan from context.
+    """Get the current task-list plan from context.
 
     Returns:
         List of TodoItem objects representing the current plan.
@@ -75,7 +75,7 @@ def get_current_plan() -> List[TodoItem]:
 
 
 def set_current_plan(todos: List[TodoItem]) -> None:
-    """Set the current TODO plan in context.
+    """Set the current task-list plan in context.
 
     This modifies the container in-place so changes are visible
     across all async contexts sharing this container.
@@ -139,7 +139,7 @@ def reset_planning_context(
 
 
 def format_plan_for_agent(todos: List[TodoItem]) -> str:
-    """Format the TODO plan for inclusion in tool response.
+    """Format the task-list plan for inclusion in tool response.
 
     This keeps the plan "fresh" in the agent's context window by
     returning the full state after each update.

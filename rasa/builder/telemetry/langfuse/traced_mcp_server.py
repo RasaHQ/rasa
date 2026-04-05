@@ -13,6 +13,7 @@ https://github.com/langfuse/langfuse-examples/tree/main/applications/mcp-tracing
 
 import asyncio
 import socket
+from contextlib import suppress
 from typing import Any, Optional
 from urllib.parse import urlparse
 
@@ -171,7 +172,7 @@ class TracedMCPServerWrapper(MCPServerStreamableHttp):
             try:
                 with socket.create_connection((host, port), timeout=timeout):
                     return True
-            except (OSError, ConnectionRefusedError, TimeoutError):
+            except OSError:
                 return False
 
         return await asyncio.to_thread(_tcp_probe)
@@ -232,13 +233,14 @@ class TracedMCPServerWrapper(MCPServerStreamableHttp):
         return parsed_url.hostname, port
 
     async def _diagnose_and_trace_health(self) -> None:
-        """Best-effort health probe for diagnostic tracing only."""
-        try:
+        """Best-effort health probe for diagnostic tracing only.
+
+        Suppresses probe failures (including :class:`asyncio.CancelledError` on Py3.11+
+        where it is not a subclass of :class:`Exception`) so diagnostics never replace
+        the cancellation from the surrounding ``__aenter__`` / ``__aexit__`` path.
+        """
+        with suppress(asyncio.CancelledError, Exception):
             await self._assert_server_reachable()
-        except BaseException:
-            # Swallow any exception to avoid interfering with the caller's exception
-            # handling.
-            pass
 
     # ------------------------------------------------------------------
     # Connection lifecycle
@@ -264,13 +266,6 @@ class TracedMCPServerWrapper(MCPServerStreamableHttp):
                 },
             )
             return self
-        except Exception as e:
-            self._log_and_trace_lifecycle_error(
-                event_name="traced_mcp_server.create_connection.error",
-                event_info="MCP server connection failed during creation",
-                exc=e,
-            )
-            raise
         except asyncio.CancelledError as e:
             self._log_and_trace_lifecycle_base_exception(
                 event_name="traced_mcp_server.create_connection.cancelled",
@@ -283,6 +278,13 @@ class TracedMCPServerWrapper(MCPServerStreamableHttp):
             )
             # Best-effort: diagnose and trace MCP server health.
             await self._diagnose_and_trace_health()
+            raise
+        except Exception as e:
+            self._log_and_trace_lifecycle_error(
+                event_name="traced_mcp_server.create_connection.error",
+                event_info="MCP server connection failed during creation",
+                exc=e,
+            )
             raise
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -311,14 +313,6 @@ class TracedMCPServerWrapper(MCPServerStreamableHttp):
             return
 
         # Handle exceptions during cleanup/teardown
-        except Exception as e:
-            self._log_and_trace_lifecycle_error(
-                event_name="traced_mcp_server.close_connection.cleanup_error",
-                event_info="Error during MCP server connection cleanup",
-                exc=e,
-            )
-            raise
-
         except asyncio.CancelledError as e:
             self._log_and_trace_lifecycle_base_exception(
                 event_name="traced_mcp_server.close_connection.cancelled",
@@ -328,6 +322,13 @@ class TracedMCPServerWrapper(MCPServerStreamableHttp):
                     "api_endpoint": self._api_endpoint,
                     "reason": "error",
                 },
+            )
+            raise
+        except Exception as e:
+            self._log_and_trace_lifecycle_error(
+                event_name="traced_mcp_server.close_connection.cleanup_error",
+                event_info="Error during MCP server connection cleanup",
+                exc=e,
             )
             raise
 

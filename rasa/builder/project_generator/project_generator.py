@@ -75,6 +75,8 @@ from rasa.utils.io import InvalidPathException
 structlogger = structlog.get_logger()
 
 BULLET_POINT_REGEX = re.compile(r"^-\s+\*[^*]+\*\s*$")
+_PROJECT_GENERATOR_PROMPTS_PACKAGE = "rasa.builder.project_generator.prompts"
+_DOMAIN_FILE = "domain.yml"
 
 
 class ProjectGenerator:
@@ -92,19 +94,19 @@ class ProjectGenerator:
         self.git_service = GitService(project_folder)
         self._skill_to_bot_system_prompt = Template(
             importlib_resources.read_text(  # type: ignore[no-untyped-call]
-                "rasa.builder.project_generator.prompts",
+                _PROJECT_GENERATOR_PROMPTS_PACKAGE,
                 "skill_to_bot_system_prompt.jinja2",
             )
         )
         self._skill_to_bot_user_prompt = Template(
             importlib_resources.read_text(  # type: ignore[no-untyped-call]
-                "rasa.builder.project_generator.prompts",
+                _PROJECT_GENERATOR_PROMPTS_PACKAGE,
                 "skill_to_bot_user_request_prompt.jinja2",
             )
         )
         self._error_feedback_template = Template(
             importlib_resources.read_text(  # type: ignore[no-untyped-call]
-                "rasa.builder.project_generator.prompts",
+                _PROJECT_GENERATOR_PROMPTS_PACKAGE,
                 "skill_to_bot_error_feedback_prompt.jinja2",
             )
         )
@@ -159,21 +161,21 @@ class ProjectGenerator:
     def _get_flow_documentation(self) -> str:
         """Get the flow documentation."""
         return importlib_resources.read_text(  # type: ignore[no-untyped-call]
-            "rasa.builder.project_generator.prompts",
+            _PROJECT_GENERATOR_PROMPTS_PACKAGE,
             "flow_documentation.json",
         )
 
     def _get_domain_documentation(self) -> str:
         """Get the domain documentation."""
         return importlib_resources.read_text(  # type: ignore[no-untyped-call]
-            "rasa.builder.project_generator.prompts",
+            _PROJECT_GENERATOR_PROMPTS_PACKAGE,
             "domain_documentation.json",
         )
 
     def _get_custom_actions_documentation(self) -> str:
         """Get the custom actions documentation."""
         return importlib_resources.read_text(  # type: ignore[no-untyped-call]
-            "rasa.builder.project_generator.prompts",
+            _PROJECT_GENERATOR_PROMPTS_PACKAGE,
             "custom_actions_documentation.json",
         )
 
@@ -480,7 +482,7 @@ class ProjectGenerator:
             domain_content = dump_obj_as_yaml_to_string(project_data["domain"])
             file_content_blocks.append(
                 FileContent(
-                    type="file", file_path="domain.yml", file_content=domain_content
+                    type="file", file_path=_DOMAIN_FILE, file_content=domain_content
                 )
             )
             # Add flow files
@@ -609,8 +611,8 @@ class ProjectGenerator:
     def _create_importer(self) -> TrainingDataImporter:
         """Create a training data importer from the current bot files."""
         try:
-            if (self.project_folder / "domain.yml").exists():
-                domain_path = self.project_folder / "domain.yml"
+            if (self.project_folder / _DOMAIN_FILE).exists():
+                domain_path = self.project_folder / _DOMAIN_FILE
             else:
                 domain_path = self.project_folder / "domain"
 

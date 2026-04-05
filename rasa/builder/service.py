@@ -112,8 +112,9 @@ from rasa.shared.importers.utils import DOMAIN_KEYS
 from rasa.utils.json_utils import extract_values
 from rasa.utils.openapi import model_to_schema
 
-# Error message constant for agent not ready state
+# Error message constants
 AGENT_NOT_READY_ERROR = "Agent not ready"
+INVALID_REQUEST_ERROR = "Invalid request"
 
 structlogger = structlog.get_logger()
 
@@ -524,7 +525,7 @@ async def handle_prompt_to_bot(request: Request) -> HTTPResponse:
     except Exception as exc:
         return response.json(
             ApiErrorResponse(
-                error="Invalid request", details={"error": str(exc)}
+                error=INVALID_REQUEST_ERROR, details={"error": str(exc)}
             ).model_dump(),
             status=400,
         )
@@ -615,7 +616,7 @@ async def handle_template_to_bot(request: Request) -> HTTPResponse:
     except Exception as exc:
         return response.json(
             ApiErrorResponse(
-                error="Invalid request", details={"error": str(exc)}
+                error=INVALID_REQUEST_ERROR, details={"error": str(exc)}
             ).model_dump(),
             status=400,
         )
@@ -706,7 +707,7 @@ async def handle_github_to_bot(request: Request) -> HTTPResponse:
     except Exception as exc:
         return response.json(
             ApiErrorResponse(
-                error="Invalid request", details={"error": str(exc)}
+                error=INVALID_REQUEST_ERROR, details={"error": str(exc)}
             ).model_dump(),
             status=400,
         )
@@ -799,7 +800,7 @@ async def handle_backup_to_bot(request: Request) -> HTTPResponse:
     except Exception as exc:
         return response.json(
             ApiErrorResponse(
-                error="Invalid request", details={"error": str(exc)}
+                error=INVALID_REQUEST_ERROR, details={"error": str(exc)}
             ).model_dump(),
             status=400,
         )
@@ -1015,7 +1016,7 @@ async def replace_all_bot_files(request: Request) -> HTTPResponse:
     except Exception as exc:
         return response.json(
             ApiErrorResponse(
-                error="Invalid request", details={"error": str(exc)}
+                error=INVALID_REQUEST_ERROR, details={"error": str(exc)}
             ).model_dump(),
             status=400,
         )
@@ -1274,6 +1275,199 @@ async def download_bot_project(request: Request) -> HTTPResponse:
         )
 
 
+async def _check_and_handle_guardrail_violations(
+    context: CopilotContext,
+    user_id: str,
+    sse: Any,
+    conversation_key: ConversationKey,
+) -> bool:
+    """Run guardrail policy checks and handle any violations.
+
+    Returns True if a violation was detected and handled (caller should return).
+    """
+    guardrail_response: Optional[GuardrailPolicyViolationContent] = None
+    if llm_service.guardrails_policy_checker is not None:
+        guardrail_response = await llm_service.guardrails_policy_checker.check_copilot_chat_for_policy_violations(  # noqa: E501
+            context=context,
+            hello_rasa_user_id=user_id,
+            hello_rasa_project_id=HELLO_RASA_PROJECT_ID,
+            lakera_project_id=LAKERA_COPILOT_HISTORY_GUARDRAIL_PROJECT_ID,
+        )
+    if guardrail_response is not None:
+        blocked_or_violation_message = (
+            await _handle_guardrail_violation_and_maybe_block(
+                sse=sse,
+                user_id=user_id,
+                violation_response=guardrail_response,
+            )
+        )
+
+        guardrail_chat_message = CopilotChatMessage(
+            role="copilot",
+            content=[
+                TextContent(type="text", text=blocked_or_violation_message.content)
+            ],
+            response_category=blocked_or_violation_message.response_category,
+        )
+        try:
+            await llm_service.history_store.append(
+                conversation_key, guardrail_chat_message
+            )
+        except Exception as exc:
+            structlogger.error(
+                "builder.copilot.history.guardrail_response_persist_failed",
+                error=str(exc),
+            )
+        return True
+    return False
+
+
+async def _send_commit_info_sse(
+    *,
+    sse: Any,
+    copilot_response_handler: Any,
+    project_generator: ProjectGenerator,
+    newly_created_commit_sha: str,
+    training_success: bool,
+) -> Optional[Any]:
+    try:
+        commit_event = await copilot_response_handler.respond_to_commit(
+            git_service=project_generator.git_service,
+            commit_sha=newly_created_commit_sha,
+            training_success=training_success,
+        )
+        commit_info_dict = commit_event.commit
+        await sse.send(commit_event.to_sse_event().format())
+        return commit_info_dict
+    except Exception as exc:
+        structlogger.warning(
+            "builder.copilot.send_commit_info_failed",
+            error=str(exc),
+            commit_sha=newly_created_commit_sha,
+        )
+        return None
+
+
+async def _send_references_and_persist_history(
+    *,
+    sse: Any,
+    copilot_response_handler: Any,
+    req: CopilotTurnRequest,
+    chat_id: str,
+    commit_info_dict: Optional[Any],
+) -> None:
+    from rasa.builder.copilot import get_copilot_mode as _get_copilot_mode
+
+    reference_section = copilot_response_handler.extract_references()
+    if reference_section.references:
+        await sse.send(reference_section.to_sse_event().format())
+
+    full_text = copilot_response_handler.extract_text_from_generated_responses()
+    final_plan = copilot_response_handler.extract_final_plan()
+    category = copilot_response_handler.extract_response_category()
+    references = reference_section.references if reference_section.references else None
+
+    if full_text:
+        try:
+            # Pass references directly if they exist
+            await persist_copilot_message_to_history(
+                text=full_text,
+                chat_id=chat_id,
+                response_category=category,
+                references=references,
+                commit=commit_info_dict,
+                plan=final_plan,
+            )
+        except Exception as exc:
+            structlogger.error("builder.copilot.history.persist_failed", error=str(exc))
+    else:
+        # Warn if no text was generated to persist
+        structlogger.warning(
+            "builder.copilot.history.no_assistant_text",
+            session_id=req.session_id,
+            implementation=_get_copilot_mode(),
+        )
+
+
+async def _handle_copilot_post_stream(
+    *,
+    sse: Any,
+    copilot_response_handler: Any,
+    copilot_client: Any,
+    project_generator: ProjectGenerator,
+    app: Any,
+    telemetry: CopilotSegmentTelemetry,
+    req: CopilotTurnRequest,
+    context: CopilotContext,
+    user_id: str,
+    chat_id: str,
+    generation_context: Any,
+    newly_created_commit_sha: Optional[str],
+    start_timestamp: float,
+) -> None:
+    """Handle post-stream copilot work: commit, training, telemetry, refs, history."""
+    training_success = False
+    if newly_created_commit_sha:
+        training_success = await _ensure_training_after_copilot_commit(
+            copilot_response_handler,
+            project_generator,
+            app,
+            newly_created_commit_sha,
+        )
+
+    commit_info_dict = None
+    if newly_created_commit_sha:
+        commit_info_dict = await _send_commit_info_sse(
+            sse=sse,
+            copilot_response_handler=copilot_response_handler,
+            project_generator=project_generator,
+            newly_created_commit_sha=newly_created_commit_sha,
+            training_success=training_success,
+        )
+
+    # 8a. Offload metabase telemetry logging to a background task
+    usage_stats = copilot_client.usage_statistics
+    app.add_task(
+        asyncio.to_thread(
+            telemetry.log_copilot_from_handler,
+            handler=copilot_response_handler,
+            used_documents=copilot_response_handler.retrieved_documents,
+            latency_ms=int((time.perf_counter() - start_timestamp) * 1000),
+            system_message=generation_context.system_message,
+            chat_history=generation_context.chat_history,
+            last_user_message=(
+                req.message.get_flattened_text_content()
+                if (req.message and req.message.role == ROLE_USER)
+                else None
+            ),
+            tracker_event_attachments=generation_context.tracker_event_attachments,
+            model=usage_stats.model or "",
+            cached_prompt_tokens=usage_stats.cached_prompt_tokens or 0,
+            prompt_tokens=usage_stats.prompt_tokens or 0,
+            completion_tokens=usage_stats.completion_tokens or 0,
+            total_tokens=usage_stats.total_tokens or 0,
+        )
+    )
+    # 8b. Setup output trace attributes for Langfuse
+    CopilotEndpointLangfuseTelemetry.setup_copilot_endpoint_call_trace_attributes(
+        hello_rasa_project_id=HELLO_RASA_PROJECT_ID or "N/A",
+        chat_id=req.session_id or "N/A",
+        user_id=user_id,
+        request=req,
+        handler=copilot_response_handler,
+        relevant_documents=copilot_response_handler.retrieved_documents,
+        copilot_context=context,
+    )
+
+    await _send_references_and_persist_history(
+        sse=sse,
+        copilot_response_handler=copilot_response_handler,
+        req=req,
+        chat_id=chat_id,
+        commit_info_dict=commit_info_dict,
+    )
+
+
 @bp.route("/copilot", methods=["POST"])
 @openapi.summary("AI copilot for bot building")
 @openapi.description(
@@ -1410,8 +1604,6 @@ async def download_bot_project(request: Request) -> HTTPResponse:
 @observe(capture_input=False, capture_output=False)
 async def copilot(request: Request) -> None:
     """Handle copilot requests with streaming markdown responses."""
-    from rasa.builder.copilot import get_copilot_mode as _get_copilot_mode
-
     sse = await request.respond(content_type="text/event-stream")
     project_generator = get_project_generator(request)
 
@@ -1496,42 +1688,13 @@ async def copilot(request: Request) -> None:
                 "builder.copilot.history.user_message_persist_failed", error=str(exc)
             )
 
-        # 5. Run guardrail policy checks. If any policy violations are detected,
-        #    send a response and end the stream.
-        guardrail_response: Optional[GuardrailPolicyViolationContent] = None
-        if llm_service.guardrails_policy_checker is not None:
-            guardrail_response = await llm_service.guardrails_policy_checker.check_copilot_chat_for_policy_violations(  # noqa: E501
-                context=context,
-                hello_rasa_user_id=user_id,
-                hello_rasa_project_id=HELLO_RASA_PROJECT_ID,
-                lakera_project_id=LAKERA_COPILOT_HISTORY_GUARDRAIL_PROJECT_ID,
-            )
-        if guardrail_response is not None:
-            blocked_or_violation_message = (
-                await _handle_guardrail_violation_and_maybe_block(
-                    sse=sse,
-                    user_id=user_id,
-                    violation_response=guardrail_response,
-                )
-            )
-
-            # Persist the guardrail response as well
-            guardrail_chat_message = CopilotChatMessage(
-                role="copilot",
-                content=[
-                    TextContent(type="text", text=blocked_or_violation_message.content)
-                ],
-                response_category=blocked_or_violation_message.response_category,
-            )
-            try:
-                await llm_service.history_store.append(
-                    conversation_key, guardrail_chat_message
-                )
-            except Exception as exc:
-                structlogger.error(
-                    "builder.copilot.history.guardrail_response_persist_failed",
-                    error=str(exc),
-                )
+        # 5. Run guardrail policy checks
+        if await _check_and_handle_guardrail_violations(
+            context=context,
+            user_id=user_id,
+            sse=sse,
+            conversation_key=conversation_key,
+        ):
             return
 
         # 6. Get the original response stream from copilot and handle it with the
@@ -1563,103 +1726,21 @@ async def copilot(request: Request) -> None:
             else:
                 newly_created_commit_sha = None
 
-        # 7b. Ensure training happens after file changes
-        training_success = False
-        if newly_created_commit_sha:
-            training_success = await _ensure_training_after_copilot_commit(
-                copilot_response_handler,
-                project_generator,
-                request.app,
-                newly_created_commit_sha,
-            )
-
-        # 7c. Send commit info via SSE if a new commit was created
-        commit_info_dict = None
-        if newly_created_commit_sha:
-            try:
-                commit_event = await copilot_response_handler.respond_to_commit(
-                    git_service=project_generator.git_service,
-                    commit_sha=newly_created_commit_sha,
-                    training_success=training_success,
-                )
-                commit_info_dict = commit_event.commit
-                await sse.send(commit_event.to_sse_event().format())
-            except Exception as exc:
-                structlogger.warning(
-                    "builder.copilot.send_commit_info_failed",
-                    error=str(exc),
-                    commit_sha=newly_created_commit_sha,
-                )
-
-        # 8a. Offload metabase telemetry logging to a background task
-        usage_stats = copilot_client.usage_statistics
-        request.app.add_task(
-            asyncio.to_thread(
-                telemetry.log_copilot_from_handler,
-                handler=copilot_response_handler,
-                used_documents=copilot_response_handler.retrieved_documents,
-                latency_ms=int((time.perf_counter() - start_timestamp) * 1000),
-                system_message=generation_context.system_message,
-                chat_history=generation_context.chat_history,
-                last_user_message=(
-                    req.message.get_flattened_text_content()
-                    if (req.message and req.message.role == ROLE_USER)
-                    else None
-                ),
-                tracker_event_attachments=generation_context.tracker_event_attachments,
-                model=usage_stats.model or "",
-                cached_prompt_tokens=usage_stats.cached_prompt_tokens or 0,
-                prompt_tokens=usage_stats.prompt_tokens or 0,
-                completion_tokens=usage_stats.completion_tokens or 0,
-                total_tokens=usage_stats.total_tokens or 0,
-            )
-        )
-        # 8b. Setup output trace attributes for Langfuse
-        CopilotEndpointLangfuseTelemetry.setup_copilot_endpoint_call_trace_attributes(
-            hello_rasa_project_id=HELLO_RASA_PROJECT_ID or "N/A",
-            chat_id=req.session_id or "N/A",
+        await _handle_copilot_post_stream(
+            sse=sse,
+            copilot_response_handler=copilot_response_handler,
+            copilot_client=copilot_client,
+            project_generator=project_generator,
+            app=request.app,
+            telemetry=telemetry,
+            req=req,
+            context=context,
             user_id=user_id,
-            request=req,
-            handler=copilot_response_handler,
-            relevant_documents=copilot_response_handler.retrieved_documents,
-            copilot_context=context,
+            chat_id=chat_id,
+            generation_context=generation_context,
+            newly_created_commit_sha=newly_created_commit_sha,
+            start_timestamp=start_timestamp,
         )
-
-        # 9. Once the stream is over, extract and send references (if any)
-        reference_section = copilot_response_handler.extract_references()
-        if reference_section.references:
-            await sse.send(reference_section.to_sse_event().format())
-
-        # 10. Append final assistant message to server-side history
-        full_text = copilot_response_handler.extract_text_from_generated_responses()
-        final_plan = copilot_response_handler.extract_final_plan()
-        category = copilot_response_handler.extract_response_category()
-        references = (
-            reference_section.references if reference_section.references else None
-        )
-
-        if full_text:
-            try:
-                # Pass references directly if they exist
-                await persist_copilot_message_to_history(
-                    text=full_text,
-                    chat_id=chat_id,
-                    response_category=category,
-                    references=references,
-                    commit=commit_info_dict,
-                    plan=final_plan,
-                )
-            except Exception as exc:
-                structlogger.error(
-                    "builder.copilot.history.persist_failed", error=str(exc)
-                )
-        else:
-            # Warn if no text was generated to persist
-            structlogger.warning(
-                "builder.copilot.history.no_assistant_text",
-                session_id=req.session_id,
-                implementation=_get_copilot_mode(),
-            )
 
     except CopilotStreamError as exc:
         await _handle_copilot_exception(
@@ -1883,7 +1964,7 @@ async def switch_copilot_mode(request: Request) -> HTTPResponse:
         if request.json is None:
             return response.json(
                 ApiErrorResponse(
-                    error="Invalid request",
+                    error=INVALID_REQUEST_ERROR,
                     details={"message": "Request body is required"},
                 ).model_dump(),
                 status=400,
@@ -1893,7 +1974,7 @@ async def switch_copilot_mode(request: Request) -> HTTPResponse:
         if not mode:
             return response.json(
                 ApiErrorResponse(
-                    error="Invalid request",
+                    error=INVALID_REQUEST_ERROR,
                     details={"message": "Mode parameter is required"},
                 ).model_dump(),
                 status=400,
@@ -1986,7 +2067,7 @@ async def _handle_copilot_exception(
             chat_id=chat_id,
             response_category=ResponseCategory.EXCEPTION,
         )
-    except BaseException as persist_exc:
+    except Exception as persist_exc:
         structlogger.error(
             "builder.copilot.history.persist_failed",
             error=str(persist_exc),
@@ -2170,7 +2251,7 @@ async def handle_change_branch(request: Request) -> HTTPResponse:
     except Exception as exc:
         return response.json(
             ApiErrorResponse(
-                error="Invalid request", details={"error": str(exc)}
+                error=INVALID_REQUEST_ERROR, details={"error": str(exc)}
             ).model_dump(),
             status=400,
         )
