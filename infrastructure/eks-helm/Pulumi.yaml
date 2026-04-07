@@ -42,8 +42,8 @@ config:
     type: string
     default: "c29tZXNlY3JldA==" #base64 encoded 'somesecret'
 packages:
-  rasa-aws: github.com/RasaHQ/pulumi-components/rasa-aws@1.0.0-rasa-aws
-  rasa-apps: github.com/RasaHQ/pulumi-components/rasa-apps@0.6.0-rasa-apps
+  rasa-aws: github.com/RasaHQ/pulumi-components/rasa-aws@v3.1.0-rasa-aws
+  rasa-apps: github.com/RasaHQ/pulumi-components/rasa-apps@v1.5.0-rasa-apps
 resources:
   githubProvider:
     type: pulumi:providers:github
@@ -73,6 +73,7 @@ resources:
       openaiApiKey: ${rasaProOpenaiApiKey}
       namespace: ${projectName}
       helmValues: ${rasaProHelmValues}
+      createNamespace: false
     options:
       provider: ${k8sProvider}
       dependsOn:
@@ -206,7 +207,7 @@ variables:
           valueFrom:
             secretKeyRef:
               name: rasa-secrets
-              key: OpenaiApiKey
+              key: openaiApiKey
         - name: RASA_PRO_LICENSE
           valueFrom:
             secretKeyRef:

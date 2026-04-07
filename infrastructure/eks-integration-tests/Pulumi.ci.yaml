@@ -1,4 +1,4 @@
 config:
   aws:region: eu-west-1
-  db_password: [secret] # set with: pulumi config set --secret db_password "your-secure-password". visible with: pulumi stack output db_password --show-secrets
-  
+  integration-tests:db_password:
+    secure: AAABAI8xd6FYbXVodCHkQLYTK0cXPbutgtf1mkePpMe7dTQYoEqEU56cUVz5u34=

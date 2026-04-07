@@ -1,5 +1,5 @@
 name: eks-cluster
-description: Pulumi stack for deploying Rasa Pro infrastructure on EKS
+description: Pulumi stack for deploying Rasa Pro infrastructure and running integration tests on EKS cluster on CI Playground
 runtime: yaml
 config:
   clusterName:
@@ -18,17 +18,17 @@ config:
     default: t3.xlarge
   albControllerChartVersion:
     type: string
-    default: "1.7.1"
+    default: "3.1.0"
   headlampHelmVersion:
     type: string
-    default: "0.32.1"
+    default: "0.42.0"
   pulumi:tags:
     value:
-      pulumi:template: https://github.com/RasaHQ/pulumi-templates/tree/HEAD/aws-eks-cluster
+      pulumi:template: https://github.com/RasaHQ/pulumi-templates/tree/main/infrastructure/aws-eks-cluster
 packages:
-  rasa-aws: github.com/RasaHQ/pulumi-components/rasa-aws@1.0.1-rasa-aws
-  rasa-apps: github.com/RasaHQ/pulumi-components/rasa-apps@1.0.0-rasa-apps
-  rasa-cloudflare: github.com/RasaHQ/pulumi-components/rasa-cloudflare@v1.1.0-rasa-cloudflare
+  rasa-aws: github.com/RasaHQ/pulumi-components/rasa-aws@v3.1.0-rasa-aws
+  rasa-apps: github.com/RasaHQ/pulumi-components/rasa-apps@v1.5.0-rasa-apps
+  rasa-cloudflare: github.com/RasaHQ/pulumi-components/rasa-cloudflare@v2.0.0-rasa-cloudflare
 resources:
   cluster:
     type: rasa-aws:EksCluster
@@ -40,11 +40,11 @@ resources:
       nodegroupMinSize: ${minClusterSize}
       nodegroupMaxSize: ${maxClusterSize}
       nodegroupDiskSize: ${clusterDiskSize}
-      enableIngressNginx: false
+      nodegroupAmiType: AL2023_x86_64_STANDARD
       enableEbsDriver: true
-      k8sVersion: "1.33"
-      amiType: AL2023_x86_64_STANDARD
-      ebsDriverVersion: "2.45.1"
+      enableAlbController: false
+      enableExternalDns: false
+      enableAutoscaler: false
   k8sProvider:
     type: pulumi:providers:kubernetes
     properties:
@@ -111,7 +111,7 @@ variables:
         alb.ingress.kubernetes.io/target-type: ip
         alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
         alb.ingress.kubernetes.io/backend-protocol: 'HTTP'
-        alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-1:329710836760:certificate/460a7ffe-b9cd-4d6a-8e4d-a09f6a9f66fd
+        alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-1:329710836760:certificate/a9206eb9-c1ba-4f77-93f2-683440788965
         alb.ingress.kubernetes.io/group.name: ${pulumi.project}-${pulumi.stack}-alb-group
       hosts:
         - host: pro-ci-headlamp.rasa-dev.io

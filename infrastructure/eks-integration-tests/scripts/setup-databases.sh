@@ -40,5 +40,7 @@ echo "ALTER DATABASE $d_quoted OWNER TO $u_quoted;" | psql -qtAX
 echo "create user integration_tests_user_no_password (no password)"
 echo "CREATE USER integration_tests_user_no_password;" | psql -qtAX
 echo "GRANT rds_iam TO integration_tests_user_no_password;" | psql -qtAX
+echo "GRANT ALL PRIVILEGES ON DATABASE integrationtestsdb TO integration_tests_user_no_password;" | psql -qtAX
+PGDATABASE=integrationtestsdb psql -qtAX -c "GRANT CREATE ON SCHEMA public TO integration_tests_user_no_password;"
 
 # Update the RDS IAM auth user with all required permissions here.

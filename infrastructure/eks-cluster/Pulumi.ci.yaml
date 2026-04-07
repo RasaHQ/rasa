@@ -1,12 +1,12 @@
 config:
   aws:region: eu-west-1
-  pulumi:template: https://github.com/rasahq/pulumi-templates/tree/head/aws-eks-cluster
-  eks-cluster:albControllerChartVersion: 1.7.1
+  pulumi:template: https://github.com/RasaHQ/pulumi-templates/tree/main/infrastructure/aws-eks-cluster
+  eks-cluster:albControllerChartVersion: 3.1.0
   eks-cluster:clusterDiskSize: "100"
   eks-cluster:clusterName: rasa-pro-ci-cluster
-  eks-cluster:headlampHelmVersion: 0.32.1
-  eks-cluster:maxClusterSize: "1"
-  eks-cluster:minClusterSize: "1"
+  eks-cluster:headlampHelmVersion: 0.41.0
+  eks-cluster:maxClusterSize: 3
+  eks-cluster:minClusterSize: 1
   eks-cluster:nodegroupInstanceType: m5.xlarge
 environment:
   - atom/atom-ci

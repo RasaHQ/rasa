@@ -1,11 +1,86 @@
 name: integration-tests
 description: RDS database for integration tests
-runtime:
-  name: python
-  options:
-    toolchain: pip
-    virtualenv: venv
+runtime: yaml
 config:
-  pulumi:tags:
-    value:
-      pulumi:template: aws-python
+  db_password:
+    type: string
+    secret: true
+
+resources:
+  stackRef:
+    type: pulumi:pulumi:StackReference
+    properties:
+      name: rasa/eks-cluster/ci
+
+  dbSubnetGroup:
+    type: aws:rds:SubnetGroup
+    properties:
+      name: rasa-pro-integration-tests-db-subnet-group
+      subnetIds: ${stackRef.outputs["private_subnets"]}
+      tags:
+        Name: rasa-pro-integration-tests-db-subnet-group
+        Project: rasa-pro
+        Environment: integration-tests
+
+  dbSecurityGroup:
+    type: aws:ec2:SecurityGroup
+    properties:
+      name: rasa-pro-integration-tests-db-sg
+      description: Security group for integration tests RDS database
+      vpcId: ${stackRef.outputs["vpc_id"]}
+      ingress:
+        - fromPort: 5432
+          toPort: 5432
+          protocol: tcp
+          cidrBlocks:
+            - 10.0.0.0/16
+          description: PostgreSQL access from VPC
+      egress:
+        - fromPort: 0
+          toPort: 0
+          protocol: "-1"
+          cidrBlocks:
+            - 0.0.0.0/0
+          description: All outbound traffic
+      tags:
+        Name: rasa-pro-integration-tests-db-sg
+        Project: rasa-pro
+        Environment: integration-tests
+
+  dbInstance:
+    type: aws:rds:Instance
+    properties:
+      identifier: rasa-pro-integration-tests-db
+      dbName: integrationtestsdb
+      instanceClass: db.t4g.small
+      allocatedStorage: 50
+      storageType: gp3
+      engine: postgres
+      # RDS PostgreSQL 17.x has a known pg_hba bug: IAM auth can fail with "PAM authentication failed".
+      # Use a 16.x version available in your region (eu-west-1: 16.6, 16.8, 16.9, 16.10, 16.11).
+      engineVersion: "16.6"
+      username: integration_tests_user
+      password: ${db_password}
+      vpcSecurityGroupIds:
+        - ${dbSecurityGroup.id}
+      dbSubnetGroupName: ${dbSubnetGroup.name}
+      backupRetentionPeriod: 7
+      backupWindow: "03:00-04:00"
+      maintenanceWindow: "sun:04:00-sun:05:00"
+      multiAz: false
+      publiclyAccessible: false
+      iamDatabaseAuthenticationEnabled: true
+      skipFinalSnapshot: true
+      deletionProtection: false
+      tags:
+        Name: rasa-pro-integration-tests-db
+        Project: rasa-pro
+        Environment: integration-tests
+
+outputs:
+  db_host: ${dbInstance.endpoint}
+  db_port: ${dbInstance.port}
+  db_name: ${dbInstance.dbName}
+  db_username: ${dbInstance.username}
+  db_password: ${db_password}
+  db_connection_string: "postgresql://${dbInstance.username}:${db_password}@${dbInstance.endpoint}:${dbInstance.port}/${dbInstance.dbName}"

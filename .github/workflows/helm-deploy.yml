@@ -197,7 +197,8 @@ jobs:
         working-directory: ./infrastructure/eks-helm
         run: |
           pulumi stack select rasa/eks-helm/${{ env.UNIQUE_IDENTIFIER }}
-          echo "DEPLOYMENT_URL=$(pulumi stack output rasaProServerUrl)" >> $GITHUB_ENV
+          DEPLOYMENT_URL=$(pulumi stack output rasaProServerUrl)
+          echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> $GITHUB_ENV
           echo "url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
           echo "rasaProServerUrl: $DEPLOYMENT_URL"
 

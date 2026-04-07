@@ -139,16 +139,47 @@ Note: `db_password` is the value you set in config; it is exported for use by sc
 
 ## Database Connection
 
-### From within the EKS cluster:
+Since the RDS instance is not publicly accessible, all connections must be made from within the VPC. Use a temporary pod in the EKS cluster as a jump host.
 
-You can connect to the database using the connection string or individual components:
+### Connecting via a temporary pod
 
 ```bash
-# Using the connection string
-psql "postgresql://integration_tests_user:<password>@<db_host>:5432/integrationtestsdb"
+# 1. Start a temporary postgres pod (auto-deleted on exit)
+kubectl run psql-debug --rm -it --image=postgres:16 --restart=Never -- bash
 
-# Or using individual components
-psql -h <db_host> -p 5432 -U integration_tests_user -d integrationtestsdb
+# 2. Inside the pod, connect to the database
+psql "host=<db_host> dbname=integrationtestsdb user=integration_tests_user password=<db_password> sslmode=require"
+
+# Get db_host and db_password from Pulumi outputs (run locally before starting the pod):
+# pulumi stack output db_host -s ci
+# pulumi stack output db_password --show-secrets -s ci
+```
+
+### Useful psql commands once connected
+
+```sql
+\dt                          -- list tables
+\dp                          -- list access privileges
+\du                          -- list users and roles
+\l                           -- list databases
+\c integrationtestsdb        -- switch to tracker store database
+SELECT * FROM events LIMIT 5; -- inspect tracker events
+```
+
+### Copying a script into the pod
+
+If you need to run a shell script (e.g. `setup-databases.sh`) from inside the pod:
+
+```bash
+# Terminal 1 — start the pod (keep it running)
+kubectl run psql-debug --rm -it --image=postgres:16 --restart=Never -- bash
+
+# Terminal 2 — copy the script into the running pod
+export KUBECONFIG=/tmp/kubeconfig  # if needed
+kubectl cp scripts/setup-databases.sh psql-debug:/tmp/setup-databases.sh
+
+# Back in Terminal 1 — run the script
+chmod +x /tmp/setup-databases.sh && /tmp/setup-databases.sh
 ```
 
 ### From Pulumi Secrets:
@@ -156,8 +187,8 @@ psql -h <db_host> -p 5432 -U integration_tests_user -d integrationtestsdb
 Retrieve credentials from Pulumi secrets:
 
 ```bash
-pulumi stack output db_password
-pulumi stack output db_connection_string
+pulumi stack output db_password --show-secrets -s ci
+pulumi stack output db_connection_string -s ci
 ```
 
 ## Bootstrap assistant database
