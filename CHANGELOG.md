@@ -362,6 +362,44 @@ Rasa Pro 3.16.0 (2026-03-26)
 - [#3690](https://github.com/rasahq/rasa-private/issues/3690), [#4072](https://github.com/rasahq/rasa-private/issues/4072), [#4206](https://github.com/rasahq/rasa-private/issues/4206), [#4391](https://github.com/rasahq/rasa-private/issues/4391), [#4432](https://github.com/rasahq/rasa-private/issues/4432), [#4434](https://github.com/rasahq/rasa-private/issues/4434), [#4482](https://github.com/rasahq/rasa-private/issues/4482), [#4483](https://github.com/rasahq/rasa-private/issues/4483), [#4501](https://github.com/rasahq/rasa-private/issues/4501), [#4505](https://github.com/rasahq/rasa-private/issues/4505), [#4521](https://github.com/rasahq/rasa-private/issues/4521), [#4530](https://github.com/rasahq/rasa-private/issues/4530), [#4538](https://github.com/rasahq/rasa-private/issues/4538), [#4564](https://github.com/rasahq/rasa-private/issues/4564), [#4591](https://github.com/rasahq/rasa-private/issues/4591), [#4630](https://github.com/rasahq/rasa-private/issues/4630), [#4643](https://github.com/rasahq/rasa-private/issues/4643), [#4647](https://github.com/rasahq/rasa-private/issues/4647), [#4666](https://github.com/rasahq/rasa-private/issues/4666), [#4723](https://github.com/rasahq/rasa-private/issues/4723), [#4731](https://github.com/rasahq/rasa-private/issues/4731), [#4742](https://github.com/rasahq/rasa-private/issues/4742), [#4827](https://github.com/rasahq/rasa-private/issues/4827), [#4899](https://github.com/rasahq/rasa-private/issues/4899)
 
 
+## [3.15.19] - 2026-04-02
+                         
+Rasa Pro 3.15.19 (2026-04-02)                              
+### Improvements
+- [#5009](https://github.com/rasahq/rasa-private/issues/5009): Declared `safetensors` and `keras` as optional NLU extras (`pip install 'rasa-pro[nlu]'` or `full`), so minimal installs no longer pull them in directly. `regex` is also declared optional and listed under those extras for consistency with `WhitespaceTokenizer`, but it remains installed on most minimal installs because the base dependency `tiktoken` (used by the LLM stack) depends on `regex`.
+
+  The affected code paths lazy-import `safetensors` and `regex`; if either package is not installed, they raise `MissingDependencyException` with install instructions. `keras` is only pulled in for the TensorFlow model stack (`rasa.utils.tensorflow.models`), so it is optional for the same minimal-install story as `safetensors`.
+- [#5018](https://github.com/rasahq/rasa-private/issues/5018): Improved sub-agent call steps that use `exit_if`: when the same ReAct agent runs again in one conversation, slots named in `exit_if` are cleared so a new run does not reuse values from the last finished run. Ongoing multi-turn agent sessions (waiting for the next user message) are unchanged.
+
+### Bugfixes
+- [#4916](https://github.com/rasahq/rasa-private/issues/4916): When an agent or MCP tool call returns a fatal error (e.g. internal server error), the user no longer receives two bot messages. Previously both the internal error message ("Sorry, I am having trouble with that...") and the flow-cancelled message ("Okay, stopping...") were shown. Now only the internal error message is shown; the cancel pattern is not pushed for system-initiated failures, so the flow is still marked ended for tracking but the confusing cancel utterance is omitted.
+- [#4958](https://github.com/rasahq/rasa-private/issues/4958): Add rephrase endpoint validation by treating defaults-only misconfiguration as warning and user-defined rephrase misconfiguration as error.
+- [#4998](https://github.com/rasahq/rasa-private/issues/4998): Improved OpenTelemetry histograms for MCP agent LLM usage: `mcp_agent_llm_prompt_token_usage` and `mcp_agent_llm_response_duration` now record a consistent, call-scoped set of attributes (`agent_name`, `execution_context`, and `protocol_type`), making metrics easier to aggregate.
+- [#5028](https://github.com/rasahq/rasa-private/issues/5028): Upgrade `langsmith` dependency to 0.6.3 to address CVE-2026-25528.
+- [#5061](https://github.com/rasahq/rasa-private/issues/5061): Fixed three bugs in `ConcurrentRedisLockStore` that caused an `IndexError: deque index out of range` crash in the PII anonymization and deletion cron jobs under multi-replica deployments.
+
+  - `get_lock()` now returns `None` when no ticket keys exist in Redis (all tickets had expired), instead of returning an empty `ConcurrentTicketLock` object that caused downstream callers to crash.
+  - `save_lock()` now skips the Redis write when the ticket has already expired (TTL ≤ 0), preventing a `ResponseError` from Redis.
+  - `save_lock()` previously passed the absolute epoch expiry timestamp as the Redis `EX` TTL, resulting in ticket keys that effectively never expired (~55 years). The TTL is now correctly computed as a relative duration in seconds.
+- [#5109](https://github.com/rasahq/rasa-private/issues/5109): Fixed correction reset when a user answers the active collect slot and corrects another slot in the same turn.
+
+  `CorrectSlotsCommand.create_correction_frame` no longer chooses the reset step only from slots in the correction payload. It also considers the current collect-information step and picks the earlier collect step in flow order, so the stack resets to the question currently being asked instead of jumping ahead to a later slot’s collect step (which skipped validation for the new value on the active slot).
+- [#5111](https://github.com/rasahq/rasa-private/issues/5111): When interruptions are ENABLED, user message should be queued for processing only if it passes interruption criteria.
+
+
+## [3.15.18] - 2026-03-16
+                         
+Rasa Pro 3.15.18 (2026-03-16)                              
+### Bugfixes
+- [#2673](https://github.com/rasahq/rasa-private/issues/2673): Restarted task-oriented ReAct agents no longer exit immediately. When an agent is restarted, the previous run's user/assistant messages are now marked in the conversation so the model does not set slots from them; the system prompt instructs the agent to treat the current interaction as a fresh start for slot collection.
+- [#4869](https://github.com/rasahq/rasa-private/issues/4869): When an A2A task has status `input_required`, Rasa now populates `AgentOutput.structured_results` from both `task.artifacts` and DataParts in `task.status.message.parts`. Previously only the text message was returned and structured data was omitted, so clients can now process artifact data when the agent is waiting for user input.
+- [#4888](https://github.com/rasahq/rasa-private/issues/4888): Fix PII redaction of user or bot messages when slot values do not match the original message text. 
+  This can occur when the original messages are multi-line or TTS-style bot read-backs.
+- [#4902](https://github.com/rasahq/rasa-private/issues/4902): Update setuptools to 80.10.2 to address vulnerability https://osv.dev/vulnerability/DEBIAN-CVE-2026-23949.
+  Replaced randomname with duoname (no dependencies) library.
+- [#4911](https://github.com/rasahq/rasa-private/issues/4911): Fixed the backend tracing wrapper (e.g., Jaeger or OTLP) around send_message to correctly forward the output_channel argument to the underlying implementation.
+
+
 ## [3.15.17] - 2026-03-11
                          
 Rasa Pro 3.15.17 (2026-03-11)                              
@@ -704,6 +742,41 @@ Rasa Pro 3.15.0 (2025-11-26)
 
 ### Miscellaneous internal changes
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
+
+## [3.14.20] - 2026-04-02
+                         
+Rasa Pro 3.14.20 (2026-04-02)                              
+### Improvements
+- [#5009](https://github.com/rasahq/rasa-private/issues/5009): Declared `safetensors` and `keras` as optional NLU extras (`pip install 'rasa-pro[nlu]'` or `full`), so minimal installs no longer pull them in directly. `regex` is also declared optional and listed under those extras for consistency with `WhitespaceTokenizer`, but it remains installed on most minimal installs because the base dependency `tiktoken` (used by the LLM stack) depends on `regex`.
+
+  The affected code paths lazy-import `safetensors` and `regex`; if either package is not installed, they raise `MissingDependencyException` with install instructions. `keras` is only pulled in for the TensorFlow model stack (`rasa.utils.tensorflow.models`), so it is optional for the same minimal-install story as `safetensors`.
+- [#5018](https://github.com/rasahq/rasa-private/issues/5018): Improved sub-agent call steps that use `exit_if`: when the same ReAct agent runs again in one conversation, slots named in `exit_if` are cleared so a new run does not reuse values from the last finished run. Ongoing multi-turn agent sessions (waiting for the next user message) are unchanged.
+
+### Bugfixes
+- [#4916](https://github.com/rasahq/rasa-private/issues/4916): When an agent or MCP tool call returns a fatal error (e.g. internal server error), the user no longer receives two bot messages. Previously both the internal error message ("Sorry, I am having trouble with that...") and the flow-cancelled message ("Okay, stopping...") were shown. Now only the internal error message is shown; the cancel pattern is not pushed for system-initiated failures, so the flow is still marked ended for tracking but the confusing cancel utterance is omitted.
+- [#4958](https://github.com/rasahq/rasa-private/issues/4958): Add rephrase endpoint validation by treating defaults-only misconfiguration as warning and user-defined rephrase misconfiguration as error.
+- [#5028](https://github.com/rasahq/rasa-private/issues/5028): Upgrade `langsmith` dependency to 0.6.3 to address CVE-2026-25528.
+- [#5061](https://github.com/rasahq/rasa-private/issues/5061): Fixed three bugs in `ConcurrentRedisLockStore` that caused an `IndexError: deque index out of range` crash in the PII anonymization and deletion cron jobs under multi-replica deployments.
+
+  - `get_lock()` now returns `None` when no ticket keys exist in Redis (all tickets had expired), instead of returning an empty `ConcurrentTicketLock` object that caused downstream callers to crash.
+  - `save_lock()` now skips the Redis write when the ticket has already expired (TTL ≤ 0), preventing a `ResponseError` from Redis.
+  - `save_lock()` previously passed the absolute epoch expiry timestamp as the Redis `EX` TTL, resulting in ticket keys that effectively never expired (~55 years). The TTL is now correctly computed as a relative duration in seconds.
+- [#5109](https://github.com/rasahq/rasa-private/issues/5109): Fixed correction reset when a user answers the active collect slot and corrects another slot in the same turn.
+
+  `CorrectSlotsCommand.create_correction_frame` no longer chooses the reset step only from slots in the correction payload. It also considers the current collect-information step and picks the earlier collect step in flow order, so the stack resets to the question currently being asked instead of jumping ahead to a later slot’s collect step (which skipped validation for the new value on the active slot).
+
+
+## [3.14.19] - 2026-03-16
+                         
+Rasa Pro 3.14.19 (2026-03-16)                              
+### Bugfixes
+- [#2673](https://github.com/rasahq/rasa-private/issues/2673): Restarted task-oriented ReAct agents no longer exit immediately. When an agent is restarted, the previous run's user/assistant messages are now marked in the conversation so the model does not set slots from them; the system prompt instructs the agent to treat the current interaction as a fresh start for slot collection.
+- [#4869](https://github.com/rasahq/rasa-private/issues/4869): When an A2A task has status `input_required`, Rasa now populates `AgentOutput.structured_results` from both `task.artifacts` and DataParts in `task.status.message.parts`. Previously only the text message was returned and structured data was omitted, so clients can now process artifact data when the agent is waiting for user input.
+- [#4888](https://github.com/rasahq/rasa-private/issues/4888): Fix PII redaction of user or bot messages when slot values do not match the original message text. 
+  This can occur when the original messages are multi-line or TTS-style bot read-backs.
+- [#4905](https://github.com/rasahq/rasa-private/issues/4905): Update setuptools to 80.10.2 to address vulnerability https://osv.dev/vulnerability/DEBIAN-CVE-2026-23949.
+  Replaced randomname with duoname (no dependencies) library.
+
 
 ## [3.14.18] - 2026-03-11
                          
