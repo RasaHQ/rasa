@@ -494,7 +494,3 @@ def main() -> None:
         asyncio.run(replay.replay_twilio_session())
     else:
         asyncio.run(replay.analyze_traffic())
-
-
-if __name__ == "__main__":
-    main()

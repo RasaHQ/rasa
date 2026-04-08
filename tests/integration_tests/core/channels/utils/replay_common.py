@@ -111,11 +111,11 @@ def print_session_summary(
     logger.info("SESSION SUMMARY")
     logger.info("=" * 60)
     logger.debug(
-        "Messages sent:      %s",
+        "Sent count: %s",
         connection_state.get("messages_sent", 0),
     )
     logger.debug(
-        "Messages received: %s",
+        "Recv count: %s",
         connection_state.get("messages_received", 0),
     )
     if state_keys:

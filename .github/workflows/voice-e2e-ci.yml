@@ -78,7 +78,7 @@ jobs:
       - name: Install Rasa with channels installation
         if: ${{ steps.cached-rasa.outputs.cache-hit != 'true' && matrix.installation == 'channels' }}
         run: |
-          make install-channels
+          make install-channels | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
 
       # Save new Cache if no existing cache hits
@@ -91,19 +91,32 @@ jobs:
 
 
   voice-e2e:
-    name: Voice E2E happy path
+    name: Voice E2E happy path tests (${{ matrix.python-version }} | ${{ matrix.credentials }})
     runs-on: warp-ubuntu-latest-x64-2x
     needs: [ install-and-cache-rasa, check-voice-code-changes ]
     if: ${{ (needs.check-voice-code-changes.outputs.voice-files == 'true' || needs.check-voice-code-changes.outputs.poetry-dependency-updates == 'true') || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     timeout-minutes: 30
+
     strategy:
       fail-fast: false
       matrix:
-        voice_data_files: [
-          "calm-benchmarking-bot/e2e_audio/happy_path/user_remove_contact_from_list/1.wav",
-        ]
+        credentials:
+          - calm-benchmarking-bot/credentials.tts.deepgram.yml
+          - calm-benchmarking-bot/credentials.tts.rime.yml
+          - calm-benchmarking-bot/credentials.tts.cartesia.yml
+          - calm-benchmarking-bot/credentials.tts.azure.yml
         python-version:
           - "3.10"
+
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
+      DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+      RIME_API_KEY: ${{ secrets.RIME_API_KEY }}
+      RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+      AZURE_SPEECH_API_KEY: ${{ secrets.AZURE_SPEECH_API_KEY }}
+      AZURE_OPENAI_ENDPOINT: "https://eastus.api.cognitive.microsoft.com/"
+      AZURE_SPEECH_REGION: "germanywestcentral"
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -139,12 +152,6 @@ jobs:
       - name: Train model and run rasa server
         id: train_and_run_rasa
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
-          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
-          RIME_API_KEY: ${{ secrets.RIME_API_KEY }}
-          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-          AZURE_SPEECH_API_KEY: ${{ secrets.AZURE_SPEECH_API_KEY }}
           PR_TITLE: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
           set -euo pipefail
@@ -160,7 +167,7 @@ jobs:
           stdbuf -oL -eL poetry run rasa run --port 5005 --model models \
           --enable-api \
           --endpoints calm-benchmarking-bot/endpoints.yml \
-          --credentials calm-benchmarking-bot/credentials.yml 2>&1 | tee rasa.log &
+          --credentials ${{ matrix.credentials }} 2>&1 | tee rasa.log &
           for i in $(seq 1 60); do
             if curl -sSf http://localhost:5005/ >/dev/null 2>&1; then
               echo "Rasa is up"
@@ -181,76 +188,9 @@ jobs:
       - name: Run calm-benchmarking-bot happy path scenario for all voice primitives
         env:
           SENDER_ID: 'test-voice_user-${{ github.run_number }}'
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
-          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
-          RIME_API_KEY: ${{ secrets.RIME_API_KEY }}
-          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
         run: |
-          echo "Using VOICE_FILES=${{ matrix.voice_data_files }}"
-          poetry run pytest -s -vv -o log_cli=true -o log_cli_level=DEBUG tests/integration_tests/core/channels/test_voice_primitives.py --voice-files=${{ matrix.voice_data_files }}
-        shell: bash
-
-      - name: Generate AudioCodes traffic file
-        if: steps.train_and_run_rasa.outcome == 'success'
-        run: |
-          mkdir -p data/e2e_voice
-          poetry run python tests/integration_tests/core/channels/utils/websocket_replay.py \
-            --mode generate \
-            --output data/e2e_voice/audiocodes_traffic.json
-        shell: bash
-
-      - name: Run AudioCodes replay test
-        if: steps.train_and_run_rasa.outcome == 'success'
-        env:
-          RASA_URL: http://localhost:5005
-          AUDIOCODES_TRAFFIC_FILE: data/e2e_voice/audiocodes_traffic.json
-          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-        run: |
-          echo "Running AudioCodes replay test..."
-          poetry run pytest -s -vv -o log_cli=true -o log_cli_level=INFO \
-            tests/integration_tests/core/channels/test_audiocodes_replay.py
-        shell: bash
-
-      - name: Generate Twilio Media Stream traffic file
-        if: steps.train_and_run_rasa.outcome == 'success'
-        run: |
-          poetry run python tests/integration_tests/core/channels/utils/twilio_media_stream_replay.py \
-            --mode generate \
-            --wav data/e2e_voice/user_remove_contact_from_list/1.wav \
-            --output data/e2e_voice/twilio_traffic.json
-        shell: bash
-
-      - name: Run Twilio Media Stream replay test
-        if: steps.train_and_run_rasa.outcome == 'success'
-        env:
-          RASA_URL: http://localhost:5005
-          TWILIO_TRAFFIC_FILE: data/e2e_voice/twilio_traffic.json
-          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-        run: |
-          echo "Running Twilio Media Stream replay test..."
-          poetry run pytest -s -vv -o log_cli=true -o log_cli_level=INFO \
-            tests/integration_tests/core/channels/test_twilio_media_stream_replay.py
-        shell: bash
-
-      - name: Generate Jambonz Stream traffic file
-        if: steps.train_and_run_rasa.outcome == 'success'
-        run: |
-          poetry run python tests/integration_tests/core/channels/utils/jambonz_replay.py \
-            --mode generate \
-            --output data/e2e_voice/jambonz_traffic.json
-        shell: bash
-
-      - name: Run Jambonz Stream replay test
-        if: steps.train_and_run_rasa.outcome == 'success'
-        env:
-          RASA_URL: http://localhost:5005
-          JAMBONZ_TRAFFIC_FILE: data/e2e_voice/jambonz_traffic.json
-          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-        run: |
-          echo "Running Jambonz Stream replay test..."
-          poetry run pytest -s -vv -o log_cli=true -o log_cli_level=INFO \
-            tests/integration_tests/core/channels/test_jambonz_replay.py
+          poetry run pytest -s -vv -o log_cli=true -o log_cli_level=DEBUG tests/integration_tests/core/channels/test_voice_primitives.py \
+            --voice-files=calm-benchmarking-bot/e2e_audio/happy_path/activate_card_elaborate_utterances/1.wav
         shell: bash
 
   send_slack_notification_on_failure:

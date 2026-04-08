@@ -37,6 +37,10 @@ class WebSocketReplay:
         self.log_file = log_file
         self.timeout = timeout
         self.delay = delay
+        self._reset_connection_state()
+
+    def _reset_connection_state(self) -> None:
+        """Reset per-session counters so a second replay run starts clean."""
         self.connection_state = {
             "connected": False,
             "session_initiated": False,
@@ -49,6 +53,7 @@ class WebSocketReplay:
 
     async def replay_websocket_session(self):
         """Replay a complete WebSocket session from captured traffic"""
+        self._reset_connection_state()
         logger.info("Loading traffic from %s", self.log_file)
         traffic_log = load_traffic_log(self.log_file)
         if traffic_log is None:
@@ -486,7 +491,3 @@ def main():
         asyncio.run(replay.replay_websocket_session())
     elif args.mode == "analyze":
         asyncio.run(replay.analyze_traffic())
-
-
-if __name__ == "__main__":
-    main()

@@ -110,9 +110,11 @@ voice-files:
   - tests/integration_tests/core/channels/utils/twilio_media_stream_replay.py
   - tests/integration_tests/core/channels/test_twilio_media_stream_replay.py
   - .github/workflows/voice-e2e-ci.yml
-  - .github/workflows/run-voice-channel-tests.yml
+  - .github/workflows/voice-integration-and-channel-tests.yml
   - tests/integration_tests/core/channels/utils/jambonz_replay.py
   - tests/integration_tests/core/channels/test_jambonz_replay.py
+  - tests/integration_tests/core/channels/utils/genesys_replay.py
+  - tests/integration_tests/core/channels/test_genesys_replay.py
 
 broker-files:
   - rasa/core/brokers/**

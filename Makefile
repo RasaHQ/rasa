@@ -302,6 +302,7 @@ test-voice-integration: ## Run voice integration tests
 		pytest $(VOICE_READY_CONNECTOR_INTEGRATION_TEST_PATH) \
 		$(VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH) \
 		-n $(JOBS) \
+		--dist loadgroup \
 		--reruns 3 --reruns-delay 1 \
 		--junitxml=integration-test-results.xml
 

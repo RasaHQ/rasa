@@ -335,7 +335,3 @@ def main() -> None:
         args.rasa_url, args.log_file, timeout=args.timeout, delay=args.delay
     )
     asyncio.run(replay.replay_jambonz_session())
-
-
-if __name__ == "__main__":
-    main()
