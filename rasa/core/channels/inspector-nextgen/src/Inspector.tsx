@@ -24,6 +24,7 @@ type Props = {
   projectId?: string;
   singleSessionMode?: boolean;
   initialInspectMode?: boolean;
+  isEmbedded?: boolean;
   onSessionStart?: (sessionId: string) => void;
   onInspectModeChange?: (inspectMode: boolean) => void;
   onMessageSent?: (message: string) => void;
@@ -77,6 +78,7 @@ const InspectorContent = (
       conversationEventActions: props.conversationEventActions ?? [],
       voiceFeaturesEnabled: props.voiceFeaturesEnabled ?? true,
       inspectMode: props.initialInspectMode ?? false,
+      isEmbedded: props.isEmbedded ?? false,
     });
   }
 

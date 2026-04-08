@@ -21,4 +21,7 @@ export const shadows = {
   focus: {
     value: "0 0 0 1px rgba(37, 99, 235, 0.3)",
   },
+  header: {
+    value: "0 33px 60px 0 rgba(0, 0, 0, 0.04)",
+  },
 };

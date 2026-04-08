@@ -4,6 +4,7 @@ import { colors } from "./tokens/colors";
 import { dialogSlotRecipe } from "./recipes/dialog";
 import { spacing } from "./tokens/spacing";
 import { shadows } from "./tokens/shadows";
+import { breakpoints } from "./tokens/breakpoints";
 import { buttonRecipe } from "./recipes/button";
 import "../fonts.css";
 import { headingRecipe } from "./recipes/heading";
@@ -100,14 +101,7 @@ const config = defineConfig({
       dialog: dialogSlotRecipe,
       accordion: accordionSlotRecipe,
     },
-    breakpoints: {
-      sm: "480px",
-      md: "768px",
-      lg: "1024px",
-      xl: "1280px",
-      "2xl": "1536px",
-      "3xl": "1920px",
-    },
+    breakpoints,
     keyframes: {
       blink: {
         "0%, 100%": {},

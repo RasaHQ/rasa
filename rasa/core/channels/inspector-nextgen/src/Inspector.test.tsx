@@ -143,4 +143,25 @@ describe("Inspector", () => {
       expect.objectContaining({ onMessageSent }),
     );
   });
+
+  it("initializes store with isEmbedded=true when isEmbedded prop is true", () => {
+    renderWithProviders(
+      <Inspector
+        projectUrl="http://localhost:5005"
+        botDataEndpoint="/data"
+        isEmbedded={true}
+      />,
+    );
+
+    expect(screen.getByTestId("try-assistant")).toBeInTheDocument();
+  });
+
+  it("defaults isEmbedded to false when not provided", () => {
+    renderWithProviders(
+      <Inspector projectUrl="http://localhost:5005" botDataEndpoint="/data" />,
+    );
+
+    expect(screen.getByTestId("try-assistant")).toBeInTheDocument();
+  });
+
 });

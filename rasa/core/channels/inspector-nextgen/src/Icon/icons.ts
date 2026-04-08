@@ -35,6 +35,7 @@ export {
   faMinus as Minus,
   faThumbsUp as ThumbsUp,
   faThumbsDown as ThumbsDown,
+  faColumns3 as Columns3,
   faExpand as Expand,
   faPlus as Plus,
   faXmark as XMark,

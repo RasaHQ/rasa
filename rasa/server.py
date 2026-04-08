@@ -1598,7 +1598,22 @@ def create_app(
         processor = app.ctx.agent.processor
         flows = await processor.get_flows()
         flows_list = get_flows_as_json(flows)
-        return response.json({"domain": domain, "flows": flows_list})
+
+        assistant_id = None
+        if (
+            processor
+            and processor.model_metadata
+            and hasattr(processor.model_metadata, "assistant_id")
+        ):
+            assistant_id = processor.model_metadata.assistant_id
+
+        return response.json(
+            {
+                "domain": domain,
+                "flows": flows_list,
+                "assistant_id": assistant_id,
+            }
+        )
 
     @app.get("/sub-agents")
     @requires_auth(app, auth_token)

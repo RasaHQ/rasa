@@ -30,6 +30,7 @@ describe("createInspectorStore", () => {
     expect(state.botDataEndpoint).toBe("");
     expect(state.conversationEventActions).toEqual([]);
     expect(state.voiceFeaturesEnabled).toBe(true);
+    expect(state.isEmbedded).toBe(false);
   });
 
   it("default actions are safe to call (noops)", () => {

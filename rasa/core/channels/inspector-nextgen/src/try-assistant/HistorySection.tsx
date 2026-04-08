@@ -1,13 +1,17 @@
-import { Box, Flex } from "@chakra-ui/react";
+import { Flex } from "@chakra-ui/react";
 import { useCallback, useMemo } from "react";
 import { InspectorViewHeader } from "../components/InspectorViewHeader";
+import { ScrollFadeArea } from "../components/ScrollFadeArea";
 import { NoData } from "../Placeholder";
-import { useInspectorStore } from "../store";
-import { toggleSelectedElement } from "../store/actions";
+import { useInspectorStore, toggleSelectedElement } from "../store";
 import { PlaceholderImage } from "../types";
 import { deriveFlowTimeline, FlowTimeline } from "./FlowTimeline";
 
-export const HistorySection = () => {
+interface HistorySectionProps {
+  showViewSwitcher?: boolean;
+}
+
+export const HistorySection = ({ showViewSwitcher }: HistorySectionProps) => {
   const conversationList = useInspectorStore((s) => s.conversationList);
   const flows = useInspectorStore((s) => s.flows);
   const allEvents = useMemo(
@@ -30,24 +34,16 @@ export const HistorySection = () => {
 
   return (
     <Flex
-      position="relative"
       direction="column"
       width="100%"
       height="100%"
       overflow="hidden"
-      borderTopRightRadius="xl"
-      borderBottomRightRadius="xl"
     >
-      <Box
-        flexShrink={0}
-        position="relative"
-        zIndex={1}
-        bg="white"
-        borderTopRightRadius="xl"
-      >
-        <InspectorViewHeader title="Flow history" />
-      </Box>
-      <Box flex={1} overflowY="auto" bg="white">
+      <InspectorViewHeader
+        title="Flow history"
+        showViewSwitcher={showViewSwitcher}
+      />
+      <ScrollFadeArea>
         {entries.length > 0 ? (
           <FlowTimeline entries={entries} onEntryClick={handleEntryClick} />
         ) : (
@@ -57,7 +53,7 @@ export const HistorySection = () => {
             longLabel="Conversation history will be shown here."
           />
         )}
-      </Box>
+      </ScrollFadeArea>
     </Flex>
   );
 };

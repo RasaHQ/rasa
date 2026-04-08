@@ -1,33 +1,25 @@
-import { Box, Flex } from "@chakra-ui/react";
+import { Flex } from "@chakra-ui/react";
 import { InspectorViewHeader } from "../components/InspectorViewHeader";
+import { ScrollFadeArea } from "../components/ScrollFadeArea";
 import { NoData } from "../Placeholder";
 import { PlaceholderImage } from "../types";
 import { useInspectorStore } from "../store";
 import { SlotsDetails } from "./MemoryDetails";
 
-export const MemorySection = () => {
+interface MemorySectionProps {
+  showViewSwitcher?: boolean;
+}
+
+export const MemorySection = ({ showViewSwitcher }: MemorySectionProps) => {
   const slotRelatedEvents = useInspectorStore((s) => s.slotRelatedEvents);
 
   return (
-    <Flex
-      position="relative"
-      direction="column"
-      width="100%"
-      height="100%"
-      overflow="hidden"
-      borderTopRightRadius="xl"
-      borderBottomRightRadius="xl"
-    >
-      <Box
-        flexShrink={0}
-        position="relative"
-        zIndex={1}
-        bg="white"
-        borderTopRightRadius="xl"
-      >
-        <InspectorViewHeader title="Collected slots" />
-      </Box>
-      <Box flex={1} overflowY="auto" bg="white">
+    <Flex direction="column" width="100%" height="100%">
+      <InspectorViewHeader
+        title="Collected slots"
+        showViewSwitcher={showViewSwitcher}
+      />
+      <ScrollFadeArea>
         {slotRelatedEvents.length > 0 ? (
           <SlotsDetails />
         ) : (
@@ -37,7 +29,7 @@ export const MemorySection = () => {
             longLabel="Collected slots will be shown here."
           />
         )}
-      </Box>
+      </ScrollFadeArea>
     </Flex>
   );
 };

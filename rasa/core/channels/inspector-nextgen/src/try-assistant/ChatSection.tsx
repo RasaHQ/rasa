@@ -79,11 +79,11 @@ export const ChatSection = ({ handleSelect }: ChatSectionProps) => {
 
   const lightColor = "#FFFFFF";
   const headerSx = {
-    borderBottom: "1px solid",
-    borderColor: "rasaNeutral.200",
-    textAlign: "center",
+    height: "48px",
+    bg: "rasaNeutral.50",
     px: "1.5rem",
-    py: "0.5rem",
+    display: "flex",
+    alignItems: "center",
   };
 
   return (

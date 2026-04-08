@@ -1,33 +1,40 @@
-import { Heading, HStack, Text } from "@chakra-ui/react";
+import { Flex, Heading, HStack, Text } from "@chakra-ui/react";
 import { InspectorViewPopover } from "./InspectorViewPopover";
 
 interface Props {
   title: string;
   text?: string;
   sticky?: boolean;
+  showViewSwitcher?: boolean;
 }
 
-export const InspectorViewHeader = ({ title, text, sticky }: Props) => {
+export const InspectorViewHeader = ({
+  title,
+  text,
+  sticky,
+  showViewSwitcher = true,
+}: Props) => {
   const stickyStyles = {
     position: "absolute",
     top: "0",
     left: "0",
+    right: "0",
   };
   return (
-    <HStack
-      width="100%"
+    <Flex
+      height="3rem"
+      flexShrink={0}
+      bg="rasaNeutral.50"
       px="1.5rem"
-      py="1rem"
-      height="auto"
-      flexDirection="row"
+      alignItems="center"
       justifyContent="space-between"
       css={sticky ? stickyStyles : {}}
     >
-      <HStack>
-        <Heading size="md">{title}</Heading>
+      <HStack minWidth={0}>
+        <Heading size="sm">{title}</Heading>
         {text && (
           <Text
-            size="md"
+            size="sm"
             overflow="hidden"
             textOverflow="ellipsis"
             whiteSpace="nowrap"
@@ -36,7 +43,7 @@ export const InspectorViewHeader = ({ title, text, sticky }: Props) => {
           </Text>
         )}
       </HStack>
-      <InspectorViewPopover />
-    </HStack>
+      {showViewSwitcher && <InspectorViewPopover />}
+    </Flex>
   );
 };

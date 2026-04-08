@@ -260,9 +260,11 @@ const flowSchema = z.object({
 // This is new for Hello Rasa
 export type BotData = {
   flows: Record<string, Flow>;
+  assistant_id?: string | null;
 };
 
 export const BotDataSchema = z.object({
   flows: z.record(z.string(), flowSchema),
+  assistant_id: z.string().nullish(),
 });
 

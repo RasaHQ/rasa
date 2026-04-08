@@ -269,7 +269,7 @@ test.describe("Event details panel", () => {
       page,
     }) => {
       await test.step("Turn off inspect mode", async () => {
-        await actions.inspector.actions(page).toggleInspect();
+        await actions.inspector.actions(page).toggleInspectOff();
       });
 
       await test.step("Assert inspector canvas is hidden", async () => {

@@ -5,7 +5,13 @@ interface PopoverMenuProps {
   trigger: React.ReactNode;
   header: string;
   children: React.ReactNode;
-  placement?: "bottom-end" | "bottom-start" | "bottom" | "top" | "top-end" | "top-start";
+  placement?:
+    | "bottom-end"
+    | "bottom-start"
+    | "bottom"
+    | "top"
+    | "top-end"
+    | "top-start";
   tooltipContent?: string;
 }
 
@@ -16,11 +22,7 @@ export const PopoverMenu = ({
   placement = "bottom-end",
   tooltipContent,
 }: PopoverMenuProps) => {
-  const triggerElement = (
-    <Popover.Trigger asChild>
-      {trigger}
-    </Popover.Trigger>
-  );
+  const triggerElement = <Popover.Trigger asChild>{trigger}</Popover.Trigger>;
 
   return (
     <Popover.Root positioning={{ placement }}>

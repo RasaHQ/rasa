@@ -34,6 +34,8 @@ function makeState(
     botDataEndpoint: "",
     conversationEventActions: [],
     voiceFeaturesEnabled: true,
+    isEmbedded: false,
+    assistantId: null,
     sendMessage: noop,
     startNewConversation: noop,
     replayConversation: noop,

@@ -9,6 +9,8 @@ const getLocators = (page: Page) => {
   const collectedSlotsSection = (section: string) => inspectorCanvas.getByTestId(`${section}-section`);
   return {
     inspectToggle: page.getByTestId("inspect-toggle"),
+    viewControlInspect: page.getByTestId("view-control").getByText("Inspect"),
+    viewControlChat: page.getByTestId("view-control").getByText("Chat"),
     restartConversation: page.getByTestId("restart-conversation"),
     tryAssistantContainer: page.getByTestId("try-assistant-container"),
     assistantInput,
@@ -68,6 +70,12 @@ export const actions = (page: Page) => {
     },
     toggleInspect: async () => {
       await locators.inspectToggle.click();
+    },
+    toggleInspectOn: async () => {
+      await locators.viewControlInspect.click();
+    },
+    toggleInspectOff: async () => {
+      await locators.viewControlChat.click();
     },
     restartConversation: async () => {
       await locators.restartConversation.click();
@@ -145,8 +153,8 @@ export const assertions = (page: Page) => {
   return {
     assertInspectPageLoaded: async () => {
       await expect(
-        locators.inspectToggle,
-        "Inspector UI (inspect toggle) should be visible",
+        locators.viewControlInspect,
+        "Inspector UI (view control) should be visible",
       ).toBeVisible();
     },
     assertHomePage: async () => {

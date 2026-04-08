@@ -18,7 +18,7 @@ export const navigateToInspectPageAndAssert = async (
 
 export const toggleInspectOnAndAssertFlowPanel = async (page: Page) => {
   await test.step("Turn Inspect on", async () => {
-    await actions.inspector.actions(page).toggleInspect();
+    await actions.inspector.actions(page).toggleInspectOn();
   });
   await test.step("Assert inspector canvas visible", async () => {
     await actions.inspector.assertions(page).assertInspectorCanvasVisible();
@@ -27,7 +27,7 @@ export const toggleInspectOnAndAssertFlowPanel = async (page: Page) => {
 
 export const toggleInspectOnAndAssertNoActiveFlow = async (page: Page) => {
   await test.step("Turn Inspect on", async () => {
-    await actions.inspector.actions(page).toggleInspect();
+    await actions.inspector.actions(page).toggleInspectOn();
   });
   await test.step("Assert flow panel shows no active flow placeholder", async () => {
     await actions.inspector.assertions(page).assertInspectorCanvasVisible();
@@ -43,7 +43,7 @@ export const assertFlowPanelShowsFlowWithDetails = async (page: Page) => {
 
 export const toggleInspectOffAndAssertCanvasHidden = async (page: Page) => {
   await test.step("Turn Inspect off", async () => {
-    await actions.inspector.actions(page).toggleInspect();
+    await actions.inspector.actions(page).toggleInspectOff();
   });
   await test.step("Assert inspector canvas hidden", async () => {
     await actions.inspector.assertions(page).assertInspectorCanvasHidden();

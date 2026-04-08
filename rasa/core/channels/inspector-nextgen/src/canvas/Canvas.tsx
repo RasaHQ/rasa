@@ -4,6 +4,9 @@ import "reactflow/dist/style.css";
 import { useCanvasContext } from "../CanvasContext";
 import { InspectorViewHeader } from "../components/InspectorViewHeader";
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from "../constants";
+import { useIsLargeScreen } from "../hooks/useIsLargeScreen";
+import { useInspectorStore } from "../store";
+import { InspectorView } from "../types/inspector";
 import { BottomControls } from "./BottomControls";
 import { AddEdge } from "./edges/AddEdge";
 import { CustomEdge } from "./edges/CustomEdge";
@@ -69,6 +72,9 @@ export const Canvas = () => {
 
   const { flowName, nodes, edges, handleInit, handleNodesChange } =
     useCanvasContext();
+  const isLargeScreen = useIsLargeScreen();
+  const inspectorView = useInspectorStore((s) => s.inspectorView);
+  const showViewSwitcher = !(isLargeScreen && inspectorView === InspectorView.All);
 
   return (
     <Box css={containerSx} data-testid="canvas">
@@ -89,7 +95,7 @@ export const Canvas = () => {
         maxZoom={5}
       />
       <BottomControls />
-      <InspectorViewHeader title="Current flow: " text={flowName} sticky />
+      <InspectorViewHeader title="Current flow: " text={flowName} sticky showViewSwitcher={showViewSwitcher} />
     </Box>
   );
 };

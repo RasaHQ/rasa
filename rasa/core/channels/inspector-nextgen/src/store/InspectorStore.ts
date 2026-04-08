@@ -38,6 +38,8 @@ export type InspectorStoreState = {
   botDataEndpoint: string;
   conversationEventActions: ConversationEventAction[];
   voiceFeaturesEnabled: boolean;
+  isEmbedded: boolean;
+  assistantId: string | null;
 
   // Actions (populated by useBotConnection after socket setup)
   sendMessage: (message: string) => void;
@@ -80,6 +82,8 @@ export function createInspectorStore(
     botDataEndpoint: "",
     conversationEventActions: [],
     voiceFeaturesEnabled: true,
+    isEmbedded: false,
+    assistantId: null,
 
     sendMessage: noop,
     startNewConversation: noop,

@@ -1,8 +1,9 @@
-import { Box, Flex, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Heading, IconButton } from "@chakra-ui/react";
 import { ArrowToBottom, Comment, FileCheck, Icon, Refresh } from "../Icon";
 import { OnboardingTooltip } from "../OnboardingTooltip";
 import { PopoverMenu } from "../PopoverMenu";
 import { PopoverMenuItem } from "../PopoverMenuItem";
+import { useInspectorStore } from "../store";
 import { SwitchButton } from "../SwitchButton";
 import { Tooltip } from "../Tooltip";
 import type { Conversation } from "../types";
@@ -26,18 +27,23 @@ export const ChatHeader = ({
   const hasEvents = conversationList.some(
     (c) => c.totalNumberOfUserMessages > 0,
   );
+  const isEmbedded = useInspectorStore((s) => s.isEmbedded);
 
   return (
-    <Flex justifyContent="space-between" flexShrink={1} alignItems="center">
-      <OnboardingTooltip target="inspectToggle">
-        <SwitchButton
-          item={{ value: "inspect", label: "Inspect" }}
-          onActivate={() => setFlowView(!flowView)}
-          isActive={flowView}
-          aria-label="Toggle inspect"
-          data-testid="inspect-toggle"
-        />
-      </OnboardingTooltip>
+    <Flex justifyContent="space-between" flex={1} alignItems="center">
+      {isEmbedded ? (
+        <OnboardingTooltip target="inspectToggle">
+          <SwitchButton
+            item={{ value: "inspect", label: "Inspect" }}
+            onActivate={() => setFlowView(!flowView)}
+            isActive={flowView}
+            aria-label="Toggle inspect"
+            data-testid="inspect-toggle"
+          />
+        </OnboardingTooltip>
+      ) : (
+        <Heading size="md">Preview</Heading>
+      )}
       <Box display="flex" gap="0.25rem" alignItems="center">
         <PopoverMenu
           trigger={

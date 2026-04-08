@@ -1,4 +1,4 @@
-import { Flex, Heading, IconButton } from "@chakra-ui/react";
+import { Box, Flex, Heading, IconButton } from "@chakra-ui/react";
 import {
   ScrollContainer,
   ScrollContent,
@@ -18,35 +18,46 @@ export function DetailView({
   children,
 }: Readonly<DetailViewProps>) {
   return (
-    <ScrollContainer>
-      <ScrollFixedHeader>
-        <Flex
-          justifyContent="space-between"
-          alignItems="center"
-          borderBottom="1px solid"
-          borderColor="rasaNeutral.300"
-          px="1.5rem"
-          py="0.5rem"
-        >
-          <Heading size="sm">
-            {title}
-          </Heading>
-          <IconButton
-            data-testid="event-details-close"
-            variant="subtle"
-            colorPalette="dark"
-            size="sm"
-            aria-label="Close"
-            onClick={onClose}
+    <Box position="relative" height="100%">
+      <ScrollContainer>
+        <ScrollFixedHeader>
+          <Flex
+            justifyContent="space-between"
+            alignItems="center"
+            height="3rem"
+            bg="rasaNeutral.50"
+            px="1.5rem"
           >
-            <Icon icon={XMark} />
-          </IconButton>
-        </Flex>
-      </ScrollFixedHeader>
+            <Heading size="md">
+              {title}
+            </Heading>
+            <IconButton
+              data-testid="event-details-close"
+              variant="solid"
+              colorPalette="light"
+              size="sm"
+              aria-label="Close"
+              onClick={onClose}
+            >
+              <Icon icon={XMark} />
+            </IconButton>
+          </Flex>
+        </ScrollFixedHeader>
 
-      <ScrollContent withSpacing={false} css={{ px: "1.5rem", py: "0.5rem" }}>
-        {children}
-      </ScrollContent>
-    </ScrollContainer>
+        <ScrollContent withSpacing={false} css={{ px: "1.5rem", py: "0.5rem" }}>
+          {children}
+        </ScrollContent>
+      </ScrollContainer>
+      <Box
+        position="absolute"
+        bottom={0}
+        left={0}
+        right={0}
+        height="24px"
+        background="linear-gradient(to bottom, transparent, white)"
+        pointerEvents="none"
+        zIndex={1}
+      />
+    </Box>
   );
 }

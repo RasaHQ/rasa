@@ -1,6 +1,7 @@
 import { Box, Flex } from "@chakra-ui/react";
 import { useCallback, useEffect } from "react";
 import { useConversationData } from "../hooks/useConversationData";
+import { useIsLargeScreen } from "../hooks/useIsLargeScreen";
 import type { UnionEventType } from "../types";
 import { InspectorView } from "../types/inspector";
 import {
@@ -9,6 +10,7 @@ import {
   selectConversationForSelectedElement,
   toggleSelectedElement,
   clearSelectedElement,
+  setInspectorView,
 } from "../store";
 import { ChatSection } from "./ChatSection";
 import { EventDetails } from "./EventDetails";
@@ -33,11 +35,33 @@ export function TryAssistant({ onInspectModeChange }: Readonly<Props>) {
     selectConversationForSelectedElement,
   );
 
+  const isEmbedded = useInspectorStore((s) => s.isEmbedded);
+  const isLargeScreen = useIsLargeScreen();
+  const showAllLayout = flowView && isLargeScreen && inspectorView === InspectorView.All;
+
+  const containerProps = isEmbedded
+    ? { flexGrow: "1", borderRadius: "1rem", overflow: "hidden" as const }
+    : { height: "100%", bg: "rasaNeutral.50", borderRadius: "1rem", overflow: "hidden" as const };
+
   useConversationData();
 
   useEffect(() => {
     onInspectModeChange?.(flowView);
   }, [flowView, onInspectModeChange]);
+
+  useEffect(() => {
+    if (isLargeScreen && flowView && inspectorView !== InspectorView.All) {
+      setInspectorView(InspectorView.All);
+    }
+  // Only run when inspect mode is toggled on while on a large screen.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flowView]);
+
+  useEffect(() => {
+    if (!isLargeScreen && inspectorView === InspectorView.All) {
+      setInspectorView(InspectorView.ActiveFlow);
+    }
+  }, [isLargeScreen, inspectorView]);
 
   const handleSelect = useCallback(
     (selection: UnionEventType) => toggleSelectedElement(selection),
@@ -45,19 +69,80 @@ export function TryAssistant({ onInspectModeChange }: Readonly<Props>) {
   );
 
   const separatorColor = "rasaNeutral.400";
-  const canvasSx = {
+  const panelBorderLeft = {
     borderLeft: "1px solid",
     borderColor: separatorColor,
   };
 
+  const flowSectionElement = (
+    <FlowSection
+      stackToShow={stackToShow}
+      conversationList={conversationList}
+      conversationForSelectedElement={conversationForSelectedElement}
+      flows={flows}
+      flowsLoading={flowsLoading}
+      flowsError={flowsError}
+    />
+  );
+
+  if (showAllLayout) {
+    return (
+      <Flex {...containerProps} data-testid="try-assistant-container">
+        <Box flex="1" minWidth={0}>
+          <ChatSection handleSelect={handleSelect} />
+        </Box>
+
+        <Box
+          css={panelBorderLeft}
+          flex="1.5"
+          minWidth={0}
+          data-testid="inspector-canvas"
+        >
+          {flowSectionElement}
+        </Box>
+
+        <Flex
+          css={panelBorderLeft}
+          flex="1"
+          minWidth={0}
+          direction="column"
+          data-testid="inspector-side-panel"
+        >
+          {selectedElement ? (
+            <EventDetails
+              event={selectedElement}
+              onClose={clearSelectedElement}
+              flows={flows}
+            />
+          ) : (
+            <>
+              <Box flex="1" minHeight={0} overflow="hidden">
+                <HistorySection />
+              </Box>
+              <Box
+                flex="1"
+                minHeight={0}
+                overflow="hidden"
+                borderTop="1px solid"
+                borderColor={separatorColor}
+              >
+                <MemorySection showViewSwitcher={false} />
+              </Box>
+            </>
+          )}
+        </Flex>
+      </Flex>
+    );
+  }
+
   return (
-    <Flex flexGrow="1" data-testid="try-assistant-container">
+    <Flex {...containerProps} data-testid="try-assistant-container">
       <Box flexBasis={flowView ? "50%" : "100%"}>
         <ChatSection handleSelect={handleSelect} />
       </Box>
       {flowView && (
         <Box
-          css={canvasSx}
+          css={panelBorderLeft}
           flexBasis="calc(50% + 1rem)"
           data-testid="inspector-canvas"
         >
@@ -69,18 +154,7 @@ export function TryAssistant({ onInspectModeChange }: Readonly<Props>) {
             />
           ) : (
             <>
-              {inspectorView === InspectorView.ActiveFlow && (
-                <FlowSection
-                  stackToShow={stackToShow}
-                  conversationList={conversationList}
-                  conversationForSelectedElement={
-                    conversationForSelectedElement
-                  }
-                  flows={flows}
-                  flowsLoading={flowsLoading}
-                  flowsError={flowsError}
-                />
-              )}
+              {inspectorView === InspectorView.ActiveFlow && flowSectionElement}
               {inspectorView === InspectorView.History && <HistorySection />}
               {inspectorView === InspectorView.Memory && <MemorySection />}
             </>

@@ -1,4 +1,4 @@
-import { Box, Text } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 import { useState } from "react";
 import { Icon } from "./Icon";
 
@@ -31,16 +31,27 @@ export const PopoverMenuItem = ({
       bg={isSelected ? "rasaNeutral.100" : "transparent"}
       _hover={{ bg: "rasaNeutral.100" }}
       onClick={onClick}
-      data-testid={testId ?? `popover-menu-${label.toLowerCase().replace(/\s+/g, "-")}`}
+      data-testid={
+        testId ?? `popover-menu-${label.toLowerCase().replace(/\s+/g, "-")}`
+      }
       fontSize="1rem"
       borderRadius="0.5rem"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Box width="1rem" height="1rem" display="flex" alignItems="center" justifyContent="center">
+      <Flex
+        width="1rem"
+        height="1rem"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
         <Icon color={isHovered ? "" : "rasaNeutral.700"} icon={icon} />
-      </Box>
-      <Text size="sm" color={isHovered ? "rasawebDeepPurple.900" : "rasawebDeepPurple.800"}>
+      </Flex>
+      <Text
+        size="sm"
+        color={isHovered ? "rasawebDeepPurple.900" : "rasawebDeepPurple.800"}
+      >
         {label}
       </Text>
     </Box>

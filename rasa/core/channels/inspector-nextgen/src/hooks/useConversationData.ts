@@ -49,4 +49,13 @@ export const useConversationData = () => {
       flowsError: error,
     }));
   }, [flows, isLoading, error]);
+
+  useEffect(() => {
+    if (botData?.assistant_id !== undefined) {
+      inspectorStore.setState((prev) => ({
+        ...prev,
+        assistantId: botData.assistant_id ?? null,
+      }));
+    }
+  }, [botData?.assistant_id]);
 };
