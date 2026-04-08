@@ -91,6 +91,20 @@ def set_tools_init_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def set_tools_status_arguments(parser: argparse.ArgumentParser) -> None:
+    """Arguments for `rasa tools status`."""
+    parser.add_argument(
+        "--project-path",
+        type=str,
+        default=None,
+        dest="project_path",
+        help=(
+            "Path to the Rasa project folder. "
+            "Defaults to the current directory when not specified."
+        ),
+    )
+
+
 def set_tools_run_arguments(parser: argparse.ArgumentParser) -> None:
     """Arguments for running the Rasa MCP tools server via `rasa tools run`."""
     parser.add_argument(

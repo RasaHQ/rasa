@@ -5,6 +5,7 @@ Subcommands:
 - ``rasa tools init skills`` — fetch and install agent skills
 - ``rasa tools init docs`` — fetch offline documentation
 - ``rasa tools run`` — start the MCP server
+- ``rasa tools status`` — show current configuration and readiness
 """
 
 from rasa.cli.tools.parsers import add_subparser

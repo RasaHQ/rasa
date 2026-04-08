@@ -20,11 +20,13 @@ def add_subparser(
         set_tools_init_arguments,
         set_tools_run_arguments,
         set_tools_skills_arguments,
+        set_tools_status_arguments,
     )
     from rasa.cli.tools.docs import docs_tools
     from rasa.cli.tools.init import init_tools
     from rasa.cli.tools.run import run_tools
     from rasa.cli.tools.skills import skills_tools
+    from rasa.cli.tools.status import status_tools
 
     tools_parser = subparsers.add_parser(
         "tools",
@@ -78,3 +80,13 @@ def add_subparser(
     )
     run_parser.set_defaults(func=run_tools)
     set_tools_run_arguments(run_parser)
+
+    status_parser = tools_subparsers.add_parser(
+        "status",
+        conflict_handler="resolve",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Show current Rasa Tools configuration and readiness.",
+    )
+    status_parser.set_defaults(func=status_tools)
+    set_tools_status_arguments(status_parser)

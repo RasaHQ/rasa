@@ -295,3 +295,17 @@ class TestToolsInitDocsArguments:
             ["tools", "init", "docs", "--project-path", "/my/bot"]
         )
         assert args.project_path == "/my/bot"
+
+
+class TestToolsStatusArguments:
+    def test_default_status_arguments(
+        self, tools_parser: argparse.ArgumentParser
+    ) -> None:
+        args = tools_parser.parse_args(["tools", "status"])
+        assert args.project_path is None
+
+    def test_status_with_project_path(
+        self, tools_parser: argparse.ArgumentParser
+    ) -> None:
+        args = tools_parser.parse_args(["tools", "status", "--project-path", "/my/bot"])
+        assert args.project_path == "/my/bot"
