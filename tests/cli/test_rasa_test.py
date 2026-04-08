@@ -299,7 +299,7 @@ def test_test_help(run: Callable[..., RunResult]):
                  [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
                  [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  [--no-plot] [--successes] [--no-errors] [--no-warnings]
-                 [--out OUT]
+                 [--sub-agents SUB_AGENTS] [--out OUT]
                  {{core,nlu,e2e,du}} ..."""
 
     lines = help_text.split("\n")

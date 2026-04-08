@@ -267,3 +267,127 @@ def test_data_validate_initializes_sub_agents_with_custom_path(
 
     assert captured["folder"] == str(tmp_path / "custom_sub_agents")
     assert Configuration.get_instance().available_agents is empty_available_agents
+
+
+@pytest.mark.asyncio
+async def test_test_core_initializes_sub_agents_with_custom_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    empty_available_agents: AvailableAgents,
+) -> None:
+    """Test that `rasa test core` initializes sub-agents with a custom path."""
+    from rasa.cli.test import run_core_test_async
+
+    captured: dict = {}
+    _setup_monkeypatch_for_config(monkeypatch, empty_available_agents, captured)
+
+    # Mock model testing functions to avoid actual testing
+    monkeypatch.setattr(
+        "rasa.cli.validation.config_path_validation.get_validated_path",
+        lambda *a, **k: str(tmp_path / "model.tar.gz"),
+        raising=True,
+    )
+
+    async def mock_test_core(**kwargs):  # type: ignore[no-untyped-def]
+        return None
+
+    monkeypatch.setattr(
+        "rasa.model_testing.test_core",
+        mock_test_core,
+        raising=True,
+    )
+
+    args = argparse.Namespace(
+        stories=str(tmp_path / "data"),
+        sub_agents=str(tmp_path / "custom_sub_agents"),
+        model=str(tmp_path / "model.tar.gz"),
+        out=str(tmp_path / "results"),
+        no_errors=False,
+        no_warnings=False,
+        successes=False,
+        e2e=False,
+        evaluate_model_directory=False,
+    )
+
+    try:
+        await run_core_test_async(args)
+    except Exception:
+        pass
+
+    assert captured["folder"] == str(tmp_path / "custom_sub_agents")
+    assert Configuration.get_instance().available_agents is empty_available_agents
+
+
+@pytest.mark.asyncio
+async def test_test_nlu_initializes_sub_agents_with_custom_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    empty_available_agents: AvailableAgents,
+) -> None:
+    """Test that `rasa test nlu` initializes sub-agents with a custom path."""
+    from rasa.cli.test import run_nlu_test_async
+
+    captured: dict = {}
+    _setup_monkeypatch_for_config(monkeypatch, empty_available_agents, captured)
+
+    # Mock get_validated_path to return paths without validation
+    def mock_get_validated_path(path, name, default):  # type: ignore[no-untyped-def]
+        if name == "nlu":
+            return str(tmp_path / "data")
+        elif name == "model":
+            return str(tmp_path / "model.tar.gz")
+        return path
+
+    monkeypatch.setattr(
+        "rasa.cli.test.get_validated_path",
+        mock_get_validated_path,
+        raising=True,
+    )
+
+    async def mock_test_nlu(*args, **kwargs):  # type: ignore[no-untyped-def]
+        return None
+
+    monkeypatch.setattr(
+        "rasa.model_testing.test_nlu",
+        mock_test_nlu,
+        raising=True,
+    )
+
+    # Mock TrainingDataImporter to return empty NLU data
+    mock_nlu_data = types.SimpleNamespace(training_examples=[])
+    monkeypatch.setattr(
+        "rasa.shared.importers.importer.TrainingDataImporter.load_from_dict",
+        lambda **k: types.SimpleNamespace(
+            get_nlu_data=lambda: mock_nlu_data,
+        ),
+        raising=True,
+    )
+
+    # Mock create_directory to avoid filesystem operations
+    monkeypatch.setattr(
+        "rasa.shared.utils.io.create_directory",
+        lambda *a, **k: None,
+        raising=True,
+    )
+
+    try:
+        await run_nlu_test_async(
+            config=None,
+            data_path=str(tmp_path / "data"),
+            models_path=str(tmp_path / "model.tar.gz"),
+            output_dir=str(tmp_path / "results"),
+            cross_validation=False,
+            percentages=[0, 25, 50, 75],
+            runs=3,
+            no_errors=False,
+            domain_path=str(tmp_path / "domain.yml"),
+            all_args={
+                "sub_agents": str(tmp_path / "custom_sub_agents"),
+                "errors": True,
+            },
+        )
+    except Exception:
+        pass
+
+    assert captured["folder"] == str(tmp_path / "custom_sub_agents")
+    assert Configuration.get_instance().available_agents is empty_available_agents

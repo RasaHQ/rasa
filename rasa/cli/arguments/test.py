@@ -7,6 +7,7 @@ from rasa.cli.arguments.default_arguments import (
     add_nlu_data_param,
     add_out_param,
     add_stories_param,
+    add_sub_agents_param,
 )
 from rasa.model import get_latest_model
 from rasa.shared.constants import (
@@ -28,6 +29,7 @@ def set_test_arguments(parser: argparse.ArgumentParser) -> None:
 
     add_no_plot_param(parser)
     add_errors_success_params(parser)
+    add_sub_agents_param(parser)
     add_out_param(
         parser,
         default=DEFAULT_RESULTS_PATH,

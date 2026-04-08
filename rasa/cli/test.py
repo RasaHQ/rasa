@@ -113,7 +113,7 @@ async def run_core_test_async(args: argparse.Namespace) -> None:
         credentials_path=CredentialsConfigPath.validate()
     ).initialise_message_processing(
         message_processing_config_path=MessageProcessingConfigPath.validate()
-    )
+    ).initialise_sub_agents(args.sub_agents)
 
     stories = get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
 
@@ -241,7 +241,7 @@ async def run_nlu_test_async(
             credentials_path=CredentialsConfigPath.validate()
         ).initialise_message_processing(
             message_processing_config_path=MessageProcessingConfigPath.validate(config),
-        )
+        ).initialise_sub_agents(all_args.get("sub_agents"))
 
         config = str(get_validated_path(config, "config", DEFAULT_CONFIG_PATH))
         config_importer = TrainingDataImporter.load_from_dict(config_path=config)
@@ -257,7 +257,7 @@ async def run_nlu_test_async(
             credentials_path=CredentialsConfigPath.validate()
         ).initialise_message_processing(
             message_processing_config_path=MessageProcessingConfigPath.validate(config),
-        )
+        ).initialise_sub_agents(all_args.get("sub_agents"))
 
         await test_nlu(model_path, data_path, output, all_args, domain_path=domain_path)
 
