@@ -1,0 +1,15 @@
+# Experiment: Evaluate the MessageClassifier in isolation.
+#
+# Usage:
+#   python -m rasa.builder.evaluator.run_experiment \
+#       --config rasa/builder/evaluator/configs/test_message_classifier.yaml
+
+name: message_classifier_eval
+description: >
+  Evaluates the MessageClassifier in isolation (no copilot response
+  generation). Reports precision, recall, and F1 per class and overall
+  (micro, macro, weighted).
+task: classification
+dataset_name: user-input-classification-dataset
+results_dir: "results/classifier_eval"
+formats: [langfuse, yaml, txt]
