@@ -20,6 +20,7 @@ from rasa.cli.tools.constants import (
     TOOLS_CONFIG_FILENAME,
 )
 from rasa.cli.tools.init import (
+    _IDE_NEXT_STEPS,
     _ask_ides,
     _build_http_entry,
     _build_stdio_entry,
@@ -787,6 +788,15 @@ class TestWriteIdeConfigs:
         assert (tmp_path / ".mcp.json").exists()
 
 
+def _plain_text(text: str) -> str:
+    """Reduce Rich-markup text and panel-rendered output to comparable plain words."""
+    import re
+
+    text = re.sub(r"\[/?[a-z ]+\]", "", text)
+    text = re.sub(r"[│╭╮╰╯─]", " ", text)
+    return " ".join(text.split())
+
+
 class TestPrintSummary:
     def _render(self, config: RunConfig, tmp_path: Path, monkeypatch: Any) -> str:
         config_path = tmp_path / TOOLS_CONFIG_DIR / TOOLS_CONFIG_FILENAME
@@ -842,3 +852,65 @@ class TestPrintSummary:
         output = self._render(config, tmp_path, monkeypatch)
         assert "Cursor" in output
         assert "VS Code" in output
+
+    @pytest.mark.parametrize("ide", ["cursor", "claude", "vscode", "jetbrains"])
+    def test_stdio_summary_shows_ide_instructions(
+        self, tmp_path: Path, monkeypatch: Any, ide: str
+    ) -> None:
+        """Stdio summary must show the full next-step message for each IDE."""
+        config = RunConfig(mode=MCP_TOOLS_TRANSPORT_STDIO, ide_integrations=[ide])
+        output = self._render(config, tmp_path, monkeypatch)
+        expected = _plain_text(_IDE_NEXT_STEPS[ide])
+        assert expected in _plain_text(output)
+
+    def test_stdio_summary_shows_all_ide_instructions(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        """Stdio summary must include instructions for every selected IDE."""
+        all_ides = list(_IDE_NEXT_STEPS.keys())
+        config = RunConfig(
+            mode=MCP_TOOLS_TRANSPORT_STDIO,
+            ide_integrations=all_ides,
+        )
+        output = _plain_text(self._render(config, tmp_path, monkeypatch))
+        for ide in all_ides:
+            expected = _plain_text(_IDE_NEXT_STEPS[ide])
+            assert expected in output
+
+    def test_stdio_summary_renders_next_panel(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        """Stdio summary must render a 'Next' panel when IDEs are configured."""
+        config = RunConfig(mode=MCP_TOOLS_TRANSPORT_STDIO, ide_integrations=["cursor"])
+        output = self._render(config, tmp_path, monkeypatch)
+        assert "Next" in output
+
+    def test_stdio_summary_no_next_panel_when_no_ides(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        """No 'Next' panel should appear when no IDEs are configured."""
+        config = RunConfig(mode=MCP_TOOLS_TRANSPORT_STDIO, ide_integrations=[])
+        output = self._render(config, tmp_path, monkeypatch)
+        assert "Next" not in output
+
+    def test_http_mode_does_not_show_ide_next_steps(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        """HTTP summary must not include IDE-specific next steps."""
+        config = RunConfig(
+            mode=MCP_TOOLS_TRANSPORT_HTTP,
+            port=9000,
+            ide_integrations=["cursor", "claude"],
+        )
+        output = _plain_text(self._render(config, tmp_path, monkeypatch))
+        assert "rasa tools run" in output
+        for ide in ("cursor", "claude"):
+            expected = _plain_text(_IDE_NEXT_STEPS[ide])
+            assert expected not in output
+
+    def test_ide_next_steps_covers_all_supported_ides(self) -> None:
+        """Every IDE in SUPPORTED_IDES must have an entry in _IDE_NEXT_STEPS."""
+        from rasa.cli.tools.constants import SUPPORTED_IDES
+
+        for ide in SUPPORTED_IDES:
+            assert ide in _IDE_NEXT_STEPS, f"Missing next-step text for {ide!r}"

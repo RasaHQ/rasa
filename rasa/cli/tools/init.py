@@ -564,6 +564,29 @@ _IDE_CONFIG_WRITERS = {
     "jetbrains": _write_jetbrains_config,
 }
 
+# Per-IDE "next steps" shown after setup completes in stdio mode.
+_IDE_NEXT_STEPS = {
+    "claude": (
+        "[bold]Claude Code:[/bold] Run [cyan]claude[/cyan] from the project "
+        "directory \u2014 it auto-discovers .mcp.json and starts the server. "
+        "No manual step needed."
+    ),
+    "cursor": (
+        "[bold]Cursor:[/bold] Open the project in Cursor, then go to "
+        "Cursor Settings \u2192 MCP and enable [cyan]rasa-tools[/cyan]."
+    ),
+    "vscode": (
+        "[bold]VS Code:[/bold] Open the project in VS Code, then run "
+        '"MCP: List Servers" from the Command Palette '
+        "(Ctrl+Shift+P / Cmd+Shift+P). "
+        "If [cyan]rasa-tools[/cyan] shows as Stopped, click it to start."
+    ),
+    "jetbrains": (
+        "[bold]JetBrains:[/bold] After pasting the JSON snippet and clicking "
+        "Apply, verify the status column shows a green check mark."
+    ),
+}
+
 
 # JSON merge helper ====================================================================
 
@@ -660,4 +683,18 @@ def _print_summary(config: RunConfig, config_path: Path) -> None:
             )
         )
     else:
-        console.print("\n[bold]Next:[/bold]\n  Start the server from your IDE.\n")
+        steps = [
+            _IDE_NEXT_STEPS[ide]
+            for ide in config.ide_integrations
+            if ide in _IDE_NEXT_STEPS
+        ]
+        if steps:
+            body = "\n\n".join(f"  {s}" for s in steps)
+            console.print(
+                Panel(
+                    body,
+                    title="[bold]Next[/bold]",
+                    border_style="cyan",
+                    expand=False,
+                )
+            )
