@@ -234,7 +234,7 @@ def write_yaml(
 
     dumper = yaml.YAML()
     # no wrap lines
-    dumper.width = YAML_LINE_MAX_WIDTH  # type: ignore
+    dumper.width = YAML_LINE_MAX_WIDTH
 
     # use `null` to represent `None`
     dumper.representer.add_representer(

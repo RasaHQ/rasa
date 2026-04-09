@@ -7,7 +7,7 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.exceptions import YamlException, YamlSyntaxException
+from rasa.shared.exceptions import YamlException
 from rasa.shared.nlu.constants import (
     INTENT,
     METADATA,
@@ -18,6 +18,7 @@ from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
     RasaYAMLWriter,
 )
+from rasa.shared.utils.yaml import YamlValidationException
 from tests.conftest import filter_expected_warnings
 
 MULTILINE_INTENT_EXAMPLES = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -137,7 +138,9 @@ def test_wrong_format_raises():
     """
 
     parser = RasaYAMLReader()
-    with pytest.raises(YamlSyntaxException):
+    # ruamel.yaml >=0.17.40 wraps tag errors as
+    # YamlValidationException rather than YamlSyntaxException.
+    with pytest.raises(YamlValidationException):
         parser.reads(wrong_yaml_nlu_content)
 
 

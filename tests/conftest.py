@@ -1833,10 +1833,15 @@ def mock_replace_environment_variables(
     if "dont_replace_environment_variables_in_yaml" in request.keywords:
         return
 
-    mock_replace_env_vars = MagicMock()
+    # Patch the env-var constructor so tests don't depend on real env vars being set.
+    # The constructor is written directly into each per-parser subclass dict by
+    # environment_variables_replaced, so we patch the module-level reference it reads.
+    mock_replace_env_vars = MagicMock(
+        side_effect=lambda loader, node: loader.construct_scalar(node)
+    )
 
     monkeypatch.setattr(
-        "rasa.shared.utils.yaml._add_yaml_constructor_to_replace_environment_variables",
+        "rasa.shared.utils.yaml._env_var_constructor",
         mock_replace_env_vars,
     )
 

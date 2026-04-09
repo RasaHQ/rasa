@@ -271,6 +271,7 @@ AWS_SESSION_TOKEN_CONFIG_KEY = "aws_session_token"
 
 CLIENT_ID_CONFIG_KEY = "client_id"
 CLIENT_SECRET_CONFIG_KEY = "client_secret"
+TOKEN_URL_CONFIG_KEY = "token_url"
 
 AWS_ACCESS_KEY_ID_ENV_VAR = "AWS_ACCESS_KEY_ID"
 AWS_SECRET_ACCESS_KEY_ENV_VAR = "AWS_SECRET_ACCESS_KEY"
@@ -353,6 +354,18 @@ SENSITIVE_DATA = [
     LANGFUSE_CONFIG_PRIVATE_KEY,
     CLIENT_ID_CONFIG_KEY,
     CLIENT_SECRET_CONFIG_KEY,
+    TOKEN_URL_CONFIG_KEY,
+]
+
+# Keys whose values are resolved at runtime (e.g. OAuth fields in MCP endpoints).
+# Unlike SENSITIVE_DATA, these are returned as-is even when the env var is not set,
+# so no error is raised during YAML loading.
+DEFERRED_RESOLUTION_KEYS = [
+    CLIENT_ID_CONFIG_KEY,
+    CLIENT_SECRET_CONFIG_KEY,
+    TOKEN_URL_CONFIG_KEY,
+    LANGFUSE_CONFIG_PUBLIC_KEY,
+    LANGFUSE_CONFIG_PRIVATE_KEY,
 ]
 
 # Used for key values in BotUtterance.data

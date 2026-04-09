@@ -27,6 +27,7 @@ from rasa.shared.constants import (
     ASSERTIONS_SCHEMA_EXTENSIONS_FILE,
     ASSERTIONS_SCHEMA_FILE,
     CONFIG_SCHEMA_FILE,
+    DEFERRED_RESOLUTION_KEYS,
     DOCS_URL_TRAINING_DATA,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     MODEL_CONFIG_SCHEMA_FILE,
@@ -99,31 +100,35 @@ def _add_env_var_resolver() -> None:
     yaml.Resolver.add_implicit_resolver("!env_var", env_var_pattern, None)
 
 
-def _add_yaml_constructor_to_replace_environment_variables() -> None:
-    """Enable yaml loader to replace the environment variables in the yaml."""
+def _env_var_constructor(loader: BaseConstructor, node: ScalarNode) -> str:
+    """Process environment variables found in the YAML."""
+    value = loader.construct_scalar(node)
+    expanded_vars = os.path.expandvars(value)
+    not_expanded = [
+        w for w in expanded_vars.split() if w.startswith("$") and w in value
+    ]
 
-    def env_var_constructor(loader: BaseConstructor, node: ScalarNode) -> str:
-        """Process environment variables found in the YAML."""
-        value = loader.construct_scalar(node)
-        expanded_vars = os.path.expandvars(value)
-        not_expanded = [
-            w for w in expanded_vars.split() if w.startswith("$") and w in value
-        ]
-        if not_expanded:
-            raise RasaException(
-                f"Error when trying to expand the "
-                f"environment variables in '{value}'. "
-                f"Please make sure to also set these "
-                f"environment variables: '{not_expanded}'."
-            )
+    constructed = loader.constructed_objects
+    key_node = next(reversed(constructed)) if constructed else None
 
-        # get key of current node
-        key_node = list(loader.constructed_objects)[-1]
-        if isinstance(key_node, ScalarNode) and key_node.value in SENSITIVE_DATA:
+    if not_expanded:
+        if (
+            isinstance(key_node, ScalarNode)
+            and key_node.value in DEFERRED_RESOLUTION_KEYS
+        ):
+            # These fields (e.g. OAuth client_id, token_url, Langfuse keys) are
+            # resolved at runtime, so an unset env var is not an error at load time.
             return value
-        return expanded_vars
+        raise RasaException(
+            f"Error when trying to expand the "
+            f"environment variables in '{value}'. "
+            f"Please make sure to also set these "
+            f"environment variables: '{not_expanded}'."
+        )
 
-    yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
+    if isinstance(key_node, ScalarNode) and key_node.value in SENSITIVE_DATA:
+        return value
+    return expanded_vars
 
 
 fix_yaml_loader()
@@ -214,7 +219,7 @@ class YamlValidationException(YamlException, ValueError):
             yaml = YAML()
             yaml.default_flow_style = False
             # Set width to 1000, so we don't break the lines of the original YAML file
-            yaml.width = 1000  # type: ignore[assignment]
+            yaml.width = 1000
             yaml.indent(mapping=2, sequence=4, offset=2)
             stream = io.StringIO()
             yaml.dump(self.content, stream)
@@ -545,15 +550,16 @@ def environment_variables_replaced(
 ) -> Generator[None, None, None]:
     """Replace environment variables during yaml loading.
 
-    Resets the environment variable constructor after the context manager exits.
+    Writes the expanding constructor directly into the per-parser subclass dict
+    (created by create_yaml_parser) and restores a no-expand constructor on exit.
     """
     try:
-        _add_yaml_constructor_to_replace_environment_variables()
+        yaml_parser.constructor.yaml_constructors["!env_var"] = _env_var_constructor
         yield
     finally:
         # replace env var constructor with one that does not expand env vars
-        yaml_parser.constructor.add_constructor(
-            "!env_var", lambda loader, node: loader.construct_scalar(node)
+        yaml_parser.constructor.yaml_constructors["!env_var"] = (
+            lambda loader, node: loader.construct_scalar(node)
         )
 
 
@@ -575,18 +581,12 @@ def read_yaml(
     custom_constructor = kwargs.get("custom_constructor", None)
     expand_env_vars = kwargs.get("expand_env_vars", True)
 
-    # Create YAML parser with custom constructor
-    yaml_parser, reset_constructors = create_yaml_parser(
-        reader_type, custom_constructor
-    )
+    yaml_parser = create_yaml_parser(reader_type, custom_constructor)
     if expand_env_vars:
         with environment_variables_replaced(yaml_parser):
             yaml_content = yaml_parser.load(content) or {}
     else:
         yaml_content = yaml_parser.load(content) or {}
-
-    # Reset to default constructors
-    reset_constructors()
 
     return yaml_content
 
@@ -594,7 +594,7 @@ def read_yaml(
 def create_yaml_parser(
     reader_type: str,
     custom_constructor: Optional[Callable] = None,
-) -> Tuple[yaml.YAML, Callable[[], None]]:
+) -> yaml.YAML:
     """Create a YAML parser with an optional custom constructor.
 
     Args:
@@ -604,40 +604,25 @@ def create_yaml_parser(
             A custom constructor function for YAML parsing.
 
     Returns:
-        Tuple[yaml.YAML, Callable[[], None]]: A tuple containing
-        the YAML parser and a function to reset constructors to
-        their original state.
+        yaml.YAML: The configured YAML parser. Each parser owns its own
+        isolated Constructor subclass, so constructors are never shared
+        between parsers.
     """
     yaml_parser = yaml.YAML(typ=reader_type)
-    yaml_parser.version = YAML_VERSION  # type: ignore[assignment]
-    yaml_parser.preserve_quotes = True  # type: ignore[assignment]
+    yaml_parser.version = YAML_VERSION
+    yaml_parser.preserve_quotes = True
 
-    # Save the original constructors
-    original_mapping_constructor = yaml_parser.constructor.yaml_constructors.get(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
+    # Replace the shared Constructor class with a per-parser subclass that owns
+    # its own yaml_constructors dict. add_constructor is a classmethod that
+    # mutates the class-level dict; without this isolation, concurrent parsers
+    # sharing the same Constructor class corrupt each other's state.
+    # Both the pure-Python and C-extension load paths use yaml_parser.Constructor,
+    # so replacing it here covers both.
+    yaml_parser.Constructor = type(
+        yaml_parser.Constructor.__name__,
+        (yaml_parser.Constructor,),
+        {"yaml_constructors": dict(yaml_parser.Constructor.yaml_constructors)},
     )
-    original_sequence_constructor = yaml_parser.constructor.yaml_constructors.get(
-        yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG
-    )
-
-    if custom_constructor is not None:
-        # Attach the custom constructor to the loader
-        yaml_parser.constructor.add_constructor(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, custom_constructor
-        )
-        yaml_parser.constructor.add_constructor(
-            yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG, custom_constructor
-        )
-
-    def reset_constructors() -> None:
-        """Reset the constructors back to their original state."""
-        yaml_parser.constructor.add_constructor(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, original_mapping_constructor
-        )
-        yaml_parser.constructor.add_constructor(
-            yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG,
-            original_sequence_constructor,
-        )
 
     def custom_date_constructor(loader: SafeLoader, node: ScalarNode) -> str:
         """Custom constructor for parsing dates in the format '%Y-%m-%d'.
@@ -663,7 +648,15 @@ def create_yaml_parser(
         "tag:yaml.org,2002:timestamp", custom_date_constructor
     )
 
-    return yaml_parser, reset_constructors
+    if custom_constructor is not None:
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, custom_constructor
+        )
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG, custom_constructor
+        )
+
+    return yaml_parser
 
 
 def _is_ascii(text: str) -> bool:
@@ -823,7 +816,7 @@ def write_yaml(
 
     dumper = yaml.YAML()
     # no wrap lines
-    dumper.width = YAML_LINE_MAX_WIDTH  # type: ignore[assignment]
+    dumper.width = YAML_LINE_MAX_WIDTH
 
     # use `null` to represent `None`
     dumper.representer.add_representer(
