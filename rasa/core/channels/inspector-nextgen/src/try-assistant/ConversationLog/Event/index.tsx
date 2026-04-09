@@ -3,10 +3,11 @@ import { forwardRef } from "react";
 import {
   type ConversationEvent,
   type ConversationEventAction,
-  ConversationEventType
+  ConversationEventType,
 } from "../../../types";
 import { ActionEvent } from "./ActionEvent";
 import { FlowEvent } from "./FlowEvent";
+import { McpToolExecutedEvent } from "./McpToolExecutedEvent";
 import { PlainEvent } from "./PlainEvent";
 import { SlotEvent } from "./SlotEvent";
 
@@ -97,6 +98,19 @@ export const Event = forwardRef<HTMLDivElement | null, Props>(
           onKeyDown={handleKeyDown}
           isSelected={selectable && isSelected}
           replayConversation={replayConversation}
+          {...additionalProps}
+        />
+      );
+    }
+
+    if (event.conversationEventType === ConversationEventType.McpToolExecuted) {
+      return (
+        <McpToolExecutedEvent
+          ref={ref}
+          event={event}
+          onClick={handleSelect}
+          onKeyDown={handleKeyDown}
+          isSelected={selectable && isSelected}
           {...additionalProps}
         />
       );

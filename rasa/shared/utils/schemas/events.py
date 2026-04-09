@@ -168,6 +168,17 @@ AGENT_STARTED = {
         "flow_id": {"type": "string"},
     }
 }
+MCP_TOOL_EXECUTED = {
+    "properties": {
+        "event": {"const": "mcp_tool_executed"},
+        "tool_name": {"type": "string"},
+        "arguments": {"type": "object"},
+        "result": {},
+        "is_error": {"type": "boolean"},
+        "error_message": {"type": ["string", "null"]},
+    },
+    "required": ["event", "tool_name", "arguments"],
+}
 AGENT_COMPLETED = {
     "properties": {
         "event": {"const": "agent_completed"},
@@ -256,6 +267,7 @@ EVENT_SCHEMA = {
         FLOW_COMPLETED,
         FLOW_CANCELLED,
         AGENT_STARTED,
+        MCP_TOOL_EXECUTED,
         AGENT_COMPLETED,
         AGENT_INTERRUPTED,
         AGENT_RESUMED,

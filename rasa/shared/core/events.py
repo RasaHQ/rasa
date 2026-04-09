@@ -428,13 +428,13 @@ class AlwaysEqualEventMixin(Event, ABC):
 class SkipEventInMDStoryMixin(Event, ABC):
     """Skips the visualization of an event in Markdown stories."""
 
-    def as_story_string(self) -> None:
+    def as_story_string(self) -> Optional[Text]:
         """Returns the event as story string.
 
         Returns:
             None, as this event should not appear inside the story.
         """
-        return
+        return None
 
 
 class UserUttered(Event):
@@ -1113,6 +1113,8 @@ class SlotSet(Event):
             value: Value to which slot is set.
             timestamp: When the event was created.
             metadata: Additional event metadata.
+            filled_by: Identifier of the component that filled this slot.
+            anonymized_at: Unix timestamp when the slot value was anonymized.
         """
         self.key = key
         self.value = value
@@ -2837,6 +2839,93 @@ class AgentStarted(SkipEventInMDStoryMixin):
         return AgentStarted(
             parameters["agent_id"],
             parameters["flow_id"],
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+
+class McpToolExecuted(SkipEventInMDStoryMixin):
+    """MCP tool execution for inspector visibility."""
+
+    type_name = "mcp_tool_executed"
+
+    def __init__(
+        self,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        result: Optional[Any] = None,
+        is_error: bool = False,
+        error_message: Optional[str] = None,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self.tool_name = tool_name
+        self.arguments = arguments
+        self.result = result
+        self.is_error = is_error
+        self.error_message = error_message
+        super().__init__(timestamp, metadata)
+
+    def __repr__(self) -> str:
+        """Returns event as string for debugging."""
+        return f"McpToolExecuted(tool={self.tool_name}, error={self.is_error})"
+
+    def __str__(self) -> str:
+        """Returns event as human-readable string."""
+        return self.__repr__()
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(
+            (self.tool_name, json.dumps(self.arguments, sort_keys=True), self.is_error)
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, McpToolExecuted):
+            return NotImplemented
+        return (
+            self.tool_name == other.tool_name
+            and self.arguments == other.arguments
+            and self.result == other.result
+            and self.is_error == other.is_error
+            and self.error_message == other.error_message
+        )
+
+    def as_story_string(self) -> Optional[Text]:
+        """Returns textual representation of the event."""
+        return None
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update(
+            {
+                "tool_name": self.tool_name,
+                "arguments": self.arguments,
+                "result": self.result,
+                "is_error": self.is_error,
+                "error_message": self.error_message,
+            }
+        )
+        return serialized
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[str, Any]) -> "McpToolExecuted":
+        if "tool_name" not in parameters:
+            raise ValueError(
+                "Failed to parse mcp_tool_executed event: tool_name is required"
+            )
+        if "arguments" not in parameters:
+            raise ValueError(
+                "Failed to parse mcp_tool_executed event: arguments is required"
+            )
+        return McpToolExecuted(
+            parameters["tool_name"],
+            parameters["arguments"],
+            parameters.get("result"),
+            parameters.get("is_error", False),
+            parameters.get("error_message"),
             parameters.get("timestamp"),
             parameters.get("metadata"),
         )

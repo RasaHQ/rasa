@@ -15,7 +15,7 @@ from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import Event, McpToolExecuted, SlotSet
 from rasa.shared.core.flows.steps import CallFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.utils.mcp.server_connection import MCPServerConnection
@@ -122,6 +122,8 @@ async def _execute_mcp_tool_call(
             timedelta(seconds=TOOL_CALL_DEFATULT_TIMEOUT),
             meta,
         )
+
+        initial_events.append(_create_mcp_tool_executed_event(step, arguments, result))
 
         # Handle tool execution result
         if result is None or result.isError:
@@ -265,7 +267,7 @@ def _prepare_tool_arguments(
 
 
 def _jsonify_slot_value(value: Any) -> str | int | float | bool | None:
-    """Prepare value for SlotSet: iterables -> JSON string, primitives -> as-is"""
+    """Prepare value for SlotSet: iterables -> JSON string, primitives -> as-is."""
     if isinstance(value, (list, dict)) and len(value):
         return json.dumps(ensure_jsonified_iterable(value))
     return value
@@ -275,7 +277,7 @@ def _get_slot_value_from_jinja2_expression(
     result_expression: str,
     result_as_dict: Dict[str, Any],
 ) -> Any:
-    """Get the slot value from the Jinja2 expression"""
+    """Get the slot value from the Jinja2 expression."""
     # Create a sandboxed environment to evaluate the expression
     _env = SandboxedEnvironment()
 
@@ -290,7 +292,7 @@ def _process_tool_result(
     result: CallToolResult,
     output_mapping: List[Dict[str, str]],
 ) -> Optional[List[SlotSet]]:
-    """Create a SetSlot event for the tool result using Jinja2 expressions"""
+    """Create a SetSlot event for the tool result using Jinja2 expressions."""
     try:
         _result_as_dict = {"result": result.model_dump()}
         slots = []
@@ -325,6 +327,48 @@ def _process_tool_result(
             json_formatting=["result"],
         )
         return None
+
+
+def _serialize_tool_result_for_event(result: Optional[CallToolResult]) -> Any:
+    """Serialize a tool result into a JSON-serializable event payload."""
+    if result is None:
+        return None
+
+    try:
+        return result.model_dump()
+    except Exception:
+        return {"content": str(result.content), "structuredContent": None}
+
+
+def _create_mcp_tool_executed_event(
+    step: CallFlowStep,
+    arguments: Dict[str, Any],
+    result: Optional[CallToolResult],
+) -> McpToolExecuted:
+    """Create an inspector event for a flow MCP tool execution."""
+    metadata = {
+        key: value
+        for key, value in {
+            "flow_id": step.flow_id,
+            "step_id": step.id,
+        }.items()
+        if value is not None
+    }
+
+    return McpToolExecuted(
+        tool_name=step.call,
+        arguments=arguments,
+        result=(
+            None
+            if result is None or result.isError
+            else _serialize_tool_result_for_event(result)
+        ),
+        is_error=result is None or result.isError,
+        error_message=(
+            str(result.content) if result is not None and result.isError else None
+        ),
+        metadata=metadata or None,
+    )
 
 
 def _handle_mcp_tool_error(

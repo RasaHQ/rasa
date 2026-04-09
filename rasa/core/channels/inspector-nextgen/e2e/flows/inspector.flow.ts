@@ -116,7 +116,7 @@ export const assertConversationEventVisible = async (
 };
 
 export const assertSlotEventVisible = async (
-  page: Page, 
+  page: Page,
   slotName: string,
 ) => {
   await test.step(`Assert slot event for ${slotName} are visible`, async () => {
@@ -354,13 +354,13 @@ export const assertCollectedCurrentFlowSlotsVisible = async (page: Page) => {
   });
 };
 
-export const assertCollectedSlotVisible = async (page: Page, section:string, slotName: string, slotValue?: string) => {
+export const assertCollectedSlotVisible = async (page: Page, section: string, slotName: string, slotValue?: string) => {
   await test.step(`Assert collected slot "${slotName}" is visible`, async () => {
     await actions.inspector.assertions(page).assertCollectedSlotVisible(section, slotName, slotValue);
   });
 };
 
-export const assertCollectedSlotNotVisible = async (page: Page, section:string, slotName: string) => {
+export const assertCollectedSlotNotVisible = async (page: Page, section: string, slotName: string) => {
   await test.step(`Assert collected slot "${slotName}" is not visible`, async () => {
     await actions.inspector.assertions(page).assertCollectedSlotNotVisible(section, slotName);
   });

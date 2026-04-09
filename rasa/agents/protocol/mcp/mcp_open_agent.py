@@ -436,6 +436,13 @@ class MCPOpenAgent(MCPBaseAgent):
                         ):
                             return error_output
 
+                    mcp_tool_events = self._get_mcp_tool_executed_events(
+                        llm_response.tool_calls, current_iteration_tool_results
+                    )
+                    accumulated_tool_output_events.extend(mcp_tool_events)
+                    if mcp_tool_events:
+                        agent_input.events.extend(mcp_tool_events)
+
                     events_from_tool_results = await self._process_tool_output_or_raise(
                         current_iteration_tool_results,
                         tool_results,

@@ -464,6 +464,35 @@ export function mapRawEventsToConversationEvents(
           timestamp: parsedTimestamp,
           __typename: "ConversationEvent",
         };
+      case "mcp_tool_executed": {
+        const rawEvent = event as RawEvent & {
+          tool_name?: string;
+          arguments?: Record<string, unknown>;
+          result?: unknown;
+          is_error?: boolean;
+          error_message?: string;
+        };
+        return {
+          id: uuid(),
+          actionText: undefined,
+          conversationEventType: ConversationEventType.McpToolExecuted,
+          flowId: event.flow_id || event.metadata?.active_flow,
+          metadata: {
+            ...event.metadata,
+            rawEvent: event,
+            tool_name: rawEvent.tool_name,
+            tool_arguments: rawEvent.arguments,
+            tool_result: rawEvent.result,
+            tool_is_error: rawEvent.is_error,
+            tool_error_message: rawEvent.error_message,
+          },
+          name: rawEvent.tool_name || "tool",
+          slotValue: undefined,
+          stepId: event.step_id || event.metadata?.step_id,
+          timestamp: parsedTimestamp,
+          __typename: "ConversationEvent",
+        };
+      }
       default:
         return {
           id: uuid(),

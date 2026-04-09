@@ -90,6 +90,17 @@ def test_remote_action_validate_all_event_subclasses(event_class: Type[Event]):
             ],
             "responses": [],
         }
+    elif event_class.type_name == "mcp_tool_executed":
+        response = {
+            "events": [
+                {
+                    "event": "mcp_tool_executed",
+                    "tool_name": "test_tool",
+                    "arguments": {},
+                }
+            ],
+            "responses": [],
+        }
     else:
         response = {"events": [{"event": event_class.type_name}], "responses": []}
 

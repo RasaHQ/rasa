@@ -74,6 +74,7 @@ from rasa.shared.core.events import (
     AgentStarted,
     BotUttered,
     Event,
+    McpToolExecuted,
     SlotSet,
     UserUttered,
 )
@@ -1408,9 +1409,7 @@ class MCPBaseAgent(AgentProtocol):
         bot_uttered: Optional[BotUttered],
         generated_events: List[Event],
     ) -> None:
-        """If bot_uttered is set, mark as input_required and append to
-        generated_events.
-        """
+        """Mark `bot_uttered` as input-required and append it."""
         if bot_uttered:
             bot_uttered.metadata[BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY] = (
                 BOT_UTTERANCE_AGENT_MESSAGE_TYPE_INPUT_REQUIRED
@@ -1422,9 +1421,7 @@ class MCPBaseAgent(AgentProtocol):
         bot_uttered: BotUttered,
         generated_events: List[Event],
     ) -> None:
-        """If filler enabled and bot_uttered set, mark as filler and append
-        to generated_events.
-        """
+        """Mark `bot_uttered` as filler and append it when enabled."""
         bot_uttered.metadata[BOT_UTTERANCE_AGENT_MESSAGE_TYPE_KEY] = (
             BOT_UTTERANCE_AGENT_MESSAGE_TYPE_FILLER_MESSAGE
         )
@@ -1586,8 +1583,7 @@ class MCPBaseAgent(AgentProtocol):
         *,
         events: Optional[List[Event]] = None,
     ) -> Optional[AgentOutput]:
-        """Execute a tool call, log output; on success record result and
-        append to messages.
+        """Execute a tool call and append its result to the conversation.
 
         Returns an AgentOutput on tool failure (caller should return it);
         returns None to continue.
@@ -1757,6 +1753,31 @@ class MCPBaseAgent(AgentProtocol):
         tool execution.
         """
         return []
+
+    def _get_mcp_tool_executed_events(
+        self,
+        tool_calls: List[LLMToolCall],
+        current_iteration_tool_results: Dict[str, AgentToolResult],
+    ) -> List[Event]:
+        """Return inspector events for this iteration's executed MCP tools."""
+        agent_id = str(make_agent_identifier(self._name, self.protocol_type))
+        events: List[Event] = []
+        for tool_call in tool_calls:
+            if tool_call.id not in current_iteration_tool_results:
+                continue
+
+            tool_result = current_iteration_tool_results[tool_call.id]
+            events.append(
+                McpToolExecuted(
+                    tool_name=tool_call.tool_name,
+                    arguments=tool_call.tool_args,
+                    result=tool_result.result,
+                    is_error=tool_result.is_error,
+                    error_message=tool_result.error_message,
+                    metadata={"agent_id": agent_id},
+                )
+            )
+        return events
 
     async def _process_tool_output_or_raise(
         self,

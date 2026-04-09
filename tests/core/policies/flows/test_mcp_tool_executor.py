@@ -29,7 +29,7 @@ from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import McpToolExecuted, SlotSet
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps.call import CallFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -527,8 +527,9 @@ async def test_execute_mcp_tool_call_success(
                 )
 
                 assert isinstance(result, ContinueFlowWithNextStep)
-                assert len(result.events) == 1
-                assert isinstance(result.events[0], SlotSet)
+                assert len(result.events) == 2
+                assert isinstance(result.events[0], McpToolExecuted)
+                assert isinstance(result.events[1], SlotSet)
                 mock_connection.ensure_active_session.assert_called_once()
                 mock_mcp_server.call_tool.assert_called_once_with(
                     "test_tool",
@@ -634,10 +635,11 @@ async def test_execute_mcp_tool_call_structured_content_only(
             )
 
     assert isinstance(result, ContinueFlowWithNextStep)
-    assert len(result.events) == 1
-    assert isinstance(result.events[0], SlotSet)
-    assert result.events[0].key == "result_slot"
-    assert result.events[0].value == "from_structured"
+    assert len(result.events) == 2
+    assert isinstance(result.events[0], McpToolExecuted)
+    assert isinstance(result.events[1], SlotSet)
+    assert result.events[1].key == "result_slot"
+    assert result.events[1].value == "from_structured"
     mock_connection.close.assert_called_once()
 
 

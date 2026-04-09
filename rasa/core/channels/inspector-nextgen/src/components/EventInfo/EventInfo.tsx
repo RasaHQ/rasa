@@ -9,6 +9,7 @@ import { isUtterance } from "../../utils";
 import { ActionEventInfo } from "./ActionEventInfo";
 import { BotMessageInfo } from "./BotMessageInfo";
 import { FlowEventInfo } from "./FlowEventInfo";
+import { McpToolExecutedEventInfo } from "./McpToolExecutedEventInfo";
 import { PlainEventInfo } from "./PlainEventInfo";
 import { SlotEventInfo } from "./SlotEventInfo";
 import { UserMessageInfo } from "./UserMessageInfo";
@@ -32,6 +33,10 @@ function isSlotEvent(event: ConversationEvent): boolean {
 
 function isActionEvent(event: ConversationEvent): boolean {
   return event.conversationEventType === ConversationEventType.Action;
+}
+
+function isMcpToolExecutedEvent(event: ConversationEvent): boolean {
+  return event.conversationEventType === ConversationEventType.McpToolExecuted;
 }
 
 interface EventInfoProps {
@@ -60,6 +65,10 @@ export const EventInfo = ({ event, onClose, flows }: EventInfoProps) => {
 
   if (isActionEvent(event)) {
     return <ActionEventInfo event={event} onClose={onClose} />;
+  }
+
+  if (isMcpToolExecutedEvent(event)) {
+    return <McpToolExecutedEventInfo event={event} onClose={onClose} />;
   }
 
   return <PlainEventInfo event={event} onClose={onClose} />;

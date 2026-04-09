@@ -67,6 +67,7 @@ export const colors = {
     900: { value: "#DA6BE0" },
   },
   rasaRed: {
+    50: { value: "#FFEBEB" },
     800: { value: "#A72E2C" },
   },
 };

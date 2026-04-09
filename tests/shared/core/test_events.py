@@ -60,6 +60,7 @@ from rasa.shared.core.events import (
     LegacyForm,
     LegacyFormValidation,
     LoopInterrupted,
+    McpToolExecuted,
     ReminderCancelled,
     ReminderScheduled,
     Restarted,
@@ -481,6 +482,9 @@ def test_event_metadata_dict(event_class: Type[Event]):
     ]:
         parameters["agent_id"] = "test_agent"
         parameters["flow_id"] = "test_flow"
+    if event_class.type_name == "mcp_tool_executed":
+        parameters["tool_name"] = "test_tool"
+        parameters["arguments"] = {}
 
     # Create the event from a `dict` that will be accepted by the
     # `_from_parameters` method of any `Event` subclass (the values themselves
@@ -510,6 +514,9 @@ def test_event_default_metadata(event_class: Type[Event]):
     ]:
         parameters["agent_id"] = "test_agent"
         parameters["flow_id"] = "test_flow"
+    if event_class.type_name == "mcp_tool_executed":
+        parameters["tool_name"] = "test_tool"
+        parameters["arguments"] = {}
 
     # Create an event without metadata. When converting the `Event` to a
     # `dict`, it should not include a `metadata` property - unless it's a
@@ -965,6 +972,7 @@ tested_events = [
     AgentInterrupted("test_agent", "test_flow"),
     AgentCancelled("test_agent", "test_flow"),
     AgentResumed("test_agent", "test_flow"),
+    McpToolExecuted("test_tool", {}),
 ]
 
 

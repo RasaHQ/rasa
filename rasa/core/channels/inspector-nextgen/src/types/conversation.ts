@@ -17,6 +17,7 @@ export enum ConversationEventType {
   AgentCancelled = "AGENT_CANCELLED",
   AgentCompleted = "AGENT_COMPLETED",
   AgentInterrupted = "AGENT_INTERRUPTED",
+  McpToolExecuted = "MCP_TOOL_EXECUTED",
   AgentResumed = "AGENT_RESUMED",
   AgentStarted = "AGENT_STARTED",
   FlowCancelled = "FLOW_CANCELLED",
@@ -130,6 +131,11 @@ export type EventMetadata = {
     rephrase?: boolean;
     rephrasePrompt?: string;
   };
+  tool_name?: string;
+  tool_arguments?: Record<string, unknown>;
+  tool_result?: unknown;
+  tool_is_error?: boolean;
+  tool_error_message?: string;
   parseData: unknown;
 };
 
@@ -137,7 +143,24 @@ export type RawEvent = {
   name: string;
   metadata: EventMetadata;
   timestamp: number;
-  event: "user" | "stack" | "action" | "bot" | "slot" | "agent" | "agent_started" | "agent_completed" | "agent_interrupted" | "agent_cancelled" | "agent_resumed";
+  tool_name?: string;
+  arguments?: Record<string, unknown>;
+  result?: unknown;
+  is_error?: boolean;
+  error_message?: string;
+  event:
+    | "user"
+    | "stack"
+    | "action"
+    | "bot"
+    | "slot"
+    | "agent"
+    | "agent_started"
+    | "agent_completed"
+    | "agent_interrupted"
+    | "agent_cancelled"
+    | "agent_resumed"
+    | "mcp_tool_executed";
   conversation_id: string;
   text: string;
   data: BackendResponseData;

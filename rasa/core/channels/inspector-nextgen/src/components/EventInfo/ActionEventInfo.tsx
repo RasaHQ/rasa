@@ -1,4 +1,4 @@
-import { Accordion, Box, Separator, Text } from "@chakra-ui/react";
+import { Accordion, Box, Heading, Separator, Text } from "@chakra-ui/react";
 import type { ConversationEvent } from "../../types";
 import { CommonEventInfo } from "./CommonEventInfo";
 import { DetailView } from "./DetailView";
@@ -16,31 +16,30 @@ export const ActionEventInfo = ({ event, onClose }: ActionEventInfoProps) => {
   return (
     <DetailView title="Action event details" onClose={onClose}>
       <Box data-testid="action-event-info">
-        <Text fontWeight="bold" fontSize="0.875rem" mb="0.25rem">
+        <Heading size="md" mb="0.25rem">
           Name
-        </Text>
-        <Text fontSize="0.875rem" mb="0.5rem">
+        </Heading>
+        <Text size="md" mb="0.5rem">
           {event.name || "-"}
         </Text>
 
         {didActionFail && (
           <Box
-            bg="red.50"
+            bg="rasaRed.50"
             borderLeft="3px solid"
             borderColor="red.500"
             p="0.5rem"
             mb="0.5rem"
             borderRadius="0.25rem"
           >
-            <Text fontWeight="bold" fontSize="0.75rem" color="red.700">
+            <Heading size="sm">
               {failureReason
                 ? "This custom action failed to execute due to the following reason:"
                 : "This custom action failed to execute"}
-            </Text>
+            </Heading>
             {failureReason && (
               <Text
-                fontSize="0.75rem"
-                color="red.700"
+                size="sm"
                 mt="0.25rem"
                 wordBreak="break-all"
               >

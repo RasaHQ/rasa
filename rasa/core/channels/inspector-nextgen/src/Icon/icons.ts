@@ -40,6 +40,7 @@ export {
   faPlus as Plus,
   faXmark as XMark,
   faHeart as Heart,
+  faHammer as Hammer,
   faArrowDown as ArrowDown,
   faLink as Link,
   faTriangleExclamation as TriangleExclamation,
