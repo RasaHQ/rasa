@@ -285,6 +285,96 @@ def test_verify_rephrase_with_rephrase_nlg_type_short_circuits_source_split():
         )
 
 
+def test_verify_rephrase_with_custom_rephraser_subclass_passes_validation():
+    """A custom NLG type that subclasses ContextualResponseRephraser should pass."""
+    from rasa.core.nlg.contextual_response_rephraser import (
+        ContextualResponseRephraser,
+    )
+
+    class _CustomRephraser(ContextualResponseRephraser):
+        pass
+
+    merged_domain = _domain_with_rephrase_response("utter_user", text="custom")
+    endpoints = MagicMock()
+    endpoints.nlg = MagicMock()
+    endpoints.nlg.type = (
+        f"{_CustomRephraser.__module__}.{_CustomRephraser.__qualname__}"
+    )
+
+    with (
+        patch(
+            "rasa.validator.class_from_module_path",
+            return_value=_CustomRephraser,
+        ),
+        patch("rasa.validator._split_rephrase_sources", side_effect=AssertionError),
+    ):
+        verify_rephrase_endpoints_consistency_or_raise(
+            domain=merged_domain, endpoints=endpoints, user_domain=None
+        )
+
+
+def test_verify_rephrase_with_non_rephraser_custom_class_raises(
+    monkeypatch: MonkeyPatch,
+):
+    """A custom NLG type that is NOT a ContextualResponseRephraser subclass.
+
+    Should still be treated as a wrong type.
+    """
+    from rasa.core.nlg.callback import CallbackNaturalLanguageGenerator
+    from rasa.shared.importers.importer import FlowSyncImporter
+
+    merged_domain = _domain_with_rephrase_response("utter_user", text="custom")
+    default_domain = Domain.empty()
+    monkeypatch.setattr(
+        FlowSyncImporter, "load_default_pattern_flows_domain", lambda: default_domain
+    )
+
+    endpoints = MagicMock()
+    endpoints.nlg = MagicMock()
+    endpoints.nlg.type = "my_module.SomeCallbackNlg"
+
+    with (
+        patch(
+            "rasa.validator.class_from_module_path",
+            return_value=CallbackNaturalLanguageGenerator,
+        ),
+        pytest.raises(ValidationError) as exc_info,
+    ):
+        verify_rephrase_endpoints_consistency_or_raise(
+            domain=merged_domain, endpoints=endpoints, user_domain=None
+        )
+    assert (
+        exc_info.value.code
+        == "validator.verify_rephrase_endpoints_consistency.nlg_not_rephrase_type"
+    )
+
+
+def test_verify_rephrase_with_unresolvable_custom_class_raises(
+    monkeypatch: MonkeyPatch,
+):
+    """A custom NLG type that cannot be imported should be treated as wrong type."""
+    from rasa.shared.importers.importer import FlowSyncImporter
+
+    merged_domain = _domain_with_rephrase_response("utter_user", text="custom")
+    default_domain = Domain.empty()
+    monkeypatch.setattr(
+        FlowSyncImporter, "load_default_pattern_flows_domain", lambda: default_domain
+    )
+
+    endpoints = MagicMock()
+    endpoints.nlg = MagicMock()
+    endpoints.nlg.type = "nonexistent_module.NoSuchClass"
+
+    with pytest.raises(ValidationError) as exc_info:
+        verify_rephrase_endpoints_consistency_or_raise(
+            domain=merged_domain, endpoints=endpoints, user_domain=None
+        )
+    assert (
+        exc_info.value.code
+        == "validator.verify_rephrase_endpoints_consistency.nlg_not_rephrase_type"
+    )
+
+
 def test_verify_nlu_with_e2e_story(
     tmp_path: Path, nlu_data_path: Path, capsys: CaptureFixture
 ):

@@ -15,6 +15,7 @@ from rasa.agents.validation import validate_agent_names_not_conflicting_with_flo
 from rasa.core.channels import UserMessage
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.engine.language import Language
 from rasa.exceptions import ValidationError
@@ -76,6 +77,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import COMMANDS, INTENT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.common import class_from_module_path
 from rasa.telemetry import track_validation_error_log
 from rasa.utils.pypred import Predicate
 
@@ -211,9 +213,9 @@ def _get_rephrase_misconfig_action(
 
         event_info = (
             "Default pattern flows include responses with rephrasing enabled, "
-            f"but the NLG endpoint type is '{nlg_display}' instead "
-            f"of '{REPHRASE_NLG_TYPE}'. Rephrasing for default patterns will be "
-            "skipped."
+            f"but the NLG endpoint type is '{nlg_display}' which is not "
+            f"'{REPHRASE_NLG_TYPE}' or a ContextualResponseRephraser subclass. "
+            "Rephrasing for default patterns will be skipped."
         )
         return _RephraseMisconfigAction(
             event_info=event_info,
@@ -234,9 +236,10 @@ def _get_rephrase_misconfig_action(
         else:
             event_info = (
                 "Domain and default pattern flows include responses with rephrasing, "
-                f"but the NLG endpoint type is '{nlg_display}' instead of "
-                f"'{REPHRASE_NLG_TYPE}'. Set 'nlg.type: {REPHRASE_NLG_TYPE}' "
-                "in endpoints.yml."
+                f"but the NLG endpoint type is '{nlg_display}' which is not "
+                f"'{REPHRASE_NLG_TYPE}' or a ContextualResponseRephraser subclass. "
+                f"Set 'nlg.type' to '{REPHRASE_NLG_TYPE}' or a "
+                "ContextualResponseRephraser subclass in endpoints.yml."
             )
     else:
         if problem_type == "missing_nlg":
@@ -249,9 +252,10 @@ def _get_rephrase_misconfig_action(
         else:
             event_info = (
                 "Domain has responses with 'metadata.rephrase: true', but "
-                f"the NLG endpoint type is '{nlg_display}' instead of "
-                f"'{REPHRASE_NLG_TYPE}'. Set 'nlg.type: {REPHRASE_NLG_TYPE}' "
-                "in endpoints.yml for rephrasing to work."
+                f"the NLG endpoint type is '{nlg_display}' which is not "
+                f"'{REPHRASE_NLG_TYPE}' or a ContextualResponseRephraser subclass. "
+                f"Set 'nlg.type' to '{REPHRASE_NLG_TYPE}' or a "
+                "ContextualResponseRephraser subclass in endpoints.yml."
             )
 
     error_code = (
@@ -266,6 +270,43 @@ def _get_rephrase_misconfig_action(
         is_warn=False,
         extra_log_kwargs={"nlg_type": nlg_type} if problem_type == "wrong_type" else {},
     )
+
+
+def _is_rephrase_compatible_nlg_type(nlg_type: Text) -> bool:
+    """Check whether the NLG type string refers to a rephrase-capable implementation.
+
+    Accepts the canonical ``rephrase`` keyword as well as fully-qualified class
+    paths that resolve to a ``ContextualResponseRephraser`` subclass, so that
+    custom rephraser implementations are not rejected by validation.
+    """
+    if nlg_type.lower() == REPHRASE_NLG_TYPE:
+        return True
+
+    try:
+        resolved_class = class_from_module_path(nlg_type)
+        is_rephraser = issubclass(resolved_class, ContextualResponseRephraser)
+    except Exception as e:
+        structlogger.debug(
+            "validator.is_rephrase_compatible_nlg_type.resolution_failed",
+            nlg_type=nlg_type,
+            error=str(e),
+            event_info=(
+                f"Could not resolve NLG type '{nlg_type}' to a class. "
+                f"It will not be treated as a rephrase-compatible type."
+            ),
+        )
+        return False
+
+    if is_rephraser:
+        structlogger.debug(
+            "validator.is_rephrase_compatible_nlg_type.custom_rephraser_detected",
+            nlg_type=nlg_type,
+            event_info=(
+                f"NLG type '{nlg_type}' is a ContextualResponseRephraser "
+                f"subclass and will be treated as a rephrase-compatible type."
+            ),
+        )
+    return is_rephraser
 
 
 def verify_rephrase_endpoints_consistency_or_raise(
@@ -301,7 +342,7 @@ def verify_rephrase_endpoints_consistency_or_raise(
     nlg_type = nlg_endpoint.type if nlg_endpoint is not None else None
 
     # Happy path: endpoint is correctly configured, no source split needed.
-    if nlg_type and str(nlg_type).lower() == REPHRASE_NLG_TYPE:
+    if nlg_type and _is_rephrase_compatible_nlg_type(str(nlg_type)):
         return
 
     rephrase_from_user, rephrase_from_defaults = _split_rephrase_sources(
