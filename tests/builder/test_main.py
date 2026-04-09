@@ -124,7 +124,7 @@ class TestSetupLangfuse:
         self, mock_langfuse_class: MagicMock
     ) -> None:
         """Test that setup_langfuse creates a Langfuse client that can be retrieved."""
-        from rasa.builder.telemetry.langfuse import langfuse_compat
+        from rasa.builder.telemetry.langfuse_integration import langfuse_compat
 
         langfuse = langfuse_compat.langfuse
 

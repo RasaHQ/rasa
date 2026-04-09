@@ -11,7 +11,7 @@ from rasa.builder.evaluator.evaluators.classification.models import (
     MetricsSummary,
 )
 from rasa.builder.evaluator.tasks.base import TaskResult
-from rasa.builder.telemetry.langfuse.langfuse_compat import require_langfuse
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import require_langfuse
 
 require_langfuse()
 

@@ -95,7 +95,9 @@ def setup_middleware(app: Sanic) -> None:
 
 def setup_langfuse() -> None:
     """Setup langfuse configuration."""
-    from rasa.builder.telemetry.langfuse.langfuse_compat import require_langfuse
+    from rasa.builder.telemetry.langfuse_integration.langfuse_compat import (
+        require_langfuse,
+    )
 
     require_langfuse()
 

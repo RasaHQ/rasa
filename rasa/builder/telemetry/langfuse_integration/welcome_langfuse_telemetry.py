@@ -3,12 +3,12 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from rasa.builder import config
 from rasa.builder.copilot.models import UsageStatistics
-from rasa.builder.telemetry.langfuse.langfuse_compat import (
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import (
     is_langfuse_available,
     langfuse,
     with_langfuse,
 )
-from rasa.builder.telemetry.langfuse.shared import (
+from rasa.builder.telemetry.langfuse_integration.shared import (
     update_generation_span_with_usage_statistics,
 )
 

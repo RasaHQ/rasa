@@ -43,7 +43,7 @@ from rasa.builder.document_retrieval.models import Document
 from rasa.builder.exceptions import (
     DocumentRetrievalError,
 )
-from rasa.builder.telemetry.langfuse.legacy_copilot_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.legacy_copilot_langfuse_telemetry import (  # noqa: E501
     LegacyCopilotLangfuseTelemetry,
 )
 from rasa.shared.constants import PACKAGE_NAME

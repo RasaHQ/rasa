@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from rasa.builder.logging_utils import ExceptionFields
-from rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry import (  # noqa: E501
     MCPLifecycleLangfuseTelemetry,
 )
 
@@ -33,7 +33,7 @@ class TestMCPLifecycleLangfuseTelemetryTraceHealth:
         ],
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_trace_health_emits_span_with_status(
         self,
@@ -72,7 +72,7 @@ class TestMCPLifecycleLangfuseTelemetryTraceHealth:
         )
 
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_trace_health_when_langfuse_yields_none_returns_early(
         self, mock_with_langfuse: Mock
@@ -94,10 +94,10 @@ class TestMCPLifecycleLangfuseTelemetryTraceHealth:
         mock_with_langfuse.return_value.__exit__.assert_called_once()
 
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.structlogger"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.structlogger"
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_trace_health_catches_exception_and_logs(
         self, mock_with_langfuse: Mock, mock_structlogger: Mock
@@ -157,7 +157,7 @@ class TestMCPLifecycleLangfuseTelemetryEmitLifecycleEvent:
         ],
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_emit_lifecycle_event_emits_span(
         self,
@@ -203,7 +203,7 @@ class TestMCPLifecycleLangfuseTelemetryEmitLifecycleEvent:
         )
 
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_emit_lifecycle_event_when_langfuse_none_returns_early(
         self, mock_with_langfuse: Mock
@@ -224,10 +224,10 @@ class TestMCPLifecycleLangfuseTelemetryEmitLifecycleEvent:
         mock_with_langfuse.assert_called_once()
 
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.structlogger"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.structlogger"
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_emit_lifecycle_event_catches_exception_and_logs(
         self, mock_with_langfuse: Mock, mock_structlogger: Mock
@@ -253,7 +253,7 @@ class TestMCPLifecycleLangfuseTelemetryUpdateToolCallSpan:
     """Tests for MCPLifecycleLangfuseTelemetry.update_tool_call_span."""
 
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_update_tool_call_span_updates_current_span(
         self, mock_with_langfuse: Mock
@@ -280,7 +280,7 @@ class TestMCPLifecycleLangfuseTelemetryUpdateToolCallSpan:
         )
 
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_update_tool_call_span_when_langfuse_none_returns_early(
         self, mock_with_langfuse: Mock
@@ -299,10 +299,10 @@ class TestMCPLifecycleLangfuseTelemetryUpdateToolCallSpan:
         mock_with_langfuse.assert_called_once()
 
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.structlogger"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.structlogger"
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_update_tool_call_span_catches_exception_and_logs(
         self, mock_with_langfuse: Mock, mock_structlogger: Mock
@@ -334,7 +334,7 @@ class TestMCPLifecycleLangfuseTelemetryMarkCurrentSpanWithBaseException:
         ],
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_mark_current_span_with_base_exception_updates_span(
         self,
@@ -356,7 +356,7 @@ class TestMCPLifecycleLangfuseTelemetryMarkCurrentSpanWithBaseException:
         )
 
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_mark_current_span_with_base_exception_when_langfuse_none_returns_early(
         self, mock_with_langfuse: Mock
@@ -374,10 +374,10 @@ class TestMCPLifecycleLangfuseTelemetryMarkCurrentSpanWithBaseException:
         mock_with_langfuse.assert_called_once()
 
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.structlogger"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.structlogger"
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry.with_langfuse"
+        "rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry.with_langfuse"
     )
     def test_mark_current_span_with_base_exception_catches_exception_and_logs(
         self, mock_with_langfuse: Mock, mock_structlogger: Mock

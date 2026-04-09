@@ -9,7 +9,7 @@ from rasa.builder.copilot.models import (
     UserChatMessage,
 )
 from rasa.builder.shared.tracker_context import CurrentState, TrackerContext
-from rasa.builder.telemetry.langfuse.copilot_endpoint_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.copilot_endpoint_langfuse_telemetry import (  # noqa: E501
     CopilotEndpointLangfuseTelemetry,
 )
 
@@ -17,7 +17,9 @@ from rasa.builder.telemetry.langfuse.copilot_endpoint_langfuse_telemetry import 
 class TestCopilotEndpointLangfuseTelemetry:
     """Test class for CopilotEndpointLangfuseTelemetry public methods."""
 
-    @patch("rasa.builder.telemetry.langfuse.langfuse_compat.langfuse.get_client")
+    @patch(
+        "rasa.builder.telemetry.langfuse_integration.langfuse_compat.langfuse.get_client"
+    )
     def test_trace_copilot_tracker_context(self, mock_get_client: Mock) -> None:
         # Given
         mock_client = Mock()
@@ -52,7 +54,9 @@ class TestCopilotEndpointLangfuseTelemetry:
         assert call_args[1]["metadata"]["max_conversation_turns"] == 10
         assert call_args[1]["metadata"]["session_id"] == "test-session-123"
 
-    @patch("rasa.builder.telemetry.langfuse.langfuse_compat.langfuse.get_client")
+    @patch(
+        "rasa.builder.telemetry.langfuse_integration.langfuse_compat.langfuse.get_client"
+    )
     def test_trace_copilot_tracker_context_with_none_tracker_context(
         self, mock_get_client: Mock
     ) -> None:
@@ -80,7 +84,9 @@ class TestCopilotEndpointLangfuseTelemetry:
         assert call_args[1]["metadata"]["max_conversation_turns"] == 10
         assert call_args[1]["metadata"]["session_id"] == "test-session-123"
 
-    @patch("rasa.builder.telemetry.langfuse.langfuse_compat.langfuse.get_client")
+    @patch(
+        "rasa.builder.telemetry.langfuse_integration.langfuse_compat.langfuse.get_client"
+    )
     def test_trace_copilot_relevant_assistant_files(
         self, mock_get_client: Mock
     ) -> None:
@@ -102,7 +108,9 @@ class TestCopilotEndpointLangfuseTelemetry:
         assert "relevant_assistant_files" in call_args[1]["output"]
         assert call_args[1]["output"]["relevant_assistant_files"] == relevant_files
 
-    @patch("rasa.builder.telemetry.langfuse.langfuse_compat.langfuse.get_client")
+    @patch(
+        "rasa.builder.telemetry.langfuse_integration.langfuse_compat.langfuse.get_client"
+    )
     def test_setup_copilot_endpoint_call_trace_attributes(
         self, mock_get_client: Mock
     ) -> None:
@@ -205,7 +213,9 @@ class TestCopilotEndpointLangfuseTelemetry:
         assert "copilot_chat_history" in copilot_context_section
         assert len(copilot_context_section["copilot_chat_history"]) == 3
 
-    @patch("rasa.builder.telemetry.langfuse.langfuse_compat.langfuse.get_client")
+    @patch(
+        "rasa.builder.telemetry.langfuse_integration.langfuse_compat.langfuse.get_client"
+    )
     def test_setup_copilot_endpoint_call_trace_attributes_with_exception_response(
         self, mock_get_client: Mock
     ) -> None:
@@ -277,7 +287,7 @@ class TestCopilotEndpointLangfuseTelemetry:
         assert "exception_stack_trace" not in metadata
 
     @patch(
-        "rasa.builder.telemetry.langfuse.copilot_endpoint_langfuse_telemetry"
+        "rasa.builder.telemetry.langfuse_integration.copilot_endpoint_langfuse_telemetry"
         ".with_langfuse"
     )
     def test_update_trace_on_error_calls_update_current_trace(
@@ -312,7 +322,7 @@ class TestCopilotEndpointLangfuseTelemetry:
         assert call_kw["tags"] == ["error"]
 
     @patch(
-        "rasa.builder.telemetry.langfuse.copilot_endpoint_langfuse_telemetry"
+        "rasa.builder.telemetry.langfuse_integration.copilot_endpoint_langfuse_telemetry"
         ".with_langfuse"
     )
     def test_update_trace_on_error_no_op_when_langfuse_unavailable(
@@ -341,7 +351,7 @@ class TestCopilotEndpointLangfuseTelemetry:
         assert mock_lf is None
 
     @patch(
-        "rasa.builder.telemetry.langfuse.copilot_endpoint_langfuse_telemetry"
+        "rasa.builder.telemetry.langfuse_integration.copilot_endpoint_langfuse_telemetry"
         ".with_langfuse"
     )
     def test_update_trace_on_error_does_not_reraise_when_update_fails(

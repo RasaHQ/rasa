@@ -48,14 +48,14 @@ from rasa.builder.project_generator.project_utils import (
 )
 from rasa.builder.project_info import ProjectInfo, ensure_first_used, load_project_info
 from rasa.builder.shared.rasa_schema_utils import get_domain_schema, get_flows_schema
-from rasa.builder.telemetry.langfuse.commit_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.commit_langfuse_telemetry import (
     CommitMessageGenerationLangfuseTelemetry,
 )
-from rasa.builder.telemetry.langfuse.langfuse_compat import observe
-from rasa.builder.telemetry.langfuse.prompt_to_bot_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import observe
+from rasa.builder.telemetry.langfuse_integration.prompt_to_bot_langfuse_telemetry import (  # noqa: E501
     PromptToBotLangfuseTelemetry,
 )
-from rasa.builder.telemetry.langfuse.welcome_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.welcome_langfuse_telemetry import (
     WelcomeMessageGenerationLangfuseTelemetry,
 )
 from rasa.builder.template_cache import copy_cache_for_template_if_available

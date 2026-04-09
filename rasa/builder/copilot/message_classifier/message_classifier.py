@@ -36,8 +36,8 @@ from rasa.builder.copilot.models import (
     UsageStatistics,
 )
 from rasa.builder.copilot.utils import filter_chat_history_messages
-from rasa.builder.telemetry.langfuse.langfuse_compat import observe
-from rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import observe
+from rasa.builder.telemetry.langfuse_integration.message_classifier_langfuse_telemetry import (  # noqa: E501
     MessageClassifierLangfuseTelemetry,
 )
 from rasa.shared.constants import PACKAGE_NAME

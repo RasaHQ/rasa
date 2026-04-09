@@ -19,7 +19,7 @@ from rasa.builder.document_retrieval.constants import (
 )
 from rasa.builder.document_retrieval.models import Document
 from rasa.builder.exceptions import DocumentRetrievalError
-from rasa.builder.telemetry.langfuse.document_retrieval_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.document_retrieval_langfuse_telemetry import (  # noqa: E501
     DocumentRetrievalLangfuseTelemetry,
 )
 from rasa.shared.utils.io import read_json_file

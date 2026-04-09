@@ -42,7 +42,7 @@ from rasa.builder.project_generator import (
     is_restricted_path,
     unsafe_write_to_bot_files,
 )
-from rasa.builder.telemetry.langfuse.langfuse_compat import observe
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import observe
 from rasa.utils.io import InvalidPathException
 
 structlogger = structlog.get_logger()

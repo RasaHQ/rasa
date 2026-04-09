@@ -13,7 +13,7 @@ from rasa.builder.copilot.models import (
     UsageStatistics,
     UserChatMessage,
 )
-from rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.message_classifier_langfuse_telemetry import (  # noqa: E501
     MessageClassifierLangfuseTelemetry,
     MessageClassifierResponseHandlerLangfuseTelemetry,
 )
@@ -34,7 +34,7 @@ class TestMessageClassifierLangfuseTelemetry:
         self, monkeypatch: pytest.MonkeyPatch
     ):
         monkeypatch.setattr(
-            "rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry.is_langfuse_available",
+            "rasa.builder.telemetry.langfuse_integration.message_classifier_langfuse_telemetry.is_langfuse_available",
             lambda: False,
         )
 
@@ -71,11 +71,11 @@ class TestMessageClassifierLangfuseTelemetry:
         mock_client, mock_generation = mock_langfuse_client
 
         monkeypatch.setattr(
-            "rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry.is_langfuse_available",
+            "rasa.builder.telemetry.langfuse_integration.message_classifier_langfuse_telemetry.is_langfuse_available",
             lambda: True,
         )
         monkeypatch.setattr(
-            "rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry.langfuse.get_client",
+            "rasa.builder.telemetry.langfuse_integration.message_classifier_langfuse_telemetry.langfuse.get_client",
             lambda: mock_client,
         )
 
@@ -148,7 +148,7 @@ class TestMessageClassifierResponseHandlerLangfuseTelemetry:
         self, monkeypatch: pytest.MonkeyPatch
     ):
         monkeypatch.setattr(
-            "rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry.is_langfuse_available",
+            "rasa.builder.telemetry.langfuse_integration.message_classifier_langfuse_telemetry.is_langfuse_available",
             lambda: False,
         )
 
@@ -172,11 +172,11 @@ class TestMessageClassifierResponseHandlerLangfuseTelemetry:
         mock_client, mock_generation = mock_langfuse_client
 
         monkeypatch.setattr(
-            "rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry.is_langfuse_available",
+            "rasa.builder.telemetry.langfuse_integration.message_classifier_langfuse_telemetry.is_langfuse_available",
             lambda: True,
         )
         monkeypatch.setattr(
-            "rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry.langfuse.get_client",
+            "rasa.builder.telemetry.langfuse_integration.message_classifier_langfuse_telemetry.langfuse.get_client",
             lambda: mock_client,
         )
 
@@ -230,11 +230,11 @@ class TestMessageClassifierResponseHandlerLangfuseTelemetry:
         mock_client, mock_generation = mock_langfuse_client
 
         monkeypatch.setattr(
-            "rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry.is_langfuse_available",
+            "rasa.builder.telemetry.langfuse_integration.message_classifier_langfuse_telemetry.is_langfuse_available",
             lambda: True,
         )
         monkeypatch.setattr(
-            "rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry.langfuse.get_client",
+            "rasa.builder.telemetry.langfuse_integration.message_classifier_langfuse_telemetry.langfuse.get_client",
             lambda: mock_client,
         )
 

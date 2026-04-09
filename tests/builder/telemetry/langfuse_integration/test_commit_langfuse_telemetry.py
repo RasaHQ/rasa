@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rasa.builder.telemetry.langfuse.commit_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.commit_langfuse_telemetry import (
     CommitMessageGenerationLangfuseTelemetry,
 )
 

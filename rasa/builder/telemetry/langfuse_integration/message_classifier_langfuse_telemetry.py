@@ -2,11 +2,11 @@ from functools import wraps
 from typing import TYPE_CHECKING, Any, Callable, Coroutine
 
 from rasa.builder import config
-from rasa.builder.telemetry.langfuse.langfuse_compat import (
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import (
     is_langfuse_available,
     langfuse,
 )
-from rasa.builder.telemetry.langfuse.shared import (
+from rasa.builder.telemetry.langfuse_integration.shared import (
     update_generation_span_with_usage_statistics,
 )
 

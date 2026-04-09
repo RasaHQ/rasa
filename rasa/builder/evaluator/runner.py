@@ -15,7 +15,10 @@ import yaml  # type: ignore[import-untyped]
 from rasa.builder.evaluator.configs.models import ExperimentConfig, load_config
 from rasa.builder.evaluator.evaluators.base import BaseEvaluator
 from rasa.builder.evaluator.tasks.base import BaseTask
-from rasa.builder.telemetry.langfuse.langfuse_compat import langfuse, require_langfuse
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import (
+    langfuse,
+    require_langfuse,
+)
 
 require_langfuse()
 

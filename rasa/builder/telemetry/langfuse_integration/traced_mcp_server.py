@@ -22,11 +22,11 @@ from agents.mcp import MCPServerStreamableHttp
 from mcp.types import CallToolResult
 
 from rasa.builder.logging_utils import log_exception
-from rasa.builder.telemetry.langfuse.langfuse_compat import (
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import (
     observe,
     with_langfuse,
 )
-from rasa.builder.telemetry.langfuse.mcp_lifecycle_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.mcp_lifecycle_langfuse_telemetry import (  # noqa: E501
     MCPLifecycleLangfuseTelemetry,
 )
 

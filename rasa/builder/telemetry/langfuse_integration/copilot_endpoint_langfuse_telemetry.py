@@ -7,8 +7,8 @@ from rasa.builder.document_retrieval.models import Document
 from rasa.builder.logging_utils import ExceptionFields
 from rasa.builder.models import BotFiles
 from rasa.builder.shared.tracker_context import TrackerContext
-from rasa.builder.telemetry.langfuse.langfuse_compat import with_langfuse
-from rasa.builder.telemetry.langfuse.shared import create_session_id
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import with_langfuse
+from rasa.builder.telemetry.langfuse_integration.shared import create_session_id
 
 if TYPE_CHECKING:
     from rasa.builder.copilot import BaseCopilotResponseHandler

@@ -34,7 +34,7 @@ from rasa.builder.copilot.models import (
     TodoItem,
     TodoPlanUpdate,
 )
-from rasa.builder.telemetry.langfuse.langfuse_compat import observe
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import observe
 
 structlogger = structlog.get_logger()
 

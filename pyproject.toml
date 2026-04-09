@@ -580,7 +580,7 @@ convention = "google"
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "pypred.Predicate".msg = "Only use the patched pypred module from rasa.utils.pypred."
-"langfuse".msg = "Only import langfuse from rasa.builder.telemetry.langfuse_compat."
+"langfuse".msg = "Only import langfuse from rasa.builder.telemetry.langfuse_integration.langfuse_compat."
 
 
 [tool.poetry.group.dev.dependencies]

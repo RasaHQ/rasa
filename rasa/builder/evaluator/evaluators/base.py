@@ -5,7 +5,7 @@ from typing import Any, List, Tuple
 
 import structlog
 
-from rasa.builder.telemetry.langfuse.langfuse_compat import require_langfuse
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import require_langfuse
 
 require_langfuse()
 

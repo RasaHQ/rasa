@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from agents.mcp import MCPServerStreamableHttp
 
-from rasa.builder.telemetry.langfuse.traced_mcp_server import TracedMCPServerWrapper
+from rasa.builder.telemetry.langfuse_integration.traced_mcp_server import (
+    TracedMCPServerWrapper,
+)
 
 
 class TestTracedMCPServerWrapper:
@@ -29,7 +31,7 @@ class TestTracedMCPServerWrapper:
     @pytest.mark.asyncio
     @patch.object(MCPServerStreamableHttp, "call_tool", new_callable=AsyncMock)
     @patch(
-        "rasa.builder.telemetry.langfuse.langfuse_compat.is_langfuse_available",
+        "rasa.builder.telemetry.langfuse_integration.langfuse_compat.is_langfuse_available",
         return_value=False,
     )
     async def test_call_tool_without_langfuse(
@@ -340,7 +342,7 @@ class TestTracedMCPServerWrapperContextManager:
     @pytest.mark.asyncio
     @patch.object(MCPServerStreamableHttp, "call_tool", new_callable=AsyncMock)
     @patch(
-        "rasa.builder.telemetry.langfuse.langfuse_compat.is_langfuse_available",
+        "rasa.builder.telemetry.langfuse_integration.langfuse_compat.is_langfuse_available",
         return_value=False,
     )
     @patch.object(TracedMCPServerWrapper, "__aexit__", new_callable=AsyncMock)
@@ -375,11 +377,11 @@ class TestTracedMCPServerWrapperEnterExitTracing:
 
     @pytest.mark.asyncio
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception"
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
     )
     @patch.object(
@@ -416,11 +418,11 @@ class TestTracedMCPServerWrapperEnterExitTracing:
 
     @pytest.mark.asyncio
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception"
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
     )
     @patch.object(
@@ -457,7 +459,7 @@ class TestTracedMCPServerWrapperEnterExitTracing:
     @pytest.mark.asyncio
     @patch.object(TracedMCPServerWrapper, "check_health", new_callable=AsyncMock)
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
     )
     @patch.object(
@@ -489,11 +491,11 @@ class TestTracedMCPServerWrapperEnterExitTracing:
     @pytest.mark.parametrize("is_healthy", [True, False])
     @patch.object(TracedMCPServerWrapper, "check_health", new_callable=AsyncMock)
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.trace_health"
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
     )
     @patch.object(
@@ -539,11 +541,11 @@ class TestTracedMCPServerWrapperEnterExitTracing:
 
     @pytest.mark.asyncio
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception"
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
     )
     @patch.object(
@@ -581,11 +583,11 @@ class TestTracedMCPServerWrapperEnterExitTracing:
 
     @pytest.mark.asyncio
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception"
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
     )
     @patch.object(
@@ -624,11 +626,11 @@ class TestTracedMCPServerWrapperEnterExitTracing:
 
     @pytest.mark.asyncio
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.mark_current_span_with_base_exception"
     )
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
     )
     @patch.object(
@@ -667,7 +669,7 @@ class TestTracedMCPServerWrapperEnterExitTracing:
 
     @pytest.mark.asyncio
     @patch(
-        "rasa.builder.telemetry.langfuse.traced_mcp_server."
+        "rasa.builder.telemetry.langfuse_integration.traced_mcp_server."
         "MCPLifecycleLangfuseTelemetry.emit_lifecycle_event"
     )
     @patch.object(

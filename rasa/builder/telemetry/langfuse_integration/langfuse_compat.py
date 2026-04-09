@@ -9,7 +9,9 @@ This provides:
 - Context manager that only executes block when langfuse is available
 
 Usage:
-    from rasa.builder.telemetry.langfuse.langfuse_compat import observe, with_langfuse
+    from rasa.builder.telemetry.langfuse_integration.langfuse_compat import (
+        observe, with_langfuse,
+    )
 
     # For decorators (works whether langfuse is installed or not):
     @observe()
@@ -21,6 +23,7 @@ Usage:
             client = lf.get_client()
 """
 
+import asyncio
 from contextlib import contextmanager
 from functools import wraps
 from types import ModuleType
@@ -33,6 +36,14 @@ def _no_op_observe(*args: Any, **kwargs: Any) -> Callable[[F], F]:
     """No-op implementation of langfuse.observe decorator that preserves types."""
 
     def decorator(func: F) -> F:
+        if asyncio.iscoroutinefunction(func):
+
+            @wraps(func)
+            async def async_wrapper(*f_args: Any, **f_kwargs: Any) -> Any:
+                return await func(*f_args, **f_kwargs)
+
+            return async_wrapper  # type: ignore[return-value]
+
         @wraps(func)
         def wrapper(*f_args: Any, **f_kwargs: Any) -> Any:
             return func(*f_args, **f_kwargs)

@@ -54,7 +54,7 @@ from rasa.builder.copilot.response_handling.constants import (
 )
 from rasa.builder.document_retrieval.models import Document
 from rasa.builder.logging_utils import log_exception
-from rasa.builder.telemetry.langfuse.message_classifier_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.message_classifier_langfuse_telemetry import (  # noqa: E501
     MessageClassifierResponseHandlerLangfuseTelemetry,
 )
 from rasa.shared.constants import PACKAGE_NAME

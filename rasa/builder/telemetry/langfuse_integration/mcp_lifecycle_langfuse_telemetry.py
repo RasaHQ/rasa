@@ -10,7 +10,7 @@ from typing import Any, Optional
 import structlog
 
 from rasa.builder.logging_utils import ExceptionFields
-from rasa.builder.telemetry.langfuse.langfuse_compat import (
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import (
     with_langfuse,
 )
 

@@ -3,7 +3,7 @@ from typing import Any, AsyncGenerator, Dict, List
 from unittest.mock import Mock, patch
 
 from rasa.builder.copilot.models import UsageStatistics
-from rasa.builder.telemetry.langfuse.legacy_copilot_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.legacy_copilot_langfuse_telemetry import (  # noqa: E501
     LegacyCopilotLangfuseTelemetry,
 )
 
@@ -12,7 +12,7 @@ class TestLegacyCopilotLangfuseTelemetry:
     """Test class for LegacyCopilotLangfuseTelemetry streaming generation methods."""
 
     @patch(
-        "rasa.builder.telemetry.langfuse.legacy_copilot_langfuse_telemetry.langfuse.get_client"
+        "rasa.builder.telemetry.langfuse_integration.legacy_copilot_langfuse_telemetry.langfuse.get_client"
     )
     def test_trace_legacy_copilot_streaming_generation_decorator(
         self, mock_get_client: Mock

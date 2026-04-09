@@ -93,10 +93,10 @@ from rasa.builder.models import (
 from rasa.builder.project_generator.project_generator import ProjectGenerator
 from rasa.builder.shared.tracker_context import TrackerContext
 from rasa.builder.telemetry.copilot_segment_telemetry import CopilotSegmentTelemetry
-from rasa.builder.telemetry.langfuse.copilot_endpoint_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.copilot_endpoint_langfuse_telemetry import (  # noqa: E501
     CopilotEndpointLangfuseTelemetry,
 )
-from rasa.builder.telemetry.langfuse.langfuse_compat import observe
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import observe
 from rasa.builder.training_service import (
     train_and_load_agent,
     try_load_existing_agent,

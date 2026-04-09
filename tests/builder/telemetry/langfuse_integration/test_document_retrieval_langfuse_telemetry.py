@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 from openai.types.chat import ChatCompletion
 
-from rasa.builder.telemetry.langfuse.document_retrieval_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.document_retrieval_langfuse_telemetry import (  # noqa: E501
     DocumentRetrievalLangfuseTelemetry,
 )
 
@@ -13,7 +13,7 @@ class TestDocumentRetrievalLangfuseTelemetry:
     """Test class for document retrieval telemetry functionality."""
 
     @patch(
-        "rasa.builder.telemetry.langfuse.document_retrieval_langfuse_telemetry.langfuse.get_client"
+        "rasa.builder.telemetry.langfuse_integration.document_retrieval_langfuse_telemetry.langfuse.get_client"
     )
     def test_trace_document_retrieval_generation_decorator(
         self, mock_get_client: Mock

@@ -14,11 +14,11 @@ from rasa.builder.copilot.response_handling.utils import (
     is_tool_output_event,
 )
 from rasa.builder.logging_utils import ExceptionFields
-from rasa.builder.telemetry.langfuse.langfuse_compat import (
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import (
     is_langfuse_available,
     langfuse,
 )
-from rasa.builder.telemetry.langfuse.shared import (
+from rasa.builder.telemetry.langfuse_integration.shared import (
     update_generation_span_with_usage_statistics,
 )
 

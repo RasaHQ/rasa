@@ -63,8 +63,8 @@ from rasa.builder.models import (
 )
 from rasa.builder.project_generator.project_generator import ProjectGenerator
 from rasa.builder.project_info import ensure_first_used
-from rasa.builder.telemetry.langfuse.langfuse_compat import observe
-from rasa.builder.telemetry.langfuse.prompt_to_bot_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.langfuse_compat import observe
+from rasa.builder.telemetry.langfuse_integration.prompt_to_bot_langfuse_telemetry import (  # noqa: E501
     PromptToBotLangfuseTelemetry,
 )
 from rasa.builder.training_service import (

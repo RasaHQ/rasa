@@ -40,10 +40,10 @@ from rasa.builder.copilot.response_handling.agent_copilot_response_handler impor
 )
 from rasa.builder.copilot.response_handling.utils import is_response_completed_event
 from rasa.builder.logging_utils import log_exception
-from rasa.builder.telemetry.langfuse.agent_copilot_langfuse_telemetry import (
+from rasa.builder.telemetry.langfuse_integration.agent_copilot_langfuse_telemetry import (  # noqa: E501
     AgentCopilotLangfuseTelemetry,
 )
-from rasa.builder.telemetry.langfuse.traced_mcp_server import (
+from rasa.builder.telemetry.langfuse_integration.traced_mcp_server import (
     TracedMCPServerWrapper,
 )
 from rasa.shared.constants import PACKAGE_NAME, ROLE_SYSTEM, ROLE_USER
