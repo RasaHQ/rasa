@@ -85,7 +85,7 @@ runs:
       working-directory: rasa/core/channels/inspector-nextgen/e2e
 
     - name: Configure Datadog Test Optimization
-      uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+      uses: datadog/test-visibility-github-action@ef8406bf5f987037fcbe3bf8ecf023f5dd1f9e36 # v2.8.0
       with:
         languages: js
         api_key: ${{ inputs.DD_API_KEY }}

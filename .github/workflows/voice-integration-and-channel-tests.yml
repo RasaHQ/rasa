@@ -119,11 +119,12 @@ jobs:
           poetry run python -m pip install azure-cognitiveservices-speech
 
       - name: Configure Datadog Test Optimization
-        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        uses: datadog/test-visibility-github-action@ef8406bf5f987037fcbe3bf8ecf023f5dd1f9e36 # v2.8.0
         with:
           languages: python
-          api_key: ${{secrets.DD_API_KEY}}
+          api_key: ${{ secrets.DD_API_KEY }}
           site: datadoghq.eu
+          python-tracer-version: "4.6.7"
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -173,11 +174,12 @@ jobs:
           version: ubuntu-${{ runner.os }}-dependencies-voice-unit-tests
 
       - name: Configure Datadog Test Optimization
-        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        uses: datadog/test-visibility-github-action@ef8406bf5f987037fcbe3bf8ecf023f5dd1f9e36 # v2.8.0
         with:
           languages: python
           api_key: ${{ secrets.DD_API_KEY }}
           site: datadoghq.eu
+          python-tracer-version: "4.6.7"
 
       - name: Install additional dependencies
         run: poetry add azure-cognitiveservices-speech

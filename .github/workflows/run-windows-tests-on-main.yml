@@ -110,17 +110,13 @@ jobs:
           (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
           Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
 
-      - name: Install ddtrace on Windows
-        run: |
-          .\.venv\Scripts\activate
-          py -m pip install -U ddtrace
-
       - name: Configure Datadog Test Optimization
-        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        uses: datadog/test-visibility-github-action@ef8406bf5f987037fcbe3bf8ecf023f5dd1f9e36 # v2.8.0
         with:
           languages: python
-          api_key: ${{secrets.DD_API_KEY}}
+          api_key: ${{ secrets.DD_API_KEY }}
           site: datadoghq.eu
+          python-tracer-version: "4.6.7"
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -251,17 +247,13 @@ jobs:
           if (!(Test-Path models)) { mkdir models }
           hf download urchade/gliner_multi_pii-v1 --repo-type model --local-dir models --cache-dir models
 
-      - name: Install ddtrace on Windows
-        run: |
-          .\.venv\Scripts\activate
-          py -m pip install -U ddtrace
-
       - name: Configure Datadog Test Optimization
-        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        uses: datadog/test-visibility-github-action@ef8406bf5f987037fcbe3bf8ecf023f5dd1f9e36 # v2.8.0
         with:
           languages: python
-          api_key: ${{secrets.DD_API_KEY}}
+          api_key: ${{ secrets.DD_API_KEY }}
           site: datadoghq.eu
+          python-tracer-version: "4.6.7"
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -362,17 +354,13 @@ jobs:
           (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
           Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
 
-      - name: Install ddtrace on Windows
-        run: |
-          .\.venv\Scripts\activate
-          py -m pip install -U ddtrace
-
       - name: Configure Datadog Test Optimization
-        uses: datadog/test-visibility-github-action@f4b026bb8b8b53f323960cf86a849a0231ff93b9 # v2.5.0
+        uses: datadog/test-visibility-github-action@ef8406bf5f987037fcbe3bf8ecf023f5dd1f9e36 # v2.8.0
         with:
           languages: python
-          api_key: ${{secrets.DD_API_KEY}}
+          api_key: ${{ secrets.DD_API_KEY }}
           site: datadoghq.eu
+          python-tracer-version: "4.6.7"
 
       - name: Test Code 🔍 (multi-process)
         env:
