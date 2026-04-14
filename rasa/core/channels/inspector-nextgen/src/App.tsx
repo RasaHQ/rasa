@@ -5,10 +5,12 @@ import { Background } from "./assets/images";
 import { StandaloneHeader } from './components/StandaloneHeader';
 import { Inspector } from './Inspector';
 import { system } from './theme';
+import { useSearchParams } from "react-router";
 
 const App = () => {
   const [containerWidth, setContainerWidth] = useState("1000px");
   const queryClient = new QueryClient();
+  const [searchParams] = useSearchParams();
   const containerCss = {
     background: `url(${Background})`,
     backgroundSize: "cover",
@@ -29,7 +31,7 @@ const App = () => {
   // already contains the correct host and specified --port 5007 e.g. http://localhost:5007.
   // Breaks in dev mode as origin is Vite dev server e.g. http://localhost:5173.
   // Therefore in dev mode default to hardcoded http://localhost:5005.
-  const projectUrl = import.meta.env.DEV ? "http://localhost:5005" : window.location.origin;
+  const projectUrl = searchParams.get("projectUrl") || (import.meta.env.DEV ? "http://localhost:5005" : globalThis.location.origin);
 
   return (
     <QueryClientProvider client={queryClient}>

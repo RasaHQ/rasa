@@ -3,6 +3,7 @@ import os
 import webbrowser
 from asyncio import AbstractEventLoop
 from typing import List, Optional, Text
+from urllib.parse import urlencode
 
 from sanic import Sanic
 
@@ -69,8 +70,10 @@ async def open_inspector_in_browser(
 ) -> None:
     """Opens the rasa inspector in the default browser."""
     dev_port = os.environ.get("RASA_INSPECTOR_DEV_PORT")
+    query_params = {"projectUrl": server_url}
     if dev_port:
-        webbrowser.open(f"http://localhost:{dev_port}")
+        query_string = f"?{urlencode(query_params)}"
+        webbrowser.open(f"http://localhost:{dev_port}{query_string}")
     else:
         if voice:
             channel = "browser_audio"
@@ -78,7 +81,10 @@ async def open_inspector_in_browser(
             channel = "inspector"
         else:
             channel = "socketio"
-        webbrowser.open(f"{server_url}/webhooks/{channel}/inspect.html?token={token}")
+        if token:
+            query_params["token"] = token
+        query_string = f"?{urlencode(query_params)}"
+        webbrowser.open(f"{server_url}/webhooks/{channel}/inspect.html{query_string}")
 
 
 def inspect(args: argparse.Namespace) -> None:

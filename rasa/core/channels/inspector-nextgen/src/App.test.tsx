@@ -32,6 +32,10 @@ vi.mock("./assets/images", () => ({
   Background: "mock-background.png",
 }));
 
+vi.mock("react-router", () => ({
+  useSearchParams: () => [{ get: () => null }],
+}));
+
 // Use defaultSystem so ChakraProvider gets a valid theme in jsdom
 vi.mock("./theme", async () => {
   const { defaultSystem } = await import("@chakra-ui/react");
