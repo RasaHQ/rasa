@@ -161,21 +161,6 @@ export const CanvasContextProvider = ({
     };
   }, [focusOnNode, selectedNode]);
 
-  const initialFitDoneRef = useRef(false);
-
-  useEffect(() => {
-    initialFitDoneRef.current = false;
-  }, [initNodes]);
-
-  useEffect(() => {
-    if (flowInstance && nodesWithCoordinates.length > 0 && !initialFitDoneRef.current) {
-      initialFitDoneRef.current = true;
-      setTimeout(() => {
-        fitView({ minZoom: 0.1 });
-      }, 0);
-    }
-  }, [flowInstance, nodesWithCoordinates, fitView]);
-
   const handleZoomInClick = () => {
     zoomIn({ duration: 200 });
   };
@@ -200,11 +185,18 @@ export const CanvasContextProvider = ({
     [setFlowInstance, focusOnNode],
   );
 
+  const handleResize = useCallback(() => {
+    if (flowInstance) {
+      focusOnNode(flowInstance.getNodes()?.[0], false);
+    }
+  }, [flowInstance, focusOnNode]);
+
   const value = {
     flowName,
     nodes,
     edges,
     handleInit,
+    handleResize,
     focusOnNode,
     handleNodesChange,
     handleZoomInClick,

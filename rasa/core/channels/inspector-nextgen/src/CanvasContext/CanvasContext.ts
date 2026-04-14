@@ -7,6 +7,7 @@ export interface ContextReturnType {
   nodes: Node<FlowNode>[];
   edges: Edge[];
   handleInit: (instance: ReactFlowInstance) => void;
+  handleResize: () => void;
   focusOnNode: (node?: Node | null, animate?: boolean) => void;
   handleNodesChange: (changes: NodeChange[]) => void;
   handleZoomInClick: () => void;
@@ -20,6 +21,7 @@ const defaultValues: ContextReturnType = {
   nodes: [],
   edges: [],
   handleInit: () => null,
+  handleResize: () => null,
   focusOnNode: () => null,
   handleNodesChange: () => null,
   handleZoomInClick: () => null,

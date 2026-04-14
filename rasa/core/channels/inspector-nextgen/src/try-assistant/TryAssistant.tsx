@@ -53,8 +53,8 @@ export function TryAssistant({ onInspectModeChange }: Readonly<Props>) {
     if (isLargeScreen && flowView && inspectorView !== InspectorView.All) {
       setInspectorView(InspectorView.All);
     }
-  // Only run when inspect mode is toggled on while on a large screen.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Only run when inspect mode is toggled on while on a large screen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flowView]);
 
   useEffect(() => {
@@ -74,6 +74,13 @@ export function TryAssistant({ onInspectModeChange }: Readonly<Props>) {
     borderColor: separatorColor,
   };
 
+  const chatPanelStyles = {
+    flexBasis: flowView ? "600px" : "100%",
+    flexShrink: "1",
+    flexGrow: "0",
+    maxWidth: flowView ? "600px" : "unset",
+  };
+
   const flowSectionElement = (
     <FlowSection
       stackToShow={stackToShow}
@@ -88,14 +95,13 @@ export function TryAssistant({ onInspectModeChange }: Readonly<Props>) {
   if (showAllLayout) {
     return (
       <Flex {...containerProps} data-testid="try-assistant-container">
-        <Box flex="1" minWidth={0}>
+        <Box css={chatPanelStyles} minWidth={0}>
           <ChatSection handleSelect={handleSelect} />
         </Box>
 
         <Box
           css={panelBorderLeft}
-          flex="1.5"
-          minWidth={0}
+          flex="800px 1"
           data-testid="inspector-canvas"
         >
           {flowSectionElement}
@@ -103,8 +109,7 @@ export function TryAssistant({ onInspectModeChange }: Readonly<Props>) {
 
         <Flex
           css={panelBorderLeft}
-          flex="1"
-          minWidth={0}
+          flex="600px 0"
           direction="column"
           data-testid="inspector-side-panel"
         >
@@ -137,13 +142,13 @@ export function TryAssistant({ onInspectModeChange }: Readonly<Props>) {
 
   return (
     <Flex {...containerProps} data-testid="try-assistant-container">
-      <Box flexBasis={flowView ? "50%" : "100%"}>
+      <Box css={chatPanelStyles}>
         <ChatSection handleSelect={handleSelect} />
       </Box>
       {flowView && (
         <Box
           css={panelBorderLeft}
-          flexBasis="calc(50% + 1rem)"
+          flex="1"
           data-testid="inspector-canvas"
         >
           {selectedElement ? (

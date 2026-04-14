@@ -1,4 +1,5 @@
 import { Box } from "@chakra-ui/react";
+import { useEffect, useRef } from "react";
 import { ReactFlow } from "reactflow";
 import "reactflow/dist/style.css";
 import { useCanvasContext } from "../CanvasContext";
@@ -27,6 +28,20 @@ const edgeTypes = {
 };
 
 export const Canvas = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const { flowName, nodes, edges, handleResize, handleInit, handleNodesChange } =
+    useCanvasContext();
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const observer = new ResizeObserver(() => {
+        handleResize();
+      });
+      observer.observe(containerRef.current);
+    }
+  }, [handleResize]);
+
   const containerSx = {
     position: "relative",
     width: "100%",
@@ -70,14 +85,12 @@ export const Canvas = () => {
     },
   };
 
-  const { flowName, nodes, edges, handleInit, handleNodesChange } =
-    useCanvasContext();
   const isLargeScreen = useIsLargeScreen();
   const inspectorView = useInspectorStore((s) => s.inspectorView);
   const showViewSwitcher = !(isLargeScreen && inspectorView === InspectorView.All);
 
   return (
-    <Box css={containerSx} data-testid="canvas">
+    <Box ref={containerRef} css={containerSx} data-testid="canvas">
       <ReactFlow
         nodes={nodes}
         edges={edges}
