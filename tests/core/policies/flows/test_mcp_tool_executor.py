@@ -332,7 +332,7 @@ def test_process_tool_result_empty_content() -> None:
 def test_handle_mcp_tool_error() -> None:
     """Test _handle_mcp_tool_error creates proper error handling."""
     mock_stack = MagicMock()
-    events = [MagicMock()]
+    events: list = []
     error_message = "Test error message"
     tool_name = "test_tool"
     mcp_server = "test_server"
@@ -341,7 +341,13 @@ def test_handle_mcp_tool_error() -> None:
         "rasa.core.policies.flows.mcp_tool_executor.structlogger"
     ) as mock_logger:
         result = _handle_mcp_tool_error(
-            mock_stack, events, error_message, tool_name, mcp_server
+            mock_stack,
+            events,
+            error_message,
+            tool_name,
+            mcp_server,
+            flow_id="test_flow",
+            step_id="test_step",
         )
 
         # Verify error logging
@@ -351,6 +357,19 @@ def test_handle_mcp_tool_error() -> None:
         assert call_args["tool_name"] == tool_name
         assert call_args["mcp_server"] == mcp_server
 
+        # Verify McpToolExecuted error event is appended
+        assert len(events) == 1
+        error_event = events[0]
+        assert isinstance(error_event, McpToolExecuted)
+        assert error_event.tool_name == tool_name
+        assert error_event.is_error is True
+        assert error_event.error_message == error_message
+        assert error_event.metadata == {
+            "flow_id": "test_flow",
+            "step_id": "test_step",
+            "mcp_server": mcp_server,
+        }
+
         # Verify stack frame is pushed
         mock_stack.push.assert_called_once()
         pushed_frame = mock_stack.push.call_args[0][0]
@@ -359,6 +378,31 @@ def test_handle_mcp_tool_error() -> None:
         # Verify return type
         assert isinstance(result, ContinueFlowWithNextStep)
         assert result.events == events
+
+
+def test_handle_mcp_tool_error_no_duplicate_event() -> None:
+    """Test _handle_mcp_tool_error does not duplicate McpToolExecuted events."""
+    mock_stack = MagicMock()
+    existing_event = McpToolExecuted(
+        tool_name="test_tool",
+        arguments={"arg": "val"},
+        result=None,
+        is_error=True,
+        error_message="earlier error",
+    )
+    events: list = [existing_event]
+
+    with patch("rasa.core.policies.flows.mcp_tool_executor.structlogger"):
+        _handle_mcp_tool_error(
+            mock_stack,
+            events,
+            "Another error",
+            "test_tool",
+            "test_server",
+        )
+
+    assert len(events) == 1
+    assert events[0] is existing_event
 
 
 @pytest.mark.asyncio
@@ -529,6 +573,7 @@ async def test_execute_mcp_tool_call_success(
                 assert isinstance(result, ContinueFlowWithNextStep)
                 assert len(result.events) == 2
                 assert isinstance(result.events[0], McpToolExecuted)
+                assert result.events[0].is_error is False
                 assert isinstance(result.events[1], SlotSet)
                 mock_connection.ensure_active_session.assert_called_once()
                 mock_mcp_server.call_tool.assert_called_once_with(
@@ -637,6 +682,7 @@ async def test_execute_mcp_tool_call_structured_content_only(
     assert isinstance(result, ContinueFlowWithNextStep)
     assert len(result.events) == 2
     assert isinstance(result.events[0], McpToolExecuted)
+    assert result.events[0].is_error is False
     assert isinstance(result.events[1], SlotSet)
     assert result.events[1].key == "result_slot"
     assert result.events[1].value == "from_structured"
@@ -709,6 +755,8 @@ async def test_call_mcp_tool_exception_handling(
             )
             assert keyword_args["tool_name"] == "test_tool"
             assert keyword_args["mcp_server"] == "test_server"
+            assert keyword_args["flow_id"] == "test_flow"
+            assert keyword_args["step_id"] == "mcp_call_step"
             assert isinstance(result, ContinueFlowWithNextStep)
 
 

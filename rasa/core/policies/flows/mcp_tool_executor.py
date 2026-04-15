@@ -62,6 +62,8 @@ async def call_mcp_tool(
             error_message=f"Failed to execute MCP tool call: {e}.",
             tool_name=step.call,
             mcp_server=step.mcp_server,
+            flow_id=step.flow_id,
+            step_id=step.id,
         )
 
 
@@ -84,6 +86,8 @@ async def _execute_mcp_tool_call(
                 f"Cannot connect to MCP server '{step.mcp_server}'.",
                 tool_name=step.call,
                 mcp_server=step.mcp_server,
+                flow_id=step.flow_id,
+                step_id=step.id,
             )
 
         # Validate tool availability
@@ -95,6 +99,8 @@ async def _execute_mcp_tool_call(
                 f"'{step.mcp_server}'.",
                 tool_name=step.call,
                 mcp_server=step.mcp_server,
+                flow_id=step.flow_id,
+                step_id=step.id,
             )
 
         # This should not happen, but we need to check for type checking to pass
@@ -105,6 +111,8 @@ async def _execute_mcp_tool_call(
                 f"No mapping found for tool '{step.call}'.",
                 tool_name=step.call,
                 mcp_server=step.mcp_server,
+                flow_id=step.flow_id,
+                step_id=step.id,
             )
 
         # Prepare arguments for the tool call
@@ -133,6 +141,8 @@ async def _execute_mcp_tool_call(
                 f"Tool '{step.call}' execution failed: {result.content}.",
                 tool_name=step.call,
                 mcp_server=step.mcp_server,
+                flow_id=step.flow_id,
+                step_id=step.id,
             )
         elif not result.content and not result.structuredContent:
             structlogger.warning(
@@ -160,6 +170,8 @@ async def _execute_mcp_tool_call(
                     f"Failed to process tool result for '{step.call}'.",
                     tool_name=step.call,
                     mcp_server=step.mcp_server,
+                    flow_id=step.flow_id,
+                    step_id=step.id,
                 )
 
         return ContinueFlowWithNextStep(events=initial_events)
@@ -377,13 +389,42 @@ def _handle_mcp_tool_error(
     error_message: str,
     tool_name: str,
     mcp_server: Optional[str],
+    flow_id: Optional[str] = None,
+    step_id: Optional[str] = None,
 ) -> FlowStepResult:
-    """Handle MCP tool errors consistently."""
+    """Handle MCP tool errors consistently.
+
+    Emits a ``McpToolExecuted`` error event (when one for the same tool has not
+    already been appended) so that the inspector frontend can display the
+    specific failure.
+    """
     structlogger.error(
         "call_mcp_tool.error",
         error_message=error_message,
         tool_name=tool_name,
         mcp_server=mcp_server,
     )
+    if not any(
+        isinstance(e, McpToolExecuted) and e.tool_name == tool_name for e in events
+    ):
+        metadata = {
+            k: v
+            for k, v in {
+                "flow_id": flow_id,
+                "step_id": step_id,
+                "mcp_server": mcp_server,
+            }.items()
+            if v is not None
+        }
+        events.append(
+            McpToolExecuted(
+                tool_name=tool_name,
+                arguments={},
+                result=None,
+                is_error=True,
+                error_message=error_message,
+                metadata=metadata or None,
+            )
+        )
     stack.push(InternalErrorPatternFlowStackFrame())
     return ContinueFlowWithNextStep(events=events)

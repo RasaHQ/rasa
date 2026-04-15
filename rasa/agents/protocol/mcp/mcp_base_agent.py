@@ -1606,6 +1606,20 @@ class MCPBaseAgent(AgentProtocol):
 
         # If the tool call failed, generate an agent error output.
         if tool_output.is_error or tool_output.result is None:
+            agent_id = str(make_agent_identifier(self._name, self.protocol_type))
+            error_event = McpToolExecuted(
+                tool_name=tool_call.tool_name,
+                arguments=tool_call.tool_args,
+                result=None,
+                is_error=True,
+                error_message=tool_output.error_message,
+                metadata={"agent_id": agent_id},
+            )
+            if events is not None:
+                events.append(error_event)
+            else:
+                events = [error_event]
+
             log_event_name = "mcp_agent.send_message.tool_execution_error"
             log_kwargs = {
                 "tool_name": tool_output.tool_name,

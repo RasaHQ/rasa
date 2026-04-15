@@ -355,6 +355,11 @@ export function useBotConnection({
 
       socket.current?.on("error", (error) => {
         setError(error as RasaProError);
+        showToast({
+          title: "An internal error has happened",
+          description: `${error}`,
+          type: "error",
+        });
         disableChat();
       });
 

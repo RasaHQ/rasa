@@ -69,14 +69,28 @@ export const McpToolExecutedEventInfo = ({
       </Box>
 
       {isError ? (
-        <>
-          <Text fontWeight="bold" fontSize="0.875rem" mb="0.25rem" color="red.600">
-            Error
-          </Text>
-          <Text fontSize="0.875rem" mb="0.5rem">
-            {errorMessage ?? "—"}
-          </Text>
-        </>
+        <Box
+          bg="red.50"
+          borderLeft="3px solid"
+          borderColor="red.500"
+          p="0.5rem"
+          mb="0.5rem"
+          borderRadius="0.25rem"
+        >
+          <Heading size="sm">
+            {errorMessage
+              ? "This tool call failed to execute due to the following reason:"
+              : "This tool call failed to execute"}
+          </Heading>
+          {errorMessage && (
+            <Text
+              size="sm"
+              mt="0.25rem"
+            >
+              {errorMessage}
+            </Text>
+          )}
+        </Box>
       ) : (
         <>
           <Heading size="md" mb="0.25rem">

@@ -5,7 +5,7 @@ import type {
   ConversationEventAction,
 } from "../../../types";
 import { Icon } from "../../../Icon";
-import { Hammer } from "../../../Icon/icons";
+import { CircleExclamation, Hammer } from "../../../Icon/icons";
 import { ConversationEventActionButton } from "../../ConversationEventActionButton";
 import { useConversationLogSx } from "../useConversationLogSx";
 
@@ -35,6 +35,11 @@ export const McpToolExecutedEvent = forwardRef<
 
   const toolName = event.metadata?.tool_name ?? event.name ?? "tool";
   const isError = event.metadata?.tool_is_error === true;
+  const errorIconSx = {
+    color: "#A72E2C",
+    marginLeft: "0.25rem",
+    marginTop: "0.25rem",
+  };
 
   return (
     <Flex
@@ -64,6 +69,14 @@ export const McpToolExecutedEvent = forwardRef<
             {toolName}
           </Text>{" "}
           {isError ? "failed" : "executed"}
+          {isError ? (
+            <Icon
+              icon={CircleExclamation}
+              style={errorIconSx}
+              box-size="1rem"
+              aria-label="Action failed"
+            />
+          ) : null}
         </Text>
       </Box>
     </Flex>

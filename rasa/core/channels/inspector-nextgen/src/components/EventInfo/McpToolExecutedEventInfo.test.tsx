@@ -221,12 +221,12 @@ describe("McpToolExecutedEventInfo", () => {
         <McpToolExecutedEventInfo event={event} onClose={vi.fn()} />,
       );
 
-      expect(screen.getByText("Error")).toBeInTheDocument();
+      expect(screen.getByText("This tool call failed to execute due to the following reason:")).toBeInTheDocument();
       expect(screen.getByText("something went wrong")).toBeInTheDocument();
       expect(screen.queryByTestId("event-mcp-tool-result")).not.toBeInTheDocument();
     });
 
-    it("shows '—' when error message is absent", () => {
+    it("doesn't show full error message if it's absent", () => {
       const event: ConversationEvent = {
         ...baseEvent,
         metadata: { ...baseEvent.metadata, tool_is_error: true },
@@ -236,8 +236,8 @@ describe("McpToolExecutedEventInfo", () => {
         <McpToolExecutedEventInfo event={event} onClose={vi.fn()} />,
       );
 
-      expect(screen.getByText("Error")).toBeInTheDocument();
-      expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText("This tool call failed to execute")).toBeInTheDocument();
+      expect(() => screen.getByText("This tool call failed to execute due to the following reason:")).toThrow();
     });
 
     it("shows error section when rawEvent.is_error is true", () => {
@@ -253,7 +253,7 @@ describe("McpToolExecutedEventInfo", () => {
         <McpToolExecutedEventInfo event={event} onClose={vi.fn()} />,
       );
 
-      expect(screen.getByText("Error")).toBeInTheDocument();
+      expect(screen.getByText("This tool call failed to execute due to the following reason:")).toBeInTheDocument();
       expect(screen.getByText("raw error")).toBeInTheDocument();
     });
   });
