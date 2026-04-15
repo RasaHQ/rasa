@@ -2529,7 +2529,7 @@ jobs:
     name: Run CLI Unit Tests
     runs-on: warp-ubuntu-latest-x64-8x
     if: ${{ inputs.full_ci_mode == 'true' || (needs.check-code-changes.outputs.cli-files == 'true') }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -2538,7 +2538,7 @@ jobs:
         # intermittently some jobs get stuck in queue for a GHA-hosted
         # runner to be available, becoming a bottleneck and slowing down
         # overall CI completion time.
-        runner: [1, 2, 3]
+        runner: [1, 2, 3, 4]
     needs: [install-and-cache-rasa, check-code-changes]
 
     steps:
@@ -2587,7 +2587,7 @@ jobs:
           JOBS: logical
           PYTHONUTF8: 1
           RUNNER_ID: ${{ matrix.runner }}
-          NUMBER_OF_RUNNERS: 3
+          NUMBER_OF_RUNNERS: 4
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
           CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
