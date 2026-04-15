@@ -1,12 +1,15 @@
 import argparse
+import asyncio
 from pathlib import Path
 from typing import Callable
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest import RunResult
 
 from rasa.cli.inspect import inspect
+from rasa.core import constants
+from rasa.core.config.credentials import CredentialsConfig
 from rasa.shared.core.domain import Domain
 
 run_module_path = "rasa.cli.run"
@@ -132,3 +135,80 @@ def test_inspect_nextgen_sets_inspector_connector(
 
     assert args.connector == "inspector"
     mock_rasa_run.assert_called_once_with(**vars(args))
+
+
+def test_inspect_uses_server_url_from_credentials(
+    inspect_parser: argparse.ArgumentParser,
+    mock_rasa_run: MagicMock,
+    trained_simple_project: Path,
+) -> None:
+    """Tests that open_inspector_in_browser receives server_url from credentials."""
+    custom_server_url = "https://my-rasa-server.example.com"
+
+    mock_credentials = MagicMock(spec=CredentialsConfig)
+    mock_credentials.channels = {"inspector": {"server_url": custom_server_url}}
+
+    args = inspect_parser.parse_args(
+        [
+            "inspect",
+            "--endpoints",
+            f"{trained_simple_project}/endpoints.yml",
+            "--model",
+            f"{trained_simple_project}/models",
+        ]
+    )
+
+    with (
+        patch(
+            "rasa.cli.inspect.CredentialsConfigPath.validate",
+            return_value=Path("credentials.yml"),
+        ),
+        patch(
+            "rasa.cli.inspect.CredentialsConfig.load_from_file",
+            return_value=mock_credentials,
+        ),
+        patch(
+            "rasa.cli.inspect.open_inspector_in_browser",
+            new_callable=AsyncMock,
+        ) as mock_open,
+    ):
+        inspect(args)
+        hook, _ = args.server_listeners[0]
+        asyncio.run(hook(None, None))
+
+    mock_open.assert_called_once_with(
+        custom_server_url, args.voice, args.nextgen, args.auth_token
+    )
+
+
+def test_inspect_falls_back_to_default_server_url_when_no_credentials(
+    inspect_parser: argparse.ArgumentParser,
+    mock_rasa_run: MagicMock,
+    trained_simple_project: Path,
+) -> None:
+    """Tests that open_inspector_in_browser falls back to default URL with no credentials."""  # noqa: E501
+    args = inspect_parser.parse_args(
+        [
+            "inspect",
+            "--endpoints",
+            f"{trained_simple_project}/endpoints.yml",
+            "--model",
+            f"{trained_simple_project}/models",
+        ]
+    )
+
+    with (
+        patch("rasa.cli.inspect.CredentialsConfigPath.validate", return_value=None),
+        patch(
+            "rasa.cli.inspect.open_inspector_in_browser",
+            new_callable=AsyncMock,
+        ) as mock_open,
+    ):
+        inspect(args)
+        hook, _ = args.server_listeners[0]
+        asyncio.run(hook(None, None))
+
+    expected_url = constants.DEFAULT_SERVER_FORMAT.format("http", args.port)
+    mock_open.assert_called_once_with(
+        expected_url, args.voice, args.nextgen, args.auth_token
+    )

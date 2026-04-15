@@ -12,7 +12,12 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.cli.arguments.default_arguments import add_sub_agents_param
 from rasa.core import constants
-from rasa.core.config.configuration import Configuration, EndpointsConfigPath
+from rasa.core.config.configuration import (
+    Configuration,
+    CredentialsConfigPath,
+    EndpointsConfigPath,
+)
+from rasa.core.config.credentials import CredentialsConfig
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.exceptions import ModelNotFound
 from rasa.model import get_local_model
@@ -93,9 +98,23 @@ def inspect(args: argparse.Namespace) -> None:
     from rasa.cli.validation.config_path_validation import get_validated_path
     from rasa.shared.constants import DEFAULT_MODELS_PATH
 
+    _credentials_path = CredentialsConfigPath.validate()
+    _credentials = (
+        CredentialsConfig.load_from_file(_credentials_path)
+        if _credentials_path
+        else None
+    )
+    _inspector_server_url = (
+        (_credentials.channels.get("inspector") or {}).get("server_url")
+        if _credentials
+        else None
+    )
+
     async def after_start_hook_open_inspector(_: Sanic, __: AbstractEventLoop) -> None:
         """Hook to open the browser on server start."""
-        server_url = constants.DEFAULT_SERVER_FORMAT.format("http", args.port)
+        server_url = _inspector_server_url or constants.DEFAULT_SERVER_FORMAT.format(
+            "http", args.port
+        )
         await open_inspector_in_browser(
             server_url, args.voice, args.nextgen, args.auth_token
         )
