@@ -18,6 +18,12 @@ from tests.tracing.instrumentation.conftest import (
     MockContextualResponseRephraser,
     TestSpanExporter,
 )
+from tests.tracing.instrumentation.prompt_token_test_helpers import (
+    NON_OPENAI_ROUTER_MODEL_GROUPS,
+    PROMPT_TOKEN_TEST_LLM_INPUT_TEXT,
+    patch_mock_contextual_response_rephraser_llm_health_check_noop,
+    patch_resolve_tiktoken_encode_fixed_token_ids,
+)
 
 
 @pytest.fixture
@@ -192,13 +198,15 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response_no_mo
     ]
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "test_key")
     llm_config = {"model_group": "no-llm-models-group"}
+    # When a referenced model group contains no usable model entries, the config
+    # falls back to component defaults — so we expect the rephraser's default model.
     expected = {
-        "llm_model": "None",
-        "llm_type": "None",
+        "llm_model": "gpt-5.1-2025-11-13",
+        "llm_type": "openai",
         "llm_model_group_id": "no-llm-models-group",
-        "llm_temperature": "None",
-        "llm_request_timeout": "None",
-        "request_timeout": "None",
+        "llm_temperature": "1.0",
+        "llm_request_timeout": "5",
+        "request_timeout": "5",
     }
 
     test_span_exported = TestSpanExporter(span_exporter)
@@ -298,13 +306,9 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
     domain_with_responses: Domain,
     monkeypatch: MonkeyPatch,
 ) -> None:
+    """OpenAI prompt token length on the span when not using model group config."""
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_tracing_rephraser")
-    monkeypatch.setattr(
-        "rasa.tracing.instrumentation.attribute_extractors.resolve_tiktoken_encode",
-        lambda model_name, fallback_encoding="cl100k_base": (
-            lambda prompt: [1, 2, 3, 4]
-        ),
-    )
+    patch_resolve_tiktoken_encode_fixed_token_ids(monkeypatch)
     test_span_exported = TestSpanExporter(span_exporter)
     ignore_substrings = ["health_check"]
     component_class = MockContextualResponseRephraser
@@ -322,7 +326,9 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
     )
 
     await mock_rephraser._generate_llm_response(
-        LLMInput(prompt="This is a test prompt.", metadata={}), Mock(), "test_sender"
+        LLMInput(prompt=PROMPT_TOKEN_TEST_LLM_INPUT_TEXT, metadata={}),
+        Mock(),
+        "test_sender",
     )
 
     captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
@@ -350,6 +356,67 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
         "request_timeout": "5",
     }
     assert captured_span.attributes == expected_attributes
+
+
+@pytest.mark.usefixtures("mock_configuration")
+async def test_tracing_contextual_response_rephraser_len_prompt_tokens_llm_model_group_router_openai(  # noqa: E501
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    domain_with_responses: Domain,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Prompt tokens counted from the OpenAI model in an LLM router model group."""
+
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_tracing_rephraser")
+    component_class = MockContextualResponseRephraser
+    patch_mock_contextual_response_rephraser_llm_health_check_noop(
+        monkeypatch, component_class
+    )
+    patch_resolve_tiktoken_encode_fixed_token_ids(monkeypatch)
+    test_span_exported = TestSpanExporter(span_exporter)
+    ignore_substrings = ["health_check"]
+    instrumentation.instrument(
+        tracer_provider,
+        contextual_response_rephraser_class=component_class,
+    )
+    previous_num_captured_spans = test_span_exported.get_previous_num_captured_spans(
+        ignore_substrings
+    )
+
+    endpoint_config = EndpointConfig.from_dict(
+        {
+            "trace_prompt_tokens": True,
+            "llm": {"model_group": "llm-model-group"},
+        }
+    )
+    mock_rephraser = component_class(
+        endpoint_config=endpoint_config, domain=domain_with_responses
+    )
+
+    await mock_rephraser._generate_llm_response(
+        LLMInput(prompt=PROMPT_TOKEN_TEST_LLM_INPUT_TEXT, metadata={}),
+        Mock(),
+        "test_sender",
+    )
+
+    all_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
+        ignore_substrings
+    )  # type: ignore
+    new_spans = all_spans[previous_num_captured_spans:]
+    generate_span = next(
+        (
+            s
+            for s in new_spans
+            if s.name == "MockContextualResponseRephraser._generate_llm_response"
+        ),
+        None,
+    )
+    assert (
+        generate_span is not None
+    ), f"Expected '_generate_llm_response' span. Found: {[s.name for s in new_spans]}"
+    assert generate_span.attributes["len_prompt_tokens"] == "4"
+    assert generate_span.attributes["llm_model_group_id"] == "llm-model-group"
+    assert generate_span.attributes["llm_is_router_group"] == "true"
 
 
 async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_openai(
@@ -402,6 +469,74 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
     )
 
     assert captured_span.attributes["len_prompt_tokens"] == "None"
+
+
+@pytest.mark.usefixtures("mock_configuration")
+async def test_tracing_contextual_response_rephraser_len_prompt_tokens_router_group_no_openai(  # noqa: E501
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    domain_with_responses: Domain,
+    caplog: LogCaptureFixture,
+    monkeypatch: MonkeyPatch,
+    mock_available_endpoints: MagicMock,
+) -> None:
+    """Prompt tokens are not counted for a router group without an OpenAI model.
+
+    When the router group contains only non-OpenAI providers, token counting is
+    skipped and len_prompt_tokens is set to "None" on the span.
+    """
+    mock_available_endpoints.model_groups = NON_OPENAI_ROUTER_MODEL_GROUPS
+    monkeypatch.setenv("COHERE_API_KEY", "mock key in test_tracing_rephraser")
+    component_class = MockContextualResponseRephraser
+    patch_mock_contextual_response_rephraser_llm_health_check_noop(
+        monkeypatch, component_class
+    )
+    test_span_exported = TestSpanExporter(span_exporter)
+    ignore_substrings = ["health_check"]
+    instrumentation.instrument(
+        tracer_provider,
+        contextual_response_rephraser_class=component_class,
+    )
+    previous_num_captured_spans = test_span_exported.get_previous_num_captured_spans(
+        ignore_substrings
+    )
+
+    endpoint_config = EndpointConfig.from_dict(
+        {"trace_prompt_tokens": True, "llm": {"model_group": "non-openai-router-group"}}
+    )
+    mock_rephraser = component_class(
+        endpoint_config=endpoint_config, domain=domain_with_responses
+    )
+
+    with caplog.at_level(logging.WARNING):
+        await mock_rephraser._generate_llm_response(
+            LLMInput(prompt=PROMPT_TOKEN_TEST_LLM_INPUT_TEXT, metadata={}),
+            Mock(),
+            "test_sender",
+        )
+        assert (
+            "Tracing prompt tokens is only supported for OpenAI models. Skipping."
+            in caplog.text
+        )
+
+    all_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
+        ignore_substrings
+    )  # type: ignore
+    new_spans = all_spans[previous_num_captured_spans:]
+    generate_span = next(
+        (
+            s
+            for s in new_spans
+            if s.name == "MockContextualResponseRephraser._generate_llm_response"
+        ),
+        None,
+    )
+    assert (
+        generate_span is not None
+    ), f"Expected '_generate_llm_response' span. Found: {[s.name for s in new_spans]}"
+    assert generate_span.attributes["len_prompt_tokens"] == "None"
+    assert generate_span.attributes["llm_model_group_id"] == "non-openai-router-group"
+    assert generate_span.attributes["llm_is_router_group"] == "true"
 
 
 @pytest.mark.usefixtures("mock_configuration")
@@ -523,13 +658,15 @@ async def test_tracing_contextual_response_rephraser_create_history_no_model_gro
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "test_key")
 
     llm_config = {"model_group": "no-llm-models-group"}
+    # When a referenced model group contains no usable model entries, the config
+    # falls back to component defaults — so we expect the rephraser's default model.
     expected = {
-        "llm_model": "None",
-        "llm_type": "None",
+        "llm_model": "gpt-5.1-2025-11-13",
+        "llm_type": "openai",
         "llm_model_group_id": "no-llm-models-group",
-        "llm_temperature": "None",
-        "llm_request_timeout": "None",
-        "request_timeout": "None",
+        "llm_temperature": "1.0",
+        "llm_request_timeout": "5",
+        "request_timeout": "5",
     }
 
     test_span_exported = TestSpanExporter(span_exporter)

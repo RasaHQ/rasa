@@ -1,18 +1,32 @@
 """Tests for attribute extraction functions in tracing."""
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 from unittest.mock import Mock, patch
 
 import pytest
 
 from rasa.agents.core.types import ProtocolType
+from rasa.shared.constants import (
+    DEPLOYMENT_CONFIG_KEY,
+    EMBEDDINGS_CONFIG_KEY,
+    LLM_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    ROUTER_CONFIG_KEY,
+    TEMPERATURE_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
+)
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps.call import CallFlowStep
 from rasa.tracing.constants import (
     AGENT_NAME_ATTRIBUTE_NAME,
     EXECUTION_CONTEXT_ATTRIBUTE_NAME,
+    LLM_MODEL_ATTRIBUTE_NAME,
     PROTOCOL_TYPE_ATTRIBUTE_NAME,
 )
 from rasa.tracing.instrumentation.attribute_extractors import (
@@ -22,7 +36,10 @@ from rasa.tracing.instrumentation.attribute_extractors import (
     extract_attrs_for_mcp_agent_llm_call,
     extract_attrs_for_remove_duplicated_set_slots,
     extract_call_flow_step_attributes,
+    extract_embedding_config,
+    extract_llm_config,
 )
+from rasa.utils.endpoints import EndpointConfig
 
 
 @pytest.fixture
@@ -425,3 +442,308 @@ def test_extract_attrs_for_remove_duplicated_set_slots(
 
     for present in expected_present:
         assert present in result["resulting_events"]
+
+
+_FLAT_LLM_CONFIG: Dict[str, Any] = {
+    PROVIDER_CONFIG_KEY: "openai",
+    MODEL_CONFIG_KEY: "gpt-5.1-2025-11-13",
+    TEMPERATURE_CONFIG_KEY: 0.7,
+    TIMEOUT_CONFIG_KEY: 30,
+}
+
+_SINGLE_MODEL_GROUP_LLM_CONFIG: Dict[str, Any] = {
+    MODEL_GROUP_ID_CONFIG_KEY: "my-group",
+    MODELS_CONFIG_KEY: [
+        {
+            PROVIDER_CONFIG_KEY: "openai",
+            MODEL_CONFIG_KEY: "gpt-5.1-2025-11-13",
+            TEMPERATURE_CONFIG_KEY: 0.5,
+            TIMEOUT_CONFIG_KEY: 60,
+            DEPLOYMENT_CONFIG_KEY: "my-deployment",
+        }
+    ],
+}
+
+_ROUTER_GROUP_WITH_OPENAI_LLM_CONFIG: Dict[str, Any] = {
+    MODEL_GROUP_ID_CONFIG_KEY: "router-group",
+    MODELS_CONFIG_KEY: [
+        {PROVIDER_CONFIG_KEY: "openai", MODEL_CONFIG_KEY: "gpt-5.1-2025-11-13"},
+        {
+            PROVIDER_CONFIG_KEY: "azure",
+            DEPLOYMENT_CONFIG_KEY: "az-deploy",
+            MODEL_CONFIG_KEY: "gpt-5.1-2025-11-13",
+        },
+    ],
+    ROUTER_CONFIG_KEY: {"routing_strategy": "latency-based-routing"},
+}
+
+_ROUTER_GROUP_AZURE_ONLY_LLM_CONFIG: Dict[str, Any] = {
+    MODEL_GROUP_ID_CONFIG_KEY: "router-group",
+    MODELS_CONFIG_KEY: [
+        {
+            PROVIDER_CONFIG_KEY: "azure",
+            DEPLOYMENT_CONFIG_KEY: "az-deploy-1",
+            MODEL_CONFIG_KEY: "gpt-5.1-2025-11-13",
+        },
+        {
+            PROVIDER_CONFIG_KEY: "azure",
+            DEPLOYMENT_CONFIG_KEY: "az-deploy-2",
+            MODEL_CONFIG_KEY: "gpt-5.1-2025-11-13",
+        },
+    ],
+    ROUTER_CONFIG_KEY: {"routing_strategy": "latency-based-routing"},
+}
+
+_FLAT_EMBEDDINGS_CONFIG: Dict[str, Any] = {
+    PROVIDER_CONFIG_KEY: "openai",
+    MODEL_CONFIG_KEY: "text-embedding-ada-002",
+}
+
+_SINGLE_MODEL_GROUP_EMBEDDINGS_CONFIG: Dict[str, Any] = {
+    MODEL_GROUP_ID_CONFIG_KEY: "embed-group",
+    MODELS_CONFIG_KEY: [
+        {PROVIDER_CONFIG_KEY: "openai", MODEL_CONFIG_KEY: "text-embedding-3-small"}
+    ],
+}
+
+_ROUTER_GROUP_EMBEDDINGS_CONFIG: Dict[str, Any] = {
+    MODEL_GROUP_ID_CONFIG_KEY: "embed-router-group",
+    MODELS_CONFIG_KEY: [
+        {PROVIDER_CONFIG_KEY: "openai", MODEL_CONFIG_KEY: "text-embedding-3-small"},
+        {
+            PROVIDER_CONFIG_KEY: "azure",
+            DEPLOYMENT_CONFIG_KEY: "az-embed-deploy",
+        },
+    ],
+    ROUTER_CONFIG_KEY: {"routing_strategy": "latency-based-routing"},
+}
+
+_ROUTER_GROUP_NON_OPENAI_EMBEDDINGS_CONFIG: Dict[str, Any] = {
+    MODEL_GROUP_ID_CONFIG_KEY: "embed-router-group",
+    MODELS_CONFIG_KEY: [
+        {PROVIDER_CONFIG_KEY: "cohere", MODEL_CONFIG_KEY: "embed-v4.0"},
+        {
+            PROVIDER_CONFIG_KEY: "azure",
+            DEPLOYMENT_CONFIG_KEY: "text-embedding-ada-002",
+        },
+    ],
+    ROUTER_CONFIG_KEY: {"routing_strategy": "latency-based-routing"},
+}
+
+_DEFAULT_LLM_CONFIG: Dict[str, Any] = {
+    PROVIDER_CONFIG_KEY: "openai",
+    MODEL_CONFIG_KEY: "gpt-4o-mini",
+}
+
+_DEFAULT_EMBEDDINGS_CONFIG: Dict[str, Any] = {
+    PROVIDER_CONFIG_KEY: "openai",
+    MODEL_CONFIG_KEY: "text-embedding-ada-002",
+}
+
+
+# ---------------------------------------------------------------------------
+# Component factories – return real instances with the given LLM/embedding
+# config so that resolve_model_client_config and combine_custom_and_default_config
+# are exercised end-to-end without any patching.
+# ---------------------------------------------------------------------------
+
+
+def _make_command_generator(llm_config: Dict[str, Any]) -> Any:
+    from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
+        CompactLLMCommandGenerator,
+    )
+
+    return CompactLLMCommandGenerator.create(
+        config={LLM_CONFIG_KEY: llm_config},
+        resource=Mock(),
+        model_storage=Mock(),
+        execution_context=Mock(),
+    )
+
+
+def _make_rephraser(llm_config: Dict[str, Any]) -> Any:
+    from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
+
+    return ContextualResponseRephraser(
+        endpoint_config=EndpointConfig(url="http://localhost", llm=llm_config),
+        domain=Domain.empty(),
+    )
+
+
+def _make_enterprise_search_policy(llm_config: Dict[str, Any]) -> Any:
+    from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
+
+    return EnterpriseSearchPolicy(
+        config={LLM_CONFIG_KEY: llm_config},
+        model_storage=Mock(),
+        resource=Mock(),
+        execution_context=Mock(),
+    )
+
+
+def _make_command_generator_with_embeddings(embeddings_config: Dict[str, Any]) -> Any:
+    from rasa.dialogue_understanding.generator.constants import FLOW_RETRIEVAL_KEY
+    from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
+        CompactLLMCommandGenerator,
+    )
+
+    return CompactLLMCommandGenerator.create(
+        config={FLOW_RETRIEVAL_KEY: {EMBEDDINGS_CONFIG_KEY: embeddings_config}},
+        resource=Mock(),
+        model_storage=Mock(),
+        execution_context=Mock(),
+    )
+
+
+def _make_enterprise_search_policy_with_embeddings(
+    embeddings_config: Dict[str, Any],
+) -> Any:
+    from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
+
+    return EnterpriseSearchPolicy(
+        config={EMBEDDINGS_CONFIG_KEY: embeddings_config},
+        model_storage=Mock(),
+        resource=Mock(),
+        execution_context=Mock(),
+    )
+
+
+_LLM_COMPONENT_FACTORIES: List[Callable[[Dict[str, Any]], Any]] = [
+    pytest.param(_make_command_generator, id="CompactLLMCommandGenerator"),
+    pytest.param(_make_rephraser, id="ContextualResponseRephraser"),
+    pytest.param(_make_enterprise_search_policy, id="EnterpriseSearchPolicy"),
+]
+
+_EMBEDDINGS_COMPONENT_FACTORIES: List[Callable[[Dict[str, Any]], Any]] = [
+    pytest.param(
+        _make_command_generator_with_embeddings, id="CompactLLMCommandGenerator"
+    ),
+    pytest.param(
+        _make_enterprise_search_policy_with_embeddings, id="EnterpriseSearchPolicy"
+    ),
+]
+
+
+class TestExtractLlmConfig:
+    """Tests for extract_llm_config parametrized across generative components."""
+
+    @pytest.fixture(autouse=True)
+    def _no_health_check(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Prevent ContextualResponseRephraser from calling the live LLM health check
+        during __init__ so it can be tested with any config, including router groups."""
+        monkeypatch.setattr(
+            "rasa.shared.utils.health_check.llm_health_check_mixin.LLMHealthCheckMixin"
+            ".perform_llm_health_check",
+            lambda *args, **kwargs: None,
+        )
+
+    @pytest.fixture(params=_LLM_COMPONENT_FACTORIES)
+    def make_component(
+        self, request: pytest.FixtureRequest
+    ) -> Callable[[Dict[str, Any]], Any]:
+        return request.param
+
+    def test_flat_config(self, make_component: Callable[[Dict[str, Any]], Any]) -> None:
+        """Attributes are extracted directly from a flat (non-model-group) config."""
+        component = make_component(_FLAT_LLM_CONFIG)
+        result = extract_llm_config(component, _DEFAULT_LLM_CONFIG)
+
+        assert result[LLM_MODEL_ATTRIBUTE_NAME] == "gpt-5.1-2025-11-13"
+        assert result["llm_type"] == "openai"
+        assert result["llm_temperature"] == "0.7"
+        assert result["llm_request_timeout"] == "30"
+        assert "llm_is_router_group" not in result
+
+    def test_single_model_group(
+        self, make_component: Callable[[Dict[str, Any]], Any]
+    ) -> None:
+        """Attributes are extracted from models[0] for a single-model group."""
+        component = make_component(_SINGLE_MODEL_GROUP_LLM_CONFIG)
+        result = extract_llm_config(component, _DEFAULT_LLM_CONFIG)
+
+        assert result[LLM_MODEL_ATTRIBUTE_NAME] == "gpt-5.1-2025-11-13"
+        assert result["llm_type"] == "openai"
+        assert result["llm_model_group_id"] == "my-group"
+        assert "llm_is_router_group" not in result
+        assert result["llm_temperature"] == "0.5"
+        assert result["llm_request_timeout"] == "60"
+        assert result["llm_engine"] == "my-deployment"
+
+    def test_router_group_prefers_openai_model(
+        self, make_component: Callable[[Dict[str, Any]], Any]
+    ) -> None:
+        """Router groups use the OpenAI model for llm_type/llm_model (token counting)
+        and set llm_is_router_group=True."""
+        component = make_component(_ROUTER_GROUP_WITH_OPENAI_LLM_CONFIG)
+        result = extract_llm_config(component, _DEFAULT_LLM_CONFIG)
+
+        assert result["llm_model_group_id"] == "router-group"
+        assert result["llm_is_router_group"] == "true"
+        assert result[LLM_MODEL_ATTRIBUTE_NAME] == "gpt-5.1-2025-11-13"
+        assert result["llm_type"] == "openai"
+        assert "llm_engine" not in result
+
+    def test_router_group_falls_back_to_first_model_when_no_openai(
+        self, make_component: Callable[[Dict[str, Any]], Any]
+    ) -> None:
+        """Router groups without an OpenAI model fall back to the first model."""
+        component = make_component(_ROUTER_GROUP_AZURE_ONLY_LLM_CONFIG)
+        result = extract_llm_config(component, _DEFAULT_LLM_CONFIG)
+
+        assert result["llm_model_group_id"] == "router-group"
+        assert result["llm_is_router_group"] == "true"
+        assert result[LLM_MODEL_ATTRIBUTE_NAME] == "gpt-5.1-2025-11-13"
+        assert result["llm_type"] == "azure"
+        assert result["llm_engine"] == "az-deploy-1"
+
+
+class TestExtractEmbeddingConfig:
+    """Tests for extract_embedding_config parametrized across generative components."""
+
+    @pytest.fixture(params=_EMBEDDINGS_COMPONENT_FACTORIES)
+    def make_component(
+        self, request: pytest.FixtureRequest
+    ) -> Callable[[Dict[str, Any]], Any]:
+        return request.param
+
+    def test_flat_config(self, make_component: Callable[[Dict[str, Any]], Any]) -> None:
+        """Attributes are extracted directly from a flat (non-model-group) config."""
+        component = make_component(_FLAT_EMBEDDINGS_CONFIG)
+        result = extract_embedding_config(component, _DEFAULT_EMBEDDINGS_CONFIG)
+
+        assert result["embeddings_model"] == "text-embedding-ada-002"
+        assert result["embeddings_type"] == "openai"
+
+    def test_single_model_group(
+        self, make_component: Callable[[Dict[str, Any]], Any]
+    ) -> None:
+        """Attributes are extracted from models[0] for a single-model group."""
+        component = make_component(_SINGLE_MODEL_GROUP_EMBEDDINGS_CONFIG)
+        result = extract_embedding_config(component, _DEFAULT_EMBEDDINGS_CONFIG)
+
+        assert result["embeddings_model"] == "text-embedding-3-small"
+        assert result["embeddings_type"] == "openai"
+        assert result["embeddings_model_group_id"] == "embed-group"
+
+    def test_router_group_prefers_openai_model(
+        self, make_component: Callable[[Dict[str, Any]], Any]
+    ) -> None:
+        """Router groups use the OpenAI model for token-counting compatibility."""
+        component = make_component(_ROUTER_GROUP_EMBEDDINGS_CONFIG)
+        result = extract_embedding_config(component, _DEFAULT_EMBEDDINGS_CONFIG)
+
+        assert result["embeddings_model_group_id"] == "embed-router-group"
+        assert result["embeddings_model"] == "text-embedding-3-small"
+        assert result["embeddings_type"] == "openai"
+
+    def test_router_group_falls_back_to_first_model_when_no_openai(
+        self, make_component: Callable[[Dict[str, Any]], Any]
+    ) -> None:
+        """Router groups without an OpenAI model fall back to the first model."""
+        component = make_component(_ROUTER_GROUP_NON_OPENAI_EMBEDDINGS_CONFIG)
+        result = extract_embedding_config(component, _DEFAULT_EMBEDDINGS_CONFIG)
+        print(result)
+
+        assert result["embeddings_model_group_id"] == "embed-router-group"
+        assert result["embeddings_model"] == "embed-v4.0"
+        assert result["embeddings_type"] == "cohere"

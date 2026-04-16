@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import Any, Dict, Sequence
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
@@ -23,6 +23,11 @@ from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
 from tests.tracing.instrumentation.conftest import (
     MockCompactLLMCommandGenerator,
     get_model_groups,
+)
+from tests.tracing.instrumentation.prompt_token_test_helpers import (
+    NON_OPENAI_ROUTER_MODEL_GROUPS,
+    PROMPT_TOKEN_TEST_LLM_INPUT_TEXT,
+    patch_resolve_tiktoken_encode_fixed_token_ids,
 )
 from tests.utilities import flows_from_str
 
@@ -100,18 +105,19 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
                 },
             },
             {
-                # llm attributes
-                "llm_type": "None",
-                "llm_model": "None",
+                # llm attributes — router group; OpenAI model is preferred
+                "llm_type": "openai",
+                "llm_model": "gpt-4",
                 "llm_model_group_id": "llm-model-group",
-                "llm_temperature": "None",
-                "llm_request_timeout": "None",
-                # embeddings attributes
-                "embeddings_model": "None",
-                "embeddings_type": "None",
+                "llm_is_router_group": "true",
+                "llm_temperature": "1.0",
+                "llm_request_timeout": "7",
+                # embeddings attributes — router group; OpenAI model is preferred
+                "embeddings_model": "text-embedding-3-large",
+                "embeddings_type": "openai",
                 "embeddings_model_group_id": "embedding-model-group",
                 # deprecated
-                "request_timeout": "None",
+                "request_timeout": "7",
                 "embeddings": json.dumps(get_model_groups()[1], sort_keys=True),
             },
         ),
@@ -308,18 +314,19 @@ async def test_tracing_compact_llm_command_generator_azure_attrs(
                 },
             },
             {
-                # llm attributes
-                "llm_type": "None",
-                "llm_model": "None",
+                # llm attributes — router group; OpenAI model is preferred
+                "llm_type": "openai",
+                "llm_model": "gpt-4",
                 "llm_model_group_id": "llm-model-group",
-                "llm_temperature": "None",
-                "llm_request_timeout": "None",
-                # embeddings attributes
-                "embeddings_model": "None",
-                "embeddings_type": "None",
+                "llm_is_router_group": "true",
+                "llm_temperature": "1.0",
+                "llm_request_timeout": "7",
+                # embeddings attributes — router group; OpenAI model is preferred
+                "embeddings_model": "text-embedding-3-large",
+                "embeddings_type": "openai",
                 "embeddings_model_group_id": "embedding-model-group",
                 # deprecated
-                "request_timeout": "None",
+                "request_timeout": "7",
                 "embeddings": json.dumps(get_model_groups()[1], sort_keys=True),
             },
         ),
@@ -421,13 +428,9 @@ async def test_tracing_compact_llm_command_generator_prompt_tokens(
     previous_num_captured_spans: int,
     monkeypatch: MonkeyPatch,
 ) -> None:
+    """OpenAI prompt token length on the span when not using model group config."""
     component_class = MockCompactLLMCommandGenerator
-    monkeypatch.setattr(
-        "rasa.tracing.instrumentation.attribute_extractors.resolve_tiktoken_encode",
-        lambda model_name, fallback_encoding="cl100k_base": (
-            lambda prompt: [1, 2, 3, 4]
-        ),
-    )
+    patch_resolve_tiktoken_encode_fixed_token_ids(monkeypatch)
 
     instrumentation.instrument(
         tracer_provider,
@@ -440,7 +443,7 @@ async def test_tracing_compact_llm_command_generator_prompt_tokens(
         resource=Resource("llm-command-generator"),
     )
     await mock_compact_llm_command_generator.invoke_llm(
-        LLMInput(prompt="This is a test prompt.", metadata={})
+        LLMInput(prompt=PROMPT_TOKEN_TEST_LLM_INPUT_TEXT, metadata={})
     )
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
@@ -481,6 +484,47 @@ async def test_tracing_compact_llm_command_generator_prompt_tokens(
         "timezone": "UTC",
     }
     assert captured_span.attributes == expected_attributes
+
+
+@pytest.mark.usefixtures("mock_configuration")
+async def test_tracing_compact_llm_command_generator_prompt_tokens_llm_model_group_router_openai(  # noqa: E501
+    default_model_storage: ModelStorage,
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Prompt tokens counted from the OpenAI model in an LLM router model group."""
+
+    component_class = MockCompactLLMCommandGenerator
+    patch_resolve_tiktoken_encode_fixed_token_ids(monkeypatch)
+
+    instrumentation.instrument(
+        tracer_provider,
+        compact_llm_command_generator_class=component_class,
+    )
+
+    mock_compact_llm_command_generator = component_class(
+        config={
+            "trace_prompt_tokens": True,
+            "llm": {"model_group": "llm-model-group"},
+        },
+        model_storage=default_model_storage,
+        resource=Resource("llm-command-generator"),
+    )
+    await mock_compact_llm_command_generator.invoke_llm(
+        LLMInput(prompt=PROMPT_TOKEN_TEST_LLM_INPUT_TEXT, metadata={})
+    )
+
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 1
+
+    captured_span = captured_spans[-1]
+    assert captured_span.name == "MockCompactLLMCommandGenerator.invoke_llm"
+    assert captured_span.attributes["len_prompt_tokens"] == "4"
+    assert captured_span.attributes["llm_model_group_id"] == "llm-model-group"
+    assert captured_span.attributes["llm_is_router_group"] == "true"
 
 
 async def test_tracing_compact_llm_command_generator_prompt_tokens_non_openai(
@@ -524,6 +568,56 @@ async def test_tracing_compact_llm_command_generator_prompt_tokens_non_openai(
     assert captured_span.name == "MockCompactLLMCommandGenerator.invoke_llm"
 
     assert captured_span.attributes["len_prompt_tokens"] == "None"
+
+
+@pytest.mark.usefixtures("mock_configuration")
+async def test_tracing_compact_llm_command_generator_prompt_tokens_router_group_no_openai(  # noqa: E501
+    default_model_storage: ModelStorage,
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+    caplog: LogCaptureFixture,
+    mock_available_endpoints: MagicMock,
+) -> None:
+    """Prompt tokens are not counted for a router group without an OpenAI model.
+
+    When the router group contains only non-OpenAI providers, token counting is
+    skipped and len_prompt_tokens is set to "None" on the span.
+    """
+    mock_available_endpoints.model_groups = NON_OPENAI_ROUTER_MODEL_GROUPS
+    component_class = MockCompactLLMCommandGenerator
+
+    instrumentation.instrument(
+        tracer_provider,
+        compact_llm_command_generator_class=component_class,
+    )
+
+    mock_compact_llm_command_generator = component_class(
+        config={
+            "trace_prompt_tokens": True,
+            "llm": {"model_group": "non-openai-router-group"},
+        },
+        model_storage=default_model_storage,
+        resource=Resource("llm-command-generator"),
+    )
+    with caplog.at_level(logging.WARNING):
+        await mock_compact_llm_command_generator.invoke_llm(
+            LLMInput(prompt="This is a test prompt.", metadata={})
+        )
+        assert (
+            "Tracing prompt tokens is only supported for OpenAI models. Skipping."
+            in caplog.text
+        )
+
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 1
+
+    captured_span = captured_spans[-1]
+    assert captured_span.name == "MockCompactLLMCommandGenerator.invoke_llm"
+    assert captured_span.attributes["len_prompt_tokens"] == "None"
+    assert captured_span.attributes["llm_model_group_id"] == "non-openai-router-group"
+    assert captured_span.attributes["llm_is_router_group"] == "true"
 
 
 @pytest.mark.parametrize(

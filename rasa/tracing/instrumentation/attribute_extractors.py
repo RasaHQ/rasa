@@ -70,7 +70,10 @@ from rasa.shared.constants import (
     MODEL_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
     MODELS_CONFIG_KEY,
+    OPENAI_PROVIDER,
     PROVIDER_CONFIG_KEY,
+    ROUTER_CONFIG_KEY,
+    TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import (
@@ -365,6 +368,53 @@ def extract_attrs_for_command(
     }
 
 
+def _resolve_model_property(
+    resolved_config: Dict[str, Any],
+) -> Tuple[Dict[str, Any], bool]:
+    """Resolve the representative model config and whether a router group is used.
+
+    For flat configs and single-model groups the representative config is
+    unambiguous. For router groups the actual model is chosen at runtime, so we
+    prefer the OpenAI model when present (because token counting only works for
+    OpenAI), falling back to the first model in the list.
+
+    Args:
+        resolved_config: The fully-resolved (post-combine) client configuration.
+
+    Returns:
+        A tuple of (model_property, is_router_group) where model_property is the
+        dict containing the representative model's attributes.
+    """
+    is_router_group = (
+        MODELS_CONFIG_KEY in resolved_config and ROUTER_CONFIG_KEY in resolved_config
+    )
+
+    if MODELS_CONFIG_KEY not in resolved_config:
+        # Flat (non-model-group) config: attributes come directly from the config.
+        return resolved_config, is_router_group
+
+    models = resolved_config[MODELS_CONFIG_KEY]
+    if not models:
+        # Misconfigured empty model group: keep tracing non-disruptive by falling
+        # back to the resolved config rather than indexing into an empty list.
+        return resolved_config, is_router_group
+
+    if is_router_group:
+        # Router group: the model that will actually be called is chosen at runtime.
+        # Prefer the OpenAI model when present because the provider is used for prompt
+        # token counting, which is only supported for OpenAI. Fall back to the first
+        # model in the list if no OpenAI model is configured.
+        openai_models = [
+            m for m in models if m.get(PROVIDER_CONFIG_KEY) == OPENAI_PROVIDER
+        ]
+        model_property = openai_models[0] if openai_models else models[0]
+    else:
+        # Single-model group (no router)
+        model_property = models[0]
+
+    return model_property, is_router_group
+
+
 def extract_llm_config(
     self: Any,
     default_llm_config: Dict[str, Any],
@@ -392,19 +442,25 @@ def extract_llm_config(
     llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY))
     llm_property = combine_custom_and_default_config(llm_config, default_llm_config)
 
+    model_group_id = llm_property.get(MODEL_GROUP_ID_CONFIG_KEY)
+    model_property, is_router_group = _resolve_model_property(llm_property)
+
     attributes = {
         "class_name": self.__class__.__name__,
         # llm client attributes
-        LLM_MODEL_ATTRIBUTE_NAME: str(llm_property.get(MODEL_CONFIG_KEY)),
-        "llm_type": str(llm_property.get(PROVIDER_CONFIG_KEY)),
-        "llm_model_group_id": str(llm_property.get(MODEL_GROUP_ID_CONFIG_KEY)),
-        "llm_temperature": str(llm_property.get("temperature")),
-        "llm_request_timeout": str(llm_property.get(TIMEOUT_CONFIG_KEY)),
-        "request_timeout": str(llm_property.get(TIMEOUT_CONFIG_KEY)),
+        LLM_MODEL_ATTRIBUTE_NAME: str(model_property.get(MODEL_CONFIG_KEY)),
+        "llm_type": str(model_property.get(PROVIDER_CONFIG_KEY)),
+        "llm_model_group_id": str(model_group_id),
+        "llm_temperature": str(model_property.get(TEMPERATURE_CONFIG_KEY)),
+        "llm_request_timeout": str(model_property.get(TIMEOUT_CONFIG_KEY)),
+        "request_timeout": str(model_property.get(TIMEOUT_CONFIG_KEY)),
     }
 
-    if DEPLOYMENT_CONFIG_KEY in llm_property:
-        attributes["llm_engine"] = str(llm_property.get(DEPLOYMENT_CONFIG_KEY))
+    if is_router_group:
+        attributes["llm_is_router_group"] = "true"
+
+    if DEPLOYMENT_CONFIG_KEY in model_property:
+        attributes["llm_engine"] = str(model_property.get(DEPLOYMENT_CONFIG_KEY))
 
     return attributes
 
@@ -441,13 +497,14 @@ def extract_embedding_config(
             embeddings_config, default_embeddings_config
         )
 
+    embeddings_model_group_id = embeddings_property.get(MODEL_GROUP_ID_CONFIG_KEY)
+    embeddings_model_property, _ = _resolve_model_property(embeddings_property)
+
     attributes = {
         # embedding client attributes
-        "embeddings_model": str(embeddings_property.get(MODEL_CONFIG_KEY)),
-        "embeddings_type": str(embeddings_property.get(PROVIDER_CONFIG_KEY)),
-        "embeddings_model_group_id": str(
-            embeddings_property.get(MODEL_GROUP_ID_CONFIG_KEY)
-        ),
+        "embeddings_model": str(embeddings_model_property.get(MODEL_CONFIG_KEY)),
+        "embeddings_type": str(embeddings_model_property.get(PROVIDER_CONFIG_KEY)),
+        "embeddings_model_group_id": str(embeddings_model_group_id),
         # TODO: Keeping this to avoid potential breaking changes
         "embeddings": json.dumps(embeddings_property, sort_keys=True),
     }
