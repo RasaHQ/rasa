@@ -217,7 +217,7 @@ dnspython = "~2.8.0"
 wheel = ">=0.46.3"
 certifi = ">=2025.11.12,<2025.12.0"
 openai = ">=2.29.0,<3.0.0"
-cryptography = "~46.0.5"
+cryptography = "~46.0.7"
 jsonpatch = "^1.33"
 importlib-resources = "^6.5.2"
 importlib-metadata = "~8.6.1"
@@ -269,7 +269,7 @@ version = "~1.14.0"
 markers = "python_version >= '3.12'"
 
 [[tool.poetry.dependencies.rasa-sdk]]
-version = "3.16.0"  # upgraded to use updated protobuf required for python 3.12, depends on protobuf (>=5.29.5,<5.30.0)
+version = "3.16.1"  # upgraded to use updated protobuf required for python 3.12, depends on protobuf (>=5.29.5,<5.30.0)
 allow-prereleases = true
 
 [tool.poetry.dependencies.langcodes]
