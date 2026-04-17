@@ -91,6 +91,7 @@ inspector-files:
   - tests/core/channels/test_development_inspector.py
   - .github/actions/inspector-e2e-tests/**
   - .github/actions/setup-node/**
+  - rasa/cli/project_templates/**
 
 voice-files:
   - rasa/core/channels/voice_ready/**
@@ -313,6 +314,7 @@ channel-files:
 builder-files:
   - rasa/builder/**
   - tests/builder/**
+  - rasa/cli/project_templates/**
 
 timer-store-files:
   - rasa/core/timer_managers/**

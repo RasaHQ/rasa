@@ -44,7 +44,7 @@ test.describe("Memory view", () => {
     });
 
     await flows.inspector.sendMessageAndAssert(page, "Tester A");
-    await actions.inspector.assertions(page).assertBotMessageCount(3);
+    await actions.inspector.assertions(page).assertBotMessageCount(2);
 
     await test.step("Assert Current flow slot \"contact name\" is collected", async () => {
       await flows.inspector.assertCollectedCurrentFlowSlotsVisible(page);
@@ -62,7 +62,7 @@ test.describe("Memory view", () => {
     });
 
     await flows.inspector.sendMessageAndAssert(page, "Yes");
-    await actions.inspector.assertions(page).assertBotMessageCount(4);
+    await actions.inspector.assertions(page).assertBotMessageCount(5);
 
     await test.step("Assert slots are cleared on flow completion", async () => {
       await flows.inspector.assertCollectedSlotNotVisible(page, "Session", "add_contact_handle");

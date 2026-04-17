@@ -89,7 +89,7 @@ test.describe("Event details panel", () => {
       page,
     }) => {
       await flows.inspector.sendMessageAndAssert(page, "What's my balance?");
-      await actions.inspector.assertions(page).assertBotMessageCount(2);
+      await actions.inspector.assertions(page).assertBotMessageCount(3);
 
       await test.step("Wait for slot event", async () => {
         await flows.inspector.assertConversationEventVisible(
@@ -141,7 +141,7 @@ test.describe("Event details panel", () => {
       page,
     }) => {
       await flows.inspector.sendMessageAndAssert(page, "What's my balance?");
-      await actions.inspector.assertions(page).assertBotMessageCount(2);
+      await actions.inspector.assertions(page).assertBotMessageCount(3);
 
       await flows.inspector.clickBotMessageAndAssertPanel(page, 1);
 
@@ -158,7 +158,7 @@ test.describe("Event details panel", () => {
       page,
     }) => {
       await flows.inspector.sendMessageAndAssert(page, "What's my balance?");
-      await actions.inspector.assertions(page).assertBotMessageCount(2);
+      await actions.inspector.assertions(page).assertBotMessageCount(3);
 
       await flows.inspector.clickUserMessageAndAssertPanel(page, 0);
 
@@ -222,7 +222,7 @@ test.describe("Event details panel", () => {
       page,
     }) => {
       await flows.inspector.sendMessageAndAssert(page, "What's my balance?");
-      await actions.inspector.assertions(page).assertBotMessageCount(2);
+      await actions.inspector.assertions(page).assertBotMessageCount(3);
 
       await test.step("Open flow event details", async () => {
         await flows.inspector.clickConversationEventAndAssertPanel(

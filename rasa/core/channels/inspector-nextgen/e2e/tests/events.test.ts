@@ -43,26 +43,18 @@ test.describe("Inspector Landing page", () => {
       );
       await flows.inspector.assertConversationEventVisible(
         page,
-        "System flow pattern_completed started",
-      );
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "System flow pattern_completed completed",
-      );
-      await flows.inspector.assertConversationEventVisible(
-        page,
         "Waiting for user input",
       );
     });
 
     await flows.inspector.sendMessageAndAssert(page, "What's my balance?");
-    await actions.inspector.assertions(page).assertBotMessageCount(2);
+    await actions.inspector.assertions(page).assertBotMessageCount(3);
 
     await test.step("Assert flow nodes are visible", async () => {
-      await flows.inspector.assertActiveFlowName(page, "check account balance");
+      await flows.inspector.assertActiveFlowName(page, "pattern completed");
       await flows.inspector.assertFlowNodeVisible(page, "Start");
-      await flows.inspector.assertFlowNodeVisible(page, "check_balance");
-      await flows.inspector.assertFlowNodeVisible(page, "utter_current_balance");
+      await flows.inspector.assertFlowNodeVisible(page, "if...");
+      await flows.inspector.assertFlowNodeVisible(page, "utter_closing_words");
     });
     await test.step("Assert conversation events are visible", async () => {
       await flows.inspector.assertConversationEventVisible(

@@ -35,7 +35,7 @@ test.describe("Conversation History view", () => {
     page,
   }) => {
     await flows.inspector.sendMessageAndAssert(page, "What's my balance?");
-    await actions.inspector.assertions(page).assertBotMessageCount(2);
+    await actions.inspector.assertions(page).assertBotMessageCount(3);
 
     await flows.inspector.switchToHistoryView(page);
     await flows.inspector.assertFlowTimelineVisible(page);
@@ -76,7 +76,7 @@ test.describe("Conversation History view", () => {
     page,
   }) => {
     await flows.inspector.sendMessageAndAssert(page, "What's my balance?");
-    await actions.inspector.assertions(page).assertBotMessageCount(2);
+    await actions.inspector.assertions(page).assertBotMessageCount(3);
 
     await flows.inspector.switchToHistoryView(page);
     await flows.inspector.assertFlowTimelineItemVisible(

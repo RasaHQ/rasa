@@ -1,6 +1,6 @@
 recipe: default.v1
 language: en
-assistant_id: generous-humanist
+assistant_id: placeholder_default
 pipeline:
 - name: SearchReadyLLMCommandGenerator
   llm:
