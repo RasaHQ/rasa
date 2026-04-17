@@ -362,6 +362,31 @@ Rasa Pro 3.16.0 (2026-03-26)
 - [#3690](https://github.com/rasahq/rasa-private/issues/3690), [#4072](https://github.com/rasahq/rasa-private/issues/4072), [#4206](https://github.com/rasahq/rasa-private/issues/4206), [#4391](https://github.com/rasahq/rasa-private/issues/4391), [#4432](https://github.com/rasahq/rasa-private/issues/4432), [#4434](https://github.com/rasahq/rasa-private/issues/4434), [#4482](https://github.com/rasahq/rasa-private/issues/4482), [#4483](https://github.com/rasahq/rasa-private/issues/4483), [#4501](https://github.com/rasahq/rasa-private/issues/4501), [#4505](https://github.com/rasahq/rasa-private/issues/4505), [#4521](https://github.com/rasahq/rasa-private/issues/4521), [#4530](https://github.com/rasahq/rasa-private/issues/4530), [#4538](https://github.com/rasahq/rasa-private/issues/4538), [#4564](https://github.com/rasahq/rasa-private/issues/4564), [#4591](https://github.com/rasahq/rasa-private/issues/4591), [#4630](https://github.com/rasahq/rasa-private/issues/4630), [#4643](https://github.com/rasahq/rasa-private/issues/4643), [#4647](https://github.com/rasahq/rasa-private/issues/4647), [#4666](https://github.com/rasahq/rasa-private/issues/4666), [#4723](https://github.com/rasahq/rasa-private/issues/4723), [#4731](https://github.com/rasahq/rasa-private/issues/4731), [#4742](https://github.com/rasahq/rasa-private/issues/4742), [#4827](https://github.com/rasahq/rasa-private/issues/4827), [#4899](https://github.com/rasahq/rasa-private/issues/4899)
 
 
+## [3.15.20] - 2026-04-10
+                         
+Rasa Pro 3.15.20 (2026-04-10)                              
+### Bugfixes
+- [#5111](https://github.com/rasahq/rasa-private/issues/5111): When interruptions are ENABLED, user message should be queued for processing only if it passes interruption criteria.
+- [#5125](https://github.com/rasahq/rasa-private/issues/5125): If interruptions are disabled, user message should be queued only if user speaks during collect step utterance.
+
+  Updated signature of following methods:
+  - send_start_marker: `send_start_marker(self, recipient_id: str)` => `send_start_marker(self, marker_input: MarkerInput)`
+  - send_intermediate_marker: `send_intermediate_marker(self, recipient_id: str)` => `send_intermediate_marker(self, marker_input: MarkerInput)`
+  - send_end_marker: `send_end_marker(self, recipient_id: str)` => `send_end_marker(self, marker_input: MarkerInput)`
+  - send_marker_message: `send_marker_message(self, recipient_id: str)` => `send_marker_message(self, marker_input: MarkerInput)`
+  - create_marker_message: create_marker_message(self, recipient_id: str) => `create_marker_message(self, marker_input: MarkerInput) -> MarkerMessageOutput`
+
+  where MarkerInput is a Pydantic-based class:
+  ```python
+  class MarkerInput(BaseModel):
+      recipient_id: str
+      marker_type: MarkerType
+      step_type: Optional[StepType] = None
+  ```
+- [#5137](https://github.com/rasahq/rasa-private/issues/5137): Fixed validation incorrectly rejecting custom ContextualResponseRephraser subclasses configured as nlg.type in endpoints.yml. The validator now resolves the class and checks inheritance instead of only accepting the literal string "rephrase".
+- [#5142](https://github.com/rasahq/rasa-private/issues/5142): Updated `PyJWT`, `werkzeug`, `aiohttp`, `orjson`, `pyasn1`, `requests`, and `ujson`to resolve security vulnerabilities.
+
+
 ## [3.15.19] - 2026-04-02
                          
 Rasa Pro 3.15.19 (2026-04-02)                              
