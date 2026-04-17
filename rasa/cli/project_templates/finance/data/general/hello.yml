@@ -2,5 +2,6 @@ flows:
   hello:
     description: Flow for greeting the user hello
     name: hello
+    run_pattern_completed: false
     steps:
       - action: utter_hello

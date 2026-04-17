@@ -31,9 +31,21 @@ responses:
     - text: "Hi there! I'm {agent_name} 👋. I can help you with {skills_summary}. \n Here's a few things you can ask me: {example_questions} \n How can I help you today?"
       metadata:
         rephrase: True
+    - text: "Hi there! I'm {agent_name}. I can help you with things like transferring money, checking your balance, and answering your finance questions. What would you like to do?"
+      metadata:
+        rephrase: True
+      channel: "browser_audio"
   utter_hello:
     - text: "Hi nice to meet you - I'm here to help with your {bank_name} account. How can I assist you?"
       metadata:
         rephrase: True
+    - text: "Hi! I'm here to help with your {bank_name} account. What can I help you with?"
+      metadata:
+        rephrase: True
+      channel: "browser_audio"
   utter_help:
-    - text: "I can help you with {skills_summary}. \n\n Here's a few things you can ask me: \n {example_questions}"
+    - text: "I can help you with {skills_summary}. \n\n Here's a few things you can ask me: \n {example_questions}\n What can I help you with?"
+    - text: "I can transfer money, check your balance, block a card, or answer general finance questions. What can I help you with?"
+      metadata:
+        rephrase: True
+      channel: "browser_audio"

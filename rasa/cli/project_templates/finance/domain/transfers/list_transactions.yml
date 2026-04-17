@@ -42,3 +42,5 @@ responses:
           title: "List all transactions"
         - payload: "/SetSlots(list_transactions_next_option=none_of_the_above)"
           title: "None of the above"
+    - text: Would you like see all transactions, only scheduled transactions, or none of the above?
+      channel: "browser_audio"

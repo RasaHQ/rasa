@@ -70,9 +70,6 @@ slots:
       - type: from_llm
 
 responses:
-
-
-
   utter_ask_transfer_type:
     - text: What type of transfer would you like to make?
       buttons:
@@ -80,6 +77,8 @@ responses:
           payload: /SetSlots(transfer_type=third party)
         - title: Transfer between your own accounts
           payload: /SetSlots(transfer_type=self transfer)
+    - text: Would you like to make a third party domestic transfer or just move money between your accounts?
+      channel: "browser_audio"
 
   utter_inform_on_wrong_transfer_type:
     - text: That doesn't seem like a valid transfer type.
@@ -93,6 +92,8 @@ responses:
           payload: /SetSlots(transfer_timing_type=scheduled)
         - title: Set it up as a recurring payment
           payload: /SetSlots(transfer_timing_type=recurring)
+    - text: Would you like this transfer to execute immediately, schedule it for a later date or actually set it up as a new recurring payment?
+      channel: "browser_audio"
 
   utter_inform_on_wrong_transfer_timing_type:
     - text: |
@@ -121,6 +122,8 @@ responses:
           payload: /SetSlots(recurrent_payment_type=direct debit)
         - title: Standing Order
           payload: /SetSlots(recurrent_payment_type=standing order)
+    - text: Should this payment be a direct debit or is it a standing order?
+      channel: "browser_audio"
 
   utter_ask_recurrent_payment_frequency:
     - text: How often should the payment be made?
@@ -131,6 +134,8 @@ responses:
           payload: /SetSlots(recurrent_payment_frequency=monthly)
         - title: Yearly
           payload: /SetSlots(recurrent_payment_frequency=yearly)
+    - text: "Should this recurring payment be done once every week, once every month or once every year?"
+      channel: "browser_audio"
 
   utter_ask_recurrent_payment_start_date:
     - text: "When would you like the recurring payments to start?"
@@ -162,16 +167,24 @@ responses:
           title: "Yes"
         - payload: /SetSlots(confirmation=false)
           title: "No, cancel the transfer"
+    - text: |
+        You’re about to perform an instant transfer of {amount_of_money} dollars to {recipient_account}.
+        Do you want to proceed?
+      channel: "browser_audio"
 
   utter_ask_setup_scheduled_transfer_confirmation:
     - text: |
-        You’re scheduling a transfer of {amount_of_money} to {recipient_account} on {date} at {time}.
+        You’re scheduling a transfer of {amount_of_money} dollars to {recipient_account} on {date} at {time}.
         Do you want to proceed?
       buttons:
         - payload: /SetSlots(confirmation=true)
           title: "Yes"
         - payload: /SetSlots(confirmation=false)
           title: "No, cancel the transfer"
+    - text: |
+        You’re scheduling a transfer of {amount_of_money} dollars to {recipient_account} on {date} at {time}.
+        Do you want to proceed?
+      channel: "browser_audio"
 
   utter_ask_setup_recurring_payment_confirmation:
     - text: |
@@ -183,34 +196,43 @@ responses:
           title: "Yes"
         - payload: /SetSlots(confirmation=false)
           title: "No, cancel the transfer"
+    - text: |
+        You’re setting up a recurring {recurrent_payment_type} to transfer {amount_of_money} dollars to {recipient_account}. 
+        The payment will be made {recurrent_payment_frequency}, starting on {date_range_start} and ending on {date_range_end}.
+        Do you want to proceed?
+      channel: "browser_audio"
 
   utter_ask_self_transfer_final_confirmation:
     - text: |
-        You're about to transfer {amount_of_money} from your {self_transfer_source_account} to {self_transfer_destination_account}.
+        You're about to transfer {amount_of_money} dollars from your {self_transfer_source_account} to {self_transfer_destination_account}.
         Do you want to proceed?
       buttons:
         - payload: /SetSlots(confirmation=true)
           title: "Yes"
         - payload: /SetSlots(confirmation=false)
           title: "No, cancel the transfer"
+    - text: |
+        You're about to transfer {amount_of_money} dollars from your {self_transfer_source_account} to {self_transfer_destination_account}.
+        Do you want to proceed?
+      channel: "browser_audio"
 
   utter_self_transfer_completed:
-    - text: Successfully transferred {amount_of_money} from {self_transfer_source_account} to {self_transfer_destination_account}.
+    - text: Successfully transferred {amount_of_money} dollars from {self_transfer_source_account} to {self_transfer_destination_account}.
 
   utter_transfer_failed:
     - text: Something went wrong. Couldn't complete the transfer.
 
   utter_transfer_completed:
-    - text: Successfully transferred {amount_of_money} to {recipient_account}.
+    - text: Successfully transferred {amount_of_money} dollars to {recipient_account}.
 
   utter_transfer_cancelled:
-    - text: Transfer cancelled.
+    - text: Okay cancelling the transfer.
 
   utter_schedule_transaction_complete:
-    - text: Transfer is scheduled.
+    - text: Transfer has been scheduled.
 
   utter_recurring_payment_setup_complete:
-    - text: Your payment has been set up.
+    - text: Your recurring payment to {recipient_account} has been set up.
 
   utter_recurring_payment_setup_failed:
       - text: Sorry, your payment could not be set up.

@@ -2,6 +2,7 @@ flows:
   pattern_search:
     name: pattern_search
     description: Flow for handling knowledge-based questions
+    run_pattern_completed: false
     steps:
     - id: 0_action_trigger_search
       next: END

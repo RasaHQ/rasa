@@ -20,6 +20,8 @@ responses:
           payload: /SetSlots(card_block_type=permanent)
         - title: "Freeze temporarily"
           payload: /SetSlots(card_block_type=temporary)
+    - text: "Would you like to permanently block your card or just freeze it temporarily?"
+      channel: "browser_audio"
   utter_block_card_successful:
     - text: "Done! Your card has been permanently blocked."
   utter_block_card_cancelled:
@@ -39,6 +41,12 @@ responses:
           payload: "/SetSlots(confirmation=true)"
         - title: "No"
           payload: "/SetSlots(confirmation=false)"
+    - condition: slots.card_block_type == "permanent"
+      text: "Are you sure you want to permanently block the card {bank_card_number}?"
+      channel: "browser_audio"
+    - condition: slots.card_block_type == "temporary"
+      text: "Are you sure you want to temporarily freeze the card {bank_card_number}?"
+      channel: "browser_audio"
 
   utter_freeze_card_successful:
     - text: "Your card has been temporarily frozen."

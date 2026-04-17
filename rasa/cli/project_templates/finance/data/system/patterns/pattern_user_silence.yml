@@ -1,0 +1,31 @@
+flows:
+  pattern_user_silence:
+    description: Reacting to user silence in voice bots
+    name: pattern react to silence
+    nlu_trigger:
+      - intent: silence_timeout
+    persisted_slots:
+      - consecutive_silence_timeouts
+    steps:
+      - noop: true
+        next:
+          - if: "slots.consecutive_silence_timeouts = 0.0"
+            then: set_slots_consecutive_silence_timeouts
+          - if: "slots.consecutive_silence_timeouts = 1.0"
+            then: set_slots_consecutive_silence_timeouts_2
+          - if: "slots.consecutive_silence_timeouts > 1.0"
+            then: message_utter_inform_hangup
+          - else: END
+      - id: set_slots_consecutive_silence_timeouts
+        set_slots:
+          - consecutive_silence_timeouts: 1.0
+      - action: utter_ask_still_there
+        next: END
+      - id: set_slots_consecutive_silence_timeouts_2
+        set_slots:
+          - consecutive_silence_timeouts: 2.0
+      - action: utter_ask_still_there
+        next: END
+      - id: message_utter_inform_hangup
+        action: utter_inform_hangup
+      - action: action_hangup

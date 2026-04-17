@@ -10,12 +10,16 @@ slots:
     mappings:
       - type: controlled
 
-responses: 
+responses:
   utter_what_can_you_do:
     - text: |
         I can help you with a few basics like:
         - Connecting you to a human
         - Help you try out the FAQs
         - Collect your feedback
+      metadata:
+        rephrase: True
+    - text: "I can help you with a few things like connecting you to a human, testing out our FAQs, or collecting your feedback."
+      channel: "browser_audio"
       metadata:
         rephrase: True

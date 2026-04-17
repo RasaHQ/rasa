@@ -5,5 +5,6 @@ flows:
       This flow is designed to greet and onboard new users who initiate a welcome intent.
       It begins with an initial greeting message to establish a friendly interaction.
     name: say hello
+    run_pattern_completed: false
     steps:
       - action: utter_greeting

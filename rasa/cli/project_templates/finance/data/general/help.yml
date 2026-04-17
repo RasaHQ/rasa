@@ -5,5 +5,6 @@ flows:
       key skills and services. This helps users understand how the agent can assist
       them effectively.
     name: help
+    run_pattern_completed: false
     steps:
       - action: utter_help

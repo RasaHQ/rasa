@@ -18,4 +18,8 @@ responses:
       payload: "/SetSlots(reboot_router=True)"
     - title: "Facing a problem"
       payload: "/SetSlots(reboot_router=False)"
+  - text: |
+      Let me know when you are done rebooting your router.
+    channel: "browser_audio"
+
 

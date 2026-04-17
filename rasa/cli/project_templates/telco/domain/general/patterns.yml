@@ -1,4 +1,6 @@
-slots: 
+version: "3.1"
+
+slots:
   example_questions:
     type: text
     initial_value: |
@@ -13,7 +15,7 @@ slots:
     initial_value: "Telly"
     mappings:
       - type: controlled
-      
+
 responses:
   utter_more_help_needed_handoff_pattern:
     - text: "Please hold on while I connect you to our expert 📲"
@@ -31,3 +33,7 @@ responses:
     - text: "Hi there! I'm {agent_name} 👋. I can help with your internet and mobile plan questions. \n\nHere's a few things you can ask me:\n{example_questions} \n\n How can I help you today?"
       metadata:
         rephrase: True
+    - text: "Hi there! I'm {agent_name}. I can help with your internet issues and billing related queries. How can I help you today?"
+      metadata:
+        rephrase: True
+      channel: "browser_audio"

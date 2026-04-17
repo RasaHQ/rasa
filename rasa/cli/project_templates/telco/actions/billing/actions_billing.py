@@ -98,10 +98,8 @@ class ActionVerifyBillByDate(Action):
                 # Generate response
                 response = (
                     f"Your bill for {bill_month} {bill_date_obj.date().year} is "
-                    f"${bill_amount:.2f}. \n"
-                    f"The average of your past bills is ${average_bill:.2f}. \n"
-                    f"This bill is {'higher' if difference > 0 else 'lower'} than "
-                    f"your average by ${abs(difference):.2f}."
+                    f"${bill_amount:.2f}, which is ${abs(difference):.2f} {'higher' if difference > 0 else 'lower'} "  # noqa: E501
+                    f"than the average of your past bills amounting to ${average_bill:.2f}."  # noqa: E501
                 )
 
                 dispatcher.utter_message(response)
@@ -180,17 +178,25 @@ class ActionRecapBill(Action):
                     return []
 
                 # Format the output
-                response1 = "Here is a summary of your costs :"
-                dispatcher.utter_message(response1)
-                response = "\n".join(
-                    [
-                        (
-                            f"{record['date']} | {record['amount']} $ "
-                            f"| {record['source']}"
-                        )
-                        for record in filtered_records
-                    ]
-                )
+
+                channel = tracker.get_latest_input_channel()
+
+                if channel == "browser_audio":
+                    record = filtered_records[0]
+                    response = f"""You spent ${record["amount"]} on {record['source']} last wednesday"""  # noqa: E501
+
+                else:
+                    response1 = "Here is a summary of your costs :"
+                    dispatcher.utter_message(response1)
+                    response = "\n".join(
+                        [
+                            (
+                                f"{record['date']} | {record['amount']} $ "
+                                f"| {record['source']}"
+                            )
+                            for record in filtered_records
+                        ]
+                    )
 
                 # Send response to user
                 dispatcher.utter_message(response)

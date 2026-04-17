@@ -8,7 +8,7 @@ from rasa_sdk.types import DomainDict
 
 class ExecutePayment(Action):
     def name(self) -> str:
-        return "action_execute_recurrent_payment"
+        return "execute_recurrent_payment"
 
     def run(
         self,

@@ -13,13 +13,19 @@ responses:
           payload: "/SetSlots(feedback_rating=thumbs_up)"
         - title: "👎 Could be better"
           payload: "/SetSlots(feedback_rating=thumbs_down)"
+    - text: "We'd love to hear about your experience. How are we doing? You can say 'great', or, 'could be better'."
+      channel: "browser_audio"
 
   utter_thankyou_positive:
     - text: "That's wonderful to hear! We appreciate you taking the time to provide us with feedback. 🌟"
     - text: "So glad we could help! Thanks for the positive feedback! 😊"
     - text: "Amazing! We're thrilled you had a great experience. Thank you for your feedback! 🎉"
+    - text: "That's great to hear! Thanks for taking the time to share your feedback."
+      channel: "browser_audio"
 
   utter_thankyou_negative:
     - text: "We appreciate you taking the time to provide us with feedback. We're always working to improve our service."
     - text: "Thank you for your honest feedback. We'll use it to make our service better."
     - text: "Thanks for letting us know. Your feedback helps us improve our agent."
+    - text: "Thanks for your feedback. We're always working to improve our service."
+      channel: "browser_audio"

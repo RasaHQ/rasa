@@ -20,6 +20,8 @@ responses:
           payload: "/SetSlots(statement_format=pdf)"
         - title: "CSV"
           payload: "/SetSlots(statement_format=csv)"
+    - text: "Which format would you like your statement in, PDF or CSV?"
+      channel: "browser_audio"
   utter_ask_statement_download_confirmation:
     - text: "Just to confirm, would you like to download your {statement_month} {statement_year} statement as a PDF?"
       buttons:
@@ -27,6 +29,8 @@ responses:
           payload: "/SetSlots(confirmation=true)"
         - title: "No"
           payload: "/SetSlots(confirmation=false)"
+    - text: "Just to confirm, would you like to download your {statement_month} {statement_year} statement as a PDF?"
+      channel: "browser_audio"
     - text: "Great! Should I go ahead and download the statement in PDF format for you?"
       buttons:
         - title: "Yes"

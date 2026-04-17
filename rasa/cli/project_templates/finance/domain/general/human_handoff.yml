@@ -16,6 +16,8 @@ responses:
           title: "Yes"
         - payload: "/SetSlots(confirm_human_handoff=False)"
           title: "No"
+    - text: "Do you want to be connected to a {bank_name} specialist?"
+      channel: "browser_audio"
 
   utter_transferring_to_human:
     - text: "I'm connecting you with a {bank_name} specialist now. They'll be with you shortly!"

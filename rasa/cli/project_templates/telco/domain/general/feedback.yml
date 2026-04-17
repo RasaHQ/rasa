@@ -13,6 +13,8 @@ responses:
           payload: "/SetSlots(feedback_rating=thumbs_up)"
         - title: "👎 Could be better"
           payload: "/SetSlots(feedback_rating=thumbs_down)"
+    - text: "If you have a minute, we'd love to hear how your experience was. Were we able to help you with everything?"
+      channel: "browser_audio"
 
   utter_thankyou_positive:
     - text: "That's wonderful to hear! We appreciate you taking the time to provide us with feedback. 🌟"

@@ -28,5 +28,7 @@ responses:
         - payload: /SetSlots(confirmation=false)
           title: "No, cancel the removal"
       text: Should I remove {remove_contact_handle} from your contact list?
+    - text: So, should I remove {remove_contact_handle} from your contact list?
+      channel: "browser_audio"
   utter_remove_contact_cancelled:
     - text: Okay, I am cancelling this removal of a contact.

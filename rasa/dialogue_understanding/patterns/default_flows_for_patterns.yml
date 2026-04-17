@@ -21,6 +21,10 @@ responses:
           payload: "/SetSlots(csat_score=satisfied)"
         - title: "👎 Not Satisfied"
           payload: "/SetSlots(csat_score=unsatisfied)"
+    - text: "Before you go — were you happy with the help you got today? You can say satisfied or not satisfied."
+      metadata:
+        rephrase: True
+      channel: "browser_audio"
 
   utter_ask_interrupted_flow_to_continue:
     - text: "Would you like to resume {{context.interrupted_flow_options}}?"

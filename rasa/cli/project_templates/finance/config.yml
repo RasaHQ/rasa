@@ -1,27 +1,18 @@
-# Rasa Assistant Configuration
-# This file controls your assistant's language, message processing pipeline, and conversation policies.
-# For full documentation, see: https://rasa.com/docs/pro/build/configuring-assistant
 recipe: default.v1
 language: en
-
-# The assistant project unique identifier
-# This default value must be replaced with a unique assistant name within your deployment
-assistant_id: placeholder_default
-
+assistant_id: generous-humanist
 pipeline:
 - name: SearchReadyLLMCommandGenerator
   llm:
     model_group: openai-gpt-5-1
   flow_retrieval:
     active: false
-
-
 policies:
 - name: FlowPolicy
 - name: EnterpriseSearchPolicy
   vector_store:
-    type: "faiss"
-    source: "./docs"
+    type: faiss
+    source: ./docs
   llm:
     model_group: openai-gpt-5-mini
   embeddings:

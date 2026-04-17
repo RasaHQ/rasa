@@ -75,6 +75,9 @@ responses:
           payload: "/SetSlots(breakdown_cost=True)"
         - title: "No, all good"
           payload: "/SetSlots(breakdown_cost=False)"
+    - text: |
+        Would you like me to show you a breakdown of all the costs?
+      channel: "browser_audio"
 
   utter_ask_issue_solved:
     - text: |
@@ -84,19 +87,31 @@ responses:
           payload: "/SetSlots(issue_solved=True)"
         - title: "No, I need further help"
           payload: "/SetSlots(issue_solved=False)"
+    - text: |
+        Did I manage to provide all the information you needed?
+      channel: "browser_audio"
 
   utter_ask_more_bill_details:
-      - text: |
-          You can see more details in your account.
-          Would you like a link to the overview that contains all your bills?
-        buttons:
-        - title: "Yes, please"
-          payload: "/SetSlots(more_bill_details=True)"
-        - title: "No, it's enough"
-          payload: "/SetSlots(more_bill_details=False)"
+    - text: |
+        You can see more details in your account.
+        Would you like a link to the overview that contains all your bills?
+      buttons:
+      - title: "Yes, please"
+        payload: "/SetSlots(more_bill_details=True)"
+      - title: "No, it's enough"
+        payload: "/SetSlots(more_bill_details=False)"
+    - text: |
+        You can view more details in your account dashboard. Would you like a link to the overview that 
+        contains all your bills?
+      channel: "browser_audio"
 
   utter_provide_bill_sources:
       - text: |
           I've provided a quick summary of your bill ⤵️
           For full details, please log in to your account and check your billing history here:
           https://companyName/account/your-bills 🔗
+      - text: |
+          I've provided a quick summary of your bill
+          For full details, please log in to your account and check your billing history on the link 
+          sent on your registered email ID
+          

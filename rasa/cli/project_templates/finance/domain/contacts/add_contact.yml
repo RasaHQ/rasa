@@ -21,6 +21,8 @@ responses:
           title: "Yes"
         - payload: "/SetSlots(confirmation=true)"
           title: "No, cancel"
+    - text: Do you want to add {add_contact_name}({add_contact_handle}) to your contacts?
+      channel: "browser_audio"
   utter_ask_add_contact_handle:
     - text: "What's the account handle or number for this contact? Example: @shaun"
       metadata:

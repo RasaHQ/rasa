@@ -16,6 +16,8 @@ responses:
           title: "Yes"
         - payload: "/SetSlots(confirm_human_handoff=False)"
           title: "No"
+    - text: "Would you like to be connected to a human agent?"
+      channel: "browser_audio"
 
   utter_transferring_to_human:
     - text: "You will be transfered to a human agent in a few moments."

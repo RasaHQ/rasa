@@ -6,6 +6,8 @@ responses:
 
         Try a few examples:
         {example_questions}
+    - text: "Hi there! I'm {agent_name}. I'm here to help. How can I assist you today?"
+      channel: "browser_audio"
   utter_help:
     - text: "What can I help you with?"
       metadata:

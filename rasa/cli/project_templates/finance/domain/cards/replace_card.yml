@@ -29,6 +29,8 @@ responses:
         payload: /SetSlots(replacement_reason=lost)
       - title: "Damaged"
         payload: /SetSlots(replacement_reason=damaged)
+    - text: Do you want to replace your card because it's lost or is it damaged?
+      channel: "browser_audio"
   utter_ask_was_card_used_fraudulently:
     - text: Is it possible that someone else has managed to use your card?
   utter_will_cancel_and_send_new:

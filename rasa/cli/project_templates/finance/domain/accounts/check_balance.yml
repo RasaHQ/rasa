@@ -13,3 +13,5 @@ responses:
   utter_current_balance:
     - text: "Your current account balance is {current_balance}."
     - text: "You have {current_balance} available in your {bank_name} account."
+    - text: "Your current account balance is {current_balance} dollars."
+      channel: "browser_audio"

@@ -12,3 +12,7 @@ responses:
         - 🧠 How does Rasa use LLMs?
       metadata:
         rephrase: True
+    - text: "You can ask me things like: what is Rasa, what is CALM, what is a flow, how do I customize my agent, or how does Rasa use LLMs."
+      channel: "browser_audio"
+      metadata:
+        rephrase: True

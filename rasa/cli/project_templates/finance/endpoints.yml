@@ -67,6 +67,7 @@ model_groups:
         model: gpt-5-mini-2025-08-07
         reasoning_effort: "minimal"
         timeout: 15
+        max_completion_tokens: 256
   - id: openai-embeddings
     models:
       - provider: openai

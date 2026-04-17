@@ -19,10 +19,12 @@ responses:
         I will run a network diagnostics for you 🛜
         Wait a moment please...
       image: "https://static.vecteezy.com/system/resources/previews/002/785/641/non_2x/speed-test-internet-measure-icon-illustration-free-vector.jpg"
+    - text: |
+        I will run a network diagnostics for you. Wait a moment please...
+      channel: "browser_audio"
   utter_acknowledge_speed_test_not_good:
   - text: |
-      Your network download speed is {network_speed} Mbps.
-      That's definitely not good.
+      Your network download speed is {network_speed} Mbps. That's definitely not good.
 
   utter_propose_reboot_router_solution:
   - text: |
@@ -54,6 +56,9 @@ responses:
           payload: "/SetSlots(more_help_needed=True)"
         - title: "Not now"
           payload: "/SetSlots(more_help_needed=False)"
+    - text: |
+        Would you like to be connected to a human agent for further assistance?
+      channel: "browser_audio"
   utter_final_help:
     - text: |
         No problem! If you need help later, feel free to ask.
@@ -62,6 +67,9 @@ responses:
   utter_final_diagnistics_run:
     - text: |
         Final try 🤞
+    - text: |
+        Making one final try!
+      channel: "browser_audio"
   utter_fail_to_find_fix:
     - text: |
         I am sorry that I could not resolve the problem with your Internet speed.
@@ -69,6 +77,9 @@ responses:
   utter_final_try_worked:
     - text: |
         third time is a charm
+    - text: |
+        Looks like that one worked!
+      channel: "browser_audio"
 actions:
   - actions_run_speed_test
   - action_sleep_few_sec

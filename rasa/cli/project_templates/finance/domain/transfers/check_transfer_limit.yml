@@ -24,9 +24,13 @@ responses:
           payload: "/SetSlots(transfer_limit_type=daily)"
         - title: Monthly
           payload: "/SetSlots(transfer_limit_type=monthly)"
+    - text: "Would you like to check your daily or monthly transfer limit?"
+      channel: "browser_audio"
 
   utter_transfer_limit_error:
     - text: "I am sorry, but I couldn't retrieve your transfer limit right now. Please try again later."
 
   utter_show_transfer_limit:
     - text: "Your {transfer_limit_type} transfer limit is ${transfer_limit}."
+    - text: "Your {transfer_limit_type} transfer limit is {transfer_limit} dollars."
+      channel: "browser_audio"

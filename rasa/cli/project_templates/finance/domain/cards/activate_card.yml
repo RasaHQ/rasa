@@ -14,6 +14,8 @@ responses:
           payload: /SetSlots(confirmation=false)
       metadata:
         rephrase: True
+    - text: "Are you sure you want to activate your card ending in {bank_card_number}?"
+      channel: "browser_audio"
   utter_activate_card_successful:
     - text: "Perfect! Your card is now activated and ready to use."
       metadata:

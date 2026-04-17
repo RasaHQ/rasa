@@ -32,6 +32,8 @@ responses:
           payload: "/SetSlots(reminder_frequency=monthly)"
         - title: "Weekly"
           payload: "/SetSlots(reminder_frequency=weekly)"
+    - text: "How often should I remind you? Once, monthly, or weekly?"
+      channel: "browser_audio"
   utter_ask_bill_pay_reminder_confirmation:
     - text: "Just to confirm - I'll setup a reminder to pay {biller_name} on {bill_due_date} ({reminder_frequency})?"
       buttons:
@@ -39,6 +41,8 @@ responses:
           payload: "/SetSlots(confirmation=true)"
         - title: "No"
           payload: "/SetSlots(confirmation=false)"
+    - text: "Just to confirm - I'll setup a reminder to pay {biller_name} on {bill_due_date} ({reminder_frequency}). Is that alright?"
+      channel: "browser_audio"
   utter_bill_pay_reminder_complete:
     - condition: slots.reminder_frequency == "once"
       text: "All set! I'll remind you to pay {biller_name} on {bill_due_date}. If you need to make any changes, just let me know!"
