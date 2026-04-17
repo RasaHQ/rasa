@@ -10,6 +10,28 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.16.4] - 2026-04-17
+                        
+Rasa Pro 3.16.4 (2026-04-17)                             
+### Bugfixes
+- [#5210](https://github.com/rasahq/rasa-private/issues/5210): Fixed tracing span attributes for LLM components that use model groups.
+  Spans now carry the correct model group ID and, for router groups, the representative model's attributes (preferring OpenAI when present for prompt token counting).
+  The `llm_is_router_group` attribute is also set on spans when a router group is active.
+- [#5223](https://github.com/rasahq/rasa-private/issues/5223): Update `cryptography` to version 46.0.7 to fix a security vulnerability. For more details, see CVE-2026-39892.
+
+
+## [3.16.3] - 2026-04-09
+                        
+Rasa Pro 3.16.3 (2026-04-09)                             
+### Improvements
+- [#5106](https://github.com/rasahq/rasa-private/issues/5106): Replaced the generic "Start the server from your IDE" message after `rasa tools init` with IDE-specific instructions for Claude Code, Cursor, VS Code, and JetBrains.
+- [#5123](https://github.com/rasahq/rasa-private/issues/5123): Added `rasa tools status` command that displays current project configuration and runtime readiness.
+
+### Bugfixes
+- [#5137](https://github.com/rasahq/rasa-private/issues/5137): Fixed validation incorrectly rejecting custom ContextualResponseRephraser subclasses configured as nlg.type in endpoints.yml. The validator now resolves the class and checks inheritance instead of only accepting the literal string "rephrase".
+- [#5142](https://github.com/rasahq/rasa-private/issues/5142): Updated `PyJWT`, `werkzeug`, `aiohttp`, `orjson`, `pyasn1`, `requests`, and `ujson`to resolve security vulnerabilities.
+
+
 ## [3.16.2] - 2026-04-02
                         
 Rasa Pro 3.16.2 (2026-04-02)                             
