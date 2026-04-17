@@ -77,7 +77,7 @@ def run_wizard(args: argparse.Namespace) -> None:
     """
     console.print(
         Panel(
-            "[bold cyan]Rasa Tools Setup Wizard[/bold cyan]\n"
+            "[bold cyan]Rasa MCP Tools Setup Wizard[/bold cyan]\n"
             "Configure your local MCP server for IDE copilots.",
             border_style="cyan",
             expand=False,

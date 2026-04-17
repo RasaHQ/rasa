@@ -54,7 +54,7 @@ def _precheck(file: Optional[IO[str]] = None) -> None:
     validate_license_from_env()
 
     banner = (
-        "[yellow bold]⚠ Rasa Tools is currently in beta.[/yellow bold]\n"
+        "[yellow bold]⚠ Rasa MCP Tools is currently in beta.[/yellow bold]\n"
         "Help us improve it by sending feedback or issues to "
         "[bold]swift@rasa.com[/bold]."
     )
