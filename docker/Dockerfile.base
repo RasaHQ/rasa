@@ -4,7 +4,7 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND="noninteractive"
 
 RUN apt-get update -qq && \
-  apt-get install -y --no-install-recommends \
+  apt-get install -y --no-install-recommends --fix-missing \
   python3-venv \
   # required by psycopg2 at build and runtime
   libpq-dev \

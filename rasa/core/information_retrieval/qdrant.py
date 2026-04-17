@@ -1,7 +1,7 @@
 from typing import Any, Dict, Text
 
 import structlog
-from langchain_community.vectorstores.qdrant import Qdrant
+from langchain_qdrant import QdrantVectorStore
 from pydantic import ValidationError
 from qdrant_client import QdrantClient
 
@@ -44,7 +44,10 @@ class Qdrant_Store(InformationRetrieval):
     ) -> None:
         """Connect to the Qdrant system."""
         params = config.kwargs
-        self.client = Qdrant(
+        # `QdrantVectorStore` expects an empty string for the default (unnamed)
+        # vector rather than `None`.
+        vector_name = params.get("vector_name") or ""
+        self.client = QdrantVectorStore(
             client=QdrantClient(
                 location=params.get("location"),
                 url=params.get("url"),
@@ -59,10 +62,15 @@ class Qdrant_Store(InformationRetrieval):
                 path=params.get("path"),
             ),
             collection_name=str(params.get("collection")),
-            embeddings=self.embeddings,
+            embedding=self.embeddings,
             content_payload_key=params.get("content_payload_key", "text"),
             metadata_payload_key=params.get("metadata_payload_key", "metadata"),
-            vector_name=params.get("vector_name", None),
+            vector_name=vector_name,
+            # Skip the (synchronous) collection config validation that the
+            # constructor otherwise runs, since the collection is created
+            # externally and may legitimately use a different distance metric
+            # or dimensionality than the defaults assumed here.
+            validate_collection_config=False,
         )
 
     async def search(

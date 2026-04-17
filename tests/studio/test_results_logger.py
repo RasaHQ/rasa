@@ -71,7 +71,8 @@ def mock_studio_config():
             KeycloakError("some error message"),
             StudioResult(
                 "Unable to authenticate with Keycloak at "
-                "http://mock-auth-server:8081/auth/ Error message: some error message",
+                "http://mock-auth-server:8081/auth/ Error message: "
+                "'some error message'",
                 False,
             ),
         ),

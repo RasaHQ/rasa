@@ -108,7 +108,7 @@ def _handle_keycloak_error(e: KeycloakError) -> StudioResult:
             "using 'rasa studio config'."
         )
     else:
-        error_msg += f"Error message: {e.error_message}"
+        error_msg += f"Error message: {e.error_message!r}"
     structlogger.error("studio.keycloak_error", event_info=error_msg, exception=str(e))
     return StudioResult(error_msg, was_successful=False)
 

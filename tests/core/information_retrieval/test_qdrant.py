@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from langchain.schema.embeddings import Embeddings
-from langchain_community.vectorstores.qdrant import Qdrant
+from langchain_qdrant import QdrantVectorStore
 from pydantic import ValidationError
 from pytest import MonkeyPatch
 
@@ -35,7 +35,7 @@ def test_qdrant_store_connect(embeddings: Embeddings) -> None:
         )
     )
     assert client.client is not None
-    assert isinstance(client.client, Qdrant)
+    assert isinstance(client.client, QdrantVectorStore)
     assert client.client.content_payload_key == "content"
     assert client.client.metadata_payload_key == "extra"
 
@@ -52,7 +52,7 @@ def test_qdrant_store_vector_name(embeddings: Embeddings) -> None:
         )
     )
     assert client.client is not None
-    assert isinstance(client.client, Qdrant)
+    assert isinstance(client.client, QdrantVectorStore)
     assert client.client.content_payload_key == "content"
     assert client.client.metadata_payload_key == "extra"
     assert client.client.vector_name == "vector"

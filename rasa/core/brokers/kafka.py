@@ -447,7 +447,7 @@ def delivery_report(err: Exception, msg: "Message") -> None:
         msg (Message): The message that was produced or failed.
     """
     if err is not None:
-        logger.error(f"Delivery failed for User record {msg.key()}: {err}")
+        logger.error(f"Delivery failed for User record {msg.key()!r}: {err}")
         return
 
     logger.info(

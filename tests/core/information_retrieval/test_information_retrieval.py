@@ -6,7 +6,7 @@ import pytest
 from data.test_information_retrieval.custom_store import CustomStore
 from rasa.core.information_retrieval import create_from_endpoint_config
 from rasa.core.information_retrieval.milvus import Milvus, Milvus_Store
-from rasa.core.information_retrieval.qdrant import Qdrant, Qdrant_Store
+from rasa.core.information_retrieval.qdrant import Qdrant_Store, QdrantVectorStore
 
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
@@ -25,7 +25,7 @@ def test_create_from_endpoint_config_with_qdrant(embeddings: "Embeddings") -> No
     config_type = "qdrant"
 
     # Mock the Qdrant class to avoid connecting to a Qdrant DB
-    with patch.object(Qdrant, "__init__", return_value=None):
+    with patch.object(QdrantVectorStore, "__init__", return_value=None):
         result = create_from_endpoint_config(config_type, embeddings)
         assert isinstance(result, Qdrant_Store)
 
