@@ -137,6 +137,7 @@ export type EventMetadata = {
   tool_is_error?: boolean;
   tool_error_message?: string;
   parseData: unknown;
+  agent_id?: string;
 };
 
 export type RawEvent = {
@@ -144,6 +145,7 @@ export type RawEvent = {
   metadata: EventMetadata;
   timestamp: number;
   tool_name?: string;
+  agent_id?: string;
   arguments?: Record<string, unknown>;
   result?: unknown;
   is_error?: boolean;

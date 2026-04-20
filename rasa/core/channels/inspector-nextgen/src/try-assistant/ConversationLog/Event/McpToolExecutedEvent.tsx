@@ -5,9 +5,10 @@ import type {
   ConversationEventAction,
 } from "../../../types";
 import { Icon } from "../../../Icon";
-import { CircleExclamation, Hammer } from "../../../Icon/icons";
+import { Wrench } from "../../../Icon/icons";
 import { ConversationEventActionButton } from "../../ConversationEventActionButton";
 import { useConversationLogSx } from "../useConversationLogSx";
+import { ErrorDot } from "./ErrorDot";
 
 interface McpToolExecutedEventProps {
   event: ConversationEvent;
@@ -35,11 +36,6 @@ export const McpToolExecutedEvent = forwardRef<
 
   const toolName = event.metadata?.tool_name ?? event.name ?? "tool";
   const isError = event.metadata?.tool_is_error === true;
-  const errorIconSx = {
-    color: "#A72E2C",
-    marginLeft: "0.25rem",
-    marginTop: "0.25rem",
-  };
 
   return (
     <Flex
@@ -61,23 +57,16 @@ export const McpToolExecutedEvent = forwardRef<
           actions={conversationEventActions}
         />
       )}
-      <Box css={{ ...baseMessageSx, color: "rasaNeutral.700" }}>
-        <Icon icon={Hammer} style={iconSx} />
+      <Box css={baseMessageSx}>
+        <Icon icon={Wrench} style={iconSx} />
         <Text size="sm" lineClamp={2} wordBreak="break-all" variant="muted">
-          MCP tool{" "}
-          <Text as="span" fontWeight="600" variant="muted">
+          Tool{" "}
+          <Text as="span" fontWeight="500" variant="muted">
             {toolName}
           </Text>{" "}
-          {isError ? "failed" : "executed"}
-          {isError ? (
-            <Icon
-              icon={CircleExclamation}
-              style={errorIconSx}
-              box-size="1rem"
-              aria-label="Action failed"
-            />
-          ) : null}
+          used
         </Text>
+        {isError && <ErrorDot />}
       </Box>
     </Flex>
   );

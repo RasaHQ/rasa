@@ -40,7 +40,6 @@ export {
   faPlus as Plus,
   faXmark as XMark,
   faHeart as Heart,
-  faHammer as Hammer,
   faArrowDown as ArrowDown,
   faLink as Link,
   faTriangleExclamation as TriangleExclamation,
@@ -50,11 +49,14 @@ export {
   faFileCheck as FileCheck,
   faSliders as Sliders,
   faBrain as Brain,
+  faRobot as Robot,
+  faWrench as Wrench,
 } from "@fortawesome/pro-light-svg-icons";
 
 export { faWaveformLines as WaveformLines } from "@fortawesome/pro-regular-svg-icons";
 
 export {
+  faCircle as Circle,
   faSquare as Square,
   faPaperPlaneTop as PaperPlaneTop,
   faArrowUp as ArrowUpSolid,

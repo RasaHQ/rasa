@@ -2,7 +2,6 @@ import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
 import React, { forwardRef } from "react";
 import { Icon } from "../../../Icon";
 import {
-  CircleExclamation,
   ClockRotateLeft,
   Code,
   Ear,
@@ -11,6 +10,7 @@ import { type ConversationEvent, type ConversationEventAction } from "../../../t
 import { isInternalRasaAction } from "../../../utils";
 import { ConversationEventActionButton } from "../../ConversationEventActionButton";
 import { useConversationLogSx } from "../useConversationLogSx";
+import { ErrorDot } from "./ErrorDot";
 
 const ACTION_LISTEN_NAME = "action_listen";
 
@@ -56,18 +56,8 @@ export const ActionEvent = forwardRef<HTMLDivElement | null, ActionEventProps>(
       pb: shouldShowReplayButton ? "1px" : undefined,
     };
 
-    const errorIconSx = {
-      color: "#A72E2C",
-      marginLeft: "0.25rem",
-    };
-
-    const actionNameSx = {
-      ...baseMessageSx,
-      color: "rasaNeutral.700",
-    };
-
     const utterSx = {
-      ...actionNameSx,
+      ...baseMessageSx,
       ml: "2.75rem",
     };
 
@@ -112,7 +102,7 @@ export const ActionEvent = forwardRef<HTMLDivElement | null, ActionEventProps>(
           {...otherProps}
         >
           {isHovered && <ConversationEventActionButton event={event} actions={conversationEventActions} />}
-          <Box css={actionNameSx}>
+          <Box css={baseMessageSx}>
             <Icon icon={actionIcon} style={iconSx} />
             <Text
               size="sm"
@@ -123,14 +113,7 @@ export const ActionEvent = forwardRef<HTMLDivElement | null, ActionEventProps>(
               {actionLabel}
             </Text>
           </Box>
-          {shouldShowActionError ? (
-            <Icon
-              icon={CircleExclamation}
-              style={errorIconSx}
-              box-size="1rem"
-              aria-label="Action failed"
-            />
-          ) : null}
+          {shouldShowActionError ? <ErrorDot /> : null}
           {shouldShowReplayButton ? (
             <IconButton
               variant="ghost"

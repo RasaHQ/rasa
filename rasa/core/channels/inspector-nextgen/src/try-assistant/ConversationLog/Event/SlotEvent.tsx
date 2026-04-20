@@ -30,7 +30,7 @@ function generateSlotEventMessage(event: ConversationEvent) {
   return (
     <Text size="sm" lineClamp={2} wordBreak="break-all" variant="muted">
       Slot{" "}
-      <Text as="span" fontWeight="600" variant="muted">
+      <Text as="span" fontWeight="500" variant="muted">
         {event.name}
       </Text>{" "}
       {suffix}
@@ -52,11 +52,6 @@ export const SlotEvent = forwardRef<HTMLDivElement | null, SlotEventProps>(
       useConversationLogSx(isSelected);
     const [isHovered, setIsHovered] = React.useState(false);
 
-    const messageSx = {
-      ...baseMessageSx,
-      color: "rasaNeutral.700",
-    };
-
     if (isInternalRasaSlot(event.name || "")) {
       return null;
     }
@@ -72,7 +67,7 @@ export const SlotEvent = forwardRef<HTMLDivElement | null, SlotEventProps>(
         {...otherProps}
       >
         {isHovered && <ConversationEventActionButton event={event} actions={conversationEventActions} />}
-        <Box css={messageSx}>
+        <Box css={baseMessageSx}>
           <Icon icon={CheckToSlot} style={iconSx} />
           {generateSlotEventMessage(event)}
         </Box>

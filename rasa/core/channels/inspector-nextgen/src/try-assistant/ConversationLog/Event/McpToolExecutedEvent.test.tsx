@@ -45,7 +45,7 @@ describe("McpToolExecutedEvent", () => {
   });
 
   describe("execution status", () => {
-    it("shows 'executed' when tool_is_error is false", () => {
+    it("shows 'used' without error dot when tool_is_error is false", () => {
       const event: ConversationEvent = {
         ...baseEvent,
         metadata: { ...baseEvent.metadata, tool_is_error: false },
@@ -55,19 +55,20 @@ describe("McpToolExecutedEvent", () => {
         <McpToolExecutedEvent event={event} isSelected={false} />,
       );
 
-      expect(screen.getByText(/executed/)).toBeInTheDocument();
-      expect(screen.queryByText(/failed/)).not.toBeInTheDocument();
+      expect(screen.getByText(/used/)).toBeInTheDocument();
+      expect(screen.queryByTestId("error-dot")).not.toBeInTheDocument();
     });
 
-    it("shows 'executed' when tool_is_error is absent", () => {
+    it("shows 'used' without error dot when tool_is_error is absent", () => {
       renderWithProviders(
         <McpToolExecutedEvent event={baseEvent} isSelected={false} />,
       );
 
-      expect(screen.getByText(/executed/)).toBeInTheDocument();
+      expect(screen.getByText(/used/)).toBeInTheDocument();
+      expect(screen.queryByTestId("error-dot")).not.toBeInTheDocument();
     });
 
-    it("shows 'failed' when tool_is_error is true", () => {
+    it("shows 'used' with error dot when tool_is_error is true", () => {
       const event: ConversationEvent = {
         ...baseEvent,
         metadata: { ...baseEvent.metadata, tool_is_error: true },
@@ -77,8 +78,8 @@ describe("McpToolExecutedEvent", () => {
         <McpToolExecutedEvent event={event} isSelected={false} />,
       );
 
-      expect(screen.getByText(/failed/)).toBeInTheDocument();
-      expect(screen.queryByText(/executed/)).not.toBeInTheDocument();
+      expect(screen.getByText(/used/)).toBeInTheDocument();
+      expect(screen.getByTestId("error-dot")).toBeInTheDocument();
     });
   });
 

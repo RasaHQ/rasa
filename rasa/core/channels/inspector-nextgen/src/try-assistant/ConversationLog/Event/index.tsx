@@ -10,6 +10,7 @@ import { FlowEvent } from "./FlowEvent";
 import { McpToolExecutedEvent } from "./McpToolExecutedEvent";
 import { PlainEvent } from "./PlainEvent";
 import { SlotEvent } from "./SlotEvent";
+import { AgentEvent } from "./AgentEvent";
 
 const flowEventTypes = [
   ConversationEventType.FlowCancelled,
@@ -22,6 +23,13 @@ const slotEventTypes = [
   ConversationEventType.Slot,
   ConversationEventType.ResetSlots,
 ];
+const agentEventTypes = new Set([
+  ConversationEventType.AgentStarted,
+  ConversationEventType.AgentCompleted,
+  ConversationEventType.AgentCancelled,
+  ConversationEventType.AgentInterrupted,
+  ConversationEventType.AgentResumed,
+]);
 
 interface Props extends FlexProps {
   event: ConversationEvent;
@@ -106,6 +114,19 @@ export const Event = forwardRef<HTMLDivElement | null, Props>(
     if (event.conversationEventType === ConversationEventType.McpToolExecuted) {
       return (
         <McpToolExecutedEvent
+          ref={ref}
+          event={event}
+          onClick={handleSelect}
+          onKeyDown={handleKeyDown}
+          isSelected={selectable && isSelected}
+          {...additionalProps}
+        />
+      );
+    }
+
+    if (agentEventTypes.has(event.conversationEventType)) {
+      return (
+        <AgentEvent
           ref={ref}
           event={event}
           onClick={handleSelect}

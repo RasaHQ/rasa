@@ -493,6 +493,28 @@ export function mapRawEventsToConversationEvents(
           __typename: "ConversationEvent",
         };
       }
+      case "agent_started":
+      case "agent_completed":
+      case "agent_cancelled":
+      case "agent_interrupted":
+      case "agent_resumed": {
+        return {
+          id: uuid(),
+          actionText: undefined,
+          conversationEventType: (event.event as string).toUpperCase() as ConversationEventType,
+          flowId: event.flow_id || event.metadata?.active_flow,
+          metadata: {
+            ...event.metadata,
+            rawEvent: event,
+            agent_id: event.agent_id,
+          },
+          name: event.name,
+          slotValue: undefined,
+          stepId: event.step_id || event.metadata?.step_id,
+          timestamp: parsedTimestamp,
+          __typename: "ConversationEvent",
+        };
+      }
       default:
         return {
           id: uuid(),

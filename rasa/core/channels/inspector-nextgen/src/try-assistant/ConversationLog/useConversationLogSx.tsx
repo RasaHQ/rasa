@@ -41,6 +41,7 @@ export const useConversationLogSx = (isSelected: boolean) => {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: "0.5rem",
+    color: "rasaNeutral.700",
   };
 
   return {

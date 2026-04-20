@@ -39,7 +39,7 @@ function generateFlowEventMessage(event: ConversationEvent) {
   return (
     <Text size="sm" variant="muted" lineClamp={2} wordBreak="break-all">
       {prefix}{" "}
-      <Text as="span" fontWeight="600" variant="muted">
+      <Text as="span" fontWeight="500" variant="muted">
         {event.flowId}
       </Text>{" "}
       {suffix}
@@ -53,12 +53,6 @@ export const FlowEvent = forwardRef<HTMLDivElement | null, FlowEventProps>(
     const { hoverableContainerSx, baseMessageSx, iconSx } =
       useConversationLogSx(isSelected);
     const [isHovered, setIsHovered] = React.useState(false);
-
-    const messageSx = {
-      ...baseMessageSx,
-      color: "rasaNeutral.700",
-    };
-
     const iconType = eventTypeToIcon[event.conversationEventType] || null;
 
     if (isInternalRasaFlow(event.flowId || "")) {
@@ -76,7 +70,7 @@ export const FlowEvent = forwardRef<HTMLDivElement | null, FlowEventProps>(
         {...otherProps}
       >
         {isHovered && <ConversationEventActionButton event={event} actions={conversationEventActions} />}
-        <Box css={messageSx}>
+        <Box css={baseMessageSx}>
           {iconType ? <Icon icon={iconType} style={iconSx} /> : null}
           {generateFlowEventMessage(event)}
         </Box>
