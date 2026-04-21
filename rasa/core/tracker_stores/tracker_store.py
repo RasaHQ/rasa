@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from inspect import isawaitable, iscoroutinefunction
 from json import JSONDecodeError
 from typing import (
@@ -392,6 +393,9 @@ class TrackerStore:
         """Publishes new tracker events to a message broker."""
         for event in new_events:
             body = {"sender_id": sender_id, "user_id": user_id}
+            event.metadata.update(
+                {"rasa_environment": os.environ.get("RASA_ENVIRONMENT")}
+            )
             body.update(event.as_dict())
             event_broker.publish(body)
 

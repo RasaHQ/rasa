@@ -895,6 +895,32 @@ async def test_tracker_store_stream_events_with_pii(
     assert call_args[3] is tracker.user_id
 
 
+async def test_tracker_store_stream_events_with_rasa_environment(
+    mock_event_broker: EventBroker,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Tests that the tracker store streams events with PII."""
+    # Given
+    tracker_store = InMemoryTrackerStore(Domain.empty(), mock_event_broker)
+    mock_publish = AsyncMock()
+    monkeypatch.setattr(mock_event_broker, "publish", mock_publish)
+    tracker_event = ActionExecuted("action_listen")
+    sender_id = uuid.uuid4().hex
+    user_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        sender_id, [tracker_event], user_id=user_id
+    )
+
+    # When
+    await tracker_store.stream_events(tracker)
+    # Then
+    tracker_event.metadata["rasa_environment"] = "test_value"
+    expected_event_body = tracker_event.as_dict()
+    expected_event_body["sender_id"] = sender_id
+    expected_event_body["user_id"] = user_id
+    mock_publish.assert_called_once_with(expected_event_body)
+
+
 async def test_stream_new_events_includes_user_id_in_published_body(
     monkeypatch: MonkeyPatch,
 ) -> None:
