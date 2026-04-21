@@ -41,6 +41,7 @@ import {
 } from "../utils/voice/audiostream";
 import { SocketTimeoutError, SocketUnavailableError } from "../errors";
 import { inspectorStore, useInspectorStore } from "../store";
+import { getConversationHistory } from "../api";
 
 const REACT_APP_SESSION_HISTORY_KEY = "rasa_session_history";
 
@@ -118,16 +119,20 @@ function generatePlaceholderUserUtterance(message: string): Utterance {
 
 export function useBotConnection({
   projectId,
+  useMemoryOnly = true,
+  sessionId: externalSessionId,
+  resetSession: resetExternalSession,
   onSessionStart,
   onReconnectError,
   onMessageSent,
-  useMemoryOnly = true,
 }: {
   projectId: string;
+  useMemoryOnly?: boolean;
+  sessionId?: string;
+  resetSession?: () => void;
   onSessionStart?: (id: string) => void;
   onReconnectError?: (error: unknown) => void;
   onMessageSent?: (message: string) => void;
-  useMemoryOnly?: boolean;
 }) {
   const { logError, showToast, socketReconnectAttempts, track } =
     useInspectorContext();
@@ -180,13 +185,13 @@ export function useBotConnection({
     totalNumberOfUserMessages: 0,
   });
   const activeModalityRef = useRef<"text" | "voice">("text");
-  const [sessionId, setSessionId] = useState(uuid());
+  const [sessionId, setSessionId] = useState(externalSessionId || uuid());
   const [url, setUrl] = useState("");
   const [, setError] = useState<ModelServiceError | RasaProError | undefined>(
     undefined,
   );
   const onVoiceErrorRef = useRef<((err: RasaProError) => void) | null>(null);
-  const projectUrl = useInspectorStore((s) => s.projectUrl);
+  const { projectUrl, trackerEndpoint } = useInspectorStore((s) => ({ projectUrl: s.projectUrl, trackerEndpoint: s.trackerEndpoint }));
 
   useEffect(() => {
     if (projectUrl) {
@@ -343,13 +348,30 @@ export function useBotConnection({
           }
 
           if (activeModalityRef.current === "text") {
-            sendMessage(SESSION_START_MESSAGE);
+            if (!externalSessionId) {
+              onSessionStartRef?.current?.(sessionId);
+              sendMessage(SESSION_START_MESSAGE);
+              // quick fix for new sessions after reconnecting, needs more attention in the future
+              setConversation({
+                ...conversation,
+                startDate: new Date().toISOString(),
+              });
+            } else if (externalSessionId && trackerEndpoint) {
+              getConversationHistory({ projectUrl, trackerEndpoint })
+                .then((trackerResult) =>
+                  handleTrackerResponse(trackerResult)
+                )
+                .catch((err) => {
+                  logError(err);
+                });
+            }
+            if (activeModalityRef.current !== "text") {
+              setConversation({
+                ...conversation,
+                startDate: new Date().toISOString(),
+              });
+            }
           }
-          // quick fix for new sessions after reconnecting, needs more attention in the future
-          setConversation({
-            ...conversation,
-            startDate: new Date().toISOString(),
-          });
         },
       );
 
@@ -437,41 +459,7 @@ export function useBotConnection({
         });
       });
 
-      socket.current?.on("tracker", (response: TrackerResponseData) => {
-        if (!response) return;
-
-        const shouldProcessResponse = response.sender_id === sessionId;
-        if (shouldProcessResponse) {
-          const events = mapRawEventsToConversationEvents(response.events);
-          setSlotRelatedEvents(getSlotRelatedEvents(events));
-
-          setSlots(formatSlots(response.slots));
-          const convertedStack: Stack[] = response.stack.map(
-            (item: RawStack) => ({
-              frameId: item.frame_id,
-              flowId: item.flow_id,
-              stepId: item.step_id,
-              collect: item.collect,
-              utter: item.utter,
-              ended: false,
-            }),
-          );
-          if (convertedStack.length > 0) {
-            setStack(convertedStack);
-          }
-          setConversation((conv) => {
-            return {
-              ...conv,
-              events,
-              totalNumberOfUserMessages: events.filter(
-                (event: UnionEventType) => isUtterance(event),
-              ).length,
-            };
-          });
-          setReplayingConversation(false);
-          setWaitingForUserInput(isWaitingForUserInput(events));
-        }
-      });
+      socket.current?.on("tracker", handleTrackerResponse);
 
       return () => {
         if (socket.current) {
@@ -489,8 +477,42 @@ export function useBotConnection({
     socketReconnectAttempts,
   ]);
 
-  useEffect(() => {
-    onSessionStartRef?.current?.(sessionId);
+  const handleTrackerResponse = useCallback((response: TrackerResponseData) => {
+    if (!response) return;
+
+    const shouldProcessResponse = response.sender_id === sessionId;
+    if (shouldProcessResponse) {
+      const events = mapRawEventsToConversationEvents(response.events);
+      setSlotRelatedEvents(getSlotRelatedEvents(events));
+
+      setSlots(formatSlots(response.slots));
+      const convertedStack: Stack[] = response.stack.map(
+        (item: RawStack) => ({
+          frameId: item.frame_id,
+          flowId: item.flow_id,
+          stepId: item.step_id,
+          collect: item.collect,
+          utter: item.utter,
+          ended: false,
+        }),
+      );
+      if (convertedStack.length > 0) {
+        setStack(convertedStack);
+      }
+      const startDate = events?.[0]?.timestamp;
+      setConversation((conv) => {
+        return {
+          ...conv,
+          events,
+          totalNumberOfUserMessages: events.filter(
+            (event: UnionEventType) => isUtterance(event),
+          ).length,
+          startDate: startDate ? new Date(startDate).toISOString() : conv.startDate,
+        };
+      });
+      setReplayingConversation(false);
+      setWaitingForUserInput(isWaitingForUserInput(events));
+    }
   }, [sessionId]);
 
   const startNewConversation = useCallback((): string => {
@@ -500,6 +522,7 @@ export function useBotConnection({
     socketReadyPromiseRef.current = new Promise((resolve) => {
       socketReadyPromiseResolveRef.current = resolve;
     });
+    resetExternalSession?.();
     const newSessionId = uuid();
     setConversation(initialConversationState(newSessionId));
     setSessionId(newSessionId);
@@ -508,7 +531,7 @@ export function useBotConnection({
     setSlots([]);
     setSlotRelatedEvents([]);
     return newSessionId;
-  }, []);
+  }, [resetExternalSession]);
 
   const startVoiceStreaming = useCallback(async () => {
     activeModalityRef.current = "voice";

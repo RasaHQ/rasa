@@ -107,7 +107,7 @@ from rasa.core.channels.inspector import InspectorInputChannel
 from rasa.core.exceptions import AgentNotReady
 from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.flows.yaml_flows_io import get_flows_as_json
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.importers.utils import DOMAIN_KEYS
 from rasa.utils.json_utils import extract_values
 from rasa.utils.openapi import model_to_schema
@@ -354,6 +354,90 @@ async def get_tracker_internal(request: Request, session_id: str) -> HTTPRespons
         return response.json(
             ApiErrorResponse(
                 error="Failed to get tracker",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/conversations/<conversation_id:path>/tracker", methods=["GET"])
+@openapi.summary("Get conversation tracker")
+@openapi.description(
+    "Returns the current state of a conversation tracker including its events."
+)
+@openapi.tag("conversations")
+@openapi.response(
+    200,
+    {"application/json": {"type": "object"}},
+    description="Tracker state retrieved successfully",
+)
+@openapi.response(
+    409,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description=AGENT_NOT_READY_ERROR,
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+async def retrieve_tracker(request: Request, conversation_id: str) -> HTTPResponse:
+    """Get a dump of a conversation's tracker including its events."""
+    verbosity_str = request.args.get(
+        "include_events", EventVerbosity.AFTER_RESTART.name
+    ).upper()
+    try:
+        verbosity = EventVerbosity[verbosity_str]
+    except KeyError:
+        enum_values = ", ".join([e.name for e in EventVerbosity])
+        return response.json(
+            ApiErrorResponse(
+                error=INVALID_REQUEST_ERROR,
+                details={
+                    "message": (
+                        "Invalid value for 'include_events'. "
+                        f"Should be one of {enum_values}"
+                    ),
+                    "parameter": "include_events",
+                },
+            ).model_dump(),
+            status=HTTPStatus.BAD_REQUEST,
+        )
+
+    try:
+        agent: Optional[Agent] = request.app.ctx.agent
+        if not agent or not agent.is_ready():
+            return response.json(
+                ApiErrorResponse(
+                    error=AGENT_NOT_READY_ERROR,
+                    details={"message": "No agent loaded or agent not ready"},
+                ).model_dump(),
+                status=HTTPStatus.CONFLICT,
+            )
+
+        if not agent.processor:
+            return response.json(
+                ApiErrorResponse(
+                    error=AGENT_NOT_READY_ERROR,
+                    details={"message": "Agent processor not available"},
+                ).model_dump(),
+                status=HTTPStatus.CONFLICT,
+            )
+
+        tracker = await agent.processor.get_tracker(conversation_id)
+
+        state = tracker.current_state(verbosity)
+        return response.json(state)
+
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "builder.service.retrieve_tracker.error",
+            tags={"endpoint": "/api/conversations/<conversation_id>/tracker"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to retrieve tracker",
                 details={"error": str(exc)},
             ).model_dump(),
             status=HTTPStatus.INTERNAL_SERVER_ERROR,

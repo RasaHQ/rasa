@@ -60,6 +60,12 @@ vi.mock("socket.io-client", () => ({
   io: (url: string): ReturnType<typeof mockIo> => mockIo(url),
 }));
 
+const mockGetConversationHistory = vi.fn();
+vi.mock("../api", () => ({
+  getConversationHistory: (...args: unknown[]) =>
+    mockGetConversationHistory(...args) as unknown,
+}));
+
 vi.mock("../stores/copilot/actions", () => ({
   setSessionId: vi.fn(),
 }));
@@ -100,6 +106,7 @@ describe("useBotConnection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     initInspectorStore();
+    mockGetConversationHistory.mockResolvedValue(null);
     (useParams as MockedUseParams).mockReturnValue({
       projectId: "test-project",
     });
@@ -695,6 +702,110 @@ describe("useBotConnection", () => {
       expect(mockStopMicrophoneStream).toHaveBeenCalled();
       expect(mockStopAudioPlayback).toHaveBeenCalled();
       expect(inspectorStore.state.sessionId).not.toBe(sessionIdAfterStart);
+    });
+  });
+
+  describe("when sessionId prop is provided", () => {
+    const EXTERNAL_SESSION_ID = "external-session-abc";
+
+    it("uses the provided sessionId as the initial session ID in the store", () => {
+      renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          sessionId: EXTERNAL_SESSION_ID,
+          useMemoryOnly: true,
+        }),
+      );
+
+      expect(inspectorStore.state.sessionId).toBe(EXTERNAL_SESSION_ID);
+    });
+
+    it("does not send /session_start on session_confirm", () => {
+      renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          sessionId: EXTERNAL_SESSION_ID,
+          useMemoryOnly: true,
+        }),
+      );
+
+      act(() => { inspectorStore.state.setUrl("https://test.example.com"); });
+      act(() => { lastSocket.handlers["connect"]?.(); });
+      act(() => { lastSocket.handlers["session_confirm"]?.(); });
+
+      const sessionStartCalls = lastSocket.emit.mock.calls.filter(
+        (call) =>
+          call[0] === "user_message" &&
+          (call[1] as { message: string }).message === "/session_start",
+      );
+      expect(sessionStartCalls).toHaveLength(0);
+    });
+
+    it("does not call getConversationHistory when trackerEndpoint is not set in the store", () => {
+      renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          sessionId: EXTERNAL_SESSION_ID,
+          useMemoryOnly: true,
+        }),
+      );
+
+      act(() => { inspectorStore.state.setUrl("https://test.example.com"); });
+      act(() => { lastSocket.handlers["connect"]?.(); });
+      act(() => { lastSocket.handlers["session_confirm"]?.(); });
+
+      expect(mockGetConversationHistory).not.toHaveBeenCalled();
+    });
+
+    it("calls getConversationHistory with projectUrl and trackerEndpoint on session_confirm", () => {
+      initInspectorStore({
+        trackerEndpoint: "/tracker",
+        projectUrl: "https://test.example.com",
+      });
+
+      renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          sessionId: EXTERNAL_SESSION_ID,
+          useMemoryOnly: true,
+        }),
+      );
+
+      act(() => { inspectorStore.state.setUrl("https://test.example.com"); });
+      act(() => { lastSocket.handlers["connect"]?.(); });
+      act(() => { lastSocket.handlers["session_confirm"]?.(); });
+
+      expect(mockGetConversationHistory).toHaveBeenCalledWith({
+        projectUrl: "https://test.example.com",
+        trackerEndpoint: "/tracker",
+      });
+    });
+
+    it("calls logError when getConversationHistory rejects", async () => {
+      const fetchError = new Error("network error");
+      initInspectorStore({
+        trackerEndpoint: "/tracker",
+        projectUrl: "https://test.example.com",
+      });
+      mockGetConversationHistory.mockRejectedValue(fetchError);
+
+      renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          sessionId: EXTERNAL_SESSION_ID,
+          useMemoryOnly: true,
+        }),
+      );
+
+      act(() => { inspectorStore.state.setUrl("https://test.example.com"); });
+      act(() => { lastSocket.handlers["connect"]?.(); });
+
+      await act(async () => {
+        lastSocket.handlers["session_confirm"]?.();
+        await Promise.resolve();
+      });
+
+      expect(mockLogError).toHaveBeenCalledWith(fetchError);
     });
   });
 });

@@ -10,7 +10,7 @@ import type {
   UnionEventType,
   VoiceErrorHandler,
 } from "../types";
-import  { InspectorView } from "../types/inspector";
+import { InspectorView } from "../types/inspector";
 
 export type InspectorStoreState = {
   // Connection / tracker data
@@ -36,6 +36,7 @@ export type InspectorStoreState = {
   // Configuration
   projectUrl: string;
   botDataEndpoint: string;
+  trackerEndpoint: string;
   conversationEventActions: ConversationEventAction[];
   voiceFeaturesEnabled: boolean;
   isEmbedded: boolean;
@@ -54,7 +55,7 @@ export type InspectorStoreState = {
 export type InspectorStore = Store<InspectorStoreState>;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const noop = () => {};
+const noop = () => { };
 const asyncNoop = () => Promise.resolve();
 
 export function createInspectorStore(
@@ -80,6 +81,7 @@ export function createInspectorStore(
 
     projectUrl: "",
     botDataEndpoint: "",
+    trackerEndpoint: "",
     conversationEventActions: [],
     voiceFeaturesEnabled: true,
     isEmbedded: false,

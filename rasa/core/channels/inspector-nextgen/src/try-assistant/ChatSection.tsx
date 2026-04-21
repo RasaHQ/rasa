@@ -23,7 +23,6 @@ interface ChatSectionProps {
 }
 
 export const ChatSection = ({ handleSelect }: ChatSectionProps) => {
-  
   const inputRef = useRef<HTMLInputElement>(null);
 
   const sessionId = useInspectorStore((s) => s.sessionId);

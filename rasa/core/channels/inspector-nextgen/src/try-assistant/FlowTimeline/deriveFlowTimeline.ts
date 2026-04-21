@@ -10,11 +10,15 @@ import type { FlowTimelineEntry } from "./types";
  * @param flowNames - Optional map of flowId → display name for human-readable labels
  */
 export function deriveFlowTimeline(
-  events: UnionEventType[],
+  events?: UnionEventType[],
   flowNames?: Map<string, string>,
 ): FlowTimelineEntry[] {
   const entries: FlowTimelineEntry[] = [];
   const openFlows = new Map<string, FlowTimelineEntry[]>();
+
+  if (!events) {
+    return [];
+  }
 
   for (const event of events) {
     if (event.__typename !== "ConversationEvent") continue;
@@ -48,7 +52,7 @@ export function deriveFlowTimeline(
           const entry = stack.pop()!;
           entry.status =
             convEvent.conversationEventType ===
-            ConversationEventType.FlowCompleted
+              ConversationEventType.FlowCompleted
               ? "completed"
               : "cancelled";
           entry.endTime = new Date(convEvent.timestamp);

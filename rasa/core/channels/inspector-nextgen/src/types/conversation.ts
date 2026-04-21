@@ -1,5 +1,6 @@
 import type { FlexProps } from "@chakra-ui/react";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import z from "zod";
 
 export type InspectorEventType = ConversationEvent | StackEvent | Utterance;
 
@@ -151,18 +152,18 @@ export type RawEvent = {
   is_error?: boolean;
   error_message?: string;
   event:
-    | "user"
-    | "stack"
-    | "action"
-    | "bot"
-    | "slot"
-    | "agent"
-    | "agent_started"
-    | "agent_completed"
-    | "agent_interrupted"
-    | "agent_cancelled"
-    | "agent_resumed"
-    | "mcp_tool_executed";
+  | "user"
+  | "stack"
+  | "action"
+  | "bot"
+  | "slot"
+  | "agent"
+  | "agent_started"
+  | "agent_completed"
+  | "agent_interrupted"
+  | "agent_cancelled"
+  | "agent_resumed"
+  | "mcp_tool_executed";
   conversation_id: string;
   text: string;
   data: BackendResponseData;
@@ -261,3 +262,11 @@ export type MessagePropsWithTopIntentName = MessageProps & {
   topIntentName?: string;
   conversationEventActions?: ConversationEventAction[];
 };
+
+export const TrackerResponseSchema = z.object({
+  sender_id: z.string(),
+  // TODO: replace any
+  events: z.any(),
+  slots: z.object(),
+  stack: z.array(z.any()),
+});

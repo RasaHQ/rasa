@@ -15,7 +15,7 @@ export const HistorySection = ({ showViewSwitcher }: HistorySectionProps) => {
   const conversationList = useInspectorStore((s) => s.conversationList);
   const flows = useInspectorStore((s) => s.flows);
   const allEvents = useMemo(
-    () => conversationList.flatMap((c) => c.events),
+    () => conversationList[conversationList.length - 1]?.events,
     [conversationList],
   );
 

@@ -32,6 +32,7 @@ function makeState(
     flowsError: null,
     projectUrl: "",
     botDataEndpoint: "",
+    trackerEndpoint: "",
     conversationEventActions: [],
     voiceFeaturesEnabled: true,
     isEmbedded: false,

@@ -1,5 +1,5 @@
 import type { ZodType } from "zod";
-import { type BotData, BotDataSchema } from "./types";
+import { type BotData, BotDataSchema, type TrackerResponseData, TrackerResponseSchema } from "./types";
 
 async function fetchWithJsonBody(
   url: string,
@@ -82,4 +82,17 @@ export const getBotData = async ({
   );
 };
 
-
+export const getConversationHistory = async ({
+  projectUrl,
+  trackerEndpoint,
+}: {
+  projectUrl: string;
+  trackerEndpoint: string;
+}): Promise<TrackerResponseData> => {
+  return apiRequest<TrackerResponseData>(
+    `${projectUrl}${trackerEndpoint}`,
+    { method: "GET" },
+    undefined,
+    TrackerResponseSchema,
+  );
+}

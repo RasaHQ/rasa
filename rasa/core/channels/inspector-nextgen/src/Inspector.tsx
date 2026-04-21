@@ -35,6 +35,10 @@ type Props = {
   onboardingTooltips?: OnboardingTooltipConfig[];
   voiceFeaturesEnabled?: boolean;
   socketReconnectAttempts?: number;
+  currentSessionId?: number;
+  sessionId?: string;
+  resetSession?: () => void;
+  trackerEndpoint?: string;
 };
 
 export const Inspector = ({
@@ -64,6 +68,8 @@ const InspectorContent = (
     projectUrl,
     singleSessionMode,
     projectId,
+    sessionId,
+    resetSession,
     onSessionStart,
     onReconnectError,
     onMessageSent,
@@ -75,6 +81,7 @@ const InspectorContent = (
     initInspectorStore({
       projectUrl,
       botDataEndpoint: props.botDataEndpoint,
+      trackerEndpoint: props.trackerEndpoint,
       conversationEventActions: props.conversationEventActions ?? [],
       voiceFeaturesEnabled: props.voiceFeaturesEnabled ?? true,
       inspectMode: props.initialInspectMode ?? false,
@@ -85,6 +92,8 @@ const InspectorContent = (
   useBotConnection({
     projectId: projectId ?? uuid(),
     useMemoryOnly: singleSessionMode ?? false,
+    sessionId,
+    resetSession,
     onSessionStart,
     onReconnectError,
     onMessageSent,

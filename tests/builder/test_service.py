@@ -1523,3 +1523,58 @@ class TestHandleCopilotException:
             extra={"session_id": None},
             tags={"endpoint": "/api/copilot"},
         )
+
+
+class TestRetrieveTrackerEndpoint:
+    """Tests for GET /api/conversations/<conversation_id>/tracker."""
+
+    def _make_agent_mock(self, tracker_state: dict) -> MagicMock:
+        tracker_mock = MagicMock()
+        tracker_mock.current_state = MagicMock(return_value=tracker_state)
+
+        processor_mock = MagicMock()
+        processor_mock.get_tracker = AsyncMock(return_value=tracker_mock)
+
+        agent_mock = MagicMock()
+        agent_mock.is_ready = MagicMock(return_value=True)
+        agent_mock.processor = processor_mock
+        return agent_mock
+
+    @pytest.mark.asyncio
+    async def test_returns_tracker_state(self, sanic_app: Sanic) -> None:
+        tracker_state = {"sender_id": "user-123", "events": [], "slots": {}}
+        sanic_app.ctx.agent = self._make_agent_mock(tracker_state)
+
+        async with sanic_app.asgi_client as client:
+            _, response = await client.get("/api/conversations/user-123/tracker")
+
+        assert response.status == 200
+        assert json.loads(response.body) == tracker_state
+
+    @pytest.mark.asyncio
+    async def test_returns_409_when_agent_not_ready(self, sanic_app: Sanic) -> None:
+        agent_mock = MagicMock()
+        agent_mock.is_ready = MagicMock(return_value=False)
+        sanic_app.ctx.agent = agent_mock
+
+        async with sanic_app.asgi_client as client:
+            _, response = await client.get("/api/conversations/user-123/tracker")
+
+        assert response.status == 409
+        payload = json.loads(response.body)
+        assert payload["error"] == "Agent not ready"
+
+    @pytest.mark.asyncio
+    async def test_returns_400_for_invalid_include_events(
+        self, sanic_app: Sanic
+    ) -> None:
+        sanic_app.ctx.agent = self._make_agent_mock({})
+
+        async with sanic_app.asgi_client as client:
+            _, response = await client.get(
+                "/api/conversations/user-123/tracker?include_events=INVALID"
+            )
+
+        assert response.status == 400
+        payload = json.loads(response.body)
+        assert payload["error"] == "Invalid request"
