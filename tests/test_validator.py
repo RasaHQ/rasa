@@ -2379,6 +2379,71 @@ def test_verify_categorical_predicate_with_double_quotes_valid() -> None:
         assert len(logs) == 0
 
 
+def test_verify_predicates_does_not_mutate_categorical_slot_values() -> None:
+    """Regression test: verify_predicates must not mutate slot.values in-place.
+
+    A categorical slot used in a subflow called from multiple parent flows
+    was having None appended to its values list on each predicate validation call,
+    corrupting the domain slot state and flow retrieval FAISS embeddings.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          sms_offer:
+            description: Subflow that collects the sms response slot.
+            steps:
+            - id: collect_sms
+              collect: sms_response
+              next:
+                - if: slots.sms_response == user_wants_sms
+                  then: END
+                - else: END
+          flow_one:
+            description: First parent flow calling sms_offer.
+            steps:
+            - id: step1
+              action: action_listen
+            - call: sms_offer
+          flow_two:
+            description: Second parent flow calling sms_offer.
+            steps:
+            - id: step1
+              action: action_listen
+            - call: sms_offer
+          flow_three:
+            description: Third parent flow calling sms_offer.
+            steps:
+            - id: step1
+              action: action_listen
+            - call: sms_offer
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          sms_response:
+            type: categorical
+            values:
+              - user_wants_sms
+              - user_does_not_want_sms
+            mappings: []
+        """
+    )
+    slot = next(s for s in test_domain.slots if s.name == "sms_response")
+    original_values = list(slot.values)
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    validator.verify_predicates()
+
+    assert (
+        None not in slot.values
+    ), "verify_predicates must not append None to slot.values"
+    assert (
+        slot.values == original_values
+    ), f"slot.values was mutated: expected {original_values}, got {slot.values}"
+
+
 @pytest.mark.parametrize(
     "predicate",
     [

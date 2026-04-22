@@ -1295,7 +1295,9 @@ class Validator:
         Returns:
             False, if validation failed, previous value of all_good, otherwise
         """
-        valid_slot_values.append(None)
+        valid_slot_values_with_none: List[Optional[str]] = list(valid_slot_values) + [
+            None
+        ]
         # slot_value can either be None, a string or a list of Literal objects
         if slot_value is None:
             slot_value = [None]
@@ -1304,7 +1306,8 @@ class Validator:
 
         slot_values_validity = [
             sv is None
-            or re.sub(r'^[\'"](.+)[\'"]$', r"\1", sv.value) in valid_slot_values
+            or re.sub(r'^[\'"](.+)[\'"]$', r"\1", sv.value)
+            in valid_slot_values_with_none
             for sv in slot_value
         ]
         if not all(slot_values_validity):
