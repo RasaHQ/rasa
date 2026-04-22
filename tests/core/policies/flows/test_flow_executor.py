@@ -473,27 +473,14 @@ def test_select_handles_current_node_being_link():
     )
 
 
-@pytest.mark.parametrize(
-    "agent_stack_frame",
-    [
-        AgentStackFrame(
-            frame_id="agent-frame-id",
-            state=AgentState.WAITING_FOR_INPUT,
-            agent_id="agent-1",
-            flow_id="flow-1",
-        ),
-        AgentStackFrame(
-            frame_id="agent-frame-id",
-            state=AgentState.INTERRUPTED,
-            agent_id="agent-1",
-            flow_id="flow-1",
-        ),
-    ],
-)
-def test_select_next_step_id_returns_current_id_when_agent_stack_frame_on_top(
-    agent_stack_frame: AgentStackFrame,
-):
-    # Create a dummy current step
+def test_select_next_step_id_returns_current_id_when_waiting_agent_stack_frame_on_top():
+    """Top AgentStackFrame in WAITING_FOR_INPUT loops back to the current step."""
+    agent_stack_frame = AgentStackFrame(
+        frame_id="agent-frame-id",
+        state=AgentState.WAITING_FOR_INPUT,
+        agent_id="agent-1",
+        flow_id="flow-1",
+    )
     step = FlowStep(
         custom_id="my_step_id",
         idx=0,
@@ -502,13 +489,38 @@ def test_select_next_step_id_returns_current_id_when_agent_stack_frame_on_top(
         next=FlowStepLinks(links=[]),
         flow_id="my_flow",
     )
-    # Create a stack with AgentStackFrame in WAITING_FOR_INPUT state
     stack = DialogueStack(frames=[agent_stack_frame])
     tracker = DialogueStateTracker.from_events("test", [])
     tracker.update_stack(stack)
 
     result = select_next_step_id(step, stack.current_context(), tracker)
     assert result == "my_step_id"
+
+
+def test_select_next_step_id_follows_links_when_interrupted_agent_stack_frame_on_top():
+    """ENG-2713: Interrupted agent on stack must not force loop-back; follow links."""
+    agent_stack_frame = AgentStackFrame(
+        frame_id="agent-frame-id",
+        state=AgentState.INTERRUPTED,
+        agent_id="agent-1",
+        flow_id="flow-1",
+    )
+    step = FlowStep(
+        custom_id="my_step_id",
+        idx=0,
+        description=None,
+        metadata={},
+        next=FlowStepLinks(
+            links=[StaticFlowStepLink(target_step_id="next_after_call")]
+        ),
+        flow_id="my_flow",
+    )
+    stack = DialogueStack(frames=[agent_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+
+    result = select_next_step_id(step, stack.current_context(), tracker)
+    assert result == "next_after_call"
 
 
 def test_select_next_step_id_ignore_agent_on_stack_returns_next_step():

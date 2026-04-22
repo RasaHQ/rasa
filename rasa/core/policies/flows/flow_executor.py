@@ -57,6 +57,7 @@ from rasa.dialogue_understanding.stack.frames import (
 )
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     AgentStackFrame,
+    AgentState,
     FlowStackFrameType,
 )
 from rasa.dialogue_understanding.stack.utils import (
@@ -162,18 +163,24 @@ def select_next_step_id(
         condition_evaluation_context: Context for evaluating conditions.
         tracker: The dialogue state tracker.
         ignore_agent_on_stack: If True, do not return current step when top
-            is an AgentStackFrame (used when rewinding so we get the real next
-            step in the flow, e.g. for correction or agent restart).
+            is an AgentStackFrame waiting for input (used when rewinding so we
+            get the real next step in the flow, e.g. for correction or agent
+            restart).
 
     Returns:
         The id of the next step, or None if there is no next step.
     """
     if not ignore_agent_on_stack:
-        # if the current step is a call step to an agent, and we already have an
-        # AgentStackFrame on top of the stack, we need to return the current
-        # step id again in order to loop back to the agent.
+        # If the current step calls an agent and the top frame is an active
+        # (waiting) agent, return the current step id to loop back to the agent.
+        # Interrupted frames must not trigger this; navigation follows links
+        # forward (e.g. ContinueFlowStep after resuming the parent flow).
         top_stack_frame = tracker.stack.top()
-        if top_stack_frame and isinstance(top_stack_frame, AgentStackFrame):
+        if (
+            top_stack_frame
+            and isinstance(top_stack_frame, AgentStackFrame)
+            and top_stack_frame.state == AgentState.WAITING_FOR_INPUT
+        ):
             return current.id
 
     next_step = current.next
