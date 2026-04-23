@@ -683,6 +683,43 @@ async def test_copilot_endpoint_stores_messages_to_sqlite(
 
 
 @pytest.mark.asyncio
+async def test_copilot_endpoint_works_without_session_id(
+    sanic_app: Sanic, monkeypatch: MonkeyPatch
+) -> None:
+    """Test that /api/copilot returns 200 when session_id is omitted.
+
+    When session_id is absent the tracker lookup must be skipped entirely.
+    """
+    mock_history_store = MagicMock()
+    mock_history_store.get = AsyncMock(return_value=[])
+    mock_history_store.append = AsyncMock()
+
+    _setup_copilot_mocks(monkeypatch, "Hello!", history_store=mock_history_store)
+
+    mock_tracker_lookup = AsyncMock(return_value=None)
+    monkeypatch.setattr(
+        "rasa.builder.service.current_tracker_from_input_channel",
+        mock_tracker_lookup,
+    )
+
+    payload = {
+        "message": {
+            "role": "user",
+            "content": [{"type": "text", "text": "Hello, can you help me?"}],
+        },
+    }
+
+    _, response = await sanic_app.asgi_client.post(
+        "/api/copilot",
+        json=payload,
+        headers={"X-User-Id": "test-user", "Accept": "text/event-stream"},
+    )
+    assert response.status == 200
+    mock_tracker_lookup.assert_not_called()
+    mock_history_store.append.assert_called()
+
+
+@pytest.mark.asyncio
 async def test_get_copilot_history_success(
     sanic_app: Sanic, monkeypatch: MonkeyPatch
 ) -> None:

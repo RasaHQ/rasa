@@ -1692,6 +1692,7 @@ async def copilot(request: Request) -> None:
     project_generator = get_project_generator(request)
 
     req: Optional[CopilotTurnRequest] = None
+    chat_id = None
     try:
         # 1. Validate and unpack input
         req = CopilotTurnRequest(**request.json)
@@ -2116,7 +2117,7 @@ async def _handle_copilot_exception(
     *,
     req: Optional[CopilotTurnRequest],
     sse: Any,
-    chat_id: str,
+    chat_id: Optional[str],
     sentry_event: str,
     send_sse_error: bool = True,
 ) -> None:
@@ -2661,6 +2662,8 @@ async def get_tracker_context_for_copilot(
     Returns:
         The tracker context if the tracker is available.
     """
+    if not req.session_id:
+        return None
     tracker = await current_tracker_from_input_channel(request.app, req.session_id)
     tracker_context = TrackerContext.from_tracker(
         tracker, max_turns=COPILOT_ASSISTANT_TRACKER_MAX_TURNS

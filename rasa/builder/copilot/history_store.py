@@ -563,7 +563,7 @@ async def persist_copilot_message_to_history(
     content: Optional[List[ContentBlock]] = None,
     text: Optional[str] = None,
     references: Optional[List[ReferenceEntry]] = None,
-    chat_id: str = DEFAULT_COPILOT_CHAT_ID,
+    chat_id: Optional[str] = DEFAULT_COPILOT_CHAT_ID,
     response_category: ResponseCategory = ResponseCategory.COPILOT,
     commit: Optional[Dict[str, Any]] = None,
     logs: Optional[List[LogContent]] = None,
