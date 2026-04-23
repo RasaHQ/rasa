@@ -35,7 +35,6 @@ type Props = {
   onboardingTooltips?: OnboardingTooltipConfig[];
   voiceFeaturesEnabled?: boolean;
   socketReconnectAttempts?: number;
-  currentSessionId?: number;
   sessionId?: string;
   resetSession?: () => void;
   trackerEndpoint?: string;

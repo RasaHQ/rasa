@@ -160,6 +160,7 @@ export function useBotConnection({
   const onReconnectErrorRef = useRef(onReconnectError);
   const onSessionStartRef = useRef(onSessionStart);
   const onMessageSentRef = useRef(onMessageSent);
+  const resetExternalSessionRef = useRef(resetExternalSession);
   useEffect(() => {
     logErrorRef.current = logError;
   }, [logError]);
@@ -172,6 +173,9 @@ export function useBotConnection({
   useEffect(() => {
     onMessageSentRef.current = onMessageSent;
   }, [onMessageSent]);
+  useEffect(() => {
+    resetExternalSessionRef.current = resetExternalSession;
+  }, [resetExternalSession]);
 
   const [conversationHistory, setConversationHistory] = useMemoryOnly
     ? [memoryHistory, setMemoryHistory]
@@ -365,12 +369,6 @@ export function useBotConnection({
                   logError(err);
                 });
             }
-            if (activeModalityRef.current !== "text") {
-              setConversation({
-                ...conversation,
-                startDate: new Date().toISOString(),
-              });
-            }
           }
         },
       );
@@ -522,7 +520,7 @@ export function useBotConnection({
     socketReadyPromiseRef.current = new Promise((resolve) => {
       socketReadyPromiseResolveRef.current = resolve;
     });
-    resetExternalSession?.();
+    resetExternalSessionRef?.current?.();
     const newSessionId = uuid();
     setConversation(initialConversationState(newSessionId));
     setSessionId(newSessionId);
@@ -531,7 +529,8 @@ export function useBotConnection({
     setSlots([]);
     setSlotRelatedEvents([]);
     return newSessionId;
-  }, [resetExternalSession]);
+    // IMPORTANT: adding deps to the array might break inspector
+  }, []);
 
   const startVoiceStreaming = useCallback(async () => {
     activeModalityRef.current = "voice";
@@ -568,6 +567,7 @@ export function useBotConnection({
     } else {
       throw new SocketUnavailableError();
     }
+    // IMPORTANT: adding deps to the array might break inspector
   }, [startNewConversation]);
 
   const stopVoiceStreaming = useCallback(async () => {
@@ -599,6 +599,7 @@ export function useBotConnection({
       audioQueueRef.current = undefined;
       startNewConversation();
     }
+    // IMPORTANT: adding deps to the array might break inspector
   }, [startNewConversation]);
 
   const replayConversation = useCallback(
