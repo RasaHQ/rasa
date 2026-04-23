@@ -8,10 +8,22 @@ intents:
   - mood_great
   - mood_unhappy
   - bot_challenge
+  - give_name
+slots:
+  user_name:         # This is the "bucket" in the bot's memory
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text     # AUTOMATION: This captures everything you type
+        intent: give_name   # ...but only when you are introducing yourself
 
 responses:
   utter_greet:
   - text: "Hey! How are you?"
+
+  # Add this so the bot can actually use the name it stored
+  utter_greet_with_name:
+  - text: "Nice to meet you, {user_name}!"
 
   utter_cheer_up:
   - text: "Here is something to cheer you up:"

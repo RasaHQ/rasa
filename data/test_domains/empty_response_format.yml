@@ -13,7 +13,7 @@ entities:
  - name
 
 responses:
-  utter_greet:
+
   utter_goodbye:
     - text: goodbye :(
   utter_default:
