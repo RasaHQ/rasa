@@ -139,6 +139,7 @@ export type EventMetadata = {
   tool_error_message?: string;
   parseData: unknown;
   agent_id?: string;
+  description?: string;
 };
 
 export type RawEvent = {

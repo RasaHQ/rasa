@@ -256,6 +256,9 @@ async def run_agent(
     agent_stack_frame = tracker.stack.find_agent_stack_frame_by_agent(
         agent_id=step.call
     )
+    agent_config = Configuration.get_instance().available_agents.get_agent_config(
+        step.call
+    )
 
     if (
         agent_stack_frame
@@ -300,7 +303,12 @@ async def run_agent(
         )
 
         # add the AgentStarted event to the list of final events
-        final_events.append(AgentStarted(step.call, step.flow_id))
+        agent_metadata: Dict[str, Any] = {}
+        if agent_config:
+            agent_metadata["description"] = agent_config.agent.description
+        final_events.append(
+            AgentStarted(step.call, step.flow_id, metadata=agent_metadata)
+        )
 
     structlogger.debug(
         "flow.step.run_agent.agent_input",
@@ -312,9 +320,7 @@ async def run_agent(
     )
 
     # send the input to the agent and wait for a response
-    protocol_type = get_protocol_type(
-        step, Configuration.get_instance().available_agents.get_agent_config(step.call)
-    )
+    protocol_type = get_protocol_type(step, agent_config)
     output: AgentOutput = await _call_agent_with_retry(
         agent_name=step.call,
         protocol_type=protocol_type,

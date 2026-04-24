@@ -7,6 +7,7 @@ import {
 } from "../../types";
 import { isUtterance } from "../../utils";
 import { ActionEventInfo } from "./ActionEventInfo";
+import { AgentEventInfo } from "./AgentEventInfo";
 import { BotMessageInfo } from "./BotMessageInfo";
 import { FlowEventInfo } from "./FlowEventInfo";
 import { McpToolExecutedEventInfo } from "./McpToolExecutedEventInfo";
@@ -39,6 +40,16 @@ function isMcpToolExecutedEvent(event: ConversationEvent): boolean {
   return event.conversationEventType === ConversationEventType.McpToolExecuted;
 }
 
+function isAgentEvent(event: ConversationEvent): boolean {
+  return [
+    ConversationEventType.AgentStarted,
+    ConversationEventType.AgentCompleted,
+    ConversationEventType.AgentCancelled,
+    ConversationEventType.AgentInterrupted,
+    ConversationEventType.AgentResumed,
+  ].includes(event.conversationEventType);
+}
+
 interface EventInfoProps {
   event: UnionEventType;
   onClose: () => void;
@@ -69,6 +80,10 @@ export const EventInfo = ({ event, onClose, flows }: EventInfoProps) => {
 
   if (isMcpToolExecutedEvent(event)) {
     return <McpToolExecutedEventInfo event={event} onClose={onClose} />;
+  }
+
+  if (isAgentEvent(event)) {
+    return <AgentEventInfo event={event} onClose={onClose} />;
   }
 
   return <PlainEventInfo event={event} onClose={onClose} />;

@@ -16,6 +16,7 @@ from rasa.agents.constants import (
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentOutput
 from rasa.agents.schemas.agent_input import AgentInput, AgentInputSlot
+from rasa.core.available_agents import AgentConfig, AgentInfo
 from rasa.core.constants import (
     ACTIVE_FLOW_METADATA_KEY,
     BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY,
@@ -2707,3 +2708,108 @@ def test_create_action_prediction_maps_all_metadata() -> None:
     assert payload[BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY] == "2023-10-27T10:00:00Z"
     assert payload[ACTIVE_FLOW_METADATA_KEY] == "flow-1"
     assert payload[STEP_ID_METADATA_KEY] == "step-1"
+
+
+# ============================================================================
+# Tests for agent event metadata enrichment
+# ============================================================================
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_run_agent_started_includes_description_in_metadata(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """AgentStarted metadata includes the agent description from config."""
+    agent_config = AgentConfig(
+        agent=AgentInfo(
+            name="car-research",
+            # this is the description of the agent we want in metadata
+            description="Researches car options",
+        ),
+    )
+    config_instance = mock_available_agents.return_value
+    config_instance.available_agents.get_agent_config.return_value = agent_config
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    flow_step_result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    agent_started_events = [
+        e
+        for e in flow_step_result.events
+        if isinstance(e, AgentStarted) and e.agent_id == "car-research"
+    ]
+    assert len(agent_started_events) == 1
+    assert agent_started_events[0].metadata["description"] == "Researches car options"
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_run_agent_started_metadata_empty_when_no_config(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """AgentStarted metadata has no description when config is absent."""
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    flow_step_result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    agent_started_events = [
+        e
+        for e in flow_step_result.events
+        if isinstance(e, AgentStarted) and e.agent_id == "car-research"
+    ]
+    assert len(agent_started_events) == 1
+    assert "description" not in (agent_started_events[0].metadata or {})

@@ -1,4 +1,4 @@
-import { Accordion, Box, Separator, Text } from "@chakra-ui/react";
+import { Accordion, Box, Heading, Separator, Text } from "@chakra-ui/react";
 import type { ConversationEvent, Flow } from "../../types";
 import { CommonEventInfo } from "./CommonEventInfo";
 import { DetailView } from "./DetailView";
@@ -14,19 +14,19 @@ export const FlowEventInfo = ({ event, flow, onClose }: FlowEventInfoProps) => {
   return (
     <DetailView title="Flow event" onClose={onClose}>
       <Box data-testid="event-slot-or-flow-name">
-        <Text fontWeight="bold" fontSize="0.875rem" mb="0.25rem">
+        <Heading size="md" mb="0.25rem">
           Name
-        </Text>
-        <Text fontSize="0.875rem" mb="0.5rem" wordBreak="break-all">
+        </Heading>
+        <Text size="md" mb="0.5rem" wordBreak="break-all">
           {flow?.name || event.flowId || "-"}
         </Text>
       </Box>
 
       <Box>
-        <Text fontWeight="bold" fontSize="0.875rem" mt="0.5rem" mb="0.25rem">
+        <Heading size="md" mt="0.5rem" mb="0.25rem">
           Description
-        </Text>
-        <Text fontSize="0.875rem" mb="0.5rem">
+        </Heading>
+        <Text size="md" mb="0.5rem">
           {flow?.description || "-"}
         </Text>
       </Box>
