@@ -801,6 +801,20 @@ Rasa Pro 3.15.0 (2025-11-26)
 ### Miscellaneous internal changes
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
 
+
+## [3.14.21] - 2026-04-24
+
+Rasa Pro 3.14.21 (2026-04-24)
+### Bugfixes
+- [#2738](https://github.com/rasahq/rasa-private/issues/2738): Fixed a bug where the validator was mutating the allowed values list of categorical slots in-place, causing `None` entries to accumulate in slots used across multiple flows via subflows. This corrupted the flow retrieval FAISS embeddings during training.
+- [#5047](https://github.com/rasahq/rasa-private/issues/5047): Fixed multi-agent flows looping back to an agent call when the top stack frame was **interrupted** instead of waiting for input, which could leave multiple agents active and fail graph execution. The loop-back shortcut now applies only when the agent frame is waiting for user input.
+- [#5137](https://github.com/rasahq/rasa-private/issues/5137): Fixed validation incorrectly rejecting custom ContextualResponseRephraser subclasses configured as nlg.type in endpoints.yml. The validator now resolves the class and checks inheritance instead of only accepting the literal string "rephrase".
+- [#5142](https://github.com/rasahq/rasa-private/issues/5142): Updated `PyJWT`, `werkzeug`, `aiohttp`, `orjson`, `pyasn1`, `requests`, and `ujson`to resolve security vulnerabilities.
+- [#5210](https://github.com/rasahq/rasa-private/issues/5210): Fixed tracing span attributes for LLM components that use model groups.
+  Spans now carry the correct model group ID and, for router groups, the representative model's attributes (preferring OpenAI when present for prompt token counting).
+  The `llm_is_router_group` attribute is also set on spans when a router group is active.
+
+
 ## [3.14.20] - 2026-04-02
 
 Rasa Pro 3.14.20 (2026-04-02)
