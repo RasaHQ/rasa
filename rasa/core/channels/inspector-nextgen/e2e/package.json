@@ -14,7 +14,7 @@
   "devDependencies": {
     "@playwright/test": "1.58.2",
     "@types/node": "24.0.10",
-    "dd-trace": "5.82.0",
-    "start-server-and-test": "2.1.3"
+    "dd-trace": "5.98.0",
+    "start-server-and-test": "2.1.4"
   }
 }
