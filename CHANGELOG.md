@@ -11,8 +11,8 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 <!-- TOWNCRIER -->
 
 ## [3.16.4] - 2026-04-17
-                        
-Rasa Pro 3.16.4 (2026-04-17)                             
+
+Rasa Pro 3.16.4 (2026-04-17)
 ### Bugfixes
 - [#5210](https://github.com/rasahq/rasa-private/issues/5210): Fixed tracing span attributes for LLM components that use model groups.
   Spans now carry the correct model group ID and, for router groups, the representative model's attributes (preferring OpenAI when present for prompt token counting).
@@ -21,8 +21,8 @@ Rasa Pro 3.16.4 (2026-04-17)
 
 
 ## [3.16.3] - 2026-04-09
-                        
-Rasa Pro 3.16.3 (2026-04-09)                             
+
+Rasa Pro 3.16.3 (2026-04-09)
 ### Improvements
 - [#5106](https://github.com/rasahq/rasa-private/issues/5106): Replaced the generic "Start the server from your IDE" message after `rasa tools init` with IDE-specific instructions for Claude Code, Cursor, VS Code, and JetBrains.
 - [#5123](https://github.com/rasahq/rasa-private/issues/5123): Added `rasa tools status` command that displays current project configuration and runtime readiness.
@@ -33,8 +33,8 @@ Rasa Pro 3.16.3 (2026-04-09)
 
 
 ## [3.16.2] - 2026-04-02
-                        
-Rasa Pro 3.16.2 (2026-04-02)                             
+
+Rasa Pro 3.16.2 (2026-04-02)
 ### Bugfixes
 - [#5109](https://github.com/rasahq/rasa-private/issues/5109): Fixed correction reset when a user answers the active collect slot and corrects another slot in the same turn.
 
@@ -42,8 +42,8 @@ Rasa Pro 3.16.2 (2026-04-02)
 
 
 ## [3.16.1] - 2026-04-01
-                        
-Rasa Pro 3.16.1 (2026-04-01)                             
+
+Rasa Pro 3.16.1 (2026-04-01)
 ### Bugfixes
 - [#5061](https://github.com/rasahq/rasa-private/issues/5061): Fixed three bugs in `ConcurrentRedisLockStore` that caused an `IndexError: deque index out of range` crash in the PII anonymization and deletion cron jobs under multi-replica deployments.
 
@@ -56,8 +56,8 @@ Rasa Pro 3.16.1 (2026-04-01)
 
 
 ## [3.16.0] - 2026-03-26
-                        
-Rasa Pro 3.16.0 (2026-03-26)                             
+
+Rasa Pro 3.16.0 (2026-03-26)
 ### Deprecations and Removals
 - [#4646](https://github.com/rasahq/rasa-private/issues/4646): Remove `HumanHandoff` command from the codebase and default prompt templates.
 - [#4766](https://github.com/rasahq/rasa-private/issues/4766): Remove generic `process_output` method from `AgentProtocol`. In ReAct / MCP agents, use `process_tool_output` for
@@ -197,7 +197,7 @@ Rasa Pro 3.16.0 (2026-03-26)
 
   Updated the default `pattern_human_handoff` flow to run `action_handoff_metric` before `utter_human_handoff_not_available`, so existing assistants automatically emit the metric when the human handoff pattern is used. If you have overridden `pattern_human_handoff` in your flows, you can add a step `action: action_handoff_metric` at the start of that flow to include those conversations in containment metrics.
 - [#4705](https://github.com/rasahq/rasa-private/issues/4705): Add support for multiple Audio Formats in Rasa. These are G.711 μ-law (legacy) along with Linear PCM 24kHz and Linear PCM 48kHz.
-- [#4720](https://github.com/rasahq/rasa-private/issues/4720): Extended support for Audio Formats, 
+- [#4720](https://github.com/rasahq/rasa-private/issues/4720): Extended support for Audio Formats,
   Updated Azure and Deepgram Automatic Speech Recognition (ASR) to support multiple audio formats. G.711 μ-law, Linear PCM 24kHz and Linear 48kHz.
   Updated Azure, Deepgram, and Cartesia Text to Speech (TTS) to support the same audio formats. Rime TTS only supports G.711 μ-law and Linear PCM 24kHz.
   Updated Jambonz and Audiocodes Stream Channel to use Linear PCM 24kHz audio when sending or receiving audio from the platform.
@@ -230,7 +230,7 @@ Rasa Pro 3.16.0 (2026-03-26)
 - [#2666](https://github.com/rasahq/rasa-private/issues/2666): The continue-interrupted pattern is now triggered after a knowledge (e.g. EnterpriseSearch) answer, so users are asked if they want to resume previously interrupted flows when returning from a search.
 - [#2667](https://github.com/rasahq/rasa-private/issues/2667): When an agent was interrupted and then resumed, it now gets reinvoked with the current context and a system instruction that it was interrupted and may use the new context or ask again. Previously, the agent only repeated its last message and did not run again.
 - [#3679](https://github.com/rasahq/rasa-private/issues/3679): Add `SessionPaused` event which purpose is to be triggered by external systems
-  when a session is paused. 
+  when a session is paused.
   It has the following properties:
   * `event` - which is always set to `session_paused`
   * `reason` - which describes why the session was paused
@@ -239,7 +239,7 @@ Rasa Pro 3.16.0 (2026-03-26)
   If `timestamp` is not provided, the current Unix timestamp of the Rasa Pro server
   will be used.
 
-  This event can be used to notify pipelines bout the pause state of a session, 
+  This event can be used to notify pipelines bout the pause state of a session,
   allowing them to take appropriate actions based on the session's status.
 
   To use this event, external systems should trigger it when a session is paused, via
@@ -344,7 +344,7 @@ Rasa Pro 3.16.0 (2026-03-26)
 - [#4770](https://github.com/rasahq/rasa-private/issues/4770): Channel specific silence_timeout can now be set in credentials file. Fixes the type error. If silence_timeout is not set the channel will use global value.
 - [#4859](https://github.com/rasahq/rasa-private/issues/4859): Stop silence timeout immediately when interruption is detected.
 - [#4869](https://github.com/rasahq/rasa-private/issues/4869): When an A2A task has status `input_required`, Rasa now populates `AgentOutput.structured_results` from both `task.artifacts` and DataParts in `task.status.message.parts`. Previously only the text message was returned and structured data was omitted, so clients can now process artifact data when the agent is waiting for user input.
-- [#4888](https://github.com/rasahq/rasa-private/issues/4888): Fix PII redaction of user or bot messages when slot values do not match the original message text. 
+- [#4888](https://github.com/rasahq/rasa-private/issues/4888): Fix PII redaction of user or bot messages when slot values do not match the original message text.
   This can occur when the original messages are multi-line or TTS-style bot read-backs.
 - [#4904](https://github.com/rasahq/rasa-private/issues/4904): Update setuptools to 80.10.2 to address vulnerability https://osv.dev/vulnerability/DEBIAN-CVE-2026-23949.
   Replaced randomname with duoname (no dependencies) library.
@@ -384,9 +384,20 @@ Rasa Pro 3.16.0 (2026-03-26)
 - [#3690](https://github.com/rasahq/rasa-private/issues/3690), [#4072](https://github.com/rasahq/rasa-private/issues/4072), [#4206](https://github.com/rasahq/rasa-private/issues/4206), [#4391](https://github.com/rasahq/rasa-private/issues/4391), [#4432](https://github.com/rasahq/rasa-private/issues/4432), [#4434](https://github.com/rasahq/rasa-private/issues/4434), [#4482](https://github.com/rasahq/rasa-private/issues/4482), [#4483](https://github.com/rasahq/rasa-private/issues/4483), [#4501](https://github.com/rasahq/rasa-private/issues/4501), [#4505](https://github.com/rasahq/rasa-private/issues/4505), [#4521](https://github.com/rasahq/rasa-private/issues/4521), [#4530](https://github.com/rasahq/rasa-private/issues/4530), [#4538](https://github.com/rasahq/rasa-private/issues/4538), [#4564](https://github.com/rasahq/rasa-private/issues/4564), [#4591](https://github.com/rasahq/rasa-private/issues/4591), [#4630](https://github.com/rasahq/rasa-private/issues/4630), [#4643](https://github.com/rasahq/rasa-private/issues/4643), [#4647](https://github.com/rasahq/rasa-private/issues/4647), [#4666](https://github.com/rasahq/rasa-private/issues/4666), [#4723](https://github.com/rasahq/rasa-private/issues/4723), [#4731](https://github.com/rasahq/rasa-private/issues/4731), [#4742](https://github.com/rasahq/rasa-private/issues/4742), [#4827](https://github.com/rasahq/rasa-private/issues/4827), [#4899](https://github.com/rasahq/rasa-private/issues/4899)
 
 
+## [3.15.21] - 2026-04-24
+
+Rasa Pro 3.15.21 (2026-04-24)
+### Bugfixes
+- [#2738](https://github.com/rasahq/rasa-private/issues/2738): Fixed a bug where the validator was mutating the allowed values list of categorical slots in-place, causing `None` entries to accumulate in slots used across multiple flows via subflows. This corrupted the flow retrieval FAISS embeddings during training.
+- [#5047](https://github.com/rasahq/rasa-private/issues/5047): Fixed multi-agent flows looping back to an agent call when the top stack frame was **interrupted** instead of waiting for input, which could leave multiple agents active and fail graph execution. The loop-back shortcut now applies only when the agent frame is waiting for user input.
+- [#5210](https://github.com/rasahq/rasa-private/issues/5210): Fixed tracing span attributes for LLM components that use model groups.
+  Spans now carry the correct model group ID and, for router groups, the representative model's attributes (preferring OpenAI when present for prompt token counting).
+  The `llm_is_router_group` attribute is also set on spans when a router group is active.
+
+
 ## [3.15.20] - 2026-04-10
-                         
-Rasa Pro 3.15.20 (2026-04-10)                              
+
+Rasa Pro 3.15.20 (2026-04-10)
 ### Bugfixes
 - [#5111](https://github.com/rasahq/rasa-private/issues/5111): When interruptions are ENABLED, user message should be queued for processing only if it passes interruption criteria.
 - [#5125](https://github.com/rasahq/rasa-private/issues/5125): If interruptions are disabled, user message should be queued only if user speaks during collect step utterance.
@@ -410,8 +421,8 @@ Rasa Pro 3.15.20 (2026-04-10)
 
 
 ## [3.15.19] - 2026-04-02
-                         
-Rasa Pro 3.15.19 (2026-04-02)                              
+
+Rasa Pro 3.15.19 (2026-04-02)
 ### Improvements
 - [#5009](https://github.com/rasahq/rasa-private/issues/5009): Declared `safetensors` and `keras` as optional NLU extras (`pip install 'rasa-pro[nlu]'` or `full`), so minimal installs no longer pull them in directly. `regex` is also declared optional and listed under those extras for consistency with `WhitespaceTokenizer`, but it remains installed on most minimal installs because the base dependency `tiktoken` (used by the LLM stack) depends on `regex`.
 
@@ -435,12 +446,12 @@ Rasa Pro 3.15.19 (2026-04-02)
 
 
 ## [3.15.18] - 2026-03-16
-                         
-Rasa Pro 3.15.18 (2026-03-16)                              
+
+Rasa Pro 3.15.18 (2026-03-16)
 ### Bugfixes
 - [#2673](https://github.com/rasahq/rasa-private/issues/2673): Restarted task-oriented ReAct agents no longer exit immediately. When an agent is restarted, the previous run's user/assistant messages are now marked in the conversation so the model does not set slots from them; the system prompt instructs the agent to treat the current interaction as a fresh start for slot collection.
 - [#4869](https://github.com/rasahq/rasa-private/issues/4869): When an A2A task has status `input_required`, Rasa now populates `AgentOutput.structured_results` from both `task.artifacts` and DataParts in `task.status.message.parts`. Previously only the text message was returned and structured data was omitted, so clients can now process artifact data when the agent is waiting for user input.
-- [#4888](https://github.com/rasahq/rasa-private/issues/4888): Fix PII redaction of user or bot messages when slot values do not match the original message text. 
+- [#4888](https://github.com/rasahq/rasa-private/issues/4888): Fix PII redaction of user or bot messages when slot values do not match the original message text.
   This can occur when the original messages are multi-line or TTS-style bot read-backs.
 - [#4902](https://github.com/rasahq/rasa-private/issues/4902): Update setuptools to 80.10.2 to address vulnerability https://osv.dev/vulnerability/DEBIAN-CVE-2026-23949.
   Replaced randomname with duoname (no dependencies) library.
@@ -448,8 +459,8 @@ Rasa Pro 3.15.18 (2026-03-16)
 
 
 ## [3.15.17] - 2026-03-11
-                         
-Rasa Pro 3.15.17 (2026-03-11)                              
+
+Rasa Pro 3.15.17 (2026-03-11)
 ### Deprecations and Removals
 - [#4675](https://github.com/rasahq/rasa-private/issues/4675): Removed an explicit deprecation warning for the license varible `RASA_PRO_LICENSE` to provide clarity that we will continue to support both this and the newer `RASA_LICENSE` variable for the forseeable future.
 
@@ -466,21 +477,21 @@ Rasa Pro 3.15.17 (2026-03-11)
   SQL tracker store behavior is aligned with MongoDB, Redis and DynamoDB (overwrite semantics), and anonymization with SQL
   completes in one atomic operation without a separate delete/save sequence.
 - [#4864](https://github.com/rasahq/rasa-private/issues/4864): Prevent `JsonPatchConflict` exceptions raised when tracker is split in sub-sessions during PII anonymization cron jobs.
-  Replace usage of a utility function that was recreating tracker objects using sub-sessions with an approach retrieving 
+  Replace usage of a utility function that was recreating tracker objects using sub-sessions with an approach retrieving
   list of events for each sub-session instead.
 
 
 ## [3.15.16] - 2026-03-06
-                         
-Rasa Pro 3.15.16 (2026-03-06)                              
+
+Rasa Pro 3.15.16 (2026-03-06)
 ### Bugfixes
 - [#2669](https://github.com/rasahq/rasa-private/issues/2669): When a flow had Agent A → flow steps → Agent B and the user restarted Agent A while Agent B was already started (then interrupted), execution after the restarted Agent A completed would jump back to Agent B and skip the flow steps between A and B. Flow steps between agents are now executed correctly, and the previously interrupted Agent B is resumed instead of started from scratch.
 - [#4770](https://github.com/rasahq/rasa-private/issues/4770): Channel specific silence_timeout can now be set in credentials file. Fixes the type error. If silence_timeout is not set the channel will use global value.
 
 
 ## [3.15.15] - 2026-03-03
-                         
-Rasa Pro 3.15.15 (2026-03-03)                              
+
+Rasa Pro 3.15.15 (2026-03-03)
 ### Bugfixes
 - [#4680](https://github.com/rasahq/rasa-private/issues/4680): - **Kafka event broker background polling thread caused test hangs and didn't allow the process to exit:** The background poll thread is now a daemon thread, so the process can terminate when the broker is not closed explicitly (e.g. in tests or after an abrupt exit). The `close()` method uses a 5-second join timeout so it does not block forever if the poll thread is stuck (e.g. when the broker is unreachable).
   - **Background polling:** The poll loop now runs for the whole lifetime of the broker, even before the producer is created. When the producer is not ready, the loop sleeps briefly instead of exiting. This allows the IAM OAuth callback to be triggered when using SASL_SSL with AWS IAM (MSK), so tokens can be refreshed as the library calls `poll()`.
@@ -791,8 +802,8 @@ Rasa Pro 3.15.0 (2025-11-26)
 - [#3325](https://github.com/rasahq/rasa-private/issues/3325), [#3442](https://github.com/rasahq/rasa-private/issues/3442), [#3467](https://github.com/rasahq/rasa-private/issues/3467), [#3505](https://github.com/rasahq/rasa-private/issues/3505), [#3563](https://github.com/rasahq/rasa-private/issues/3563), [#3945](https://github.com/rasahq/rasa-private/issues/3945)
 
 ## [3.14.20] - 2026-04-02
-                         
-Rasa Pro 3.14.20 (2026-04-02)                              
+
+Rasa Pro 3.14.20 (2026-04-02)
 ### Improvements
 - [#5009](https://github.com/rasahq/rasa-private/issues/5009): Declared `safetensors` and `keras` as optional NLU extras (`pip install 'rasa-pro[nlu]'` or `full`), so minimal installs no longer pull them in directly. `regex` is also declared optional and listed under those extras for consistency with `WhitespaceTokenizer`, but it remains installed on most minimal installs because the base dependency `tiktoken` (used by the LLM stack) depends on `regex`.
 
@@ -814,20 +825,20 @@ Rasa Pro 3.14.20 (2026-04-02)
 
 
 ## [3.14.19] - 2026-03-16
-                         
-Rasa Pro 3.14.19 (2026-03-16)                              
+
+Rasa Pro 3.14.19 (2026-03-16)
 ### Bugfixes
 - [#2673](https://github.com/rasahq/rasa-private/issues/2673): Restarted task-oriented ReAct agents no longer exit immediately. When an agent is restarted, the previous run's user/assistant messages are now marked in the conversation so the model does not set slots from them; the system prompt instructs the agent to treat the current interaction as a fresh start for slot collection.
 - [#4869](https://github.com/rasahq/rasa-private/issues/4869): When an A2A task has status `input_required`, Rasa now populates `AgentOutput.structured_results` from both `task.artifacts` and DataParts in `task.status.message.parts`. Previously only the text message was returned and structured data was omitted, so clients can now process artifact data when the agent is waiting for user input.
-- [#4888](https://github.com/rasahq/rasa-private/issues/4888): Fix PII redaction of user or bot messages when slot values do not match the original message text. 
+- [#4888](https://github.com/rasahq/rasa-private/issues/4888): Fix PII redaction of user or bot messages when slot values do not match the original message text.
   This can occur when the original messages are multi-line or TTS-style bot read-backs.
 - [#4905](https://github.com/rasahq/rasa-private/issues/4905): Update setuptools to 80.10.2 to address vulnerability https://osv.dev/vulnerability/DEBIAN-CVE-2026-23949.
   Replaced randomname with duoname (no dependencies) library.
 
 
 ## [3.14.18] - 2026-03-11
-                         
-Rasa Pro 3.14.18 (2026-03-11)                              
+
+Rasa Pro 3.14.18 (2026-03-11)
 ### Deprecations and Removals
 - [#4675](https://github.com/rasahq/rasa-private/issues/4675): Removed an explicit deprecation warning for the license varible `RASA_PRO_LICENSE` to provide clarity that we will continue to support both this and the newer `RASA_LICENSE` variable for the forseeable future.
 
@@ -845,13 +856,13 @@ Rasa Pro 3.14.18 (2026-03-11)
   SQL tracker store behavior is aligned with MongoDB, Redis and DynamoDB (overwrite semantics), and anonymization with SQL
   completes in one atomic operation without a separate delete/save sequence.
 - [#4864](https://github.com/rasahq/rasa-private/issues/4864): Prevent `JsonPatchConflict` exceptions raised when tracker is split in sub-sessions during PII anonymization cron jobs.
-  Replace usage of a utility function that was recreating tracker objects using sub-sessions with an approach retrieving 
+  Replace usage of a utility function that was recreating tracker objects using sub-sessions with an approach retrieving
   list of events for each sub-session instead.
 
 
 ## [3.14.17] - 2026-03-03
-                         
-Rasa Pro 3.14.17 (2026-03-03)                              
+
+Rasa Pro 3.14.17 (2026-03-03)
 ### Bugfixes
 - [#4680](https://github.com/rasahq/rasa-private/issues/4680): - **Kafka event broker background polling thread caused test hangs and didn't allow the process to exit:** The background poll thread is now a daemon thread, so the process can terminate when the broker is not closed explicitly (e.g. in tests or after an abrupt exit). The `close()` method uses a 5-second join timeout so it does not block forever if the poll thread is stuck (e.g. when the broker is unreachable).
   - **Background polling:** The poll loop now runs for the whole lifetime of the broker, even before the producer is created. When the producer is not ready, the loop sleeps briefly instead of exiting. This allows the IAM OAuth callback to be triggered when using SASL_SSL with AWS IAM (MSK), so tokens can be refreshed as the library calls `poll()`.
