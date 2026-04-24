@@ -10,6 +10,17 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.16.5] - 2026-04-24
+                        
+Rasa Pro 3.16.5 (2026-04-24)                             
+### Bugfixes
+- [#2738](https://github.com/rasahq/rasa-private/issues/2738): Fixed a bug where the validator was mutating the allowed values list of categorical slots in-place, causing `None` entries to accumulate in slots used across multiple flows via subflows. This corrupted the flow retrieval FAISS embeddings during training.
+- [#5047](https://github.com/rasahq/rasa-private/issues/5047): Fixed multi-agent flows looping back to an agent call when the top stack frame was **interrupted** instead of waiting for input, which could leave multiple agents active and fail graph execution. The loop-back shortcut now applies only when the agent frame is waiting for user input.
+
+### Miscellaneous internal changes
+- [#4639](https://github.com/rasahq/rasa-private/issues/4639)
+
+
 ## [3.16.4] - 2026-04-17
 
 Rasa Pro 3.16.4 (2026-04-17)
