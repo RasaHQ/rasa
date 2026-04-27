@@ -1,1 +1,9 @@
 /.github/workflows/ @RasaHQ/infrastructure-squad
+
+# Rasa MCP Tools / Copilot tooling
+/rasa/cli/tools/ @RasaHQ/team-swift
+/rasa/cli/arguments/tools.py @RasaHQ/team-swift
+/rasa/core/channels/inspector-nextgen @RasaHQ/team-swift
+/rasa/builder/ @RasaHQ/team-swift
+/tests/cli/tools/ @RasaHQ/team-swift
+/tests/cli/arguments/test_tools.py @RasaHQ/team-swift
