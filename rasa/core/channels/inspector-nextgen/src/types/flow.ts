@@ -61,8 +61,15 @@ type FlowNodeSetSlots = FlowNodeBase & {
   type: FlowNodeType.SetSlots;
 };
 
-type FlowNodeCall = FlowNodeBase & {
+export enum CallType {
+  Flow,
+  Agent,
+  Tool,
+}
+
+export type FlowNodeCall = FlowNodeBase & {
   type: FlowNodeType.Call;
+  callType: CallType;
 };
 
 export type FlowNode =
@@ -107,4 +114,3 @@ export enum NodeType {
   SET_SLOTS = "SET_SLOTS",
   CALL = "CALL",
 }
-

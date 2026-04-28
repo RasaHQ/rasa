@@ -28,6 +28,7 @@ export const useConversationData = () => {
       const { nodes: newNodes, edges: newEdges } = createFlowNodesFromFlowSteps(
         flow.steps,
         flowId,
+        Object.keys(botData?.flows),
       );
       allFlows.push({
         id: flowId,

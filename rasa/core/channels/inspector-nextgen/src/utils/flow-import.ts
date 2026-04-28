@@ -7,6 +7,7 @@ import {
   FlowNodeType,
   NodeType,
   NodeConditionSubType,
+  CallType,
 } from "../types";
 import {
   isFlowStepThen,
@@ -173,10 +174,25 @@ export function buildFlowStructureFromSteps({
   });
 }
 
+function stepCallType(
+  step: PreNodeFlowStep,
+  flowNamesList?: string[],
+): CallType {
+  const flowName = flowNamesList?.find((name: string) => name === step.call);
+  if (flowName) {
+    return CallType.Flow;
+  }
+  if (step.mcpServer) {
+    return CallType.Tool;
+  }
+  return CallType.Agent;
+}
+
 // Modified from Studio
 function createFlowNodeFromStep(
   step: PreNodeFlowStep & { id: string },
   logicNodeIdsPerConditionStep: Record<string, string>,
+  flowNamesList?: string[],
 ): FlowNode | undefined {
   const node = {
     id: step.id,
@@ -215,12 +231,16 @@ function createFlowNodeFromStep(
         type: FlowNodeType.SetSlots,
         label: "Set Slots",
       };
-    case NodeType.CALL:
+    case NodeType.CALL: {
+      const label = `Call ${step.call}`;
+      const callType = stepCallType(step, flowNamesList);
       return {
         ...node,
         type: FlowNodeType.Call,
-        label: "Call a flow and return",
+        label,
+        callType,
       };
+    }
     case NodeType.LOGIC:
       return {
         ...node,
@@ -251,6 +271,7 @@ function createFlowNodeFromStep(
 export function createFlowNodesFromFlowSteps(
   steps: FlowStep[],
   flowName: string,
+  flowNamesList?: string[],
 ): {
   nodes: FlowNode[];
   edges: FlowEdge[];
@@ -272,7 +293,7 @@ export function createFlowNodesFromFlowSteps(
       continue;
     }
 
-    const node = createFlowNodeFromStep(step, logicNodeIdsPerConditionStep);
+    const node = createFlowNodeFromStep(step, logicNodeIdsPerConditionStep, flowNamesList);
     if (node && node.type === FlowNodeType.Logic) {
       const conditionStepIds = Object.keys(conditionStepSources).filter(
         (conditionStepId) => conditionStepSources[conditionStepId] === step.id,
@@ -357,4 +378,3 @@ export function createFlowNodesFromFlowSteps(
     edges: [startEdge, ...edgesToCreate],
   };
 }
-

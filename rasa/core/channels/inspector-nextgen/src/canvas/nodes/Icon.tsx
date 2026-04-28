@@ -9,28 +9,32 @@ import {
   CommentXMark,
   Icon as IconComponent,
   Question,
+  Robot,
   Square,
+  Wrench,
 } from "../../Icon";
-import { FlowNodeType } from "../../types";
+import { CallType, FlowNodeType, type FlowNode } from "../../types";
 
 interface Props {
-  type: FlowNodeType | "invalid";
+  node: FlowNode;
 }
 
-export const Icon = ({ type }: Props) => {
-  const bgColor = getBackgroundColor(type);
+export const Icon = ({ node }: Props) => {
+  const type = node.type;
+  const bgColor = getBackgroundColor(node);
   const color = getColor(type);
   const containerSx = {
     borderRadius: "0.5rem",
     color: color[0],
-    p: "0.25rem",
     bg: bgColor[0],
-    width: "20px",
+    w: "1.875rem",
+    h: "1.875rem",
     justifyContent: "center",
+    alignItems: "center",
   };
   return (
     <Flex css={containerSx}>
-      <IconComponent icon={getIcon(type)} />
+      <IconComponent icon={getIcon(node)} size="lg" />
     </Flex>
   );
 };
@@ -42,8 +46,8 @@ const getColor = (type: FlowNodeType | "invalid") => {
   return ["rasaNeutral.50"];
 };
 
-const getBackgroundColor = (type: FlowNodeType | "invalid") => {
-  switch (type) {
+const getBackgroundColor = (node: FlowNode) => {
+  switch (node.type) {
     case FlowNodeType.CollectInformation:
       return ["rasaGreen.800"];
     case FlowNodeType.Message:
@@ -56,17 +60,22 @@ const getBackgroundColor = (type: FlowNodeType | "invalid") => {
     case FlowNodeType.Condition:
     case FlowNodeType.Logic:
       return ["rasaPink.900"];
-    case "invalid":
+    case undefined:
       return ["rasaRed.800"];
+    case FlowNodeType.Call: {
+      if (node.callType === CallType.Flow) {
+        return ["rasawebDeepPurple.800"];
+      }
+      return ["rasawebLavender.700"];
+    }
     case FlowNodeType.Link:
-    case FlowNodeType.Call:
     default:
       return ["rasawebDeepPurple.800"];
   }
 };
 
-const getIcon = (type: FlowNodeType | "invalid") => {
-  switch (type) {
+const getIcon = (node: FlowNode) => {
+  switch (node.type) {
     case FlowNodeType.CollectInformation:
       return Question;
     case FlowNodeType.Message:
@@ -78,11 +87,17 @@ const getIcon = (type: FlowNodeType | "invalid") => {
       return CodeMerge;
     case FlowNodeType.SetSlots:
       return CheckToSlot;
-    case FlowNodeType.Call:
-      return ArrowRightArrowLeft;
+    case FlowNodeType.Call: {
+      if (node.callType === CallType.Flow) {
+        return ArrowRightArrowLeft;
+      } else if (node.callType === CallType.Agent) {
+        return Robot;
+      }
+      return Wrench;
+    }
     case FlowNodeType.Start:
       return Square;
-    case "invalid":
+    case undefined:
       return CommentXMark;
     case FlowNodeType.Link:
     default:

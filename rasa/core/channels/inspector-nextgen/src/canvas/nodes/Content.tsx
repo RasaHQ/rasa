@@ -21,7 +21,7 @@ export const Content = ({ node }: Props) => {
   };
 
   const textSx = {
-    ml: "0.5rem",
+    ml: "0.75rem",
     wordBreak: "break-word",
     display: "-webkit-box",
     "-webkit-line-clamp": "3",
@@ -31,7 +31,7 @@ export const Content = ({ node }: Props) => {
 
   return (
     <Flex css={containerSx}>
-      <NodeIcon type={data.type} />
+      <NodeIcon node={data} />
       <Text size="xs" css={textSx}>
         {extractNodeLabel(data)}
       </Text>

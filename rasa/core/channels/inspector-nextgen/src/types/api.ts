@@ -43,6 +43,7 @@ export interface FlowStep {
   resetAfterFlowEnds?: boolean;
   rejections?: FlowCollectStepRejection[];
   next?: FlowStep[] | string | FlowStepCondition[];
+  mcpServer?: string;
 }
 
 export function isFlowStep(
@@ -128,6 +129,7 @@ const baseStepSchema = z
     silence_timeout: z.number(),
     reset_after_flow_ends: z.boolean(),
     description: z.string(),
+    mcp_server: z.string(),
   })
   .partial();
 
@@ -212,6 +214,12 @@ const stepSchema: z.ZodType<Step> = baseStepSchema
         silenceTimeout: step.silence_timeout,
       };
     }
+    if (step.call && step.mcp_server) {
+      return {
+        ...transformedStep,
+        mcpServer: step.mcp_server,
+      };
+    }
     return transformedStep;
   });
 
@@ -267,4 +275,3 @@ export const BotDataSchema = z.object({
   flows: z.record(z.string(), flowSchema),
   assistant_id: z.string().nullish(),
 });
-
