@@ -194,7 +194,10 @@ reach EOL, by using the `ALREADY_ALERTED_PYTHON_VERSIONS` repository variable.
 Triggered upon failures in `Continous Integration Tests` in PRs, if asked for assistance via `@claude <message>` comment (for example: "@claude Analyse and fix failures in this PR").
 
 ### E2E tests on N26 customer-like bot
-Triggered on RC creation (can also be triggered manually on-demand if required), to run e2e tests on N26 customer-like bot, to check for regressions.
+Runs e2e tests on N26 customer-like bot, to check for regressions. Triggered:
+1. Weekly: 1am UTC on Sundays
+2. On RC1 creation
+3. Ad-hoc/manually, if required.
 
 ## Actions
 In order to remove duplications in the CI workflow steps actions were packaged using [composite actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action).
