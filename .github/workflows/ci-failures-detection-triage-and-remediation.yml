@@ -1,0 +1,569 @@
+name: CI Failures Detection, Triage, and Remediation
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # 2 AM UTC daily
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-main
+  cancel-in-progress: true
+
+env:
+  CLAUDE_CODE_VERSION: '2.1.119'
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  nightly-maintenance:
+    runs-on: warp-ubuntu-latest-x64-2x
+    timeout-minutes: 30
+
+    steps:
+      - name: Check for previous-day CI failures and existing maintenance PRs
+        id: check
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd #v8.0.0
+        with:
+          retries: 3
+          retry-exempt-status-codes: 401,403
+          script: |
+            const owner = context.repo.owner
+            const repo  = context.repo.repo
+
+            const listRuns = (status) => github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id: 'ci-on-push.yml', branch: 'main', status, per_page: 30,
+            }).then(r => r.data.workflow_runs)
+
+            // Rolling 24-hour cutoff — aligns with the daily schedule.
+            const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000)
+
+            // 1. Any unresolved failures on main in the last 24 hours?
+            const failedRecently = (await listRuns('failure')).filter(r => new Date(r.created_at) >= cutoff)
+            if (failedRecently.length === 0) {
+              console.log('No CI failures on main in the last 24 hours — nothing to do.')
+              core.setOutput('should_run', 'false')
+              return
+            }
+
+            // 2. Were those failures followed by a successful run (i.e. already fixed)?
+            const latestFailure = new Date(Math.max(...failedRecently.map(r => new Date(r.created_at))))
+            const fixedAlready  = (await listRuns('success')).some(r => new Date(r.created_at) > latestFailure)
+            if (fixedAlready) {
+              console.log('Failures already followed by a successful run — nothing to do.')
+              core.setOutput('should_run', 'false')
+              return
+            }
+
+            // 3. Already have an open CI-fix PR (claude-authored or manually labelled)?
+            const openPRs = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 })
+            if (openPRs.some(pr => pr.head.ref.startsWith('claude-fix-ci-nightly-'))) {
+              console.log('Open Claude maintenance PR already exists — nothing to do.')
+              core.setOutput('should_run', 'false')
+              return
+            }
+            if (openPRs.some(pr => pr.labels.some(l => l.name === 'CI-fix'))) {
+              console.log('Open PR with CI-fix label already exists — nothing to do.')
+              core.setOutput('should_run', 'false')
+              return
+            }
+
+            const runs = failedRecently.slice(0, 5)
+            console.log(`Analysing ${runs.length} failed run(s): ${runs.map(r => r.id).join(', ')}`)
+            core.setOutput('should_run', 'true')
+            core.setOutput('run_ids', JSON.stringify(runs.map(r => r.id)))
+
+      - name: Gather failure logs from failed runs
+        if: steps.check.outputs.should_run == 'true'
+        id: failure-context
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd #v8.0.0
+        with:
+          retries: 3
+          retry-exempt-status-codes: 401,403
+          script: |
+            const owner  = context.repo.owner
+            const repo   = context.repo.repo
+            const runIds = JSON.parse('${{ steps.check.outputs.run_ids }}')
+
+            const result = { failedRuns: [] }
+
+            for (const runId of runIds) {
+              const jobs       = (await github.rest.actions.listJobsForWorkflowRun({ owner, repo, run_id: runId, per_page: 100 })).data.jobs
+              const failedJobs = jobs.filter(j => j.conclusion === 'failure')
+
+              const runData = { runId, failedJobs: [] }
+              for (const job of failedJobs) {
+                const log = await github.rest.actions.downloadJobLogsForWorkflowRun({ owner, repo, job_id: job.id })
+
+                // Normalize: Buffer→UTF-8, strip ANSI escapes, strip GHA ISO-8601 timestamps.
+                // Without this, grep/awk patterns silently find nothing because every line
+                // starts with a timestamp and ANSI codes wrap keywords like ERROR/FAILED.
+                const raw = Buffer.isBuffer(log.data) ? log.data.toString('utf8') : String(log.data)
+                const logData = raw
+                  .replace(/\x1b\[[0-9;]*[mGKHF]/g, '')          // ANSI colour/cursor codes
+                  .replace(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z /gm, '') // GHA timestamps
+
+                // Stage 1: GHA step annotations (::error:: lines)
+                const { stdout: annotations } = await exec.getExecOutput(
+                  'grep', ['-E', '^::error::', '-'],
+                  { input: logData, ignoreReturnCode: true }
+                )
+
+                // Stage 2: pytest-structured extraction vs generic grep fallback
+                const isPytest = logData.includes('=== FAILURES ===') || logData.includes('=== short test summary info ===')
+                let structured = ''
+
+                if (isPytest) {
+                  // 2a. Short test summary — compact FAILED/PASSED list, highest signal-to-noise
+                  const { stdout: summary } = await exec.getExecOutput(
+                    'awk', [
+                      '/=== short test summary info ===/{in_s=1;next} in_s&&/^=== /{in_s=0} in_s{print}',
+                      '-',
+                    ],
+                    { input: logData, ignoreReturnCode: true }
+                  )
+                  // 2b. Last FAILURES section, capped at 100 lines.
+                  //     Resets on each new FAILURES header so only the final one is kept.
+                  const { stdout: failures } = await exec.getExecOutput(
+                    'awk', [
+                      '/=== FAILURES ===/{in_f=1;n=0;next} in_f&&/^=== /{in_f=0} in_f{lines[++n]=$0} END{s=(n>100?n-99:1);for(i=s;i<=n;i++)print lines[i]}',
+                      '-',
+                    ],
+                    { input: logData, ignoreReturnCode: true }
+                  )
+                  structured = [summary.trim(), failures.trim()].filter(Boolean).join('\n')
+                } else {
+                  // 2c. Non-pytest fallback: whole-word grep with context
+                  const { stdout: grepOut } = await exec.getExecOutput(
+                    'grep', [
+                      '-iwE', '-B', '5', '-A', '5',
+                      'ERROR|FAILED|exception|assert|timeout|ECONNRESET|Killed|OOM|No space',
+                      '-',
+                    ],
+                    { input: logData, ignoreReturnCode: true }
+                  )
+                  structured = grepOut
+                }
+
+                const combined = [annotations.trim(), structured.trim()].filter(Boolean).join('\n')
+                const errorLog = (await exec.getExecOutput('tail', ['-n', '50'], { input: combined })).stdout
+
+                runData.failedJobs.push({
+                  jobName: job.name,
+                  failedSteps: job.steps.filter(s => s.conclusion === 'failure').map(s => s.name),
+                  logs: errorLog,
+                })
+              }
+              result.failedRuns.push(runData)
+            }
+
+            console.log(`Gathered logs for ${result.failedRuns.length} run(s), ${result.failedRuns.reduce((n, r) => n + r.failedJobs.length, 0)} failed job(s) total.`)
+            return result
+
+      - name: Check out main
+        if: steps.check.outputs.should_run == 'true'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: main
+          # To keep context minimal, checkout only what's strictly required
+          sparse-checkout: |
+            rasa/**
+            test*/**
+            data/**
+            tools/**
+            stubs/**
+            examples/**
+            .github/actions/setup-python-env/**
+            .github/actions/test-prerequisites/**
+            scripts/poetry-version.sh
+            Makefile
+            .github/poetry_version.txt
+            makefile_vars
+            Makefile.docker
+            pyproject.toml
+            poetry.lock
+          # cone-mode: false — required because patterns include globs (test*/**) and
+          # individual root files (pyproject.toml, Makefile). Cone mode only accepts
+          # plain directory paths, and passes patterns to git verbatim otherwise.
+          sparse-checkout-cone-mode: false
+          # In case of true-positives, claude-code tries to find
+          # causing commit. So not doing shallow-clone (default fetch-depth: 1),
+          # but not fetching full history (fetch-depth: 0) either, to keep context
+          # size reasonable. It's likely that failure is due to a recent commit.
+          fetch-depth: 10
+
+      - name: Set git identity and configure push authentication
+        if: steps.check.outputs.should_run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name  "claude[bot]"
+          git config --global user.email "claude[bot]@users.noreply.github.com"
+          # Configure git to authenticate via GitHub CLI without persisting the token in the remote URL.
+          gh auth setup-git
+
+      - name: Create fix branch
+        if: steps.check.outputs.should_run == 'true'
+        run: |
+          BRANCH="claude-fix-ci-nightly-$(date -u +%Y%m%d-%H%M)-${{ github.run_id }}"
+          git checkout -b "${BRANCH}"
+          echo "FIX_BRANCH=${BRANCH}" >> "${GITHUB_ENV}"
+          echo "TARGET_BRANCH=main"   >> "${GITHUB_ENV}"
+
+      - name: Gather recent commits to main
+        if: steps.check.outputs.should_run == 'true'
+        run: |
+          {
+            echo "RECENT_COMMITS<<EOF"
+            git log --oneline --no-decorate -n 10 --first-parent
+            echo "EOF"
+          } >> "${GITHUB_ENV}"
+
+      - name: Install git-push guardrail
+        if: steps.check.outputs.should_run == 'true'
+        run: |
+          cat > .git/hooks/pre-push <<'HOOK'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          if [[ -z "${FIX_BRANCH:-}" || -z "${TARGET_BRANCH:-}" ]]; then
+            echo "FIX_BRANCH/TARGET_BRANCH not set; refusing to push." && exit 1
+          fi
+          current="$(git rev-parse --abbrev-ref HEAD)"
+          if [[ "$current" != "${FIX_BRANCH}" ]]; then
+            echo "Wrong branch ${current}. Expected: ${FIX_BRANCH}." && exit 1
+          fi
+          allowed="refs/heads/${FIX_BRANCH}"
+          blocked="refs/heads/${TARGET_BRANCH}"
+          while read -r _lref _lsha remote_ref _rsha; do
+            [[ -z "${remote_ref:-}" ]] && continue
+            [[ "$remote_ref" == "$blocked" ]] && echo "Refusing push to ${TARGET_BRANCH}." && exit 1
+            [[ "$remote_ref" != "$allowed" ]] && echo "Refusing push to ${remote_ref}; only ${allowed} is allowed." && exit 1
+          done
+          # Allowed-path check: only permit maintenance-safe paths to be pushed.
+          changed="$(git diff --name-only "${TARGET_BRANCH}..HEAD" 2>/dev/null || true)"
+          if [[ -n "$changed" ]]; then
+            allowed_re='^(tests?[^/]*/|data/|tools/|stubs/|examples/|\.github/actions/|rasa/([^/]+/)*tests/)'
+            disallowed="$(echo "$changed" | grep -Ev "$allowed_re" || true)"
+            if [[ -n "$disallowed" ]]; then
+              echo "Refusing push: only test/fixture/infra paths may be modified."
+              echo "Disallowed paths:"
+              echo "$disallowed"
+              exit 1
+            fi
+          fi
+          HOOK
+          chmod +x .git/hooks/pre-push
+
+      - name: Install dependencies
+        if: steps.check.outputs.should_run == 'true'
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: '3.10'
+
+      - name: Load cached claude-code
+        if: steps.check.outputs.should_run == 'true'
+        id: claude-code-cache
+        uses: WarpBuilds/cache@8f10197bad216ec3a6ba6188e7e41e5f52f894cc # v1.4.7
+        with:
+          key: claude-code-version-${{ env.CLAUDE_CODE_VERSION }}-os-${{ runner.os }}
+          path: ~/.local/bin/claude
+
+      - name: Install Claude Code, with signature verification
+        if: steps.check.outputs.should_run == 'true' && steps.claude-code-cache.outputs.cache-hit != 'true'
+        run: |
+          VERSION="${CLAUDE_CODE_VERSION}"
+          REPO=https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases
+          # Manifest uses Node.js platform naming: linux-x64, not linux-x86_64
+          PLATFORM=linux-x64
+
+          # 1. Import GPG key
+          curl -fsSL https://downloads.claude.ai/keys/claude-code.asc | gpg --import
+
+          # 2. Enforce fingerprint (important in CI)
+          EXPECTED_FPR="31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE"
+          ACTUAL_FPR=$(gpg --fingerprint --with-colons security@anthropic.com | awk -F: '/^fpr:/ {print $10; exit}')
+
+          if [ "$ACTUAL_FPR" != "$EXPECTED_FPR" ]; then
+            echo "GPG fingerprint mismatch! Got: $ACTUAL_FPR"
+            exit 1
+          fi
+
+          # 3. Mark the key as ultimately trusted so gpg --verify exits 0.
+          #    Freshly imported keys default to [unknown] trust, which causes gpg
+          #    --batch --verify to exit 1 despite a valid signature.
+          echo "${EXPECTED_FPR}:6:" | gpg --import-ownertrust
+
+          # 4. Download manifest + signature
+          curl -fsSLO "$REPO/$VERSION/manifest.json"
+          curl -fsSLO "$REPO/$VERSION/manifest.json.sig"
+
+          # 5. Verify signature
+          gpg --batch --verify manifest.json.sig manifest.json
+
+          # 6. Extract binary info.
+          #    The manifest has no 'url' field — binary lives at $REPO/$VERSION/$PLATFORM/$BINARY.
+          BINARY=$(jq -r ".platforms[\"$PLATFORM\"].binary" manifest.json)
+          CHECKSUM=$(jq -r ".platforms[\"$PLATFORM\"].checksum" manifest.json)
+
+          if [ "$BINARY" = "null" ] || [ -z "$BINARY" ]; then
+            echo "Error: platform '$PLATFORM' not found in manifest. Available platforms:"
+            jq -r '.platforms | keys[]' manifest.json
+            exit 1
+          fi
+          if [ "$CHECKSUM" = "null" ] || [ -z "$CHECKSUM" ]; then
+            echo "Error: no checksum for platform '$PLATFORM' in manifest."
+            exit 1
+          fi
+
+          URL="$REPO/$VERSION/$PLATFORM/$BINARY"
+
+          # 7. Download binary
+          curl -fsSL "$URL" -o claude
+
+          # 8. Verify checksum
+          echo "$CHECKSUM  claude" | sha256sum -c -
+
+          # 9. Install (non-root safe path for Actions)
+          chmod +x claude
+          mkdir -p "$HOME/.local/bin"
+          mv claude "$HOME/.local/bin/claude"
+
+      - name: Analyse and fix CI failures
+        if: steps.check.outputs.should_run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RASA_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_SIMPLE: 1
+          # Enable telemetry via OTEL, and send OTEL otlp data to Datadog backend
+          CLAUDE_CODE_ENABLE_TELEMETRY: 1
+          OTEL_METRICS_EXPORTER: console,otlp
+          OTEL_LOGS_EXPORTER: console,otlp
+          OTEL_EXPORTER_OTLP_HEADERS: dd-api-key=${{ secrets.DD_API_KEY }}
+          OTEL_EXPORTER_OTLP_LOGS_PROTOCOL: http/protobuf
+          OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: https://otlp.datadoghq.eu/v1/logs
+          OTEL_EXPORTER_OTLP_LOGS_HEADERS: dd-api-key=${{ secrets.DD_API_KEY }}
+          OTEL_EXPORTER_OTLP_METRICS_PROTOCOL: http/protobuf
+          OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: https://otlp.datadoghq.eu/v1/metrics
+          OTEL_EXPORTER_OTLP_METRICS_HEADERS: dd-api-key=${{ secrets.DD_API_KEY }}
+          OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE: delta
+
+        run: |
+          export PATH="${HOME}/.local/bin:${PATH}"
+          {
+            printf '%s\n' 'You are an expert CI maintainer.' '' '## Context'
+            printf '  - FIX_BRANCH = "%s"\n' "${FIX_BRANCH}"
+            printf '  - TARGET_BRANCH = %s\n' "${TARGET_BRANCH:-main}"
+            printf '%s\n' ''
+            cat <<'SYSTEM_PROMPT'
+          ## Phase 1 — Triage (always run first)
+          1. Parse CI failure context from the prompt. Logs are pre-filtered; do not re-search.
+          2. List each failed job with failed steps.
+          3. Extract 3–10 most diagnostic lines per job (errors, stack traces, assertions).
+          4. Note timing/infra hints (timeouts, ECONNRESET, OOM) separately.
+          5. Map errors to code locations; distinguish test failures vs infra issues vs product defects.
+          6. Classify: false-positive | true-positive | both.
+             - false-positive: flaky infra, test bugs, bad fixtures/config.
+             - true-positive: product code behavior violates expectations. Be conservative.
+             - both: Both true-positives and false-positives found, in set of failures.
+          7. If true-positive: attribute introducing commits using RECENT_COMMITS from the prompt.
+             Use: `git log --oneline -- <path>` and `git show --stat <sha>` for 1–2 key files.
+          8. If a plausible fix requires forbidden paths (see Guardrails), classify as true-positive.
+          Output: 1–2 sentence summary, root cause bullets, classification + confidence, evidence,
+          introducing commit(s) if true-positive, recommended next phase.
+
+          ## Phase 2 — False-positive fix + Draft PR (only if classification includes false-positive)
+          1. Identify minimal change surface (test, fixture, config, infra knob).
+          2. Extract narrowest pytest target(s) from failure logs.
+          3. Implement fix:
+             - Infra noise: stabilize with strategies such as retries, polling, back-offs, caching etc.
+             - Test code: prefer deterministic checks; avoid blanket skips or xfails.
+             - Test data/config: update fixtures to match current expected behavior; keep minimal.
+          4. Scope check: `git diff --name-only` — forbidden paths → reclassify true-positive and stop.
+             Workflow paths → output report with `git diff -U3` and stop (no PR).
+          5. Verify: `poetry run pytest <target> -x -v --tb=short 2>&1 | tail -50`.
+             Max 3 fix attempts. If still failing → reclassify true-positive and stop.
+             Test >5 min or total >10 min → mark inconclusive and stop.
+          6. Scope re-check: repeat step 4 after verification passes.
+          7. Push: `git push -u origin HEAD:refs/heads/"$FIX_BRANCH"`. Never push to TARGET_BRANCH.
+          8. Create Draft PR: `gh pr create --draft --label "CI-fix" --base "$TARGET_BRANCH"` with
+             concise title and body (fix summary, validation run, risks). Do NOT assign any reviewers.
+          Output: PR URL and summary.
+
+          ## Phase 3 — True-positive report (only if classification includes true-positive)
+          Write bug-report.md at the repository root. It is posted verbatim to Slack.
+          30 lines maximum, no padding, no repetition. Required sections (tight bullets):
+          - **Cause** — what went wrong
+          - **Reproduction** — minimal command(s) to reproduce
+          - **Expected vs Actual** — one line each
+          - **Introducing commit(s)** — sha + one-line rationale from RECENT_COMMITS;
+            "Unable to attribute" if none identified with confidence
+          Do NOT post any PR or issue comments.
+
+          ## Phase 4 — Both
+          Execute Phase 2 for false-positive failure(s), then Phase 3 for true-positive failure(s).
+
+          ## Guardrails (always in effect)
+          - Allowed change paths (file and directory names, and glob patterns): **/**/tests*/, data/, tools/, stubs/, examples/, .github/actions/ ONLY.
+          - Forbidden (file and directory names, and glob patterns): rasa/**/!(tests)/**, pyproject.toml, poetry.lock, Makefile*, makefile_vars, docker/, scripts/.
+            If a fix requires these → reclassify as true-positive and stop.
+          - Report-only, without making any code changes or commits: .github/workflows/ changes → report (in bug-report.md) with sample diff snippet, never PR.
+          - Branch safety: never push to TARGET_BRANCH or any non-fix branch. No --force, --no-verify.
+          - NEVER post PR comments, issue comments, or reviews of any kind.
+          SYSTEM_PROMPT
+          } > /tmp/ci-system-prompt.txt
+
+          cat > /tmp/ci-user-prompt.txt <<'USER_PROMPT'
+          ## CI Maintenance — Nightly Failure Analysis
+
+          ## Failure context (failed CI runs on main, last 24 hours)
+          ${{ steps.failure-context.outputs.result }}
+
+          ## Git context (recent commits to main)
+          ${{ env.RECENT_COMMITS }}
+
+          ## Task
+          Analyse and fix the CI failures above, following the phased instructions in the system
+          prompt. Be maximally token-efficient: short structured bullets, no repetition of evidence.
+          USER_PROMPT
+
+          # Run claude, with default model(s)
+          claude --bare \
+            --output-format json \
+            --system-prompt "$(</tmp/ci-system-prompt.txt)" \
+            -p "$(</tmp/ci-user-prompt.txt)" \
+            --allowed-tools 'Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash,TodoWrite,BashOutput,KillBash' \
+            --disallowed-tools 'Bash(curl *),Bash(wget *),Bash(git push * --delete *),Bash(git push * -d *),Bash(git * --force *),Bash(git * -f *),Bash(gh * delete *),Bash(git push * --no-verify *),Bash(gh pr comment *),Bash(gh issue comment *),Bash(gh pr review *),Bash(gh api * comments *),Bash(gh api * review-comments *),Bash(gh api * reviews *),mcp__*,MCPSearch,NotebookEdit,WebFetch,WebSearch,ExitPlanMode,AskUserQuestion,LSP,Task,EnterPlanMode,ToolSearch' \
+            > /tmp/claude-result.json
+
+      - name: Comment on summary with result, token usage and costs
+        if: steps.check.outputs.should_run == 'true'
+        continue-on-error: true # non-critical; bad JSON must not block downstream steps
+        run: |
+          # --output-format json emits a single JSON object with .usage (token counts)
+          # and .total_cost_usd. Example structure:
+          # {"type":"result","usage":{"input_tokens":N,"output_tokens":N,
+          #   "cache_read_input_tokens":N,"cache_creation_input_tokens":N},
+          #  "total_cost_usd":0.123,...}
+          {
+            echo "## Token usage and cost"
+            echo '```json'
+            jq '{usage: .usage, total_cost_usd: .total_cost_usd, result: .result}' /tmp/claude-result.json
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Validate Claude's changes (forbidden-path guard)
+        if: (success() || failure()) && steps.check.outputs.should_run == 'true'
+        id: validate-claude-changes
+        run: |
+          # Workflow-level enforcement: fail the job if Claude touched any forbidden path.
+          # This is independent of the system-prompt guardrails and the pre-push git hook —
+          # all three layers must pass before a PR or Slack notification is allowed through.
+          changed="$(git diff --name-only "${TARGET_BRANCH}..HEAD" 2>/dev/null || true)"
+          # Also catch uncommitted staged/unstaged changes Claude left behind.
+          changed="$(
+            printf '%s\n%s\n%s\n' \
+              "$changed" \
+              "$(git diff --name-only HEAD)" \
+              "$(git diff --name-only)"
+          )"
+          changed="$(echo "$changed" | sort -u | grep -v '^[[:space:]]*$' || true)"
+
+          if [[ -z "$changed" ]]; then
+            echo "No changes detected — nothing to validate."
+            exit 0
+          fi
+
+          echo "Changed files:"
+          echo "$changed"
+
+          workflow_hits="$(echo "$changed" | grep -E '^\.github/workflows/' || true)"
+          allowed_paths_regex='^(tests?[^/]*(/|$)|data/|tools/|stubs/|examples/|\.github/actions/|rasa/([^/]+/)*tests/.*)'
+          out_of_scope_hits="$(echo "$changed" | grep -Ev "$allowed_paths_regex" || true)"
+
+          if [[ -n "$workflow_hits" ]]; then
+            echo "::error::Forbidden: Claude modified .github/workflows/ — workflow changes must never be pushed:"
+            echo "$workflow_hits"
+            exit 1
+          fi
+          if [[ -n "$out_of_scope_hits" ]]; then
+            echo "::error::Forbidden: Claude modified files outside approved maintenance paths (tests*/, data/, tools/, stubs/, examples/, .github/actions/, rasa/**/tests/**):"
+            echo "$out_of_scope_hits"
+            exit 1
+          fi
+
+          echo "Scope check passed — all changed files are within approved maintenance paths."
+
+      - name: Check for fix PR
+        if: (success() || failure()) && steps.validate-claude-changes.outcome == 'success' && steps.check.outputs.should_run == 'true'
+        id: fix-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          URL=$(gh pr list --head "${{ env.FIX_BRANCH }}" --json url --jq '.[0].url // empty' 2>/dev/null || true)
+          echo "url=${URL}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check for bug report
+        if: (success() || failure()) && steps.check.outputs.should_run == 'true'
+        id: bug-report
+        run: |
+          if [[ -f "${{ github.workspace }}/bug-report.md" ]]; then
+            echo "exists=true" >> "${GITHUB_OUTPUT}"
+            # Safety truncation at 35 lines (Claude is prompted to stay within 30)
+            {
+              echo "content<<BUG_REPORT_EOF"
+              head -n 35 "${{ github.workspace }}/bug-report.md"
+              echo "BUG_REPORT_EOF"
+            } >> "${GITHUB_OUTPUT}"
+          else
+            echo "exists=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Notify Slack of false-positive fix PR
+        if: (success() || failure()) && steps.validate-claude-changes.outcome == 'success' && steps.fix-pr.outputs.url != ''
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          # Send notification to #rasa-qa slack channel
+          payload: |
+            channel: C07NSRHF94K
+            text: |
+              🔧 *CI Nightly Maintenance — False-Positive Fix Ready for Review*
+
+              A Draft PR fixing flaky/false-positive failures on `main` has been opened:
+              ${{ steps.fix-pr.outputs.url }}
+
+              Full run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Prepare Slack message with bug report
+        if: (success() || failure()) && steps.bug-report.outputs.exists == 'true'
+        id: slack-message-with-bug-report
+        env:
+          CONTENT: ${{ steps.bug-report.outputs.content }}
+        run: |
+          MESSAGE_JSON=$(jq -cn \
+            --arg content "$CONTENT" \
+            --arg repo "${{ github.repository }}" \
+            --arg runid "${{ github.run_id }}" \
+            '{
+              channel: "C07NSRHF94K",
+              text: "🐛 *CI Nightly Maintenance — True-Positive Bug Detected*\n\n\($content)\n\nFull run: https://github.com/\($repo)/actions/runs/\($runid)"
+            }')
+
+          {
+            echo "MESSAGE<<EOF"
+            echo "$MESSAGE_JSON"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send Slack message with bug report
+        if: (success() || failure()) && steps.bug-report.outputs.exists == 'true'
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        with:
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          # Send notification to #rasa-qa slack channel
+          payload: ${{ steps.slack-message-with-bug-report.outputs.MESSAGE }}

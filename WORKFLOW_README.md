@@ -199,6 +199,16 @@ Runs e2e tests on N26 customer-like bot, to check for regressions. Triggered:
 2. On RC1 creation
 3. Ad-hoc/manually, if required.
 
+### CI Failures Detection, Triage, and Remediation
+CI maintenance workflow that works as follows:
+1. Triggered nightly at 2am UTC.
+2. Checks for failed runs of [CI](.github/workflows/ci-on-push.yml) on `main`, from previous day.
+    - If no failures, or subsequent runs show success, then no action taken.
+    - Similarly, if fix PRs already exist, then no action taken.
+3. If pending failures found:
+    - For false-positives: Creates draft fix PRs and posts in `#rasa-qa` Slack channel.
+    - For true-positives: Posts bug report in `#rasa-qa` Slack channel.
+
 ## Actions
 In order to remove duplications in the CI workflow steps actions were packaged using [composite actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action).
 The current set of actions are as follows :
