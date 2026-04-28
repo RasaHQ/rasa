@@ -13,6 +13,7 @@ from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.core.config.configuration import Configuration
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_stores.mongo_tracker_store import MongoTrackerStore
 from rasa.shared.core.domain import Domain
@@ -301,3 +302,10 @@ async def nlu_trigger_flow_policy_bot_agent(
     return Agent.load(
         model_path=trained_nlu_trigger_flow_policy_bot, action_endpoint=endpoint
     )
+
+
+@pytest.fixture
+def empty_rephraser() -> ContextualResponseRephraser:
+    domain = Domain.empty()
+    endpoint_config = EndpointConfig.from_dict({})
+    return ContextualResponseRephraser(endpoint_config=endpoint_config, domain=domain)

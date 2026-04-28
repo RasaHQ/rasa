@@ -55,6 +55,7 @@ ACTION_RESET_ROUTING = "action_reset_routing"
 ACTION_HANGUP = "action_hangup"
 ACTION_HANDOFF_METRIC = "action_handoff_metric"
 ACTION_REPEAT_BOT_MESSAGES = "action_repeat_bot_messages"
+ACTION_DEFAULT_CAPABILITIES_NAME = "action_default_capabilities"
 
 # pattern continue interrupted flows
 ACTION_CONTINUE_INTERRUPTED_FLOW = "action_continue_interrupted_flow"
@@ -97,6 +98,7 @@ DEFAULT_ACTION_NAMES = [
     ACTION_HANGUP,
     ACTION_HANDOFF_METRIC,
     ACTION_REPEAT_BOT_MESSAGES,
+    ACTION_DEFAULT_CAPABILITIES_NAME,
     ACTION_CONTINUE_INTERRUPTED_FLOW,
     ACTION_CANCEL_INTERRUPTED_FLOWS,
 ]

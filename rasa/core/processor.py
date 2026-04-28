@@ -1661,6 +1661,8 @@ class MessageProcessor:
             temporary_tracker.update_with_events(prediction.events)
 
             run_args = inspect.getfullargspec(action.run).args
+            extra_kwargs: Dict[str, Any] = {}
+
             if "metadata" in run_args:
                 metadata: Optional[Dict] = prediction.action_metadata
 
@@ -1675,17 +1677,18 @@ class MessageProcessor:
                     metadata = prediction.action_metadata or {}
                     metadata.update(flows_metadata)
 
-                events = await action.run(
-                    output_channel,
-                    nlg,
-                    temporary_tracker,
-                    self.domain,
-                    metadata=metadata,
-                )
-            else:
-                events = await action.run(
-                    output_channel, nlg, temporary_tracker, self.domain
-                )
+                extra_kwargs["metadata"] = metadata
+
+            if "flows" in run_args:
+                extra_kwargs["flows"] = await self.get_flows()
+
+            events = await action.run(
+                output_channel,
+                nlg,
+                temporary_tracker,
+                self.domain,
+                **extra_kwargs,
+            )
 
             if validate_frames:
                 stack = tracker.stack

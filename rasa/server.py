@@ -94,6 +94,7 @@ if TYPE_CHECKING:
     from mypy_extensions import Arg, KwArg, VarArg
 
     from rasa.core.processor import MessageProcessor
+    from rasa.shared.core.flows.flow import Flow
 
     SanicResponse = Union[
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
@@ -834,6 +835,59 @@ def create_app(
 
             state = tracker.current_state(verbosity)
             return response.json(state)
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                f"An unexpected error occurred. Error: {e}",
+            )
+
+    @app.get("/conversations/<conversation_id:path>/capabilities")
+    @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
+    async def retrieve_capabilities(
+        request: Request, conversation_id: Text
+    ) -> HTTPResponse:
+        """Get the capabilities available to the assistant for a given conversation.
+
+        Returns all user-defined flows, partitioned into startable (guard conditions
+        satisfied for this conversation) and all flows. Useful for building dynamic
+        "what can you do?" responses in custom actions without hard-coding the list.
+        """
+        processor = app.ctx.agent.processor if app.ctx.agent else None
+        if not processor:
+            raise ErrorResponse(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                "An unexpected error occurred. Error: No processor found on agent.",
+            )
+
+        try:
+            tracker = await processor.get_tracker(conversation_id)
+            flows = await processor.get_flows()
+            user_flows = flows.user_flows
+
+            startable = tracker.get_startable_flows(user_flows)
+            startable_ids = {f.id for f in startable.underlying_flows}
+
+            def _serialize_flow(flow: "Flow", *, is_startable: bool) -> Dict[Text, Any]:
+                return {
+                    "id": flow.id,
+                    "name": flow.custom_name or flow.id,
+                    "description": flow.description,
+                    "guard_condition": flow.guard_condition,
+                    "startable": is_startable,
+                    "always_include_in_prompt": flow.always_include_in_prompt,
+                    "trigger_intents": sorted(flow.get_trigger_intents()),
+                }
+
+            capabilities = [
+                _serialize_flow(f, is_startable=f.id in startable_ids)
+                for f in user_flows.underlying_flows
+            ]
+
+            return response.json({"flows": capabilities})
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(

@@ -120,6 +120,7 @@ structlogger = structlog.get_logger()
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
     from rasa.core.actions.action_clean_stack import ActionCleanStack
+    from rasa.core.actions.action_default_capabilities import ActionDefaultCapabilities
     from rasa.core.actions.action_handoff_metric import ActionHandoffMetric
     from rasa.core.actions.action_hangup import ActionHangup
     from rasa.core.actions.action_repeat_bot_messages import ActionRepeatBotMessages
@@ -161,6 +162,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionHangup(),
         ActionHandoffMetric(),
         ActionRepeatBotMessages(),
+        ActionDefaultCapabilities(),
         ActionContinueInterruptedFlow(),
         ActionCancelInterruptedFlows(),
     ]

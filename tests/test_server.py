@@ -67,7 +67,7 @@ from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore, Tracker
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.model_training import TrainingResult
 from rasa.nlu.test import CVEvaluationResult
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import DEFAULT_SENDER_ID, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -1489,6 +1489,146 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     }
 
 
+async def test_retrieve_capabilities_returns_all_user_flows_valid_auth(
+    rasa_server_with_flows: Sanic,
+) -> None:
+    """All user flows appear in the response with the expected fields."""
+    rasa_app = rasa_server_with_flows.asgi_client
+    _, response = await rasa_app.get(
+        f"/conversations/{DEFAULT_SENDER_ID}/capabilities",
+        params={"token": "rasa"},
+    )
+    assert response.status == HTTPStatus.OK
+    data = response.json
+    assert "flows" in data
+    assert isinstance(data["flows"], list)
+    flows_by_id = {f["id"]: f for f in data["flows"]}
+    assert "foo" in flows_by_id
+    assert "bar" in flows_by_id
+    assert "named_flow_with_triggers" in flows_by_id
+    assert "guarded_flow_true" in flows_by_id
+    assert "guarded_flow_false" in flows_by_id
+    assert "flow_with_persisted_slots" in flows_by_id
+    for flow in data["flows"]:
+        assert "id" in flow
+        assert "name" in flow
+        assert "description" in flow
+        assert "guard_condition" in flow
+        assert "startable" in flow
+        assert "always_include_in_prompt" in flow
+        assert "trigger_intents" in flow
+
+    named_flow = flows_by_id["named_flow_with_triggers"]
+    assert named_flow["name"] == "Named Flow With Trigger"
+    assert named_flow["description"] == "Flow with custom name and NLU triggers."
+    assert named_flow["trigger_intents"] == ["greet", "hello"]
+    assert named_flow["guard_condition"] is None
+    assert named_flow["startable"] is True
+
+    guarded_true = flows_by_id["guarded_flow_true"]
+    assert guarded_true["guard_condition"] == "slots.name != null"
+    assert guarded_true["always_include_in_prompt"] is True
+    assert guarded_true["startable"] is False
+
+    guarded_false = flows_by_id["guarded_flow_false"]
+    assert guarded_false["guard_condition"] == "False"
+    assert guarded_false["startable"] is False
+
+
+async def test_retrieve_capabilities_guard_free_flows_are_startable(
+    rasa_server_with_flows: Sanic,
+) -> None:
+    """Flows without guard conditions are always startable."""
+    rasa_app = rasa_server_with_flows.asgi_client
+    _, response = await rasa_app.get(
+        f"/conversations/{DEFAULT_SENDER_ID}/capabilities",
+        params={"token": "rasa"},
+    )
+    assert response.status == HTTPStatus.OK
+    data = response.json
+    for flow in data["flows"]:
+        if flow["guard_condition"] is None:
+            assert flow["startable"] is True
+
+
+async def test_retrieve_capabilities_guarded_flow_becomes_startable_when_slot_is_set(
+    rasa_server_with_flows: Sanic,
+) -> None:
+    """Guarded flow startability changes based on tracker slot values."""
+    rasa_app = rasa_server_with_flows.asgi_client
+    sender_id = f"{DEFAULT_SENDER_ID}_guarded_{uuid.uuid4().hex}"
+
+    _, response_before = await rasa_app.get(
+        f"/conversations/{sender_id}/capabilities",
+        params={"token": "rasa"},
+    )
+    assert response_before.status == HTTPStatus.OK
+    before = {f["id"]: f for f in response_before.json["flows"]}
+    assert before["guarded_flow_true"]["startable"] is False
+
+    _, event_response = await rasa_app.post(
+        f"/conversations/{sender_id}/tracker/events",
+        params={"token": "rasa"},
+        json={"event": "slot", "name": "name", "value": "Alice"},
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+    assert event_response.status == HTTPStatus.OK
+
+    _, response_after = await rasa_app.get(
+        f"/conversations/{sender_id}/capabilities",
+        params={"token": "rasa"},
+    )
+    assert response_after.status == HTTPStatus.OK
+    after = {f["id"]: f for f in response_after.json["flows"]}
+    assert after["guarded_flow_true"]["startable"] is True
+
+
+async def test_retrieve_capabilities_requires_auth(
+    rasa_server_with_flows: Sanic,
+) -> None:
+    """Endpoint respects authentication when an auth token is configured."""
+    rasa_app = rasa_server_with_flows.asgi_client
+    _, response = await rasa_app.get(
+        f"/conversations/{DEFAULT_SENDER_ID}/capabilities",
+        headers={"Authorization": "Bearer wrongtoken"},
+    )
+    assert response.status == HTTPStatus.UNAUTHORIZED
+
+
+async def test_retrieve_capabilities_catch_internal_exception(
+    rasa_server_with_flows: Sanic,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Endpoint respects authentication when an auth token is configured."""
+    monkeypatch.setattr(
+        rasa_server_with_flows.ctx.agent.processor,
+        "get_flows",
+        AsyncMock(side_effect=Exception),
+    )
+    rasa_app = rasa_server_with_flows.asgi_client
+    _, response = await rasa_app.get(
+        f"/conversations/{uuid.uuid4().hex}/capabilities",
+        params={"token": "rasa"},
+    )
+    assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+async def test_retrieve_capabilities_no_processor(
+    rasa_server_with_flows: Sanic,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Endpoint respects authentication when an auth token is configured."""
+    rasa_app = rasa_server_with_flows.asgi_client
+    monkeypatch.setattr(
+        rasa_app.sanic_app.ctx.agent, "processor", AsyncMock(return_value=None)
+    )
+    _, response = await rasa_app.get(
+        f"/conversations/{uuid.uuid4().hex}/capabilities",
+        params={"token": "rasa"},
+    )
+    assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
+
+
 @pytest.mark.parametrize("event", test_events)
 async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
     model_id = rasa_app.sanic_app.ctx.agent.model_id
@@ -1827,6 +1967,7 @@ def test_list_routes(empty_agent: Agent):
         "get_data",
         "get_sub_agents",
         "get_trackers_by_user_id",
+        "retrieve_capabilities",
     }
 
 

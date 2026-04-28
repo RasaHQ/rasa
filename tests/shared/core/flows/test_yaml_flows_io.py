@@ -46,9 +46,13 @@ def test_is_flows_file(tests_data_folder: str, path: str, expected_result: bool)
 
 def test_flow_reading(basic_flows_file: str):
     flows_list = YAMLFlowsReader.read_from_file(basic_flows_file)
-    assert len(flows_list) == 2
+    assert len(flows_list) == 6
     assert flows_list.flow_by_id("foo") is not None
     assert flows_list.flow_by_id("bar") is not None
+    assert flows_list.flow_by_id("named_flow_with_triggers") is not None
+    assert flows_list.flow_by_id("guarded_flow_true") is not None
+    assert flows_list.flow_by_id("guarded_flow_false") is not None
+    assert flows_list.flow_by_id("flow_with_persisted_slots") is not None
 
 
 def test_flow_writing(basic_flows_file: str):
@@ -303,13 +307,13 @@ def test_read_flow_with_metadata_with_line_numbers() -> None:
 
 
 def test_read_flow_without_metadata_with_line_numbers() -> None:
-    flows = YAMLFlowsReader.read_from_file("data/test_flows/basic_flows.yml")
+    flows = YAMLFlowsReader.read_from_file("data/test_flows/flows_without_metadata.yml")
     flows_with_metadata = YAMLFlowsReader.read_from_file(
         "data/test_flows/flows_with_metadata.yml"
     )
 
     for flow in flows.underlying_flows:
-        assert flow.file_path == "data/test_flows/basic_flows.yml"
+        assert flow.file_path == "data/test_flows/flows_without_metadata.yml"
         flow.file_path = None
     for flow in flows_with_metadata.underlying_flows:
         assert flow.file_path == "data/test_flows/flows_with_metadata.yml"

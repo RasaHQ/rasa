@@ -189,13 +189,6 @@ def tracker_without_language(
 
 
 @pytest.fixture
-def empty_rephraser() -> ContextualResponseRephraser:
-    domain = Domain.empty()
-    endpoint_config = EndpointConfig.from_dict({})
-    return ContextualResponseRephraser(endpoint_config=endpoint_config, domain=domain)
-
-
-@pytest.fixture
 def english_language() -> Language:
     return Language.from_language_code("en", is_default=True)
 

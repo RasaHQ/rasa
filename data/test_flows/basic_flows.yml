@@ -8,3 +8,33 @@ flows:
     steps:
       - action: "utter_greet"
       - collect: "important_info"
+  named_flow_with_triggers:
+    name: "Named Flow With Trigger"
+    description: "Flow with custom name and NLU triggers."
+    nlu_trigger:
+      - intent: "greet"
+      - intent:
+          name: "hello"
+          confidence_threshold: 0.7
+    steps:
+      - action: "utter_greet"
+  guarded_flow_true:
+    description: "Flow with a guard that is true when name is known."
+    if: "slots.name != null"
+    always_include_in_prompt: true
+    steps:
+      - action: "utter_channel"
+  guarded_flow_false:
+    description: "Flow with a guard that is false in a fresh conversation."
+    if: False
+    steps:
+      - action: "utter_default"
+  flow_with_persisted_slots:
+    description: "Flow with persisted slots and run_pattern_completed override."
+    persisted_slots:
+      - name
+    run_pattern_completed: false
+    steps:
+      - set_slots:
+          - name: "flow_user"
+      - action: "utter_goodbye"
