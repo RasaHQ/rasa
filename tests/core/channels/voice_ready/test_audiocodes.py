@@ -1,14 +1,15 @@
 import asyncio
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable, Dict
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import structlog
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from sanic import Request, Sanic
+from sanic.exceptions import NotFound, ServerError
 
 from rasa.core import run, utils
 from rasa.core.channels.channel import (
@@ -22,8 +23,10 @@ from rasa.core.channels.voice_ready.audiocodes import (
     AudiocodesOutput,
     Conversation,
     HttpUnauthorized,
+    WebsocketOutput,
     map_call_params,
 )
+from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.exceptions import RasaException
 from tests.utilities import filter_logs
@@ -68,6 +71,189 @@ def test_from_credentials(credentials: Any) -> None:
     assert isinstance(input_channel, AudiocodesInput)
 
 
+def test_from_credentials_validation_error_message() -> None:
+    """Invalid schema raises RasaException with 'Invalid credentials'."""
+    with pytest.raises(RasaException) as exc_info:
+        AudiocodesInput.from_credentials(
+            {"token": "abc", "keep_alive_expiration_factor": 0.5}
+        )
+    assert "Invalid credentials" in str(exc_info.value)
+
+
+def test_map_call_params() -> None:
+    """map_call_params maps Audiocodes parameters to CallParameters."""
+    parameters = {
+        "vaigConversationId": "conv-1",
+        "caller": "+123",
+        "callee": "+456",
+        "callerDisplayName": "Alice",
+        "callerHost": "host1",
+        "calleeHost": "host2",
+    }
+    result = map_call_params(parameters)
+    assert isinstance(result, CallParameters)
+    assert result.call_id == "conv-1"
+    assert result.user_phone == "+123"
+    assert result.bot_phone == "+456"
+    assert result.user_name == "Alice"
+    assert result.user_host == "host1"
+    assert result.bot_host == "host2"
+
+
+def test_map_call_params_partial() -> None:
+    """map_call_params handles missing keys with None."""
+    result = map_call_params({})
+    assert result.call_id is None
+    assert result.user_phone is None
+    assert result.bot_phone is None
+    assert result.user_name is None
+    assert result.user_host is None
+    assert result.bot_host is None
+
+
+def test_conversation_get_metadata() -> None:
+    """Conversation.get_metadata returns activity parameters."""
+    assert Conversation.get_metadata({"parameters": {"key": "val"}}) == {"key": "val"}
+    assert Conversation.get_metadata({}) is None
+    assert Conversation.get_metadata({"type": "message"}) is None
+
+
+def test_conversation_update_sets_last_activity() -> None:
+    """Conversation.update sets last_activity to current time."""
+    conv = Conversation(conversation_id="c1")
+    assert hasattr(conv, "last_activity")
+    before = datetime.now(timezone.utc)
+    conv.update()
+    after = datetime.now(timezone.utc)
+    assert before <= conv.last_activity <= after
+
+
+async def test_handle_event_dtmf() -> None:
+    """_handle_event returns DTMF intent and value metadata."""
+    conversation = Conversation(conversation_id="123")
+    event = {"name": "DTMF", "value": "5"}
+    text, metadata = conversation._handle_event(event)
+    assert text == f"{INTENT_MESSAGE_PREFIX}vaig_event_DTMF"
+    assert metadata == {"value": "5"}
+
+
+async def test_handle_event_other_with_parameters_and_value() -> None:
+    """_handle_event for other events includes parameters and value."""
+    conversation = Conversation(conversation_id="123")
+    event = {
+        "name": "noUserInput",
+        "value": 1,
+        "parameters": {"vaigConversationId": "id1"},
+    }
+    text, metadata = conversation._handle_event(event)
+    assert text == f"{INTENT_MESSAGE_PREFIX}vaig_event_noUserInput"
+    assert metadata == {"vaigConversationId": "id1", "value": 1}
+
+
+def test_conversation_is_active_conversation_active() -> None:
+    """is_active_conversation returns True when within delta."""
+    conv = Conversation(conversation_id="c1")
+    now = datetime.now(timezone.utc)
+    delta = timedelta(seconds=60)
+    assert conv.is_active_conversation(now, delta) is True
+
+
+def test_conversation_is_active_conversation_inactive(
+    capsys: CaptureFixture,
+) -> None:
+    """is_active_conversation returns False and logs when past delta."""
+    conv = Conversation(conversation_id="c1")
+    conv.last_activity = datetime.now(timezone.utc) - timedelta(seconds=200)
+    now = datetime.now(timezone.utc)
+    delta = timedelta(seconds=60)
+    assert conv.is_active_conversation(now, delta) is False
+    captured = capsys.readouterr()
+    assert "audiocodes.conversation.inactive" in captured.out
+
+
+async def test_handle_activities_duplicate_activity_logs_and_skips(
+    capsys: CaptureFixture,
+) -> None:
+    """Duplicate activity id is skipped and warning is logged."""
+    conversation = Conversation(conversation_id="c1")
+    on_new_message = AsyncMock()
+    output_channel = MagicMock(spec=OutputChannel)
+    message = {
+        "activities": [
+            {"id": "dup-id", "type": "message", "text": "first", "parameters": {}},
+            {"id": "dup-id", "type": "message", "text": "second", "parameters": {}},
+        ]
+    }
+    await conversation.handle_activities(
+        message, CHANNEL_NAME, output_channel, on_new_message
+    )
+    on_new_message.assert_called_once()
+    assert on_new_message.call_args[0][0].text == "first"
+    captured = capsys.readouterr()
+    assert "audiocodes.handle.activities.duplicate_activity" in captured.out
+
+
+async def test_handle_activities_unknown_activity_type_logs_and_skips(
+    capsys: CaptureFixture,
+) -> None:
+    """Unknown activity type is skipped and warning is logged."""
+    conversation = Conversation(conversation_id="c1")
+    on_new_message = AsyncMock()
+    output_channel = MagicMock(spec=OutputChannel)
+    message = {
+        "activities": [
+            {"id": "id1", "type": "unknown_type", "text": "ignored", "parameters": {}},
+        ]
+    }
+    await conversation.handle_activities(
+        message, CHANNEL_NAME, output_channel, on_new_message
+    )
+    on_new_message.assert_not_called()
+    captured = capsys.readouterr()
+    assert "audiocodes.handle.activities.unknown_activity_type" in captured.out
+
+
+async def test_handle_activities_empty_text_skipped() -> None:
+    """Activity that yields empty text (e.g. event with no name) is skipped."""
+    conversation = Conversation(conversation_id="c1")
+    on_new_message = AsyncMock()
+    output_channel = MagicMock(spec=OutputChannel)
+    message = {
+        "activities": [
+            {"id": "id1", "type": "event"},  # no "name" -> _handle_event returns "", {}
+        ]
+    }
+    await conversation.handle_activities(
+        message, CHANNEL_NAME, output_channel, on_new_message
+    )
+    on_new_message.assert_not_called()
+
+
+async def test_handle_activities_on_new_message_raises_sends_hangup() -> None:
+    """When on_new_message raises, hangup event is sent via output channel."""
+    conversation = Conversation(conversation_id="c1")
+    output_channel = MagicMock(spec=OutputChannel)
+    output_channel.send_custom_json = AsyncMock()
+
+    async def failing_handler(_: UserMessage) -> None:
+        raise RuntimeError("simulated failure")
+
+    message = {
+        "activities": [
+            {"id": "id1", "type": "message", "text": "hi", "parameters": {}},
+        ]
+    }
+    await conversation.handle_activities(
+        message, CHANNEL_NAME, output_channel, failing_handler
+    )
+    output_channel.send_custom_json.assert_called_once()
+    call_args = output_channel.send_custom_json.call_args
+    assert call_args[0][0] == "c1"
+    assert call_args[0][1]["type"] == "event"
+    assert call_args[0][1]["name"] == "hangup"
+    assert "An error occurred" in call_args[0][1]["text"]
+
+
 async def test_attachment_messages_raise_exceptions() -> None:
     with pytest.raises(RasaException):
         output_channel = AudiocodesOutput()
@@ -80,13 +266,10 @@ async def test_image_messages_raise_exceptions() -> None:
         await output_channel.send_image_url(recipient_id="123", image="xxx")
 
 
-def test_audiocodes_input_channel() -> None:
-    input_channel = AudiocodesInput(
-        token="TOKEN",
-        use_websocket=True,
-        keep_alive=120,
-        keep_alive_expiration_factor=1.5,
-    )
+def test_audiocodes_input_channel(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+) -> None:
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=True)
 
     s = run.configure_app([input_channel], port=5004)
     routes_list = utils.list_routes(s)
@@ -273,7 +456,9 @@ async def test_handle_no_user_input_event(
     assert user_msg.metadata == expected_metadata
 
 
-async def test_on_activities_returns_immediately(monkeypatch: MonkeyPatch) -> None:
+async def test_on_activities_returns_immediately(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+) -> None:
     """Test that on_activities endpoint returns immediately without
     waiting for activity processing.
     """
@@ -282,12 +467,7 @@ async def test_on_activities_returns_immediately(monkeypatch: MonkeyPatch) -> No
     async def slow_on_new_message(message: UserMessage) -> None:
         await asyncio.sleep(1.0)  # Simulate slow processing
 
-    input_channel = AudiocodesInput(
-        token="test_token",
-        use_websocket=True,
-        keep_alive=120,
-        keep_alive_expiration_factor=1.5,
-    )
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=True)
 
     conversation_id = "test_conv"
     input_channel.conversations[conversation_id] = Conversation(conversation_id)
@@ -312,7 +492,7 @@ async def test_on_activities_returns_immediately(monkeypatch: MonkeyPatch) -> No
             }
         ]
     }
-    headers = {"Authorization": "test_token"}
+    headers = {"Authorization": "Bearer TOKEN"}
 
     # Measure response time
     start_time = datetime.now()
@@ -324,7 +504,9 @@ async def test_on_activities_returns_immediately(monkeypatch: MonkeyPatch) -> No
     assert response.status == 200
 
 
-async def test_background_task_completes(monkeypatch: MonkeyPatch) -> None:
+async def test_background_task_completes(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+) -> None:
     """Test that background task created for activity handling
     completes successfully.
     """
@@ -334,12 +516,7 @@ async def test_background_task_completes(monkeypatch: MonkeyPatch) -> None:
         processed_messages.append(message.text)
         await asyncio.sleep(0.1)  # Small delay to ensure it's running async
 
-    input_channel = AudiocodesInput(
-        token="test_token",
-        use_websocket=False,
-        keep_alive=120,
-        keep_alive_expiration_factor=1.5,
-    )
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=False)
 
     conversation_id = "test_conv"
     input_channel.conversations[conversation_id] = Conversation(conversation_id)
@@ -364,7 +541,7 @@ async def test_background_task_completes(monkeypatch: MonkeyPatch) -> None:
             }
         ]
     }
-    headers = {"Authorization": "Bearer test_token"}
+    headers = {"Authorization": "Bearer TOKEN"}
 
     # Make request
     _, response = await test_client.post(url, json=data, headers=headers)
@@ -381,14 +558,11 @@ async def test_background_task_completes(monkeypatch: MonkeyPatch) -> None:
     assert len(input_channel.background_tasks[conversation_id]) == 0
 
 
-async def test_invalid_token_raises_error() -> None:
+async def test_invalid_token_raises_error(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+) -> None:
     """Test that requests with invalid tokens are rejected."""
-    input_channel = AudiocodesInput(
-        token="correct_token",
-        use_websocket=False,
-        keep_alive=120,
-        keep_alive_expiration_factor=1.5,
-    )
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=False)
 
     # Create Sanic test client
     app = Sanic("test_app")
@@ -400,7 +574,7 @@ async def test_invalid_token_raises_error() -> None:
     url = f"{url_prefix}/webhook"
 
     # Test with correct token
-    headers = {"Authorization": "Bearer correct_token"}
+    headers = {"Authorization": "Bearer TOKEN"}
     _, response = await test_client.get(url, headers=headers)
 
     assert response.status == 200
@@ -417,18 +591,15 @@ async def test_invalid_token_raises_error() -> None:
     assert response.status == 401
 
 
-def test_check_token() -> None:
-    input_channel = AudiocodesInput(
-        token="correct_token",
-        use_websocket=False,
-        keep_alive=120,
-        keep_alive_expiration_factor=1.5,
-    )
+def test_check_token(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+) -> None:
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=False)
 
     # Test with correct token
     # assert no exception is raised
     try:
-        input_channel._check_token("correct_token")
+        input_channel._check_token("TOKEN")
     except HttpUnauthorized:
         pytest.fail("HttpUnauthorized raised unexpectedly!")
 
@@ -439,6 +610,271 @@ def test_check_token() -> None:
     # Test with missing token
     with pytest.raises(HttpUnauthorized):
         input_channel._check_token(None)
+
+
+@pytest.mark.asyncio
+async def test_create_task_tracks_and_cleans_up(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+) -> None:
+    """_create_task adds task to background_tasks and callback removes it."""
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=True)
+    conv_id = "conv-1"
+    input_channel.conversations[conv_id] = Conversation(conv_id)
+
+    async def dummy_coro() -> None:
+        pass
+
+    task = input_channel._create_task(conv_id, dummy_coro())
+    assert task in input_channel.background_tasks[conv_id]
+    await task
+    assert len(input_channel.background_tasks[conv_id]) == 0
+
+
+@pytest.mark.asyncio
+async def test_set_scheduler_job(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """_set_scheduler_job adds interval job for clean_old_conversations."""
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=True)
+    mock_job = MagicMock()
+    mock_scheduler = MagicMock()
+    mock_scheduler.add_job = MagicMock(return_value=mock_job)
+
+    async def return_scheduler() -> MagicMock:
+        return mock_scheduler
+
+    monkeypatch.setattr(
+        "rasa.core.channels.voice_ready.audiocodes.jobs.scheduler",
+        return_scheduler,
+    )
+    await input_channel._set_scheduler_job()
+    assert input_channel.scheduler_job is mock_job
+    mock_scheduler.add_job.assert_called_once_with(
+        input_channel.clean_old_conversations, "interval", minutes=10
+    )
+
+
+def test_get_conversation_not_found(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+) -> None:
+    """_get_conversation raises NotFound when conversation does not exist."""
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=False)
+    with pytest.raises(NotFound, match="Conversation not found"):
+        input_channel._get_conversation("TOKEN", "nonexistent-conv")
+
+
+def test_clean_old_conversations_removes_inactive(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+) -> None:
+    """clean_old_conversations removes conversations past keep_alive * factor."""
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=True)
+    conv1 = Conversation("c1")
+    conv1.last_activity = datetime.now(timezone.utc) - timedelta(seconds=200)
+    conv2 = Conversation("c2")
+    input_channel.conversations["c1"] = conv1
+    input_channel.conversations["c2"] = conv2
+
+    input_channel.clean_old_conversations()
+
+    assert "c1" not in input_channel.conversations
+    assert "c2" in input_channel.conversations
+
+
+def test_handle_start_conversation_success_with_websocket(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+) -> None:
+    """handle_start_conversation returns urls including websocketURL."""
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=True)
+    body = {"conversation": "conv-123"}
+    result = input_channel.handle_start_conversation(body)
+    assert result["activitiesURL"] == "conversation/conv-123/activities"
+    assert result["disconnectURL"] == "conversation/conv-123/disconnect"
+    assert result["refreshURL"] == "conversation/conv-123/keepalive"
+    assert result["expiresSeconds"] == 120
+    assert result["websocketURL"] == "conversation/conv-123/websocket"
+    assert "conv-123" in input_channel.conversations
+
+
+def test_handle_start_conversation_success_without_websocket(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+) -> None:
+    """handle_start_conversation omits websocketURL when use_websocket False."""
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=False)
+    body = {"conversation": "conv-456"}
+    result = input_channel.handle_start_conversation(body)
+    assert "websocketURL" not in result
+
+
+def test_handle_start_conversation_already_exists_raises(
+    audiocodes_input_token_channel_factory: Callable[[bool], AudiocodesInput],
+) -> None:
+    """handle_start_conversation raises ServerError when conversation already exists."""
+    input_channel = audiocodes_input_token_channel_factory(use_websocket=False)
+    input_channel.conversations["existing"] = Conversation("existing")
+    with pytest.raises(ServerError, match="Conversation already exists"):
+        input_channel.handle_start_conversation({"conversation": "existing"})
+
+
+# URL prefix for audiocodes blueprint (matches existing tests)
+_AC_BLUEPRINT_URL_PREFIX = "rasa.core.channels.voice_ready.audiocodes"
+
+
+def _ac_path(path: str) -> str:
+    """Build request path for audiocodes blueprint (asgi_client, no leading slash)."""
+    return f"{_AC_BLUEPRINT_URL_PREFIX}{path}"
+
+
+@pytest.fixture
+def audiocodes_input_token_channel_factory(
+    monkeypatch: MonkeyPatch,
+) -> Callable[[bool], AudiocodesInput]:
+    """Callable(use_websocket) -> AudiocodesInput(
+    token=TOKEN, keep_alive=120, factor=1.5).
+
+    License validation is mocked before construction.
+    """
+    monkeypatch.setattr(
+        "rasa.core.channels.voice_ready.audiocodes.validate_voice_license_scope",
+        MagicMock(),
+    )
+
+    def _make(use_websocket: bool) -> AudiocodesInput:
+        return AudiocodesInput(
+            token="TOKEN",
+            use_websocket=use_websocket,
+            keep_alive=120,
+            keep_alive_expiration_factor=1.5,
+        )
+
+    return _make
+
+
+@pytest.fixture
+def audiocodes_blueprint_input(monkeypatch: MonkeyPatch) -> AudiocodesInput:
+    """AudiocodesInput for Sanic blueprint tests; token matches Bearer in requests.
+
+    License validation is mocked before construction (fixtures run before @patch).
+    """
+    monkeypatch.setattr(
+        "rasa.core.channels.voice_ready.audiocodes.validate_voice_license_scope",
+        MagicMock(),
+    )
+    return AudiocodesInput(
+        token="token",
+        use_websocket=False,
+        keep_alive=120,
+        keep_alive_expiration_factor=1.5,
+    )
+
+
+@pytest.fixture
+def audiocodes_blueprint_app(audiocodes_blueprint_input: AudiocodesInput) -> Sanic:
+    """Sanic app with audiocodes blueprint registered (asgi_client route tests)."""
+    app = Sanic("test")
+    app.blueprint(
+        audiocodes_blueprint_input.blueprint(AsyncMock()),
+        url_prefix=_AC_BLUEPRINT_URL_PREFIX,
+    )
+    return app
+
+
+@pytest.mark.asyncio
+async def test_health_route(audiocodes_blueprint_app: Sanic) -> None:
+    """Health route returns status ok."""
+    _, response = await audiocodes_blueprint_app.asgi_client.get(_ac_path("/"))
+    assert response.status == 200
+    assert response.json == {"status": "ok"}
+
+
+@pytest.mark.asyncio
+async def test_receive_get_returns_ac_bot_api(
+    audiocodes_blueprint_app: Sanic,
+) -> None:
+    """Receive GET returns ac-bot-api type and success."""
+    _, response = await audiocodes_blueprint_app.asgi_client.get(
+        _ac_path("/webhook"),
+        headers={"Authorization": "Bearer token"},
+    )
+    assert response.status == 200
+    assert response.json.get("type") == "ac-bot-api"
+    assert response.json.get("success") is True
+
+
+@patch(
+    "rasa.core.channels.voice_ready.audiocodes.jobs.scheduler",
+    new_callable=AsyncMock,
+)
+@pytest.mark.asyncio
+async def test_receive_post_starts_conversation(
+    mock_scheduler: AsyncMock,
+    audiocodes_blueprint_app: Sanic,
+) -> None:
+    """Receive POST with conversation body returns urls."""
+    mock_scheduler.return_value = MagicMock(add_job=MagicMock(return_value=MagicMock()))
+    _, response = await audiocodes_blueprint_app.asgi_client.post(
+        _ac_path("/webhook"),
+        json={"conversation": "new-conv-1"},
+        headers={"Authorization": "Bearer token"},
+    )
+    assert response.status == 200
+    data = response.json
+    assert "activitiesURL" in data
+    assert "new-conv-1" in data["activitiesURL"]
+
+
+@pytest.mark.asyncio
+async def test_keepalive_route(
+    audiocodes_blueprint_input: AudiocodesInput,
+    audiocodes_blueprint_app: Sanic,
+) -> None:
+    """Keepalive route validates token and returns empty json."""
+    audiocodes_blueprint_input.conversations["conv-1"] = Conversation("conv-1")
+    _, response = await audiocodes_blueprint_app.asgi_client.post(
+        _ac_path("/conversation/conv-1/keepalive"),
+        headers={"Authorization": "Bearer token"},
+    )
+    assert response.status == 200
+    assert response.json == {}
+
+
+async def test_audiocodes_output_hangup() -> None:
+    """hangup adds hangup event to messages."""
+    output = AudiocodesOutput()
+    await output.hangup(recipient_id="conv-1")
+    assert len(output.messages) == 1
+    assert output.messages[0]["type"] == "event"
+    assert output.messages[0]["name"] == "hangup"
+
+
+async def test_audiocodes_output_send_text_with_buttons() -> None:
+    """send_text_with_buttons uses concise format (text + button titles)."""
+    output = AudiocodesOutput()
+    await output.send_text_with_buttons(
+        recipient_id="conv-1",
+        text="Choose one",
+        buttons=[{"title": "A", "payload": "/a"}, {"title": "B", "payload": "/b"}],
+    )
+    assert len(output.messages) >= 1
+    # Concise format appends ". A, B" to text (see send_text_with_buttons_concise)
+    assert any("Choose one" in str(m.get("text", "")) for m in output.messages)
+
+
+@pytest.mark.asyncio
+async def test_websocket_output_do_add_message_sends_via_ws() -> None:
+    """WebsocketOutput.do_add_message sends JSON via websocket."""
+    mock_ws = MagicMock()
+    mock_ws.send = AsyncMock()
+    output = WebsocketOutput(ws=mock_ws, conversation_id="conv-1")
+    await output.do_add_message({"type": "message", "text": "hello"})
+    mock_ws.send.assert_called_once()
+    payload = mock_ws.send.call_args[0][0]
+    import json as json_module
+
+    data = json_module.loads(payload)
+    assert data["conversation"] == "conv-1"
+    assert len(data["activities"]) == 1
+    assert data["activities"][0]["text"] == "hello"
 
 
 @pytest.fixture

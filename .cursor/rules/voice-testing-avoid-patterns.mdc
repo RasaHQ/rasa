@@ -1,0 +1,35 @@
+---
+description: Testing anti-patterns to avoid when adding or modifying voice tests (voice channels, ASR, Sanic blueprints)
+globs: "**/test*.py","**/tests/**/*.py"
+alwaysApply: false
+---
+
+# Voice Testing Conventions – What to Avoid
+
+When adding or modifying tests in this project (especially under `tests/core/channels/voice_ready/`, `tests/core/channels/voice_stream/`, and integration tests touching voice or channels), avoid the following.
+
+## Event loop and async
+
+- **Do not add synchronous tests for code that requires a running event loop.** If the class or code under test calls `asyncio.get_running_loop()` (e.g. in `__init__`) or other async-only APIs during normal execution, write the test as `async def test_...` so it runs under pytest-asyncio and has an event loop. Example: `AzureASR` in `rasa/core/channels/voice_stream/asr/azure.py` uses `get_running_loop()` in `__init__`, so any test that instantiates it must be an async test.
+
+## Mocks and patches
+
+- **Do not let unit tests depend on real license or environment checks.** When testing components that call `validate_voice_license_scope()` or similar license/feature checks (e.g. `AudiocodesInput` in `rasa/core/channels/voice_ready/audiocodes.py`), patch them in the test, e.g. `@patch("rasa.core.channels.voice_ready.audiocodes.validate_voice_license_scope")`, so unit tests are isolated and do not require a real voice license or special env setup.
+
+- **Do not use AsyncMock for SDK or library methods that are invoked without `await`.** If the production code calls a method like `start_continuous_recognition_async()` or `stop_continuous_recognition_async()` without awaiting it, mock it with `MagicMock(return_value=...)` (or similar) so the test does not trigger "coroutine was never awaited" warnings. Use `AsyncMock` only for callables that are actually awaited in the code under test.
+
+- **Patch at the correct import path.** When mocking Azure Speech SDK or other libraries that are imported inside the module under test (e.g. `import azure.cognitiveservices.speech as speechsdk` inside a function), patch the target where it is used, e.g. `azure.cognitiveservices.speech.SpeechRecognizer`, not a local name like `speechsdk` in the test file.
+
+- **Prefer MagicMock assignment or monkeypatch over `mock.patch` when replacing instance attributes.** When you need to replace a method or attribute on an object you already have (e.g. `asr.fill_queue`, `asr.main_loop.call_soon_threadsafe`), assign a `MagicMock()` directly (e.g. `obj.method = mock.MagicMock()`) or use `monkeypatch.setattr(obj, "method", mock.MagicMock())` instead of `with mock.patch.object(obj, "method")`. Use `mock.patch` or `patch.dict` only when the code under test looks up the name by import or from the environment (e.g. `os.environ`, `importlib.import_module`, or `azure.cognitiveservices.speech.SpeechConfig`), where injection via assignment is not possible.
+
+## Sanic blueprint and route tests
+
+- **Do not assume blueprint routes are mounted at root.** When testing Sanic blueprint routes (e.g. health, webhook, keepalive), register the blueprint with the same `url_prefix` used elsewhere in the project (or as in existing tests), and use that prefix when building request paths. Otherwise requests may return 404. Example: use a shared constant like `_AC_BLUEPRINT_URL_PREFIX` and `app.blueprint(bp, url_prefix=...)` so paths match.
+
+## Test scope and organization
+
+- **Do not add tests for TTS providers in channel provider test files.** Channel test files (e.g. under `tests/core/channels/voice_ready/`, `tests/core/channels/voice_stream/`) should focus on channel behavior, routing, and integration with the channel API. TTS (text-to-speech) provider logic belongs in dedicated TTS test modules (e.g. under `tests/core/channels/voice_stream/tts/` or equivalent). Mixing TTS provider tests into channel tests blurs boundaries and makes test discovery and maintenance harder.
+
+## Voice channel output and assertions
+
+- **Do not assert exact equality on message text when the channel uses concise/transformed format.** For voice channels, `send_text_with_buttons_concise` (and similar) may append punctuation and button titles to the text (e.g. `"Choose one"` becomes `"Choose one. A, B"`). Assert that the stored message contains the intended text (e.g. `"Choose one" in message["text"]`) or assert on the actual format, not strict equality with the original input.

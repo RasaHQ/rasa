@@ -1,4 +1,5 @@
 import asyncio
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -52,6 +53,35 @@ def setup_call_state():
 @pytest.fixture
 def mulaw_format() -> AudioFormat:
     return MULAW_8KHZ
+
+
+@pytest.fixture
+def azure_sdk_mocks(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
+    """Patch Azure Speech SDK; return mock stream and recognizer for connect tests."""
+    mock_stream = MagicMock()
+    mock_recognizer = MagicMock()
+    mock_recognizer.start_continuous_recognition_async = MagicMock(return_value=None)
+    monkeypatch.setattr(
+        "azure.cognitiveservices.speech.SpeechConfig",
+        MagicMock(return_value=MagicMock()),
+    )
+    monkeypatch.setattr(
+        "azure.cognitiveservices.speech.audio.AudioStreamFormat",
+        MagicMock(return_value=MagicMock()),
+    )
+    monkeypatch.setattr(
+        "azure.cognitiveservices.speech.audio.PushAudioInputStream",
+        MagicMock(return_value=mock_stream),
+    )
+    monkeypatch.setattr(
+        "azure.cognitiveservices.speech.audio.AudioConfig",
+        MagicMock(return_value=MagicMock()),
+    )
+    monkeypatch.setattr(
+        "azure.cognitiveservices.speech.SpeechRecognizer",
+        MagicMock(return_value=mock_recognizer),
+    )
+    return SimpleNamespace(stream=mock_stream, recognizer=mock_recognizer)
 
 
 async def wait_for_task_to_become_cancelled(
