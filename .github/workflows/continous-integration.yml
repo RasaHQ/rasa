@@ -2628,7 +2628,7 @@ jobs:
         include:
           # Group 1 (runner 1) runs the heaviest split (~test_server.py etc.); use larger runner and job timeout
           - runner: 1
-            runs-on: warp-ubuntu-latest-x64-16x
+            runs-on: warp-ubuntu-latest-x64-32x
           - runner: 2
             runs-on: warp-ubuntu-latest-x64-4x
           - runner: 3
