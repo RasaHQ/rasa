@@ -3,17 +3,17 @@
 A single runner that handles any experiment defined by a YAML config file.
 """
 
-import csv
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, NamedTuple, Type
+from typing import Any, Dict, List, NamedTuple, Type
 
 import structlog
-import yaml  # type: ignore[import-untyped]
 
+from rasa.builder.evaluator.artifacts import Artifact, YAMLArtifact
 from rasa.builder.evaluator.configs.models import ExperimentConfig, load_config
 from rasa.builder.evaluator.evaluators.base import BaseEvaluator
+from rasa.builder.evaluator.results_export import ResultsExporter
 from rasa.builder.evaluator.tasks.base import BaseTask
 from rasa.builder.telemetry.langfuse_integration.langfuse_compat import (
     langfuse,
@@ -32,6 +32,7 @@ class AvailableTasks(str, Enum):
     """Available eval experiment task types."""
 
     CLASSIFICATION = "classification"
+    RETRIEVAL = "retrieval"
 
 
 class AvailableLevels(str, Enum):
@@ -53,12 +54,21 @@ def _build_evaluator_registry() -> Dict[AvailableTasks, EvaluatorEntry]:
     from rasa.builder.evaluator.evaluators.classification.evaluator import (
         ClassificationEvaluator,
     )
+    from rasa.builder.evaluator.evaluators.retrieval.evaluator import (
+        RetrievalEvaluator,
+    )
     from rasa.builder.evaluator.tasks.classifier_task import ClassifierTask
+    from rasa.builder.evaluator.tasks.retrieval_task import RetrievalTask
 
     return {
         AvailableTasks.CLASSIFICATION: EvaluatorEntry(
             task_cls=ClassifierTask,
             eval_cls=ClassificationEvaluator,
+            level=AvailableLevels.RUN,
+        ),
+        AvailableTasks.RETRIEVAL: EvaluatorEntry(
+            task_cls=RetrievalTask,
+            eval_cls=RetrievalEvaluator,
             level=AvailableLevels.RUN,
         ),
     }
@@ -77,6 +87,8 @@ class ExperimentRunner:
 
         self._output_dir = Path(self._config.results_dir)
         self._output_dir.mkdir(parents=True, exist_ok=True)
+
+        self._exporter = ResultsExporter(output_dir=self._output_dir)
 
     def _retrieve_dataset(self, dataset_name: str) -> DatasetClient:
         structlogger.info("runner.dataset_retrieval.start", dataset_name=dataset_name)
@@ -110,7 +122,13 @@ class ExperimentRunner:
         )
 
         self._langfuse.flush()
-        self._export_results(result)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        artifacts: List[Artifact] = list(self._evaluator.build_artifacts(timestamp))
+        if "yaml" in self._config.formats:
+            artifacts.append(self._build_run_results_artifact(result, timestamp))
+        self._exporter.export(artifacts=artifacts)
+
         return result
 
     def _build_experiment_kwargs(self, task: AvailableTasks) -> Dict[str, Any]:
@@ -121,7 +139,7 @@ class ExperimentRunner:
             )
         entry = self._registry[task]
 
-        task_instance = entry.task_cls()
+        task_instance = entry.task_cls(config=self._config)
         self._evaluator = entry.eval_cls()
         eval_key = (
             "run_evaluators" if entry.level == AvailableLevels.RUN else "evaluators"
@@ -129,98 +147,26 @@ class ExperimentRunner:
 
         return {"task": task_instance.run_task, eval_key: [self._evaluator.run]}
 
-    def _export_results(self, result: ExperimentResult) -> None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    def _build_run_results_artifact(
+        self, experiment_result: ExperimentResult, timestamp: str
+    ) -> YAMLArtifact:
+        """Compose the experiment-metadata + metrics YAML artifact."""
+        summary = self._evaluator.summary
+        metrics: Dict[str, Any] = {}
+        if summary is not None and hasattr(summary, "model_dump"):
+            metrics = summary.model_dump()
 
-        if "txt" in self._config.formats:
-            self._write_txt(result, timestamp)
-
-        if "yaml" in self._config.formats:
-            self._write_yaml(result, timestamp)
-
-        if self._task == AvailableTasks.CLASSIFICATION:
-            self._write_misclassifications_csv(timestamp)
-
-    def _write_txt(self, result: ExperimentResult, timestamp: str) -> None:
-        output_path = self._output_dir / f"{timestamp}_run_results.txt"
-        try:
-            result_str = result.format().replace("\\n", "\n")
-            with open(str(output_path), "w") as f:
-                f.write(result_str)
-            structlogger.info(
-                "runner.export.txt",
-                file=str(output_path),
-            )
-        except Exception as e:
-            structlogger.error("runner.export.txt_failed", error=str(e))
-
-    def _write_yaml(self, result: ExperimentResult, timestamp: str) -> None:
-        output_path = self._output_dir / f"{timestamp}_run_results.yaml"
-        try:
-            structured_data: Dict[str, Any] = {
-                "experiment": {
-                    "name": self._config.name,
-                    "description": self._config.description,
-                    "timestamp": datetime.now().isoformat(),
-                    "run_url": result.dataset_run_url,
-                    "run_id": result.dataset_run_id,
-                },
-                "metrics": {},
-            }
-
-            summary = self._evaluator.summary
-            if summary is not None and hasattr(summary, "model_dump"):
-                structured_data["metrics"] = summary.model_dump()
-
-            with open(str(output_path), "w") as f:
-                yaml.dump(structured_data, f, default_flow_style=False, sort_keys=False)
-            structlogger.info(
-                "runner.export.yaml",
-                file=str(output_path),
-            )
-        except Exception as e:
-            structlogger.error("runner.export.yaml_failed", error=str(e))
-
-    def _write_misclassifications_csv(self, timestamp: str) -> None:
-        from rasa.builder.evaluator.evaluators.classification.models import (
-            ClassificationResult,
+        data = {
+            "experiment": {
+                "name": self._config.name,
+                "description": self._config.description,
+                "timestamp": datetime.now().isoformat(),
+                "run_url": experiment_result.dataset_run_url,
+                "run_id": experiment_result.dataset_run_id,
+            },
+            "metrics": metrics,
+        }
+        return YAMLArtifact(
+            filename=f"{timestamp}_run_results.yaml",
+            data=data,
         )
-
-        results = self._evaluator.results
-        if not isinstance(results, list):
-            structlogger.warning("runner.export.misclassifications_csv_no_results")
-            return
-
-        misclassified = [
-            r
-            for r in results
-            if isinstance(r, ClassificationResult) and r.prediction != r.expected
-        ]
-        if not misclassified:
-            structlogger.info("runner.export.misclassifications_csv_empty")
-            return
-
-        output_path = self._output_dir / f"{timestamp}_misclassifications.csv"
-        try:
-            with open(output_path, "w", newline="") as f:
-                writer = csv.DictWriter(
-                    f, fieldnames=["input_text", "predicted", "expected"]
-                )
-                writer.writeheader()
-                for r in misclassified:
-                    writer.writerow(
-                        {
-                            "input_text": r.input_text or "",
-                            "predicted": r.prediction.value,
-                            "expected": r.expected.value,
-                        }
-                    )
-            structlogger.info(
-                "runner.export.misclassifications_csv",
-                file=str(output_path),
-                count=len(misclassified),
-            )
-        except Exception as e:
-            structlogger.error(
-                "runner.export.misclassifications_csv_failed", error=str(e)
-            )

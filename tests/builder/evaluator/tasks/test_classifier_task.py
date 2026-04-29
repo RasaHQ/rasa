@@ -3,11 +3,23 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from rasa.builder.evaluator.tasks.base import TaskResult
+from rasa.builder.evaluator.configs.models import ExperimentConfig
+from rasa.builder.evaluator.tasks.base import ClassifierTaskResult
 
 CLASSIFIER_PATH = (
     "rasa.builder.copilot.message_classifier.message_classifier.MessageClassifier"
 )
+
+
+def _make_config() -> ExperimentConfig:
+    return ExperimentConfig(
+        name="test",
+        description="test",
+        dataset_name="test",
+        task="classification",
+        results_dir="/tmp/test",
+        formats=["yaml"],
+    )
 
 
 class TestClassifierTaskInit:
@@ -15,7 +27,7 @@ class TestClassifierTaskInit:
         with patch(CLASSIFIER_PATH) as mock_cls:
             from rasa.builder.evaluator.tasks.classifier_task import ClassifierTask
 
-            task = ClassifierTask()
+            task = ClassifierTask(config=_make_config())
             mock_cls.assert_called_once()
             assert task._classifier is mock_cls.return_value
 
@@ -35,7 +47,7 @@ class TestClassifierTaskRunTask:
         with patch(CLASSIFIER_PATH, return_value=mock_classifier):
             from rasa.builder.evaluator.tasks.classifier_task import ClassifierTask
 
-            task = ClassifierTask()
+            task = ClassifierTask(config=_make_config())
 
         item = SimpleNamespace(
             id="item-1",
@@ -58,7 +70,7 @@ class TestClassifierTaskRunTask:
         )
         result = await task.run_task(item=item)
 
-        assert isinstance(result, TaskResult)
+        assert isinstance(result, ClassifierTaskResult)
         assert result.predicted_category == ResponseCategory.COPILOT
         assert result.complete_response == "test response"
 
@@ -69,7 +81,7 @@ class TestClassifierTaskRunTask:
         with patch(CLASSIFIER_PATH, return_value=mock_classifier):
             from rasa.builder.evaluator.tasks.classifier_task import ClassifierTask
 
-            task = ClassifierTask()
+            task = ClassifierTask(config=_make_config())
 
         item = SimpleNamespace(
             id="item-1",
@@ -98,7 +110,7 @@ class TestClassifierTaskRunTask:
         with patch(CLASSIFIER_PATH):
             from rasa.builder.evaluator.tasks.classifier_task import ClassifierTask
 
-            task = ClassifierTask()
+            task = ClassifierTask(config=_make_config())
 
         # Item with invalid structure → from_raw_data will raise
         item = SimpleNamespace(

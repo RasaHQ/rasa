@@ -5,6 +5,7 @@ from typing import Any, List, Tuple
 
 import structlog
 
+from rasa.builder.evaluator.artifacts import Artifact
 from rasa.builder.telemetry.langfuse_integration.langfuse_compat import require_langfuse
 
 require_langfuse()
@@ -80,3 +81,12 @@ class BaseEvaluator(ABC):
                 error=str(e),
             )
             return []
+
+    def build_artifacts(self, timestamp: str) -> List[Artifact]:
+        """Build evaluator-specific artifacts for export.
+
+        Default is an empty list. Subclasses override to format their own
+        data (using ``self.results`` / ``self.summary``) into ``Artifact``
+        descriptors; the exporter persists them based on type.
+        """
+        return []

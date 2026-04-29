@@ -70,7 +70,7 @@ def valid_config_dict() -> Dict[str, Any]:
         "dataset_name": "test-dataset",
         "task": "classification",
         "results_dir": "results",
-        "formats": ["langfuse", "yaml", "txt"],
+        "formats": ["langfuse", "yaml"],
     }
 
 
@@ -106,7 +106,7 @@ def make_runner(tmp_path: Path):
                 dataset_name="ds",
                 task="classification",
                 results_dir=str(tmp_path / "results"),
-                formats=["langfuse", "yaml", "txt"],
+                formats=["langfuse", "yaml"],
             ),
             "_langfuse": MagicMock(),
             "_task": AvailableTasks.CLASSIFICATION,
@@ -120,6 +120,7 @@ def make_runner(tmp_path: Path):
             "_dataset": MagicMock(),
             "_output_dir": tmp_path / "results",
             "_evaluator": MagicMock(),
+            "_exporter": MagicMock(),
         }
         defaults.update(overrides)
 

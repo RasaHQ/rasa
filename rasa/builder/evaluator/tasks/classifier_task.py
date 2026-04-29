@@ -10,8 +10,9 @@ from typing import Any, Optional
 
 import structlog
 
+from rasa.builder.evaluator.configs.models import ExperimentConfig
 from rasa.builder.evaluator.dataset.models import DatasetEntry
-from rasa.builder.evaluator.tasks.base import BaseTask, TaskResult
+from rasa.builder.evaluator.tasks.base import BaseTask, ClassifierTaskResult
 
 structlogger = structlog.get_logger()
 
@@ -23,7 +24,8 @@ class ClassifierTask(BaseTask):
     items, avoiding redundant initialisation overhead per item.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, config: ExperimentConfig) -> None:
+        super().__init__(config)
         from rasa.builder.copilot.message_classifier.message_classifier import (
             MessageClassifier,
         )
@@ -35,7 +37,7 @@ class ClassifierTask(BaseTask):
         *,
         item: Any,
         **_: Any,
-    ) -> Optional[TaskResult]:
+    ) -> Optional[ClassifierTaskResult]:
         """Run the MessageClassifier on a dataset item.
 
         Args:
@@ -43,7 +45,7 @@ class ClassifierTask(BaseTask):
             kwargs: Additional keyword arguments passed by Langfuse.
 
         Returns:
-            TaskResult with predicted category, or None on failure.
+            ClassifierTaskResult with predicted category, or None on failure.
         """
         try:
             dataset_entry = DatasetEntry.from_raw_data(
@@ -55,7 +57,7 @@ class ClassifierTask(BaseTask):
             context = dataset_entry.to_copilot_context()
             result = await self._classifier.classify(context)
 
-            return TaskResult(
+            return ClassifierTaskResult(
                 predicted_category=result.category,
                 complete_response=result.raw_response,
             )

@@ -12,4 +12,4 @@ description: >
 task: classification
 dataset_name: user-input-classification-dataset
 results_dir: "results/classifier_eval"
-formats: [langfuse, yaml, txt]
+formats: [langfuse, yaml]

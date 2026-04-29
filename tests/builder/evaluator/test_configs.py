@@ -18,7 +18,7 @@ class TestLoadConfig:
         assert config.dataset_name == "test-dataset"
         assert config.task == "classification"
         assert config.results_dir == "results"
-        assert set(config.formats) == {"langfuse", "yaml", "txt"}
+        assert set(config.formats) == {"langfuse", "yaml"}
 
     def test_file_not_found(self):
         with pytest.raises(FileNotFoundError, match="Config file not found"):

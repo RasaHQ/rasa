@@ -2,7 +2,7 @@
 
 Offline evaluation framework for Copilot components. Experiments run against
 [Langfuse](https://langfuse.com) datasets, metrics are tracked in Langfuse and
-exported locally as YAML/TXT. The framework is config-driven — switching between
+exported locally as YAML. The framework is config-driven — switching between
 experiments requires only a YAML file change.
 
 ## Architecture
@@ -28,16 +28,16 @@ experiments requires only a YAML file change.
 │  per dataset   │        │   called once  │
 │  item          │        │   after all    │
 │                │        │   items        │
-│  Returns       │        │  item-level:   │
-│  TaskResult    │        │   called per   │
-│                │        │   item         │
+│  Returns a     │        │  item-level:   │
+│  task-specific │        │   called per   │
+│  result model  │        │   item         │
 └────────────────┘        └────────────────┘
         │                          │
         ▼                          ▼
 ┌──────────────────────────────────────────┐
 │              Langfuse                    │
 │  Dataset run + Evaluation objects        │
-│  + local export (YAML, TXT)              │
+│  + local export (YAML, CSV)              │
 └──────────────────────────────────────────┘
 ```
 
@@ -52,10 +52,10 @@ in `configs/models.py`:
 |----------------|---------------------------------------------------|
 | `name`         | Experiment name (shown in Langfuse)               |
 | `description`  | Human-readable description                        |
-| `task`         | Task type (available tasks: `classification`)     |
+| `task`         | Task type (available: `classification`, `retrieval`) |
 | `dataset_name` | Langfuse dataset to evaluate against              |
 | `results_dir`  | Local directory for exported results              |
-| `formats`      | Output formats: `langfuse`, `yaml`, `txt`         |
+| `formats`      | Output formats: `langfuse`, `yaml`                |
 
 ### Runner (`runner.py`)
 
@@ -75,15 +75,20 @@ Langfuse's `dataset.run_experiment()` with the correct evaluator key:
 ### Tasks (`tasks/`)
 
 A task is a class extending `BaseTask`. It receives a single Langfuse dataset
-item and returns a `TaskResult`:
+item and returns a task-specific result model (e.g. `ClassifierTaskResult`,
+`RetrievalTaskResult`):
 
 ```python
 class BaseTask(ABC):
+    def __init__(self, config: ExperimentConfig) -> None:
+        self._config = config
+
     @abstractmethod
-    async def run_task(self, *, item: Any, **kwargs: Any) -> Optional[TaskResult]: ...
+    async def run_task(self, *, item: Any, **kwargs: Any) -> Optional[Any]: ...
 ```
 
-- `__init__` — set up expensive resources once (e.g. model clients)
+- `__init__` — receives the full `ExperimentConfig` so the task can read
+  task-specific fields (e.g. `config.retrieval`); set up expensive resources once
 - `run_task` — called per dataset item by Langfuse
 
 ### Evaluators (`evaluators/`)
@@ -106,8 +111,9 @@ The `run()` method is the Langfuse entry point — subclasses should not overrid
 
 1. **Create a task** in `tasks/`:
    - Extend `BaseTask`
-   - Initialize resources in `__init__`
-   - Implement `run_task(*, item, **kwargs) -> Optional[TaskResult]`
+   - Define a task-specific result model in `tasks/base.py`
+   - Initialize resources in `__init__(config)` and call `super().__init__(config)`
+   - Implement `run_task(*, item, **kwargs) -> Optional[<YourResultModel>]`
 
 2. **Create an evaluator** in `evaluators/<name>/`:
    - Extend `BaseEvaluator`
@@ -136,7 +142,7 @@ The `run()` method is the Langfuse entry point — subclasses should not overrid
    task: my_task
    dataset_name: my-langfuse-dataset
    results_dir: "results/my_experiment"
-   formats: [langfuse, yaml, txt]
+   formats: [langfuse, yaml]
    ```
 
 6. **Run it**:
@@ -168,6 +174,27 @@ python -m rasa.builder.evaluator.run_experiment \
     --config rasa/builder/evaluator/configs/test_message_classifier.yaml
 ```
 
+### Retrieval
+
+Evaluates document retrieval quality in isolation (no copilot response generation).
+Reports recall@K, MRR, latency, error/empty rates overall and per query category.
+
+| Property    | Value                                                        |
+|-------------|--------------------------------------------------------------|
+| Config      | `configs/test_retrieval.yaml`                                |
+| Task        | `RetrievalTask` (`tasks/retrieval_task.py`)                  |
+| Evaluator   | `RetrievalEvaluator` (`evaluators/retrieval/`)               |
+| Level       | `run` (batch metrics after all items)                        |
+| Dataset     | `retrieval-eval-v1`                                          |
+| Metrics     | recall@3/5/10, MRR, latency (mean/p50/p95), error rate, empty result rate, per-category breakdown |
+
+**Run:**
+
+```bash
+python -m rasa.builder.evaluator.run_experiment \
+    --config rasa/builder/evaluator/configs/test_retrieval.yaml
+```
+
 ## Environment variables
 
 | Variable              | Required | Description                          |
@@ -175,7 +202,8 @@ python -m rasa.builder.evaluator.run_experiment \
 | `OPENAI_API_KEY`      | Yes      | OpenAI API key for LLM calls         |
 | `LANGFUSE_PUBLIC_KEY` | Yes      | Langfuse project public key          |
 | `LANGFUSE_SECRET_KEY` | Yes      | Langfuse project secret key          |
-| `LANGFUSE_HOST`       | No       | Langfuse host URL (defaults to cloud) |
+| `LANGFUSE_HOST`       | No       | Langfuse host URL (defaults to cloud)|
+| `INKEEP_API_KEY`      | Yes      | InKeep API key for retrieval calls   |
 
 ## Output formats
 
@@ -185,7 +213,13 @@ Results can be exported in any combination via the `formats` config field:
 |------------|--------------------------------------------------------------------|
 | `langfuse` | Evaluation objects stored in the Langfuse experiment run (always on)|
 | `yaml`     | Timestamped YAML file in `results_dir` with structured metrics     |
-| `txt`      | Timestamped text file in `results_dir` with human-readable summary |
 
-Output files are named `<YYYYMMDD_HHMMSS>_run_results.<ext>` and written to the
+Output files are named `<YYYYMMDD_HHMMSS>_run_results.yaml` and written to the
 directory specified by `results_dir` in the config.
+
+Task-specific artifacts are also written alongside YAML:
+
+| Artifact                                 | Task             | Contents                             |
+|------------------------------------------|------------------|--------------------------------------|
+| `<timestamp>_misclassifications.csv`     | `classification` | Misclassified items (input, predicted, expected) |
+| `<timestamp>_bias_report.csv`            | `retrieval`      | Top over-retrieved URLs with bias scores |

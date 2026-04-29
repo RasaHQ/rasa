@@ -5,12 +5,13 @@ from typing import List, Tuple
 import structlog
 
 from rasa.builder.copilot.models import ResponseCategory
+from rasa.builder.evaluator.artifacts import Artifact, CSVArtifact
 from rasa.builder.evaluator.evaluators.base import BaseEvaluator
 from rasa.builder.evaluator.evaluators.classification.models import (
     ClassificationResult,
     MetricsSummary,
 )
-from rasa.builder.evaluator.tasks.base import TaskResult
+from rasa.builder.evaluator.tasks.base import ClassifierTaskResult
 from rasa.builder.telemetry.langfuse_integration.langfuse_compat import require_langfuse
 
 require_langfuse()
@@ -37,7 +38,7 @@ class ClassificationEvaluator(BaseEvaluator):
 
             if (
                 output is None
-                or not isinstance(output, TaskResult)
+                or not isinstance(output, ClassifierTaskResult)
                 or output.predicted_category is None
                 or expected is None
                 or not isinstance(expected, dict)
@@ -136,3 +137,34 @@ class ClassificationEvaluator(BaseEvaluator):
         )
 
         return evaluations
+
+    def build_artifacts(self, timestamp: str) -> List[Artifact]:
+        """Build the misclassifications CSV artifact."""
+        if not isinstance(self.results, list):
+            structlogger.warning("evaluators.classification.export.no_results")
+            return []
+
+        misclassified = [
+            r
+            for r in self.results
+            if isinstance(r, ClassificationResult) and r.prediction != r.expected
+        ]
+        if not misclassified:
+            structlogger.info("evaluators.classification.export.empty")
+            return []
+
+        rows = [
+            {
+                "input_text": r.input_text or "",
+                "predicted": r.prediction.value,
+                "expected": r.expected.value,
+            }
+            for r in misclassified
+        ]
+        return [
+            CSVArtifact(
+                filename=f"{timestamp}_misclassifications.csv",
+                fieldnames=["input_text", "predicted", "expected"],
+                rows=rows,
+            )
+        ]

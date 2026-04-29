@@ -14,7 +14,7 @@ from rasa.builder.evaluator.evaluators.classification.models import (
     OverallClassificationMetrics,
     PerClassMetrics,
 )
-from rasa.builder.evaluator.tasks.base import TaskResult
+from rasa.builder.evaluator.tasks.base import ClassifierTaskResult
 
 COPILOT = ResponseCategory.COPILOT
 ERROR = ResponseCategory.ERROR_FALLBACK
@@ -23,7 +23,7 @@ ERROR = ResponseCategory.ERROR_FALLBACK
 class TestExtractResults:
     def test_happy_path(self, make_item_result):
         item = make_item_result(
-            output=TaskResult(predicted_category=COPILOT),
+            output=ClassifierTaskResult(predicted_category=COPILOT),
             expected_output={"response_category": "copilot"},
             item_input={"message": "hello"},
         )
@@ -39,7 +39,7 @@ class TestExtractResults:
     def test_multiple_valid_items(self, make_item_result):
         items = [
             make_item_result(
-                output=TaskResult(predicted_category=COPILOT),
+                output=ClassifierTaskResult(predicted_category=COPILOT),
                 expected_output={"response_category": "copilot"},
                 item_id=f"item-{i}",
             )
@@ -75,7 +75,7 @@ class TestExtractResults:
 
     def test_skip_none_predicted_category(self, make_item_result):
         item = make_item_result(
-            output=TaskResult(predicted_category=None),
+            output=ClassifierTaskResult(predicted_category=None),
             expected_output={"response_category": "copilot"},
         )
         evaluator = ClassificationEvaluator()
@@ -87,7 +87,7 @@ class TestExtractResults:
     def test_skip_none_expected(self):
         """When item is None, expected becomes None → skipped."""
         item_result = SimpleNamespace(
-            output=TaskResult(predicted_category=COPILOT), item=None
+            output=ClassifierTaskResult(predicted_category=COPILOT), item=None
         )
         evaluator = ClassificationEvaluator()
         results, skip_count = evaluator.extract_results([item_result])
@@ -97,7 +97,7 @@ class TestExtractResults:
 
     def test_skip_expected_not_dict(self, make_item_result):
         item = make_item_result(
-            output=TaskResult(predicted_category=COPILOT),
+            output=ClassifierTaskResult(predicted_category=COPILOT),
             expected_output="not a dict",
         )
         evaluator = ClassificationEvaluator()
@@ -108,7 +108,7 @@ class TestExtractResults:
 
     def test_skip_invalid_response_category(self, make_item_result):
         item = make_item_result(
-            output=TaskResult(predicted_category=COPILOT),
+            output=ClassifierTaskResult(predicted_category=COPILOT),
             expected_output={"response_category": "TOTALLY_INVALID"},
         )
         evaluator = ClassificationEvaluator()
@@ -119,7 +119,7 @@ class TestExtractResults:
 
     def test_input_text_from_dict(self, make_item_result):
         item = make_item_result(
-            output=TaskResult(predicted_category=COPILOT),
+            output=ClassifierTaskResult(predicted_category=COPILOT),
             expected_output={"response_category": "copilot"},
             item_input={"message": "test message"},
         )
@@ -130,7 +130,7 @@ class TestExtractResults:
 
     def test_input_text_none_fallback(self, make_item_result):
         item = make_item_result(
-            output=TaskResult(predicted_category=COPILOT),
+            output=ClassifierTaskResult(predicted_category=COPILOT),
             expected_output={"response_category": "copilot"},
             item_input=None,
         )
@@ -143,12 +143,12 @@ class TestExtractResults:
         """Skipped items are logged; valid items still extracted."""
         items = [
             make_item_result(
-                output=TaskResult(predicted_category=COPILOT),
+                output=ClassifierTaskResult(predicted_category=COPILOT),
                 expected_output={"response_category": "copilot"},
             ),
             make_item_result(output=None, expected_output=None),
             make_item_result(
-                output=TaskResult(predicted_category=ERROR),
+                output=ClassifierTaskResult(predicted_category=ERROR),
                 expected_output={"response_category": "error_fallback"},
             ),
         ]
@@ -220,3 +220,58 @@ class TestToEvaluations:
 
         skipped = next(e for e in evaluations if e.name == "skipped_items")
         assert skipped.value == 2
+
+
+class TestBuildArtifacts:
+    def test_returns_misclassifications_csv(self):
+        evaluator = ClassificationEvaluator()
+        evaluator.results = [
+            ClassificationResult(
+                prediction=COPILOT, expected=ERROR, input_text="wrong"
+            ),
+            ClassificationResult(
+                prediction=COPILOT, expected=COPILOT, input_text="right"
+            ),
+        ]
+
+        artifacts = evaluator.build_artifacts(timestamp="20260408_120000")
+
+        assert len(artifacts) == 1
+        artifact = artifacts[0]
+        assert artifact.filename == "20260408_120000_misclassifications.csv"
+        assert artifact.fieldnames == ["input_text", "predicted", "expected"]
+        assert artifact.rows == [
+            {
+                "input_text": "wrong",
+                "predicted": "copilot",
+                "expected": "error_fallback",
+            }
+        ]
+
+    def test_no_misclassifications_returns_empty(self):
+        evaluator = ClassificationEvaluator()
+        evaluator.results = [
+            ClassificationResult(prediction=COPILOT, expected=COPILOT),
+        ]
+
+        artifacts = evaluator.build_artifacts(timestamp="20260408_120000")
+
+        assert artifacts == []
+
+    def test_non_list_results_returns_empty(self):
+        evaluator = ClassificationEvaluator()
+        evaluator.results = None
+
+        artifacts = evaluator.build_artifacts(timestamp="20260408_120000")
+
+        assert artifacts == []
+
+    def test_none_input_text_becomes_empty_string(self):
+        evaluator = ClassificationEvaluator()
+        evaluator.results = [
+            ClassificationResult(prediction=COPILOT, expected=ERROR, input_text=None)
+        ]
+
+        artifacts = evaluator.build_artifacts(timestamp="20260408_120000")
+
+        assert artifacts[0].rows[0]["input_text"] == ""
