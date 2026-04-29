@@ -278,12 +278,18 @@ jobs:
         continue-on-error: true
         if: ${{ steps.filter.outputs.lock_file == 'true' }}
         id: check_litellm_upgrade
-        run: git diff ${{ github.sha }}:pyproject.toml origin/${{ github.base_ref }}:pyproject.toml | grep -e '-litellm\|+litellm2'
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          BASE_REF: ${{ github.base_ref }}
+        run: git diff "$GITHUB_SHA:pyproject.toml" "origin/$BASE_REF:pyproject.toml" | grep -e '-litellm\|+litellm2'
       - name: Check upgrades to OpenAI dependency
         continue-on-error: true
         id: check_openai_upgrade
         if: ${{ always() && steps.filter.outputs.lock_file == 'true' }}
-        run: git diff ${{ github.sha }}:pyproject.toml origin/${{ github.base_ref }}:pyproject.toml | grep -e '-openai\|+openai'
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          BASE_REF: ${{ github.base_ref }}
+        run: git diff "$GITHUB_SHA:pyproject.toml" "origin/$BASE_REF:pyproject.toml" | grep -e '-openai\|+openai'
 
   e2e_test:
     name: Run e2e Test

@@ -283,21 +283,29 @@ jobs:
 
       - name: Checkout target branch to be able to diff on PR
         if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          git fetch origin ${{ github.base_ref }}
-          echo "DOCSTRING_DIFF_BRANCH=origin/${{ github.base_ref }}" >> $GITHUB_ENV
+          git fetch origin "$BASE_REF"
+          echo "DOCSTRING_DIFF_BRANCH=origin/$BASE_REF" >> "$GITHUB_ENV"
 
       - name: Checkout target branch to be able to diff on merge queue
         if: github.event_name == 'merge_group'
+        env:
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: |
-          git fetch origin ${{ github.event.merge_group.base_sha }}
-          echo "DOCSTRING_DIFF_BRANCH=${{ github.event.merge_group.base_sha }}" >> $GITHUB_ENV
+          git fetch origin "$MERGE_GROUP_BASE_SHA"
+          echo "DOCSTRING_DIFF_BRANCH=$MERGE_GROUP_BASE_SHA" >> "$GITHUB_ENV"
 
       - name: Fetch current branch
         run: |
           # Fetch entire history for current branch so that `make lint-docstrings`
           # can calculate the proper diff between the branches
-          git fetch --unshallow origin "${{ github.ref }}"
+          if [ -f .git/shallow ]; then
+            git fetch --unshallow origin
+          else
+            git fetch origin
+          fi
 
       - name: Add github workflow problem matchers
         run: |

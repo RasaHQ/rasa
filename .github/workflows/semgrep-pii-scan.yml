@@ -32,16 +32,18 @@ jobs:
       
       - name: Get changed files
         id: changed-files
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          git fetch origin ${{ github.base_ref }}
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD | grep '\.py$' || true)
+          git fetch origin "$BASE_REF"
+          CHANGED_FILES=$(git diff --name-only "origin/$BASE_REF" HEAD | grep '\.py$' || true)
           
           if [ -n "$CHANGED_FILES" ]; then
-            echo "changed_files<<EOF" >> $GITHUB_OUTPUT
-            echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+            echo "changed_files<<EOF" >> "$GITHUB_OUTPUT"
+            echo "$CHANGED_FILES" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
           else
-            echo "changed_files=" >> $GITHUB_OUTPUT
+            echo "changed_files=" >> "$GITHUB_OUTPUT"
           fi
       
       - name: Run Semgrep scan
