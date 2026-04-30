@@ -16,7 +16,12 @@ from rasa.agents.constants import (
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentOutput
 from rasa.agents.schemas.agent_input import AgentInput, AgentInputSlot
-from rasa.core.available_agents import AgentConfig, AgentInfo
+from rasa.core.available_agents import (
+    AgentConfig,
+    AgentConnections,
+    AgentInfo,
+    AgentMCPServerConfig,
+)
 from rasa.core.constants import (
     ACTIVE_FLOW_METADATA_KEY,
     BOT_UTTERANCE_AGENT_MESSAGE_TIMESTAMP_KEY,
@@ -2813,3 +2818,204 @@ async def test_run_agent_started_metadata_empty_when_no_config(
     ]
     assert len(agent_started_events) == 1
     assert "description" not in (agent_started_events[0].metadata or {})
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_mcp_tools_collected_across_servers(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """mcp_tools in metadata collects include_tools from all servers."""
+    agent_config = AgentConfig(
+        agent=AgentInfo(name="car-research", description="desc"),
+        connections=AgentConnections(
+            mcp_servers=[
+                AgentMCPServerConfig(name="srv1", include_tools=["tool_a", "tool_b"]),
+                AgentMCPServerConfig(name="srv2", include_tools=["tool_c"]),
+            ]
+        ),
+    )
+    config_instance = mock_available_agents.return_value.available_agents
+    config_instance.get_agent_config.return_value = agent_config
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    event = next(e for e in result.events if isinstance(e, AgentStarted))
+    assert event.metadata["mcp_tools"] == ["tool_a", "tool_b", "tool_c"]
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_excluded_mcp_tools_collected_across_servers(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """excluded_mcp_tools in metadata collects exclude_tools from all servers."""
+    agent_config = AgentConfig(
+        agent=AgentInfo(name="car-research", description="desc"),
+        connections=AgentConnections(
+            mcp_servers=[
+                AgentMCPServerConfig(name="srv1", exclude_tools=["delete_record"]),
+                AgentMCPServerConfig(name="srv2", exclude_tools=["admin_reset"]),
+            ]
+        ),
+    )
+    config_instance = mock_available_agents.return_value.available_agents
+    config_instance.get_agent_config.return_value = agent_config
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    event = next(e for e in result.events if isinstance(e, AgentStarted))
+    assert event.metadata["excluded_mcp_tools"] == ["delete_record", "admin_reset"]
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_excluded_mcp_tools_empty_when_no_exclude_tools_configured(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """excluded_mcp_tools is an empty list when servers have no exclude_tools."""
+    agent_config = AgentConfig(
+        agent=AgentInfo(name="car-research", description="desc"),
+        connections=AgentConnections(
+            mcp_servers=[
+                AgentMCPServerConfig(name="srv1", include_tools=["tool_a"]),
+            ]
+        ),
+    )
+    config_instance = mock_available_agents.return_value.available_agents
+    config_instance.get_agent_config.return_value = agent_config
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    event = next(e for e in result.events if isinstance(e, AgentStarted))
+    assert event.metadata["excluded_mcp_tools"] == []
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_excluded_mcp_tools_absent_when_no_connections_config(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """excluded_mcp_tools is not in metadata when agent has no connections config."""
+    agent_config = AgentConfig(
+        agent=AgentInfo(name="car-research", description="desc"),
+    )
+    config_instance = mock_available_agents.return_value.available_agents
+    config_instance.get_agent_config.return_value = agent_config
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    event = next(e for e in result.events if isinstance(e, AgentStarted))
+    assert "excluded_mcp_tools" not in (event.metadata or {})

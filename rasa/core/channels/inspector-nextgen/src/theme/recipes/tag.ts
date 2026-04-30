@@ -5,14 +5,32 @@ export const tagSlotRecipe = defineSlotRecipe({
   slots: ["root", "label"],
   base: {
     root: {
-      bg: "colorPalette.subtle",
+      bg: "rasaNeutral.300",
       borderRadius: "0.5rem",
+      paddingInline: "10px"
     },
     label: {
-      color: "colorPalette.solid",
+      fontFamily: "Soehne",
       fontWeight: "500",
-      fontSize: "13px",
     },
   },
-  variants: {},
+  variants: {
+    variant: {
+      subtle: {
+        root: {
+          bg: "rasaNeutral.300",
+        },
+        label: {
+          color: "rasaNeutral.800",
+        }
+      }
+    },
+    size: {
+      lg: {
+        root: {
+          fontSize: "12px",
+        }
+      }
+    }
+  },
 });

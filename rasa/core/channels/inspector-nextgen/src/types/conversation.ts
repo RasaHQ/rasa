@@ -140,6 +140,8 @@ export type EventMetadata = {
   parseData: unknown;
   agent_id?: string;
   description?: string;
+  mcp_tools?: string[];
+  excluded_mcp_tools?: string[];
 };
 
 export type RawEvent = {

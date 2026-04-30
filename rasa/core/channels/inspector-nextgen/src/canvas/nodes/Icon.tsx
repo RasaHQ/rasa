@@ -29,6 +29,7 @@ export const Icon = ({ node }: Props) => {
     bg: bgColor[0],
     w: "1.875rem",
     h: "1.875rem",
+    minWidth: "1.875rem",
     justifyContent: "center",
     alignItems: "center",
   };

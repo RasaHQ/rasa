@@ -183,4 +183,91 @@ describe("AgentEventInfo", () => {
       expect(screen.getByText("Event info")).toBeInTheDocument();
     });
   });
+
+  describe("tools section", () => {
+    it("renders 'All server tools available' when neither tools nor excluded tools are set", () => {
+      renderWithProviders(
+        <AgentEventInfo event={baseEvent} onClose={vi.fn()} />,
+      );
+
+      expect(screen.getByText("Tools")).toBeInTheDocument();
+      expect(screen.getByText("All server tools available")).toBeInTheDocument();
+    });
+
+    it("renders 'All server tools available' when tools and excluded tools are empty arrays", () => {
+      const event: ConversationEvent = {
+        ...baseEvent,
+        metadata: {
+          ...baseEvent.metadata,
+          mcp_tools: [],
+          excluded_mcp_tools: [],
+        },
+      };
+
+      renderWithProviders(
+        <AgentEventInfo event={event} onClose={vi.fn()} />,
+      );
+
+      expect(screen.getByText("All server tools available")).toBeInTheDocument();
+    });
+
+    it("renders tool tags under 'Tools' heading when mcp_tools are present", () => {
+      const event: ConversationEvent = {
+        ...baseEvent,
+        metadata: {
+          ...baseEvent.metadata,
+          mcp_tools: ["search_web", "send_email"],
+        },
+      };
+
+      renderWithProviders(
+        <AgentEventInfo event={event} onClose={vi.fn()} />,
+      );
+
+      expect(screen.getByText("Tools")).toBeInTheDocument();
+      expect(screen.getByText("search_web")).toBeInTheDocument();
+      expect(screen.getByText("send_email")).toBeInTheDocument();
+      expect(screen.queryByText("All server tools available")).not.toBeInTheDocument();
+    });
+
+    it("renders excluded tool tags under 'Excluded tools' heading when excluded_mcp_tools are present", () => {
+      const event: ConversationEvent = {
+        ...baseEvent,
+        metadata: {
+          ...baseEvent.metadata,
+          excluded_mcp_tools: ["delete_record", "admin_reset"],
+        },
+      };
+
+      renderWithProviders(
+        <AgentEventInfo event={event} onClose={vi.fn()} />,
+      );
+
+      expect(screen.getByText("Excluded tools")).toBeInTheDocument();
+      expect(screen.getByText("delete_record")).toBeInTheDocument();
+      expect(screen.getByText("admin_reset")).toBeInTheDocument();
+      expect(screen.queryByText("All server tools available")).not.toBeInTheDocument();
+    });
+
+    it("renders both 'Tools' and 'Excluded tools' sections when both are present", () => {
+      const event: ConversationEvent = {
+        ...baseEvent,
+        metadata: {
+          ...baseEvent.metadata,
+          mcp_tools: ["search_web"],
+          excluded_mcp_tools: ["delete_record"],
+        },
+      };
+
+      renderWithProviders(
+        <AgentEventInfo event={event} onClose={vi.fn()} />,
+      );
+
+      expect(screen.getByText("Tools")).toBeInTheDocument();
+      expect(screen.getByText("search_web")).toBeInTheDocument();
+      expect(screen.getByText("Excluded tools")).toBeInTheDocument();
+      expect(screen.getByText("delete_record")).toBeInTheDocument();
+      expect(screen.queryByText("All server tools available")).not.toBeInTheDocument();
+    });
+  });
 });

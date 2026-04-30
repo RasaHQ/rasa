@@ -306,6 +306,14 @@ async def run_agent(
         agent_metadata: Dict[str, Any] = {}
         if agent_config:
             agent_metadata["description"] = agent_config.agent.description
+            if agent_config.connections:
+                servers = agent_config.connections.mcp_servers or []
+                agent_metadata["mcp_tools"] = [
+                    t for s in servers for t in (s.include_tools or [])
+                ]
+                agent_metadata["excluded_mcp_tools"] = [
+                    t for s in servers for t in (s.exclude_tools or [])
+                ]
         final_events.append(
             AgentStarted(step.call, step.flow_id, metadata=agent_metadata)
         )
