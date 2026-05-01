@@ -151,3 +151,18 @@ runs:
       --env-file="$ENV_FILE_PATH" \
       logs rasa-https-action-server
     shell: bash
+
+  - name: Check rasa-pro-direct container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      RASA_SDK_REPOSITORY: ${{ inputs.RASA_SDK_REPOSITORY }}
+      RASA_SDK_IMAGE_TAG: ${{ inputs.RASA_SDK_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
+      ENV_FILE_PATH: ${{ inputs.ENV_FILE_PATH }}
+    run: |
+      docker compose -f "$COMPOSE_FILE_PATH" \
+        --env-file="$ENV_FILE_PATH" \
+        logs rasa-pro-direct
+    shell: bash

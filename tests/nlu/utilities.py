@@ -1,13 +1,15 @@
 import tempfile
 
-import ruamel.yaml as yaml
+from ruamel.yaml import YAML
 
 
 def write_file_config(file_config):
     with tempfile.NamedTemporaryFile(
         "w+", suffix="_tmp_config_file.yml", delete=False
     ) as f:
-        f.write(yaml.safe_dump(file_config))
+        with YAML(typ="safe", pure=True, output=f) as yaml:
+            yaml.dump(file_config)
+
         f.flush()
         return f
 

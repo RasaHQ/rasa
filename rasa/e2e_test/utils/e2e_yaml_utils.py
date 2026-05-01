@@ -43,7 +43,8 @@ class E2ETestYAMLWriter:
         if not output_dir.exists():
             output_dir.mkdir(parents=True, exist_ok=True)
 
-        yaml_data = ruamel.yaml.safe_load(tests)
+        yaml = ruamel.yaml.YAML(typ="safe", pure=True)
+        yaml_data = yaml.load(tests)
 
         test_cases_yaml = {KEY_TEST_CASES: yaml_data}
         with open(output_file, "w") as outfile:

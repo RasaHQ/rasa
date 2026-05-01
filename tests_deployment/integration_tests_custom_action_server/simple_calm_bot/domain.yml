@@ -4,6 +4,8 @@ actions:
   - action_list_contacts
   - action_list_reminders
   - action_end_session
+  - action_stream_recent_transactions
+  - action_stream_agent_skills
 
 slots:
   transfer_money_recipient:

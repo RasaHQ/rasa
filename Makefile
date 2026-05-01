@@ -23,6 +23,7 @@ METRICS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/tracing/test_metrics.
 CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/actions/custom_actions
 NLU_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_custom_actions_with_nlu.py
 CALM_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_custom_actions_with_calm.py
+STREAMING_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_streaming_actions.py
 ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/enterprise_search
 CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channels
 VOICE_READY_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channels/voice_ready
@@ -538,7 +539,7 @@ test-custom-action-integration-with-nlu-bot:  ## Run the action server integrati
 
 
 # Run the action server integration tests with CALM bot
-test-custom-action-integration-with-calm-bot: INTEGRATION_TEST_PATH = $(CALM_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)
+test-custom-action-integration-with-calm-bot: INTEGRATION_TEST_PATH = $(CALM_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) $(STREAMING_ACTIONS_INTEGRATION_TEST_PATH)
 test-custom-action-integration-with-calm-bot: RESULTS_FILE = integration-results-custom-actions-with-calm-bot-results.xml
 test-custom-action-integration-with-calm-bot:  ## Run the action server integration tests with CALM bot.
 	$(TEST_CUSTOM_ACTION_INTEGRATION_COMMAND)

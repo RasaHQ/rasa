@@ -252,3 +252,54 @@ class QueueOutputChannel(CollectingOutputChannel):
 
     async def _persist_message(self, message: Dict[Text, Any]) -> None:
         await self.messages.put(message)
+
+    @property
+    def supports_streaming(self) -> bool:
+        """QueueOutputChannel supports streaming: chunks are forwarded to the
+        SSE queue immediately so the REST client receives them in real time."""
+        return True
+
+    async def send_response_chunk(
+        self,
+        recipient_id: Text,
+        chunk: Text,
+        **kwargs: Any,
+    ) -> None:
+        """Forward a streamed text chunk directly onto the SSE queue.
+
+        Each call results in one NDJSON line written to the client by
+        ``stream_response``, so the end user sees tokens as they arrive
+        rather than waiting for the full response.
+
+        The base-class implementation is called first so that
+        ``_accumulated_streaming_text`` stays up to date.  This allows
+        ``send_text_message`` to detect and suppress follow-up
+        ``_utter_responses`` calls that would otherwise push the full
+        assembled text onto the queue a second time.
+        """
+        await super().send_response_chunk(recipient_id, chunk, **kwargs)
+        await self.messages.put({"recipient_id": recipient_id, "text": chunk})
+
+    async def send_text_message(
+        self,
+        recipient_id: Text,
+        text: Text,
+        **kwargs: Any,
+    ) -> None:
+        """Enqueue a text message, skipping it if it duplicates streamed content.
+
+        When an action streams its response token-by-token via
+        ``send_response_chunk`` and the same assembled text is later delivered
+        again through ``_utter_responses`` → ``send_response`` →
+        ``send_text_message``, this guard detects the exact-text match against
+        ``_accumulated_streaming_text`` and silently drops the duplicate,
+        preventing the end user from receiving the same message twice in the
+        SSE stream.
+
+        Any text that does *not* match the last streamed content (e.g. a
+        separate follow-up message dispatched via ``utter_message`` for
+        different content) is forwarded normally.
+        """
+        if self._is_duplicate_of_last_streamed_response(text):
+            return
+        await super().send_text_message(recipient_id, text, **kwargs)

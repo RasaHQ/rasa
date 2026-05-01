@@ -1,12 +1,15 @@
+import asyncio
 import json
 from abc import ABC
 from typing import Any, Dict, List, Optional, Text, Union
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import grpc
+import grpc.aio
 import pytest
 import structlog
 from google.protobuf.json_format import Parse
+from google.protobuf.struct_pb2 import Struct
 from pytest import MonkeyPatch
 from rasa_sdk.grpc_errors import ResourceNotFound, ResourceNotFoundType
 from rasa_sdk.grpc_py import action_webhook_pb2
@@ -23,6 +26,7 @@ from rasa.core.actions.custom_action_executor import (
     CustomActionRequestWriter,
 )
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
+from rasa.core.channels import OutputChannel
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import (
     AnySlot,
@@ -1430,21 +1434,35 @@ def grpc_custom_action_executor() -> GRPCCustomActionExecutor:
     return GRPCCustomActionExecutor(action_name(), action_endpoint())
 
 
+def make_aio_rpc_error(code: grpc.StatusCode, details: str) -> grpc.aio.AioRpcError:
+    """Construct a ``grpc.aio.AioRpcError`` suitable for use as a side_effect."""
+    return grpc.aio.AioRpcError(
+        code=code,
+        initial_metadata=grpc.aio.Metadata(),
+        trailing_metadata=grpc.aio.Metadata(),
+        details=details,
+    )
+
+
 @pytest.fixture
-def grpc_insecure_channel_result() -> MagicMock:
-    """Return grpc insecure channel result."""
-    return MagicMock()
+def grpc_insecure_channel_result() -> AsyncMock:
+    """Return an async-context-manager-compatible mock for an aio channel."""
+    mock_channel = AsyncMock()
+    # ``async with channel as ch`` should yield the channel itself,
+    # matching grpc.aio.Channel behaviour.
+    mock_channel.__aenter__.return_value = mock_channel
+    return mock_channel
 
 
 @pytest.fixture
 def grpc_insecure_channel(
-    monkeypatch: MonkeyPatch, grpc_insecure_channel_result: MagicMock
+    monkeypatch: MonkeyPatch, grpc_insecure_channel_result: AsyncMock
 ) -> MagicMock:
-    """Mock grpc.insecure channel."""
+    """Mock grpc.aio.insecure_channel."""
     _grpc_insecure_channel = MagicMock()
     _grpc_insecure_channel.return_value = grpc_insecure_channel_result
     monkeypatch.setattr(
-        "grpc.insecure_channel",
+        "grpc.aio.insecure_channel",
         _grpc_insecure_channel,
     )
     return _grpc_insecure_channel
@@ -1452,19 +1470,23 @@ def grpc_insecure_channel(
 
 @pytest.fixture
 def grpc_secure_channel(monkeypatch: MonkeyPatch) -> MagicMock:
-    """Mock grpc.secure channel."""
+    """Mock grpc.aio.secure_channel."""
     _grpc_secure_channel = MagicMock()
     monkeypatch.setattr(
-        "grpc.secure_channel",
+        "grpc.aio.secure_channel",
         _grpc_secure_channel,
     )
     return _grpc_secure_channel
 
 
 @pytest.fixture
-def grpc_client() -> MagicMock:
-    """Return grpc client."""
-    return MagicMock()
+def grpc_client() -> AsyncMock:
+    """Return an async-capable mock gRPC stub.
+
+    ``grpc_client.Webhook`` is an ``AsyncMock`` so it can be awaited inside
+    ``_request()`` without blocking.
+    """
+    return AsyncMock()
 
 
 @pytest.fixture
@@ -1536,7 +1558,7 @@ def mock_file_as_bytes(monkeypatch: MonkeyPatch) -> MagicMock:
 
 
 def test_create_grpc_insecure_channel(
-    grpc_insecure_channel_result: MagicMock,
+    grpc_insecure_channel_result: AsyncMock,
     grpc_insecure_channel: MagicMock,
     grpc_custom_action_executor: GRPCCustomActionExecutor,
 ) -> None:
@@ -1711,15 +1733,22 @@ def test_test_grpc_custom_action_executor_logs_error_on_wrong_cert_configuration
 
 
 @pytest.mark.parametrize(
-    "dialogue_tracker, expected_warning_logs",
-    [(create_tracker_with_tuple(), 1), (create_tracker_without_tuple(), 0)],
+    "dialogue_tracker",
+    [create_tracker_with_tuple(), create_tracker_without_tuple()],
 )
 def test_grpc_custom_action_executor_create_payload(
     dialogue_tracker: DialogueStateTracker,
-    expected_warning_logs: int,
     domain: Domain,
     grpc_custom_action_executor: GRPCCustomActionExecutor,
 ) -> None:
+    """Payload creation must succeed without warnings for both tuple and
+    non-tuple slot values.
+
+    Tuples used to trigger a ParseDict failure that was silently caught and
+    retried via a JSON round-trip (emitting a warning).  _sanitize_payload()
+    now normalises tuples to lists before ParseDict is called, so no warning
+    should be emitted and no JSON fallback is needed.
+    """
     with structlog.testing.capture_logs() as caplog:
         result_grpc_payload = grpc_custom_action_executor._create_payload(
             tracker=dialogue_tracker, domain=domain
@@ -1728,6 +1757,7 @@ def test_grpc_custom_action_executor_create_payload(
         expected_grpc_payload = create_grpc_payload(tracker=dialogue_tracker)
 
         assert result_grpc_payload == expected_grpc_payload
+        # No fallback warning should appear now that tuples are sanitised first.
         logs = filter_logs(
             caplog,
             event=(
@@ -1742,7 +1772,7 @@ def test_grpc_custom_action_executor_create_payload(
                 )
             ],
         )
-        assert len(logs) == expected_warning_logs
+        assert len(logs) == 0
 
 
 class StubRpcError(grpc.RpcError):
@@ -1787,65 +1817,68 @@ def mock_grpc_call_exception(monkeypatch: MonkeyPatch) -> MagicMock:
             "action server over gRPC protocol.",
         ),
         (
-            StubGrpcCallException(grpc.StatusCode.UNKNOWN, "Unknown error"),
+            make_aio_rpc_error(grpc.StatusCode.UNKNOWN, "Unknown error"),
             f"Failed to execute custom action '{action_name()}'. "
             "Error: Unknown error",
         ),
     ],
 )
+@pytest.mark.asyncio
 @pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
-def test_grpc_webhook_request_rpc_error(
-    exception: Union[StubRpcError, StubGrpcCallException],
+async def test_grpc_webhook_request_rpc_error(
+    exception: Union[StubRpcError, grpc.aio.AioRpcError],
     expected_exception_message: str,
-    grpc_client: MagicMock,
+    grpc_client: AsyncMock,
     grpc_custom_action_executor: GRPCCustomActionExecutor,
     grpc_payload: action_webhook_pb2.WebhookRequest,
 ) -> None:
     grpc_client.Webhook.side_effect = exception
 
     with pytest.raises(RasaException) as raised_exception:
-        grpc_custom_action_executor._request(grpc_payload)
-        assert expected_exception_message in str(raised_exception.value)
+        await grpc_custom_action_executor._request(grpc_payload)
+
+    assert expected_exception_message in str(raised_exception.value)
 
 
+@pytest.mark.asyncio
 @pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
-def test_grpc_webhook_request_domain_not_found_rpc_call_error(
-    grpc_client: MagicMock,
+async def test_grpc_webhook_request_domain_not_found_rpc_call_error(
+    grpc_client: AsyncMock,
     grpc_custom_action_executor: GRPCCustomActionExecutor,
     grpc_payload: action_webhook_pb2.WebhookRequest,
 ) -> None:
-    action_name = "action_name"
     resource_not_found = ResourceNotFound(
-        action_name=action_name,
+        action_name=grpc_custom_action_executor.action_name,
         message="message",
         resource_type=ResourceNotFoundType.DOMAIN,
     )
     details = resource_not_found.model_dump_json()
 
-    grpc_client.Webhook.side_effect = StubGrpcCallException(
+    grpc_client.Webhook.side_effect = make_aio_rpc_error(
         grpc.StatusCode.NOT_FOUND, details
     )
 
     with pytest.raises(DomainNotFound):
         with structlog.testing.capture_logs() as caplog:
-            grpc_custom_action_executor._request(grpc_payload)
+            await grpc_custom_action_executor._request(grpc_payload)
 
-            logs = filter_logs(
-                caplog,
-                event="rasa.core.actions.grpc_custom_action_executor.domain_not_found",
-                log_level="error",
-                log_message_parts=[
-                    f"Failed to execute custom action "
-                    f"'{action_name}'. "
-                    f"Could not find domain. {resource_not_found.message}"
-                ],
-            )
-            assert len(logs) == 1
+    logs = filter_logs(
+        caplog,
+        event="rasa.core.actions.grpc_custom_action_executor.domain_not_found",
+        log_level="error",
+        log_message_parts=[
+            f"Failed to execute custom action "
+            f"'{grpc_custom_action_executor.action_name}'. "
+            f"Could not find domain. {resource_not_found.message}"
+        ],
+    )
+    assert len(logs) == 1
 
 
+@pytest.mark.asyncio
 @pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
-def test_grpc_webhook_request_action_not_found_rpc_call_error(
-    grpc_client: MagicMock,
+async def test_grpc_webhook_request_action_not_found_rpc_call_error(
+    grpc_client: AsyncMock,
     grpc_custom_action_executor: GRPCCustomActionExecutor,
     grpc_payload: action_webhook_pb2.WebhookRequest,
 ) -> None:
@@ -1856,12 +1889,12 @@ def test_grpc_webhook_request_action_not_found_rpc_call_error(
     )
     details = resource_not_found.model_dump_json()
 
-    grpc_client.Webhook.side_effect = StubGrpcCallException(
+    grpc_client.Webhook.side_effect = make_aio_rpc_error(
         grpc.StatusCode.NOT_FOUND, details
     )
 
     with pytest.raises(RasaException) as exception:
-        grpc_custom_action_executor._request(grpc_payload)
+        await grpc_custom_action_executor._request(grpc_payload)
         assert (
             f"Failed to execute custom action "
             f"'{grpc_custom_action_executor.action_name}'. "
@@ -1871,13 +1904,14 @@ def test_grpc_webhook_request_action_not_found_rpc_call_error(
 
 @pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
 async def test_grpc_custom_action_executor_run(
-    grpc_client: MagicMock,
+    grpc_client: AsyncMock,
     grpc_custom_action_executor: GRPCCustomActionExecutor,
     tracker_without_tuple: DialogueStateTracker,
     domain: Domain,
     grpc_payload: action_webhook_pb2.WebhookRequest,
 ) -> None:
     grpc_custom_action_executor.action_endpoint.headers = {"key": "value"}
+    grpc_client.Webhook.return_value = action_webhook_pb2.WebhookResponse()
     await grpc_custom_action_executor.run(tracker=tracker_without_tuple, domain=domain)
 
     expected_metadata = [("key", "value")]
@@ -1888,7 +1922,7 @@ async def test_grpc_custom_action_executor_run(
 
 @pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
 async def test_grpc_custom_action_executor_run_without_response_validation(
-    grpc_client: MagicMock,
+    grpc_client: AsyncMock,
     grpc_custom_action_executor: GRPCCustomActionExecutor,
     tracker_without_tuple: DialogueStateTracker,
     domain: Domain,
@@ -1896,6 +1930,7 @@ async def test_grpc_custom_action_executor_run_without_response_validation(
     monkeypatch: MonkeyPatch,
 ) -> None:
     grpc_custom_action_executor.action_endpoint.headers = {"key": "value"}
+    grpc_client.Webhook.return_value = action_webhook_pb2.WebhookResponse()
     mock_validate = MagicMock()
     monkeypatch.setattr(RemoteActionJSONValidator, "validate", mock_validate)
     await grpc_custom_action_executor.run(tracker=tracker_without_tuple, domain=domain)
@@ -1905,7 +1940,7 @@ async def test_grpc_custom_action_executor_run_without_response_validation(
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
 async def test_grpc_run_with_result_returns_retry_on_domain_not_found(
-    grpc_client: MagicMock,
+    grpc_client: AsyncMock,
     grpc_custom_action_executor: GRPCCustomActionExecutor,
     tracker_without_tuple: DialogueStateTracker,
     domain: Domain,
@@ -1918,7 +1953,7 @@ async def test_grpc_run_with_result_returns_retry_on_domain_not_found(
     )
     details = resource_not_found.model_dump_json()
 
-    grpc_client.Webhook.side_effect = StubGrpcCallException(
+    grpc_client.Webhook.side_effect = make_aio_rpc_error(
         grpc.StatusCode.NOT_FOUND, details
     )
 
@@ -1936,7 +1971,7 @@ async def test_grpc_run_with_result_returns_retry_on_domain_not_found(
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
 async def test_grpc_run_with_result_returns_success_on_valid_response(
-    grpc_client: MagicMock,
+    grpc_client: AsyncMock,
     grpc_custom_action_executor: GRPCCustomActionExecutor,
     tracker_without_tuple: DialogueStateTracker,
     domain: Domain,
@@ -1963,7 +1998,7 @@ async def test_grpc_run_with_result_returns_success_on_valid_response(
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
 async def test_grpc_run_returns_empty_dict_for_missing_domain(
-    grpc_client: MagicMock,
+    grpc_client: AsyncMock,
     grpc_custom_action_executor: GRPCCustomActionExecutor,
     tracker_without_tuple: DialogueStateTracker,
     domain: Domain,
@@ -1977,7 +2012,7 @@ async def test_grpc_run_returns_empty_dict_for_missing_domain(
     )
     details = resource_not_found.model_dump_json()
 
-    grpc_client.Webhook.side_effect = StubGrpcCallException(
+    grpc_client.Webhook.side_effect = make_aio_rpc_error(
         grpc.StatusCode.NOT_FOUND, details
     )
 
@@ -1986,3 +2021,545 @@ async def test_grpc_run_returns_empty_dict_for_missing_domain(
         tracker_without_tuple, domain, include_domain=False
     )
     assert result == {}
+
+
+# ---------------------------------------------------------------------------
+# run_streaming() tests
+# ---------------------------------------------------------------------------
+
+
+def make_streaming_event(**kwargs: Any) -> action_webhook_pb2.WebhookStreamEvent:
+    """Construct a ``WebhookStreamEvent`` protobuf message."""
+    return action_webhook_pb2.WebhookStreamEvent(**kwargs)
+
+
+async def async_iter(items: List[Any]):
+    """Yield items from a list as an async iterator."""
+    for item in items:
+        yield item
+
+
+class FakeOutputChannel(OutputChannel):
+    """Minimal output channel that records streaming calls."""
+
+    def __init__(self) -> None:
+        self.chunks: List[str] = []
+        self.responses: List[Dict[str, Any]] = []
+        self.started = False
+        self.ended = False
+
+    @property
+    def supports_streaming(self) -> bool:
+        return True
+
+    async def send_text_message(
+        self, recipient_id: str, text: str, **kwargs: Any
+    ) -> None:
+        pass
+
+    async def send_response_chunk_start(self, recipient_id: str, **kwargs: Any) -> None:
+        self.started = True
+
+    async def send_response_chunk(
+        self, recipient_id: str, chunk: str, **kwargs: Any
+    ) -> None:
+        self.chunks.append(chunk)
+
+    async def send_response_chunk_end(self, recipient_id: str, **kwargs: Any) -> None:
+        self.ended = True
+
+    async def send_response(self, recipient_id: str, message: Dict[str, Any]) -> None:
+        self.responses.append(message)
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_run_streaming_forwards_chunks_and_returns_final_result(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    """Chunks are forwarded to the output channel; final_result is returned."""
+    events = [
+        make_streaming_event(
+            chunk_start=action_webhook_pb2.ChunkStart(response_id="r1")
+        ),
+        make_streaming_event(
+            chunk=action_webhook_pb2.Chunk(response_id="r1", text="Hello")
+        ),
+        make_streaming_event(
+            chunk=action_webhook_pb2.Chunk(response_id="r1", text=" world")
+        ),
+        make_streaming_event(chunk_end=action_webhook_pb2.ChunkEnd(response_id="r1")),
+        make_streaming_event(final_result=action_webhook_pb2.WebhookResponse()),
+    ]
+    grpc_client.WebhookStream = MagicMock(return_value=async_iter(events))
+
+    channel = FakeOutputChannel()
+    result = await grpc_custom_action_executor.run_streaming(
+        tracker=tracker_without_tuple,
+        domain=domain,
+        output_channel=channel,
+    )
+
+    assert channel.started is True
+    assert channel.chunks == ["Hello", " world"]
+    assert channel.ended is True
+    assert isinstance(result, dict)
+    grpc_client.WebhookStream.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_run_streaming_raises_on_stream_without_final_result(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    """A stream that ends without a final_result event raises RasaException."""
+    events = [
+        make_streaming_event(
+            chunk_start=action_webhook_pb2.ChunkStart(response_id="r1")
+        ),
+        make_streaming_event(
+            chunk=action_webhook_pb2.Chunk(response_id="r1", text="partial")
+        ),
+        # no final_result
+    ]
+    grpc_client.WebhookStream = MagicMock(return_value=async_iter(events))
+
+    channel = FakeOutputChannel()
+    with pytest.raises(RasaException, match="final_result"):
+        await grpc_custom_action_executor.run_streaming(
+            tracker=tracker_without_tuple,
+            domain=domain,
+            output_channel=channel,
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+@pytest.mark.parametrize(
+    "exception, exception_type, match_msg",
+    [
+        (RuntimeError("channel write failed"), RuntimeError, "channel write failed"),
+        (
+            asyncio.CancelledError("client disconnected"),
+            asyncio.CancelledError,
+            "client disconnected",
+        ),
+    ],
+)
+async def test_run_streaming_propagates_channel_error_raised_mid_stream(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+    exception: Any,
+    exception_type: Any,
+    match_msg: str,
+) -> None:
+    """An exception from output_channel.send_response_chunk propagates unchanged.
+
+    If the output channel raises while forwarding a chunk (e.g. a broken
+    WebSocket or a full queue), run_streaming must not swallow it — the error
+    is unrelated to gRPC and must reach the caller unmodified.
+    """
+    events = [
+        make_streaming_event(
+            chunk_start=action_webhook_pb2.ChunkStart(response_id="r1")
+        ),
+        make_streaming_event(
+            chunk=action_webhook_pb2.Chunk(response_id="r1", text="Hello")
+        ),
+        make_streaming_event(
+            chunk=action_webhook_pb2.Chunk(response_id="r1", text=" world")
+        ),
+        make_streaming_event(chunk_end=action_webhook_pb2.ChunkEnd(response_id="r1")),
+        make_streaming_event(final_result=action_webhook_pb2.WebhookResponse()),
+    ]
+    grpc_client.WebhookStream = MagicMock(return_value=async_iter(events))
+
+    channel = FakeOutputChannel()
+    # Raise on the first send_response_chunk call
+    # to simulate a mid-stream channel failure.
+    channel.send_response_chunk = AsyncMock(side_effect=exception)
+
+    with pytest.raises(exception_type, match=match_msg):
+        await grpc_custom_action_executor.run_streaming(
+            tracker=tracker_without_tuple,
+            domain=domain,
+            output_channel=channel,
+        )
+
+    # The fix: even though the channel raised mid-stream, the executor must
+    # still close the chunk session so the client is not left waiting.
+    assert (
+        channel.ended is True
+    ), "chunk session must be closed after a mid-stream channel error"
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_run_streaming_closes_chunk_session_when_chunk_start_cancelled(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    """CancelledError during chunk_start still triggers cleanup via None sentinel.
+
+    The None sentinel marks the session as 'attempted' before the dispatch
+    call, so if send_response_chunk_start is itself cancelled the
+    ``except BaseException`` handler fires and sends a best-effort chunk_end.
+    """
+    events = [
+        make_streaming_event(
+            chunk_start=action_webhook_pb2.ChunkStart(response_id="r1")
+        ),
+        make_streaming_event(
+            chunk=action_webhook_pb2.Chunk(response_id="r1", text="Hello")
+        ),
+        make_streaming_event(chunk_end=action_webhook_pb2.ChunkEnd(response_id="r1")),
+        make_streaming_event(final_result=action_webhook_pb2.WebhookResponse()),
+    ]
+    grpc_client.WebhookStream = MagicMock(return_value=async_iter(events))
+
+    channel = FakeOutputChannel()
+    channel.send_response_chunk_start = AsyncMock(
+        side_effect=asyncio.CancelledError("client disconnected")
+    )
+
+    with pytest.raises(asyncio.CancelledError):
+        await grpc_custom_action_executor.run_streaming(
+            tracker=tracker_without_tuple,
+            domain=domain,
+            output_channel=channel,
+        )
+
+    assert (
+        not channel.started
+    ), "started must remain False since chunk_start was cancelled"
+    assert (
+        channel.ended is True
+    ), "chunk_end must be sent as cleanup even when chunk_start itself was cancelled"
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_run_streaming_raises_on_grpc_rpc_error(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    """An AioRpcError (non-NOT_FOUND) is wrapped in RasaException."""
+
+    async def failing_stream():
+        raise make_aio_rpc_error(grpc.StatusCode.UNAVAILABLE, "service unavailable")
+        # satisfy type checker — never reached
+        return
+        yield
+
+    grpc_client.WebhookStream = MagicMock(return_value=failing_stream())
+
+    channel = FakeOutputChannel()
+    with pytest.raises(RasaException, match="service unavailable"):
+        await grpc_custom_action_executor.run_streaming(
+            tracker=tracker_without_tuple,
+            domain=domain,
+            output_channel=channel,
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_run_streaming_raises_domain_not_found_on_not_found_error(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    """An AioRpcError with NOT_FOUND + DOMAIN resource type raises DomainNotFound."""
+    resource_not_found = ResourceNotFound(
+        action_name="action_stream_demo",
+        message="Domain not found",
+        resource_type=ResourceNotFoundType.DOMAIN,
+    )
+
+    async def failing_stream():
+        raise make_aio_rpc_error(
+            grpc.StatusCode.NOT_FOUND, resource_not_found.model_dump_json()
+        )
+        return
+        yield
+
+    grpc_client.WebhookStream = MagicMock(return_value=failing_stream())
+
+    channel = FakeOutputChannel()
+    with pytest.raises(DomainNotFound):
+        await grpc_custom_action_executor.run_streaming(
+            tracker=tracker_without_tuple,
+            domain=domain,
+            output_channel=channel,
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_run_streaming_forwards_rich_chunk_via_send_response(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    """A Chunk with rich content (buttons) is forwarded via send_response, not
+    send_response_chunk."""
+    btn = Struct()
+    btn.update({"title": "Yes", "payload": "/affirm"})
+
+    events = [
+        make_streaming_event(
+            chunk_start=action_webhook_pb2.ChunkStart(response_id="r1")
+        ),
+        make_streaming_event(
+            chunk=action_webhook_pb2.Chunk(
+                response_id="r1", text="Pick an option:", buttons=[btn]
+            )
+        ),
+        make_streaming_event(chunk_end=action_webhook_pb2.ChunkEnd(response_id="r1")),
+        make_streaming_event(final_result=action_webhook_pb2.WebhookResponse()),
+    ]
+    grpc_client.WebhookStream = MagicMock(return_value=async_iter(events))
+
+    channel = FakeOutputChannel()
+    result = await grpc_custom_action_executor.run_streaming(
+        tracker=tracker_without_tuple,
+        domain=domain,
+        output_channel=channel,
+    )
+
+    # Rich chunk must go to send_response, not send_response_chunk.
+    assert channel.chunks == [], "text send_response_chunk should not have been called"
+    assert len(channel.responses) == 1
+    assert channel.responses[0]["text"] == "Pick an option:"
+    assert channel.responses[0]["buttons"] == [{"title": "Yes", "payload": "/affirm"}]
+    assert isinstance(result, dict)
+    grpc_client.WebhookStream.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_run_streaming_warns_on_duplicate_response(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    """warn_on_duplicate_streamed_responses is called when the gRPC final_result
+    contains a response that was already delivered as a Chunk stream event."""
+    from unittest.mock import patch
+
+    events = [
+        make_streaming_event(
+            chunk_start=action_webhook_pb2.ChunkStart(response_id="r1")
+        ),
+        make_streaming_event(
+            chunk=action_webhook_pb2.Chunk(response_id="r1", text="Hello world")
+        ),
+        make_streaming_event(chunk_end=action_webhook_pb2.ChunkEnd(response_id="r1")),
+        make_streaming_event(final_result=action_webhook_pb2.WebhookResponse()),
+    ]
+    grpc_client.WebhookStream = MagicMock(return_value=async_iter(events))
+
+    channel = FakeOutputChannel()
+    with patch(
+        "rasa.core.actions.grpc_custom_action_executor.warn_on_duplicate_streamed_responses"
+    ) as mock_warn:
+        await grpc_custom_action_executor.run_streaming(
+            tracker=tracker_without_tuple,
+            domain=domain,
+            output_channel=channel,
+        )
+
+    mock_warn.assert_called_once()
+    call_kwargs = mock_warn.call_args[1]
+    assert call_kwargs["action_name"] == grpc_custom_action_executor.action_name
+    assert call_kwargs["streamed_payloads"] == [{"text": "Hello world"}]
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_run_streaming_raises_domain_not_found_on_missing_domain_stream_error(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    """A StreamError whose message starts with STREAM_ERROR_MISSING_DOMAIN raises
+    DomainNotFound so that RetryCustomActionExecutor can retry with the domain.
+
+    Without this, the RetryCustomActionExecutor.run_streaming() never sees a
+    DomainNotFound and the retry loop is never entered, leaving the request
+    permanently failed.
+    """
+    from rasa.core.actions.action_exceptions import DomainNotFound
+    from rasa.core.actions.constants import STREAM_ERROR_MISSING_DOMAIN
+
+    events = [
+        make_streaming_event(
+            error=action_webhook_pb2.StreamError(
+                action_name="list_contacts",
+                message=(
+                    f"{STREAM_ERROR_MISSING_DOMAIN}, assistant will retry the "
+                    f"request and include the domain in the request payload."
+                ),
+            )
+        ),
+    ]
+    grpc_client.WebhookStream = MagicMock(return_value=async_iter(events))
+
+    channel = FakeOutputChannel()
+    with pytest.raises(DomainNotFound):
+        await grpc_custom_action_executor.run_streaming(
+            tracker=tracker_without_tuple,
+            domain=domain,
+            output_channel=channel,
+        )
+
+    assert (
+        not channel.started
+    ), "chunk session must not have been started before DomainNotFound"
+    assert (
+        channel.chunks == []
+    ), "no chunks must have been forwarded before DomainNotFound"
+    assert (
+        not channel.ended
+    ), "chunk session must not have been ended before DomainNotFound"
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_run_streaming_raises_rasa_exception_on_non_domain_stream_error(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    """A StreamError unrelated to domain still raises a generic RasaException."""
+    events = [
+        make_streaming_event(
+            error=action_webhook_pb2.StreamError(
+                action_name="list_contacts",
+                message="Unhandled exception in action code.",
+            )
+        ),
+    ]
+    grpc_client.WebhookStream = MagicMock(return_value=async_iter(events))
+
+    channel = FakeOutputChannel()
+    with pytest.raises(RasaException, match="Unhandled exception in action code."):
+        await grpc_custom_action_executor.run_streaming(
+            tracker=tracker_without_tuple,
+            domain=domain,
+            output_channel=channel,
+        )
+
+    assert (
+        not channel.started
+    ), "chunk session must not have been started before StreamError"
+    assert channel.chunks == [], "no chunks must have been forwarded before StreamError"
+    assert (
+        not channel.ended
+    ), "chunk session must not have been ended before StreamError"
+
+
+# ---------------------------------------------------------------------------
+# _parse_not_found_error unit tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "details", [None, "", "not-json-at-all", '{"unexpected_field": 42}']
+)
+def test_parse_not_found_error_returns_none(
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    details: Any,
+) -> None:
+    assert grpc_custom_action_executor._parse_not_found_error(details) is None
+
+
+def test_parse_not_found_error_returns_parsed_model_for_valid_payload(
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+) -> None:
+    """Returns a ResourceNotFound instance for a well-formed JSON payload."""
+    resource_not_found = ResourceNotFound(
+        action_name="action_hello",
+        message="Domain not found",
+        resource_type=ResourceNotFoundType.DOMAIN,
+    )
+
+    result = grpc_custom_action_executor._parse_not_found_error(
+        resource_not_found.model_dump_json()
+    )
+
+    assert result is not None
+    assert result.resource_type == ResourceNotFoundType.DOMAIN
+    assert result.message == "Domain not found"
+
+
+# ---------------------------------------------------------------------------
+# Fallback to RasaException when NOT_FOUND details cannot be parsed
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_request_raises_rasa_exception_when_not_found_details_is_not_json(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    grpc_payload: action_webhook_pb2.WebhookRequest,
+) -> None:
+    """_request wraps a NOT_FOUND error in RasaException when details is not valid JSON.
+
+    Previously, ResourceNotFound.model_validate_json() would raise a pydantic
+    ValidationError (or JSONDecodeError) that escaped the AioRpcError handler
+    entirely.  Now it falls back to a RasaException carrying the raw details.
+    """
+    raw_details = "plain text error message, not JSON"
+    grpc_client.Webhook.side_effect = make_aio_rpc_error(
+        grpc.StatusCode.NOT_FOUND, raw_details
+    )
+
+    with pytest.raises(RasaException, match=raw_details):
+        await grpc_custom_action_executor._request(grpc_payload)
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_run_streaming_raises_rasa_exception_when_not_found_details_is_not_json(
+    grpc_client: AsyncMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    """run_streaming wraps a NOT_FOUND AioRpcError in RasaException when details is not
+    valid JSON, preventing a raw pydantic ValidationError from escaping the handler.
+    """
+    raw_details = "plain text error message, not JSON"
+
+    async def failing_stream():
+        raise make_aio_rpc_error(grpc.StatusCode.NOT_FOUND, raw_details)
+        yield
+
+    grpc_client.WebhookStream = MagicMock(return_value=failing_stream())
+
+    channel = FakeOutputChannel()
+    with pytest.raises(RasaException, match=raw_details):
+        await grpc_custom_action_executor.run_streaming(
+            tracker=tracker_without_tuple,
+            domain=domain,
+            output_channel=channel,
+        )

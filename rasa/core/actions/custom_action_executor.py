@@ -3,8 +3,9 @@ from __future__ import annotations
 import abc
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional, Text
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Text
 
+import structlog
 from pydantic import BaseModel
 
 import rasa
@@ -15,11 +16,90 @@ from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
+    from rasa.core.channels.channel import OutputChannel
     from rasa.shared.core.domain import Domain
     from rasa.shared.core.trackers import DialogueStateTracker
 
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger(__name__)
+
+# Keys that indicate a stream_chunk payload carries rich content (buttons, image,
+# attachment, custom JSON, etc.) and should be delivered via send_response() rather
+# than as an incremental text token via send_response_chunk().
+RICH_KEYS: frozenset = frozenset(
+    {"buttons", "image", "attachment", "custom", "elements", "quick_replies"}
+)
+
+
+async def dispatch_stream_chunk(
+    output_channel: "OutputChannel",
+    sender_id: str,
+    payload: Dict[str, Any],
+) -> None:
+    """Route a stream_chunk payload to the correct OutputChannel method.
+
+    A chunk is treated as **rich content** if its payload contains any key from
+    :data:`RICH_KEYS` (``buttons``, ``image``, ``attachment``, ``custom``,
+    ``elements``, ``quick_replies``).  Rich chunks are delivered immediately and
+    completely via :meth:`~OutputChannel.send_response`.
+
+    All other chunks (typically carrying only ``text``) are treated as
+    incremental text tokens and forwarded via
+    :meth:`~OutputChannel.send_response_chunk`.
+
+    Args:
+        output_channel: The output channel to deliver the chunk to.
+        sender_id: The recipient / conversation ID.
+        payload: The chunk payload dict, with protocol-internal keys
+            (``event``, ``response_id``) already removed by the caller.
+    """
+    if RICH_KEYS & set(payload.keys()):
+        await output_channel.send_response(sender_id, payload.copy())
+    else:
+        await output_channel.send_response_chunk(sender_id, payload.get("text", ""))
+
+
+def warn_on_duplicate_streamed_responses(
+    action_name: str,
+    streamed_payloads: List[Dict[str, Any]],
+    final_responses: List[Dict[str, Any]],
+) -> None:
+    """Log a warning if any response in *final_responses* was already streamed.
+
+    An action that calls both ``stream_chunk()`` and ``utter_message()`` for the
+    same content will cause the user to receive that message twice — once during
+    execution and again when ``RemoteAction._utter_responses()`` processes the
+    final result.  This function detects that mistake and surfaces it as a
+    structured warning so action authors can fix it during development.
+
+    Only exact payload matches trigger the warning.  Incremental text tokens
+    (e.g. ``{"text": "Hello"}``) will not match a concatenated final response
+    (``{"text": "Hello world"}``), so normal token-streaming does not produce
+    false positives.
+
+    Args:
+        action_name: Name of the action being executed (for log context).
+        streamed_payloads: Payloads already delivered to the output channel
+            mid-stream (collected by the executor during ``run_streaming()``).
+        final_responses: The ``responses`` list from the action's final result
+            dict (``final_result["responses"]``).
+    """
+    for response in final_responses:
+        if response in streamed_payloads:
+            structlogger.warning(
+                "rasa.core.actions.custom_action_executor"
+                ".run_streaming.duplicate_response",
+                action_name=action_name,
+                event_info=(
+                    f"Action '{action_name}' included a response in its final "
+                    f"result that was already delivered mid-stream. The user will "
+                    f"receive this message twice. Use stream_chunk() for mid-stream "
+                    f"delivery or utter_message() for the final result, not both "
+                    f"for the same content."
+                ),
+            )
+            break
 
 
 class ActionResultType(Enum):
@@ -44,7 +124,16 @@ class CustomActionExecutor(abc.ABC):
 
     Provides an abstraction layer for executing custom actions
     regardless of the communication protocol.
+
+    Set ``supports_streaming = True`` on a concrete subclass to advertise that
+    it overrides :meth:`run_streaming`.  :meth:`RemoteAction._can_stream` uses
+    this flag instead of ``hasattr`` so that the inherited default
+    ``run_streaming`` (which raises :class:`NotImplementedError`) does not
+    accidentally enable the streaming path for executors that have not
+    implemented it.
     """
+
+    supports_streaming: ClassVar[bool] = False
 
     @abc.abstractmethod
     async def run(
@@ -64,6 +153,46 @@ class CustomActionExecutor(abc.ABC):
             The response from the execution of the custom action.
         """
         pass
+
+    async def run_streaming(
+        self,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        output_channel: "OutputChannel",
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        """Execute the custom action with server-streaming support.
+
+        The default implementation raises :class:`NotImplementedError`.
+        Concrete subclasses that support streaming must:
+
+        1. Override this method with an actual implementation.
+        2. Set ``supports_streaming = True`` at the class level so that
+           :meth:`~rasa.core.actions.action.RemoteAction._can_stream`
+           activates the streaming path for them.
+
+        The ``supports_streaming`` flag is the authoritative capability signal
+        used by ``_can_stream``.  Using a flag rather than ``hasattr`` means
+        that this inherited stub does **not** accidentally make non-streaming
+        executors appear to support streaming.
+
+        Args:
+            tracker: The current state of the dialogue.
+            domain: The domain object containing domain-specific information.
+            output_channel: Channel to forward incremental chunks to.
+            include_domain: If True, the domain is included in the request.
+
+        Returns:
+            The final action result dict (events + responses).
+
+        Raises:
+            NotImplementedError: When the executor does not support streaming.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not implement run_streaming(). "
+            f"Set supports_streaming = True and override run_streaming() "
+            f"to enable streaming for this executor."
+        )
 
     async def run_with_result(
         self,
@@ -247,3 +376,55 @@ class RetryCustomActionExecutor(CustomActionExecutor):
                 raise DomainNotFound()
 
         return result.response if result.response is not None else {}
+
+    async def run_streaming(
+        self,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        output_channel: "OutputChannel",
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        """Streaming variant of :meth:`run` with domain-not-found retry.
+
+        Delegates to the wrapped executor's ``run_streaming()`` method.
+        This method should only be called when ``RemoteAction._can_stream()``
+        has already confirmed that the inner executor exposes ``run_streaming``
+        (the check looks through this wrapper).  Calling it on a wrapper whose
+        inner executor does not implement ``run_streaming`` will raise
+        ``AttributeError``; that is an implementation bug in the caller, not a
+        runtime-recoverable error.
+
+        Domain retry semantics differ from the unary path: because partial
+        chunks may already have been forwarded to *output_channel* before the
+        error is detected, the retry re-opens the stream from scratch with
+        ``include_domain=True``.  In practice the SDK validates the domain
+        before emitting any chunks, so a mid-stream ``DomainNotFound`` should
+        not occur.
+
+        Args:
+            tracker: Current dialogue tracker.
+            domain: Domain of the assistant.
+            output_channel: Channel to forward incremental chunks to.
+            include_domain: Whether to include the full domain in the payload.
+
+        Returns:
+            Final action result dict (events + responses).
+
+        Raises:
+            DomainNotFound: If the domain is still missing after the retry.
+        """
+        try:
+            return await self._custom_action_executor.run_streaming(
+                tracker=tracker,
+                domain=domain,
+                output_channel=output_channel,
+                include_domain=include_domain,
+            )
+        except DomainNotFound:
+            # Retry once with the domain included.
+            return await self._custom_action_executor.run_streaming(
+                tracker=tracker,
+                domain=domain,
+                output_channel=output_channel,
+                include_domain=True,
+            )

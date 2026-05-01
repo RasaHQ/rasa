@@ -130,6 +130,8 @@ scripts/use-venv.sh
 .vscode/mcp.json
 .cursor/mcp.json
 .cursor/rules/
+.cursor/plans/
+.cursor/*.json
 
 # Agent skills (installed by rasa tools / IDEs; remove these lines to commit skills)
 .claude/skills/

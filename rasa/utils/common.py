@@ -352,6 +352,7 @@ def configure_library_logging() -> None:
     update_mcp_log_level()
     update_pymongo_log_level(library_log_level)
     update_openai_log_level()
+    update_grpc_log_level(library_log_level)
 
 
 def update_apscheduler_log_level() -> None:
@@ -558,6 +559,28 @@ def update_openai_log_level() -> None:
     ]
 
     for logger_name in openai_loggers:
+        logging.getLogger(logger_name).setLevel(log_level)
+        logging.getLogger(logger_name).propagate = False
+
+
+def update_grpc_log_level(library_log_level: Text) -> None:
+    """Set the log level for gRPC loggers.
+
+    The ``grpc._cython.cygrpc`` logger emits ``DEBUG`` messages (e.g.
+    ``Using AsyncIOEngine.POLLER as I/O engine``) that are typically
+    noise in production.  This function silences them via the shared
+    ``LOG_LEVEL_LIBRARIES`` environment variable so operators can tune
+    the verbosity without any Rasa-specific knob.
+    """
+    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, library_log_level)
+
+    grpc_loggers = [
+        "grpc",
+        "grpc._cython.cygrpc",
+        "grpc.aio",
+    ]
+
+    for logger_name in grpc_loggers:
         logging.getLogger(logger_name).setLevel(log_level)
         logging.getLogger(logger_name).propagate = False
 

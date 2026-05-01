@@ -1661,6 +1661,82 @@ async def test_action_invalid_metadata(default_processor: MessageProcessor):
     )
 
 
+@pytest.mark.asyncio
+@pytest.mark.timeout(180, func_only=True)
+async def test_run_action_records_failure_when_streaming_channel_raises(
+    flow_policy_bot_agent: Agent,
+) -> None:
+    """_run_action records failure metadata and triggers pattern_internal_error.
+
+    When run_streaming raises mid-stream (e.g. a broken output channel),
+    the CALM MessageProcessor must:
+    - catch the exception and record ACTION_METADATA_EXECUTION_SUCCESS=False
+      with the original error message, and
+    - push pattern_internal_error onto the dialogue stack so the assistant
+      can recover gracefully.
+    """
+    processor = flow_policy_bot_agent.processor
+    domain = Domain.empty()
+
+    tracker = DialogueStateTracker.from_events(
+        "stream-error-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
+    )
+    tracker.update_stack(
+        DialogueStack(
+            frames=[UserFlowStackFrame(flow_id="foo", step_id="0_collect_foo_slot_a")]
+        )
+    )
+
+    # Mock executor: supports streaming and raises to simulate a channel write error.
+    mock_executor = MagicMock()
+    mock_executor.supports_streaming = True
+    mock_executor.run_streaming = AsyncMock(
+        side_effect=RuntimeError("channel write failed")
+    )
+
+    # Output channel that advertises streaming support.
+    channel = CollectingOutputChannel()
+    with patch.object(
+        type(channel),
+        "supports_streaming",
+        new_callable=lambda: property(lambda self: True),
+    ):
+        action = RemoteAction("my_streaming_action")
+        action.executor = mock_executor
+
+        await processor._run_action(
+            action,
+            tracker,
+            channel,
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            PolicyPrediction([], "mock_policy"),
+        )
+
+    applied = tracker.applied_events()
+    action_event = next(
+        (
+            e
+            for e in applied
+            if isinstance(e, ActionExecuted) and e.action_name == "my_streaming_action"
+        ),
+        None,
+    )
+    assert action_event is not None, "ActionExecuted event must be recorded on failure"
+    assert action_event.metadata[ACTION_METADATA_EXECUTION_SUCCESS] is False
+    assert (
+        "channel write failed"
+        in action_event.metadata[ACTION_METADATA_EXECUTION_ERROR_MESSAGE]
+    )
+
+    # CALM processors must also push pattern_internal_error so the assistant recovers.
+    stack_updates = [e for e in tracker.events if isinstance(e, DialogueStackUpdated)]
+    assert any(
+        '"type": "pattern_cancel_flow"' in u.update
+        and '"type": "pattern_internal_error"' in u.update
+        for u in stack_updates
+    ), "pattern_internal_error must be triggered after a streaming action failure"
+
+
 async def test_restart_triggers_session_start(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,

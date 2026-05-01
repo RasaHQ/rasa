@@ -21,3 +21,15 @@ flows:
     steps:
       - action: action_list_reminders
       - action: action_end_session
+
+  stream_recent_transactions:
+    description: This flow streams a summary of the user's recent transactions in real time.
+    name: stream recent transactions
+    steps:
+      - action: action_stream_recent_transactions
+
+  stream_agent_skills:
+    description: This flow streams a short introduction and then presents quick-reply buttons listing the skills the assistant can help with.
+    name: stream agent skills
+    steps:
+      - action: action_stream_agent_skills

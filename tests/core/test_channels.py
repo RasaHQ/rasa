@@ -124,6 +124,123 @@ async def test_collecting_output_channel_streaming_no_errors():
     assert channel._accumulated_streaming_text == ""
 
 
+def test_collecting_output_channel_supports_streaming_is_false():
+    """CollectingOutputChannel must not advertise streaming support.
+
+    RemoteAction._can_stream() checks both the executor and the output channel.
+    CollectingOutputChannel is used for plain REST webhooks; it must return
+    False so that non-SSE requests do not activate the streaming code path.
+    """
+    channel = CollectingOutputChannel()
+    assert channel.supports_streaming is False
+
+
+# ---------------------------------------------------------------------------
+# QueueOutputChannel streaming tests
+# ---------------------------------------------------------------------------
+
+
+def test_queue_output_channel_supports_streaming_is_true():
+    """QueueOutputChannel must advertise streaming support.
+
+    It is the output channel used for SSE REST responses; supports_streaming=True
+    allows RemoteAction._can_stream() to activate the streaming path for those
+    requests.
+    """
+    from rasa.core.channels.rest import QueueOutputChannel
+
+    channel = QueueOutputChannel()
+    assert channel.supports_streaming is True
+
+
+@pytest.mark.asyncio
+async def test_queue_output_channel_send_response_chunk_puts_message_in_queue():
+    """Each send_response_chunk call places a {recipient_id, text} dict in the queue.
+
+    The SSE stream_response() generator reads from this queue to write NDJSON
+    lines, so every chunk call must produce exactly one entry.
+    """
+    from asyncio import Queue
+
+    from rasa.core.channels.rest import QueueOutputChannel
+
+    q: Queue = Queue()
+    channel = QueueOutputChannel(message_queue=q)
+
+    await channel.send_response_chunk("user1", "hello")
+    await channel.send_response_chunk("user1", " world")
+
+    assert q.qsize() == 2
+    first = await q.get()
+    second = await q.get()
+    assert first == {"recipient_id": "user1", "text": "hello"}
+    assert second == {"recipient_id": "user1", "text": " world"}
+
+
+@pytest.mark.asyncio
+async def test_queue_channel_send_text_message_skips_duplicate_of_streamed_response():
+    """send_text_message drops text that exactly matches the last streamed content.
+
+    When an LLM action (or any default pattern) streams tokens via
+    send_response_chunk and _utter_responses later calls send_text_message with
+    the full assembled text, the duplicate must be silently suppressed so the
+    SSE client does not receive the same message twice.
+    """
+    from asyncio import Queue
+
+    from rasa.core.channels.rest import QueueOutputChannel
+
+    q: Queue = Queue()
+    channel = QueueOutputChannel(message_queue=q)
+
+    # Simulate a streaming sequence.
+    await channel.send_response_chunk_start("user1")
+    await channel.send_response_chunk("user1", "Do you need help")
+    await channel.send_response_chunk("user1", " with anything else?")
+    await channel.send_response_chunk_end("user1")
+
+    # _utter_responses later calls send_text_message with the assembled text.
+    await channel.send_text_message("user1", "Do you need help with anything else?")
+
+    # Only the individual chunks (2) should be in the queue; the assembled
+    # duplicate must have been dropped.
+    assert q.qsize() == 2
+    assert await q.get() == {"recipient_id": "user1", "text": "Do you need help"}
+    assert await q.get() == {"recipient_id": "user1", "text": " with anything else?"}
+
+
+@pytest.mark.asyncio
+async def test_queue_output_channel_send_text_message_delivers_non_duplicate():
+    """send_text_message forwards messages whose text differs from the last stream.
+
+    A follow-up utter_message for *different* content (e.g. a confirmation card
+    after streaming the main reply) must still reach the SSE queue.
+    """
+    from asyncio import Queue
+
+    from rasa.core.channels.rest import QueueOutputChannel
+
+    q: Queue = Queue()
+    channel = QueueOutputChannel(message_queue=q)
+
+    await channel.send_response_chunk_start("user1")
+    await channel.send_response_chunk("user1", "Streaming reply.")
+    await channel.send_response_chunk_end("user1")
+
+    # This is a *different* message — it must not be suppressed.
+    await channel.send_text_message("user1", "Is there anything else I can help with?")
+
+    # 1 chunk + 1 follow-up message = 2 items in the queue.
+    assert q.qsize() == 2
+    chunk_msg = await q.get()
+    follow_up = await q.get()
+    assert chunk_msg == {"recipient_id": "user1", "text": "Streaming reply."}
+    assert follow_up == {
+        "recipient_id": "user1",
+        "text": "Is there anything else I can help with?",
+    }
+
+
 async def test_console_input():
     from rasa.core.channels import console
 

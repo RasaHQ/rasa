@@ -8,9 +8,9 @@ from textwrap import dedent
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-import ruamel
 import structlog
 from jinja2 import Template
+from ruamel.yaml import YAML
 from ruamel.yaml.scanner import ScannerError
 
 from rasa import telemetry
@@ -193,7 +193,8 @@ class E2ETestConverter:
             bool: True if valid, False otherwise
         """
         try:
-            yaml_data = ruamel.yaml.safe_load(yaml_string)
+            yaml = YAML(typ="safe", pure=True)
+            yaml_data = yaml.load(yaml_string)
             validate_yaml_data_using_schema_with_assertions(
                 yaml_data={KEY_TEST_CASES: yaml_data}, schema_content=self.e2e_schema
             )

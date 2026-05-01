@@ -39,8 +39,9 @@ def test_e2e_write_tests_to_yaml_correct_content(tmp_path: Path):
     with open(output_files[0], "r") as file:
         written_content = file.read()
 
-    written_yaml_data = ruamel.yaml.safe_load(written_content)
-    test_yaml_data = ruamel.yaml.safe_load(test_yaml_string)
+    yaml = ruamel.yaml.YAML(typ="safe", pure=True)
+    written_yaml_data = yaml.load(written_content)
+    test_yaml_data = yaml.load(test_yaml_string)
 
     assert written_yaml_data == {"test_cases": test_yaml_data}
 

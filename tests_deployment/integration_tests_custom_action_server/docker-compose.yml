@@ -21,6 +21,10 @@ configs:
       action_endpoint:
         url: "grpc://rasa-grpc-tls-action-server:5055"
         cafile: "/certs/ca.pem"
+  endpoints-direct.yml:
+    content: |
+      action_endpoint:
+        actions_module: "actions"
   action-server-endpoints.yml:
     content: |
         empty: "empty"
@@ -267,5 +271,33 @@ services:
       interval: 5s
       retries: 10
       timeout: 10s
+
+  # ---------------------------------------------------------------------------
+  # Direct custom action executor (in-process, no remote action server).
+  # Rasa is configured with ``actions_module: actions`` so actions run in the
+  # same process — no gRPC / HTTP action server required.
+  # ---------------------------------------------------------------------------
+  rasa-pro-direct:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    container_name: rasa-pro-direct
+    volumes:
+      - "${BOT_PATH}:/app"
+    configs:
+      - source: endpoints-direct.yml
+        target: /endpoints-direct.yml
+    entrypoint: ""
+    command: rasa run -p ${RASA_PORT} --enable-api --endpoints /endpoints-direct.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "${RASA_DIRECT_PORT}:${RASA_PORT}"
+    environment:
+      <<: *license
+    healthcheck:
+      test: curl localhost:${RASA_PORT} || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
 
 networks: { rasa-pro-network: { name: rasa-pro-network } }

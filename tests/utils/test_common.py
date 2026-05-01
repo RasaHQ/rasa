@@ -22,6 +22,7 @@ from rasa.utils.common import (
     configure_logging_from_file,
     find_unavailable_packages,
     get_bool_env_variable,
+    update_grpc_log_level,
 )
 
 
@@ -448,3 +449,38 @@ def test_configure_logging_for_pymongo(
     assert pymongo_sublogger_topology.getEffectiveLevel() == logging.WARNING
     pymongo_sublogger_server_selection = logging.getLogger("pymongo.serverSelection")
     assert pymongo_sublogger_server_selection.getEffectiveLevel() == logging.WARNING
+
+
+def test_update_grpc_log_level_sets_level_from_env(monkeypatch: MonkeyPatch) -> None:
+    """update_grpc_log_level() applies LOG_LEVEL_LIBRARIES to all gRPC loggers."""
+    monkeypatch.setenv("LOG_LEVEL_LIBRARIES", "WARNING")
+    update_grpc_log_level("ERROR")
+
+    for name in ("grpc", "grpc._cython.cygrpc", "grpc.aio"):
+        assert logging.getLogger(name).level == logging.WARNING, name
+
+
+def test_update_grpc_log_level_falls_back_to_argument(monkeypatch: MonkeyPatch) -> None:
+    """When LOG_LEVEL_LIBRARIES is unset the fallback argument is used."""
+    monkeypatch.delenv("LOG_LEVEL_LIBRARIES", raising=False)
+    update_grpc_log_level("WARNING")
+
+    for name in ("grpc", "grpc._cython.cygrpc", "grpc.aio"):
+        assert logging.getLogger(name).level == logging.WARNING, name
+
+
+def test_configure_library_logging_suppresses_grpc_debug_noise(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """configure_library_logging() wires up gRPC suppression end-to-end.
+
+    The default LOG_LEVEL_LIBRARIES=ERROR means the notorious
+    'Using AsyncIOEngine.POLLER as I/O engine' DEBUG line from
+    grpc._cython.cygrpc is silenced automatically.
+    """
+    monkeypatch.setenv("LOG_LEVEL_LIBRARIES", "ERROR")
+    configure_logging_and_warnings()
+
+    for name in ("grpc", "grpc._cython.cygrpc", "grpc.aio"):
+        assert logging.getLogger(name).level == logging.ERROR, name
+        assert logging.getLogger(name).propagate is False, name

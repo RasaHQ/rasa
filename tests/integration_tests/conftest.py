@@ -1,6 +1,7 @@
+import json
 import os
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
@@ -17,6 +18,53 @@ def send_message_to_rasa_server(
     )
     json_response = response.json()
     return sender_id, json_response
+
+
+def send_streaming_message_to_rasa_server(
+    server_location: str,
+    message: str,
+    sender_id: Optional[str] = None,
+    verify: Any = True,
+    timeout: int = 30,
+) -> Tuple[str, List[Dict[str, Any]]]:
+    """POST to ``/webhooks/rest/webhook?stream=true`` and collect all SSE chunks.
+
+    The REST SSE endpoint writes newline-delimited JSON objects (one per line)
+    and closes the connection when the action completes.  This helper reads the
+    response as a stream and parses each non-empty line as JSON.
+
+    Args:
+        server_location: Base URL of the Rasa server, e.g. ``http://localhost:5012``.
+        message: Text of the user message to send.
+        sender_id: Conversation sender ID.  A UUID is generated if omitted.
+        verify: Passed directly to ``requests.post`` as the ``verify`` argument.
+            Pass a path to a CA bundle to validate a self-signed TLS certificate,
+            or ``False`` to skip verification (not recommended in production).
+        timeout: Request timeout in seconds.
+
+    Returns:
+        A ``(sender_id, events)`` tuple where *events* is the ordered list of
+        JSON dicts received over the stream.
+    """
+    if not sender_id:
+        sender_id = str(uuid.uuid4())
+
+    with requests.post(
+        f"{server_location}/webhooks/rest/webhook",
+        params={"stream": "true"},
+        json={"sender": sender_id, "message": message},
+        stream=True,
+        verify=verify,
+        timeout=timeout,
+    ) as response:
+        response.raise_for_status()
+        events: List[Dict[str, Any]] = []
+        for raw_line in response.iter_lines(decode_unicode=True):
+            line = raw_line.strip()
+            if line:
+                events.append(json.loads(line))
+
+    return sender_id, events
 
 
 def get_conversation_tracker(server_location: str, conversation_id: str) -> dict:

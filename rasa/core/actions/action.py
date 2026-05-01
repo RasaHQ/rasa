@@ -947,6 +947,34 @@ class RemoteAction(Action):
 
         return bot_messages
 
+    def _can_stream(self, output_channel: "OutputChannel") -> bool:
+        """Return True when both the executor and output channel support streaming.
+
+        Streaming requires:
+        * The executor (or the executor it wraps, in the case of
+          :class:`~rasa.core.actions.custom_action_executor.RetryCustomActionExecutor`)
+          exposes a ``run_streaming`` method.
+        * The output channel reports :attr:`~OutputChannel.supports_streaming`
+          as ``True`` (e.g. voice channels).
+
+        When either condition is not met the existing unary ``run`` path is
+        used unchanged, so all non-streaming executors and channels are
+        completely unaffected.
+
+        ``RetryCustomActionExecutor`` is a transparent wrapper around the real
+        executor; the streaming capability check is therefore performed on the
+        inner executor it wraps (``_custom_action_executor``) so that adding
+        ``run_streaming`` to the retry wrapper does not accidentally activate
+        streaming for executor types that do not support it (e.g.
+        ``HTTPCustomActionExecutor``).
+        """
+        from rasa.core.actions.custom_action_executor import RetryCustomActionExecutor
+
+        executor = self.executor
+        if isinstance(executor, RetryCustomActionExecutor):
+            executor = executor._custom_action_executor
+        return output_channel.supports_streaming and executor.supports_streaming
+
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -970,10 +998,17 @@ class RemoteAction(Action):
                 SESSION_START_REJECTION_MESSAGE,
             )
 
-        response = await self.executor.run(
-            domain=domain,
-            tracker=tracker,
-        )
+        if self._can_stream(output_channel):
+            response = await self.executor.run_streaming(
+                tracker=tracker,
+                domain=domain,
+                output_channel=output_channel,
+            )
+        else:
+            response = await self.executor.run(
+                domain=domain,
+                tracker=tracker,
+            )
 
         events_json = response.get("events", [])
         responses = response.get("responses", [])

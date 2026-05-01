@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional, Text, Tuple, Union
 
 import aiohttp
-import ruamel.yaml as yaml
+from ruamel.yaml import YAML
 
 import rasa.cli.utils
 import rasa.shared.utils.cli
@@ -103,10 +103,13 @@ def _prepare_credentials_for_rasa_x(
     # this makes sure the Rasa X is properly configured no matter what
     if rasa_x_url:
         credentials["rasa"] = {"url": rasa_x_url}
-    dumped_credentials = yaml.dump(credentials, default_flow_style=False)
-    tmp_credentials = rasa.utils.io.create_temporary_file(dumped_credentials, "yml")
+    temp_file = rasa.utils.io.create_temporary_file("", "yml")
+    with open(temp_file, "w") as f:
+        yaml = YAML(typ="safe", pure=True)
+        yaml.default_flow_style = False
+        yaml.dump(credentials, stream=f)
 
-    return tmp_credentials
+    return temp_file
 
 
 def rasa_x(args: argparse.Namespace) -> None:
