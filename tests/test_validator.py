@@ -29,6 +29,7 @@ from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.llm import get_prompt_template
 from rasa.telemetry import (
     TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE,
     TELEMETRY_VALIDATION_ERROR_LOG_EVENT,
@@ -4207,6 +4208,25 @@ def test_verify_prompt_templates_all_dialogue_understanding_templates_are_valid(
         component_name="SearchReadyLLMCommandGenerator",
         component_type="pipeline component",
     )
+
+
+@pytest.mark.parametrize(
+    "prompt_template_path",
+    ALL_DIALOGUE_UNDERSTANDING_PROMPT_TEMPLATES,
+    ids=lambda path: path.name,
+)
+def test_verify_prompt_templates_no_hand_over_command(
+    prompt_template_path: Path,
+) -> None:
+    """Ensure Verify "hand over" command is not present in the prompt templates."""
+    default_template = "{{ content }}"
+    template_content = get_prompt_template(
+        str(prompt_template_path),
+        default_template,
+    )
+    assert template_content is not None
+    assert "hand over" not in template_content
+    assert "HumanHandoff()" not in template_content
 
 
 @pytest.mark.parametrize(
