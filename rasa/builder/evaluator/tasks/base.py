@@ -1,12 +1,20 @@
 """Base models and abstract class for experiment tasks."""
 
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, List, Optional
 
 from pydantic import BaseModel
 
 from rasa.builder.copilot.models import ResponseCategory
 from rasa.builder.evaluator.configs.models import ExperimentConfig
+
+
+class AvailableTasks(str, Enum):
+    """Available eval experiment task types."""
+
+    CLASSIFICATION = "classification"
+    RETRIEVAL = "retrieval"
 
 
 class ClassifierTaskResult(BaseModel):

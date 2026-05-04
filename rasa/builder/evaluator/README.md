@@ -195,6 +195,92 @@ python -m rasa.builder.evaluator.run_experiment \
     --config rasa/builder/evaluator/configs/test_retrieval.yaml
 ```
 
+## Dataset generation
+
+Before running an experiment you need a labeled dataset in Langfuse. The
+`dataset/data_gen/` module provides config-driven pipelines to build classifier
+and retrieval datasets from seed queries using LLM-as-judge labeling, then push
+them to Langfuse and save a local JSONL copy.
+
+```
+┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│  Seed queries    │───▶│  LLM labeling    │───▶│  Dataset entries │
+│   (JSONL)        │    │  (gpt-4.1)       │    │  (JSONL + LF)    │
+└──────────────────┘    └──────────────────┘    └──────────────────┘
+```
+
+Seed queries can be hand-curated or extracted from production Langfuse traces
+via [process_langfuse_traces.py](rasa/builder/evaluator/dataset/data_gen/retrieval/process_langfuse_traces.py).
+
+### Classifier dataset
+
+Single-stage labeling: each query is assigned one `ResponseCategory` label.
+
+| Property      | Value                                                        |
+|---------------|--------------------------------------------------------------|
+| Builder       | [build_classifier_dataset.py](rasa/builder/evaluator/dataset/data_gen/classifier/build_classifier_dataset.py) |
+| Config        | [configs/build_classifier_dataset.yaml](rasa/builder/evaluator/configs/build_classifier_dataset.yaml) |
+| Input         | JSONL of seed queries                                        |
+| Output        | Langfuse dataset + local JSONL of `DatasetEntry` records     |
+| Model         | `gpt-4.1-2025-04-14` (configurable)                          |
+
+**Run:**
+
+```bash
+uv run python -m rasa.builder.evaluator.dataset.data_gen.classifier.build_classifier_dataset \
+    --config rasa/builder/evaluator/configs/build_classifier_dataset.yaml
+```
+
+### Retrieval dataset
+
+Two-stage labeling: an index is built from the docs repo, then each query is
+labeled with the set of relevant pages.
+
+| Property      | Value                                                        |
+|---------------|--------------------------------------------------------------|
+| Builder       | [build_retrieval_dataset.py](rasa/builder/evaluator/dataset/data_gen/retrieval/build_retrieval_dataset.py) |
+| Config        | [configs/label_retrieval_dataset.yaml](rasa/builder/evaluator/configs/label_retrieval_dataset.yaml) |
+| Input         | JSONL of seed queries + path to docs repo                    |
+| Output        | Langfuse dataset + local JSONL of `RetrievalDatasetEntry` records |
+| Model         | `gpt-4.1-2025-04-14` (configurable)                          |
+
+**Run:**
+
+```bash
+uv run python -m rasa.builder.evaluator.dataset.data_gen.retrieval.build_retrieval_dataset \
+    --config rasa/builder/evaluator/configs/label_retrieval_dataset.yaml
+```
+
+### Common labeling config fields
+
+Both pipelines share the `LabelingConfig` schema (`configs/models.py`):
+
+| Field                   | Description                                          |
+|-------------------------|------------------------------------------------------|
+| `dataset_name`          | Target Langfuse dataset name                         |
+| `dataset_description`   | Human-readable description                           |
+| `queries_path`          | Path to seed queries JSONL                           |
+| `output_dir`            | Local directory for the JSONL copy                   |
+| `model` / `temperature` | LLM used for labeling                                |
+| `batch_size` / `batch_pause_seconds` | Concurrency + rate-limit controls       |
+| `max_retries`           | Retry budget per query                               |
+| `classifier.valid_categories` | (classifier) Allowed labels                    |
+| `retrieval.docs_repo_path`    | (retrieval) Path to the documentation repo     |
+
+### Sourcing seed queries from Langfuse traces
+
+To bootstrap seed queries from production traffic:
+
+```bash
+uv run python -m rasa.builder.evaluator.dataset.data_gen.retrieval.process_langfuse_traces \
+    --trace-name {copilot} \
+    --kind {classification,retrieval} \
+    --output-dir <dir> \
+    --output-filename <file.jsonl>
+```
+
+The resulting JSONL can be passed as `queries_path` to either builder above.
+
 ## Environment variables
 
 | Variable              | Required | Description                          |

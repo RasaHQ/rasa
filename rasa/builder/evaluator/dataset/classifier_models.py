@@ -140,6 +140,15 @@ class DatasetEntry(BaseModel):
             copilot_chat_history=self.metadata.copilot_additional_context.copilot_chat_history,
         )
 
+    def to_langfuse_item_kwargs(self) -> Dict[str, Any]:
+        """Convert to kwargs for ``langfuse.create_dataset_item()``."""
+        return {
+            "id": self.id,
+            "input": self.input.model_dump(),
+            "expected_output": self.expected_output.model_dump(),
+            "metadata": self.metadata.model_dump(),
+        }
+
     @classmethod
     def from_raw_data(
         cls,

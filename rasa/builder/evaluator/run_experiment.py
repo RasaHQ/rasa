@@ -7,32 +7,14 @@ Usage:
 """
 
 import argparse
-import os
 import sys
 
 import structlog
 
+from rasa.builder.evaluator.helpers import validate_env
 from rasa.builder.evaluator.runner import ExperimentRunner
 
 structlogger = structlog.get_logger()
-
-REQUIRED_ENV_VARS = [
-    "OPENAI_API_KEY",
-    # "LANGFUSE_HOST",
-    "LANGFUSE_PUBLIC_KEY",
-    "LANGFUSE_SECRET_KEY",
-]
-
-
-def _validate_environment() -> None:
-    """Check that required env vars are set."""
-    missing = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
-    if missing:
-        structlogger.error(
-            "run_experiment.missing_env_vars",
-            missing=missing,
-        )
-        sys.exit(1)
 
 
 def _run(config_path: str) -> int:
@@ -64,7 +46,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    _validate_environment()
+    validate_env(push_langfuse=True)
 
     return _run(args.config)
 

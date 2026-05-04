@@ -1,0 +1,28 @@
+# Labeling: Single-stage LLM labeling for the classifier evaluation ground truth.
+#
+# Usage:
+#   python -m rasa.builder.evaluator.dataset.data_gen.classifier.build_classifier_dataset \
+#       --config rasa/builder/evaluator/configs/build_classifier_dataset.yaml
+
+dataset_name: user-input-classification-dataset
+dataset_description: "Classifier eval dataset: queries with ground-truth ResponseCategory labels."
+output_dir: results/classifier_labeling
+queries_path: path-to-queries.jsonl
+
+model: gpt-4.1-2025-04-14
+temperature: 0.0
+max_retries: 1
+batch_size: 5
+batch_pause_seconds: 3.0
+
+classifier:
+  valid_categories:
+    - greeting_detection
+    - goodbye_detection
+    - rasa_introduction_detection
+    - copilot_introduction_detection
+    - roleplay_detection
+    - out_of_scope_detection
+    - knowledge_base_access_requested
+    - unclear_input_detection
+    - copilot

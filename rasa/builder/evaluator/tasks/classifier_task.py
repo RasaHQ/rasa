@@ -11,7 +11,7 @@ from typing import Any, Optional
 import structlog
 
 from rasa.builder.evaluator.configs.models import ExperimentConfig
-from rasa.builder.evaluator.dataset.models import DatasetEntry
+from rasa.builder.evaluator.dataset.classifier_models import DatasetEntry
 from rasa.builder.evaluator.tasks.base import BaseTask, ClassifierTaskResult
 
 structlogger = structlog.get_logger()

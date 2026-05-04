@@ -9,9 +9,9 @@ import pytest
 
 from rasa.builder.evaluator.runner import (
     AvailableLevels,
-    AvailableTasks,
     EvaluatorEntry,
 )
+from rasa.builder.evaluator.tasks.base import AvailableTasks
 
 
 class TestResolveTask:

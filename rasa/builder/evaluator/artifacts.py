@@ -27,4 +27,13 @@ class YAMLArtifact(BaseModel):
     data: Mapping[str, Any]
 
 
-Artifact = Union[CSVArtifact, YAMLArtifact]
+class JSONLArtifact(BaseModel):
+    """A JSONL file: one pydantic model serialized per line."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    filename: str
+    records: List[BaseModel]
+
+
+Artifact = Union[CSVArtifact, YAMLArtifact, JSONLArtifact]

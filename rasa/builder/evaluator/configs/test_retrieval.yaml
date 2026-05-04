@@ -1,7 +1,7 @@
 name: "retrieval-eval-inkeep"
 description: "Document retrieval quality evaluation (InKeep backend)"
 task: "retrieval"
-dataset_name: "retrieval-eval-v1"
+dataset_name: "retrieval-eval"
 results_dir: "eval_results/retrieval"
 formats:
   - "langfuse"

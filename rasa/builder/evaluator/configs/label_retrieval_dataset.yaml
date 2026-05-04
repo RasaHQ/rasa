@@ -1,0 +1,20 @@
+# Labeling: Two-stage LLM labeling for the retrieval evaluation ground truth.
+#
+# Usage:
+#   python -m rasa.builder.evaluator.dataset.data_gen.retrieval.build_retrieval_dataset \
+#       --config rasa/builder/evaluator/configs/label_retrieval_dataset.yaml
+
+dataset_name: retrieval-eval-queries
+dataset_description: "Retrieval evaluation dataset: queries with ground-truth relevant pages."
+output_dir: results/retrieval_labeling
+queries_path: path-to-queries
+
+model: gpt-4.1-2025-04-14
+temperature: 0.0
+max_page_content_chars: 15000
+max_retries: 1
+batch_size: 5
+batch_pause_seconds: 3.0
+
+retrieval:
+  docs_repo_path: path-to-docs-repo

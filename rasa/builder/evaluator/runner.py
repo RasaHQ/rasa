@@ -11,10 +11,14 @@ from typing import Any, Dict, List, NamedTuple, Type
 import structlog
 
 from rasa.builder.evaluator.artifacts import Artifact, YAMLArtifact
-from rasa.builder.evaluator.configs.models import ExperimentConfig, load_config
+from rasa.builder.evaluator.configs.models import (
+    ConfigType,
+    ExperimentConfig,
+    load_config,
+)
 from rasa.builder.evaluator.evaluators.base import BaseEvaluator
 from rasa.builder.evaluator.results_export import ResultsExporter
-from rasa.builder.evaluator.tasks.base import BaseTask
+from rasa.builder.evaluator.tasks.base import AvailableTasks, BaseTask
 from rasa.builder.telemetry.langfuse_integration.langfuse_compat import (
     langfuse,
     require_langfuse,
@@ -26,13 +30,6 @@ from langfuse._client.datasets import DatasetClient  # noqa: TID251, E402
 from langfuse.experiment import ExperimentResult  # noqa: TID251, E402
 
 structlogger = structlog.get_logger()
-
-
-class AvailableTasks(str, Enum):
-    """Available eval experiment task types."""
-
-    CLASSIFICATION = "classification"
-    RETRIEVAL = "retrieval"
 
 
 class AvailableLevels(str, Enum):
@@ -78,7 +75,7 @@ class ExperimentRunner:
     """Universal experiment runner driven by YAML config."""
 
     def __init__(self, config_path: str) -> None:
-        self._config: ExperimentConfig = load_config(config_path)
+        self._config: ExperimentConfig = load_config(config_path, ConfigType.EXPERIMENT)
         self._langfuse = langfuse.get_client()
 
         self._task = self._resolve_task(self._config.task)

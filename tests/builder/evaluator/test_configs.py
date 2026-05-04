@@ -6,12 +6,12 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from rasa.builder.evaluator.configs.models import load_config
+from rasa.builder.evaluator.configs.models import ConfigType, load_config
 
 
 class TestLoadConfig:
     def test_success(self, valid_config_yaml: str):
-        config = load_config(valid_config_yaml)
+        config = load_config(valid_config_yaml, ConfigType.EXPERIMENT)
 
         assert config.name == "test-experiment"
         assert config.description == "A test experiment"
@@ -22,7 +22,7 @@ class TestLoadConfig:
 
     def test_file_not_found(self):
         with pytest.raises(FileNotFoundError, match="Config file not found"):
-            load_config("/nonexistent/path/config.yaml")
+            load_config("/nonexistent/path/config.yaml", ConfigType.EXPERIMENT)
 
     def test_invalid_schema(self, tmp_path: Path):
         config_file = tmp_path / "bad.yaml"
@@ -30,7 +30,7 @@ class TestLoadConfig:
             yaml.dump({"name": "test"}, f)  # missing required fields
 
         with pytest.raises(ValidationError):
-            load_config(str(config_file))
+            load_config(str(config_file), ConfigType.EXPERIMENT)
 
     def test_invalid_task_value(self, tmp_path: Path, valid_config_dict: dict):
         valid_config_dict["task"] = "regression"
@@ -39,4 +39,4 @@ class TestLoadConfig:
             yaml.dump(valid_config_dict, f)
 
         with pytest.raises(ValidationError):
-            load_config(str(config_file))
+            load_config(str(config_file), ConfigType.EXPERIMENT)

@@ -91,10 +91,10 @@ def make_runner(tmp_path: Path):
     from rasa.builder.evaluator.configs.models import ExperimentConfig
     from rasa.builder.evaluator.runner import (
         AvailableLevels,
-        AvailableTasks,
         EvaluatorEntry,
         ExperimentRunner,
     )
+    from rasa.builder.evaluator.tasks.base import AvailableTasks
 
     def _factory(**overrides: Any) -> ExperimentRunner:
         runner = object.__new__(ExperimentRunner)

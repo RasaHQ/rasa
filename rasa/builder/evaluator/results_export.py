@@ -16,8 +16,14 @@ from typing import Any, Iterable, Mapping, Sequence
 
 import structlog
 import yaml  # type: ignore[import-untyped]
+from pydantic import BaseModel
 
-from rasa.builder.evaluator.artifacts import Artifact, CSVArtifact, YAMLArtifact
+from rasa.builder.evaluator.artifacts import (
+    Artifact,
+    CSVArtifact,
+    JSONLArtifact,
+    YAMLArtifact,
+)
 
 structlogger = structlog.get_logger()
 
@@ -78,6 +84,33 @@ class ResultsFileWriter:
                 error=str(e),
             )
 
+    def write_jsonl(
+        self,
+        filename: str,
+        records: Sequence[BaseModel],
+    ) -> None:
+        """Write ``records`` as a JSONL file under the configured output dir.
+
+        Each record is serialized via ``model_dump_json()`` on its own line.
+        """
+        output_path = self._output_dir / filename
+        try:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, "w") as f:
+                for record in records:
+                    f.write(record.model_dump_json() + "\n")
+            structlogger.info(
+                "results_export.jsonl",
+                file=str(output_path),
+                count=len(records),
+            )
+        except Exception as e:
+            structlogger.error(
+                "results_export.jsonl_failed",
+                file=str(output_path),
+                error=str(e),
+            )
+
 
 class ResultsExporter:
     """Dispatches ``Artifact`` objects to the appropriate writer method.
@@ -102,6 +135,11 @@ class ResultsExporter:
                 self._writer.write_yaml(
                     filename=artifact.filename,
                     data=artifact.data,
+                )
+            elif isinstance(artifact, JSONLArtifact):
+                self._writer.write_jsonl(
+                    filename=artifact.filename,
+                    records=artifact.records,
                 )
             else:
                 structlogger.warning(
