@@ -144,6 +144,7 @@ export type EventMetadata = {
   description?: string;
   mcp_tools?: string[];
   excluded_mcp_tools?: string[];
+  exit_conditions?: string[];
 };
 
 export type RawEvent = {

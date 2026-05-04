@@ -175,6 +175,66 @@ describe("AgentEventInfo", () => {
     });
   });
 
+  describe("exit conditions section", () => {
+    it("renders exit conditions accordion when exit_conditions is present", () => {
+      const event: ConversationEvent = {
+        ...baseEvent,
+        metadata: {
+          ...baseEvent.metadata,
+          exit_conditions: ["slots.amount > 0", "slots.done is True"],
+        },
+      };
+
+      renderWithProviders(
+        <AgentEventInfo event={event} onClose={vi.fn()} />,
+      );
+
+      expect(screen.getByText("Exit conditions")).toBeInTheDocument();
+    });
+
+    it("formats each condition with a leading dash", () => {
+      const event: ConversationEvent = {
+        ...baseEvent,
+        metadata: {
+          ...baseEvent.metadata,
+          exit_conditions: ["slots.amount > 0", "slots.done is True"],
+        },
+      };
+
+      renderWithProviders(
+        <AgentEventInfo event={event} onClose={vi.fn()} />,
+      );
+
+      const codeBlock = screen.getByTestId("agent-exit-conditions");
+      expect(codeBlock.textContent).toBe("- slots.amount > 0\n- slots.done is True");
+    });
+
+    it("does not render exit conditions section when exit_conditions is absent", () => {
+      renderWithProviders(
+        <AgentEventInfo event={baseEvent} onClose={vi.fn()} />,
+      );
+
+      expect(screen.queryByText("Exit conditions")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("agent-exit-conditions")).not.toBeInTheDocument();
+    });
+
+    it("does not render exit conditions section when exit_conditions is undefined", () => {
+      const event: ConversationEvent = {
+        ...baseEvent,
+        metadata: {
+          ...baseEvent.metadata,
+          exit_conditions: undefined,
+        },
+      };
+
+      renderWithProviders(
+        <AgentEventInfo event={event} onClose={vi.fn()} />,
+      );
+
+      expect(screen.queryByText("Exit conditions")).not.toBeInTheDocument();
+    });
+  });
+
   describe("event info accordion", () => {
     it("renders event info section", () => {
       renderWithProviders(

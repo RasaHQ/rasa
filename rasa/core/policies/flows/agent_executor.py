@@ -314,6 +314,8 @@ async def run_agent(
                 agent_metadata["excluded_mcp_tools"] = [
                     t for s in servers for t in (s.exclude_tools or [])
                 ]
+        if step.exit_if:
+            agent_metadata["exit_conditions"] = step.exit_if
         final_events.append(
             AgentStarted(step.call, step.flow_id, metadata=agent_metadata)
         )

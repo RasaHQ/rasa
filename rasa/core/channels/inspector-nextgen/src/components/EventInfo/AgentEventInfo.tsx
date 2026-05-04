@@ -1,4 +1,4 @@
-import { Accordion, Box, Heading, Separator, Tag, Text } from "@chakra-ui/react";
+import { Accordion, Box, Code, Heading, Separator, Tag, Text } from "@chakra-ui/react";
 import { useCallback } from "react";
 import {
   type ConversationEvent
@@ -22,6 +22,7 @@ export const AgentEventInfo = ({
   const description = event.metadata?.description || "-";
   const tools = event.metadata?.mcp_tools || [];
   const excludedTools = event.metadata?.excluded_mcp_tools || [];
+  const exitConditions = event.metadata?.exit_conditions;
 
   const toolTagStyles = {
     mr: "0.25rem",
@@ -29,13 +30,13 @@ export const AgentEventInfo = ({
   };
 
   const renderTools = useCallback((tools: string[]) => (
-    <Text size="md" mb="0.5rem" lineHeight="2rem">
+    <Box mb="0.5rem" lineHeight="2rem">
       {tools.map(tool => (
         <Tag.Root key={tool} size="lg" variant="subtle" rounded="full" css={toolTagStyles}>
           <Tag.Label>{tool}</Tag.Label>
         </Tag.Root>
       ))}
-    </Text>
+    </Box>
     // ignoring because it's not important :)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ), []);
@@ -101,6 +102,27 @@ export const AgentEventInfo = ({
       )}
 
       <Separator mt="0.5rem" />
+
+      {exitConditions && (
+        <Accordion.Root collapsible multiple>
+          <EventAccordionItem title="Exit conditions" value="exit-conditions">
+            <Code
+              whiteSpace="pre-wrap"
+              display="block"
+              fontSize="0.75rem"
+              p="1rem"
+              borderRadius="0.5rem"
+              variant="solid"
+              fontFamily="IBM Plex Mono"
+              data-testid="agent-exit-conditions"
+            >
+              {exitConditions.map((condition: string) => (
+                `- ${condition}`
+              )).join("\n")}
+            </Code>
+          </EventAccordionItem>
+        </Accordion.Root>
+      )}
 
       <Accordion.Root collapsible multiple>
         <EventAccordionItem title="Event info" value="event-info">

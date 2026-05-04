@@ -3019,3 +3019,97 @@ async def test_excluded_mcp_tools_absent_when_no_connections_config(
 
     event = next(e for e in result.events if isinstance(e, AgentStarted))
     assert "excluded_mcp_tools" not in (event.metadata or {})
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_exit_conditions_in_agent_started_metadata(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """exit_conditions is included in AgentStarted metadata when step.exit_if is set."""
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+              exit_if:
+                - slots.amount > 0
+                - slots.done is True
+        """
+    )
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    mock_run_agent.return_value = AgentOutput(
+        id="car-research",
+        status=AgentStatus.COMPLETED,
+        response_message=None,
+        events=[],
+    )
+
+    result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    event = next(e for e in result.events if isinstance(e, AgentStarted))
+    assert event.metadata is not None
+    assert event.metadata["exit_conditions"] == [
+        "slots.amount > 0",
+        "slots.done is True",
+    ]
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_exit_conditions_absent_when_no_exit_if(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """exit_conditions is not in AgentStarted metadata when step has no exit_if."""
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    event = next(e for e in result.events if isinstance(e, AgentStarted))
+    assert "exit_conditions" not in (event.metadata or {})
