@@ -385,6 +385,7 @@ export function mapRawEventsToConversationEvents(
           text: event.text,
           tokens: [],
           timestamp: parsedTimestamp,
+          originalTimestamp: event.timestamp,
           type: UtteranceType.User,
           __typename: "Utterance",
           rephrase: false,
@@ -411,6 +412,7 @@ export function mapRawEventsToConversationEvents(
           }),
           tokens: [],
           timestamp: parsedTimestamp,
+          originalTimestamp: event.timestamp,
           type: UtteranceType.Bot,
           commands: null,
           rephrase: event.metadata?.metadata?.rephrase || false,
@@ -430,6 +432,7 @@ export function mapRawEventsToConversationEvents(
           },
           update: event.update || "",
           timestamp: parsedTimestamp,
+          originalTimestamp: event.timestamp,
           __typename: "StackEvent",
         };
       case "action":
@@ -446,6 +449,7 @@ export function mapRawEventsToConversationEvents(
           slotValue: undefined,
           stepId: event.step_id || event.metadata?.step_id,
           timestamp: parsedTimestamp,
+          originalTimestamp: event.timestamp,
           __typename: "ConversationEvent",
         };
       case "slot" as const:
@@ -462,6 +466,7 @@ export function mapRawEventsToConversationEvents(
           slotValue: event.value,
           stepId: event.step_id || event.metadata?.step_id,
           timestamp: parsedTimestamp,
+          originalTimestamp: event.timestamp,
           __typename: "ConversationEvent",
         };
       case "mcp_tool_executed": {
@@ -490,6 +495,7 @@ export function mapRawEventsToConversationEvents(
           slotValue: undefined,
           stepId: event.step_id || event.metadata?.step_id,
           timestamp: parsedTimestamp,
+          originalTimestamp: event.timestamp,
           __typename: "ConversationEvent",
         };
       }
@@ -500,18 +506,19 @@ export function mapRawEventsToConversationEvents(
       case "agent_resumed": {
         return {
           id: uuid(),
+          agentId: event.agent_id,
           actionText: undefined,
           conversationEventType: (event.event as string).toUpperCase() as ConversationEventType,
           flowId: event.flow_id || event.metadata?.active_flow,
           metadata: {
             ...event.metadata,
             rawEvent: event,
-            agent_id: event.agent_id,
           },
           name: event.name,
           slotValue: undefined,
           stepId: event.step_id || event.metadata?.step_id,
           timestamp: parsedTimestamp,
+          originalTimestamp: event.timestamp,
           __typename: "ConversationEvent",
         };
       }
@@ -529,6 +536,7 @@ export function mapRawEventsToConversationEvents(
           slotValue: undefined,
           stepId: event.step_id || event.metadata?.step_id,
           timestamp: parsedTimestamp,
+          originalTimestamp: event.timestamp,
           __typename: "ConversationEvent",
         };
     }

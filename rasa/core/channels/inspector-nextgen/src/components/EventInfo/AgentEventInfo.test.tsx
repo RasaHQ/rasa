@@ -31,11 +31,12 @@ const baseEvent: ConversationEvent = {
   name: "event_name",
   actionText: "",
   flowId: "banking",
+  agentId: "banking_backend",
   slotValue: null,
   stepId: "banking_0_call_banking_backend",
   timestamp: new Date("2026-01-21T14:28:54Z").toISOString(),
+  originalTimestamp: 1737469734,
   metadata: {
-    agent_id: "banking_backend",
     active_flow: "banking",
     step_id: "banking_0_call_banking_backend",
     parseData: {},
@@ -62,7 +63,7 @@ describe("AgentEventInfo", () => {
   });
 
   describe("agent name", () => {
-    it("uses agent_id from metadata", () => {
+    it("uses agentId from event", () => {
       renderWithProviders(
         <AgentEventInfo event={baseEvent} onClose={vi.fn()} />,
       );
@@ -70,10 +71,10 @@ describe("AgentEventInfo", () => {
       expect(screen.getByText("banking_backend")).toBeInTheDocument();
     });
 
-    it("falls back to event.name when agent_id is absent", () => {
+    it("falls back to event.name when agentId is absent", () => {
       const event: ConversationEvent = {
         ...baseEvent,
-        metadata: { parseData: {} },
+        agentId: undefined,
       };
 
       renderWithProviders(
@@ -83,11 +84,11 @@ describe("AgentEventInfo", () => {
       expect(screen.getByText("event_name")).toBeInTheDocument();
     });
 
-    it("falls back to 'agent' when both agent_id and name are absent", () => {
+    it("falls back to 'agent' when both agentId and name are absent", () => {
       const event = {
         ...baseEvent,
+        agentId: undefined,
         name: undefined,
-        metadata: { parseData: {} },
       } as unknown as ConversationEvent;
 
       renderWithProviders(

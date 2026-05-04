@@ -12,6 +12,7 @@ describe("MessageMarkup", () => {
       type: UtteranceType.Bot,
       text: "",
       timestamp: new Date().toISOString(),
+      originalTimestamp: 0,
       tokens: [],
       rephrase: false,
       rephrasePrompt: null,

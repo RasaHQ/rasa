@@ -65,6 +65,7 @@ function makeFlowStartedEvent(id: string, flowId = "my_flow"): ConversationEvent
     conversationEventType: ConversationEventType.FlowStarted,
     flowId,
     timestamp: "2024-01-01T12:00:00Z",
+    originalTimestamp: 0,
     actionText: "",
     name: "",
     slotValue: null,

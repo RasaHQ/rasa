@@ -90,6 +90,7 @@ export type ConversationEvent = {
   __typename: "ConversationEvent";
   actionText: string;
   conversationEventType: ConversationEventType;
+  agentId?: string;
   flowId: string;
   id: string;
   metadata: EventMetadata;
@@ -97,6 +98,7 @@ export type ConversationEvent = {
   slotValue: string | null;
   stepId: string;
   timestamp: string;
+  originalTimestamp: number;
 };
 
 export type Utterance = {
@@ -109,6 +111,7 @@ export type Utterance = {
   responseData?: ResponseData;
   text: string;
   timestamp: string;
+  originalTimestamp: number;
   tokens: Token[];
   type: UtteranceType;
   intents?: UtteranceIntent[];
@@ -138,7 +141,6 @@ export type EventMetadata = {
   tool_is_error?: boolean;
   tool_error_message?: string;
   parseData: unknown;
-  agent_id?: string;
   description?: string;
   mcp_tools?: string[];
   excluded_mcp_tools?: string[];

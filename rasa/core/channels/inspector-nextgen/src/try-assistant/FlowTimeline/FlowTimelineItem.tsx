@@ -1,4 +1,6 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
+import { capitalize } from "lodash";
+import { useMemo } from "react";
 import type { FlowInvocationStatus, FlowTimelineEntry } from "./types";
 
 const STATUS_CONFIG: Record<
@@ -50,10 +52,6 @@ function formatDuration(start: Date, end: Date): string {
   return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
 }
 
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
 interface FlowTimelineItemProps {
   readonly entry: FlowTimelineEntry;
   readonly isFirst: boolean;
@@ -68,6 +66,17 @@ export function FlowTimelineItem({
   onClick,
 }: FlowTimelineItemProps) {
   const config = STATUS_CONFIG[entry.status];
+
+  const title = useMemo(() => {
+    if (entry.type === "agent") {
+      return `Agent: ${entry.agentId ?? "unknown"}`;
+    } else if (entry.flowName) {
+      return capitalize(entry.flowName);
+    } else {
+      return entry.flowId
+    }
+  }, [entry.type, entry.agentId, entry.flowName, entry.flowId]);
+
 
   const subtitle = entry.endTime
     ? `Started at ${formatTime(entry.startTime)}  \u2022  Duration: ${formatDuration(entry.startTime, entry.endTime)}`
@@ -129,7 +138,7 @@ export function FlowTimelineItem({
             lineHeight="1.7"
             truncate
           >
-            {entry.flowName ? capitalize(entry.flowName) : entry.flowId}
+            {title}
           </Text>
           <Text size="xs" variant="muted" whiteSpace="pre">
             {subtitle}

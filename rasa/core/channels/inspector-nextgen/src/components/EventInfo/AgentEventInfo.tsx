@@ -17,7 +17,7 @@ export const AgentEventInfo = ({
   onClose,
 }: AgentEventInfoProps) => {
   const agentName =
-    event.metadata?.agent_id ?? event.name ?? "agent";
+    event.agentId ?? event.name ?? "agent";
   const flowId = event.flowId || event.metadata?.active_flow;
   const description = event.metadata?.description || "-";
   const tools = event.metadata?.mcp_tools || [];

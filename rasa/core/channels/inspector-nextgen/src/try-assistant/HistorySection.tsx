@@ -7,11 +7,7 @@ import { useInspectorStore, toggleSelectedElement } from "../store";
 import { PlaceholderImage } from "../types";
 import { deriveFlowTimeline, FlowTimeline } from "./FlowTimeline";
 
-interface HistorySectionProps {
-  showViewSwitcher?: boolean;
-}
-
-export const HistorySection = ({ showViewSwitcher }: HistorySectionProps) => {
+export const HistorySection = () => {
   const conversationList = useInspectorStore((s) => s.conversationList);
   const flows = useInspectorStore((s) => s.flows);
   const allEvents = useMemo(
@@ -41,7 +37,6 @@ export const HistorySection = ({ showViewSwitcher }: HistorySectionProps) => {
     >
       <InspectorViewHeader
         title="Flow history"
-        showViewSwitcher={showViewSwitcher}
       />
       <ScrollFadeArea>
         {entries.length > 0 ? (

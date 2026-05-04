@@ -31,6 +31,7 @@ describe("TryAssistantConversation", () => {
           type: UtteranceType.User,
           text: "Hello",
           timestamp: new Date().toISOString(),
+          originalTimestamp: 0,
           tokens: [],
           rephrase: false,
           rephrasePrompt: null,

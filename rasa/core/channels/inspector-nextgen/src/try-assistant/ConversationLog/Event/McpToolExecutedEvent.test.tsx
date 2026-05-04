@@ -14,6 +14,7 @@ const baseEvent: ConversationEvent = {
   slotValue: null,
   stepId: "",
   timestamp: new Date().toISOString(),
+  originalTimestamp: 0,
   metadata: {
     tool_name: "my_tool",
     parseData: {},

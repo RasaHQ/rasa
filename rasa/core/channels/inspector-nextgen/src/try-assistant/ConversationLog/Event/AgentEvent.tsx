@@ -41,7 +41,7 @@ export const AgentEvent = forwardRef<HTMLDivElement | null, AgentEventProps>(
       useConversationLogSx(isSelected);
     const [isHovered, setIsHovered] = React.useState(false);
 
-    const agentId = event.metadata?.agent_id ?? event.name ?? "agent";
+    const agentId = event.agentId ?? event.name ?? "agent";
     const statusText = agentEventText[event.conversationEventType] ?? "invoked";
     const isError = event.metadata?.execution_success === false;
 

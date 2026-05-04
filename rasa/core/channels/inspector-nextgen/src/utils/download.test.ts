@@ -18,6 +18,7 @@ function makeUtterance(overrides: Partial<Utterance>): Utterance {
     type: UtteranceType.User,
     tokens: [],
     timestamp: new Date().toISOString(),
+    originalTimestamp: 0,
     rephrase: false,
     rephrasePrompt: null,
     metadata: { parseData: {} } as EventMetadata,
@@ -36,6 +37,7 @@ function makeConversationEvent(overrides: Partial<ConversationEvent>): Conversat
     slotValue: "",
     stepId: "",
     timestamp: new Date().toISOString(),
+    originalTimestamp: 0,
     metadata: { parseData: {} } as EventMetadata,
     ...overrides,
   };

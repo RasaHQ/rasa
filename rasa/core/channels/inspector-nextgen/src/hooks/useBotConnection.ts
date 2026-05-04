@@ -102,11 +102,13 @@ function generatePlaceholderId() {
 }
 
 function generatePlaceholderUserUtterance(message: string): Utterance {
+  const timestamp = new Date();
   return {
     id: generatePlaceholderId(),
     text: message,
     tokens: [],
-    timestamp: `${Date.now()}`,
+    timestamp: `${timestamp.toISOString()}`,
+    originalTimestamp: +timestamp,
     type: UtteranceType.User,
     __typename: "Utterance",
     rephrase: false,

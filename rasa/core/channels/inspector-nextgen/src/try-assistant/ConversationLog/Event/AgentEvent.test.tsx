@@ -14,15 +14,16 @@ const baseEvent: ConversationEvent = {
   slotValue: null,
   stepId: "",
   timestamp: new Date().toISOString(),
+  originalTimestamp: 0,
+  agentId: "banking_backend",
   metadata: {
-    agent_id: "banking_backend",
     parseData: {},
   },
 };
 
 describe("AgentEvent", () => {
   describe("agent name display", () => {
-    it("uses agent_id from metadata", () => {
+    it("uses agentId from event", () => {
       renderWithProviders(
         <AgentEvent event={baseEvent} isSelected={false} />,
       );
@@ -30,10 +31,10 @@ describe("AgentEvent", () => {
       expect(screen.getByText("banking_backend")).toBeInTheDocument();
     });
 
-    it("falls back to event.name when metadata.agent_id is absent", () => {
+    it("falls back to event.name when agentId is absent", () => {
       const event: ConversationEvent = {
         ...baseEvent,
-        metadata: { parseData: {} },
+        agentId: undefined,
       };
 
       renderWithProviders(
@@ -43,11 +44,11 @@ describe("AgentEvent", () => {
       expect(screen.getByText("event_name")).toBeInTheDocument();
     });
 
-    it("falls back to 'agent' when both agent_id and name are absent", () => {
+    it("falls back to 'agent' when both agentId and name are absent", () => {
       const event = {
         ...baseEvent,
+        agentId: undefined,
         name: undefined,
-        metadata: { parseData: {} },
       } as unknown as ConversationEvent;
 
       renderWithProviders(
