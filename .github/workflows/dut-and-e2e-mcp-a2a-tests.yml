@@ -50,6 +50,8 @@ env:
   CALM_BENCHMARKING_BOT_READ_TOKEN: ${{ secrets.CALM_BENCH_CLONE }}
   AWS_REGION_NAME: us-east-1
   DEFAULT_PYTHON_VERSION: "3.10"
+  LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+  LANGFUSE_PRIVATE_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
 
 permissions:
   id-token: write
@@ -78,6 +80,11 @@ jobs:
 
   e2e_mcp_tests:
     runs-on: warp-ubuntu-latest-x64-2x
+    services:
+      jaeger:
+        image: cr.jaegertracing.io/jaegertracing/jaeger:2.17.0@sha256:6266573208d665ce5c17483bce0a75d0806480d92c84766d288d0aee885ce708
+        ports:
+          - 4317:4317
     needs: check-agent-changes
     if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || needs.check-agent-changes.outputs.agent-files == 'true' || needs.check-agent-changes.outputs.sub-agent-files =='true') }}
     strategy:
@@ -121,7 +128,7 @@ jobs:
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           RASA_DEFAULT_INSTALLATION_ONLY: false
-          OPTIONAL_GROUP_TO_INSTALL: channels
+          OPTIONAL_GROUP_TO_INSTALL: monitoring
       - name: Run mock MCP finance server
         working-directory: calm-benchmarking-bot
         run: make run-finnhub-mock-mcp-server > mcp-server-logs.txt 2>&1 &
@@ -195,6 +202,11 @@ jobs:
 
   e2e_a2a_tests:
     runs-on: warp-ubuntu-latest-x64-2x
+    services:
+      jaeger:
+        image: cr.jaegertracing.io/jaegertracing/jaeger:2.17.0@sha256:6266573208d665ce5c17483bce0a75d0806480d92c84766d288d0aee885ce708
+        ports:
+          - 4317:4317
     needs: check-agent-changes
     if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || needs.check-agent-changes.outputs.agent-files == 'true' || needs.check-agent-changes.outputs.sub-agent-files =='true') }}
     strategy:
@@ -230,7 +242,7 @@ jobs:
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           RASA_DEFAULT_INSTALLATION_ONLY: false
-          OPTIONAL_GROUP_TO_INSTALL: channels
+          OPTIONAL_GROUP_TO_INSTALL: monitoring
       - name: Install UV
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Configure AWS credentials
@@ -333,6 +345,10 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
+      jaeger:
+        image: cr.jaegertracing.io/jaegertracing/jaeger:2.17.0@sha256:6266573208d665ce5c17483bce0a75d0806480d92c84766d288d0aee885ce708
+        ports:
+          - 4317:4317
     strategy:
       fail-fast: false
       matrix:
@@ -354,7 +370,7 @@ jobs:
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           RASA_DEFAULT_INSTALLATION_ONLY: false
-          OPTIONAL_GROUP_TO_INSTALL: channels
+          OPTIONAL_GROUP_TO_INSTALL: monitoring
       - name: Run mock MCP finance server
         working-directory: calm-benchmarking-bot
         run: make run-finnhub-mock-mcp-server > mcp-server-logs.txt 2>&1 &
@@ -438,6 +454,11 @@ jobs:
 
   DUT_mcp:
     runs-on: warp-ubuntu-latest-x64-2x
+    services:
+      jaeger:
+        image: cr.jaegertracing.io/jaegertracing/jaeger:2.17.0@sha256:6266573208d665ce5c17483bce0a75d0806480d92c84766d288d0aee885ce708
+        ports:
+          - 4317:4317
     needs: check-agent-changes
     if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || needs.check-agent-changes.outputs.agent-files == 'true' || needs.check-agent-changes.outputs.sub-agent-files =='true') }}
     strategy:
@@ -467,7 +488,7 @@ jobs:
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           RASA_DEFAULT_INSTALLATION_ONLY: false
-          OPTIONAL_GROUP_TO_INSTALL: channels
+          OPTIONAL_GROUP_TO_INSTALL: monitoring
       - name: Run mock MCP finance server
         working-directory: calm-benchmarking-bot
         run: make run-finnhub-mock-mcp-server > mcp-server-logs.txt 2>&1 &
@@ -500,7 +521,7 @@ jobs:
             set -Eeuxvo pipefail
             cd "${GITHUB_WORKSPACE}"/calm-benchmarking-bot
             rm -rf .rasa
-            make dut-mcp | tee dut-mcp-log
+            make dut-mcp 2>&1 | tee dut-mcp-log
             grep -iE '\b0 failed test cases' dut-mcp-log || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' dut-mcp-log \
               && echo "::warning::DUTs failed due to external/3rd-party service issues (non-blocking)")
       - name: Save DUT results
@@ -518,6 +539,11 @@ jobs:
 
   DUT_a2a:
     runs-on: warp-ubuntu-latest-x64-2x
+    services:
+      jaeger:
+        image: cr.jaegertracing.io/jaegertracing/jaeger:2.17.0@sha256:6266573208d665ce5c17483bce0a75d0806480d92c84766d288d0aee885ce708
+        ports:
+          - 4317:4317
     needs: check-agent-changes
     if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || needs.check-agent-changes.outputs.agent-files == 'true' || needs.check-agent-changes.outputs.sub-agent-files =='true') }}
     strategy:
@@ -547,7 +573,7 @@ jobs:
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           RASA_DEFAULT_INSTALLATION_ONLY: false
-          OPTIONAL_GROUP_TO_INSTALL: channels
+          OPTIONAL_GROUP_TO_INSTALL: monitoring
       - name: Install UV
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Configure AWS credentials
@@ -587,7 +613,7 @@ jobs:
             set -Eeuxvo pipefail
             cd "${GITHUB_WORKSPACE}"/calm-benchmarking-bot
             rm -rf .rasa
-            make dut-a2a | tee dut-a2a-log
+            make dut-a2a 2>&1 | tee dut-a2a-log
             grep -iE '\b0 failed test cases' dut-a2a-log || (grep -iE 'APITimeoutError|ProviderClientAPIException|BedrockException' dut-a2a-log \
               && echo "::warning::DUTs failed due to external/3rd-party service issues (non-blocking)")
           # Restart mock A2A agent to clear conversation history, before re-running test(s)

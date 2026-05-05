@@ -14,7 +14,7 @@ inputs:
     required: false
     default: "true"
   OPTIONAL_GROUP_TO_INSTALL:
-    description: "Optional group to install, from: nlu, channels or full. Incompatible with `RASA_DEFAULT_INSTALLATION_ONLY` input"
+    description: "Optional group to install, from: nlu, channels, monitoring or full. Incompatible with `RASA_DEFAULT_INSTALLATION_ONLY` input"
     required: false
     default: "full"
   DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL:

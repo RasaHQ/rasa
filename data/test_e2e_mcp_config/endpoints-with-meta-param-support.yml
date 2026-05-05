@@ -1,5 +1,16 @@
 action_endpoint:
   actions_module: "actions"
+
+tracing:
+  - type: langfuse
+    host: https://cloud.langfuse.com
+    public_key: ${LANGFUSE_PUBLIC_KEY}
+    private_key: ${LANGFUSE_PRIVATE_KEY}
+  - type: jaeger
+    host: localhost
+    port: 4317
+    service_name: rasa
+    sync_export: ~
   
 mcp_servers:
   - name: finnhub_mock_mcp_server
