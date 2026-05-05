@@ -58,6 +58,15 @@ class UserStoppedSpeaking(VoiceInputChannelMessage):
         call_state_input.is_user_speaking = False
 
 
+DEFAULT_INTERRUPTION_MIN_WORDS = 3
+
+
+@dataclass
+class InterruptionConfig:
+    enabled: bool = False
+    min_words: int = DEFAULT_INTERRUPTION_MIN_WORDS
+
+
 # Per voice session data
 # This is similar to how flask makes the "request" object available as a global variable
 # It's a "global" variable that is local to an async task (i.e. websocket session)
@@ -73,6 +82,8 @@ class CallState:
     latest_bot_audio_id: Optional[str] = None
     should_hangup: bool = False
     connection_failed: bool = False
+
+    interruption_config: InterruptionConfig = field(default_factory=InterruptionConfig)
 
     # Latency tracking - start times only
     user_speech_start_time: Optional[float] = None
@@ -93,6 +104,26 @@ class CallState:
     # Generic field for channel-specific state data
     channel_data: Dict[str, Any] = field(default_factory=dict)
     monitor_task: Optional[asyncio.Task] = None
+
+    def is_interruptable(self) -> bool:
+        if not self.interruption_config.enabled:
+            return False
+
+        # Is the bot response interruptible?
+        if not self.channel_data.get("allow_interruptions", True):
+            return False
+
+        return True
+
+    def can_collect_audio_during_dtmf(self) -> bool:
+        return (
+            self.is_collecting_dtmf
+            and self.dtmf_config is not None
+            and not self.dtmf_config.allow_audio_input
+        )
+
+    def can_receive_user_input(self) -> bool:
+        return self.is_rasa_listening and not self.is_bot_speaking
 
     async def monitor_silence_timeout(self) -> None:
         timeout = self.silence_timeout
@@ -138,10 +169,6 @@ class CallState:
             while True:
                 try:
                     message = await self.internal_queue.get()
-                    logger.debug(
-                        "voice_channel.call_state.start_state_monitoring.signal_received",
-                        message=message,
-                    )
                     if isinstance(message, VoiceInputChannelMessage):
                         message.process(self)
 

@@ -15,10 +15,6 @@ from rasa import server
 from rasa.core.agent import Agent
 from rasa.core.channels import TwilioMediaStreamsInputChannel, UserMessage, channel
 from rasa.core.channels.channel import BASIC_AUTH_SCHEME
-from rasa.core.channels.constants import (
-    USER_CONVERSATION_SESSION_END,
-    USER_CONVERSATION_SESSION_START,
-)
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.call_state import (
     BotIsSpeaking,
@@ -504,64 +500,6 @@ async def test_map_media_input_message(
     )
     action = await input_channel.map_input_message(media_messages[0], websocket)
     assert isinstance(action, NewAudioAction)
-
-
-async def test_run_audio_streaming(
-    input_channel: TwilioMediaStreamsInputChannel,
-    twilio_call_parameters: CallParameters,
-    twilio_input_stream: List[str],
-    monkeypatch: MonkeyPatch,
-):
-    asr_mock = AsyncMock()
-    asr_mock.send_audio_chunks = AsyncMock()
-    tts_mock = AsyncMock()
-
-    websocket = AsyncMock()
-
-    async def wrapped(messages: List[Any]):
-        for message in messages:
-            yield message
-
-    websocket.__aiter__.side_effect = lambda: wrapped(twilio_input_stream)
-
-    input_channel._get_asr_and_tts_engines = MagicMock(
-        return_value=(asr_mock, tts_mock)
-    )
-
-    on_new_message = AsyncMock()
-    await input_channel.run_audio_streaming(on_new_message, websocket)
-    # Should be called thrice with,
-    # - /session_start
-    # - /session_end
-    assert on_new_message.call_count == 2
-
-    # assert that when streaming start we start with /session_start
-    awaited_message1 = on_new_message.await_args_list[0].args[0]
-    assert awaited_message1.text == USER_CONVERSATION_SESSION_START
-    assert awaited_message1.input_channel == input_channel.name()
-    assert awaited_message1.metadata == asdict(twilio_call_parameters)
-    assert awaited_message1.sender_id == input_channel.get_sender_id(
-        twilio_call_parameters
-    )
-
-    # assert that after streaming is finished we end the conversation by processing
-    # /session_end
-    awaited_message2 = on_new_message.await_args_list[1].args[0]
-    assert awaited_message2.text == USER_CONVERSATION_SESSION_END
-    assert awaited_message2.input_channel == input_channel.name()
-    assert awaited_message2.metadata is None
-    assert awaited_message2.sender_id == input_channel.get_sender_id(
-        twilio_call_parameters
-    )
-
-    # Should be called when websocket has audio data
-
-    mapped_message = await input_channel.map_input_message(
-        twilio_input_stream[1], websocket
-    )
-    assert isinstance(mapped_message, NewAudioAction)
-
-    asr_mock.send_audio_chunks.assert_awaited_once_with(mapped_message.audio_bytes)
 
 
 USERNAME = 0

@@ -47,6 +47,7 @@ from rasa.core.channels.voice_stream.audio_bytes import (
 )
 from rasa.core.channels.voice_stream.call_state import (
     CallState,
+    InterruptionConfig,
     RasaIsListening,
     RasaIsProcessing,
     UserStoppedSpeaking,
@@ -84,12 +85,6 @@ logger = structlog.get_logger(__name__)
 DEFAULT_INTERRUPTION_MIN_WORDS = 3
 DEFAULT_MIN_DELAY_BETWEEN_BOT_MESSAGES_SECONDS = 1
 DEFAULT_MIN_DELAY_AFTER_FILLER_BOT_MESSAGES_SECONDS = 2
-
-
-@dataclass
-class InterruptionConfig:
-    enabled: bool = False
-    min_words: int = DEFAULT_INTERRUPTION_MIN_WORDS
 
 
 @dataclass
@@ -882,24 +877,13 @@ class VoiceInputChannel(InputChannel):
         Returns:
             True if the event should interrupt playback, False otherwise.
         """
-        # Are interruptions are enabled for the channel?
-        if not self.interruption_config.enabled:
-            return False
-
-        # Is the bot response interruptible?
-        if not call_state.channel_data.get("allow_interruptions", True):
-            return False
-
-        # Is the bot speaking? If not, we don't want to interrupt
-        if not call_state.is_bot_speaking:
-            return False
 
         # Did the user speak more than 3 words?
         min_words = self.interruption_config.min_words
         if isinstance(e, (NewTranscript, UserIsSpeaking)):
             translator = str.maketrans("", "", string.punctuation)
             words = e.text.translate(translator).split()
-            can_interrupt = len(words) >= min_words and call_state.is_bot_speaking
+            can_interrupt = len(words) >= min_words
             return can_interrupt
         return False
 
@@ -923,13 +907,26 @@ class VoiceInputChannel(InputChannel):
         call_parameters: CallParameters,
     ) -> None:
         async for event in asr_engine.stream_asr_events():
-            await asr_event_queue.put(event)
-            logger.debug("voice_channel.receive_asr_events", ev=event)
-            if self.should_interrupt(event):
-                logger.debug("voice_channel.asr_event_should_interrupt", ev=event)
-                call_state.stop_silence_monitoring()
-                await tts_engine.stop_streaming()
-                await self.interrupt_playback(ws, call_parameters)
+            is_interruptable = call_state.is_interruptable()
+            logger.debug(
+                "voice_channel.receive_asr_events",
+                ev=event,
+                is_interruptable=is_interruptable,
+            )
+            if is_interruptable:
+                should_interrupt = self.should_interrupt(event)
+                logger.debug(
+                    "voice_channel.asr_event_should_interrupt",
+                    ev=event,
+                    should_interrupt=should_interrupt,
+                )
+                if should_interrupt:
+                    await asr_event_queue.put(event)
+                    call_state.stop_silence_monitoring()
+                    await tts_engine.stop_streaming()
+                    await self.interrupt_playback(ws, call_parameters)
+            else:
+                await asr_event_queue.put(event)
 
     async def handle_asr_events(
         self,
@@ -983,6 +980,7 @@ class VoiceInputChannel(InputChannel):
         call_state_ = CallState(
             internal_queue=asyncio.Queue(),
             asr_event_queue=asyncio.Queue(),
+            interruption_config=self.interruption_config,
         )
         call_state_.start_state_monitoring()
         call_state_.current_language = self.language
@@ -1167,11 +1165,7 @@ class VoiceInputChannel(InputChannel):
             self._track_asr_latency()
             call_state.rasa_processing_start_time = time.time()
 
-            if (
-                call_state.is_collecting_dtmf
-                and call_state.dtmf_config
-                and not call_state.dtmf_config.allow_audio_input
-            ):
+            if call_state.can_collect_audio_during_dtmf():
                 # currently collecting DTMF input, ignore audio input
                 logger.info(
                     "VoiceInputChannel.handle_asr_event.ignoring_audio_during_dtmf_collection"

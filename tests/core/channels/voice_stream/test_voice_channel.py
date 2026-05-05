@@ -17,7 +17,7 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
     UserIsSpeaking,
     UserSilence,
 )
-from rasa.core.channels.voice_stream.audio_bytes import AudioFormat
+from rasa.core.channels.voice_stream.audio_bytes import AudioFormat, RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import (
     RasaIsListening,
     RasaIsProcessing,
@@ -31,6 +31,7 @@ from rasa.core.channels.voice_stream.call_state import (
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 from rasa.core.channels.voice_stream.voice_channel import (
     DTMFInputAction,
+    NewAudioAction,
     VoiceInputChannel,
     VoiceLanguageChangePlugin,
     VoiceOutputChannel,
@@ -39,6 +40,24 @@ from rasa.core.channels.voice_stream.voice_channel import (
 )
 from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.core.flows.steps.collect import DTMFConfig
+
+
+@pytest.fixture
+def mock_asr_engine() -> MagicMock:
+    mock_asr_engine = MagicMock()
+    mock_asr_engine.connect = AsyncMock()
+    mock_asr_engine.close_connection = AsyncMock()
+    mock_asr_engine.send_audio_chunks = AsyncMock()
+    mock_asr_engine.send_keep_alive = AsyncMock()
+    return mock_asr_engine
+
+
+@pytest.fixture
+def mock_tts_engine() -> MagicMock:
+    mock_tts_engine = MagicMock()
+    mock_tts_engine.connect = AsyncMock()
+    mock_tts_engine.close_connection = AsyncMock()
+    return mock_tts_engine
 
 
 class StubVoiceInputChannel(VoiceInputChannel):
@@ -64,8 +83,23 @@ class StubVoiceOutputChannel(VoiceOutputChannel):
     def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
         return channel_bytes.hex()
 
-    def create_marker_message(self, recipient_id: str):
+    def create_marker_message(self, recipient_id: str, channel_bytes: bytes) -> str:
         return "{}", "marker-id"
+
+
+class MockWebSocket:
+    """Async-iterable websocket stub for testing consume_audio_bytes."""
+
+    def __init__(self, messages: list):
+        self._messages = messages
+        self.close = AsyncMock()
+
+    def __aiter__(self):
+        return self._make_iter()
+
+    async def _make_iter(self):
+        for msg in self._messages:
+            yield msg
 
 
 async def test_azure_tts_engine_from_config(
@@ -253,7 +287,6 @@ def _make_channel_and_mocks(
         NewTranscript(text="one two three"),
         UserIsSpeaking(text="one two three"),
     ],
-    ids=["NewTranscript", "UserIsSpeaking"],
 )
 @pytest.mark.parametrize(
     "allow_interruptions_dict",
@@ -263,7 +296,7 @@ def _make_channel_and_mocks(
     ],
 )
 @pytest.mark.usefixtures("setup_call_state")
-async def test_stop_streaming_and_interrupt_playback_on_interruption(
+async def test_stop_streaming_and_interrupt_playback_on_interruption_enabled(
     allow_interruptions_dict: Dict[str, bool],
     mock_validate_voice_license_scope,
     asr_event: ASREvent,
@@ -280,6 +313,7 @@ async def test_stop_streaming_and_interrupt_playback_on_interruption(
     )
     call_state.channel_data.update(allow_interruptions_dict)
     call_state.is_bot_speaking = True
+    call_state.interruption_config = channel.interruption_config
 
     asr_event_queue: asyncio.Queue = asyncio.Queue()
     mock_asr_engine = _make_mock_asr_engine([asr_event])
@@ -338,6 +372,7 @@ async def test_receive_asr_events_does_not_interrupt_when_words_below_threshold(
     )
     call_state.channel_data = allow_interruptions_dict
     call_state.is_bot_speaking = True
+    call_state.interruption_config = channel.interruption_config
 
     events = [
         NewTranscript(text="one two"),
@@ -359,8 +394,8 @@ async def test_receive_asr_events_does_not_interrupt_when_words_below_threshold(
     mock_tts_engine.stop_streaming.assert_not_awaited()
     channel.interrupt_playback.assert_not_awaited()
 
-    # But the events are still queued
-    assert asr_event_queue.qsize() == 2
+    # The events are not queued, because the text does not pass interruption assertion
+    assert asr_event_queue.qsize() == 0
 
 
 @pytest.mark.parametrize(
@@ -386,6 +421,7 @@ async def test_interruptions_for_multiple_asr_events_in_sequence(
     )
     call_state.channel_data = allow_interruptions_dict
     call_state.is_bot_speaking = True
+    call_state.interruption_config = channel.interruption_config
 
     interruptible_events = [
         NewTranscript(text="one two three"),
@@ -419,7 +455,7 @@ async def test_interruptions_for_multiple_asr_events_in_sequence(
     ],
 )
 @pytest.mark.usefixtures("setup_call_state")
-async def test_interruptions_not_firing_when_disabled(
+async def test_asr_event_queued_when_interruptions_are_disabled(
     allow_interruptions_dict: Dict[str, bool],
     mock_validate_voice_license_scope,
     call_parameters: CallParameters,
@@ -434,6 +470,7 @@ async def test_interruptions_not_firing_when_disabled(
     )
     call_state.channel_data = allow_interruptions_dict
     call_state.is_bot_speaking = True
+    call_state.interruption_config = channel.interruption_config
 
     events = [
         NewTranscript(text="one two"),
@@ -455,7 +492,7 @@ async def test_interruptions_not_firing_when_disabled(
     mock_tts_engine.stop_streaming.assert_not_awaited()
     channel.interrupt_playback.assert_not_awaited()
 
-    # But the events are still queued
+    # The events are not queued
     assert asr_event_queue.qsize() == 2
 
 
@@ -1010,3 +1047,64 @@ async def test_notify_message_processing_started_then_completed_order(
     assert call_state.internal_queue.qsize() == 2
     assert isinstance(call_state.internal_queue.get_nowait(), RasaIsProcessing)
     assert isinstance(call_state.internal_queue.get_nowait(), RasaIsListening)
+
+
+@pytest.fixture
+def mock_language_plugin(monkeypatch: MonkeyPatch):
+    mock_plugin = MagicMock()
+    mock_plugin.register_hook = MagicMock()
+    mock_plugin.unregister_hook = AsyncMock()
+    mock_plugin_cls = MagicMock()
+    mock_plugin_cls.return_value = mock_plugin
+    monkeypatch.setattr(
+        "rasa.core.channels.voice_stream.voice_channel.VoiceLanguageChangePlugin",
+        mock_plugin_cls,
+    )
+
+
+@pytest.mark.usefixtures(
+    "mock_validate_voice_license_scope", "mock_language_plugin", "setup_call_state"
+)
+async def test_consume_audio_bytes_new_audio_action(
+    call_parameters: CallParameters,
+    mulaw_format: AudioFormat,
+    mock_asr_engine: MagicMock,
+    mock_tts_engine: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """consume_audio_bytes forwards a NewAudioAction to the ASR engine."""
+    audio_bytes = RasaAudioBytes(b"\x00" * 10, format=mulaw_format)
+    on_new_message = AsyncMock()
+
+    channel = StubVoiceInputChannel(
+        server_url="https://example.com",
+        asr_config={"name": "azure"},
+        tts_config={"name": "azure"},
+        interruptions={"enabled": True},
+    )
+    channel.create_output_channel = MagicMock(return_value=on_new_message)
+    channel.collect_call_parameters = AsyncMock(return_value=call_parameters)
+
+    hanging_event = asyncio.Event()
+
+    # Hang forever so receive_asr_events never finishes before consume_audio_bytes
+    async def _hanging_stream():
+        await hanging_event.wait()
+        yield  # Never reached; required to make this an async generator
+
+    mock_asr_engine.stream_asr_events = _hanging_stream
+    asr_config = MagicMock()
+    asr_config.keep_alive_interval = 9999
+    mock_asr_engine.config = asr_config
+
+    channel._get_asr_and_tts_engines = MagicMock(
+        return_value=(mock_asr_engine, mock_tts_engine)
+    )
+    channel.handle_disconnect = AsyncMock()
+    channel.map_input_message = AsyncMock(return_value=NewAudioAction(audio_bytes))
+
+    mock_ws = MockWebSocket(messages=[b"raw_audio"])
+
+    await channel.run_audio_streaming(on_new_message, mock_ws)
+
+    mock_asr_engine.send_audio_chunks.assert_awaited_once_with(audio_bytes)

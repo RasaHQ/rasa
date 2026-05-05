@@ -1,4 +1,5 @@
 import asyncio
+from typing import Any, Dict, Optional
 
 import pytest
 
@@ -7,11 +8,13 @@ from rasa.core.channels.voice_stream.call_state import (
     BotIsSpeaking,
     BotStoppedSpeaking,
     CallState,
+    InterruptionConfig,
     RasaIsListening,
     RasaIsProcessing,
     UserIsSpeaking,
     UserStoppedSpeaking,
 )
+from rasa.shared.core.flows.steps.collect import DTMFConfig
 from tests.core.channels.voice_stream.conftest import wait_for_task_to_become_cancelled
 
 
@@ -364,3 +367,91 @@ async def test_stop_all_is_safe_when_nothing_running(
     call_state_instance.stop_all()
     assert call_state_instance.monitor_task is None
     assert call_state_instance.silence_timeout_watcher is None
+
+
+# ---------------------------------------------------------------------------
+# is_interruptable
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "interruption_enabled, channel_data, expected",
+    [
+        # interruption_disabled
+        (False, {}, False),
+        # enabled_allow_interruptions_not_set
+        (True, {}, True),
+        # enabled_allow_interruptions_true
+        (True, {"allow_interruptions": True}, True),
+        # enabled_allow_interruptions_false
+        (True, {"allow_interruptions": False}, False),
+    ],
+)
+def test_is_interruptable(
+    call_state_instance: CallState,
+    interruption_enabled: bool,
+    channel_data: Dict[str, Any],
+    expected: bool,
+) -> None:
+    """is_interruptable returns True only when interruption is enabled and
+    allow_interruptions is not explicitly False in channel_data."""
+    call_state_instance.interruption_config = InterruptionConfig(
+        enabled=interruption_enabled
+    )
+    call_state_instance.channel_data = channel_data
+
+    assert call_state_instance.is_interruptable() is expected
+
+
+@pytest.mark.parametrize(
+    "is_collecting_dtmf, dtmf_config, expected",
+    [
+        # not_collecting_dtmf
+        (False, DTMFConfig(allow_audio_input=False), False),
+        # dtmf_config_is_none
+        (True, None, False),
+        # audio_input_allowed
+        (True, DTMFConfig(allow_audio_input=True), False),
+        # collecting_and_audio_disabled
+        (True, DTMFConfig(allow_audio_input=False), True),
+    ],
+)
+def test_can_collect_audio_during_dtmf(
+    call_state_instance: CallState,
+    is_collecting_dtmf: bool,
+    dtmf_config: Optional[DTMFConfig],
+    expected: bool,
+) -> None:
+    """can_collect_audio_during_dtmf returns True only when collecting DTMF and
+    allow_audio_input is False."""
+    call_state_instance.is_collecting_dtmf = is_collecting_dtmf
+    call_state_instance.dtmf_config = dtmf_config
+
+    assert call_state_instance.can_collect_audio_during_dtmf() is expected
+
+
+@pytest.mark.parametrize(
+    "is_rasa_listening, is_bot_speaking, expected",
+    [
+        # listening_and_bot_silent
+        (True, False, True),
+        # not_listening_and_bot_silent
+        (False, False, False),
+        # listening_but_bot_speaking
+        (True, True, False),
+        # not_listening_and_bot_speaking
+        (False, True, False),
+    ],
+)
+def test_can_receive_user_input(
+    call_state_instance: CallState,
+    is_rasa_listening: bool,
+    is_bot_speaking: bool,
+    expected: bool,
+) -> None:
+    """can_receive_user_input returns True only when rasa is listening and the
+    bot is not speaking."""
+    call_state_instance.is_rasa_listening = is_rasa_listening
+    call_state_instance.is_bot_speaking = is_bot_speaking
+
+    assert call_state_instance.can_receive_user_input() is expected
