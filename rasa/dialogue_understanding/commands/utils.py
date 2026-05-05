@@ -11,6 +11,7 @@ from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
 )
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     AgentStackFrame,
+    AgentState,
     FlowStackFrameType,
     UserFlowStackFrame,
 )
@@ -202,6 +203,10 @@ def resume_flow(
     )
     if agent_stack_frame:
         agent_id = agent_stack_frame.agent_id
+        # Reset state to WAITING_FOR_INPUT so select_next_step_id loops back to the
+        # agent call step. Without this, INTERRUPTED frames would skip the agent and
+        # advance to END, causing pattern_completed to fire prematurely.
+        agent_stack_frame.state = AgentState.WAITING_FOR_INPUT
         applied_events.append(AgentResumed(agent_id, agent_stack_frame.flow_id))
 
     # Create flow interruption and resumption events

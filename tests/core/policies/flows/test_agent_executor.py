@@ -3023,6 +3023,107 @@ async def test_excluded_mcp_tools_absent_when_no_connections_config(
 
 @pytest.mark.asyncio
 @patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_agent_resumed_after_interruption_re_invokes_agent(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """Test that resuming an interrupted agent re-invokes it (ENG-2769).
+
+    When a flow containing a sub-agent is interrupted by a digression and then
+    resumed, the agent must be re-invoked with full conversation history, not
+    skipped. This requires the agent frame state to be reset from INTERRUPTED
+    to WAITING_FOR_INPUT during resume_flow().
+    """
+    from rasa.dialogue_understanding.commands.utils import resume_flow
+
+    # Setup agent to return input_required status
+    mock_agent_output = AgentOutput(
+        id="test-output-id",
+        status=AgentStatus.INPUT_REQUIRED,
+        response_message="Agent response after resume",
+    )
+    mock_run_agent.return_value = mock_agent_output
+
+    agent_config = AgentConfig(
+        agent=AgentInfo(name="test-agent", description="test agent"),
+    )
+    config_instance = mock_available_agents.return_value.available_agents
+    config_instance.get_agent_config.return_value = agent_config
+
+    flows = flows_from_str(
+        """
+        flows:
+          main_flow:
+            description: flow with agent
+            steps:
+            - id: call_agent_step
+              call: test-agent
+          interrupting_flow:
+            description: interrupting flow
+            steps:
+            - id: interrupt_step
+              action: utter_interrupt
+        """
+    )
+
+    # Create initial state: main_flow with agent waiting for input
+    user_frame = UserFlowStackFrame(
+        flow_id="main_flow", step_id="call_agent_step", frame_id="main-frame"
+    )
+    agent_frame = AgentStackFrame(
+        frame_id="agent-frame",
+        state=AgentState.WAITING_FOR_INPUT,
+        agent_id="test-agent",
+        flow_id="main_flow",
+        step_id="call_agent_step",
+    )
+    stack = DialogueStack(frames=[user_frame, agent_frame])
+    tracker = DialogueStateTracker.from_events("test_sender", [])
+    tracker.update_stack(stack)
+
+    # Simulate interruption: set agent to INTERRUPTED
+    agent_frame.state = AgentState.INTERRUPTED
+
+    # Add interrupting flow on top
+    interrupting_frame = UserFlowStackFrame(
+        flow_id="interrupting_flow",
+        step_id="interrupt_step",
+        frame_id="interrupting-frame",
+        frame_type="interrupt",
+    )
+    stack.push(interrupting_frame)
+
+    # Now resume the main_flow (this is what happens after pattern_continue_interrupted)
+    events = resume_flow("main_flow", tracker, stack)
+
+    # Verify agent state was reset to WAITING_FOR_INPUT
+    assert agent_frame.state == AgentState.WAITING_FOR_INPUT
+
+    # Verify AgentResumed event was created
+    agent_resumed_events = [e for e in events if isinstance(e, AgentResumed)]
+    assert len(agent_resumed_events) == 1
+    assert agent_resumed_events[0].agent_id == "test-agent"
+
+    # Now call run_agent to verify it gets invoked (not skipped)
+    flow = flows.flow_by_id("main_flow")
+    step = flow.step_by_id("call_agent_step")
+    result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    # Verify run_agent was called (agent was re-invoked)
+    assert mock_run_agent.called
+    assert isinstance(result, PauseFlowReturnPrediction)
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
 async def test_exit_conditions_in_agent_started_metadata(
     mock_run_agent: AsyncMock,
     monkeypatch: MonkeyPatch,

@@ -9,6 +9,7 @@ from rasa.dialogue_understanding.commands.utils import (
     find_default_flows_collecting_slot,
     initialize_pattern_validate_slot,
     is_none_value,
+    resume_flow,
 )
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -688,3 +689,154 @@ def test_remove_pattern_completed_frames_no_completed_pattern():
     # Should not modify the stack since there's no pattern_completed
     assert len(result.frames) == len(stack.frames)
     assert len(events) == 0
+
+
+def test_resume_flow_resets_agent_state_to_waiting_for_input():
+    """Test that resume_flow resets an interrupted agent frame to WAITING_FOR_INPUT.
+
+    This is a regression test for ENG-2769: when a flow containing a sub-agent is
+    interrupted and then resumed, the agent frame must transition from INTERRUPTED
+    to WAITING_FOR_INPUT so that select_next_step_id loops back to the agent call
+    step instead of advancing to END.
+    """
+    from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+        FlowStackFrameType,
+    )
+    from rasa.shared.core.events import AgentResumed, FlowResumed
+
+    # Create a tracker
+    tracker = DialogueStateTracker.from_events("test_sender", [])
+
+    # Simulate a flow with an agent that was interrupted
+    user_frame_1 = UserFlowStackFrame(
+        flow_id="main_flow",
+        step_id="call_agent_step",
+        frame_id="main-flow-frame",
+        frame_type=FlowStackFrameType.REGULAR,
+    )
+    agent_frame = AgentStackFrame(
+        frame_id="agent-frame-1",
+        state=AgentState.INTERRUPTED,  # Agent was interrupted
+        agent_id="test_agent",
+        flow_id="main_flow",
+        step_id="call_agent_step",
+    )
+    # Create an interrupting flow on top
+    user_frame_2 = UserFlowStackFrame(
+        flow_id="interrupting_flow",
+        step_id="some_step",
+        frame_id="interrupting-flow-frame",
+        frame_type=FlowStackFrameType.INTERRUPT,
+    )
+
+    stack = DialogueStack(frames=[user_frame_1, agent_frame, user_frame_2])
+
+    # Resume the main flow (which contains the interrupted agent)
+    events = resume_flow("main_flow", tracker, stack)
+
+    # Check that the agent frame state was reset to WAITING_FOR_INPUT
+    assert agent_frame.state == AgentState.WAITING_FOR_INPUT
+
+    # Check that AgentResumed event was created
+    agent_resumed_events = [e for e in events if isinstance(e, AgentResumed)]
+    assert len(agent_resumed_events) == 1
+    assert agent_resumed_events[0].agent_id == "test_agent"
+    assert agent_resumed_events[0].flow_id == "main_flow"
+
+    # Check that FlowResumed event was created
+    flow_resumed_events = [e for e in events if isinstance(e, FlowResumed)]
+    assert len(flow_resumed_events) == 1
+    assert flow_resumed_events[0].flow_id == "main_flow"
+
+    # Check that the frames were reordered correctly (main_flow frames on top).
+    # move_frames_to_top appends [user_frame_1, agent_frame] after frames_to_keep
+    # ([user_frame_2]), so the list is [user_frame_2, user_frame_1, agent_frame].
+    # frames[-1] is the top of the stack (last element, popped first).
+    assert stack.frames[-1] == agent_frame  # agent frame is now at top
+    assert stack.frames[-2] == user_frame_1  # user frame below agent
+    assert stack.frames[-3] == user_frame_2  # interrupting flow moved to bottom
+
+
+def test_resume_flow_without_agent():
+    """Test that resume_flow works correctly for flows without agents."""
+    from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+        FlowStackFrameType,
+    )
+    from rasa.shared.core.events import AgentResumed, FlowResumed
+
+    # Create a tracker
+    tracker = DialogueStateTracker.from_events("test_sender", [])
+
+    # Simulate a regular flow without an agent that was interrupted
+    user_frame_1 = UserFlowStackFrame(
+        flow_id="main_flow",
+        step_id="some_step",
+        frame_id="main-flow-frame",
+        frame_type=FlowStackFrameType.REGULAR,
+    )
+    # Create an interrupting flow on top
+    user_frame_2 = UserFlowStackFrame(
+        flow_id="interrupting_flow",
+        step_id="some_step",
+        frame_id="interrupting-flow-frame",
+        frame_type=FlowStackFrameType.INTERRUPT,
+    )
+
+    stack = DialogueStack(frames=[user_frame_1, user_frame_2])
+
+    # Resume the main flow
+    events = resume_flow("main_flow", tracker, stack)
+
+    # Check that no AgentResumed event was created (no agent)
+    agent_resumed_events = [e for e in events if isinstance(e, AgentResumed)]
+    assert len(agent_resumed_events) == 0
+
+    # Check that FlowResumed event was created
+    flow_resumed_events = [e for e in events if isinstance(e, FlowResumed)]
+    assert len(flow_resumed_events) == 1
+    assert flow_resumed_events[0].flow_id == "main_flow"
+
+
+def test_resume_flow_agent_already_waiting_for_input():
+    """Test that resume_flow handles agent frames already in WAITING_FOR_INPUT state."""
+    from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+        FlowStackFrameType,
+    )
+    from rasa.shared.core.events import AgentResumed
+
+    # Create a tracker
+    tracker = DialogueStateTracker.from_events("test_sender", [])
+
+    # Simulate a flow with an agent that is already waiting for input
+    user_frame_1 = UserFlowStackFrame(
+        flow_id="main_flow",
+        step_id="call_agent_step",
+        frame_id="main-flow-frame",
+        frame_type=FlowStackFrameType.REGULAR,
+    )
+    agent_frame = AgentStackFrame(
+        frame_id="agent-frame-1",
+        state=AgentState.WAITING_FOR_INPUT,  # Already waiting for input
+        agent_id="test_agent",
+        flow_id="main_flow",
+        step_id="call_agent_step",
+    )
+    user_frame_2 = UserFlowStackFrame(
+        flow_id="interrupting_flow",
+        step_id="some_step",
+        frame_id="interrupting-flow-frame",
+        frame_type=FlowStackFrameType.INTERRUPT,
+    )
+
+    stack = DialogueStack(frames=[user_frame_1, agent_frame, user_frame_2])
+
+    # Resume the main flow
+    events = resume_flow("main_flow", tracker, stack)
+
+    # Check that the agent frame state remains WAITING_FOR_INPUT (idempotent)
+    assert agent_frame.state == AgentState.WAITING_FOR_INPUT
+
+    # Check that AgentResumed event was still created
+    agent_resumed_events = [e for e in events if isinstance(e, AgentResumed)]
+    assert len(agent_resumed_events) == 1
+    assert agent_resumed_events[0].agent_id == "test_agent"
