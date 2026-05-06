@@ -11,8 +11,8 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 <!-- TOWNCRIER -->
 
 ## [3.16.5] - 2026-04-24
-                        
-Rasa Pro 3.16.5 (2026-04-24)                             
+
+Rasa Pro 3.16.5 (2026-04-24)
 ### Bugfixes
 - [#2738](https://github.com/rasahq/rasa-private/issues/2738): Fixed a bug where the validator was mutating the allowed values list of categorical slots in-place, causing `None` entries to accumulate in slots used across multiple flows via subflows. This corrupted the flow retrieval FAISS embeddings during training.
 - [#5047](https://github.com/rasahq/rasa-private/issues/5047): Fixed multi-agent flows looping back to an agent call when the top stack frame was **interrupted** instead of waiting for input, which could leave multiple agents active and fail graph execution. The loop-back shortcut now applies only when the agent frame is waiting for user input.
@@ -69,12 +69,80 @@ Rasa Pro 3.16.1 (2026-04-01)
 ## [3.16.0] - 2026-03-26
 
 Rasa Pro 3.16.0 (2026-03-26)
+
+### Breaking changes
+
+Upgrading may require config edits, code updates, or retraining. All incompatible changes for this release are listed below in one place.
+
+- [#4733](https://github.com/rasahq/rasa-private/issues/4733): Default language models used by built-in LLM features have changed. If you need the same behavior as before, pin the previous model names in `endpoints.yml`.
+
+  | Component | New default model |
+  | --- | --- |
+  | `LLMBasedCommandGenerator` | `gpt-5.1-2025-11-13` |
+  | `CompactLLMCommandGenerator` | `gpt-5.1-2025-11-13` |
+  | `SearchReadyLLMCommandGenerator` | `gpt-5.1-2025-11-13` |
+  | `ContextualResponseRephraser` | `gpt-5.1-2025-11-13` |
+  | `IntentlessPolicy` | `gpt-5-mini-2025-08-07` |
+  | `MCPBaseAgent` | `gpt-5.1-2025-11-13` |
+  | `EnterpriseSearchPolicy` | `gpt-5-mini-2025-08-07` |
+  | `LLMBasedRouter` | `gpt-5-mini-2025-08-07` |
+  | `ConversationRephraser` | `gpt-5-mini-2025-08-07` |
+
+- [#4727](https://github.com/rasahq/rasa-private/issues/4727): Default prompts for command generation changed. If you already set a custom `prompt_template` in `config.yml`, that file is still used.
+
+- [#4748](https://github.com/rasahq/rasa-private/issues/4748): Default prompts for ReAct agents changed (task vs general assistant behavior and `task_completed` guidance). If you override templates, compare your custom files against the latest templates in `rasa/agents/templates/`.
+
+- [#4766](https://github.com/rasahq/rasa-private/issues/4766), [#4851](https://github.com/rasahq/rasa-private/issues/4851), [#4867](https://github.com/rasahq/rasa-private/issues/4867): Agent interface changed.
+  1. `process_output` was removed from the shared agent protocol. Use `process_agent_output` for `A2AAgent` implementations and `process_tool_output` for ReAct/MCP agent implementations:
+
+     ```python
+     # A2A agents
+     async def process_agent_output(self, output: AgentOutput) -> AgentOutput
+
+     # ReAct/MCP agents
+     async def process_tool_output(
+         self,
+         current_iteration_tool_results: Dict[str, AgentToolResult],
+         cumulative_tool_results: Dict[str, AgentToolResult],
+         output_channel: Optional[OutputChannel] = None,
+     ) -> List[Event]
+     ```
+
+  2. `run` signature changed with optional cooperative cancellation support:
+
+     ```python
+     async def run(
+         self,
+         input: "AgentInput",
+         output_channel: Optional[OutputChannel] = None,
+         cancellation_token: Optional["CancellationToken"] = None,
+     ) -> "AgentOutput"
+     ```
+
+  3. Custom tool callable signature changed:
+
+     - Before: `Callable[[Dict[str, Any]], AgentToolResult]`
+     - After: `Callable[[Dict[str, Any], AgentToolContext], AgentToolResult]`
+     - Import `AgentToolContext` via `from rasa.agents.schemas import AgentToolContext`.
+
 ### Deprecations and Removals
 - [#4646](https://github.com/rasahq/rasa-private/issues/4646): Remove `HumanHandoff` command from the codebase and default prompt templates.
 - [#4766](https://github.com/rasahq/rasa-private/issues/4766): Remove generic `process_output` method from `AgentProtocol`. In ReAct / MCP agents, use `process_tool_output` for
   tool-result-based post-processing. In `A2AAgent`, use `process_agent_output` method.
 
 ### Features
+- [#4733](https://github.com/RasaHQ/rasa-private/pull/4733): Added optional `reasoning_effort` on LLM model configuration for providers and models that support it (for example OpenAI and Azure OpenAI reasoning-capable models). By default, Rasa tries to apply the lowest appropriate `reasoning_effort` for the resolved model name (using provider metadata where available). We recommend using the lowest supported value unless you explicitly need deeper reasoning. Any value you set explicitly is left unchanged. Models that do not support this parameter do not receive a default. For Azure deployments configured without a concrete `model` name, Rasa can resolve the backing model and set `reasoning_effort` after the first probe response.
+
+  Example configuration in `endpoints.yml`:
+
+  ```yaml
+  model_groups:
+    - id: openai-reasoning
+      models:
+        - provider: openai
+          model: gpt-5-mini-2025-08-07
+          reasoning_effort: "minimal"
+  ```
 - [#2677](https://github.com/rasahq/rasa-private/issues/2677): Added `max_polling_time` and `polling_initial_delay` to A2A agent configuration so polling parameters can be set per agent. Defaults remain 60 seconds and 0.5 seconds respectively when not set.
 
   To override polling for an A2A agent, set the options in the agent's configuration:
