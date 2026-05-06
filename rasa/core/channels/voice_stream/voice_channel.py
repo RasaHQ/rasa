@@ -913,18 +913,21 @@ class VoiceInputChannel(InputChannel):
                 ev=event,
                 is_interruptable=is_interruptable,
             )
+
             if is_interruptable:
-                should_interrupt = self.should_interrupt(event)
-                logger.debug(
-                    "voice_channel.asr_event_should_interrupt",
-                    ev=event,
-                    should_interrupt=should_interrupt,
-                )
-                if should_interrupt:
+                if not call_state.is_bot_speaking:
                     await asr_event_queue.put(event)
-                    call_state.stop_silence_monitoring()
-                    await tts_engine.stop_streaming()
-                    await self.interrupt_playback(ws, call_parameters)
+                elif should_interrupt := self.should_interrupt(event):
+                    logger.debug(
+                        "voice_channel.asr_event_should_interrupt",
+                        ev=event,
+                        should_interrupt=should_interrupt,
+                    )
+                    if should_interrupt:
+                        await asr_event_queue.put(event)
+                        call_state.stop_silence_monitoring()
+                        await tts_engine.stop_streaming()
+                        await self.interrupt_playback(ws, call_parameters)
             else:
                 await asr_event_queue.put(event)
 

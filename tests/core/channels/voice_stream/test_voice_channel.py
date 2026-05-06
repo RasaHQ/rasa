@@ -226,6 +226,73 @@ def test_dtmf_config_none_when_not_collecting():
     assert call_state.is_collecting_dtmf is False
 
 
+async def test_on_asr_event_received_calls_should_interrupt_and_interrupt_playback(
+    mock_validate_voice_license_scope,
+    setup_call_state,
+):
+    """_on_asr_event_received calls should_interrupt for every event
+    and interrupt_playback only when should_interrupt returns True.
+    """
+    channel = StubVoiceInputChannel(
+        server_url="https://example.com",
+        asr_config={"name": "deepgram"},
+        tts_config={"name": "azure"},
+        interruptions={"enabled": True, "min_words": 3},
+    )
+    call_state.channel_data["allow_interruptions"] = True
+    call_state.is_bot_speaking = True
+
+    asr_event_queue: asyncio.Queue = asyncio.Queue()
+    channel_websocket = MagicMock()
+    call_parameters = CallParameters(
+        call_id="call_123",
+        user_phone="+123",
+        bot_phone="+456",
+        stream_id="stream_456",
+        direction="inbound",
+    )
+
+    events = [
+        UserIsSpeaking(text="one"),
+        NewTranscript(text="one two three"),
+        UserIsSpeaking(text="one two three four"),
+    ]
+    should_interrupt_calls = []
+    base_should_interrupt = VoiceInputChannel.should_interrupt
+
+    def record_and_should_interrupt(e: Any) -> bool:
+        should_interrupt_calls.append(e)
+        return base_should_interrupt(channel, e)
+
+    channel.should_interrupt = record_and_should_interrupt
+    channel.interrupt_playback = AsyncMock()
+
+    for event in events:
+        await asr_event_queue.put(event)
+        if channel.should_interrupt(event):
+            await channel.interrupt_playback(channel_websocket, call_parameters)
+
+    assert should_interrupt_calls == events
+    assert channel.interrupt_playback.await_count == 2
+    channel.interrupt_playback.assert_has_calls(
+        [call(channel_websocket, call_parameters)] * 2
+    )
+    assert asr_event_queue.qsize() == 3
+    for expected in events:
+        assert await asr_event_queue.get() is expected
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+async def _async_events(*events):
+    """Async generator that yields the provided ASR events one by one."""
+    for event in events:
+        yield event
+
+
 @pytest.fixture
 def call_parameters() -> CallParameters:
     return CallParameters(
@@ -362,7 +429,8 @@ async def test_receive_asr_events_does_not_interrupt_when_words_below_threshold(
     mock_validate_voice_license_scope,
     call_parameters: CallParameters,
 ) -> None:
-    """Test that interruptions do not trigger when word count is below threshold."""
+    """Test that interruptions do not trigger when word count is below
+    threshold while bot is speaking."""
     # Given events with fewer words than the min_words threshold (3)
 
     mock_web_socket = MagicMock()
@@ -492,8 +560,83 @@ async def test_asr_event_queued_when_interruptions_are_disabled(
     mock_tts_engine.stop_streaming.assert_not_awaited()
     channel.interrupt_playback.assert_not_awaited()
 
-    # The events are not queued
+    # The events are queued
     assert asr_event_queue.qsize() == 2
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_receive_asr_events_bot_speaking_triggers_interrupt(
+    call_parameters: CallParameters, mock_validate_voice_license_scope: None
+):
+    """When the bot is speaking, is_interruptable is True, and event words meet
+    min_words, should_interrupt returns True — the event is queued and
+    interrupt_playback is called.
+    """
+    channel, mock_tts_engine = _make_channel_and_mocks(
+        mock_validate_voice_license_scope,
+        interruption_config={"enabled": True, "min_words": 3},
+    )
+    call_state.interruption_config.enabled = True
+    call_state.is_bot_speaking = True
+
+    asr_event_queue: asyncio.Queue = asyncio.Queue()
+    ws = MagicMock()
+
+    event = NewTranscript(text="one two three four")
+    asr_engine = MagicMock()
+    asr_engine.stream_asr_events.return_value = _async_events(event)
+    channel.interrupt_playback = AsyncMock()
+
+    await channel.receive_asr_events(
+        asr_engine=asr_engine,
+        tts_engine=mock_tts_engine,
+        asr_event_queue=asr_event_queue,
+        ws=ws,
+        call_parameters=call_parameters,
+    )
+
+    assert asr_event_queue.qsize() == 1
+    assert await asr_event_queue.get() is event
+    channel.interrupt_playback.assert_awaited_once_with(ws, call_parameters)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_receive_asr_events_bot_not_speaking_user_is_speaking(
+    call_parameters: CallParameters, mock_validate_voice_license_scope: None
+):
+    """When bot is not speaking and interruption is disabled, user utterances
+    shoudl be queued.
+    """
+    channel, mock_tts_engine = _make_channel_and_mocks(
+        mock_validate_voice_license_scope,
+        interruption_config={"enabled": True, "min_words": 3},
+    )
+    call_state.interruption_config.enabled = True
+    call_state.is_bot_speaking = False  # bot is silent
+
+    asr_event_queue: asyncio.Queue = asyncio.Queue()
+    ws = MagicMock()
+
+    events = [
+        UserIsSpeaking(text="one two"),
+        NewTranscript(text="five six"),
+    ]
+    asr_engine = MagicMock()
+    asr_engine.stream_asr_events.return_value = _async_events(*events)
+    channel.interrupt_playback = AsyncMock()
+
+    await channel.receive_asr_events(
+        asr_engine=asr_engine,
+        tts_engine=mock_tts_engine,
+        asr_event_queue=asr_event_queue,
+        ws=ws,
+        call_parameters=call_parameters,
+    )
+
+    assert asr_event_queue.qsize() == 2
+    assert await asr_event_queue.get() is events[0]
+    assert await asr_event_queue.get() is events[1]
+    channel.interrupt_playback.assert_not_awaited()
 
 
 @pytest.mark.usefixtures("setup_call_state")
