@@ -31,19 +31,19 @@ model_groups:
         api_base: ${AZURE_API_BASE_GPT5_2_CSE}
         api_key: ${AZURE_API_KEY_CSE}
         api_version: ${AZURE_API_VERSION_GPT5_2_CSE}
-        timeout: 30
+        timeout: 120
         num_retries: 5
       - provider: azure
         deployment: ${AZURE_DEPLOYMENT_GPT5_2_ENGINE}
         api_base: ${AZURE_API_BASE_GPT5_2_ENGINE}
         api_key: ${AZURE_API_KEY_ENGINE}
         api_version: ${AZURE_API_VERSION_GPT5_2_ENGINE}
-        timeout: 30
+        timeout: 120
         num_retries: 5
     router:
       routing_strategy: cost-based-routing
       num_retries: 5
-      timeout: 30
+      timeout: 120
       allowed_fails: 3
       cooldown_time: 30
       retry_after: 5
@@ -56,7 +56,7 @@ model_groups:
     models:
       - provider: openai
         model: openai/responses/gpt-5.2-2025-12-11
-        timeout: 30
+        timeout: 120
         temperature: 1.0
         reasoning_effort: "xhigh"
         max_completion_tokens: 5096

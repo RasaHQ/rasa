@@ -19,4 +19,4 @@ connections:
 configuration:
   llm:
     model_group: llm-model
-  tool_timeout: 30
+  tool_timeout: 120
