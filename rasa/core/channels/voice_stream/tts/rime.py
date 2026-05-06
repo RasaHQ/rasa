@@ -61,7 +61,6 @@ class RimeTTSConfig(TTSEngineConfig):
 
 
 class RimeTTS(TTSEngine[RimeTTSConfig]):
-    session: Optional[aiohttp.ClientSession] = None
     required_env_vars = (RIME_API_KEY_ENV_VAR,)
     ws: Optional[aiohttp.ClientWebSocketResponse] = None
     # Indicates if TTS is being used in streaming input mode
@@ -93,11 +92,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
             )
 
         super().__init__(rasa_language, format, config, additional_languages or [])
-        timeout = ClientTimeout(total=self.config.timeout)
-        # Have to create this class-shared session lazily at run time otherwise
-        # the async event loop doesn't work
-        if self.__class__.session is None or self.__class__.session.closed:
-            self.__class__.session = aiohttp.ClientSession(timeout=timeout)
+        self.session: Optional[aiohttp.ClientSession] = None
 
     def get_websocket_url(self) -> str:
         """Build WebSocket URL with query parameters for Rime TTS."""
@@ -148,11 +143,13 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
 
     async def connect(self, config: Optional[RimeTTSConfig] = None) -> None:
         """Establish WebSocket connection to Rime TTS."""
+        # Create session if it doesn't exist or is closed
+        if self.session is None or self.session.closed:
+            timeout = ClientTimeout(total=self.config.timeout)
+            self.session = aiohttp.ClientSession(timeout=timeout)
+
         headers = self.get_request_headers()
         ws_url = self.get_websocket_url()
-
-        if self.session is None:
-            raise ConnectionException("Client session is not initialized")
 
         try:
             self.ws = await self.session.ws_connect(
@@ -173,7 +170,7 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
             raise ConnectionException(error_msg) from e
 
     async def close_connection(self) -> None:
-        """Close WebSocket connection if it exists."""
+        """Close WebSocket connection. Session is kept alive for reuse."""
         if self.ws and not self.ws.closed:
             await self.ws.close()
             self.ws = None

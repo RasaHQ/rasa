@@ -7,6 +7,12 @@ policies:
 - name: FlowPolicy
 - name: EnterpriseSearchPolicy
   max_messages_in_query: 1
+  llm:
+    timeout: 90
+    max_retries: 3
+  embeddings:
+    timeout: 60
+    max_retries: 3
   vector_store:
     type: milvus
     threshold: 0.6

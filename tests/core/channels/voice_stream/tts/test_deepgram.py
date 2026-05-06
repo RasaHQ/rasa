@@ -35,12 +35,6 @@ def test_default_config():
     assert config.language_map["en"].model == "aura-2-andromeda-en"
 
 
-async def test_tts_session_sharing(mulaw_format):
-    tts_engine = DeepgramTTS(rasa_language="en", format=mulaw_format)
-    tts_engine_2 = DeepgramTTS(rasa_language="en", format=mulaw_format)
-    assert tts_engine_2.session is tts_engine.session
-
-
 @pytest.mark.parametrize(
     "format",
     [

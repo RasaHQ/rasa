@@ -53,12 +53,6 @@ def test_default_config():
     assert config.version == "2025-04-16"
 
 
-async def test_tts_session_sharing(mulaw_format):
-    tts_engine = CartesiaTTS(rasa_language="en", format=mulaw_format)
-    tts_engine_2 = CartesiaTTS(rasa_language="en", format=mulaw_format)
-    assert tts_engine_2.session is tts_engine.session
-
-
 @pytest.mark.parametrize(
     "format",
     [

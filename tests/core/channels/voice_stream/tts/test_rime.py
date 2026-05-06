@@ -46,13 +46,6 @@ def set_rime_key(monkeypatch: MonkeyPatch):
 
 
 @pytest.mark.usefixtures("set_rime_key")
-async def test_tts_session_sharing(mulaw_format: AudioFormat):
-    tts_engine = RimeTTS(rasa_language="en", format=mulaw_format)
-    tts_engine_2 = RimeTTS(rasa_language="en", format=mulaw_format)
-    assert tts_engine_2.session is tts_engine.session
-
-
-@pytest.mark.usefixtures("set_rime_key")
 async def test_websocket_url_creation(mulaw_format: AudioFormat):
     tts_engine = RimeTTS(rasa_language="en", format=mulaw_format)
     ws_url = tts_engine.get_websocket_url()

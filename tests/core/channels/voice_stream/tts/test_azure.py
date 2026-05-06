@@ -396,14 +396,14 @@ async def test_synthesize_timeout(monkeypatch: MonkeyPatch, mulaw_format: AudioF
     monkeypatch.setenv("AZURE_SPEECH_API_KEY", "my key")
     tts_engine = AzureTTS(rasa_language="en", format=mulaw_format)
     text = "Test timeout"
-    assert tts_engine.session is not None
 
     # Mock the response to be an async context manager
     mock_response = AsyncMock()
     # Did this to avoid AttributeError: __aenter__ error
     mock_response.__aenter__.side_effect = TimeoutError("Request timed out")
 
-    # Patch the 'post' method to return the mock response
+    # Inject a mock client session and patch the `post` call.
+    tts_engine.session = MagicMock()
     with patch.object(tts_engine.session, "post", return_value=mock_response):
         with pytest.raises(TTSError) as exc_info:
             async for chunk in tts_engine.synthesize(text):

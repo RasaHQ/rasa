@@ -21,7 +21,6 @@ from rasa.core.channels.voice_stream.tts.tts_engine import (
     TTSLanguageMapEntry,
 )
 from rasa.shared.constants import DEEPGRAM_API_KEY_ENV_VAR
-from rasa.shared.exceptions import ConnectionException
 
 structlogger = structlog.get_logger()
 
@@ -38,7 +37,6 @@ class DeepgramTTSConfig(TTSEngineConfig):
 
 
 class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
-    session: Optional[aiohttp.ClientSession] = None
     required_env_vars = (DEEPGRAM_API_KEY_ENV_VAR,)
     ws: Optional[aiohttp.ClientWebSocketResponse] = None
     streaming_input: bool = True
@@ -56,11 +54,7 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
         additional_languages: Optional[List[str]] = None,
     ):
         super().__init__(rasa_language, format, config, additional_languages)
-        timeout = ClientTimeout(total=self.config.timeout)
-        # Have to create this class-shared session lazily at run time otherwise
-        # the async event loop doesn't work
-        if self.__class__.session is None or self.__class__.session.closed:
-            self.__class__.session = aiohttp.ClientSession(timeout=timeout)
+        self.session: Optional[aiohttp.ClientSession] = None
 
     @staticmethod
     def get_request_headers(config: DeepgramTTSConfig) -> dict[str, str]:
@@ -70,11 +64,13 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
         }
 
     async def connect(self, config: Optional[DeepgramTTSConfig] = None) -> None:
+        # Create session if it doesn't exist or is closed
+        if self.session is None or self.session.closed:
+            timeout = ClientTimeout(total=self.config.timeout)
+            self.session = aiohttp.ClientSession(timeout=timeout)
+
         headers = self.get_request_headers(self.config)
         ws_url = self.get_websocket_url(self.config)
-
-        if self.session is None:
-            raise ConnectionException("Client session is not initialized")
 
         self.ws = await self.session.ws_connect(
             ws_url,
@@ -83,7 +79,7 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
         )
 
     async def close_connection(self) -> None:
-        """Close WebSocket connection if it exists."""
+        """Close WebSocket connection. Session is kept alive for reuse."""
         if self.ws and not self.ws.closed:
             await self.ws.close()
             self.ws = None

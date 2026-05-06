@@ -28,6 +28,9 @@ ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/enterprise_
 CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channels
 VOICE_READY_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channels/voice_ready
 VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channels/voice_stream
+VOICE_STREAM_DEEPGRAM_TTS_INTEGRATION_TEST_PATH = $(VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH)/tts/test_deepgram_tts.py
+VOICE_STREAM_CARTESIA_TTS_INTEGRATION_TEST_PATH = $(VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH)/tts/test_integration_cartesia.py
+VOICE_STREAM_RIME_TTS_INTEGRATION_TEST_PATH = $(VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH)/tts/test_rime_tts.py
 TRACKER_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/tracker_stores
 CUSTOM_COMPONENT_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/custom_components
 CALM_PII_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/privacy
@@ -299,13 +302,26 @@ test-agents: ARGS=--ignore tests/core/channels/voice_stream/
 test-agents: test-marker
 
 test-voice-integration: ## Run voice integration tests
+	# Deepgram, Cartesia, and Rime TTS use a class-level aiohttp ClientSession; run
+	# those files with -n 1 so xdist does not share one session across workers, and
+	# integration modules reset the session between tests (pytest-asyncio loops).
+	poetry run \
+		pytest \
+		$(VOICE_STREAM_DEEPGRAM_TTS_INTEGRATION_TEST_PATH) \
+		$(VOICE_STREAM_CARTESIA_TTS_INTEGRATION_TEST_PATH) \
+		$(VOICE_STREAM_RIME_TTS_INTEGRATION_TEST_PATH) \
+		-n 1 \
+		--dist no \
+		--reruns 3 --reruns-delay 1
 	poetry run \
 		pytest $(VOICE_READY_CONNECTOR_INTEGRATION_TEST_PATH) \
 		$(VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH) \
+		--ignore $(VOICE_STREAM_DEEPGRAM_TTS_INTEGRATION_TEST_PATH) \
+		--ignore $(VOICE_STREAM_CARTESIA_TTS_INTEGRATION_TEST_PATH) \
+		--ignore $(VOICE_STREAM_RIME_TTS_INTEGRATION_TEST_PATH) \
 		-n $(JOBS) \
 		--dist loadgroup \
-		--reruns 3 --reruns-delay 1 \
-		--junitxml=integration-test-results.xml
+		--reruns 3 --reruns-delay 1
 
 test-dm1-tensorflow: PYTEST_MARKER=category_dm1_tensorflow and (not nlu)
 test-dm1-tensorflow: prepare-spacy prepare-mitie prepare-transformers test-marker
@@ -579,6 +595,8 @@ run-rasa-calm-demo-test-containers: BOT_PATH = $(RASA_CALM_DEMO_BOT_SETUP_PATH)/
 run-rasa-calm-demo-test-containers: ## Run the containers.
 	$(RUN_RASA_CALM_DEMO_CONTAINERS_COMMAND)
 
+# OpenAI/API resilience for the CALM stack is tuned in
+# tests_deployment/integration_tests_enterprise_search/configs/config-{faiss,qdrant,milvus}.yml
 TEST_ENTERPRISE_SEARCH_INTEGRATION_COMMAND = poetry run \
 		pytest $(ENTERPRISE_SEARCH_TEST_PATH) \
 		-n $(JOBS) \
