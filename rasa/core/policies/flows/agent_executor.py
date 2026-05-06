@@ -43,6 +43,7 @@ from rasa.core.policies.flows.flow_step_result import (
 from rasa.core.utils import get_slot_names_from_exit_conditions
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.internal_error import (
+    INTERNAL_ERROR_SOURCE_AGENT,
     InternalErrorPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -381,11 +382,11 @@ async def run_agent(
         return _handle_agent_cancelled(output, final_events, stack, step)
     elif output.status == AgentStatus.FATAL_ERROR:
         return _handle_agent_fatal_error(
-            output, final_events, stack, step, flows, tracker
+            output, final_events, stack, step, flows, tracker, protocol_type
         )
     else:
         return _handle_agent_unknown_status(
-            output, final_events, stack, step, flows, tracker
+            output, final_events, stack, step, flows, tracker, protocol_type
         )
 
 
@@ -461,6 +462,25 @@ async def _call_agent_with_retry(
 ################################################################################
 
 
+def _internal_error_info_for_agent_failure(
+    step: CallFlowStep,
+    output: AgentOutput,
+    protocol_type: Optional[ProtocolType] = None,
+) -> Dict[str, Any]:
+    """Populate ``info`` for internal-error stack frame (agent failure)."""
+    info: Dict[str, Any] = {
+        "error_source": INTERNAL_ERROR_SOURCE_AGENT,
+        "agent_name": step.call,
+        "flow_id": step.flow_id,
+        "step_id": step.id,
+    }
+    if protocol_type is not None:
+        info["agent_type"] = protocol_type.value
+    if output.error_message:
+        info["error_message"] = output.error_message
+    return info
+
+
 def _handle_agent_unknown_status(
     output: AgentOutput,
     final_events: List[Event],
@@ -468,6 +488,7 @@ def _handle_agent_unknown_status(
     step: CallFlowStep,
     flows: FlowsList,
     tracker: DialogueStateTracker,
+    protocol_type: Optional[ProtocolType] = None,
 ) -> FlowStepResult:
     """Handle unknown agent status.
 
@@ -506,7 +527,11 @@ def _handle_agent_unknown_status(
         final_events.append(flow_cancelled_event)
 
     # trigger the internal error pattern
-    stack.push(InternalErrorPatternFlowStackFrame())
+    stack.push(
+        InternalErrorPatternFlowStackFrame(
+            info=_internal_error_info_for_agent_failure(step, output, protocol_type),
+        )
+    )
     return ContinueFlowWithNextStep(events=final_events)
 
 
@@ -666,6 +691,7 @@ def _handle_agent_fatal_error(
     step: CallFlowStep,
     flows: FlowsList,
     tracker: DialogueStateTracker,
+    protocol_type: Optional[ProtocolType] = None,
 ) -> FlowStepResult:
     """Handle fatal error from agent execution.
 
@@ -724,7 +750,11 @@ def _handle_agent_fatal_error(
     _mark_canceled_frames_ended(stack)
     final_events.append(FlowCancelled(step.flow_id, step.id))
 
-    stack.push(InternalErrorPatternFlowStackFrame())
+    stack.push(
+        InternalErrorPatternFlowStackFrame(
+            info=_internal_error_info_for_agent_failure(step, output, protocol_type),
+        )
+    )
     return ContinueFlowWithNextStep(events=final_events)
 
 

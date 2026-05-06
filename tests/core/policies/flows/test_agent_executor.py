@@ -63,6 +63,7 @@ from rasa.core.policies.flows.flow_step_result import (
 )
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.internal_error import (
+    INTERNAL_ERROR_SOURCE_AGENT,
     InternalErrorPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -2094,7 +2095,13 @@ def test_handle_agent_fatal_error() -> None:
     tracker = DialogueStateTracker.from_events("test", [])
 
     result = _handle_agent_fatal_error(
-        output, final_events, stack, step, flows, tracker
+        output,
+        final_events,
+        stack,
+        step,
+        flows,
+        tracker,
+        ProtocolType.MCP_OPEN,
     )
 
     # Verify the result
@@ -2106,7 +2113,16 @@ def test_handle_agent_fatal_error() -> None:
     assert any(
         isinstance(e, FlowCancelled) and e.flow_id == "test_flow" for e in result.events
     )
-    assert isinstance(stack.frames[-1], InternalErrorPatternFlowStackFrame)
+    err_frame = stack.frames[-1]
+    assert isinstance(err_frame, InternalErrorPatternFlowStackFrame)
+    assert err_frame.info == {
+        "error_source": INTERNAL_ERROR_SOURCE_AGENT,
+        "agent_name": "test_agent",
+        "agent_type": ProtocolType.MCP_OPEN.value,
+        "flow_id": "test_flow",
+        "step_id": "test_call",
+        "error_message": "Fatal error occurred",
+    }
     # No cancel pattern - user sees only internal error, not "flow cancelled"
     assert not any(isinstance(f, CancelPatternFlowStackFrame) for f in stack.frames)
     # AgentStackFrame should be removed from stack
@@ -2270,6 +2286,9 @@ def test_handle_agent_fatal_error_cancels_all_agents_in_same_flow() -> None:
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
+    assert stack.frames[-1].info["agent_name"] == "agent_a"
+    assert "agent_type" not in stack.frames[-1].info
+    assert stack.frames[-1].info["error_source"] == INTERNAL_ERROR_SOURCE_AGENT
     cancelled_agents = [
         e.agent_id for e in result.events if isinstance(e, AgentCancelled)
     ]
@@ -2325,10 +2344,13 @@ def test_handle_agent_fatal_error_cancels_only_failing_agent_when_digressed() ->
     tracker = DialogueStateTracker.from_events("test", [])
 
     result = _handle_agent_fatal_error(
-        output, final_events, stack, step, flows, tracker
+        output, final_events, stack, step, flows, tracker, ProtocolType.MCP_TASK
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
+    assert stack.frames[-1].info["agent_name"] == "agent_a"
+    assert stack.frames[-1].info["agent_type"] == ProtocolType.MCP_TASK.value
+    assert stack.frames[-1].info["error_source"] == INTERNAL_ERROR_SOURCE_AGENT
     cancelled_agents = [
         e.agent_id for e in result.events if isinstance(e, AgentCancelled)
     ]
@@ -2364,7 +2386,13 @@ def test_handle_agent_unknown_status() -> None:
     tracker = DialogueStateTracker.from_events("test", [])
 
     result = _handle_agent_unknown_status(
-        output, final_events, stack, step, flows, tracker
+        output,
+        final_events,
+        stack,
+        step,
+        flows,
+        tracker,
+        ProtocolType.A2A,
     )
 
     # Verify the result
@@ -2377,7 +2405,16 @@ def test_handle_agent_unknown_status() -> None:
         isinstance(e, FlowCancelled) and e.flow_id == "test_flow" for e in result.events
     )
     assert isinstance(stack.frames[-2], CancelPatternFlowStackFrame)
-    assert isinstance(stack.frames[-1], InternalErrorPatternFlowStackFrame)
+    err_frame = stack.frames[-1]
+    assert isinstance(err_frame, InternalErrorPatternFlowStackFrame)
+    assert err_frame.info == {
+        "error_source": INTERNAL_ERROR_SOURCE_AGENT,
+        "agent_name": "test_agent",
+        "agent_type": ProtocolType.A2A.value,
+        "flow_id": "test_flow",
+        "step_id": "test_call",
+        "error_message": "Unknown status",
+    }
 
 
 # ============================================================================

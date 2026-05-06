@@ -11,6 +11,21 @@ from rasa.shared.constants import (
 
 FLOW_PATTERN_INTERNAL_ERROR_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "internal_error"
 
+INTERNAL_ERROR_SOURCE_AGENT = "agent"
+"""Value for ``info["error_source"]`` when the failure came from an agent call."""
+
+INTERNAL_ERROR_SOURCE_MCP_TOOL = "mcp_tool"
+"""Value for ``info["error_source"]`` when the failure came from an MCP tool call."""
+
+_INFO_KEYS_EXPOSED_IN_PATTERN_CONTEXT = (
+    "error_source",
+    "agent_name",
+    "agent_type",
+    "tool_name",
+    "mcp_server",
+    "error_message",
+)
+
 
 @dataclass
 class InternalErrorPatternFlowStackFrame(PatternFlowStackFrame):
@@ -23,7 +38,15 @@ class InternalErrorPatternFlowStackFrame(PatternFlowStackFrame):
     """Error type used in switch-case of the error pattern flow."""
 
     info: Dict[Text, Any] = field(default_factory=dict)
-    """Additional info to be provided to the user"""
+    """Structured failure context for ``pattern_internal_error`` (predicates, NLG).
+
+    Contents vary by call site: many paths push an empty dict. Agent and MCP tool
+    failures typically set ``error_source`` to ``INTERNAL_ERROR_SOURCE_AGENT`` or
+    ``INTERNAL_ERROR_SOURCE_MCP_TOOL`` and add relevant metadata (for example
+    ``agent_name``, ``tool_name``, ``mcp_server``, ``error_message``, ``flow_id``,
+    ``step_id``). Other producers may use different keys altogether (for example
+    ``max_characters`` when user input exceeds the configured limit).
+    """
 
     @classmethod
     def type(cls) -> str:
@@ -44,5 +67,5 @@ class InternalErrorPatternFlowStackFrame(PatternFlowStackFrame):
             frame_id=data["frame_id"],
             step_id=data["step_id"],
             error_type=data.get("error_type", RASA_PATTERN_INTERNAL_ERROR_DEFAULT),
-            info=data.get("info", {}),
+            info=dict(data.get("info") or {}),
         )

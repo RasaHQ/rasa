@@ -26,6 +26,7 @@ from rasa.core.policies.flows.mcp_tool_executor import (
     call_mcp_tool,
 )
 from rasa.dialogue_understanding.patterns.internal_error import (
+    INTERNAL_ERROR_SOURCE_MCP_TOOL,
     InternalErrorPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -374,6 +375,17 @@ def test_handle_mcp_tool_error() -> None:
         mock_stack.push.assert_called_once()
         pushed_frame = mock_stack.push.call_args[0][0]
         assert isinstance(pushed_frame, InternalErrorPatternFlowStackFrame)
+        assert "agent_name" not in pushed_frame.info
+        assert "agent_type" not in pushed_frame.info
+        assert pushed_frame.info["error_source"] == INTERNAL_ERROR_SOURCE_MCP_TOOL
+        assert pushed_frame.info == {
+            "error_source": INTERNAL_ERROR_SOURCE_MCP_TOOL,
+            "tool_name": tool_name,
+            "mcp_server": mcp_server,
+            "error_message": error_message,
+            "flow_id": "test_flow",
+            "step_id": "test_step",
+        }
 
         # Verify return type
         assert isinstance(result, ContinueFlowWithNextStep)
@@ -403,6 +415,17 @@ def test_handle_mcp_tool_error_no_duplicate_event() -> None:
 
     assert len(events) == 1
     assert events[0] is existing_event
+    pushed_frame = mock_stack.push.call_args[0][0]
+    assert isinstance(pushed_frame, InternalErrorPatternFlowStackFrame)
+    assert "agent_name" not in pushed_frame.info
+    assert "agent_type" not in pushed_frame.info
+    assert pushed_frame.info["error_source"] == INTERNAL_ERROR_SOURCE_MCP_TOOL
+    assert pushed_frame.info == {
+        "error_source": INTERNAL_ERROR_SOURCE_MCP_TOOL,
+        "tool_name": "test_tool",
+        "mcp_server": "test_server",
+        "error_message": "Another error",
+    }
 
 
 @pytest.mark.asyncio

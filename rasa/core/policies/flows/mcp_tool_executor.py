@@ -12,6 +12,7 @@ from rasa.core.policies.flows.flow_step_result import (
     FlowStepResult,
 )
 from rasa.dialogue_understanding.patterns.internal_error import (
+    INTERNAL_ERROR_SOURCE_MCP_TOOL,
     InternalErrorPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -426,5 +427,15 @@ def _handle_mcp_tool_error(
                 metadata=metadata or None,
             )
         )
-    stack.push(InternalErrorPatternFlowStackFrame())
+    error_info: Dict[str, Any] = {
+        "error_source": INTERNAL_ERROR_SOURCE_MCP_TOOL,
+        "tool_name": tool_name,
+        "mcp_server": mcp_server,
+        "error_message": error_message,
+    }
+    if flow_id is not None:
+        error_info["flow_id"] = flow_id
+    if step_id is not None:
+        error_info["step_id"] = step_id
+    stack.push(InternalErrorPatternFlowStackFrame(info=error_info))
     return ContinueFlowWithNextStep(events=events)

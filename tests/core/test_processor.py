@@ -3800,12 +3800,14 @@ async def test_custom_action_failure_triggers_pattern_internal_error(
         assert (
             bot_uttered[0].metadata.get("utter_action") == "utter_internal_error_rasa"
         )
-        assert (
-            FlowCompleted(
-                flow_id="pattern_internal_error",
-                step_id="pattern_internal_error_3_utter_internal_error_rasa",
-            )
-            in tracker.events
+        internal_error_completions = [
+            e
+            for e in tracker.events
+            if isinstance(e, FlowCompleted) and e.flow_id == "pattern_internal_error"
+        ]
+        assert internal_error_completions
+        assert internal_error_completions[0].step_id.endswith(
+            "_utter_internal_error_rasa"
         )
         # Verify that the flow was cancelled before triggering internal error
         dialogue_stack_updates = [
