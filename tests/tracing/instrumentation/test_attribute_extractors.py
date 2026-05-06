@@ -398,6 +398,58 @@ def test_extract_attrs_for_mcp_agent_llm_call_includes_datetime_config() -> None
         assert result[PROTOCOL_TYPE_ATTRIBUTE_NAME] == str(ProtocolType.MCP_OPEN)
 
 
+def test_extract_attrs_for_mcp_agent_llm_call_handles_router_client_config() -> None:
+    """Test MCP extractor works when llm_client.config is router-shaped."""
+    from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
+    from rasa.agents.schemas import AgentInput
+
+    component = Mock(spec=MCPBaseAgent)
+    component._name = "test-mcp-agent"
+    component.protocol_type = ProtocolType.MCP_OPEN
+    component._include_date_time = False
+    component._timezone = "UTC"
+    component._llm_config = {
+        "id": "test-model-group",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+        "router": {"routing_strategy": "simple-shuffle"},
+    }
+    component.get_default_llm_config.return_value = {
+        "provider": "openai",
+        "model": "gpt-4o-mini",
+        "temperature": 0.0,
+    }
+
+    # Router client config shape has no top-level `provider`.
+    component.llm_client = Mock()
+    component.llm_client.config = {
+        "id": "test-model-group",
+        "model_list": [
+            {
+                "model_name": "test-model-group",
+                "litellm_params": {"model": "openai/gpt-4"},
+            }
+        ],
+        "router": {"routing_strategy": "simple-shuffle"},
+    }
+    component.build_messages_for_llm_request.return_value = [
+        {"role": "user", "content": "test"}
+    ]
+
+    agent_input = Mock(spec=AgentInput)
+
+    with patch(
+        "rasa.tracing.instrumentation.attribute_extractors.compute_prompt_tokens_length",
+        return_value=3,
+    ):
+        result = extract_attrs_for_mcp_agent_llm_call(component, agent_input)
+
+    assert result["llm_type"] == "openai"
+    assert result["llm_model"] == "gpt-4"
+    assert result["llm_model_group_id"] == "test-model-group"
+    assert result["prompt_messages_count"] == 1
+    assert result["len_prompt_tokens"] == "3"
+
+
 @pytest.mark.parametrize(
     ("update_json", "expected_absent", "expected_present"),
     [

@@ -1186,10 +1186,12 @@ def extract_attrs_for_mcp_agent_llm_call(
     This function extracts tracing attributes specifically for MCP agent LLM calls,
     including LLM configuration, prompt messages, and token counts.
     """
-    # Extract LLM configuration using the actual resolved config from the LLM client
+    # Use MCP's single-model default config as merge base.
+    # `self.llm_client.config` can be a router config (model_list/router), which
+    # doesn't include top-level `provider` and can trigger KeyError during merge.
     attributes = extract_llm_config(
         self,
-        default_llm_config=self.llm_client.config,
+        default_llm_config=self.get_default_llm_config(),
     )
 
     # Build messages

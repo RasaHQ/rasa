@@ -60,6 +60,7 @@ def mock_agent_with_config() -> Mock:
     agent: Mock = Mock()
     agent.__class__.__name__ = "MCPOpenAgent"
     agent.llm_client.config = DEFAULT_LLM_CONFIG
+    agent.get_default_llm_config.return_value = DEFAULT_LLM_CONFIG
     agent._name = "mock_open_agent"
     agent.protocol_type = ProtocolType.MCP_OPEN
     return agent
@@ -116,6 +117,7 @@ def test_extract_attrs_basic_functionality(
     agent.__class__.__name__ = agent_type
     agent.llm_config = llm_config
     agent.llm_client.config = expected_config
+    agent.get_default_llm_config.return_value = expected_config
     agent._name = "parametrized_mcp_agent"
     agent.protocol_type = (
         ProtocolType.MCP_TASK if "Task" in agent_type else ProtocolType.MCP_OPEN
