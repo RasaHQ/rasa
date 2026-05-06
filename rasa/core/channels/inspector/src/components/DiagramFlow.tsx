@@ -22,15 +22,15 @@ export const DiagramFlow = ({ stackFrame, stepTrail, flows, slots }: Props) => {
 
   const config = {
     startOnLoad: true,
-    logLevel: 'warning',
+    logLevel: 'warn',
     flowchart: {
       useMaxWidth: false,
       htmlLabels: false,
     },
-  }
+  } as const
 
   useEffect(() => {
-    mermaid.mermaidAPI.initialize(config)
+    mermaid.initialize(config)
   }, [])
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export const DiagramFlow = ({ stackFrame, stepTrail, flows, slots }: Props) => {
     // mermaid needs to be reloaded every time the text changes but a data-processed
     // attribute prevents it. We need to remove it each time `text` changes
     mermaidRef.current?.removeAttribute('data-processed')
-    mermaid.contentLoaded()
+    void mermaid.run()
 
     setTimeout(() => {
       const active = document.querySelectorAll('.active')[0]

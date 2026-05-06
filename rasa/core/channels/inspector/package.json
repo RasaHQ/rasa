@@ -18,15 +18,15 @@
     "@chakra-ui/react": "2.8.1",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "axios": "1.13.5",
+    "axios": "1.15.1",
     "deep-chat-react": "2.4.2",
     "framer-motion": "10.16.4",
     "immutable-json-patch": "^6.0.2",
-    "mermaid": "10.9.3",
+    "mermaid": "11.10.0",
     "query-string": "^9.3.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-syntax-highlighter": "15.6.6",
+    "react-syntax-highlighter": "16.1.1",
     "react-use-websocket": "^4.13.0",
     "usehooks-ts": "2.9.1"
   },
@@ -54,11 +54,16 @@
   },
   "resolutions": {
     "cross-spawn": "7.0.6",
-    "dompurify": "3.3.1",
+    "dompurify": "3.4.0",
     "braces": "3.0.3",
     "ws": "8.19.0",
     "rollup": "3.29.5",
-    "@adobe/css-tools": "^4.4.4"
+    "@adobe/css-tools": "^4.4.4",
+    "lodash-es": "^4.18.1",
+    "follow-redirects": "^1.16.0",
+    "dagre-d3-es": "7.0.13",
+    "uuid": "14.0.0",
+    "yaml": "1.10.3"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
