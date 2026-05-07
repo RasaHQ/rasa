@@ -1,4 +1,4 @@
-import { Accordion, Box, Code, HStack, Separator, Text } from "@chakra-ui/react";
+import { Accordion, Box, Code, Heading, HStack, Separator, Text } from "@chakra-ui/react";
 import type { Utterance } from "../../types";
 import { CommonEventInfo } from "./CommonEventInfo";
 import { DetailView } from "./DetailView";
@@ -29,9 +29,9 @@ export const UserMessageInfo = ({ utterance, onClose }: UserMessageInfoProps) =>
 
   return (
     <DetailView title="User message details" onClose={onClose}>
-      <Text fontWeight="bold" fontSize="0.75rem" mt="0.5rem" mb="0.25rem">
+      <Heading size="md" mb="1" mt="2">
         Predicted intents
-      </Text>
+      </Heading>
       {intentPills && intentPills.length > 0 ? (
         <Box mb="0.5rem">{intentPills}</Box>
       ) : (
@@ -40,9 +40,9 @@ export const UserMessageInfo = ({ utterance, onClose }: UserMessageInfoProps) =>
 
       {utterance.commands ? (
         <>
-          <Text fontWeight="bold" fontSize="0.75rem" mt="0.5rem" mb="0.25rem">
-            Predicted Commands
-          </Text>
+          <Heading size="md" mt="2" mb="1">
+            Predicted commands
+          </Heading>
           <Code whiteSpace="pre-wrap" display="block" fontSize="0.75rem" p="0.5rem" mb="0.5rem">
             {JSON.stringify(utterance.commands, null, 2) || "-"}
           </Code>

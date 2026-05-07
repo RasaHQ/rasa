@@ -21,6 +21,7 @@ import {
   type QuickReply,
   type Button,
 } from "../types";
+import { isVoiceLatency } from "./latency";
 
 export const eventTexts: { [key: string]: string } = {
   [ConversationEventType.FlowCancelled]: " cancelled",
@@ -247,6 +248,33 @@ export function isUtterance(event: UnionEventType): event is Utterance {
     (event as Utterance).type === UtteranceType.Bot ||
     (event as Utterance).type === UtteranceType.User
   );
+}
+
+/** Keep client-merged voice latency on bot utterances when the tracker socket replaces events. */
+export function preserveVoiceLatencyOnBotUtterances(
+  currentEvents: UnionEventType[],
+  incomingEvents: UnionEventType[],
+): UnionEventType[] {
+  if (!incomingEvents.length) return incomingEvents;
+  return incomingEvents.map((event, index) => {
+    const previous = currentEvents[index];
+    if (
+      isUtterance(event) &&
+      event.type === UtteranceType.Bot &&
+      previous &&
+      isUtterance(previous) &&
+      isVoiceLatency(previous.metadata?.voiceLatency)
+    ) {
+      return {
+        ...event,
+        metadata: {
+          ...event.metadata,
+          voiceLatency: previous.metadata.voiceLatency,
+        },
+      };
+    }
+    return event;
+  });
 }
 
 export function isBotUtteranceEmpty(

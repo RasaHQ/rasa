@@ -4,12 +4,41 @@ import {
   extractSlotEventsForSession,
   formatSlots,
   getSlotRelatedEvents,
+  preserveVoiceLatencyOnBotUtterances,
 } from "./conversation";
 import {
   type ConversationEvent,
   type UnionEventType,
+  type Utterance,
   ConversationEventType,
+  UtteranceType,
 } from "../types";
+
+const sampleVoiceLatency = {
+  asr_latency_ms: 1,
+  rasa_processing_latency_ms: 2,
+  tts_complete_latency_ms: 3,
+  tts_first_byte_latency_ms: 4,
+};
+
+function botUtterance(
+  id: string,
+  text: string,
+  metadata: Utterance["metadata"] = { parseData: {} },
+): Utterance {
+  return {
+    id,
+    __typename: "Utterance",
+    type: UtteranceType.Bot,
+    text,
+    timestamp: "100",
+    tokens: [],
+    rephrase: false,
+    rephrasePrompt: null,
+    metadata,
+    originalTimestamp: 0,
+  };
+}
 
 function slot(
   id: string,
@@ -314,5 +343,21 @@ describe("getSlotRelatedEvents", () => {
       "regularFlowStart",
       "slot1",
     ]);
+  });
+});
+
+describe("preserveVoiceLatencyOnBotUtterances", () => {
+  it("copies voiceLatency from previous bot at same index", () => {
+    const current: UnionEventType[] = [
+      botUtterance("b1", "hi", {
+        parseData: {},
+        voiceLatency: sampleVoiceLatency,
+      }),
+    ];
+    const incoming: UnionEventType[] = [
+      botUtterance("b1-new", "hi", { parseData: {} }),
+    ];
+    const out = preserveVoiceLatencyOnBotUtterances(current, incoming);
+    expect((out[0] as Utterance).metadata.voiceLatency).toEqual(sampleVoiceLatency);
   });
 });

@@ -1,4 +1,4 @@
-import { Box, Text } from "@chakra-ui/react";
+import { Box, Heading, Text } from "@chakra-ui/react";
 
 interface CommonEventInfoProps {
   event: {
@@ -14,28 +14,28 @@ export const CommonEventInfo = ({ event }: CommonEventInfoProps) => {
   return (
     <>
       <Box data-testid="event-occurred-at">
-        <Text fontWeight="bold" fontSize="0.875rem" mb="0.25rem">
+        <Heading size="md" mb="1">
           Occurred at
-        </Text>
-        <Text fontSize="0.875rem" mb="0.5rem">
+        </Heading>
+        <Text size="md" mb="2">
           {formatted}
         </Text>
       </Box>
 
       <Box>
-        <Text fontWeight="bold" fontSize="0.875rem" mb="0.25rem">
+        <Heading size="md" mb="1">
           ID
-        </Text>
-        <Text fontSize="0.875rem" mb="0.5rem" wordBreak="break-all">
+        </Heading>
+        <Text size="md" mb="2" wordBreak="break-all">
           {event.id}
         </Text>
       </Box>
 
       <Box data-testid="event-type">
-        <Text fontWeight="bold" fontSize="0.875rem" mb="0.25rem">
+        <Heading size="md" mb="1">
           Type
-        </Text>
-        <Text fontSize="0.875rem" mb="0.5rem">
+        </Heading>
+        <Text size="md" mb="2">
           {event.conversationEventType}
         </Text>
       </Box>

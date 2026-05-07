@@ -1,8 +1,10 @@
-import { Accordion, Box, Code, Separator, Text } from "@chakra-ui/react";
+import { Accordion, Box, Code, Heading, Separator, Text } from "@chakra-ui/react";
 import type { Utterance } from "../../types";
 import { CommonEventInfo } from "./CommonEventInfo";
 import { DetailView } from "./DetailView";
 import { EventAccordionItem } from "./EventAccordionItem";
+import { BotLatencyAccordionItem } from "./LatencyDetails";
+import { botUtteranceHasLatencyMetadata } from "../../utils/latency";
 
 interface BotMessageInfoProps {
   utterance: Utterance;
@@ -11,15 +13,16 @@ interface BotMessageInfoProps {
 
 export const BotMessageInfo = ({ utterance, onClose }: BotMessageInfoProps) => {
   const utterAction = utterance.metadata?.utter_action;
+  const showLatency = botUtteranceHasLatencyMetadata(utterance);
 
   return (
     <DetailView title="Agent response details" onClose={onClose}>
       {utterAction && (
         <Box>
-          <Text fontWeight="bold" fontSize="0.875rem" mb="0.25rem">
+          <Heading size="md" mb="1">
             Name
-          </Text>
-          <Text fontSize="0.875rem" mb="0.5rem" wordBreak="break-all">
+          </Heading>
+          <Text size="md" mb="2" wordBreak="break-all">
             {utterAction}
           </Text>
         </Box>
@@ -28,28 +31,37 @@ export const BotMessageInfo = ({ utterance, onClose }: BotMessageInfoProps) => {
       {utterance.rephrase && (
         <>
           <Box>
-            <Text fontWeight="bold" fontSize="0.875rem" mb="0.25rem">
+            <Heading size="md" mb="1">
               Original response
-            </Text>
-            <Text fontSize="0.875rem" mb="0.5rem">
+            </Heading>
+            <Text size="md" mb="2">
               {utterance.metadata?.domain_ground_truth ?? "-"}
             </Text>
           </Box>
 
           <Box>
-            <Text fontWeight="bold" fontSize="0.875rem" mb="0.25rem">
+            <Heading size="md" mb="1">
               Rephrased response
-            </Text>
-            <Text fontSize="0.875rem" mb="0.5rem">
+            </Heading>
+            <Text size="md" mb="2">
               {utterance.text ?? "-"}
             </Text>
           </Box>
         </>
       )}
 
-      <Separator mt="0.5rem" />
+      <Separator mt="2" />
 
-      <Accordion.Root collapsible multiple>
+      <Accordion.Root
+        collapsible
+        multiple
+      >
+        {showLatency && (
+          <BotLatencyAccordionItem
+            executionTimes={utterance.metadata?.execution_times}
+            voiceLatency={utterance.metadata?.voiceLatency}
+          />
+        )}
         {utterance.responseData?.custom && (
           <EventAccordionItem title="Custom response" value="custom-response">
             <Code

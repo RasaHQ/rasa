@@ -22,11 +22,14 @@ import {
   type TrackerResponseData,
   type UnionEventType,
   type Utterance,
+  type VoiceLatency,
 } from "../types";
 import {
   getSlotRelatedEvents,
   isUtterance,
+  isVoiceLatency,
   mapRawEventsToConversationEvents,
+  preserveVoiceLatencyOnBotUtterances,
 } from "../utils";
 import { useInspectorContext } from "../InspectorContext";
 import { useLocalStorage } from "./useLocalStorage";
@@ -233,8 +236,10 @@ export function useBotConnection({
   >([]);
   const [waitingForUserInput, setWaitingForUserInput] = useState(false);
   const [replayingConversation, setReplayingConversation] = useState(false);
+  const [voiceLatency, setVoiceLatency] = useState<VoiceLatency | undefined>();
 
   const cleanup = () => {
+    setVoiceLatency(undefined);
     socket.current?.removeAllListeners();
     socket.current?.io.removeAllListeners();
     socket.current?.disconnect();
@@ -281,6 +286,31 @@ export function useBotConnection({
   }, [initialTrackerData]);
 
   useEffect(() => {
+    if (!voiceLatency) return;
+
+    setConversation((currentConversations) => {
+      const events = currentConversations.events;
+      let lastBotIndex = -1;
+      for (let i = events.length - 1; i >= 0; i--) {
+        const event = events[i];
+        if (isUtterance(event) && event.type === UtteranceType.Bot) {
+          lastBotIndex = i;
+          break;
+        }
+      }
+      if (lastBotIndex < 0) return currentConversations;
+      const bot = events[lastBotIndex];
+      if (!isUtterance(bot) || bot.metadata?.voiceLatency) return currentConversations;
+      const next = [...events];
+      next[lastBotIndex] = {
+        ...bot,
+        metadata: { ...bot.metadata, voiceLatency },
+      };
+      return { ...currentConversations, events: next };
+    });
+  }, [voiceLatency]);
+
+  useEffect(() => {
     if (!socket.current && url) {
       const urlObject = new URL(url);
 
@@ -301,33 +331,48 @@ export function useBotConnection({
         });
       });
 
+      const storeVoiceLatencyFromBotMessage = (payload: string) => {
+        try {
+          const parsed = JSON.parse(payload) as { latency?: unknown };
+          if (parsed.latency !== undefined && isVoiceLatency(parsed.latency)) {
+            setVoiceLatency(parsed.latency);
+          }
+        } catch {
+          // Not JSON (e.g. raw audio envelope) — ignore
+        }
+      };
+
       socket.current?.on("bot_message", (data) => {
-        if (audioQueueRef.current) {
-          if (typeof data === "string") {
-            try {
-              addDataToAudioQueue(audioQueueRef.current)(data);
-            } catch (error) {
-              logErrorRef.current(error, {
-                tags: {
-                  component: "useBotConnection",
-                  action: "bot_message",
-                },
-                extra: { data },
-              });
-            }
-          } else {
-            logErrorRef.current(
-              `Unexpected typeof bot_message data. Got: ${typeof data}, expected: string.`,
-              {
-                tags: {
-                  component: "useBotConnection",
-                  action: "bot_message",
-                },
-                extra: {
-                  data: typeof data === "object" ? JSON.stringify(data) : null,
-                },
+        if (activeModalityRef.current === "text") {
+          return;
+        }
+        if (typeof data !== "string") {
+          logErrorRef.current(
+            `Unexpected typeof bot_message data. Got: ${typeof data}, expected: string.`,
+            {
+              tags: {
+                component: "useBotConnection",
+                action: "bot_message",
               },
-            );
+              extra: {
+                data: typeof data === "object" ? JSON.stringify(data) : null,
+              },
+            },
+          );
+          return;
+        }
+        storeVoiceLatencyFromBotMessage(data);
+        if (audioQueueRef.current) {
+          try {
+            addDataToAudioQueue(audioQueueRef.current)(data);
+          } catch (error) {
+            logErrorRef.current(error, {
+              tags: {
+                component: "useBotConnection",
+                action: "bot_message",
+              },
+              extra: { data },
+            });
           }
         }
       });
@@ -501,10 +546,14 @@ export function useBotConnection({
       }
       const startDate = events?.[0]?.timestamp;
       setConversation((conv) => {
+        const newEvents =
+          activeModalityRef.current === "voice"
+            ? preserveVoiceLatencyOnBotUtterances(conv.events, events)
+            : events;
         return {
           ...conv,
-          events,
-          totalNumberOfUserMessages: events.filter(
+          events: newEvents,
+          totalNumberOfUserMessages: newEvents.filter(
             (event: UnionEventType) => isUtterance(event),
           ).length,
           startDate: startDate ? new Date(startDate).toISOString() : conv.startDate,

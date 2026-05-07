@@ -1787,33 +1787,57 @@ class MessageProcessor:
         tracker.update_with_events(events)
         return events, tracker
 
-    def _add_metadata_if_action_listen(
-        self, action: Action, prediction: PolicyPrediction
-    ) -> None:
-        """Adds execution times to the ActionExecuted event metadata."""
+    def _compute_execution_times_ms(self) -> Optional[Dict[str, float]]:
+        """Return per-turn timing (ms) if turn timestamps are available.
+
+        ``command_processor`` spans from turn start until the command processor
+        finished. ``prediction_loop`` spans from then until *now* (caller
+        context), so values on ``BotUttered`` events are cumulative up to the
+        moment each batch of bot events is logged, while ``action_listen`` uses
+        the value at the end of the prediction loop.
+        """
         if not hasattr(self, "time_turn_start"):
-            return
-
+            return None
         if not hasattr(self, "time_command_processor"):
-            return
-
-        if not action.name() == ACTION_LISTEN_NAME:
-            return
-
-        if prediction.action_metadata is None:
-            prediction.action_metadata = {}
-
-        # calculate execution times
+            return None
         execution_time_prediction_loop = (
             time.time() - self.time_command_processor
         ) * 1000
         execution_time_command_processor = (
             self.time_command_processor - self.time_turn_start
         ) * 1000
-        prediction.action_metadata[ACTION_METADATA_EXECUTION_TIME] = {
+        return {
             "command_processor": execution_time_command_processor,
             "prediction_loop": execution_time_prediction_loop,
         }
+
+    def _attach_execution_times_to_action_listen(
+        self, action: Action, prediction: PolicyPrediction
+    ) -> None:
+        """Adds execution times to the ActionExecuted event metadata."""
+        if not action.name() == ACTION_LISTEN_NAME:
+            return
+
+        execution_times = self._compute_execution_times_ms()
+        if execution_times is None:
+            return
+
+        if prediction.action_metadata is None:
+            prediction.action_metadata = {}
+
+        prediction.action_metadata[ACTION_METADATA_EXECUTION_TIME] = execution_times
+
+    def _attach_execution_times_to_bot_events(self, events: List[Event]) -> None:
+        """Merge turn execution times into ``BotUttered`` metadata when absent."""
+        execution_times = self._compute_execution_times_ms()
+        if execution_times is None:
+            return
+        for event in events:
+            if not isinstance(event, BotUttered):
+                continue
+            if ACTION_METADATA_EXECUTION_TIME in event.metadata:
+                continue
+            event.metadata[ACTION_METADATA_EXECUTION_TIME] = execution_times
 
     def _log_action_and_events_on_tracker(
         self,
@@ -1841,6 +1865,7 @@ class MessageProcessor:
             action_name=action.name(),
             rasa_events=copy.deepcopy(events),
         )
+        self._attach_execution_times_to_bot_events(events)
         tracker.update_with_events(events)
 
     def _log_action_prediction_on_tracker(
@@ -1860,7 +1885,7 @@ class MessageProcessor:
         tracker.update_with_events(prediction.events)
 
         # log the action and its produced events
-        self._add_metadata_if_action_listen(action, prediction)
+        self._attach_execution_times_to_action_listen(action, prediction)
         tracker.update(
             action.event_for_successful_execution(
                 prediction, was_successful, error_message

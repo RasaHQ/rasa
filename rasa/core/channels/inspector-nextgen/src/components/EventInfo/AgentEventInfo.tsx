@@ -44,26 +44,26 @@ export const AgentEventInfo = ({
   return (
     <DetailView title="Sub-agent event details" onClose={onClose}>
       <Box>
-        <Heading size="md" mb="0.25rem">
+        <Heading size="md" mb="1">
           Name
         </Heading>
-        <Text size="md" mb="0.5rem" wordBreak="break-all">
+        <Text size="md" mb="2" wordBreak="break-all">
           {agentName}
         </Text>
       </Box>
 
       <Box>
-        <Heading size="md" mt="0.5rem" mb="0.25rem">
+        <Heading size="md" mt="2" mb="1">
           Description
         </Heading>
-        <Text size="md" mb="0.5rem">
+        <Text size="md" mb="2">
           {description}
         </Text>
       </Box>
 
       {!!tools.length && (
         <Box>
-          <Heading size="md" mt="0.5rem" mb="0.25rem">
+          <Heading size="md" mt="2" mb="1">
             Tools
           </Heading>
           {renderTools(tools)}
@@ -72,7 +72,7 @@ export const AgentEventInfo = ({
 
       {!!excludedTools.length && (
         <Box>
-          <Heading size="md" mt="0.5rem" mb="0.25rem">
+          <Heading size="md" mt="2" mb="1">
             Excluded tools
           </Heading>
           {renderTools(excludedTools)}
@@ -81,7 +81,7 @@ export const AgentEventInfo = ({
 
       {!tools.length && !excludedTools.length && (
         <Box>
-          <Heading size="md" mt="0.5rem" mb="0.25rem">
+          <Heading size="md" mt="2" mb="1">
             Tools
           </Heading>
           <Text size="md" mb="0.5rem" wordBreak="break-all">
@@ -92,16 +92,16 @@ export const AgentEventInfo = ({
 
       {flowId && (
         <Box>
-          <Heading size="md" mt="0.5rem" mb="0.25rem">
+          <Heading size="md" mt="2" mb="1">
             Trigger
           </Heading>
-          <Text size="md" mb="0.5rem" wordBreak="break-all">
+          <Text size="md" mb="2" wordBreak="break-all">
             This sub-agent was triggered by flow {flowId}
           </Text>
         </Box>
       )}
 
-      <Separator mt="0.5rem" />
+      <Separator mt="2" />
 
       {exitConditions && (
         <Accordion.Root collapsible multiple>

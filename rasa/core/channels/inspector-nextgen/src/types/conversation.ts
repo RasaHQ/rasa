@@ -120,12 +120,26 @@ export type Utterance = {
 
 export type UnionEventType = ConversationEvent | Utterance;
 
+export type RasaExecutionTime = {
+  command_processor: number;
+  prediction_loop: number;
+};
+
+export type VoiceLatency = {
+  asr_latency_ms: number;
+  rasa_processing_latency_ms: number;
+  tts_complete_latency_ms: number;
+  tts_first_byte_latency_ms: number;
+};
+
 export type EventMetadata = {
   active_flow?: string;
   utter_action?: string;
   flow_id?: string;
   execution_success?: boolean;
   execution_error_message?: string;
+  execution_times?: RasaExecutionTime;
+  voiceLatency?: VoiceLatency;
   step_id?: string;
   rawEvent?: RawEvent;
   reset?: boolean;

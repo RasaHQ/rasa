@@ -1,4 +1,4 @@
-import { Accordion, Box, Code, Separator, Text } from "@chakra-ui/react";
+import { Accordion, Box, Code, Heading, Separator, Text } from "@chakra-ui/react";
 import type { ConversationEvent } from "../../types";
 import { CommonEventInfo } from "./CommonEventInfo";
 import { DetailView } from "./DetailView";
@@ -13,24 +13,24 @@ export const SlotEventInfo = ({ event, onClose }: SlotEventInfoProps) => {
   return (
     <DetailView title="Slot event" onClose={onClose}>
       <Box data-testid="event-slot-or-flow-name">
-        <Text fontWeight="bold" fontSize="0.875rem" mb="0.25rem">
+        <Heading size="md" mb="1">
           Slot name
-        </Text>
-        <Text fontSize="0.875rem" mb="0.5rem">
+        </Heading>
+        <Text size="md" mb="2">
           {event.name || "-"}
         </Text>
       </Box>
 
       <Box data-testid="event-slot-value">
-        <Text fontWeight="bold" fontSize="0.875rem" mb="0.25rem">
+        <Heading size="md" mb="1">
           Value
-        </Text>
+        </Heading>
         <Code
           whiteSpace="pre-wrap"
           display="block"
           fontSize="0.75rem"
           p="1rem"
-          mb="0.5rem"
+          mb="2"
           borderRadius="0.5rem"
           variant="solid"
           fontFamily="IBM Plex Mono"

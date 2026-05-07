@@ -16,10 +16,10 @@ export const ActionEventInfo = ({ event, onClose }: ActionEventInfoProps) => {
   return (
     <DetailView title="Action event details" onClose={onClose}>
       <Box data-testid="action-event-info">
-        <Heading size="md" mb="0.25rem">
+        <Heading size="md" mb="1">
           Name
         </Heading>
-        <Text size="md" mb="0.5rem">
+        <Text size="md" mb="2">
           {event.name || "-"}
         </Text>
 

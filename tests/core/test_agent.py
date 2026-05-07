@@ -357,7 +357,13 @@ async def test_agent_handle_message_only_nlu(trained_nlu_model: Text):
         assert e1 == e2
 
 
-async def test_agent_handle_message_only_core(trained_core_model: Text):
+@patch(
+    "rasa.core.processor.MessageProcessor._compute_execution_times_ms",
+    return_value=None,
+)
+async def test_agent_handle_message_only_core(
+    _mock_execution_times: MagicMock, trained_core_model: Text
+):
     agent = await load_agent(model_path=trained_core_model)
     model_id = agent.model_id
     model_name = agent.processor.model_filename

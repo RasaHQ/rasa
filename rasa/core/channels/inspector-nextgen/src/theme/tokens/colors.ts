@@ -47,7 +47,9 @@ export const colors = {
     400: { value: "#1EC9C6" },
   },
   rasaOrange: {
+    50: { value: "#FEF1DE" },
     600: { value: "#EB7D15" },
+    900: { value: "#B05600" },
   },
   rasawebOrange: {
     600: { value: "#F97316" },

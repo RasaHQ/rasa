@@ -22,12 +22,23 @@ export const tagSlotRecipe = defineSlotRecipe({
         },
         label: {
           color: "rasaNeutral.800",
-        }
+        },
+      },
+      surface: {
+        root: {
+          bg: "colorPalette.50",
+          borderRadius: "0.5rem",
+          borderWidth: "0",
+          boxShadow: "none",
+        },
+        label: {
+          color: "colorPalette.900",
+        },
       }
     },
     size: {
       lg: {
-        root: {
+        label: {
           fontSize: "12px",
         }
       }
