@@ -110,13 +110,15 @@ class StartFlowCommand(Command):
 
             # if the continue interrupted flow is active, and the command generator
             # predicted a start flow command for the flow which is on top of the stack,
-            # we just need to remove the pattern_continue_interrupted frame(s) from the
-            # stack
+            # we need to remove the pattern_continue_interrupted frame(s) and resume
+            # the interrupted flow stack. This ensures agent frames are moved back to
+            # waiting_for_input and the agent call step can be re-entered.
             stack, flow_completed_events = remove_pattern_continue_interrupted_frames(
                 stack
             )
             applied_events.extend(flow_completed_events)
-            return applied_events + tracker.create_stack_updated_events(stack)
+            applied_events.extend(resume_flow(self.flow, tracker, stack))
+            return applied_events
 
         # if the flow is already on the stack, resume it
         if (

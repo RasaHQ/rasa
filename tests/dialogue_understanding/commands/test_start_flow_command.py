@@ -977,8 +977,8 @@ def test_start_flow_interrupts_active_agent_frame():
             )
 
 
-def test_start_flow_removes_continue_interrupted_frames_when_same_flow():
-    """Test that starting the same flow removes continue interrupted frames."""
+def test_start_flow_resumes_same_flow_and_removes_continue_interrupted_frames():
+    """Test that starting the same flow resumes it and removes continue interrupted."""
     all_flows = flows_from_str(
         """
         flows:
@@ -992,9 +992,17 @@ def test_start_flow_removes_continue_interrupted_frames_when_same_flow():
 
     tracker = DialogueStateTracker.from_events("test", evts=[])
 
-    # Create a stack with foo flow and continue interrupted pattern frame on top
+    # Create a stack with foo flow, interrupted agent, and continue interrupted
+    # pattern frame on top.
     user_stack_frame = UserFlowStackFrame(
         flow_id="foo", step_id="START", frame_id="foo-frame-id"
+    )
+    agent_stack_frame = AgentStackFrame(
+        frame_id="agent-frame-id",
+        state=AgentState.INTERRUPTED,
+        agent_id="foo-agent",
+        flow_id="foo",
+        step_id="call_foo_agent",
     )
     continue_interrupted_frame = ContinueInterruptedPatternFlowStackFrame(
         frame_id="continue-pattern-frame",
@@ -1005,11 +1013,13 @@ def test_start_flow_removes_continue_interrupted_frames_when_same_flow():
     )
 
     tracker.update_stack(
-        DialogueStack(frames=[user_stack_frame, continue_interrupted_frame])
+        DialogueStack(
+            frames=[user_stack_frame, agent_stack_frame, continue_interrupted_frame]
+        )
     )
 
-    # Verify the stack has both frames initially
-    assert len(tracker.stack.frames) == 2
+    # Verify the stack has all frames initially.
+    assert len(tracker.stack.frames) == 3
     assert tracker.stack.top() == continue_interrupted_frame
 
     command = StartFlowCommand(flow="foo")
@@ -1017,15 +1027,21 @@ def test_start_flow_removes_continue_interrupted_frames_when_same_flow():
     # WHEN: starting the same flow that's already on top
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
 
-    # Should return FlowCompleted and dialogue stack updated events
-    assert len(events) == 2
+    # Should return flow completion for the pattern and proper flow/agent resume events.
+    assert len(events) == 4
     assert isinstance(events[0], FlowCompleted)
-    assert isinstance(events[1], DialogueStackUpdated)
+    assert isinstance(events[1], AgentResumed)
+    assert isinstance(events[2], FlowResumed)
+    assert isinstance(events[3], DialogueStackUpdated)
 
-    dialogue_stack_event = events[1]
+    dialogue_stack_event = events[3]
     updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
-    assert len(updated_stack.frames) == 1
-    assert updated_stack.top() == user_stack_frame
+    assert len(updated_stack.frames) == 2
+    assert updated_stack.frames[0] == user_stack_frame
+    resumed_agent_frame = updated_stack.top()
+    assert isinstance(resumed_agent_frame, AgentStackFrame)
+    assert resumed_agent_frame.agent_id == "foo-agent"
+    assert resumed_agent_frame.state == AgentState.WAITING_FOR_INPUT
 
 
 def test_start_flow_resumes_flow_and_removes_continue_interrupted_frames():
