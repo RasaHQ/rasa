@@ -280,7 +280,13 @@ async def test_agent_load_on_invalid_model_path(model_path: Optional[Text]):
         Agent.load(model_path)
 
 
-async def test_agent_handle_message_full_model(default_agent: Agent):
+@patch(
+    "rasa.core.processor.MessageProcessor._compute_execution_times_ms",
+    return_value=None,
+)
+async def test_agent_handle_message_full_model(
+    _mock_execution_times: MagicMock, default_agent: Agent
+):
     model_id = default_agent.model_id
     model_name = default_agent.processor.model_filename
     assistant_id = default_agent.processor.model_metadata.assistant_id
