@@ -1249,7 +1249,12 @@ async def test_fetch_tracker_with_initial_session_does_not_update_session(
     ]
 
 
+@patch(
+    "rasa.core.processor.MessageProcessor._compute_execution_times_ms",
+    return_value=None,
+)
 async def test_handle_message_with_session_start_expiry_starts_new_session(
+    _mock_execution_times: MagicMock,
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
@@ -1377,7 +1382,12 @@ async def test_handle_message_with_session_start_expiry_starts_new_session(
     assert actual_events == expected
 
 
+@patch(
+    "rasa.core.processor.MessageProcessor._compute_execution_times_ms",
+    return_value=None,
+)
 async def test_handle_message_with_session_start_expiry_continues_same_session(
+    _mock_execution_times: MagicMock,
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
@@ -2110,8 +2120,14 @@ async def test_policy_events_not_applied_if_rejected(
         assert event == expected
 
 
+@patch(
+    "rasa.core.processor.MessageProcessor._compute_execution_times_ms",
+    return_value=None,
+)
 async def test_logging_of_end_to_end_action(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch
+    _mock_execution_times: MagicMock,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
 ):
     model_id = default_processor.model_metadata.model_id
     model_name = default_processor.model_filename
