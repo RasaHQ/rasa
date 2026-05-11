@@ -376,6 +376,27 @@ def test_verify_rephrase_with_unresolvable_custom_class_raises(
     )
 
 
+def test_verify_rephrase_skip_validation_parameter(monkeypatch: MonkeyPatch):
+    """Test that skip_rephrase_validation=True skips all validation."""
+    from rasa.shared.importers.importer import FlowSyncImporter
+
+    merged_domain = _domain_with_rephrase_response("utter_user", text="custom")
+    default_domain = Domain.empty()
+    monkeypatch.setattr(
+        FlowSyncImporter, "load_default_pattern_flows_domain", lambda: default_domain
+    )
+
+    # This would normally raise ValidationError due to user-defined rephrase
+    # with missing NLG, but skip_rephrase_validation=True should bypass it.
+    verify_rephrase_endpoints_consistency_or_raise(
+        domain=merged_domain,
+        endpoints=None,
+        user_domain=None,
+        skip_rephrase_validation=True,
+    )
+    # Test passes if no exception is raised
+
+
 def test_verify_nlu_with_e2e_story(
     tmp_path: Path, nlu_data_path: Path, capsys: CaptureFixture
 ):
@@ -413,11 +434,11 @@ def test_verify_nlu_with_e2e_story(
     )
 
     expected_event = (
-        "validator.verify_example_repetition_in_intents" ".one_example_multiple_intents"
+        "validator.verify_example_repetition_in_intents.one_example_multiple_intents"
     )
     expected_log_level = "warning"
     expected_log_message = (
-        "The example 'good afternoon' was found labeled " "with multiple different"
+        "The example 'good afternoon' was found labeled with multiple different"
     )
 
     validator = Validator.from_importer(importer)
@@ -619,7 +640,7 @@ def test_verify_logging_message_for_intent_not_used_in_story(
     expected_event = "validator.verify_intents_in_stories_or_flows.not_used"
     expected_log_level = "warning"
     expected_log_message = (
-        "The intent 'goodbye' is not used " "in any story, rule or flow."
+        "The intent 'goodbye' is not used in any story, rule or flow."
     )
 
     validator_under_test.verify_intents_in_stories_or_flows(ignore_warnings=False)
@@ -641,7 +662,7 @@ def test_verify_logging_message_for_repetition_in_intents(
     validator = Validator.from_importer(importer)
 
     expected_event = (
-        "validator.verify_example_repetition_in_intents" ".one_example_multiple_intents"
+        "validator.verify_example_repetition_in_intents.one_example_multiple_intents"
     )
     expected_log_level = "warning"
     expected_log_message_part = "You should fix that conflict "
@@ -1442,7 +1463,7 @@ def test_verify_flow_steps_against_domain_disallowed_list_slot(
     validator = Validator.from_importer(importer)
 
     expected_event = (
-        "validator.verify_flows_steps_against_domain" ".use_of_list_slot_in_flow"
+        "validator.verify_flows_steps_against_domain.use_of_list_slot_in_flow"
     )
     expected_log_level = "error"
     expected_log_message = (
@@ -1497,9 +1518,7 @@ def test_verify_flow_steps_against_domain_interpolated_action_name(
 
     validator = Validator.from_importer(importer)
 
-    expected_event = (
-        "validator.verify_flows_steps_against_domain" ".interpolated_action"
-    )
+    expected_event = "validator.verify_flows_steps_against_domain.interpolated_action"
     expected_log_level = "debug"
     expected_log_message = (
         "An interpolated action name 'validate_{context.collect}' "
@@ -2045,7 +2064,7 @@ def test_verify_predicates_namespaces_not_referenced(
     )
 
     expected_event = (
-        "validator.verify_namespaces" ".referencing_variables_without_namespace"
+        "validator.verify_namespaces.referencing_variables_without_namespace"
     )
     expected_log_level = "error"
     expected_log_message = (

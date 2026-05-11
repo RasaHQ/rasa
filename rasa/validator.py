@@ -313,6 +313,7 @@ def verify_rephrase_endpoints_consistency_or_raise(
     domain: Domain,
     endpoints: Optional[AvailableEndpoints],
     user_domain: Optional[Domain] = None,
+    skip_rephrase_validation: bool = False,
 ) -> None:
     """Validate domain response rephrase settings against runtime endpoints.
 
@@ -329,11 +330,17 @@ def verify_rephrase_endpoints_consistency_or_raise(
         user_domain: Optional user-defined domain (before default pattern merge).
             When provided, allows differentiation between rephrase from user domain
             vs default pattern flows for more precise error messages.
+        skip_rephrase_validation: If True, skip rephrase validation entirely.
+            This is useful in contexts like Dialogue Understanding Tests where
+            rephrasing is intentionally disabled.
 
     Raises:
         ValidationError: If user-defined responses have rephrasing enabled but NLG
             is missing or not configured as type rephrase.
     """
+    if skip_rephrase_validation:
+        return
+
     rephrase_in_domain = _get_rephrase_enabled_responses(domain)
     if not rephrase_in_domain:
         return

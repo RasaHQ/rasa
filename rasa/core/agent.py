@@ -210,6 +210,7 @@ async def load_agent(
     endpoints: Optional[AvailableEndpoints] = None,
     sub_agents: Optional[AvailableAgents] = None,
     loop: Optional[AbstractEventLoop] = None,
+    skip_rephrase_validation: bool = False,
 ) -> Agent:
     """Loads agent from server, remote storage or disk.
 
@@ -220,6 +221,9 @@ async def load_agent(
         endpoints: Endpoint configuration.
         sub_agents: Sub-agents configuration.
         loop: Optional async loop to pass to broker creation.
+        skip_rephrase_validation: If True, skip rephrase endpoint validation.
+            Useful in contexts like Dialogue Understanding Tests where rephrasing
+            is intentionally disabled.
 
     Returns:
         The instantiated `Agent` or `None`.
@@ -281,7 +285,11 @@ async def load_agent(
             # Initialize timer manager after model is loaded
             await agent.initialize_timer_manager()
             if agent.domain is not None:
-                verify_rephrase_endpoints_consistency_or_raise(agent.domain, endpoints)
+                verify_rephrase_endpoints_consistency_or_raise(
+                    agent.domain,
+                    endpoints,
+                    skip_rephrase_validation=skip_rephrase_validation,
+                )
             return agent
 
         elif remote_storage is not None:
@@ -312,7 +320,11 @@ async def load_agent(
         await agent.initialize_timer_manager()
         # Ensure runtime rephrase settings are consistent with loaded endpoints.
         if agent.domain is not None:
-            verify_rephrase_endpoints_consistency_or_raise(agent.domain, endpoints)
+            verify_rephrase_endpoints_consistency_or_raise(
+                agent.domain,
+                endpoints,
+                skip_rephrase_validation=skip_rephrase_validation,
+            )
 
         return agent
 

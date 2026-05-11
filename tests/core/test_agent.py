@@ -219,7 +219,11 @@ async def test_load_agent_runs_rephrase_validation(trained_rasa_model: Text):
     ) as mock_verify_rephrase:
         agent = await load_agent(model_path=trained_rasa_model, endpoints=endpoints)
 
-    mock_verify_rephrase.assert_called_once_with(agent.domain, endpoints)
+    mock_verify_rephrase.assert_called_once_with(
+        agent.domain,
+        endpoints,
+        skip_rephrase_validation=False,
+    )
 
 
 async def test_load_agent_rephrase_validation_error_propagates(

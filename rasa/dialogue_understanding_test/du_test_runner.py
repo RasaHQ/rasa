@@ -88,6 +88,7 @@ class DialogueUnderstandingTestRunner:
                     remote_storage=remote_storage,
                     endpoints=endpoints,
                     sub_agents=sub_agents,
+                    skip_rephrase_validation=True,
                 )
             # Defensive return for mypy - never actually reached
             return
