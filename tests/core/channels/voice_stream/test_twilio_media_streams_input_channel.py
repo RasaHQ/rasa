@@ -3,7 +3,7 @@ import json
 import logging
 from dataclasses import asdict
 from http import HTTPStatus
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -19,7 +19,10 @@ from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.call_state import (
     BotIsSpeaking,
     BotStoppedSpeaking,
-    _call_state,
+    Marker,
+    MarkerType,
+    StepType,
+    call_state,
 )
 from rasa.core.channels.voice_stream.twilio_media_streams import (
     CALL_SID_REQUEST_KEY,
@@ -168,6 +171,11 @@ def test_invalid_credentials(
         TwilioMediaStreamsInputChannel.from_credentials(config)
 
 
+###############################################################
+# Map Input Message
+###############################################################
+
+
 async def test_map_input_message_dtmf(input_channel: TwilioMediaStreamsInputChannel):
     """Test handling of DTMF input messages."""
     dtmf_message = {
@@ -240,79 +248,228 @@ async def test_map_input_message_unknown_event(
 
 
 @pytest.mark.usefixtures("setup_call_state")
-async def test_map_input_message_mark_bot_is_speaking(
+async def test_map_input_message_mark_unknown_marker(
     input_channel: TwilioMediaStreamsInputChannel,
 ):
-    """Test that a mark event whose name does NOT match latest_bot_audio_id
-    puts BotIsSpeaking on the internal queue and returns ContinueConversationAction."""
-    from rasa.core.channels.voice_stream.call_state import call_state
-
-    call_state.latest_bot_audio_id = "final-mark-id"
-    mark_message = {
-        "event": "mark",
-        "streamSid": "MZ123",
-        "mark": {"name": "intermediate-mark-id"},
-    }
+    """Test mark event when the marker ID is not registered in call_state."""
+    mark_message = json.dumps(
+        {
+            "event": "mark",
+            "streamSid": "MZ123",
+            "mark": {"name": "unknown-marker-id"},
+        }
+    )
     websocket = AsyncMock()
 
-    action = await input_channel.map_input_message(json.dumps(mark_message), websocket)
+    previous_event_count = call_state.internal_queue.qsize()
+    action = await input_channel.map_input_message(mark_message, websocket)
 
     assert isinstance(action, ContinueConversationAction)
-    queued = call_state.internal_queue.get_nowait()
-    assert isinstance(queued, BotIsSpeaking)
+    # No new events are queued
+    assert call_state.internal_queue.qsize() == previous_event_count
+
+
+@pytest.mark.parametrize(
+    "current_bot_utterance_type", [StepType.REGULAR_UTTER, StepType.COLLECT, None]
+)
+@pytest.mark.parametrize("marker_type", [MarkerType.START, MarkerType.END])
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_no_step_type(
+    input_channel: TwilioMediaStreamsInputChannel,
+    marker_type: MarkerType,
+    current_bot_utterance_type: Optional[StepType],
+):
+    """Test mark event with a registered marker that has no step_type.
+
+    The marker should be removed and the conversation should continue.
+    No new events should be added on call_state.internal_queue.
+    """
+    marker_id = "no-step-marker"
+    call_state.set_marker(
+        Marker(marker_id=marker_id, marker_type=marker_type, step_type=None)
+    )
+    call_state.current_bot_utterance_type = current_bot_utterance_type
+
+    mark_message = json.dumps(
+        {
+            "event": "mark",
+            "streamSid": "MZ123",
+            "mark": {"name": marker_id},
+        }
+    )
+    websocket = AsyncMock()
+    previous_event_count = call_state.internal_queue.qsize()
+
+    action = await input_channel.map_input_message(mark_message, websocket)
+
+    assert isinstance(action, ContinueConversationAction)
+    assert call_state.get_marker(marker_id) is None
+    assert call_state.current_bot_utterance_type == current_bot_utterance_type
+    # No new events are queued
+    assert call_state.internal_queue.qsize() == previous_event_count
+
+
+@pytest.mark.parametrize("step_type", [StepType.COLLECT, StepType.REGULAR_UTTER])
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_start(
+    step_type: StepType,
+    input_channel: TwilioMediaStreamsInputChannel,
+):
+    """Test mark event with a START marker sets is_bot_speaking and utterance type."""
+    marker_id = "start-marker"
+    call_state.set_marker(
+        Marker(
+            marker_id=marker_id,
+            marker_type=MarkerType.START,
+            step_type=step_type,
+        )
+    )
+
+    mark_message = json.dumps(
+        {
+            "event": "mark",
+            "streamSid": "MZ123",
+            "mark": {"name": marker_id},
+        }
+    )
+    websocket = AsyncMock()
+    action = await input_channel.map_input_message(mark_message, websocket)
+
+    assert isinstance(action, ContinueConversationAction)
+
+    assert call_state.internal_queue.qsize() == 1
+    event = call_state.internal_queue.get_nowait()
+    assert isinstance(event, BotIsSpeaking)
+
+    assert call_state.current_bot_utterance_type == step_type
+    assert call_state.get_marker(marker_id) is None
 
 
 @pytest.mark.usefixtures("setup_call_state")
-async def test_map_input_message_mark_bot_stopped_speaking(
+async def test_map_input_message_mark_end_no_hangup(
     input_channel: TwilioMediaStreamsInputChannel,
 ):
-    """Test that a mark event whose name matches latest_bot_audio_id puts
-    BotStoppedSpeaking on the internal queue and returns ContinueConversationAction
-    when should_hangup is False."""
-    from rasa.core.channels.voice_stream.call_state import call_state
+    """Test mark event with an END marker and should_hangup=False.
 
-    audio_id = "final-mark-id"
-    call_state.latest_bot_audio_id = audio_id
+    is_bot_speaking should be set to False and current_bot_utterance_type cleared.
+    """
+    from rasa.core.channels.voice_stream.call_state import (
+        Marker,
+        MarkerType,
+        StepType,
+        call_state,
+    )
+
+    marker_id = "end-marker"
+    call_state.set_marker(
+        Marker(
+            marker_id=marker_id,
+            marker_type=MarkerType.END,
+            step_type=StepType.REGULAR_UTTER,
+        )
+    )
+    call_state.is_bot_speaking = True
+    call_state.current_bot_utterance_type = StepType.REGULAR_UTTER
     call_state.should_hangup = False
 
-    mark_message = {
-        "event": "mark",
-        "streamSid": "MZ123",
-        "mark": {"name": audio_id},
-    }
+    mark_message = json.dumps(
+        {
+            "event": "mark",
+            "streamSid": "MZ123",
+            "mark": {"name": marker_id},
+        }
+    )
     websocket = AsyncMock()
-
-    action = await input_channel.map_input_message(json.dumps(mark_message), websocket)
+    action = await input_channel.map_input_message(mark_message, websocket)
 
     assert isinstance(action, ContinueConversationAction)
-    queued = _call_state.get().internal_queue.get_nowait()
-    assert isinstance(queued, BotStoppedSpeaking)
+
+    assert call_state.internal_queue.qsize() == 1
+    event = call_state.internal_queue.get_nowait()
+    assert isinstance(event, BotStoppedSpeaking)
+
+    assert call_state.current_bot_utterance_type is None
+    assert call_state.get_marker(marker_id) is None
 
 
 @pytest.mark.usefixtures("setup_call_state")
-async def test_map_input_message_mark_hangup(
+async def test_map_input_message_mark_end_with_hangup(
     input_channel: TwilioMediaStreamsInputChannel,
 ):
-    """Test that a mark event matching latest_bot_audio_id with should_hangup=True
-    puts BotStoppedSpeaking on the internal queue and returns EndConversationAction."""
-    from rasa.core.channels.voice_stream.call_state import call_state
+    """Test mark event with an END marker and should_hangup=True
+    returns EndConversationAction."""
+    from rasa.core.channels.voice_stream.call_state import (
+        Marker,
+        MarkerType,
+        StepType,
+        call_state,
+    )
 
-    audio_id = "final-mark-id"
-    call_state.latest_bot_audio_id = audio_id
+    marker_id = "end-hangup-marker"
+    call_state.set_marker(
+        Marker(
+            marker_id=marker_id,
+            marker_type=MarkerType.END,
+            step_type=StepType.COLLECT,
+        )
+    )
+    call_state.is_bot_speaking = True
     call_state.should_hangup = True
 
-    mark_message = {
-        "event": "mark",
-        "streamSid": "MZ123",
-        "mark": {"name": audio_id},
-    }
+    mark_message = json.dumps(
+        {
+            "event": "mark",
+            "streamSid": "MZ123",
+            "mark": {"name": marker_id},
+        }
+    )
     websocket = AsyncMock()
-
-    action = await input_channel.map_input_message(json.dumps(mark_message), websocket)
+    action = await input_channel.map_input_message(mark_message, websocket)
 
     assert isinstance(action, EndConversationAction)
-    queued = call_state.internal_queue.get_nowait()
-    assert isinstance(queued, BotStoppedSpeaking)
+    assert call_state.internal_queue.qsize() == 1
+    event = call_state.internal_queue.get_nowait()
+    assert isinstance(event, BotStoppedSpeaking)
+
+    assert call_state.current_bot_utterance_type is None
+    assert call_state.get_marker(marker_id) is None
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_intermediate(
+    input_channel: TwilioMediaStreamsInputChannel,
+):
+    """Test mark event with an INTERMEDIATE marker - no START/END branch is taken."""
+    from rasa.core.channels.voice_stream.call_state import (
+        Marker,
+        MarkerType,
+        StepType,
+        call_state,
+    )
+
+    marker_id = "intermediate-marker"
+    call_state.set_marker(
+        Marker(
+            marker_id=marker_id,
+            marker_type=MarkerType.INTERMEDIATE,
+            step_type=StepType.REGULAR_UTTER,
+        )
+    )
+
+    mark_message = json.dumps(
+        {
+            "event": "mark",
+            "streamSid": "MZ123",
+            "mark": {"name": marker_id},
+        }
+    )
+    websocket = AsyncMock()
+    previous_event_count = call_state.internal_queue.qsize()
+    action = await input_channel.map_input_message(mark_message, websocket)
+
+    assert isinstance(action, ContinueConversationAction)
+    assert call_state.get_marker(marker_id) is None
+    assert call_state.internal_queue.qsize() == previous_event_count
 
 
 def create_twilio_media_streams_start_message(

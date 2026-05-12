@@ -118,7 +118,7 @@ describe("useBotConnection", () => {
     mockIo.mockImplementation(() => {
       const socket: MockSocket = {
         emit: vi.fn(),
-        handlers: {} as SocketHandlers,
+        handlers: {},
         on: (event: string, cb: SocketHandler) => {
           socket.handlers[event] = cb;
         },

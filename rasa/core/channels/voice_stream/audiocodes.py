@@ -29,6 +29,7 @@ from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     DTMFInputAction,
     EndConversationAction,
+    MarkerInput,
     NewAudioAction,
     VoiceChannelAction,
     VoiceInputChannel,
@@ -79,17 +80,18 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
         )
         return media_message
 
-    async def send_start_marker(self, recipient_id: str) -> None:
+    async def send_start_marker(self, marker_input: MarkerInput) -> None:
         """Send playStream.start before first audio chunk."""
         self._increment_stream_id()
+        stream_id = self._get_stream_id()
         media_message = json.dumps(
             {
                 "type": "playStream.start",
-                "streamId": self._get_stream_id(),
+                "streamId": stream_id,
                 "mediaFormat": PREFERRED_AUDIO_FORMAT,
             }
         )
-        logger.debug("Sending start marker", stream_id=self._get_stream_id())
+        logger.debug("Sending start marker", stream_id=stream_id)
         await self.voice_websocket.send(media_message)
 
         # This should be set when the bot actually starts speaking
@@ -98,11 +100,11 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
         # which are played to the user immediately.
         await call_state.enqueue_event(BotIsSpeaking())
 
-    async def send_intermediate_marker(self, recipient_id: str) -> None:
+    async def send_intermediate_marker(self, marker_input: MarkerInput) -> None:
         """Audiocodes doesn't need intermediate markers, so do nothing."""
         pass
 
-    async def send_end_marker(self, recipient_id: str) -> None:
+    async def send_end_marker(self, marker_input: MarkerInput) -> None:
         """Send playStream.stop after last audio chunk."""
         media_message = json.dumps(
             {

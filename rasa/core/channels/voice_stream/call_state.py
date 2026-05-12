@@ -4,9 +4,11 @@ import abc
 import asyncio
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, Optional, cast
 
 import structlog
+from pydantic import BaseModel
 from werkzeug.local import LocalProxy
 
 from rasa.core.channels.voice_stream.asr.asr_event import UserSilence
@@ -67,6 +69,32 @@ class InterruptionConfig:
     min_words: int = DEFAULT_INTERRUPTION_MIN_WORDS
 
 
+class StepType(str, Enum):
+    COLLECT = "collect"
+    REGULAR_UTTER = "regular_utter"
+
+    @staticmethod
+    def from_str(value: str) -> StepType:
+        if value == "collect":
+            return StepType.COLLECT
+        elif value == "regular_utter":
+            return StepType.REGULAR_UTTER
+        else:
+            raise ValueError(f"Unrecognized step type: {value}")
+
+
+class MarkerType(str, Enum):
+    START = "start"
+    INTERMEDIATE = "intermediate"
+    END = "end"
+
+
+class Marker(BaseModel):
+    marker_id: str
+    marker_type: Optional[MarkerType] = None
+    step_type: Optional[StepType] = None
+
+
 # Per voice session data
 # This is similar to how flask makes the "request" object available as a global variable
 # It's a "global" variable that is local to an async task (i.e. websocket session)
@@ -79,7 +107,6 @@ class CallState:
     is_rasa_listening: bool = False
     silence_timeout_watcher: Optional[asyncio.Task] = None
     silence_timeout: Optional[float] = None
-    latest_bot_audio_id: Optional[str] = None
     should_hangup: bool = False
     connection_failed: bool = False
 
@@ -101,9 +128,15 @@ class CallState:
     dtmf_config: Optional[DTMFConfig] = None
     dtmf_buffer: str = ""
 
+    current_bot_utterance_type: Optional[StepType] = None
+    audio_markers: Dict[str, Marker] = field(default_factory=dict)
+
     # Generic field for channel-specific state data
     channel_data: Dict[str, Any] = field(default_factory=dict)
     monitor_task: Optional[asyncio.Task] = None
+
+    # Language state - tracks the current language slot value
+    current_language: Optional[str] = None
 
     def is_interruptable(self) -> bool:
         if not self.interruption_config.enabled:
@@ -211,8 +244,26 @@ class CallState:
         self.stop_signal_processing()
         self.stop_silence_monitoring()
 
-    # Language state - tracks the current language slot value
-    current_language: Optional[str] = None
+    def can_queue_user_message(self) -> bool:
+        return (
+            self.is_interruptable()
+            or self.current_bot_utterance_type != StepType.REGULAR_UTTER
+        )
+
+    def set_marker(self, marker: Marker) -> None:
+        logger.debug("call_state.set_marker", marker=marker)
+        self.audio_markers[marker.marker_id] = marker
+
+    def remove_marker(self, marker_id: str) -> None:
+        logger.debug(
+            "call_state.remove_marker", marker=self.audio_markers.get(marker_id)
+        )
+        self.audio_markers.pop(marker_id)
+
+    def get_marker(self, marker_id: str) -> Optional[Marker]:
+        marker = self.audio_markers.get(marker_id)
+        logger.debug("call_state.get_marker", marker=marker)
+        return marker
 
 
 _call_state: ContextVar[CallState] = ContextVar("call_state")

@@ -29,6 +29,7 @@ from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     DTMFInputAction,
     EndConversationAction,
+    MarkerInput,
     NewAudioAction,
     VoiceChannelAction,
     VoiceInputChannel,
@@ -86,7 +87,7 @@ class GenesysOutputChannel(VoiceOutputChannel):
     ) -> None:
         await self.voice_websocket.send(audio_bytes.data)
 
-    async def send_marker_message(self, recipient_id: str) -> None:
+    async def send_marker_message(self, marker_input: MarkerInput) -> None:
         """Send a message that marks positions in the audio stream.
 
         Genesys does not support this feature, so we do nothing here.

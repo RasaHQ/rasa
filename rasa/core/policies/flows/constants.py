@@ -1,0 +1,2 @@
+STEP_TYPE_METADATA_KEY = "type"
+COLLECT_STEP_TYPE = "collect_step"

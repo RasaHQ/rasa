@@ -7,6 +7,7 @@ from jinja2 import Template
 from structlog.contextvars import bound_contextvars
 
 from rasa.core.channels.channel import OutputChannel
+from rasa.core.policies.flows.constants import COLLECT_STEP_TYPE, STEP_TYPE_METADATA_KEY
 
 if TYPE_CHECKING:
     from rasa.agents.core.cancellation import CancellationToken
@@ -996,8 +997,18 @@ def _run_action_step(
 
     if action_name in available_actions:
         structlogger.debug("flow.step.run.action", context=context)
+        top_frame = stack.top()
+        is_collect = isinstance(top_frame, CollectInformationPatternFlowStackFrame)
+
         return PauseFlowReturnPrediction(
-            FlowActionPrediction(action_name, 1.0, events=initial_events)
+            FlowActionPrediction(
+                action_name,
+                1.0,
+                events=initial_events,
+                metadata={STEP_TYPE_METADATA_KEY: COLLECT_STEP_TYPE}
+                if is_collect
+                else None,
+            )
         )
     else:
         if step.action != "validate_{{context.collect}}":

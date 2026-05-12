@@ -4,9 +4,10 @@ import audioop
 import base64
 import json
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Awaitable, Callable, Dict, Optional, Union
 
 import structlog
+from pydantic import BaseModel
 from sanic import (  # type: ignore[attr-defined]
     Blueprint,
     HTTPResponse,
@@ -27,6 +28,9 @@ from rasa.core.channels.voice_stream.audio_debugging import _save_rasa_bytes_to_
 from rasa.core.channels.voice_stream.call_state import (
     BotIsSpeaking,
     BotStoppedSpeaking,
+    Marker,
+    MarkerType,
+    StepType,
     call_state,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
@@ -34,6 +38,8 @@ from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     EndConversationAction,
+    MarkerInput,
+    MarkerMessageOutput,
     NewAudioAction,
     VoiceChannelAction,
     VoiceInputChannel,
@@ -47,6 +53,40 @@ _SAMPLE_RATE_TO_FORMAT = {
     24000: L16_24KHZ,
     48000: L16_48KHZ,
 }
+
+
+class LatencyOutput(BaseModel):
+    asr_latency_ms: Optional[float]
+    rasa_processing_latency_ms: Optional[float]
+    tts_first_byte_latency_ms: Optional[float]
+    tts_complete_latency_ms: Optional[float]
+
+    def is_empty(self) -> bool:
+        return (
+            self.asr_latency_ms is None
+            or self.rasa_processing_latency_ms is None
+            or self.tts_first_byte_latency_ms is None
+            or self.tts_complete_latency_ms is None
+        )
+
+
+class MarkerOutput(BaseModel):
+    marker: str
+    marker_type: Optional[MarkerType] = None
+    step_type: Optional[StepType] = None
+    latency: Optional[LatencyOutput] = None
+
+    def serialize_str(self) -> str:
+        return self.model_dump_json(
+            exclude={"latency"} if not self.latency or self.latency.is_empty() else None
+        )
+
+    def to_marker(self) -> Marker:
+        return Marker(
+            marker_id=self.marker,
+            marker_type=self.marker_type,
+            step_type=self.step_type,
+        )
 
 
 class BrowserAudioOutputChannel(VoiceOutputChannel):
@@ -68,26 +108,26 @@ class BrowserAudioOutputChannel(VoiceOutputChannel):
     def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
         return json.dumps({"audio": base64.b64encode(channel_bytes).decode("utf-8")})
 
-    def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
-        message_id = uuid.uuid4().hex
-        marker_data = {"marker": message_id}
+    def create_marker_message(self, marker_input: MarkerInput) -> MarkerMessageOutput:
+        marker_output = MarkerOutput(
+            marker=uuid.uuid4().hex,
+            marker_type=marker_input.marker_type,
+            step_type=marker_input.step_type,
+            latency=LatencyOutput(
+                asr_latency_ms=call_state.asr_latency_ms,
+                rasa_processing_latency_ms=call_state.rasa_processing_latency_ms,
+                tts_first_byte_latency_ms=call_state.tts_first_byte_latency_ms,
+                tts_complete_latency_ms=call_state.tts_complete_latency_ms,
+            ),
+        )
 
-        # Include comprehensive latency information if available
-        latency_data = {
-            "asr_latency_ms": call_state.asr_latency_ms,
-            "rasa_processing_latency_ms": call_state.rasa_processing_latency_ms,
-            "tts_first_byte_latency_ms": call_state.tts_first_byte_latency_ms,
-            "tts_complete_latency_ms": call_state.tts_complete_latency_ms,
-        }
+        if marker_input.marker_type in {MarkerType.START, MarkerType.END}:
+            call_state.set_marker(marker_output.to_marker())
 
-        # Filter out None values from latency data
-        latency_data = {k: v for k, v in latency_data.items() if v is not None}
-
-        # Add latency data to marker if any metrics are available
-        if latency_data:
-            marker_data["latency"] = latency_data  # type: ignore[assignment]
-
-        return json.dumps(marker_data), message_id
+        return MarkerMessageOutput(
+            message_id=marker_output.marker,
+            message=marker_output.serialize_str(),
+        )
 
 
 class BrowserAudioInputChannel(VoiceInputChannel):
@@ -211,16 +251,26 @@ class BrowserAudioInputChannel(VoiceInputChannel):
             self._accumulate_bytes(audio_bytes)
             return NewAudioAction(audio_bytes)
         elif "marker" in data:
-            if data["marker"] == call_state.latest_bot_audio_id:
-                # Just finished streaming last audio bytes
-                await call_state.enqueue_event(BotStoppedSpeaking())
-                if call_state.should_hangup:
-                    logger.debug(
-                        "browser_audio.hangup", marker=call_state.latest_bot_audio_id
-                    )
-                    return EndConversationAction()
-            else:
-                await call_state.enqueue_event(BotIsSpeaking())
+            marker_message = MarkerOutput.model_validate(data)
+
+            marker = call_state.get_marker(marker_message.marker)
+
+            if marker:
+                call_state.remove_marker(marker.marker_id)
+                if marker.step_type:
+                    if marker.marker_type == MarkerType.START:
+                        call_state.current_bot_utterance_type = marker.step_type
+                        await call_state.enqueue_event(BotIsSpeaking())
+
+                    if marker.marker_type == MarkerType.END:
+                        call_state.current_bot_utterance_type = None
+                        await call_state.enqueue_event(BotStoppedSpeaking())
+                        if call_state.should_hangup:
+                            logger.debug(
+                                "browser_audio.hangup",
+                                marker=marker,
+                            )
+                            return EndConversationAction()
         return ContinueConversationAction()
 
     async def interrupt_playback(

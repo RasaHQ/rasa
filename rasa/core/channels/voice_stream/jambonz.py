@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Optional, Text, Tuple, Union
+from typing import Any, Awaitable, Callable, Dict, Literal, Optional, Text, Union
 
 import structlog
+from pydantic import BaseModel, Field
 from sanic import (  # type: ignore[attr-defined]
     Blueprint,
     HTTPResponse,
@@ -22,6 +23,9 @@ from rasa.core.channels.voice_stream.audio_bytes import L16_24KHZ, RasaAudioByte
 from rasa.core.channels.voice_stream.call_state import (
     BotIsSpeaking,
     BotStoppedSpeaking,
+    Marker,
+    MarkerType,
+    StepType,
     call_state,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
@@ -30,6 +34,8 @@ from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     DTMFInputAction,
     EndConversationAction,
+    MarkerInput,
+    MarkerMessageOutput,
     NewAudioAction,
     VoiceChannelAction,
     VoiceInputChannel,
@@ -62,6 +68,22 @@ def map_call_params(data: Dict[Text, str]) -> CallParameters:
     )
 
 
+class MarkerOutput(BaseModel):
+    name: str
+    marker_type: Optional[MarkerType] = Field(default=None, exclude=True)
+    step_type: Optional[StepType] = Field(default=None, exclude=True)
+
+    def to_marker(self) -> Marker:
+        return Marker(
+            marker_id=self.name, marker_type=self.marker_type, step_type=self.step_type
+        )
+
+
+class MarkerMessage(BaseModel):
+    type: Literal["mark"] = "mark"
+    data: MarkerOutput
+
+
 class JambonzStreamOutputChannel(VoiceOutputChannel):
     @classmethod
     def name(cls) -> str:
@@ -73,10 +95,29 @@ class JambonzStreamOutputChannel(VoiceOutputChannel):
         """Jambonz needs L16 24kHz."""
         await self.voice_websocket.send(audio_bytes.data)
 
-    def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
+    def create_marker_message(self, marker_input: MarkerInput) -> MarkerMessageOutput:
         """Create a marker message to track audio stream position."""
-        marker_id = uuid.uuid4().hex
-        return json.dumps({"type": "mark", "data": {"name": marker_id}}), marker_id
+        marker_output = MarkerOutput(
+            name=uuid.uuid4().hex,
+            marker_type=marker_input.marker_type,
+            step_type=marker_input.step_type,
+        )
+
+        message = MarkerMessage(data=marker_output)
+
+        logger.debug(
+            "jambonz_stream.create_marker_message",
+            marker_message=marker_output.model_dump(),
+            marker=message,
+        )
+
+        if marker_input.marker_type in {MarkerType.START, MarkerType.END}:
+            call_state.set_marker(marker_output.to_marker())
+
+        return MarkerMessageOutput(
+            message_id=marker_output.name,
+            message=message.model_dump_json(),
+        )
 
 
 class JambonzStreamInputChannel(VoiceInputChannel):
@@ -181,16 +222,23 @@ class JambonzStreamInputChannel(VoiceInputChannel):
                 digit=data["dtmf"],
             )
         if data.get("type") == "mark":
-            if data["data"]["name"] == call_state.latest_bot_audio_id:
-                # Just finished streaming last audio bytes
-                await call_state.enqueue_event(BotStoppedSpeaking())
-                if call_state.should_hangup:
-                    logger.debug(
-                        "jambonz.hangup", marker=call_state.latest_bot_audio_id
-                    )
-                    return EndConversationAction()
-            else:
-                await call_state.enqueue_event(BotIsSpeaking())
+            marker_output = MarkerOutput.model_validate(data.get("data"))
+            marker = call_state.get_marker(marker_output.name)
+
+            if marker:
+                call_state.remove_marker(marker.marker_id)
+
+                if marker.step_type:
+                    if marker.marker_type == MarkerType.START:
+                        call_state.current_bot_utterance_type = marker.step_type
+                        await call_state.enqueue_event(BotIsSpeaking())
+
+                    if marker.marker_type == MarkerType.END:
+                        call_state.current_bot_utterance_type = None
+                        await call_state.enqueue_event(BotStoppedSpeaking())
+                        if call_state.should_hangup:
+                            logger.debug("jambonz.hangup", marker=marker)
+                            return EndConversationAction()
         else:
             logger.warning("jambonz.unexpected_message", message=data)
 

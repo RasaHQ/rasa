@@ -35,7 +35,6 @@ def test_call_state_default_values(call_state_instance: CallState) -> None:
     assert call_state_instance.is_rasa_listening is False
     assert call_state_instance.silence_timeout_watcher is None
     assert call_state_instance.silence_timeout is None
-    assert call_state_instance.latest_bot_audio_id is None
     assert call_state_instance.should_hangup is False
     assert call_state_instance.connection_failed is False
     assert call_state_instance.is_collecting_dtmf is False
@@ -367,11 +366,6 @@ async def test_stop_all_is_safe_when_nothing_running(
     call_state_instance.stop_all()
     assert call_state_instance.monitor_task is None
     assert call_state_instance.silence_timeout_watcher is None
-
-
-# ---------------------------------------------------------------------------
-# is_interruptable
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(

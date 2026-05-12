@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -8,7 +8,9 @@ from rasa.core.channels.voice_stream.audio_bytes import AudioFormat, RasaAudioBy
 from rasa.core.channels.voice_stream.call_state import (
     BotIsSpeaking,
     BotStoppedSpeaking,
-    _call_state,
+    Marker,
+    MarkerType,
+    StepType,
 )
 from rasa.core.channels.voice_stream.jambonz import (
     JAMBONZ_STREAMS_WEBSOCKET_PATH,
@@ -21,6 +23,7 @@ from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     DTMFInputAction,
     EndConversationAction,
+    MarkerInput,
     NewAudioAction,
 )
 from rasa.shared.exceptions import InvalidConfigException
@@ -122,6 +125,11 @@ def test_channel_bytes_conversion(
     assert len(result) == len(result)
 
 
+###############################################################
+# Map Input Message
+###############################################################
+
+
 async def test_map_input_message_bytes(
     input_channel: JambonzStreamInputChannel,
     sample_audio_bytes: bytes,
@@ -132,116 +140,203 @@ async def test_map_input_message_bytes(
     assert isinstance(action, NewAudioAction)
 
 
+@pytest.mark.parametrize(
+    "bot_utterance_type", [StepType.COLLECT, StepType.REGULAR_UTTER, None]
+)
 @pytest.mark.usefixtures("setup_call_state")
-async def test_map_input_message_mark(
+async def test_map_input_message_mark_with_no_registered_marker(
     input_channel: JambonzStreamInputChannel,
     mock_websocket: AsyncMock,
+    bot_utterance_type: Optional[StepType],
 ):
-    """Test handling of mark messages."""
-    _call_state.get().latest_bot_audio_id = "1234"
-    mark_message = {"type": "mark", "data": {"name": "1234"}}
+    """Test mark message when no marker is registered with that ID."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    mark_message = {"type": "mark", "data": {"name": "unregistered_marker_id"}}
+    call_state.current_bot_utterance_type = bot_utterance_type
+    previous_event_count = call_state.internal_queue.qsize()
+
     action = await input_channel.map_input_message(
         json.dumps(mark_message), mock_websocket
     )
+
+    assert isinstance(action, ContinueConversationAction)
+    # bot_utterance_type should be unchanged
+    assert call_state.current_bot_utterance_type == bot_utterance_type
+    # No new events are queued
+    assert call_state.internal_queue.qsize() == previous_event_count
+
+
+@pytest.mark.parametrize("step_type", [StepType.COLLECT, StepType.REGULAR_UTTER])
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_with_start_marker(
+    input_channel: JambonzStreamInputChannel,
+    mock_websocket: AsyncMock,
+    step_type: StepType,
+):
+    """Test that a START marker updates current_bot_utterance_type,
+    sets is_bot_speaking to True and removes the marker."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    marker_id = "marker_start_1"
+    marker = Marker(
+        marker_id=marker_id, marker_type=MarkerType.START, step_type=step_type
+    )
+    call_state.set_marker(marker)
+    mark_message = {"type": "mark", "data": {"name": marker_id}}
+
+    action = await input_channel.map_input_message(
+        json.dumps(mark_message), mock_websocket
+    )
+
     assert isinstance(action, ContinueConversationAction)
 
-    # Test mark message with hangup flag
-    _call_state.get().should_hangup = True
+    assert call_state.internal_queue.qsize() == 1
+    event = call_state.internal_queue.get_nowait()
+    assert isinstance(event, BotIsSpeaking)
+
+    assert call_state.current_bot_utterance_type == step_type
+    assert call_state.get_marker(marker_id) is None
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_with_end_marker(
+    input_channel: JambonzStreamInputChannel, mock_websocket: AsyncMock
+):
+    """Test that an END marker clears current_bot_utterance_type,
+    queues BotStoppedSpeaking and removes the marker."""
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    marker_id = "marker_end_1"
+    marker = Marker(
+        marker_id=marker_id,
+        marker_type=MarkerType.END,
+        step_type=StepType.REGULAR_UTTER,
+    )
+    call_state.set_marker(marker)
+    call_state.current_bot_utterance_type = StepType.REGULAR_UTTER
+    mark_message = {"type": "mark", "data": {"name": marker_id}}
+
     action = await input_channel.map_input_message(
         json.dumps(mark_message), mock_websocket
     )
+
+    assert isinstance(action, ContinueConversationAction)
+    assert call_state.current_bot_utterance_type is None
+
+    assert call_state.internal_queue.qsize() == 1
+    event = call_state.internal_queue.get_nowait()
+    assert isinstance(event, BotStoppedSpeaking)
+
+    assert call_state.get_marker(marker_id) is None
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_mark_with_end_marker_should_hangup(
+    input_channel: JambonzStreamInputChannel, mock_websocket: AsyncMock
+):
+    """Test that an END marker clears current_bot_utterance_type,
+    queues BotStoppedSpeaking and removes the marker.
+
+    EndConversationAction is returned as a result.
+    """
+    from rasa.core.channels.voice_stream.call_state import call_state
+
+    marker_id = "marker_end_1"
+    marker = Marker(
+        marker_id=marker_id,
+        marker_type=MarkerType.END,
+        step_type=StepType.REGULAR_UTTER,
+    )
+    call_state.set_marker(marker)
+    call_state.current_bot_utterance_type = StepType.REGULAR_UTTER
+    mark_message = {"type": "mark", "data": {"name": marker_id}}
+
+    call_state.should_hangup = True
+    action = await input_channel.map_input_message(
+        json.dumps(mark_message), mock_websocket
+    )
+
     assert isinstance(action, EndConversationAction)
 
+    assert call_state.internal_queue.qsize() == 1
+    event = call_state.internal_queue.get_nowait()
+    assert isinstance(event, BotStoppedSpeaking)
 
+    assert call_state.current_bot_utterance_type is None
+    assert call_state.get_marker(marker_id) is None
+
+
+@pytest.mark.parametrize(
+    "current_bot_utterance_type", [StepType.REGULAR_UTTER, StepType.COLLECT, None]
+)
+@pytest.mark.parametrize("marker_type", [MarkerType.START, MarkerType.END])
 @pytest.mark.usefixtures("setup_call_state")
-async def test_map_input_message_mark_matching_id_puts_bot_stopped_speaking(
+async def test_map_input_message_mark_with_marker_no_step_type(
     input_channel: JambonzStreamInputChannel,
     mock_websocket: AsyncMock,
+    marker_type: MarkerType,
+    current_bot_utterance_type: Optional[StepType],
 ):
-    """Test that a mark matching latest_bot_audio_id puts
-    BotStoppedSpeaking on queue."""
-    from rasa.core.channels.voice_stream.call_state import BotStoppedSpeaking
+    """Test that a marker without step_type is removed, that no events are
+    queued and that bot utterance type is not affected."""
+    from rasa.core.channels.voice_stream.call_state import call_state
 
-    state = _call_state.get()
-    state.latest_bot_audio_id = "abc"
-    state.should_hangup = False
+    marker_id = "marker_no_step"
+    marker = Marker(marker_id=marker_id, marker_type=marker_type, step_type=None)
+    call_state.set_marker(marker)
+    mark_message = {"type": "mark", "data": {"name": marker_id}}
 
-    mark_message = {"type": "mark", "data": {"name": "abc"}}
+    previous_event_count = call_state.internal_queue.qsize()
+    call_state.current_bot_utterance_type = current_bot_utterance_type
+
     action = await input_channel.map_input_message(
         json.dumps(mark_message), mock_websocket
     )
 
     assert isinstance(action, ContinueConversationAction)
-    assert not state.internal_queue.empty()
-    queued = state.internal_queue.get_nowait()
-    assert isinstance(queued, BotStoppedSpeaking)
+    # Current bot utterance is not affected
+    assert call_state.current_bot_utterance_type == current_bot_utterance_type
+    # No new events are queued
+    assert call_state.internal_queue.qsize() == previous_event_count
+    # Marker is removed
+    assert call_state.get_marker(marker_id) is None
 
 
+@pytest.mark.parametrize(
+    "current_bot_utterance_type", [StepType.REGULAR_UTTER, StepType.COLLECT, None]
+)
 @pytest.mark.usefixtures("setup_call_state")
-async def test_map_input_message_mark_matching_id_hangup_puts_bot_stopped_speaking(
+async def test_map_input_message_mark_with_intermediate_marker(
     input_channel: JambonzStreamInputChannel,
     mock_websocket: AsyncMock,
+    current_bot_utterance_type: Optional[StepType],
 ):
-    """Test that a mark with hangup flag still puts BotStoppedSpeaking on queue."""
+    """Test that an INTERMEDIATE marker leaves current_bot_utterance_type unchanged."""
     from rasa.core.channels.voice_stream.call_state import call_state
 
-    call_state.latest_bot_audio_id = "xyz"
-    call_state.should_hangup = True
-
-    mark_message = {"type": "mark", "data": {"name": "xyz"}}
-    action = await input_channel.map_input_message(
-        json.dumps(mark_message), mock_websocket
+    marker_id = "marker_intermediate"
+    marker = Marker(
+        marker_id=marker_id,
+        marker_type=MarkerType.INTERMEDIATE,
+        step_type=StepType.COLLECT,
     )
+    call_state.set_marker(marker)
+    mark_message = {"type": "mark", "data": {"name": marker_id}}
+    previous_event_count = call_state.internal_queue.qsize()
+    call_state.current_bot_utterance_type = current_bot_utterance_type
 
-    assert isinstance(action, EndConversationAction)
-    assert not call_state.internal_queue.empty()
-    queued = call_state.internal_queue.get_nowait()
-    assert isinstance(queued, BotStoppedSpeaking)
-
-
-@pytest.mark.usefixtures("setup_call_state")
-async def test_map_input_message_mark_non_matching_id(
-    input_channel: JambonzStreamInputChannel,
-    mock_websocket: AsyncMock,
-):
-    """Test that a mark whose name does not match latest_bot_audio_id
-    puts BotIsSpeaking on queue."""
-    from rasa.core.channels.voice_stream.call_state import call_state
-
-    call_state.latest_bot_audio_id = "current-id"
-
-    mark_message = {"type": "mark", "data": {"name": "older-id"}}
     action = await input_channel.map_input_message(
         json.dumps(mark_message), mock_websocket
     )
 
     assert isinstance(action, ContinueConversationAction)
-    assert not call_state.internal_queue.empty()
-    queued = call_state.internal_queue.get_nowait()
-    assert isinstance(queued, BotIsSpeaking)
-
-
-@pytest.mark.usefixtures("setup_call_state")
-async def test_map_input_message_mark_non_matching_id_no_hangup(
-    input_channel: JambonzStreamInputChannel,
-    mock_websocket: AsyncMock,
-):
-    """Test that a non-last mark doesn't trigger hangup
-    even when should_hangup is True."""
-    from rasa.core.channels.voice_stream.call_state import call_state
-
-    call_state.latest_bot_audio_id = "final-id"
-    call_state.should_hangup = True
-
-    mark_message = {"type": "mark", "data": {"name": "intermediate-id"}}
-    action = await input_channel.map_input_message(
-        json.dumps(mark_message), mock_websocket
-    )
-
-    # should NOT hang up — the name did not match the latest audio id
-    assert isinstance(action, ContinueConversationAction)
-    queued = call_state.internal_queue.get_nowait()
-    assert isinstance(queued, BotIsSpeaking)
+    # No new events are queued
+    assert call_state.internal_queue.qsize() == previous_event_count
+    # Current bot utterance is not affected
+    assert call_state.current_bot_utterance_type == current_bot_utterance_type
+    # Marker is removed
+    assert call_state.get_marker(marker_id) is None
 
 
 async def test_output_channel_audio_sending(
@@ -259,17 +354,30 @@ async def test_output_channel_audio_sending(
     assert len(sent_bytes) == len(audio_bytes)
 
 
+@pytest.mark.parametrize(
+    "marker_type", [MarkerType.START, MarkerType.INTERMEDIATE, MarkerType.END]
+)
+@pytest.mark.parametrize("step_type", [StepType.COLLECT, StepType.REGULAR_UTTER, None])
+@pytest.mark.usefixtures("setup_call_state")
 def test_create_marker_message(
+    mock_websocket: AsyncMock,
+    mock_tts_engine: MagicMock,
+    marker_type: MarkerType,
+    step_type: Optional[StepType],
     jambonz_output_channel: JambonzStreamOutputChannel,
-) -> None:
+):
     """Test marker message creation."""
-    message, marker_id = jambonz_output_channel.create_marker_message("test_recipient")
+    marker_message = jambonz_output_channel.create_marker_message(
+        marker_input=MarkerInput(
+            recipient_id="recipient_id", marker_type=marker_type, step_type=step_type
+        )
+    )
 
-    assert isinstance(message, str)
-    parsed = json.loads(message)
+    assert isinstance(marker_message.message, str)
+    parsed = json.loads(marker_message.message)
     assert parsed["type"] == "mark"
     assert "name" in parsed["data"]
-    assert len(marker_id) > 0
+    assert len(marker_message.message_id) > 0
 
 
 async def test_blueprint_health_endpoint(input_channel: JambonzStreamInputChannel):

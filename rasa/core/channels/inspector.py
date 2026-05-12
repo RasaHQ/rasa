@@ -17,11 +17,11 @@ from typing import (
     Optional,
     Set,
     Text,
-    Tuple,
     Union,
 )
 
 import structlog
+from pydantic import BaseModel
 
 from rasa.core.channels import UserMessage
 from rasa.core.channels.socketio import SocketBlueprint, SocketIOInput, SocketIOOutput
@@ -32,9 +32,13 @@ from rasa.core.channels.voice_stream.audio_bytes import (
     MULAW_8KHZ,
     RasaAudioBytes,
 )
+from rasa.core.channels.voice_stream.browser_audio import LatencyOutput
 from rasa.core.channels.voice_stream.call_state import (
     BotIsSpeaking,
     BotStoppedSpeaking,
+    Marker,
+    MarkerType,
+    StepType,
     call_state,
 )
 from rasa.core.channels.voice_stream.tts import TTSEngine
@@ -42,6 +46,8 @@ from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     EndConversationAction,
+    MarkerInput,
+    MarkerMessageOutput,
     NewAudioAction,
     VoiceChannelAction,
     VoiceInputChannel,
@@ -93,6 +99,25 @@ def does_need_action_prediction(tracker: "DialogueStateTracker") -> bool:
         or not isinstance(tracker.events[-1], ActionExecuted)
         or tracker.events[-1].action_name != ACTION_LISTEN_NAME
     )
+
+
+class MarkerOutput(BaseModel):
+    marker: str
+    marker_type: Optional[MarkerType] = None
+    step_type: Optional[StepType] = None
+    latency: Optional[LatencyOutput] = None
+
+    def serialize_str(self) -> str:
+        return self.model_dump_json(
+            exclude={"latency"} if not self.latency or self.latency.is_empty() else None
+        )
+
+    def to_marker(self) -> Marker:
+        return Marker(
+            marker_id=self.marker,
+            marker_type=self.marker_type,
+            step_type=self.step_type,
+        )
 
 
 class InspectorTrackerUpdatePlugin:
@@ -475,16 +500,26 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
             audio_bytes = self.channel_bytes_to_rasa_audio_bytes(channel_bytes)
             return NewAudioAction(audio_bytes)
         elif "marker" in message:
-            if message["marker"] == call_state.latest_bot_audio_id:
-                # Just finished streaming last audio bytes
-                await call_state.enqueue_event(BotStoppedSpeaking())
-                if call_state.should_hangup:
-                    structlogger.debug(
-                        "inspector.hangup", marker=call_state.latest_bot_audio_id
-                    )
-                    return EndConversationAction()
-            else:
-                await call_state.enqueue_event(BotIsSpeaking())
+            marker_message = MarkerOutput.model_validate(message)
+
+            marker = call_state.get_marker(marker_message.marker)
+
+            if marker:
+                call_state.remove_marker(marker.marker_id)
+                if marker.step_type:
+                    if marker.marker_type == MarkerType.START:
+                        call_state.current_bot_utterance_type = marker.step_type
+                        await call_state.enqueue_event(BotIsSpeaking())
+
+                    if marker.marker_type == MarkerType.END:
+                        call_state.current_bot_utterance_type = None
+                        await call_state.enqueue_event(BotStoppedSpeaking())
+                        if call_state.should_hangup:
+                            structlogger.debug(
+                                "inspector.hangup",
+                                marker=marker,
+                            )
+                            return EndConversationAction()
         return ContinueConversationAction()
 
     def create_output_channel(
@@ -703,26 +738,26 @@ class InspectorVoiceOutputChannel(VoiceOutputChannel):
     def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
         return json.dumps({"audio": base64.b64encode(channel_bytes).decode("utf-8")})
 
-    def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
-        message_id = uuid.uuid4().hex
-        marker_data: Dict[str, Any] = {"marker": message_id}
+    def create_marker_message(self, marker_input: MarkerInput) -> MarkerMessageOutput:
+        marker_output = MarkerOutput(
+            marker=uuid.uuid4().hex,
+            marker_type=marker_input.marker_type,
+            step_type=marker_input.step_type,
+            latency=LatencyOutput(
+                asr_latency_ms=call_state.asr_latency_ms,
+                rasa_processing_latency_ms=call_state.rasa_processing_latency_ms,
+                tts_first_byte_latency_ms=call_state.tts_first_byte_latency_ms,
+                tts_complete_latency_ms=call_state.tts_complete_latency_ms,
+            ),
+        )
 
-        # Include comprehensive latency information if available
-        latency_data = {
-            "asr_latency_ms": call_state.asr_latency_ms,
-            "rasa_processing_latency_ms": call_state.rasa_processing_latency_ms,
-            "tts_first_byte_latency_ms": call_state.tts_first_byte_latency_ms,
-            "tts_complete_latency_ms": call_state.tts_complete_latency_ms,
-        }
+        if marker_input.marker_type in {MarkerType.START, MarkerType.END}:
+            call_state.set_marker(marker_output.to_marker())
 
-        # Filter out None values from latency data
-        latency_data = {k: v for k, v in latency_data.items() if v is not None}
-
-        # Add latency data to marker if any metrics are available
-        if latency_data:
-            marker_data["latency"] = latency_data
-
-        return json.dumps(marker_data), message_id
+        return MarkerMessageOutput(
+            message_id=marker_output.marker,
+            message=marker_output.serialize_str(),
+        )
 
 
 class SocketIOVoiceWebsocketAdapter:

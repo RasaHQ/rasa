@@ -43,8 +43,30 @@ const int16ToFloatArray = (arr: Int16Array): Float32Array => {
 };
 
 interface Mark {
-  id: string;
-  bytesToGo: number;
+  marker: string
+  markerType?: "start" | "intermediate" | "end"
+  stepType?: "collect" | "regular_utter"
+  bytesToGo: number
+}
+
+interface PartialMark {
+  marker: string
+  markerType?: "start" | "intermediate" | "end"
+  stepType?: "collect" | "regular_utter"
+}
+
+interface MarkerOutput {
+  marker: string
+  marker_type?: "start" | "intermediate" | "end"
+  step_type?: "collect" | "regular_utter"
+}
+
+function packMarkerForOutput(marker_input: Mark): MarkerOutput {
+  return {
+    marker: marker_input.marker,
+    step_type: marker_input.stepType,
+    marker_type: marker_input.markerType,
+  }
 }
 
 export interface AudioQueue {
@@ -54,7 +76,7 @@ export interface AudioQueue {
   enqueue: (newAudio: Float32Array) => void;
   onSamplesPlayed: (samplesPlayed: number) => void;
   attachPlaybackNode: (node: AudioWorkletNode) => void;
-  addMarker: (id: string) => void;
+  addMarker: (marker: PartialMark) => void;
   reduceMarkers: (samplesPlayed: number) => void;
   popMarkers: () => void;
   clear: () => void;
@@ -106,14 +128,13 @@ export const createAudioQueue = (socket: Socket): AudioQueue => {
       pendingChunks.length = 0;
     },
 
-    addMarker(id: string) {
-      this.marks.push({ id, bytesToGo: this.queuedSamples });
+    addMarker(marker:PartialMark) {
+      this.marks.push({...marker, bytesToGo: this.queuedSamples});
     },
 
     reduceMarkers(samplesPlayed: number) {
-      this.marks = this.marks.map((m) => ({
-        id: m.id,
-        bytesToGo: m.bytesToGo - samplesPlayed,
+      this.marks = this.marks.map((marker_input) => ({
+        ...marker_input, bytesToGo: marker_input.bytesToGo - samplesPlayed
       }));
     },
 
@@ -128,8 +149,8 @@ export const createAudioQueue = (socket: Socket): AudioQueue => {
       }
       const marksToPop = this.marks.slice(0, popUpTo);
       this.marks = this.marks.slice(popUpTo, this.marks.length);
-      marksToPop.forEach((m) => {
-        this.socket.emit("user_message", { marker: m.id });
+      marksToPop.forEach((marker) => {
+        this.socket.emit("user_message", packMarkerForOutput(marker));
       });
     },
 
@@ -333,7 +354,11 @@ export const addDataToAudioQueue =
       parsedData["marker"] &&
       typeof parsedData["marker"] === "string"
     ) {
-      audioQueue.addMarker(parsedData["marker"]);
+      audioQueue.addMarker({
+        marker: parsedData["marker"],
+        markerType: parsedData["marker_type"] as Mark["markerType"],
+        stepType: parsedData["step_type"] as Mark["stepType"],
+      });
     } else if (parsedData["interruptPlayback"]) {
       audioQueue.clear();
     } else {

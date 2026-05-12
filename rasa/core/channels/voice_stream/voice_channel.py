@@ -19,6 +19,7 @@ from typing import (
 )
 
 import structlog
+from pydantic import BaseModel
 from sanic import Blueprint, Websocket  # type: ignore
 from sanic.exceptions import WebsocketClosed
 
@@ -48,8 +49,10 @@ from rasa.core.channels.voice_stream.audio_bytes import (
 from rasa.core.channels.voice_stream.call_state import (
     CallState,
     InterruptionConfig,
+    MarkerType,
     RasaIsListening,
     RasaIsProcessing,
+    StepType,
     UserStoppedSpeaking,
     _call_state,
     call_state,
@@ -65,6 +68,7 @@ from rasa.core.channels.voice_stream.tts.tts_engine import (
     TTSError,
 )
 from rasa.core.channels.voice_stream.util import generate_silence
+from rasa.core.policies.flows.constants import COLLECT_STEP_TYPE, STEP_TYPE_METADATA_KEY
 from rasa.hooks import hookimpl
 from rasa.plugin import plugin_manager
 from rasa.shared.core.constants import LANGUAGE_SLOT, SILENCE_TIMEOUT_SLOT
@@ -82,7 +86,6 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 # define constants for the voice channel
-DEFAULT_INTERRUPTION_MIN_WORDS = 3
 DEFAULT_MIN_DELAY_BETWEEN_BOT_MESSAGES_SECONDS = 1
 DEFAULT_MIN_DELAY_AFTER_FILLER_BOT_MESSAGES_SECONDS = 2
 
@@ -201,6 +204,18 @@ def tts_engine_from_config(
             )
 
 
+class MarkerInput(BaseModel):
+    recipient_id: str
+    marker_type: MarkerType
+    step_type: Optional[StepType] = None
+
+
+@dataclass
+class MarkerMessageOutput:
+    message_id: str
+    message: str
+
+
 class VoiceOutputChannel(OutputChannel):
     def __init__(
         self,
@@ -260,31 +275,38 @@ class VoiceOutputChannel(OutputChannel):
         """Wrap the bytes for the channel in the proper format."""
         raise NotImplementedError
 
-    def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
+    def create_marker_message(self, marker_input: MarkerInput) -> MarkerMessageOutput:
         """Create a marker message for a specific channel."""
         raise NotImplementedError
 
-    async def send_marker_message(self, recipient_id: str) -> None:
+    async def send_marker_message(self, marker_input: MarkerInput) -> None:
         """Send a message that marks positions in the audio stream."""
-        marker_message, mark_id = self.create_marker_message(recipient_id)
+        marker_message = self.create_marker_message(marker_input)
+        await self._send_marker_message_via_websocket(
+            marker_message.message_id, marker_message.message
+        )
+
+    async def _send_marker_message_via_websocket(
+        self, mark_id: str, marker_message: str
+    ) -> None:
         try:
             await self.voice_websocket.send(marker_message)
         except WebsocketClosed:
             call_state.connection_failed = True
         self.latest_message_id = mark_id
 
-    async def send_start_marker(self, recipient_id: str) -> None:
+    async def send_start_marker(self, marker_input: MarkerInput) -> None:
         """Send a marker message before the first audio chunk."""
         # Default implementation uses the generic marker message
-        await self.send_marker_message(recipient_id)
+        await self.send_marker_message(marker_input)
 
-    async def send_intermediate_marker(self, recipient_id: str) -> None:
+    async def send_intermediate_marker(self, marker_input: MarkerInput) -> None:
         """Send a marker message during audio streaming."""
-        await self.send_marker_message(recipient_id)
+        await self.send_marker_message(marker_input)
 
-    async def send_end_marker(self, recipient_id: str) -> None:
+    async def send_end_marker(self, marker_input: MarkerInput) -> None:
         """Send a marker message after the last audio chunk."""
-        await self.send_marker_message(recipient_id)
+        await self.send_marker_message(marker_input)
 
     def update_silence_timeout(self) -> None:
         """Updates the silence timeout for the session."""
@@ -441,7 +463,12 @@ class VoiceOutputChannel(OutputChannel):
                 # send intermediate marker every second of audio
                 full_seconds_of_audio = int(collected_audio.full_seconds())
                 if full_seconds_of_audio > seconds_marker:
-                    await self.send_intermediate_marker(recipient_id)
+                    await self.send_intermediate_marker(
+                        MarkerInput(
+                            recipient_id=recipient_id,
+                            marker_type=MarkerType.INTERMEDIATE,
+                        )
+                    )
                     seconds_marker = full_seconds_of_audio
             except WebsocketClosed:
                 call_state.connection_failed = True
@@ -544,8 +571,17 @@ class VoiceOutputChannel(OutputChannel):
             # fallback to non-streaming synthesis
             return
 
+        await self.send_start_marker(
+            MarkerInput(
+                recipient_id=recipient_id,
+                step_type=StepType.COLLECT
+                if kwargs.get(STEP_TYPE_METADATA_KEY) == COLLECT_STEP_TYPE
+                else StepType.REGULAR_UTTER,
+                marker_type=MarkerType.START,
+            )
+        )
+
         self.audio_sender_task = asyncio.create_task(self._stream_tts(recipient_id))
-        await self.send_start_marker(recipient_id)
         logger.debug("voice_channel.start_streaming_response")
 
     async def send_response_chunk(
@@ -594,9 +630,18 @@ class VoiceOutputChannel(OutputChannel):
 
         if self.audio_sender_task:
             await self.audio_sender_task
-        await self.send_end_marker(recipient_id)
+
+        await self.send_end_marker(
+            MarkerInput(
+                recipient_id=recipient_id,
+                step_type=StepType.COLLECT
+                if kwargs.get(STEP_TYPE_METADATA_KEY) == COLLECT_STEP_TYPE
+                else StepType.REGULAR_UTTER,
+                marker_type=MarkerType.END,
+            )
+        )
+
         self.tts_engine.stream_state = StreamState.NO_STREAMING
-        call_state.latest_bot_audio_id = self.latest_message_id
         self._last_bot_message_end_time = time.monotonic()
         logger.debug("voice_channel.end_streaming_response")
 
@@ -624,7 +669,15 @@ class VoiceOutputChannel(OutputChannel):
         )
 
         # Send start marker
-        await self.send_start_marker(recipient_id)
+        await self.send_start_marker(
+            MarkerInput(
+                recipient_id=recipient_id,
+                step_type=StepType.COLLECT
+                if kwargs.get(STEP_TYPE_METADATA_KEY) == COLLECT_STEP_TYPE
+                else StepType.REGULAR_UTTER,
+                marker_type=MarkerType.START,
+            )
+        )
 
         # Is the response interruptible?
         allow_interruptions = kwargs.get("allow_interruptions", True)
@@ -639,9 +692,16 @@ class VoiceOutputChannel(OutputChannel):
 
         # Track TTS completion time
         self._track_tts_complete_latency()
-        await self.send_end_marker(recipient_id)
 
-        call_state.latest_bot_audio_id = self.latest_message_id
+        await self.send_end_marker(
+            MarkerInput(
+                recipient_id=recipient_id,
+                step_type=StepType.COLLECT
+                if kwargs.get(STEP_TYPE_METADATA_KEY) == COLLECT_STEP_TYPE
+                else StepType.REGULAR_UTTER,
+                marker_type=MarkerType.END,
+            )
+        )
 
         self._last_bot_message_end_time = time.monotonic()
 
@@ -883,8 +943,7 @@ class VoiceInputChannel(InputChannel):
         if isinstance(e, (NewTranscript, UserIsSpeaking)):
             translator = str.maketrans("", "", string.punctuation)
             words = e.text.translate(translator).split()
-            can_interrupt = len(words) >= min_words
-            return can_interrupt
+            return len(words) >= min_words
         return False
 
     async def interrupt_playback(
@@ -1174,6 +1233,18 @@ class VoiceInputChannel(InputChannel):
                     "VoiceInputChannel.handle_asr_event.ignoring_audio_during_dtmf_collection"
                 )
                 return
+
+            if not call_state.can_queue_user_message():
+                logger.debug(
+                    "VoiceInputChannel.handle_asr_event.ignoring_user_message",
+                    interruptions_enabled=call_state.is_interruptable(),
+                    current_bot_utterance_type=call_state.current_bot_utterance_type,
+                )
+                call_state.current_bot_utterance_type = None
+                return
+            logger.debug(
+                "VoiceInputChannel.handle_asr_event.queueing_user_message",
+            )
 
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             sender_id = self.get_sender_id(call_parameters)

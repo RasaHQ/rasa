@@ -17,10 +17,20 @@ from rasa.core.channels.inspector import (
     does_need_action_prediction,
     tracker_as_dump,
 )
-from rasa.core.channels.voice_stream.voice_channel import (
+from rasa.core.channels.voice_stream.call_state import (
     DEFAULT_INTERRUPTION_MIN_WORDS,
+    BotIsSpeaking,
+    BotStoppedSpeaking,
+    Marker,
+    MarkerType,
+    StepType,
+    call_state,
+)
+from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     EndConversationAction,
+    MarkerInput,
+    MarkerMessageOutput,
     NewAudioAction,
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
@@ -37,7 +47,12 @@ def inspector_input() -> InspectorInputChannel:
 
 
 @pytest.fixture
-def _set_call_state():
+def output_channel() -> InspectorTextOutputChannel:
+    return InspectorVoiceOutputChannel(MagicMock(), MagicMock(), None, None)
+
+
+@pytest.fixture
+def setup_call_state():
     """Set up the call_state context var for tests."""
     from rasa.core.channels.voice_stream.call_state import CallState, _call_state
 
@@ -575,83 +590,198 @@ async def test_cleanup_tasks_for_sid() -> None:
         await task
 
 
-def test_cleanup_tasks_for_sid_noop_missing() -> None:
-    channel = InspectorInputChannel()
-    channel.sio_server = AsyncMock()
-    channel._cleanup_tasks_for_sid("nonexistent")
+def test_cleanup_tasks_for_sid_noop_missing(
+    inspector_input: InspectorInputChannel,
+) -> None:
+    inspector_input.sio_server = AsyncMock()
+    inspector_input._cleanup_tasks_for_sid("nonexistent")
 
 
-async def test_channel_after_server_stop() -> None:
-    channel = InspectorInputChannel()
-    channel.sio_server = AsyncMock()
+async def test_channel_after_server_stop(
+    inspector_input: InspectorInputChannel,
+) -> None:
+    inspector_input.sio_server = AsyncMock()
 
     async def long_running() -> None:
         await asyncio.sleep(100)
 
     task = asyncio.create_task(long_running())
-    channel.background_tasks["sid1"] = task
-    channel.active_connections["sid1"] = MagicMock()
+    inspector_input.background_tasks["sid1"] = task
+    inspector_input.active_connections["sid1"] = MagicMock()
 
-    await channel.after_server_stop()
+    await inspector_input.after_server_stop()
 
-    assert len(channel.background_tasks) == 0
-    assert len(channel.active_connections) == 0
+    assert len(inspector_input.background_tasks) == 0
+    assert len(inspector_input.active_connections) == 0
     assert task.cancelled()
 
 
 # --- map_input_message ---
 
 
-async def test_map_input_message_audio() -> None:
-    channel = InspectorInputChannel()
-    channel.sio_server = AsyncMock()
+async def test_map_input_message_audio(inspector_input: InspectorInputChannel) -> None:
+    inspector_input.sio_server = AsyncMock()
     raw = base64.b64encode(b"\x00\x01\x02\x03").decode()
-    action = await channel.map_input_message({"audio": raw}, MagicMock())
+    action = await inspector_input.map_input_message({"audio": raw}, MagicMock())
     assert isinstance(action, NewAudioAction)
 
 
-async def test_map_input_message_marker_match(_set_call_state) -> None:  # type: ignore[no-untyped-def]
-    from rasa.core.channels.voice_stream.call_state import BotStoppedSpeaking
-
-    channel = InspectorInputChannel()
-    channel.sio_server = AsyncMock()
-    _set_call_state.latest_bot_audio_id = "m1"
-    _set_call_state.should_hangup = False
-
-    action = await channel.map_input_message({"marker": "m1"}, MagicMock())
+async def test_map_input_message_no_audio_no_marker(
+    inspector_input: InspectorInputChannel,
+) -> None:
+    """A message with neither 'audio' nor
+    'marker' should return ContinueConversationAction."""
+    inspector_input.sio_server = AsyncMock()
+    action = await inspector_input.map_input_message({"text": "hello"}, MagicMock())
     assert isinstance(action, ContinueConversationAction)
-    enqueued = _set_call_state.internal_queue.get_nowait()
-    assert isinstance(enqueued, BotStoppedSpeaking)
 
 
-async def test_map_input_message_marker_hangup(_set_call_state) -> None:  # type: ignore[no-untyped-def]
-    channel = InspectorInputChannel()
-    channel.sio_server = AsyncMock()
-    _set_call_state.latest_bot_audio_id = "m1"
-    _set_call_state.should_hangup = True
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_marker_not_found(
+    inspector_input: InspectorInputChannel,
+) -> None:
+    """A marker message whose ID is not tracked
+    should return ContinueConversationAction."""
+    inspector_input.sio_server = AsyncMock()
 
-    action = await channel.map_input_message({"marker": "m1"}, MagicMock())
+    message = {"marker": "unknown-marker-id", "marker_type": "start"}
+    action = await inspector_input.map_input_message(message, MagicMock())
+
+    assert isinstance(action, ContinueConversationAction)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_marker_start_enqueues_bot_is_speaking(
+    inspector_input: InspectorInputChannel,
+) -> None:
+    """A START marker with a step_type should enqueue BotIsSpeaking and update
+    current_bot_utterance_type, then return ContinueConversationAction."""
+    inspector_input.sio_server = AsyncMock()
+
+    marker_id = "marker-start-1"
+    marker = Marker(
+        marker_id=marker_id,
+        marker_type=MarkerType.START,
+        step_type=StepType.REGULAR_UTTER,
+    )
+    call_state.set_marker(marker)
+
+    message = {
+        "marker": marker_id,
+        "marker_type": MarkerType.START.value,
+        "step_type": StepType.REGULAR_UTTER.value,
+    }
+    action = await inspector_input.map_input_message(message, MagicMock())
+
+    assert isinstance(action, ContinueConversationAction)
+    assert call_state.current_bot_utterance_type == StepType.REGULAR_UTTER
+    # marker should have been removed
+    assert call_state.get_marker(marker_id) is None
+    # BotIsSpeaking event should have been queued
+    queued = call_state.internal_queue.get_nowait()
+    assert isinstance(queued, BotIsSpeaking)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_marker_end_no_hangup(
+    inspector_input: InspectorInputChannel,
+) -> None:
+    """An END marker without hangup should enqueue BotStoppedSpeaking, clear
+    current_bot_utterance_type, and return ContinueConversationAction."""
+    inspector_input.sio_server = AsyncMock()
+
+    marker_id = "marker-end-1"
+    marker = Marker(
+        marker_id=marker_id,
+        marker_type=MarkerType.END,
+        step_type=StepType.REGULAR_UTTER,
+    )
+    call_state.set_marker(marker)
+    call_state.current_bot_utterance_type = StepType.REGULAR_UTTER
+    call_state.should_hangup = False
+
+    message = {
+        "marker": marker_id,
+        "marker_type": MarkerType.END.value,
+        "step_type": StepType.REGULAR_UTTER.value,
+    }
+    action = await inspector_input.map_input_message(message, MagicMock())
+
+    assert isinstance(action, ContinueConversationAction)
+    assert call_state.current_bot_utterance_type is None
+    assert call_state.get_marker(marker_id) is None
+    queued = call_state.internal_queue.get_nowait()
+    assert isinstance(queued, BotStoppedSpeaking)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_marker_end_with_hangup(
+    inspector_input: InspectorInputChannel,
+) -> None:
+    """An END marker with should_hangup=True should return EndConversationAction."""
+    inspector_input.sio_server = AsyncMock()
+
+    marker_id = "marker-end-hangup"
+    marker = Marker(
+        marker_id=marker_id,
+        marker_type=MarkerType.END,
+        step_type=StepType.REGULAR_UTTER,
+    )
+    call_state.set_marker(marker)
+    call_state.current_bot_utterance_type = StepType.REGULAR_UTTER
+    call_state.should_hangup = True
+
+    message = {
+        "marker": marker_id,
+        "marker_type": MarkerType.END.value,
+        "step_type": StepType.REGULAR_UTTER.value,
+    }
+    action = await inspector_input.map_input_message(message, MagicMock())
+
     assert isinstance(action, EndConversationAction)
+    assert call_state.current_bot_utterance_type is None
+    assert call_state.get_marker(marker_id) is None
+    queued = call_state.internal_queue.get_nowait()
+    assert isinstance(queued, BotStoppedSpeaking)
 
 
-async def test_map_input_message_marker_non_matching(_set_call_state) -> None:  # type: ignore[no-untyped-def]
-    from rasa.core.channels.voice_stream.call_state import BotIsSpeaking
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_marker_start_no_step_type(
+    inspector_input: InspectorInputChannel,
+) -> None:
+    """A START marker without a step_type should not update
+    utterance type or enqueue events."""
+    inspector_input.sio_server = AsyncMock()
 
-    channel = InspectorInputChannel()
-    channel.sio_server = AsyncMock()
-    _set_call_state.latest_bot_audio_id = "other"
+    marker_id = "marker-start-no-step"
+    marker = Marker(marker_id=marker_id, marker_type=MarkerType.START, step_type=None)
+    call_state.set_marker(marker)
 
-    action = await channel.map_input_message({"marker": "xyz"}, MagicMock())
+    message = {"marker": marker_id, "marker_type": MarkerType.START.value}
+    action = await inspector_input.map_input_message(message, MagicMock())
+
     assert isinstance(action, ContinueConversationAction)
-    enqueued = _set_call_state.internal_queue.get_nowait()
-    assert isinstance(enqueued, BotIsSpeaking)
+    assert call_state.current_bot_utterance_type is None
+    assert call_state.internal_queue.empty()
 
 
-async def test_map_input_message_unknown() -> None:
-    channel = InspectorInputChannel()
-    channel.sio_server = AsyncMock()
-    action = await channel.map_input_message({"something": True}, MagicMock())
+@pytest.mark.usefixtures("setup_call_state")
+async def test_map_input_message_marker_end_no_step_type(
+    inspector_input: InspectorInputChannel,
+) -> None:
+    """An END marker without a step_type should not enqueue events."""
+    inspector_input.sio_server = AsyncMock()
+
+    marker_id = "marker-end-no-step"
+    marker = Marker(marker_id=marker_id, marker_type=MarkerType.END, step_type=None)
+    call_state.set_marker(marker)
+    call_state.should_hangup = False
+
+    message = {"marker": marker_id, "marker_type": MarkerType.END.value}
+    action = await inspector_input.map_input_message(message, MagicMock())
+
     assert isinstance(action, ContinueConversationAction)
+    assert call_state.internal_queue.empty()
 
 
 # --- SocketIOVoiceWebsocketAdapter ---
@@ -735,29 +865,203 @@ def test_voice_output_bytes_to_message() -> None:
     assert base64.b64decode(parsed["audio"]) == raw
 
 
-def test_voice_output_marker_no_latency(_set_call_state) -> None:  # type: ignore[no-untyped-def]
-    _set_call_state.asr_latency_ms = None
-    _set_call_state.rasa_processing_latency_ms = None
-    _set_call_state.tts_first_byte_latency_ms = None
-    _set_call_state.tts_complete_latency_ms = None
+@pytest.mark.usefixtures("setup_call_state")
+def test_create_marker_message_returns_marker_message_output(
+    output_channel: InspectorVoiceOutputChannel,
+) -> None:
+    """create_marker_message should return a MarkerMessageOutput instance."""
+    marker_input = MarkerInput(
+        recipient_id="user-1",
+        marker_type=MarkerType.START,
+        step_type=StepType.COLLECT,
+    )
+    result = output_channel.create_marker_message(marker_input)
+    assert isinstance(result, MarkerMessageOutput)
 
-    ch = InspectorVoiceOutputChannel(MagicMock(), MagicMock(), None, None)
-    marker_json, _ = ch.create_marker_message("r")
-    parsed = json.loads(marker_json)
+
+@pytest.mark.usefixtures("setup_call_state")
+def test_create_marker_message_id_is_hex_uuid(
+    output_channel: InspectorVoiceOutputChannel,
+) -> None:
+    """message_id should be a 32-character hexadecimal UUID."""
+    marker_input = MarkerInput(
+        recipient_id="user-1",
+        marker_type=MarkerType.START,
+        step_type=StepType.COLLECT,
+    )
+    result = output_channel.create_marker_message(marker_input)
+    assert len(result.message_id) == 32
+    # Raises ValueError if not a valid hex string
+    int(result.message_id, 16)
+
+
+@pytest.mark.usefixtures("setup_call_state")
+def test_create_marker_message_id_matches_marker_in_json(
+    output_channel: InspectorVoiceOutputChannel,
+) -> None:
+    """The message_id on the return value should equal the 'marker' field in the
+    serialised JSON message."""
+    marker_input = MarkerInput(
+        recipient_id="user-1",
+        marker_type=MarkerType.END,
+        step_type=StepType.REGULAR_UTTER,
+    )
+    result = output_channel.create_marker_message(marker_input)
+    message_data = json.loads(result.message)
+    assert message_data["marker"] == result.message_id
+
+
+@pytest.mark.usefixtures("setup_call_state")
+@pytest.mark.parametrize(
+    "marker_type, step_type, expected_marker_type, expected_step_type",
+    [
+        (MarkerType.START, StepType.COLLECT, "start", "collect"),
+        (MarkerType.END, StepType.REGULAR_UTTER, "end", "regular_utter"),
+        (MarkerType.INTERMEDIATE, StepType.COLLECT, "intermediate", "collect"),
+    ],
+)
+def test_create_marker_message_json_contains_correct_fields(
+    output_channel: InspectorVoiceOutputChannel,
+    marker_type: MarkerType,
+    step_type: StepType,
+    expected_marker_type: str,
+    expected_step_type: str,
+) -> None:
+    """The serialised JSON should contain the correct marker_type and step_type."""
+    marker_input = MarkerInput(
+        recipient_id="user-1",
+        marker_type=marker_type,
+        step_type=step_type,
+    )
+    result = output_channel.create_marker_message(marker_input)
+    message_data = json.loads(result.message)
+    assert message_data["marker_type"] == expected_marker_type
+    assert message_data["step_type"] == expected_step_type
+
+
+@pytest.mark.usefixtures("setup_call_state")
+def test_create_marker_message_start_stored_in_call_state(
+    output_channel: InspectorVoiceOutputChannel,
+) -> None:
+    """A START marker should be stored in call_state with the correct attributes."""
+    marker_input = MarkerInput(
+        recipient_id="user-1",
+        marker_type=MarkerType.START,
+        step_type=StepType.COLLECT,
+    )
+    result = output_channel.create_marker_message(marker_input)
+    stored = call_state.get_marker(result.message_id)
+
+    assert stored is not None
+    assert stored.marker_id == result.message_id
+    assert stored.marker_type == MarkerType.START
+    assert stored.step_type == StepType.COLLECT
+
+
+@pytest.mark.usefixtures("setup_call_state")
+def test_create_marker_message_end_stored_in_call_state(
+    output_channel: InspectorVoiceOutputChannel,
+) -> None:
+    """An END marker should be stored in call_state with the correct attributes."""
+    marker_input = MarkerInput(
+        recipient_id="user-1",
+        marker_type=MarkerType.END,
+        step_type=StepType.REGULAR_UTTER,
+    )
+    result = output_channel.create_marker_message(marker_input)
+    stored = call_state.get_marker(result.message_id)
+
+    assert stored is not None
+    assert stored.marker_id == result.message_id
+    assert stored.marker_type == MarkerType.END
+    assert stored.step_type == StepType.REGULAR_UTTER
+
+
+@pytest.mark.usefixtures("setup_call_state")
+def test_create_marker_message_intermediate_not_stored_in_call_state(
+    output_channel: InspectorVoiceOutputChannel,
+) -> None:
+    """An INTERMEDIATE marker should NOT be stored in call_state."""
+    marker_input = MarkerInput(
+        recipient_id="user-1",
+        marker_type=MarkerType.INTERMEDIATE,
+        step_type=StepType.COLLECT,
+    )
+    result = output_channel.create_marker_message(marker_input)
+    assert call_state.get_marker(result.message_id) is None
+
+
+@pytest.mark.usefixtures("setup_call_state")
+def test_create_marker_message_start_without_step_type_stored_in_call_state(
+    output_channel: InspectorVoiceOutputChannel,
+) -> None:
+    """A START marker with no step_type should still be stored in call_state."""
+    marker_input = MarkerInput(
+        recipient_id="user-1",
+        marker_type=MarkerType.START,
+    )
+    result = output_channel.create_marker_message(marker_input)
+    stored = call_state.get_marker(result.message_id)
+
+    assert stored is not None
+    assert stored.step_type is None
+
+
+@pytest.mark.usefixtures("setup_call_state")
+def test_create_marker_message_latency_excluded_when_values_are_none(
+    output_channel: InspectorVoiceOutputChannel,
+) -> None:  # type: ignore[no-untyped-def]
+    call_state.asr_latency_ms = None
+    call_state.rasa_processing_latency_ms = None
+    call_state.tts_first_byte_latency_ms = None
+    call_state.tts_complete_latency_ms = None
+
+    marker_message = output_channel.create_marker_message(
+        MarkerInput(
+            recipient_id="user-1",
+            marker_type=MarkerType.START,
+            step_type=StepType.REGULAR_UTTER,
+        )
+    )
+    parsed = json.loads(marker_message.message)
     assert "marker" in parsed
     assert "latency" not in parsed
 
 
-def test_voice_output_marker_with_latency(_set_call_state) -> None:  # type: ignore[no-untyped-def]
-    _set_call_state.asr_latency_ms = 100
-    _set_call_state.rasa_processing_latency_ms = 200
-    _set_call_state.tts_first_byte_latency_ms = None
-    _set_call_state.tts_complete_latency_ms = 50
+@pytest.mark.usefixtures("setup_call_state")
+def test_create_marker_message_latency_included_when_all_values_present(
+    output_channel: InspectorVoiceOutputChannel,
+) -> None:  # type: ignore[no-untyped-def]
+    call_state.asr_latency_ms = 100
+    call_state.rasa_processing_latency_ms = 200
+    call_state.tts_first_byte_latency_ms = 150.0
+    call_state.tts_complete_latency_ms = 50
 
-    ch = InspectorVoiceOutputChannel(MagicMock(), MagicMock(), None, None)
-    marker_json, mid = ch.create_marker_message("r")
-    parsed = json.loads(marker_json)
+    marker_message = output_channel.create_marker_message(
+        MarkerInput(
+            recipient_id="user-1",
+            marker_type=MarkerType.END,
+            step_type=StepType.COLLECT,
+        )
+    )
+    parsed = json.loads(marker_message.message)
     assert parsed["latency"]["asr_latency_ms"] == 100
     assert parsed["latency"]["rasa_processing_latency_ms"] == 200
     assert parsed["latency"]["tts_complete_latency_ms"] == 50
-    assert "tts_first_byte_latency_ms" not in parsed["latency"]
+    assert parsed["latency"]["tts_first_byte_latency_ms"] == 150
+
+
+@pytest.mark.usefixtures("setup_call_state")
+def test_create_marker_message_each_call_produces_unique_message_id(
+    output_channel: InspectorVoiceOutputChannel,
+) -> None:
+    """Successive calls to create_marker_message should produce distinct message IDs."""
+    marker_input = MarkerInput(
+        recipient_id="user-1",
+        marker_type=MarkerType.INTERMEDIATE,
+        step_type=StepType.COLLECT,
+    )
+    result_a = output_channel.create_marker_message(marker_input)
+    result_b = output_channel.create_marker_message(marker_input)
+
+    assert result_a.message_id != result_b.message_id

@@ -232,8 +232,8 @@ describe("audiostream", () => {
 
     it("clears audio queue queuedSamples and marks", async () => {
       audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
-      audioQueue.addMarker("marker1");
-      audioQueue.addMarker("marker2");
+      audioQueue.addMarker({ marker: "marker1" });
+      audioQueue.addMarker({ marker: "marker2" });
       expect(audioQueue.queuedSamples).toBe(5);
       expect(audioQueue.marks.length).toBe(2);
 
@@ -528,12 +528,14 @@ describe("audiostream", () => {
 
       it("reduces and pops markers", () => {
         audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
-        audioQueue.addMarker("marker1");
+        audioQueue.addMarker({ marker: "marker1" });
 
         audioQueue.onSamplesPlayed(5);
 
         expect(mockSocket.emit).toHaveBeenCalledWith("user_message", {
           marker: "marker1",
+          step_type: undefined,
+          marker_type: undefined,
         });
         expect(audioQueue.marks).toHaveLength(0);
       });
@@ -543,38 +545,38 @@ describe("audiostream", () => {
       describe("addMarker", () => {
         it("adds marker with current queuedSamples as bytesToGo", () => {
           audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
-          audioQueue.addMarker("marker1");
+          audioQueue.addMarker({ marker: "marker1" });
 
           expect(audioQueue.marks).toHaveLength(1);
           expect(audioQueue.marks[0]).toEqual({
-            id: "marker1",
+            marker: "marker1",
             bytesToGo: 5,
           });
         });
 
         it("adds multiple markers with correct bytesToGo", () => {
           audioQueue.enqueue(new Float32Array([1, 2, 3]));
-          audioQueue.addMarker("marker1");
+          audioQueue.addMarker({ marker: "marker1" });
 
           audioQueue.enqueue(new Float32Array([4, 5]));
-          audioQueue.addMarker("marker2");
+          audioQueue.addMarker({ marker: "marker2" });
 
           expect(audioQueue.marks).toHaveLength(2);
           expect(audioQueue.marks[0]).toEqual({
-            id: "marker1",
+            marker: "marker1",
             bytesToGo: 3,
           });
           expect(audioQueue.marks[1]).toEqual({
-            id: "marker2",
+            marker: "marker2",
             bytesToGo: 5,
           });
         });
 
         it("adds marker with 0 bytesToGo when queue is empty", () => {
-          audioQueue.addMarker("marker1");
+          audioQueue.addMarker({ marker: "marker1" });
 
           expect(audioQueue.marks[0]).toEqual({
-            id: "marker1",
+            marker: "marker1",
             bytesToGo: 0,
           });
         });
@@ -583,8 +585,8 @@ describe("audiostream", () => {
       describe("reduceMarkers", () => {
         it("reduces bytesToGo for all markers", () => {
           audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
-          audioQueue.addMarker("marker1");
-          audioQueue.addMarker("marker2");
+          audioQueue.addMarker({ marker: "marker1" });
+          audioQueue.addMarker({ marker: "marker2" });
 
           audioQueue.reduceMarkers(2);
 
@@ -594,7 +596,7 @@ describe("audiostream", () => {
 
         it("allows bytesToGo to become negative", () => {
           audioQueue.enqueue(new Float32Array([1, 2]));
-          audioQueue.addMarker("marker1");
+          audioQueue.addMarker({ marker: "marker1" });
 
           audioQueue.reduceMarkers(5);
 
@@ -604,23 +606,27 @@ describe("audiostream", () => {
 
       describe("popMarkers", () => {
         it("emits markers with bytesToGo <= 0 to socket", () => {
-          audioQueue.addMarker("marker1");
-          audioQueue.addMarker("marker2");
+          audioQueue.addMarker({ marker: "marker1" });
+          audioQueue.addMarker({ marker: "marker2" });
 
           audioQueue.popMarkers();
 
           expect(mockSocket.emit).toHaveBeenCalledTimes(2);
           expect(mockSocket.emit).toHaveBeenCalledWith("user_message", {
             marker: "marker1",
+            step_type: undefined,
+            marker_type: undefined,
           });
           expect(mockSocket.emit).toHaveBeenCalledWith("user_message", {
             marker: "marker2",
+            step_type: undefined,
+            marker_type: undefined,
           });
         });
 
         it("removes emitted markers from marks array", () => {
-          audioQueue.addMarker("marker1");
-          audioQueue.addMarker("marker2");
+          audioQueue.addMarker({ marker: "marker1" });
+          audioQueue.addMarker({ marker: "marker2" });
 
           audioQueue.popMarkers();
 
@@ -629,8 +635,8 @@ describe("audiostream", () => {
 
         it("keeps markers with positive bytesToGo", () => {
           audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
-          audioQueue.addMarker("marker1");
-          audioQueue.addMarker("marker2");
+          audioQueue.addMarker({ marker: "marker1" });
+          audioQueue.addMarker({ marker: "marker2" });
 
           audioQueue.reduceMarkers(2);
           audioQueue.popMarkers();
@@ -641,18 +647,20 @@ describe("audiostream", () => {
 
         it("pops only markers with bytesToGo <= 0", () => {
           audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
-          audioQueue.addMarker("marker1");
+          audioQueue.addMarker({ marker: "marker1" });
           audioQueue.enqueue(new Float32Array([6, 7, 8]));
-          audioQueue.addMarker("marker2");
+          audioQueue.addMarker({ marker: "marker2" });
 
           audioQueue.reduceMarkers(6);
           audioQueue.popMarkers();
 
           expect(audioQueue.marks).toHaveLength(1);
-          expect(audioQueue.marks[0].id).toBe("marker2");
+          expect(audioQueue.marks[0].marker).toBe("marker2");
           expect(mockSocket.emit).toHaveBeenCalledTimes(1);
           expect(mockSocket.emit).toHaveBeenCalledWith("user_message", {
             marker: "marker1",
+            step_type: undefined,
+            marker_type: undefined,
           });
         });
       });
@@ -660,12 +668,14 @@ describe("audiostream", () => {
       describe("onSamplesPlayed with markers", () => {
         it("reduces markers and pops them when samples are played", () => {
           audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
-          audioQueue.addMarker("marker1");
+          audioQueue.addMarker({ marker: "marker1" });
 
           audioQueue.onSamplesPlayed(5);
 
           expect(mockSocket.emit).toHaveBeenCalledWith("user_message", {
             marker: "marker1",
+            step_type: undefined,
+            marker_type: undefined,
           });
           expect(audioQueue.marks).toHaveLength(0);
         });
@@ -675,8 +685,8 @@ describe("audiostream", () => {
     describe("clear", () => {
       it("resets queuedSamples and marks", () => {
         audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
-        audioQueue.addMarker("marker1");
-        audioQueue.addMarker("marker2");
+        audioQueue.addMarker({ marker: "marker1" });
+        audioQueue.addMarker({ marker: "marker2" });
 
         audioQueue.clear();
 
@@ -744,7 +754,7 @@ describe("audiostream", () => {
         addData(JSON.stringify({ marker: "marker1" }));
 
         expect(audioQueue.marks).toHaveLength(1);
-        expect(audioQueue.marks[0].id).toBe("marker1");
+        expect(audioQueue.marks[0].marker).toBe("marker1");
       });
 
       it("adds multiple markers in order", () => {
@@ -753,16 +763,16 @@ describe("audiostream", () => {
         addData(JSON.stringify({ marker: "marker3" }));
 
         expect(audioQueue.marks).toHaveLength(3);
-        expect(audioQueue.marks[0].id).toBe("marker1");
-        expect(audioQueue.marks[1].id).toBe("marker2");
-        expect(audioQueue.marks[2].id).toBe("marker3");
+        expect(audioQueue.marks[0].marker).toBe("marker1");
+        expect(audioQueue.marks[1].marker).toBe("marker2");
+        expect(audioQueue.marks[2].marker).toBe("marker3");
       });
     });
 
     describe("interruptPlayback", () => {
       it("clears audio queue on interrupt", () => {
         audioQueue.enqueue(new Float32Array([1, 2, 3, 4, 5]));
-        audioQueue.addMarker("marker1");
+        audioQueue.addMarker({ marker: "marker1" });
 
         addData(JSON.stringify({ interruptPlayback: true }));
 

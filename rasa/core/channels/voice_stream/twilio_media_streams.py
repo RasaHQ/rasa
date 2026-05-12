@@ -9,13 +9,14 @@ from typing import (
     Awaitable,
     Callable,
     Dict,
+    Literal,
     Optional,
     Text,
-    Tuple,
     Union,
 )
 
 import structlog
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from sanic import (  # type: ignore[attr-defined]
     Blueprint,
     HTTPResponse,
@@ -40,6 +41,9 @@ from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import (
     BotIsSpeaking,
     BotStoppedSpeaking,
+    Marker,
+    MarkerType,
+    StepType,
     call_state,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
@@ -48,6 +52,8 @@ from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     DTMFInputAction,
     EndConversationAction,
+    MarkerInput,
+    MarkerMessageOutput,
     NewAudioAction,
     VoiceChannelAction,
     VoiceInputChannel,
@@ -83,6 +89,40 @@ def map_call_params(data: Dict[Text, Any]) -> CallParameters:
     )
 
 
+class MarkerOutput(BaseModel):
+    name: str
+    step_type: Optional[StepType] = Field(
+        default=None,
+        validation_alias=AliasChoices("stepType", "step_type"),
+        serialization_alias="stepType",
+        exclude=True,
+    )
+    marker_type: Optional[MarkerType] = Field(
+        default=None,
+        validation_alias=AliasChoices("markerType", "marker_type"),
+        serialization_alias="markerType",
+        exclude=True,
+    )
+
+    def to_marker(self) -> Marker:
+        return Marker(
+            marker_id=self.name, marker_type=self.marker_type, step_type=self.step_type
+        )
+
+
+class MarkerMessage(BaseModel):
+    model_config = ConfigDict(
+        extra="ignore",
+    )
+
+    event: Literal["mark"] = "mark"
+    stream_sid: str = Field(
+        validation_alias=AliasChoices("streamSid", "stream_sid"),
+        serialization_alias="streamSid",
+    )
+    mark: MarkerOutput
+
+
 class TwilioMediaStreamsOutputChannel(VoiceOutputChannel):
     @classmethod
     def name(cls) -> str:
@@ -93,16 +133,28 @@ class TwilioMediaStreamsOutputChannel(VoiceOutputChannel):
     ) -> bytes:
         return base64.b64encode(rasa_audio_bytes.data)
 
-    def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
-        message_id = uuid.uuid4().hex
-        mark_message = json.dumps(
-            {
-                "event": "mark",
-                "streamSid": recipient_id,
-                "mark": {"name": message_id},
-            }
+    def create_marker_message(self, marker_input: MarkerInput) -> MarkerMessageOutput:
+        mark_message = MarkerMessage(
+            stream_sid=marker_input.recipient_id,
+            mark=MarkerOutput(
+                name=uuid.uuid4().hex,
+                step_type=marker_input.step_type,
+                marker_type=marker_input.marker_type,
+            ),
         )
-        return mark_message, message_id
+
+        logger.debug(
+            "twilio_media_streams.create_marker_message",
+            message_json=mark_message.model_dump_json(by_alias=True),
+        )
+
+        if marker_input.marker_type in {MarkerType.START, MarkerType.END}:
+            call_state.set_marker(mark_message.mark.to_marker())
+
+        mark_message_str = mark_message.model_dump_json(by_alias=True)
+        return MarkerMessageOutput(
+            message_id=mark_message.mark.name, message=mark_message_str
+        )
 
     def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
         media_message = json.dumps(
@@ -201,20 +253,28 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         elif data["event"] == "dtmf":
             return DTMFInputAction(digit=data["dtmf"]["digit"])
         elif data["event"] == "mark":
-            if data["mark"]["name"] == call_state.latest_bot_audio_id:
-                # Just finished streaming last audio bytes
-                await call_state.enqueue_event(
-                    BotStoppedSpeaking(),
-                )
-                if call_state.should_hangup:
-                    logger.debug(
-                        "twilio_streams.hangup", marker=call_state.latest_bot_audio_id
-                    )
-                    return EndConversationAction()
-            else:
-                await call_state.enqueue_event(
-                    BotIsSpeaking(),
-                )
+            marker_message = MarkerMessage.model_validate(data)
+
+            marker = call_state.get_marker(marker_message.mark.name)
+
+            if marker:
+                call_state.remove_marker(marker.marker_id)
+
+                if marker.step_type:
+                    if marker.marker_type == MarkerType.START:
+                        call_state.current_bot_utterance_type = marker.step_type
+                        await call_state.enqueue_event(BotIsSpeaking())
+
+                    if marker.marker_type == MarkerType.END:
+                        call_state.current_bot_utterance_type = None
+                        await call_state.enqueue_event(BotStoppedSpeaking())
+
+                        if call_state.should_hangup:
+                            logger.debug(
+                                "twilio_streams.hangup",
+                                marker=marker,
+                            )
+                            return EndConversationAction()
         return ContinueConversationAction()
 
     def create_output_channel(

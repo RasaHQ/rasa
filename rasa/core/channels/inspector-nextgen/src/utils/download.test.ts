@@ -21,7 +21,7 @@ function makeUtterance(overrides: Partial<Utterance>): Utterance {
     originalTimestamp: 0,
     rephrase: false,
     rephrasePrompt: null,
-    metadata: { parseData: {} } as EventMetadata,
+    metadata: { parseData: {} },
     ...overrides,
   };
 }
@@ -38,7 +38,7 @@ function makeConversationEvent(overrides: Partial<ConversationEvent>): Conversat
     stepId: "",
     timestamp: new Date().toISOString(),
     originalTimestamp: 0,
-    metadata: { parseData: {} } as EventMetadata,
+    metadata: { parseData: {} },
     ...overrides,
   };
 }
@@ -62,7 +62,7 @@ describe("generateTestCase", () => {
       makeUtterance({
         type: UtteranceType.Bot,
         text: "Hi there!",
-        metadata: { utter_action: "utter_greet", parseData: {} } as EventMetadata,
+        metadata: { utter_action: "utter_greet", parseData: {} },
       }),
     ]);
 
@@ -231,7 +231,7 @@ describe("generateTestCase", () => {
       makeUtterance({
         type: UtteranceType.Bot,
         text: "Hi!",
-        metadata: { utter_action: "utter_hello", parseData: {} } as EventMetadata,
+        metadata: { utter_action: "utter_hello", parseData: {} },
       }),
       makeConversationEvent({
         conversationEventType: ConversationEventType.FlowCompleted,
@@ -250,7 +250,7 @@ describe("generateTestCase", () => {
       makeUtterance({
         type: UtteranceType.Bot,
         text: "Choose transfer type",
-        metadata: { utter_action: "utter_ask_transfer_type", parseData: {} } as EventMetadata,
+        metadata: { utter_action: "utter_ask_transfer_type", parseData: {} },
         responseData: {
           buttons: [],
           quickReplies: [
@@ -306,7 +306,7 @@ describe("generateTestCase", () => {
       makeUtterance({
         type: UtteranceType.Bot,
         text: "To whom?",
-        metadata: { utter_action: "utter_ask_recipient", parseData: {} } as EventMetadata,
+        metadata: { utter_action: "utter_ask_recipient", parseData: {} },
       }),
     ]);
 
@@ -371,7 +371,7 @@ describe("downloadConversation", () => {
         makeUtterance({
           type: UtteranceType.User,
           text: "Hello",
-          metadata: { rawEvent, parseData: {} } as EventMetadata,
+          metadata: { rawEvent, parseData: {} },
         }),
       ]),
     ];

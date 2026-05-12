@@ -109,8 +109,30 @@ const intToFloatArray = (arr: Int16Array): Float32Array => {
 }
 
 interface Mark {
-  id: string
+  marker: string
+  markerType?: "start" | "intermediate" | "end"
+  stepType?: "collect" | "regular_utter"
   bytesToGo: number
+}
+
+interface PartialMarker {
+  marker: string
+  markerType?: "start" | "intermediate" | "end"
+  stepType?: "collect" | "regular_utter"
+}
+
+interface MarkerOutput {
+  marker: string
+  marker_type?: "start" | "intermediate" | "end"
+  step_type?: "collect" | "regular_utter"
+}
+
+function packMarkerForOutput(marker_input: Mark): MarkerOutput {
+  return {
+    marker: marker_input.marker,
+    step_type: marker_input.stepType,
+    marker_type: marker_input.markerType,
+  }
 }
 
 interface AudioQueue {
@@ -119,7 +141,7 @@ interface AudioQueue {
   socket: WebSocket
   enqueue: (newAudio: Float32Array) => void
   onSamplesPlayed: (samplesPlayed: number) => void
-  addMarker: (id: string) => void
+  addMarker: (marker: PartialMarker) => void
   reduceMarkers: (samplesPlayed: number) => void
   popMarkers: () => void
   clear: () => void
@@ -142,8 +164,8 @@ const createAudioQueue = (
       )
     },
 
-    addMarker: function (id: string) {
-      this.marks.push({ id, bytesToGo: this.queuedSamples })
+    addMarker: function (marker: PartialMarker) {
+      this.marks.push({ ...marker, bytesToGo: this.queuedSamples })
     },
 
     onSamplesPlayed: function (samplesPlayed: number) {
@@ -156,8 +178,8 @@ const createAudioQueue = (
     },
 
     reduceMarkers: function (samplesPlayed: number) {
-      this.marks = this.marks.map((m) => {
-        return { id: m.id, bytesToGo: m.bytesToGo - samplesPlayed }
+      this.marks = this.marks.map((marker_input) => {
+        return { ...marker_input, bytesToGo: marker_input.bytesToGo - samplesPlayed }
       })
     },
 
@@ -173,9 +195,9 @@ const createAudioQueue = (
       }
       const marksToPop = this.marks.slice(0, popUpTo)
       this.marks = this.marks.slice(popUpTo, this.marks.length)
-      marksToPop.forEach((m) => {
+      marksToPop.forEach((marker_input) => {
         if (this.socket.readyState === WebSocket.OPEN) {
-          this.socket.send(JSON.stringify({ marker: m.id }))
+          this.socket.send(JSON.stringify(packMarkerForOutput(marker_input)))
         }
       })
     },
@@ -268,7 +290,9 @@ const addDataToAudioQueue =
         if (data['latency'] && onLatencyUpdate) {
           onLatencyUpdate(data['latency'])
         }
-        audioQueue.addMarker(data['marker'])
+        audioQueue.addMarker({
+          ...data,
+        })
       } else if (data['interruptPlayback']) {
         // User interrupted the bot, immediately clear the audio queue
         audioQueue.clear()
