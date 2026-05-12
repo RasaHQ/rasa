@@ -130,6 +130,9 @@ class RimeTTS(TTSEngine[RimeTTSConfig]):
         if self.config.segment is not None:
             query_params["segment"] = self.config.segment
 
+        if self.config.no_text_normalization:
+            query_params["noTextNormalization"] = "true"
+
         url = f"{base_url}?{urlencode(query_params)}"
         return url
 

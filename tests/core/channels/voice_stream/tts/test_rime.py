@@ -74,6 +74,29 @@ async def test_websocket_url_with_optional_params(mulaw_format: AudioFormat):
 
 
 @pytest.mark.usefixtures("set_rime_key")
+async def test_websocket_url_with_no_text_normalization(mulaw_format: AudioFormat):
+    config = RimeTTSConfig(
+        model_id="mistv2",
+        no_text_normalization=True,
+        language_map={
+            "en": {"language": "eng", "voice": "cove"},
+        },
+    )
+    tts_engine = RimeTTS(rasa_language="en", config=config, format=mulaw_format)
+    ws_url = tts_engine.get_websocket_url()
+    assert "noTextNormalization=true" in ws_url
+
+
+@pytest.mark.usefixtures("set_rime_key")
+async def test_websocket_url_no_text_normalization_absent_by_default(
+    mulaw_format: AudioFormat,
+):
+    tts_engine = RimeTTS(rasa_language="en", format=mulaw_format)
+    ws_url = tts_engine.get_websocket_url()
+    assert "noTextNormalization" not in ws_url
+
+
+@pytest.mark.usefixtures("set_rime_key")
 def test_request_headers():
     headers = RimeTTS.get_request_headers()
     assert "Authorization" in headers
