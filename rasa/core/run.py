@@ -284,6 +284,7 @@ def serve_application(
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
     inspect: Optional[bool] = False,
     voice: Optional[bool] = False,
+    inspector_server_url: Optional[Text] = None,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:
@@ -293,7 +294,10 @@ def serve_application(
 
     if inspect:
         logger.info("Starting development inspector.")
-        input_channels = [DevelopmentInspectProxy(ic, voice) for ic in input_channels]
+        input_channels = [
+            DevelopmentInspectProxy(ic, voice, inspector_server_url)
+            for ic in input_channels
+        ]
 
         # the inspector needs the api to retrieve slots and flows
         enable_api = True

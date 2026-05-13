@@ -112,9 +112,9 @@ def inspect(args: argparse.Namespace) -> None:
 
     async def after_start_hook_open_inspector(_: Sanic, __: AbstractEventLoop) -> None:
         """Hook to open the browser on server start."""
-        server_url = _inspector_server_url or constants.DEFAULT_SERVER_FORMAT.format(
-            "http", args.port
-        )
+        server_url = _inspector_server_url
+        if server_url == "0.0.0.0" or server_url is None:
+            server_url = constants.DEFAULT_SERVER_FORMAT.format("http", args.port)
         await open_inspector_in_browser(
             server_url, args.voice, args.nextgen, args.auth_token
         )
@@ -129,6 +129,7 @@ def inspect(args: argparse.Namespace) -> None:
     args.enable_api = True
     args.inspect = True
     args.credentials = None
+    args.inspector_server_url = _inspector_server_url
     args.server_listeners = [(after_start_hook_open_inspector, "after_server_start")]
     dev_port = os.environ.get("RASA_INSPECTOR_DEV_PORT")
     if dev_port:

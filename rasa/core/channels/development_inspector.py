@@ -14,6 +14,7 @@ from typing import (
     Set,
     Text,
 )
+from urllib.parse import urlencode
 
 import orjson
 import structlog
@@ -108,11 +109,17 @@ class DevelopmentInspectProxy(InputChannel):
     the state of the conversation.
     """
 
-    def __init__(self, underlying: InputChannel, is_voice: bool = False) -> None:
+    def __init__(
+        self,
+        underlying: InputChannel,
+        is_voice: bool = False,
+        server_url: Optional[Text] = None,
+    ) -> None:
         """Initializes the DevelopmentInspectProxy channel."""
         super().__init__()
         self.underlying = underlying
         self.is_voice = is_voice
+        self.server_url = server_url if server_url and server_url != "0.0.0.0" else None
         self.processor: Optional[MessageProcessor] = None
         self.tracker_stream = TrackerStream(get_tracker=self.get_tracker_state)
         self._turn_start_times: Dict[Text, float] = {}
@@ -250,12 +257,15 @@ class DevelopmentInspectProxy(InputChannel):
 
             inspect_path = app.url_for(f"{app.name}.{underlying_webhook.name}.inspect")
 
-            # replace 0.0.0.0 with localhost
-            serve_location = app.serve_location.replace("0.0.0.0", "localhost")
+            serve_location = self.server_url or app.serve_location.replace(
+                "0.0.0.0", "localhost"
+            )
+            query_string = f"?{urlencode({'projectUrl': serve_location})}"
+            inspect_url = f"{serve_location}{inspect_path}{query_string}"
 
             print_info(
                 f"Development inspector for channel {self.name()} is running. To "
-                f"inspect conversations, visit {serve_location}{inspect_path}"
+                f"inspect conversations, visit {inspect_url}"
             )
 
         underlying_webhook.add_websocket_route(
