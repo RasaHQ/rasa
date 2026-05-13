@@ -315,7 +315,7 @@ export function useBotConnection({
       const urlObject = new URL(url);
 
       const socketIoPath =
-        urlObject.pathname === "/" ? undefined : urlObject.pathname;
+        urlObject.pathname === "/" ? undefined : `${urlObject.pathname}/socket.io`;
 
       socket.current = io(urlObject.toString(), {
         transports: ["websocket", "polling"],
