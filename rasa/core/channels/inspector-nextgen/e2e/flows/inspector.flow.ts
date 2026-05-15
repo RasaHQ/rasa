@@ -293,7 +293,7 @@ export const stopVoiceCallAndAssertInactive = async (page: Page) => {
     await actions.inspector.actions(page).stopVoiceCall();
   });
   await test.step("Assert inactive voice state", async () => {
-    await actions.inspector.assertions(page).assertVoiceInactiveState();
+    await actions.inspector.assertions(page).assertVoiceStoppedState();
     await actions.inspector.assertions(page).assertVoiceStartButtonVisible();
   });
 };

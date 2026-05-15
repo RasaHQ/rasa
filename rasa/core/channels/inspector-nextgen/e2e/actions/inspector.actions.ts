@@ -513,6 +513,16 @@ export const assertions = (page: Page) => {
         "Input should be enabled when voice is inactive",
       ).toBeEnabled();
     },
+    assertVoiceStoppedState: async () => {
+      await expect(
+        locators.inputField,
+        "Input placeholder should show 'Type your message'",
+      ).toHaveAttribute("placeholder", "Type your message");
+      await expect(
+        locators.inputField,
+        "Input should be enabled when voice is inactive",
+      ).toBeDisabled();
+    },
     assertSlotEventVisible: async (slotName: string) => {
       await expect(
         locators.inspectorCanvas.getByRole("heading", { name: "Slot event" }),

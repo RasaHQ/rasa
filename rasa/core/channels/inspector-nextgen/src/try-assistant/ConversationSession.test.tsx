@@ -115,4 +115,28 @@ describe("ConversationSession", () => {
     const messages = screen.getAllByTestId("message");
     expect(messages[1].dataset.props).toContain('"isSelected":true');
   });
+
+  it("renders session end date label when endDate is provided", () => {
+    const conversationWithEndDate = {
+      ...baseConversation,
+      endDate: new Date("2024-06-15T10:30:00.000Z").toISOString(),
+    };
+    renderWithProviders(
+      <ConversationSession
+        conversation={conversationWithEndDate}
+        inspectorMode={false}
+      />,
+    );
+    expect(screen.getByText(/Session ended on/)).toBeInTheDocument();
+  });
+
+  it("does not render session end date label when endDate is not provided", () => {
+    renderWithProviders(
+      <ConversationSession
+        conversation={baseConversation}
+        inspectorMode={false}
+      />,
+    );
+    expect(screen.queryByText(/Session ended on/)).not.toBeInTheDocument();
+  });
 });

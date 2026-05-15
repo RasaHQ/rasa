@@ -245,11 +245,11 @@ export function useBotConnection({
     socket.current?.disconnect();
   };
 
-  const disableChat = () => {
+  const disableChat = useCallback(() => {
     setInputDisabled(true);
     setWaitingForUserInput(false);
     setReplayingConversation(false);
-  };
+  }, []);
 
   const sendMessage = useCallback(
     (message: string) => {
@@ -648,10 +648,14 @@ export function useBotConnection({
     } finally {
       microphoneStreamRef.current = undefined;
       audioQueueRef.current = undefined;
-      startNewConversation();
+      setConversation((conv) => ({
+        ...conv,
+        endDate: (new Date()).toISOString(),
+      }));
+      disableChat();
     }
     // IMPORTANT: adding deps to the array might break inspector
-  }, [startNewConversation]);
+  }, [disableChat]);
 
   const replayConversation = useCallback(
     (events: UnionEventType[]) => {

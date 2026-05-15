@@ -48,6 +48,7 @@ export const ConversationSession = ({
   const { events = [] } = conversation;
 
   const formattedStartDate = formatDateTime(new Date(conversation.startDate));
+  const formattedEndDate = conversation.endDate ? formatDateTime(new Date(conversation.endDate)) : undefined;
 
   const headingSx = {
     color: "rasaNeutral.700",
@@ -140,6 +141,16 @@ export const ConversationSession = ({
       {waitingForResponse || replayingConversation ? (
         <ConversationLoadingSpinner />
       ) : null}
+
+      {formattedEndDate && (
+        <HStack px="1.5rem" py="0.5rem" width="100%" justifyContent="center">
+          <Box css={headingSx} flex="0 1 auto" >
+            <Text size="sm" variant="muted" color="rasawebNeutral.600">
+              Session ended on {formattedEndDate}
+            </Text>
+          </Box>
+        </HStack>
+      )}
     </Box>
   );
 };

@@ -38,6 +38,7 @@ export type Conversation = {
   id: string;
   reviewed: boolean;
   startDate: string;
+  endDate?: string;
   totalNumberOfUserMessages: number;
 };
 

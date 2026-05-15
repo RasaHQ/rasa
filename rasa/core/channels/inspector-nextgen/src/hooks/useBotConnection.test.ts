@@ -669,7 +669,7 @@ describe("useBotConnection", () => {
       );
     });
 
-    it("stopVoiceStreaming calls stopMicrophoneStream, stopAudioPlayback and startNewConversation", async () => {
+    it("stopVoiceStreaming calls stopMicrophoneStream, stopAudioPlayback and disables chat without starting new conversation", async () => {
       renderHook(() => useBotConnection({
         projectId: "test-project",
         onSessionStart: vi.fn(),
@@ -701,7 +701,8 @@ describe("useBotConnection", () => {
 
       expect(mockStopMicrophoneStream).toHaveBeenCalled();
       expect(mockStopAudioPlayback).toHaveBeenCalled();
-      expect(inspectorStore.state.sessionId).not.toBe(sessionIdAfterStart);
+      expect(inspectorStore.state.sessionId).toBe(sessionIdAfterStart);
+      expect(inspectorStore.state.inputDisabled).toBe(true);
     });
   });
 
