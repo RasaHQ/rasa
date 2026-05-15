@@ -18,7 +18,7 @@ from rasa.shared.constants import (
 )
 
 if TYPE_CHECKING:
-    from langchain.schema import Document
+    from langchain_core.documents import Document
 
 _FAQ_PAIR_PATTERN = re.compile(
     rf"{re.escape(FAQ_INPUT_DATA_QUESTION_LINE_PREFIX)}\s*"
@@ -55,7 +55,7 @@ def _format_faq_documents(documents: List["Document"]) -> List["Document"]:
     More details in documentation: https://rasa.com/docs/reference/config/policies/extractive-search/
     """
     structured_faqs = []
-    from langchain.schema import Document
+    from langchain_core.documents import Document
 
     for document in documents:
         chunks = document.page_content.strip().split(FAQ_DOCUMENT_ENTRY_SEPARATOR)

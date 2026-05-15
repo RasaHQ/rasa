@@ -1150,7 +1150,18 @@ jobs:
 
       - name: Install additional dependencies for Docs ingestion
         run: |
-          pip install unstructured==0.12.2 langchain==0.0.329 qdrant-client==1.9.1 pymilvus==2.3.5 openai==0.28.1 tiktoken==0.4.0
+          pip install \
+            unstructured==0.12.2 \
+            langchain==1.2.16 \
+            langchain-community==0.4.1 \
+            langchain-core==1.3.3 \
+            langchain-openai==1.2.1 \
+            langchain-qdrant==1.1.0 \
+            langchain-text-splitters==1.1.2 \
+            qdrant-client==1.17.1 \
+            pymilvus==2.6.12 \
+            "openai>=2.29.0,<3.0.0" \
+            tiktoken==0.12.0
 
       - name: Run vector store setup for Qdrant
         run: |

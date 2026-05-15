@@ -10,8 +10,8 @@ from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
-    from langchain.schema import Document
-    from langchain.schema.embeddings import Embeddings
+    from langchain_core.documents import Document
+    from langchain_core.embeddings import Embeddings
 
 
 logger = structlog.get_logger()

@@ -121,7 +121,7 @@ from rasa.telemetry import (
 )
 
 if TYPE_CHECKING:
-    from langchain.schema.embeddings import Embeddings
+    from langchain_core.embeddings import Embeddings
 
     from rasa.core.channels.channel import OutputChannel
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer

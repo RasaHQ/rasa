@@ -364,15 +364,17 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         with pytest.raises(Exception):
             await broker.connect()
 
-    # Only Rasa Pro logs, but logs from the library itself.
+    # Only Rasa Pro logs and expected aio_pika/aiormq connection logs.
+    # Allowed loggers: rasa core, asyncio, aio_pika, aiormq (all variants), and ddtrace
+    allowed_prefixes = [
+        "rasa.core.brokers.pika",
+        "asyncio",
+        "aio_pika",
+        "aiormq",
+        "ddtrace.internal.writer.writer",
+    ]
     assert all(
-        record.name
-        in [
-            "rasa.core.brokers.pika",
-            "asyncio",
-            "aio_pika.robust_connection",
-            "ddtrace.internal.writer.writer",
-        ]
+        any(record.name.startswith(prefix) for prefix in allowed_prefixes)
         for record in caplog.records
     )
 

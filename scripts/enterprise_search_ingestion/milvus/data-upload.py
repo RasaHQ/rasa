@@ -2,14 +2,15 @@
 
 import argparse
 import logging
-from langchain.schema import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders.directory import DirectoryLoader
-from langchain_community.document_loaders.text import TextLoader
-from langchain_community.embeddings.openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Milvus
 from pathlib import Path
 from typing import List
+
+from langchain_community.document_loaders.directory import DirectoryLoader
+from langchain_community.document_loaders.text import TextLoader
+from langchain_community.vectorstores import Milvus
+from langchain_core.documents import Document
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

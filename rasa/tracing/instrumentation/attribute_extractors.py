@@ -108,7 +108,7 @@ from rasa.tracing.constants import (
 )
 
 if TYPE_CHECKING:
-    from langchain.llms.base import BaseLLM
+    from langchain_core.language_models.llms import BaseLLM
 
     from rasa.core.channels.voice_stream.tts.config import StreamingConfig
     from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy

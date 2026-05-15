@@ -1,8 +1,8 @@
 from unittest.mock import Mock
 
 import pytest
-from langchain.schema.embeddings import Embeddings
 from langchain_community.embeddings import FakeEmbeddings
+from langchain_core.embeddings import Embeddings
 
 
 @pytest.fixture

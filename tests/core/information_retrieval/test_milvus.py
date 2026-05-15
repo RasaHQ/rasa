@@ -2,9 +2,9 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from langchain.schema import Document
-from langchain.schema.embeddings import Embeddings
 from langchain_community.vectorstores.milvus import Milvus
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 from pytest import MonkeyPatch
 
 from rasa.core.information_retrieval import InformationRetrievalException

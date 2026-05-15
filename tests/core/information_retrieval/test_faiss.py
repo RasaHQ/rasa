@@ -1,8 +1,8 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from langchain.schema import Document
-from langchain.schema.embeddings import Embeddings
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 from pytest import MonkeyPatch
 
 from rasa.core.information_retrieval import InformationRetrievalException

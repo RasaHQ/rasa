@@ -3,8 +3,8 @@ from typing import Any, Dict, List, Optional, Text
 
 import numpy as np
 import structlog
-from langchain.schema.embeddings import Embeddings
 from langchain_community.vectorstores import FAISS
+from langchain_core.embeddings import Embeddings
 
 from rasa.shared.constants import REQUIRED_SLOTS_KEY
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain

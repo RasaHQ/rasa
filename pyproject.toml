@@ -208,10 +208,12 @@ portalocker = "~3.2.0"
 pypred = "^0.4.0"
 structlog = "~25.5.0"
 structlog-sentry = "~2.2.1"
-langchain = "~0.3.27"
-langchain-community = "~0.3.29"
-langchain-core = "~0.3.81"
-langsmith = "~0.6.3"
+langchain = "~1.2.16"
+langchain-community = "~0.4.1"
+langchain-core = "~1.3.2"
+langchain-openai = "~1.2.1"  # required for OpenAIEmbeddings after LangChain split the provider package
+langchain-text-splitters = "~1.1.2"  # required for RecursiveCharacterTextSplitter after LangChain v1 split the package
+langsmith = "~0.7.31"
 jinja2 = "~3.1.6"
 dnspython = "~2.8.0"
 wheel = ">=0.46.3"
@@ -232,11 +234,11 @@ tiktoken = "~0.12.0"  # required by litellm
 faiss-cpu = "~1.13.2"
 pymilvus = "~2.6.12"  # previously pinned to ">=2.4.1,<2.4.2", 2.4.2 introduces milvus-lite dependency that fails on windows
 qdrant-client = "~1.17.1"
-langchain-qdrant = "~0.2.1" # migrate from the deprecated `langchain_community.vectorstores.qdrant.Qdrant` to the maintained `langchain_qdrant.QdrantVectorStore` which is compatible with qdrant-client `1.16+`.
+langchain-qdrant = "~1.1.0" # migrate from the deprecated `langchain_community.vectorstores.qdrant.Qdrant` to the maintained `langchain_qdrant.QdrantVectorStore` which is compatible with qdrant-client `1.16+`.
 psutil = "^5.9.5"
 tenacity = "~8.4.2"  # pinned down because of langchain
 types-protobuf = "~5.29.1"
-litellm = "1.82.4" # pinned to specific version after litellm security incident
+litellm = "1.84.0" # pinned to specific version; fixes CVE-2026-42208 with broad dep ranges (openai>=2.20, python-dotenv>=1.0, importlib-metadata>=8.0)
 openpyxl = "^3.1.5"
 diskcache = "~5.6.3"
 dask = "~2024.8.0"  # later versions drop python 3.9 support

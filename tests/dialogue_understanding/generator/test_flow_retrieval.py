@@ -4,9 +4,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
-from langchain.docstore.document import Document
 from langchain_community.vectorstores.faiss import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
+from langchain_core.documents import Document
 from pytest import MonkeyPatch
 
 from rasa.dialogue_understanding.generator.flow_retrieval import (

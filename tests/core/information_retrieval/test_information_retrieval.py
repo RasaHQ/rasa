@@ -9,7 +9,7 @@ from rasa.core.information_retrieval.milvus import Milvus, Milvus_Store
 from rasa.core.information_retrieval.qdrant import Qdrant_Store, QdrantVectorStore
 
 if TYPE_CHECKING:
-    from langchain.schema.embeddings import Embeddings
+    from langchain_core.embeddings import Embeddings
 
 
 def test_create_from_endpoint_config_with_milvus(embeddings: "Embeddings") -> None:

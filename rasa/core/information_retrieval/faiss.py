@@ -2,10 +2,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
 
 import structlog
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders.directory import DirectoryLoader
 from langchain_community.document_loaders.text import TextLoader
 from langchain_community.vectorstores.faiss import FAISS
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from rasa.core.information_retrieval import (
     InformationRetrieval,
@@ -17,8 +17,8 @@ from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.ml_utils import persist_faiss_vector_store
 
 if TYPE_CHECKING:
-    from langchain.schema import Document
-    from langchain.schema.embeddings import Embeddings
+    from langchain_core.documents import Document
+    from langchain_core.embeddings import Embeddings
 
 logger = structlog.get_logger()
 

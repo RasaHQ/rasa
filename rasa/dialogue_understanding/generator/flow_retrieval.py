@@ -22,10 +22,10 @@ from typing import Any, Dict, List, Optional, Text
 
 import structlog
 from jinja2 import Template
-from langchain.docstore.document import Document
-from langchain.schema.embeddings import Embeddings
 from langchain_community.vectorstores.faiss import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 
 import rasa.shared.utils.io
 from rasa.engine.storage.resource import Resource

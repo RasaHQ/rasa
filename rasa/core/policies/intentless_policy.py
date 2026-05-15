@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple
 import structlog
 from deprecated import deprecated  # type: ignore[import-untyped]
 from jinja2 import Template
-from langchain.docstore.document import Document
-from langchain.schema.embeddings import Embeddings
 from langchain_community.vectorstores.faiss import FAISS
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 
 import rasa.shared.utils.io
 from rasa import telemetry

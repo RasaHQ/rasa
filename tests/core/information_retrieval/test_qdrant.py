@@ -2,7 +2,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from langchain.schema.embeddings import Embeddings
+from langchain_core.embeddings import Embeddings
 from langchain_qdrant import QdrantVectorStore
 from pydantic import ValidationError
 from pytest import MonkeyPatch

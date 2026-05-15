@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 import pytest
 import structlog
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 from rasa.core.information_retrieval.ingestion.faq_parser import _format_faq_documents
 from tests.utilities import filter_logs

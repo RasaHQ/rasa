@@ -5,13 +5,13 @@ from pathlib import Path
 from typing import List
 
 import yaml
-from langchain.document_loaders import DirectoryLoader, TextLoader
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.schema import Document
-from langchain.schema.embeddings import Embeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores.milvus import Milvus
-from langchain.vectorstores.qdrant import Qdrant
+from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from langchain_community.vectorstores.milvus import Milvus
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
+from langchain_openai import OpenAIEmbeddings
+from langchain_qdrant import QdrantVectorStore
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -60,9 +60,9 @@ def create_chunks(documents: List[Document], chunk_size: int, chunk_overlap: int
     return text_splitter.split_documents(documents)
 
 def create_milvus_collection(
-        embeddings: Embeddings,
-        docs: List[Document],
-        connection_args: dict,
+    embeddings: Embeddings,
+    docs: List[Document],
+    connection_args: dict,
 ) -> Milvus:
     """Creates a Milvus collection from the documents.
 
@@ -99,10 +99,10 @@ def create_milvus_collection(
 
 
 def create_qdrant_collection(
-        embeddings: Embeddings,
-        docs: List[Document],
-        connection_args: dict,
-) -> None:
+    embeddings: Embeddings,
+    docs: List[Document],
+    connection_args: dict,
+) -> QdrantVectorStore:
     """Creates a Qdrant collection from the documents.
 
     Args:
@@ -118,7 +118,7 @@ def create_qdrant_collection(
     path = connection_args.get("path", None)
     collection_name = connection_args.get("collection", DEFAULT_COLLECTION_NAME)
 
-    return Qdrant.from_documents(
+    return QdrantVectorStore.from_documents(
         docs,
         embeddings,
         host=host,
@@ -148,7 +148,7 @@ def main():
         description="Extract documents from a folder and load them into a vector store.",
         epilog="Example: python ingest.py --config config.yaml",
     )
-    parser.add_argument('-c', '--config', required=True, help='config file path')
+    parser.add_argument("-c", "--config", required=True, help="config file path")
     args = parser.parse_args()
     opt = yaml.load(open(args.config), Loader=yaml.FullLoader)
     opt.update(vars(args))

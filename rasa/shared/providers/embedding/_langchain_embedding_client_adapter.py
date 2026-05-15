@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any, Dict, Iterator, List, Optional
 
-from langchain_core.embeddings.embeddings import Embeddings
+from langchain_core.embeddings import Embeddings
 
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 

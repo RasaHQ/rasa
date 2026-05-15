@@ -5,8 +5,8 @@ from typing import Any, Dict, Generator, List, Optional
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
 from pytest import MonkeyPatch
 
 import rasa.shared.utils.io

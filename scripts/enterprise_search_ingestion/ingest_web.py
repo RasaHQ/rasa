@@ -1,17 +1,18 @@
 import logging
-
-from bs4 import BeautifulSoup
-from langchain.schema import Document
-from langchain.schema.embeddings import Embeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import RecursiveUrlLoader
-from langchain_community.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
-from langchain_community.vectorstores.milvus import Milvus
-from langchain_community.vectorstores.qdrant import Qdrant
-from typing import List
-import yaml
-from argparse import ArgumentParser
 import os
+from argparse import ArgumentParser
+from typing import List, Optional
+
+import yaml
+from bs4 import BeautifulSoup
+from langchain_community.document_loaders import RecursiveUrlLoader
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores.milvus import Milvus
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
+from langchain_openai import OpenAIEmbeddings
+from langchain_qdrant import QdrantVectorStore
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -119,7 +120,7 @@ def create_qdrant_collection(
     embeddings: Embeddings,
     docs: List[Document],
     connection_args: dict,
-) -> Qdrant:
+) -> QdrantVectorStore:
     """Creates a Qdrant collection from the documents.
 
     Args:
@@ -135,7 +136,7 @@ def create_qdrant_collection(
     path = connection_args.get("path", None)
     collection_name = connection_args.get("collection", DEFAULT_COLLECTION_NAME)
 
-    return Qdrant.from_documents(
+    return QdrantVectorStore.from_documents(
         docs,
         embeddings,
         host=host,
@@ -155,7 +156,7 @@ def validate_embeddings_type(embeddings_type: str):
         raise SystemExit(f"Embeddings type '{embeddings_type}' not supported.")
     elif embeddings_type.lower() == "openai":
         # check if OPENAI_API_KEY is set
-        if not "OPENAI_API_KEY" in os.environ:
+        if "OPENAI_API_KEY" not in os.environ:
             raise SystemExit("OPENAI_API_KEY environment variable not set.")
 
 
