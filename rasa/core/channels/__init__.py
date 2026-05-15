@@ -27,6 +27,7 @@ from rasa.core.channels.voice_stream.genesys import GenesysInputChannel
 from rasa.core.channels.inspector import InspectorInputChannel
 from rasa.core.channels.voice_stream.audiocodes import AudiocodesVoiceInputChannel
 from rasa.core.channels.voice_stream.jambonz import JambonzStreamInputChannel
+from rasa.core.channels.voice_stream.signalwire import SignalWireInputChannel
 
 # Type annotations for channels with optional dependencies
 FacebookInput: Optional[Type[InputChannel]]
@@ -108,6 +109,7 @@ input_channel_classes: List[Type[InputChannel]] = [
         InspectorInputChannel,
         AudiocodesVoiceInputChannel,
         JambonzStreamInputChannel,
+        SignalWireInputChannel,
     ]
     if c is not None
 ]
