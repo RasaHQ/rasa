@@ -361,6 +361,9 @@ test-marker-without-voice: test-marker
 release:  ## Prepare a release.
 	poetry run python scripts/release.py prepare --interactive
 
+release-micro:  ## Prepare a micro release without any prompts.
+	poetry run python scripts/release.py prepare --micro
+
 alpha-release:  ## Prepare a release.
 	poetry run python scripts/release.py prepare --next_version alpha && \
 	poetry run python scripts/release.py tag --skip-confirmation

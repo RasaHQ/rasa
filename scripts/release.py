@@ -69,6 +69,14 @@ def create_argument_parser() -> argparse.ArgumentParser:
         "--automated-release",
         action="store_true",
     )
+    prepare_subparser.add_argument(
+        "--micro",
+        action="store_true",
+        help=(
+            "Skip all questions and immediately prepare a release with the "
+            "next detected micro version."
+        ),
+    )
     tag_subparser = subparsers.add_parser(
         "tag",
         description="Tag the next release",
@@ -346,6 +354,8 @@ def parse_next_version(version: Text) -> Version:
 
 def next_version(args: argparse.Namespace) -> Version:
     """Take cmdline args or ask the user for the next version and return semver."""
+    if getattr(args, "micro", False):
+        return parse_next_version("micro")
     return parse_next_version(args.next_version or ask_version())
 
 
