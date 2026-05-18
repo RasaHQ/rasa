@@ -26,7 +26,7 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
       portalRef,
       contentRef,
       onlyShowIfTruncated = false,
-      bgColor = "rasawebDeepPurple.900",
+      bgColor = "bg.inverted",
       ...rest
     } = props;
     const [isTruncated, setIsTruncated] = useState(false);
@@ -50,7 +50,6 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
             <ChakraTooltip.Content
               ref={contentRef}
               bg={bgColor}
-              fontSize="sm"
               px={4}
               py={3}
               borderRadius="md"
@@ -78,4 +77,3 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
     );
   },
 );
-

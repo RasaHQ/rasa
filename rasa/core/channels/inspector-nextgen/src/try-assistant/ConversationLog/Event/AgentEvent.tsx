@@ -67,9 +67,9 @@ export const AgentEvent = forwardRef<HTMLDivElement | null, AgentEventProps>(
         )}
         <Box css={baseMessageSx}>
           <Icon icon={Robot} style={iconSx} />
-          <Text size="sm" lineClamp={2} wordBreak="break-all" variant="muted">
+          <Text textStyle="sm" lineClamp={2} wordBreak="break-all" variant="muted">
             Sub-agent{" "}
-            <Text as="span" fontWeight="500" variant="muted">
+            <Text as="span" fontWeight="medium" variant="muted">
               {agentId}
             </Text>{" "}
             {statusText}

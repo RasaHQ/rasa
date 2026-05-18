@@ -7,21 +7,21 @@ export const StartAloneNode = (props: NodeProps<FlowNodeStart>) => {
   const { data, isConnectable, sourcePosition } = props;
 
   const sx = {
-    bg: "#2C9793",
-    color: "#FFFFFF",
-    borderRadius: "9999px",
+    bg: "teal.solid",
+    color: "fg.inverted",
+    borderRadius: "full",
     border: "none",
     borderColor: "transparent",
-    boxShadow: "0 0.125rem 0.5rem 0 rgba(0, 0, 0, 0.15)",
-    px: "1.5rem",
-    py: "0.5rem",
+    boxShadow: "tooltip",
+    px: "6",
+    py: "2",
     pointerEvents: "all",
     height: "auto",
   };
 
   return (
     <>
-      <Text size="xs" tabIndex={0} css={sx} data-testid="node">
+      <Text textStyle="xs" tabIndex={0} css={sx} data-testid="node">
         {extractNodeLabel(data)}
       </Text>
       <Handle

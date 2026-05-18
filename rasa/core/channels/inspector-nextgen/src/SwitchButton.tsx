@@ -1,4 +1,4 @@
-import { Button, type ButtonProps } from "@chakra-ui/react";
+import { Button, Toggle, type ButtonProps } from "@chakra-ui/react";
 import { Icon, LocationCrosshairs } from "./Icon";
 
 type Props = ButtonProps & {
@@ -16,37 +16,24 @@ export const SwitchButton = ({
   onActivate,
   ...props
 }: Props) => {
-  const sx = {
-    borderColor: "rasaNeutral.300",
-    color: "rasawebDeepPurple.800",
-    _hover: {
-      bg: "rasaNeutral.50",
-    },
-  };
-  const activeSx = {
-    color: "rasaNeutral.50",
-    bg: "rasawebPurple.800",
-    borderColor: "rasawebPurple.800",
-    _hover: {
-      bg: "rasawebPurple.800",
-      color: "rasaNeutral.50",
-    },
-  };
   return (
-    <Button
-      {...props}
-      rounded="full"
-      variant="outline"
-      size="sm"
-      height="1.5rem"
-      fontSize="13px"
-      px={2.5}
-      css={isActive ? { ...sx, ...activeSx } : sx}
-      onClick={() => onActivate(item.value)}
+    <Toggle.Root
+      pressed={isActive}
+      onPressedChange={() => onActivate(item.value)}
+      asChild
     >
-      <Icon icon={LocationCrosshairs} />
-      {item.label}
-    </Button>
+      <Button
+        {...props}
+        colorPalette={{ base: "gray", _pressed: "purple" }}
+        variant={{ base: "outline", _pressed: "solid" }}
+        rounded="full"
+        size="sm"
+        height="6"
+        px={2.5}
+      >
+        <Icon icon={LocationCrosshairs} />
+        {item.label}
+      </Button>
+    </Toggle.Root>
   );
 };
-

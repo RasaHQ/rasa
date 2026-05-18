@@ -49,9 +49,9 @@ export const SlotsDetails = () => {
   ];
 
   return (
-    <Box bg="white" borderRadius="0.5rem">
+    <Box bg="white" borderRadius="lg">
       <ScrollContainer>
-        <ScrollContent withSpacing={false} pl="1rem" pr="1.75rem" py="0.5rem" css={{ "& [data-orientation='vertical']": { display: "none" } }}>
+        <ScrollContent withSpacing={false} pl="4" pr="7" py="2" css={{ "& [data-orientation='vertical']": { display: "none" } }}>
           <SlotSections sections={sections} activeSlotName={activeSlotName} />
         </ScrollContent>
       </ScrollContainer>
@@ -71,18 +71,18 @@ interface SlotSectionsProps {
 
 function SlotSections({ sections, activeSlotName }: SlotSectionsProps) {
   return (
-    <Box display="flex" flexDirection="column" gap="1rem">
+    <Box display="flex" flexDirection="column" gap="4">
       {sections.map((section, index) => (
         <Box key={index}>
           {index > 0 && (
-            <Separator mb="1rem" mx="-1rem" />
+            <Separator mb="4" mx="-4" />
           )}
           <Box display="flex" flexDirection="column" data-testid={`${section.title}-section`}>
             <Heading
-              size="md"
-              px="0.5rem"
-              py="0.25rem"
-              mb="0.25rem"
+              textStyle="sm"
+              px="2"
+              py="1"
+              mb="1"
             >
               {section.title}
             </Heading>
@@ -117,21 +117,21 @@ const SlotRow = ({
       display="flex"
       alignItems="center"
       justifyContent="space-between"
-      px="0.5rem"
-      py="0.25rem"
-      borderRadius="0.5rem"
-      bg={isActive ? "rasaNeutral.100" : "transparent"}
-      color="rasawebDeepPurple.800"
+      px="2"
+      py="1"
+      borderRadius="lg"
+      bg={isActive ? "bg.muted" : "transparent"}
+      color="fg"
       _hover={{
-        bg: "rasaNeutral.100", 
+        bg: "bg.muted",
         cursor: "pointer",
       }}
       onClick={() => slot.event ? handleSlotClick(slot.event) : undefined}
       data-testid={`slot-${slot.name}`}
     >
-      <Text 
+      <Text
         variant="primary"
-        size="md"
+        textStyle="sm"
         width="50%"
         truncate
         title={slot.name}
@@ -140,8 +140,8 @@ const SlotRow = ({
       </Text>
       <Text
         variant="primary"
-        size="sm"
-        fontFamily='"IBM Plex Mono", monospace'
+        textStyle="sm"
+        fontFamily="mono"
         width="50%"
         truncate
         title={valueStr}

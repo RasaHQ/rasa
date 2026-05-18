@@ -3,10 +3,10 @@ import { MessageMarkup } from "./ConversationLog/Message/MessageMarkup";
 
 export const ConversationLoadingSpinner = () => {
   const loadingDotSx = {
-    borderRadius: "50%",
-    width: "0.375rem",
-    height: "0.375rem",
-    bg: "rasaNeutral.500",
+    borderRadius: "full",
+    width: "1.5",
+    height: "1.5",
+    bg: "border.emphasized",
     animationName: "blink",
     animationDuration: "1.25s",
     animationTimingFunction: "ease-in-out",
@@ -15,7 +15,7 @@ export const ConversationLoadingSpinner = () => {
 
   return (
     <MessageMarkup aria-label="Agent is typing">
-      <Flex gap="0.25rem" data-testid="loading-dots">
+      <Flex gap="1" data-testid="loading-dots">
         <Box css={loadingDotSx} />
         <Box css={loadingDotSx} animationDelay="0.25s" />
         <Box css={loadingDotSx} animationDelay="0.5s" />

@@ -19,7 +19,7 @@ export const LoadingSpinner = ({
   ...props
 }: Props) => {
   const showText = showTextProp ?? (size === "lg" || size === "xl");
-  const defaultColor = "#574AE2";
+  const defaultColor = "purple.solid";
 
   return (
     <Center height={"100%"} flexDirection="column" {...props}>
@@ -28,10 +28,9 @@ export const LoadingSpinner = ({
         animationDuration="1s"
         color={color ?? defaultColor}
         size={size}
-        mb={showText ? "1rem" : 0}
+        mb={showText ? "4" : 0}
       />
       {showText ? <Text>Loading</Text> : null}
     </Center>
   );
 };
-

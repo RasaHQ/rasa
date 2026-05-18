@@ -21,16 +21,15 @@ export const VoiceButton = ({
       content="Start voice conversation"
       aria-label="Start voice conversation"
       positioning={{ placement: "top" }}
-      bgColor="rasawebDeepPurple.800"
+      bgColor="bg.inverted"
       showArrow
     >
       <IconButton
         variant="solid"
-        colorPalette="dark"
+        colorPalette="purple"
         rounded="full"
         aria-label="Start voice conversation"
         size="xs"
-        fontSize="1rem"
         onClick={() => void startCall()}
         disabled={isDisabled || voiceCallState === "connecting"}
       >
@@ -42,16 +41,15 @@ export const VoiceButton = ({
       content="End conversation"
       aria-label="End conversation"
       positioning={{ placement: "top" }}
-      bgColor="rasawebDeepPurple.800"
+      bgColor="bg.inverted"
       showArrow
     >
       <IconButton
         variant="solid"
-        colorPalette="dark"
+        colorPalette="purple"
         rounded="full"
         aria-label="Stop voice conversation"
         size="xs"
-        fontSize="1rem"
         onClick={() => void stopCall()}
         disabled={isDisabled}
       >

@@ -58,7 +58,7 @@ export const ActionEvent = forwardRef<HTMLDivElement | null, ActionEventProps>(
 
     const utterSx = {
       ...baseMessageSx,
-      ml: "2.75rem",
+      ml: "11",
     };
 
     const replaySx = {
@@ -84,7 +84,7 @@ export const ActionEvent = forwardRef<HTMLDivElement | null, ActionEventProps>(
     } else if (event.name?.startsWith("utter_")) {
       return (
         <Flex css={nonClickableContainerSx} ref={ref} {...otherProps}>
-          <Text size="sm" css={utterSx}>
+          <Text textStyle="sm" css={utterSx}>
             {event.name}
           </Text>
         </Flex>
@@ -105,7 +105,7 @@ export const ActionEvent = forwardRef<HTMLDivElement | null, ActionEventProps>(
           <Box css={baseMessageSx}>
             <Icon icon={actionIcon} style={iconSx} />
             <Text
-              size="sm"
+              textStyle="sm"
               variant="muted"
               lineClamp={2}
               wordBreak={"break-all"}

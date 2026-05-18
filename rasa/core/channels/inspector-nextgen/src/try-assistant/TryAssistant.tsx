@@ -40,8 +40,8 @@ export function TryAssistant({ onInspectModeChange }: Readonly<Props>) {
   const showAllLayout = flowView && isLargeScreen && inspectorView === InspectorView.All;
 
   const containerProps = isEmbedded
-    ? { flexGrow: "1", borderRadius: "1rem", overflow: "hidden" as const }
-    : { height: "100%", bg: "rasaNeutral.50", borderRadius: "1rem", overflow: "hidden" as const };
+    ? { flexGrow: "1", bg: "bg.panel", borderRadius: "2xl", overflow: "hidden" as const }
+    : { height: "100%", bg: "bg.panel", borderRadius: "2xl", overflow: "hidden" as const };
 
   useConversationData();
 
@@ -68,13 +68,14 @@ export function TryAssistant({ onInspectModeChange }: Readonly<Props>) {
     [],
   );
 
-  const separatorColor = "rasaNeutral.400";
+  const separatorColor = "border.emphasized";
   const panelBorderLeft = {
     borderLeft: "1px solid",
     borderColor: separatorColor,
   };
 
   const chatPanelStyles = {
+    bg: "bg.panel",
     flexBasis: flowView ? "600px" : "100%",
     flexShrink: "1",
     flexGrow: "0",

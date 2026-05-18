@@ -16,13 +16,13 @@ export const BottomControls = () => {
 
   const containerSx = {
     position: "absolute",
-    bottom: "1rem",
-    left: "2rem",
+    bottom: "4",
+    left: "8",
     height: "auto",
   };
 
   const buttonProps = {
-    colorPalette: "dark",
+    colorPalette: "gray",
     variant: "subtle" as const,
   };
 
@@ -30,8 +30,7 @@ export const BottomControls = () => {
     <Flex css={containerSx}>
       <Box // TODO: reuse shared component with /try-assistant/AsjCopilotButton.tsx (i.e. ButtonGroup)
         zIndex={1}
-        bg="rasaNeutral.50"
-        boxShadow="0px 2px 8px 0px #00000026"
+        boxShadow="tooltip"
         borderRadius="lg"
         display="flex"
       >
@@ -65,8 +64,8 @@ export const BottomControls = () => {
         <Tooltip content="Zoom to 100%" showArrow>
           <Button
             {...buttonProps}
-            pr="0.5rem"
-            pl="0.25rem"
+            pr="2"
+            pl="1"
             aria-label="Zoom to 100%"
             onClick={handleZoomTo100}
           >

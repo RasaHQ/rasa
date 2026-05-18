@@ -1,4 +1,4 @@
-import { Box, Heading, Popover } from "@chakra-ui/react";
+import { Box, Menu } from "@chakra-ui/react";
 import { Tooltip } from "./Tooltip";
 
 interface PopoverMenuProps {
@@ -6,12 +6,12 @@ interface PopoverMenuProps {
   header: string;
   children: React.ReactNode;
   placement?:
-    | "bottom-end"
-    | "bottom-start"
-    | "bottom"
-    | "top"
-    | "top-end"
-    | "top-start";
+  | "bottom-end"
+  | "bottom-start"
+  | "bottom"
+  | "top"
+  | "top-end"
+  | "top-start";
   tooltipContent?: string;
 }
 
@@ -22,10 +22,10 @@ export const PopoverMenu = ({
   placement = "bottom-end",
   tooltipContent,
 }: PopoverMenuProps) => {
-  const triggerElement = <Popover.Trigger asChild>{trigger}</Popover.Trigger>;
+  const triggerElement = <Menu.Trigger asChild>{trigger}</Menu.Trigger>;
 
   return (
-    <Popover.Root positioning={{ placement }}>
+    <Menu.Root positioning={{ placement }}>
       {tooltipContent ? (
         <Tooltip content={tooltipContent} showArrow>
           <Box>{triggerElement}</Box>
@@ -33,20 +33,14 @@ export const PopoverMenu = ({
       ) : (
         triggerElement
       )}
-      <Popover.Positioner>
-        <Popover.Content
-          width="240px"
-          borderRadius="0.5rem"
-          boxShadow="0px 2px 10px 0px rgba(0, 0, 0, 0.18)"
-        >
-          <Popover.Body p="0.5rem">
-            <Box px="0.75rem" py="0.5rem" textAlign="start">
-              <Heading size="sm">{header}</Heading>
-            </Box>
+      <Menu.Positioner>
+        <Menu.Content width="56">
+          <Menu.ItemGroup>
+            <Menu.ItemGroupLabel>{header}</Menu.ItemGroupLabel>
             {children}
-          </Popover.Body>
-        </Popover.Content>
-      </Popover.Positioner>
-    </Popover.Root>
+          </Menu.ItemGroup>
+        </Menu.Content>
+      </Menu.Positioner>
+    </Menu.Root>
   );
 };

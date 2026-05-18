@@ -12,7 +12,7 @@ export const StandardNode = (props: NodeProps) => {
     _hover?: { boxShadow: string; cursor: string };
   } = {
     pointerEvents: "all",
-    borderColor: selected ? "rasawebDeepPurple.800" : "rasaNeutral.500",
+    borderColor: selected ? "fg" : "border.emphasized",
   };
 
   return (

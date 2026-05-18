@@ -1,10 +1,11 @@
-import { Accordion, Box, Code, Heading, Separator, Text } from "@chakra-ui/react";
+import { Accordion, Box, Heading, Separator, Text } from "@chakra-ui/react";
 import type { Utterance } from "../../types";
 import { CommonEventInfo } from "./CommonEventInfo";
 import { DetailView } from "./DetailView";
 import { EventAccordionItem } from "./EventAccordionItem";
 import { BotLatencyAccordionItem } from "./LatencyDetails";
 import { botUtteranceHasLatencyMetadata } from "../../utils/latency";
+import { RasaCodeBlock } from "../../RasaCodeBlock";
 
 interface BotMessageInfoProps {
   utterance: Utterance;
@@ -19,10 +20,10 @@ export const BotMessageInfo = ({ utterance, onClose }: BotMessageInfoProps) => {
     <DetailView title="Agent response details" onClose={onClose}>
       {utterAction && (
         <Box>
-          <Heading size="md" mb="1">
+          <Heading textStyle="sm" mb="1">
             Name
           </Heading>
-          <Text size="md" mb="2" wordBreak="break-all">
+          <Text textStyle="sm" mb="2" wordBreak="break-all">
             {utterAction}
           </Text>
         </Box>
@@ -31,19 +32,19 @@ export const BotMessageInfo = ({ utterance, onClose }: BotMessageInfoProps) => {
       {utterance.rephrase && (
         <>
           <Box>
-            <Heading size="md" mb="1">
+            <Heading textStyle="sm" mb="1">
               Original response
             </Heading>
-            <Text size="md" mb="2">
+            <Text textStyle="sm" mb="2">
               {utterance.metadata?.domain_ground_truth ?? "-"}
             </Text>
           </Box>
 
           <Box>
-            <Heading size="md" mb="1">
+            <Heading textStyle="sm" mb="1">
               Rephrased response
             </Heading>
-            <Text size="md" mb="2">
+            <Text textStyle="sm" mb="2">
               {utterance.text ?? "-"}
             </Text>
           </Box>
@@ -64,14 +65,9 @@ export const BotMessageInfo = ({ utterance, onClose }: BotMessageInfoProps) => {
         )}
         {utterance.responseData?.custom && (
           <EventAccordionItem title="Custom response" value="custom-response">
-            <Code
-              whiteSpace="pre-wrap"
-              display="block"
-              fontSize="0.75rem"
-              p="0.5rem"
-            >
-              {JSON.stringify(utterance.responseData.custom, null, 2)}
-            </Code>
+            <RasaCodeBlock
+              code={JSON.stringify(utterance.responseData.custom, null, 2)}
+            />
           </EventAccordionItem>
         )}
         <EventAccordionItem title="Event details" value="event-details">
@@ -80,6 +76,6 @@ export const BotMessageInfo = ({ utterance, onClose }: BotMessageInfoProps) => {
           />
         </EventAccordionItem>
       </Accordion.Root>
-    </DetailView>
+    </DetailView  >
   );
 };

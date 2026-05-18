@@ -1,8 +1,7 @@
-import { Box } from "@chakra-ui/react";
-import { Circle, Icon } from "../../../Icon";
+import { Status } from "@chakra-ui/react";
 
 export const ErrorDot = () => (
-  <Box as="span" flexShrink={0} ml="2" display="inline-flex" data-testid="error-dot">
-    <Icon icon={Circle} color="rasaRed.800" size="2xs" />
-  </Box>
+  <Status.Root colorPalette="red" ml="2" data-testid="error-dot">
+    <Status.Indicator />
+  </Status.Root>
 );

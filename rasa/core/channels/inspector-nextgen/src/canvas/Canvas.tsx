@@ -46,7 +46,7 @@ export const Canvas = () => {
     position: "relative",
     width: "100%",
     height: "100%",
-    fontSize: "0.75rem",
+    fontSize: "xs",
     "& .react-flow__panel": {
       margin: 0,
     },
@@ -75,10 +75,10 @@ export const Canvas = () => {
       zIndex: `-1 !important`,
     },
     "& .react-flow__edge-add": {
-      stroke: "rasaNeutral.500",
+      stroke: "border.emphasized",
     },
     "& .react-flow__edge-path": {
-      stroke: "rasaNeutral.500",
+      stroke: "border.emphasized",
     },
     "& .react-flow__handle": {
       visibility: "hidden",

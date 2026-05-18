@@ -1,27 +1,22 @@
 export const useConversationLogSx = (isSelected: boolean) => {
-  const containerSxBgSelected = "#F6F7FB";
-  const containerSxBg = "#FFFFFF";
-
-  const hoverBg = "rasaNeutral.100";
-
   const containerSx = {
     flexDirection: "row",
     textAlign: "left",
     ml: 0,
     mr: 0,
     _first: { mt: 0 },
-    p: "0.5rem",
-    pl: "1.5rem",
-    pr: "1.5rem",
-    bg: isSelected ? containerSxBgSelected : containerSxBg,
+    p: "2",
+    pl: "6",
+    pr: "6",
+    bg: isSelected ? "bg.muted" : "bg.panel",
   };
 
   const hoverableSx = {
     cursor: "pointer",
     _hover: {
-      bg: hoverBg,
+      bg: "bg.muted",
       "& .message-bubble": {
-        bg: "rasaNeutral.50",
+        bg: "bg.panel",
       },
     },
   };
@@ -32,16 +27,17 @@ export const useConversationLogSx = (isSelected: boolean) => {
   };
 
   const iconSx = {
-    marginRight: "0.5rem",
-    width: "1.25rem",
+    marginRight: "6",
+    height: "14",
+    width: "14",
   };
 
   const baseMessageSx = {
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: "0.5rem",
-    color: "rasaNeutral.700",
+    borderRadius: "lg",
+    color: "fg.muted",
   };
 
   return {

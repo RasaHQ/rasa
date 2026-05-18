@@ -18,7 +18,7 @@ export function FlowTimeline({ entries, onEntryClick }: FlowTimelineProps) {
   if (entries.length === 0) return null;
 
   return (
-    <Flex direction="column" bg="white" px="16px" py="8px" data-testid="flow-timeline">
+    <Flex direction="column" px="4" py="2" data-testid="flow-timeline">
       {entries.map((entry, index) => (
         <FlowTimelineItem
           key={entry.id}

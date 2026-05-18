@@ -44,11 +44,11 @@ export const MessageMarkup = forwardRef<HTMLDivElement | null, Props>(
 
     const { hoverableSx } = useConversationLogSx(shouldUseSelectedStyles ?? false);
 
-    const regularBgColor = "rasaNeutral.100";
-    const userBgColor = "rasawebDeepPurple.800";
-    const regularTextColor = "rasawebDeepPurple.800";
-    const highlightTextColor = "rasaNeutral.50";
-    const selectedBgColor = "rasaNeutral.50";
+    const regularBgColor = "bg.muted";
+    const userBgColor = "fg";
+    const regularTextColor = "fg";
+    const highlightTextColor = "bg.subtle";
+    const selectedBgColor = "bg.panel";
 
     const utteranceType = utterance?.type || UtteranceType.Bot;
 
@@ -58,11 +58,11 @@ export const MessageMarkup = forwardRef<HTMLDivElement | null, Props>(
 
     const containerSx = {
       _first: { mt: 0 },
-      px: "1rem",
-      py: "0.5rem",
-      pr: isUser ? "1.5rem" : "3.5rem",
-      pl: isUser ? "3.5rem" : "1.5rem",
-      bg: shouldUseSelectedStyles ? "rasaNeutral.200" : "transparent",
+      px: "4",
+      py: "2",
+      pr: isUser ? "6" : "14",
+      pl: isUser ? "14" : "6",
+      bg: shouldUseSelectedStyles ? "bg.muted" : "transparent",
       ...(inspectorMode ? hoverableSx : {}),
       ...containerSxAdditional,
     };
@@ -81,25 +81,24 @@ export const MessageMarkup = forwardRef<HTMLDivElement | null, Props>(
         : regularTextColor;
 
     const messageSx = {
-      borderRadius: isUser
-        ? "1rem 0.25rem 1rem 1rem"
-        : "0.25rem 1rem 1rem 1rem",
-      p: utterance ? "0" : "1rem",
+      borderTopLeftRadius: isUser ? "2xl" : "sm",
+      borderTopRightRadius: isUser ? "sm" : "2xl",
+      borderBottomRightRadius: "2xl",
+      borderBottomLeftRadius: "2xl",
+      p: utterance ? "0" : "4",
       bg: messageSxBg,
       color: messageSxColor,
-      fontSize: "0.813rem",
       overflow: "hidden",
-      mb: "0.25rem",
+      mb: "1",
       wordBreak: "break-word",
-      maxWidth: "20rem",
+      maxWidth: "80",
       ...messageSxAdditional,
     };
 
     const intentSx = {
-      color: "#6B7694",
-      fontSize: "0.75rem",
-      mb: "0.5rem",
-      mr: "1rem",
+      color: "fg.muted",
+      mb: "2",
+      mr: "4",
       _last: { mb: 0 },
     };
 
@@ -127,7 +126,7 @@ export const MessageMarkup = forwardRef<HTMLDivElement | null, Props>(
             src={isUser ? UserAvatar : BotAvatar}
           />
         ) : (
-          <Box width="2.5rem" />
+          <Box width="10" />
         )}
         <Box display="inline-block">
           {topOverlay}

@@ -28,9 +28,9 @@ function generateSlotEventMessage(event: ConversationEvent) {
     : "";
 
   return (
-    <Text size="sm" lineClamp={2} wordBreak="break-all" variant="muted">
+    <Text textStyle="sm" lineClamp={2} wordBreak="break-all">
       Slot{" "}
-      <Text as="span" fontWeight="500" variant="muted">
+      <Text as="span" fontWeight="medium">
         {event.name}
       </Text>{" "}
       {suffix}

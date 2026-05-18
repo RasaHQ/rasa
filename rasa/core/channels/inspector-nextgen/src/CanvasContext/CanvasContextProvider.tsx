@@ -46,11 +46,11 @@ export const CanvasContextProvider = ({
   highlightedNodes = [],
 }: Props) => {
   const { logError } = useInspectorContext();
-  const { getToken } = useTheme();
-  const markerEndColor = getToken("colors.rasaNeutral.500") as string;
-  const highlightedMarkerEndColor = getToken(
-    "colors.rasawebDeepPurple.800",
-  ) as string;
+  const { getToken, getTokenPx } = useTheme();
+  const markerEndColor = getToken("colors.border.emphasized") as string;
+  const highlightedMarkerEndColor = getToken("colors.fg") as string;
+  const edgeBorderRadius = parseInt(getToken("radii.lg") as string);
+  const markerSize = getTokenPx("sizes.5");
   const { zoomIn, zoomOut, fitView, zoomTo } = useReactFlow();
   const [nodesWithCoordinates, setNodesWithCoordinates] = useState(
     [] as FlowNode[],
@@ -67,6 +67,8 @@ export const CanvasContextProvider = ({
       highlightedEdges,
       markerEndColor,
       highlightedMarkerEndColor,
+      edgeBorderRadius,
+      markerSize,
     ),
   );
 
@@ -79,6 +81,8 @@ export const CanvasContextProvider = ({
         highlightedEdges,
         markerEndColor,
         highlightedMarkerEndColor,
+        edgeBorderRadius,
+        markerSize,
       ),
     );
   }, [
@@ -87,6 +91,8 @@ export const CanvasContextProvider = ({
     setEdges,
     markerEndColor,
     highlightedMarkerEndColor,
+    edgeBorderRadius,
+    markerSize,
   ]);
 
   const initializeNodes = useCallback(
@@ -284,6 +290,8 @@ function edgesApiToCanvas(
   highlightedEdges: FlowEdge[],
   markerEndColor: string,
   highlightedMarkerEndColor: string,
+  edgeBorderRadius: number,
+  markerSize: number,
 ): Edge[] {
   return edges.map((edge) => {
     let type = "add";
@@ -308,14 +316,14 @@ function edgesApiToCanvas(
       selected: isHighlighted ?? false,
       markerEnd: {
         type: MarkerType.Arrow,
-        width: 20,
-        height: 20,
+        width: markerSize,
+        height: markerSize,
         color: edgeMarkerEndColor,
       },
       data: {
         isReadOnly: true,
       },
-      pathOptions: { borderRadius: 8 },
+      pathOptions: { borderRadius: edgeBorderRadius },
     };
   });
 }

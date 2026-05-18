@@ -1,4 +1,4 @@
-import { Box, HStack, Text } from "@chakra-ui/react";
+import { Alert, Box, HStack } from "@chakra-ui/react";
 import { useCallback } from "react";
 import {
   type Conversation,
@@ -50,23 +50,6 @@ export const ConversationSession = ({
   const formattedStartDate = formatDateTime(new Date(conversation.startDate));
   const formattedEndDate = conversation.endDate ? formatDateTime(new Date(conversation.endDate)) : undefined;
 
-  const headingSx = {
-    color: "rasaNeutral.700",
-    fontSize: "0.75rem",
-    textAlign: "center",
-    width: "100%",
-    backgroundColor: "rasawebNeutral.50",
-    px: "3.5rem",
-    py: "0.5rem",
-    borderRadius: "0.75rem",
-  };
-
-  const versionSx = {
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  };
-
   // we don't want to render stack events, becomes too noisy
   const shownEvents = events.filter(
     (event) =>
@@ -91,16 +74,13 @@ export const ConversationSession = ({
   );
 
   return (
-    <Box mt="1rem" mb="1rem">
-      <HStack px="1.5rem" py="0.5rem" width="100%" justifyContent="center">
-        <Box css={headingSx} flex="0 1 auto" >
-          <Text size="sm" variant="muted" color="rasawebNeutral.600">
-            Session started on {formattedStartDate}
-          </Text>
-          {assistantVersion ? (
-            <Text css={versionSx}>{assistantVersion}</Text>
-          ) : null}
-        </Box>
+    <Box mt="4" mb="4">
+      <HStack px="6" py="2" width="100%" justifyContent="center">
+        <Alert.Root size="sm" justifyContent="center">
+          <Alert.Title>
+            Session started on {formattedStartDate} {assistantVersion || ""}
+          </Alert.Title>
+        </Alert.Root>
       </HStack>
 
       {shownEvents.map((event, index) => {
@@ -143,12 +123,12 @@ export const ConversationSession = ({
       ) : null}
 
       {formattedEndDate && (
-        <HStack px="1.5rem" py="0.5rem" width="100%" justifyContent="center">
-          <Box css={headingSx} flex="0 1 auto" >
-            <Text size="sm" variant="muted" color="rasawebNeutral.600">
+        <HStack px="6" py="2" width="100%" justifyContent="center">
+          <Alert.Root size="sm" justifyContent="center">
+            <Alert.Title>
               Session ended on {formattedEndDate}
-            </Text>
-          </Box>
+            </Alert.Title>
+          </Alert.Root>
         </HStack>
       )}
     </Box>

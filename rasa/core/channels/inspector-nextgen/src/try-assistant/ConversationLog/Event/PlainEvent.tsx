@@ -15,14 +15,13 @@ export const PlainEvent = forwardRef<HTMLDivElement | null, PlainEventProps>(
     const [isHovered, setIsHovered] = React.useState(false);
 
     const eventSx = {
-      fontSize: "0.75rem",
-      mb: "0.5rem",
-      ml: "1.5rem",
+      mb: "2",
+      ml: "6",
       _last: { mb: 0 },
     };
 
     const containerSxBot = {
-      padding: "0.5rem",
+      padding: "2",
       pr: `3.5rem`,
       _first: { mt: 0 },
     };
@@ -41,8 +40,8 @@ export const PlainEvent = forwardRef<HTMLDivElement | null, PlainEventProps>(
         {...otherProps}
       >
         {isHovered && <ConversationEventActionButton event={event} actions={conversationEventActions} />}
-        <Box ml="2rem">
-          <Text size="sm" variant="muted" css={eventSx}>
+        <Box ml="8">
+          <Text textStyle="sm" variant="muted" css={eventSx}>
             {event.conversationEventType.toLowerCase()}
           </Text>
         </Box>

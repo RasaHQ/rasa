@@ -5,7 +5,7 @@ import { isRasaExecutionTime, isVoiceLatency } from "../../utils/latency";
 
 function LatencyPill({ ms }: { readonly ms: number }) {
   return (
-    <Tag.Root variant="surface" colorPalette="rasaOrange" size="lg">
+    <Tag.Root variant="surface" colorPalette="orange" size="lg">
       <Tag.Label>
         ~{ms} ms
       </Tag.Label>
@@ -22,12 +22,10 @@ function LatencyRow({
 }) {
   return (
     <HStack justify="flex-start" py="2" gap="1">
-      <Heading
-        size="md"
-      >
+      <Heading textStyle="sm">
         {label}
       </Heading>
-      <Text size="md">
+      <Text textStyle="sm">
         {Math.round(valueMs)} ms
       </Text>
     </HStack >
@@ -91,13 +89,11 @@ export function BotLatencyAccordionItem({
   return (
     <Accordion.Item
       value="latency"
-      borderBottom="1px solid"
-      borderColor="rasaNeutral.300"
       py="1"
     >
-      <Accordion.ItemTrigger colorPalette="dark" px="0" cursor="pointer">
+      <Accordion.ItemTrigger px="0" cursor="pointer">
         <HStack flex="1" justify="flex-start" align="center" gap="2">
-          <Heading size="md" textAlign="left">
+          <Heading textStyle="sm">
             Latency per turn:
           </Heading>
           <LatencyPill ms={titleMs} />

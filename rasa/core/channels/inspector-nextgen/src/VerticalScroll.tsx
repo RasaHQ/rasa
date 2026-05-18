@@ -10,7 +10,7 @@ export const ScrollContainer = (props: ScrollContainerProps) => {
     height: "100%",
     width: "100%",
     gridTemplateRows: `auto 1fr auto`,
-    gridTemplateAreas: `"header" 
+    gridTemplateAreas: `"header"
                         "content"
                         "footer"`,
     ...css,
@@ -45,9 +45,9 @@ export const ScrollContent = (props: ScrollContentProps) => {
 
   const containerSx = {
     ...(withSpacing && {
-      m: "1rem",
-      mr: "0.5rem",
-      pr: "1rem",
+      m: "4",
+      mr: "2",
+      pr: "4",
     }),
     ...css,
     overflow: "auto",
@@ -77,4 +77,3 @@ export const ScrollFixedFooter = (props: ScrollFixedFooterProps) => {
     </GridItem>
   );
 };
-

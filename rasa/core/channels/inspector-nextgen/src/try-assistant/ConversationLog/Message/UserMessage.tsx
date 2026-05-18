@@ -1,4 +1,4 @@
-import { type FlexProps } from "@chakra-ui/react";
+import { type FlexProps, Text } from "@chakra-ui/react";
 import { forwardRef } from "react";
 import { isInternalRasaMessage } from "../../../utils";
 import type { MessagePropsWithTopIntentName } from "../../../types";
@@ -16,7 +16,7 @@ export const UserMessage = forwardRef<
   };
 
   const messageSxUser = {
-    p: "1rem",
+    p: "4",
     cursor: props.selectable ? "pointer" : "auto",
     whiteSpace: "pre-wrap",
   };
@@ -34,7 +34,9 @@ export const UserMessage = forwardRef<
       isUser={true}
       ref={ref}
     >
-      {utterance.text}
+      <Text textStyle="sm">
+        {utterance.text}
+      </Text>
     </MessageMarkup>
   );
 });

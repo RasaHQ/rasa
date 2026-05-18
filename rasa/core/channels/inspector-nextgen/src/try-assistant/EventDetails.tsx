@@ -10,7 +10,7 @@ interface EventDetailsProps {
 
 export const EventDetails = ({ event, onClose, flows }: EventDetailsProps) => {
   return (
-    <Box height="100%" bg="rasaNeutral.50" borderRadius="0.5rem">
+    <Box height="100%" borderRadius="lg">
       <EventInfo event={event} onClose={onClose} flows={flows} />
     </Box>
   );

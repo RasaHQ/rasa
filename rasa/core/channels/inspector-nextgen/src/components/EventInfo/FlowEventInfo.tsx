@@ -14,24 +14,24 @@ export const FlowEventInfo = ({ event, flow, onClose }: FlowEventInfoProps) => {
   return (
     <DetailView title="Flow event" onClose={onClose}>
       <Box data-testid="event-slot-or-flow-name">
-        <Heading size="md" mb="0.25rem">
+        <Heading textStyle="sm" mb="1">
           Name
         </Heading>
-        <Text size="md" mb="0.5rem" wordBreak="break-all">
+        <Text textStyle="sm" mb="2" wordBreak="break-all">
           {flow?.name || event.flowId || "-"}
         </Text>
       </Box>
 
       <Box>
-        <Heading size="md" mt="0.5rem" mb="0.25rem">
+        <Heading textStyle="sm" mt="2" mb="1">
           Description
         </Heading>
-        <Text size="md" mb="0.5rem">
+        <Text textStyle="sm" mb="2">
           {flow?.description || "-"}
         </Text>
       </Box>
 
-      <Separator mt="0.5rem" />
+      <Separator mt="2" />
 
       <Accordion.Root collapsible multiple>
         <EventAccordionItem title="Event details" value="event-details">

@@ -597,6 +597,7 @@ describe("useBotConnection", () => {
         title: "Server disconnected",
         description: "Trying to reconnect...",
         type: "error",
+        max: 3,
       });
     });
   });

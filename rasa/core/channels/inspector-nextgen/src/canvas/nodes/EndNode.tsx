@@ -15,7 +15,7 @@ export const EndNode = (props: NodeProps) => {
   } = {
     pointerEvents: "all",
     overflow: "visible",
-    borderColor: selected ? "rasawebDeepPurple.800" : "rasaNeutral.500",
+    borderColor: selected ? "fg" : "border.emphasized",
   };
 
   return (

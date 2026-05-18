@@ -18,26 +18,26 @@ export const OnboardingTooltip = ({ target, children }: Props) => {
   if (!onboardingTooltip) return <>{children}</>;
 
   const tooltipContent = (
-    <VStack align="start" gap={3} maxW="320px">
+    <VStack align="start" gap={3} maxW="80">
       <VStack align="start" gap={2}>
-        <Heading size="lg" color="rasawebNeutral.50">
+        <Heading textStyle="lg" color="fg.inverted">
           {onboardingTooltip.title}
         </Heading>
-        <Text fontSize="xs" color="rasawebNeutral.50" lineHeight="1.4">
+        <Text color="fg.inverted">
           {onboardingTooltip.description}
         </Text>
       </VStack>
       <HStack justify="space-between" width="100%">
         <HStack gap={2}>
           {onboardingTooltip.counter && (
-            <Text fontSize="xs" color="rasawebNeutral.50">
+            <Text color="fg.inverted">
               {onboardingTooltip.counter}
             </Text>
           )}
           <Button
             size="xs"
             variant="ghost"
-            color="rasawebNeutral.50"
+            color="fg.inverted"
             _hover={{ bg: "whiteAlpha.200" }}
             onClick={() => onboardingTooltip.onDismiss()}
           >
@@ -46,7 +46,7 @@ export const OnboardingTooltip = ({ target, children }: Props) => {
         </HStack>
         <Button
           variant="outline"
-          colorPalette="dark"
+          colorPalette="gray"
           size="xs"
           onClick={() => onboardingTooltip.onAction()}
         >

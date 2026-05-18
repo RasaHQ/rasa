@@ -20,8 +20,8 @@ export const PayloadResponse = ({
   isDisabled?: boolean;
 }) => {
   const containerSx = {
-    mt: "0.5rem",
-    gap: "0.5rem",
+    mt: "2",
+    gap: "2",
     flexWrap: "wrap",
   };
 
@@ -47,7 +47,7 @@ export const PayloadResponse = ({
       return (
         <ButtonLink
           variant="outline"
-          colorPalette="dark"
+          colorPalette="gray"
           key={item.title}
           to={item.payload}
           target={"_blank"}
@@ -65,7 +65,7 @@ export const PayloadResponse = ({
       return (
         <Button
           variant="outline"
-          colorPalette="dark"
+          colorPalette="gray"
           key={item.title}
           onClick={(e) => onClick(e, item.payload)}
           disabled={isDisabled}

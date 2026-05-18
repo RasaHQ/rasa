@@ -21,16 +21,8 @@ export const ViewControl = () => {
     ),
   }));
 
-  const containerStyles = {
-    xl: {
-      position: "absolute !important",
-      left: "50%",
-      translate: "-50%",
-    },
-  };
-
   return (
-    <Box css={containerStyles}>
+    <Box>
       <SegmentGroup.Root
         data-testid="view-control"
         size="sm"
@@ -38,10 +30,11 @@ export const ViewControl = () => {
         onValueChange={(details) => {
           setInspectMode(details.value === "inspect");
         }}
+        css={{ "--segment-indicator-bg": "colors.bg" }}
       >
         <SegmentGroup.Indicator />
         <SegmentGroup.Items items={items} />
       </SegmentGroup.Root>
-    </Box>
+    </Box >
   );
 };

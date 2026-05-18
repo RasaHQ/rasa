@@ -3,6 +3,7 @@ import type { ConversationEvent } from "../../types";
 import { CommonEventInfo } from "./CommonEventInfo";
 import { DetailView } from "./DetailView";
 import { EventAccordionItem } from "./EventAccordionItem";
+import { ErrorAlert } from "../../try-assistant/ConversationLog/Event/ErrorAlert";
 
 interface ActionEventInfoProps {
   event: ConversationEvent;
@@ -16,41 +17,24 @@ export const ActionEventInfo = ({ event, onClose }: ActionEventInfoProps) => {
   return (
     <DetailView title="Action event details" onClose={onClose}>
       <Box data-testid="action-event-info">
-        <Heading size="md" mb="1">
+        <Heading textStyle="sm" mb="1">
           Name
         </Heading>
-        <Text size="md" mb="2">
+        <Text textStyle="sm" mb="2">
           {event.name || "-"}
         </Text>
 
         {didActionFail && (
-          <Box
-            bg="rasaRed.50"
-            borderLeft="3px solid"
-            borderColor="red.500"
-            p="0.5rem"
-            mb="0.5rem"
-            borderRadius="0.25rem"
-          >
-            <Heading size="sm">
-              {failureReason
-                ? "This custom action failed to execute due to the following reason:"
-                : "This custom action failed to execute"}
-            </Heading>
-            {failureReason && (
-              <Text
-                size="sm"
-                mt="0.25rem"
-                wordBreak="break-all"
-              >
-                {failureReason}
-              </Text>
-            )}
-          </Box>
+          <ErrorAlert
+            title={failureReason
+              ? "This custom action failed to execute due to the following reason:"
+              : "This custom action failed to execute"}
+            message={failureReason}
+          />
         )}
       </Box>
 
-      <Separator mt="0.5rem" />
+      <Separator mt="2" />
 
       <Accordion.Root collapsible multiple>
         <EventAccordionItem title="Event details" value="event-details">

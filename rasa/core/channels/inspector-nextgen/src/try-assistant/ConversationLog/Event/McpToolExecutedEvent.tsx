@@ -59,9 +59,9 @@ export const McpToolExecutedEvent = forwardRef<
       )}
       <Box css={baseMessageSx}>
         <Icon icon={Wrench} style={iconSx} />
-        <Text size="sm" lineClamp={2} wordBreak="break-all" variant="muted">
+        <Text textStyle="sm" lineClamp={2} wordBreak="break-all" variant="muted">
           Tool{" "}
-          <Text as="span" fontWeight="500" variant="muted">
+          <Text as="span" fontWeight="medium" variant="muted">
             {toolName}
           </Text>{" "}
           used

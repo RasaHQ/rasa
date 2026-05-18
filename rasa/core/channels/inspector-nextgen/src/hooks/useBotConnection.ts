@@ -426,6 +426,7 @@ export function useBotConnection({
           title: "An internal error has happened",
           description: `${error}`,
           type: "error",
+          max: 3,
         });
         disableChat();
       });
@@ -451,6 +452,7 @@ export function useBotConnection({
             title: "Server disconnected",
             description: "Trying to reconnect...",
             type: "error",
+            max: 3,
           });
         }
         if (!socket.current?.active) {
@@ -470,6 +472,7 @@ export function useBotConnection({
           title: "Reconnect failed",
           description: "Reconnecting...",
           type: "error",
+          max: 3,
         });
         disableChat();
         onReconnectErrorRef?.current?.(error);
@@ -493,6 +496,7 @@ export function useBotConnection({
           title: "Reconnect failed",
           description: errorDescription,
           type: "error",
+          max: 3,
         });
         disableChat();
         onReconnectErrorRef?.current?.(new Error("Reconnect failed"));

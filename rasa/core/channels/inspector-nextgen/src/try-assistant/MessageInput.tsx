@@ -5,6 +5,7 @@ import {
   forwardRef,
   type KeyboardEvent,
   type RefObject,
+  useCallback,
   useMemo,
   useState,
 } from "react";
@@ -37,12 +38,12 @@ export const MessageInput = forwardRef<HTMLInputElement, Props>(
       return "Type your message";
     }, [voiceCallState, callDuration]);
 
-    const handleSubmit = () => {
+    const handleSubmit = useCallback(() => {
       if (message && !isDisabled) {
         onSubmit(message);
         setMessage("");
       }
-    };
+    }, [onSubmit, isDisabled, setMessage, message]);
 
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
       setMessage(event.target.value);
@@ -54,63 +55,44 @@ export const MessageInput = forwardRef<HTMLInputElement, Props>(
       }
     };
 
-    const containerSx = {
-      bg: "rasaNeutral.100",
-      borderRadius: "3xl",
-      display: "flex",
-      justifyContent: "center",
-    };
-
-    if (voiceCallState === "connecting" || voiceCallState === "active") {
-      containerSx.bg = "rasawebNeutral.50";
-    }
+    const button = useCallback(() => {
+      if (voiceFeaturesEnabled && message.length === 0) {
+        return <VoiceButton
+          voiceCallState={voiceCallState}
+          startCall={startVoiceCall}
+          stopCall={stopVoiceCall}
+          isDisabled={isDisabled}
+        />;
+      }
+      return <IconButton
+        variant="solid"
+        colorPalette="purple"
+        rounded="full"
+        aria-label="Send message"
+        size="xs"
+        onClick={handleSubmit}
+        disabled={message.length === 0 || isDisabled}
+      >
+        <Icon icon={PaperPlaneTop} />
+      </IconButton>
+    }, [voiceFeaturesEnabled, message, handleSubmit, isDisabled, startVoiceCall, stopVoiceCall, voiceCallState]);
 
     return (
       <InputGroup
         onKeyDown={handleKeyboardEvent}
-        css={containerSx}
-        m="1.5rem"
-        px="1rem"
-        width={`calc(100% - 3rem)`}
-        height="3.5rem"
         data-testid="assistant-input"
+        endElement={button()}
       >
-        <>
-          <Input
-            type="text"
-            placeholder={placeholder}
-            value={message}
-            onChange={handleChange}
-            disabled={isDisabled || voiceCallState !== "inactive"}
-            ref={ref}
-            css={{
-              borderWidth: "0",
-              outline: "none",
-              "&:hover": { outline: "none" },
-            }}
-          />
-          {voiceFeaturesEnabled && message.length === 0 ? (
-            <VoiceButton
-              voiceCallState={voiceCallState}
-              startCall={startVoiceCall}
-              stopCall={stopVoiceCall}
-              isDisabled={isDisabled}
-            />
-          ) : (
-            <IconButton
-              variant="solid"
-              colorPalette="dark"
-              rounded="full"
-              aria-label="Send message"
-              size="xs"
-              fontSize="1rem"
-              onClick={handleSubmit}
-              disabled={message.length === 0 || isDisabled}
-            >
-              <Icon icon={PaperPlaneTop} />
-            </IconButton>
-          )}
-        </>
+        <Input
+          type="text"
+          size="3xl"
+          bg="bg.subtle"
+          placeholder={placeholder}
+          value={message}
+          onChange={handleChange}
+          disabled={isDisabled || voiceCallState !== "inactive"}
+          ref={ref}
+        />
       </InputGroup>
     );
   },

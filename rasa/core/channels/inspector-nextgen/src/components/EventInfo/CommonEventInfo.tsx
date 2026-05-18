@@ -14,28 +14,28 @@ export const CommonEventInfo = ({ event }: CommonEventInfoProps) => {
   return (
     <>
       <Box data-testid="event-occurred-at">
-        <Heading size="md" mb="1">
+        <Heading textStyle="sm" mb="1">
           Occurred at
         </Heading>
-        <Text size="md" mb="2">
+        <Text textStyle="sm" mb="2">
           {formatted}
         </Text>
       </Box>
 
       <Box>
-        <Heading size="md" mb="1">
+        <Heading textStyle="sm" mb="1">
           ID
         </Heading>
-        <Text size="md" mb="2" wordBreak="break-all">
+        <Text textStyle="sm" mb="2" wordBreak="break-all">
           {event.id}
         </Text>
       </Box>
 
       <Box data-testid="event-type">
-        <Heading size="md" mb="1">
+        <Heading textStyle="sm" mb="1">
           Type
         </Heading>
-        <Text size="md" mb="2">
+        <Text textStyle="sm" mb="2">
           {event.conversationEventType}
         </Text>
       </Box>

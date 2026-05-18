@@ -22,19 +22,18 @@ export const InspectorViewHeader = ({
   };
   return (
     <Flex
-      height="3rem"
+      height="12"
       flexShrink={0}
-      bg="rasaNeutral.50"
-      px="1.5rem"
+      px="6"
       alignItems="center"
       justifyContent="space-between"
       css={sticky ? stickyStyles : {}}
     >
       <HStack minWidth={0}>
-        <Heading size="sm">{title}</Heading>
+        <Heading textStyle="sm">{title}</Heading>
         {text && (
           <Text
-            size="sm"
+            textStyle="sm"
             overflow="hidden"
             textOverflow="ellipsis"
             whiteSpace="nowrap"

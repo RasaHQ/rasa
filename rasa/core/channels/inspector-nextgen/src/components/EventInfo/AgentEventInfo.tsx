@@ -1,5 +1,6 @@
-import { Accordion, Box, Code, Heading, Separator, Tag, Text } from "@chakra-ui/react";
+import { Accordion, Box, Heading, Separator, Tag, Text } from "@chakra-ui/react";
 import { useCallback } from "react";
+import { RasaCodeBlock } from "../../RasaCodeBlock";
 import {
   type ConversationEvent
 } from "../../types";
@@ -25,14 +26,14 @@ export const AgentEventInfo = ({
   const exitConditions = event.metadata?.exit_conditions;
 
   const toolTagStyles = {
-    mr: "0.25rem",
-    maxWidth: "20rem",
+    mr: "1",
+    maxWidth: "80",
   };
 
   const renderTools = useCallback((tools: string[]) => (
-    <Box mb="0.5rem" lineHeight="2rem">
+    <Box mb="2">
       {tools.map(tool => (
-        <Tag.Root key={tool} size="lg" variant="subtle" rounded="full" css={toolTagStyles}>
+        <Tag.Root key={tool} size="xl" variant="subtle" rounded="full" css={toolTagStyles}>
           <Tag.Label>{tool}</Tag.Label>
         </Tag.Root>
       ))}
@@ -44,26 +45,26 @@ export const AgentEventInfo = ({
   return (
     <DetailView title="Sub-agent event details" onClose={onClose}>
       <Box>
-        <Heading size="md" mb="1">
+        <Heading textStyle="sm" mb="1">
           Name
         </Heading>
-        <Text size="md" mb="2" wordBreak="break-all">
+        <Text textStyle="sm" mb="2" wordBreak="break-all">
           {agentName}
         </Text>
       </Box>
 
       <Box>
-        <Heading size="md" mt="2" mb="1">
+        <Heading textStyle="sm" mt="2" mb="1">
           Description
         </Heading>
-        <Text size="md" mb="2">
+        <Text textStyle="sm" mb="2">
           {description}
         </Text>
       </Box>
 
       {!!tools.length && (
         <Box>
-          <Heading size="md" mt="2" mb="1">
+          <Heading textStyle="sm" mt="2" mb="1">
             Tools
           </Heading>
           {renderTools(tools)}
@@ -72,7 +73,7 @@ export const AgentEventInfo = ({
 
       {!!excludedTools.length && (
         <Box>
-          <Heading size="md" mt="2" mb="1">
+          <Heading textStyle="sm" mt="2" mb="1">
             Excluded tools
           </Heading>
           {renderTools(excludedTools)}
@@ -81,10 +82,10 @@ export const AgentEventInfo = ({
 
       {!tools.length && !excludedTools.length && (
         <Box>
-          <Heading size="md" mt="2" mb="1">
+          <Heading textStyle="sm" mt="2" mb="1">
             Tools
           </Heading>
-          <Text size="md" mb="0.5rem" wordBreak="break-all">
+          <Text textStyle="sm" mb="2" wordBreak="break-all">
             All server tools available
           </Text>
         </Box>
@@ -92,10 +93,10 @@ export const AgentEventInfo = ({
 
       {flowId && (
         <Box>
-          <Heading size="md" mt="2" mb="1">
+          <Heading textStyle="sm" mt="2" mb="1">
             Trigger
           </Heading>
-          <Text size="md" mb="2" wordBreak="break-all">
+          <Text textStyle="sm" mb="2" wordBreak="break-all">
             This sub-agent was triggered by flow {flowId}
           </Text>
         </Box>
@@ -106,20 +107,12 @@ export const AgentEventInfo = ({
       {exitConditions && (
         <Accordion.Root collapsible multiple>
           <EventAccordionItem title="Exit conditions" value="exit-conditions">
-            <Code
-              whiteSpace="pre-wrap"
-              display="block"
-              fontSize="0.75rem"
-              p="1rem"
-              borderRadius="0.5rem"
-              variant="solid"
-              fontFamily="IBM Plex Mono"
-              data-testid="agent-exit-conditions"
-            >
-              {exitConditions.map((condition: string) => (
+            <RasaCodeBlock
+              code={exitConditions.map((condition: string) => (
                 `- ${condition}`
               )).join("\n")}
-            </Code>
+              data-testid="agent-exit-conditions"
+            />
           </EventAccordionItem>
         </Accordion.Root>
       )}

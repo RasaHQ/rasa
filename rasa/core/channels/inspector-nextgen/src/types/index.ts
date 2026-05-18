@@ -2,6 +2,7 @@ export * from "./api";
 export * from "./conversation";
 export * from "./flow";
 export * from "./inspector";
+import type { StoreProps as ToastStoreProps } from '@zag-js/toast';
 import type { RasaProError } from "./conversation";
 
 export enum PlaceholderImage {
@@ -24,7 +25,7 @@ export type TrackFn = (
   properties?: Record<string, unknown>,
 ) => void | Promise<void>;
 
-export type ShowToastOptions = {
+export type ShowToastOptions = ToastStoreProps & {
   title: string;
   description: string;
   type: "error" | "info" | "success" | "warning";

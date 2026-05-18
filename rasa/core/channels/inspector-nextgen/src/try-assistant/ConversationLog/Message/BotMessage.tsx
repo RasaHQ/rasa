@@ -17,7 +17,8 @@ import { Modal } from "../../../Modal";
 import { ConversationEventActionButton } from "../../ConversationEventActionButton";
 import { MessageMarkup } from "./MessageMarkup";
 import { type Item as PayloadItem, PayloadResponse } from "./PayloadResponse";
-import { CodeBlock } from "../../../CodeBlock";
+import { useTheme } from "../../../hooks/useTheme";
+import { RasaCodeBlock } from "../../../RasaCodeBlock";
 
 const startsWithProtocol = (payload: string) =>
   /^\b((mailto|tel|sms):|[a-z]+:\/\/)/i.test(payload);
@@ -30,6 +31,7 @@ export const BotMessage = forwardRef<
     props;
   const { open, onOpen, onClose } = useDisclosure();
   const [isHovered, setIsHovered] = useState(false);
+  const { getToken } = useTheme();
 
   const image = utterance.responseData?.image;
   const buttons = getButtons(utterance.responseData);
@@ -46,21 +48,21 @@ export const BotMessage = forwardRef<
       },
       "aria-label": "Cancel",
       variant: "outline" as const,
-      colorPalette: "dark" as const,
+      colorPalette: "gray" as const,
     },
   ];
 
   const imageSx = {
-    borderTopRadius: "0.25rem",
-    borderTopRightRadius: "1rem",
+    borderTopRadius: "sm",
+    borderTopRightRadius: "2xl",
     objectFit: "cover",
     objectPosition: "center",
     width: "100%",
   };
 
   const dividerSx = {
-    borderColor: "#DDE2EF",
-    my: "0.5rem",
+    borderColor: "border.emphasized",
+    my: "2",
   };
 
   return (
@@ -84,9 +86,9 @@ export const BotMessage = forwardRef<
     >
       {image ? <Image src={image} css={imageSx} alt="Assistant image" /> : null}
 
-      <Box p="1rem" _empty={{ display: "none" }}>
+      <Box p="4" _empty={{ display: "none" }}>
         {text ? (
-          <Text size="md" whiteSpace="pre-wrap">
+          <Text textStyle="sm" whiteSpace="pre-wrap">
             {text}
           </Text>
         ) : null}
@@ -100,14 +102,13 @@ export const BotMessage = forwardRef<
             <Flex alignItems="center">
               <Icon
                 icon={IconCode}
-                fontSize="1rem"
-                style={{ marginRight: "7" }}
+                style={{ marginRight: getToken("spacing.7") as string }}
               />
               JSON
             </Flex>
             <Modal
               button={() => (
-                <Button size="sm" mt="3" colorPalette="dark">
+                <Button size="sm" mt="3" colorPalette="gray">
                   Click to view code
                 </Button>
               )}
@@ -117,10 +118,7 @@ export const BotMessage = forwardRef<
               onClose={onClose}
               onOpen={onOpen}
             >
-              <CodeBlock
-                language="json"
-                code={JSON.stringify(custom, null, 2) || "-"}
-              />
+              <RasaCodeBlock code={JSON.stringify(custom, null, 2) || "-"} />
             </Modal>
           </Box>
         ) : null}

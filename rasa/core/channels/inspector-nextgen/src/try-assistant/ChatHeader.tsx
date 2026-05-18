@@ -30,7 +30,7 @@ export const ChatHeader = ({
   const isEmbedded = useInspectorStore((s) => s.isEmbedded);
 
   return (
-    <Flex justifyContent="space-between" flex={1} alignItems="center">
+    <Flex justifyContent="space-between" flex={1} alignItems="center" bg="bg.panel">
       {isEmbedded ? (
         <OnboardingTooltip target="inspectToggle">
           <SwitchButton
@@ -42,16 +42,15 @@ export const ChatHeader = ({
           />
         </OnboardingTooltip>
       ) : (
-        <Heading size="md">Preview</Heading>
+        <Heading textStyle="sm">Preview</Heading>
       )}
-      <Box display="flex" gap="0.25rem" alignItems="center">
+      <Box display="flex" gap="1" alignItems="center">
         <PopoverMenu
           trigger={
             <IconButton
               aria-label="Download"
               data-testid="download-button"
-              variant="solid"
-              colorPalette="light"
+              variant="ghost"
               size="sm"
               disabled={!hasEvents}
             >
@@ -78,8 +77,7 @@ export const ChatHeader = ({
           <IconButton
             aria-label="Restart conversation"
             data-testid="restart-conversation"
-            variant="solid"
-            colorPalette="light"
+            variant="ghost"
             onClick={onNewConversation}
             size="sm"
           >

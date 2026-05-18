@@ -18,8 +18,8 @@ export const ConversationEventActionButton = ({ actions, event }: ConversationEv
       top="-1.25rem"
       right="5"
       zIndex={1}
-      bg="rasaNeutral.50"
-      boxShadow="0px 2px 8px 0px #00000026"
+      bg="bg.subtle"
+      boxShadow="tooltip"
       borderRadius="lg"
     >
       {actions.map(({ icon, label, action }, index: number) => (
@@ -27,7 +27,7 @@ export const ConversationEventActionButton = ({ actions, event }: ConversationEv
         <Button
           key={index}
           variant="subtle"
-          colorPalette="dark"
+          colorPalette="gray"
           size="sm"
           onClick={() => action({ ...event })}
           aria-label={label}

@@ -37,9 +37,9 @@ function generateFlowEventMessage(event: ConversationEvent) {
   const suffix = eventTexts[event.conversationEventType] ?? "";
 
   return (
-    <Text size="sm" variant="muted" lineClamp={2} wordBreak="break-all">
+    <Text textStyle="sm" color="fg.muted" lineClamp={2} wordBreak="break-all">
       {prefix}{" "}
-      <Text as="span" fontWeight="500" variant="muted">
+      <Text as="span" fontWeight="medium" variant="muted">
         {event.flowId}
       </Text>{" "}
       {suffix}

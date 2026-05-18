@@ -15,11 +15,11 @@ export function EventAccordionItem({
     <Accordion.Item
       value={value}
       borderBottom="1px solid"
-      borderColor="rasaNeutral.300"
-      py="0.25rem"
+      borderColor="border"
+      py="1"
     >
-      <Accordion.ItemTrigger colorPalette="dark" px="0" cursor="pointer">
-        <Heading flex="1" size="md" textAlign="left">
+      <Accordion.ItemTrigger colorPalette="gray" px="0" cursor="pointer">
+        <Heading flex="1" textStyle="sm" textAlign="left">
           {title}
         </Heading>
         <Accordion.ItemIndicator />

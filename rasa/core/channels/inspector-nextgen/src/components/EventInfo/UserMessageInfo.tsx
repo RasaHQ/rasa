@@ -1,4 +1,5 @@
-import { Accordion, Box, Code, Heading, HStack, Separator, Text } from "@chakra-ui/react";
+import { Accordion, Box, Heading, HStack, Separator, Text } from "@chakra-ui/react";
+import { RasaCodeBlock } from "../../RasaCodeBlock";
 import type { Utterance } from "../../types";
 import { CommonEventInfo } from "./CommonEventInfo";
 import { DetailView } from "./DetailView";
@@ -10,46 +11,48 @@ interface UserMessageInfoProps {
 }
 
 export const UserMessageInfo = ({ utterance, onClose }: UserMessageInfoProps) => {
+  const getConfidencePalette = (confidence: number) =>
+    confidence > 0.7 ? "green" : confidence > 0.4 ? "yellow" : "red";
+
   const intentPills = utterance.intents?.slice(0, 3).map((intent) => (
-    <HStack key={intent.id} mb="0.25rem">
+    <HStack key={intent.id} mb="1">
       <Box
-        bg={intent.confidence > 0.7 ? "green.100" : intent.confidence > 0.4 ? "yellow.100" : "red.100"}
-        color={intent.confidence > 0.7 ? "green.800" : intent.confidence > 0.4 ? "yellow.800" : "red.800"}
-        px="0.375rem"
-        py="0.125rem"
-        borderRadius="0.25rem"
-        fontSize="0.688rem"
+        colorPalette={getConfidencePalette(intent.confidence)}
+        px="1.5"
+        py="0.5"
+        borderRadius="sm"
         fontWeight="600"
       >
         {(intent.confidence * 100).toFixed(1)}%
       </Box>
-      <Text fontSize="0.813rem">{intent.name}</Text>
+      <Text>{intent.name}</Text>
     </HStack>
   ));
 
   return (
     <DetailView title="User message details" onClose={onClose}>
-      <Heading size="md" mb="1" mt="2">
+      <Heading textStyle="sm" mt="2" mb="1">
         Predicted intents
       </Heading>
       {intentPills && intentPills.length > 0 ? (
-        <Box mb="0.5rem">{intentPills}</Box>
+        <Box mb="2">{intentPills}</Box>
       ) : (
-        <Text fontSize="0.813rem" mb="0.5rem">-</Text>
+        <Text mb="2">-</Text>
       )}
 
       {utterance.commands ? (
         <>
-          <Heading size="md" mt="2" mb="1">
-            Predicted commands
+          <Heading textStyle="sm" mt="2" mb="1">
+            Predicted Commands
           </Heading>
-          <Code whiteSpace="pre-wrap" display="block" fontSize="0.75rem" p="0.5rem" mb="0.5rem">
-            {JSON.stringify(utterance.commands, null, 2) || "-"}
-          </Code>
+
+          <RasaCodeBlock
+            code={utterance.commands != null ? JSON.stringify(utterance.commands, null, 2) || "-" : "—"}
+          />
         </>
       ) : null}
 
-      <Separator mt="0.5rem" />
+      <Separator mt="2" />
 
       <Accordion.Root collapsible multiple>
         <EventAccordionItem title="Event details" value="event-details">

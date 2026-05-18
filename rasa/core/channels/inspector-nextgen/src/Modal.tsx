@@ -92,8 +92,8 @@ export const Modal = (props: Props) => {
         {displayOverlay && <Dialog.Backdrop />}
         <Dialog.Positioner>
           <Dialog.Content>
-            <Dialog.Header pt="1rem">
-              <Heading size="lg">{title}</Heading>
+            <Dialog.Header pt="4">
+              <Heading textStyle="lg">{title}</Heading>
             </Dialog.Header>
             {isLoading ? (
               <Flex flexGrow={1} justifyContent="center" alignItems="center">
@@ -101,7 +101,7 @@ export const Modal = (props: Props) => {
               </Flex>
             ) : (
               <Box as={type} css={overflowSx}>
-                <Dialog.Body p="2rem" pt="0.5rem">
+                <Dialog.Body p="8" pt="2">
                   {children}
                 </Dialog.Body>
                 {hasActions || footer ? (
@@ -114,9 +114,8 @@ export const Modal = (props: Props) => {
                   <Dialog.CloseTrigger asChild>
                     <IconButton
                       size="lg"
-                      fontSize="lg"
                       variant="subtle"
-                      colorPalette="dark"
+                      colorPalette="gray"
                       aria-label="Close"
                     >
                       <Icon icon={XMark} />
@@ -134,7 +133,7 @@ export const Modal = (props: Props) => {
 
 const Actions = ({ actions }: { actions: Action[] }) => {
   return (
-    <HStack gap="0.5rem" flexGrow={1} justifyContent="flex-end">
+    <HStack gap="2" flexGrow={1} justifyContent="flex-end">
       {actions.map((action) => {
         const {
           id,
@@ -162,7 +161,7 @@ const Actions = ({ actions }: { actions: Action[] }) => {
             key={id}
             type={type}
             onClick={handleClick}
-            borderRadius={"0.5rem"}
+            borderRadius="lg"
             {...props}
           >
             {title}
@@ -172,4 +171,3 @@ const Actions = ({ actions }: { actions: Action[] }) => {
     </HStack>
   );
 };
-

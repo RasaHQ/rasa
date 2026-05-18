@@ -1,4 +1,6 @@
-import { Accordion, Box, Code, Heading, Separator, Text } from "@chakra-ui/react";
+import { Accordion, Box, Heading, Separator, Text } from "@chakra-ui/react";
+import { RasaCodeBlock } from "../../RasaCodeBlock";
+import { ErrorAlert } from "../../try-assistant/ConversationLog/Event/ErrorAlert";
 import type { ConversationEvent } from "../../types";
 import { CommonEventInfo } from "./CommonEventInfo";
 import { DetailView } from "./DetailView";
@@ -34,95 +36,63 @@ export const McpToolExecutedEventInfo = ({
 
   return (
     <DetailView title="MCP tool executed" onClose={onClose}>
-      <Box mb="0.5rem">
-        <Heading size="md" mb="0.25rem">
+      <Box mb="2">
+        <Heading textStyle="sm" mb="1">
           Tool
         </Heading>
-        <Text size="md">{toolName}</Text>
+        <Text textStyle="sm">{toolName}</Text>
       </Box>
 
       {event.flowId && (
-        <Box mb="0.5rem">
-          <Heading size="md" mb="0.25rem">
+        <Box mb="2">
+          <Heading textStyle="sm" mb="1">
             Flow
           </Heading>
-          <Text size="md">{event.flowId}</Text>
+          <Text textStyle="sm">{event.flowId}</Text>
         </Box>
       )}
 
-      <Heading size="md" mb="0.25rem">
+      <Heading textStyle="sm" mb="1">
         Arguments
       </Heading>
-      <Box maxHeight="12rem" overflowY="auto" borderRadius="0.5rem" mb="0.5rem">
-        <Code
-          whiteSpace="pre-wrap"
-          display="block"
-          fontSize="0.75rem"
-          p="1rem"
-          borderRadius="0.5rem"
-          variant="solid"
-          fontFamily="IBM Plex Mono"
+      <Box maxHeight="48" overflowY="auto" borderRadius="lg" mb="2">
+        <RasaCodeBlock
+          code={argumentsValue != null ? JSON.stringify(argumentsValue, null, 2) : "—"}
           data-testid="event-mcp-tool-arguments"
-        >
-          {argumentsValue != null ? JSON.stringify(argumentsValue, null, 2) : "—"}
-        </Code>
+        />
       </Box>
 
       {isError ? (
-        <Box
-          bg="red.50"
-          borderLeft="3px solid"
-          borderColor="red.500"
-          p="0.5rem"
-          mb="0.5rem"
-          borderRadius="0.25rem"
-        >
-          <Heading size="sm">
-            {errorMessage
-              ? "This tool call failed to execute due to the following reason:"
-              : "This tool call failed to execute"}
-          </Heading>
-          {errorMessage && (
-            <Text
-              size="sm"
-              mt="0.25rem"
-            >
-              {errorMessage}
-            </Text>
-          )}
-        </Box>
+        <ErrorAlert
+          title={errorMessage ?
+            "This tool call failed to execute due to the following reason:" :
+            "This tool call failed to execute"}
+          message={errorMessage}
+        />
       ) : (
         <>
-          <Heading size="md" mb="0.25rem">
+          <Heading textStyle="sm" mb="1">
             Result
           </Heading>
           <Box
-            maxHeight="20rem"
+            maxHeight="80"
             overflowY="auto"
-            borderRadius="0.5rem"
-            mb="0.5rem"
+            borderRadius="lg"
+            mb="2"
           >
-            <Code
-              whiteSpace="pre-wrap"
-              display="block"
-              fontSize="0.75rem"
-              p="1rem"
-              borderRadius="0.5rem"
-              variant="solid"
-              fontFamily="IBM Plex Mono"
-              data-testid="event-mcp-tool-result"
-            >
-              {resultValue != null
+            <RasaCodeBlock
+              code={resultValue != null
                 ? typeof resultValue === "string"
                   ? resultValue
                   : JSON.stringify(resultValue, null, 2)
                 : "—"}
-            </Code>
+              data-testid="event-mcp-tool-result"
+            />
           </Box>
         </>
       )}
 
-      <Separator mt="0.5rem" />
+      <Separator mt="2" />
       <Accordion.Root collapsible multiple>
         <EventAccordionItem title="Event details" value="event-details">
           <CommonEventInfo event={event} />

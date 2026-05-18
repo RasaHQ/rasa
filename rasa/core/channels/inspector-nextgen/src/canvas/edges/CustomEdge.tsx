@@ -6,6 +6,7 @@ import {
 } from "reactflow";
 import { useCanvasContext } from "../../CanvasContext";
 import { FlowNodeType, type FlowNode } from "../../types";
+import { useTheme } from "../../hooks/useTheme";
 
 /**
  *
@@ -144,10 +145,11 @@ export const CustomEdge = (props: EdgeProps) => {
     selected,
   } = props;
   const { nodes } = useCanvasContext();
-
-  const defaultEdgeColor = "rasaNeutral.500";
-  const highlightedEdgeColor = "rasawebDeepPurple.800";
+  const { getToken } = useTheme();
+  const defaultEdgeColor = getToken("colors.border.emphasized") as string;
+  const highlightedEdgeColor = getToken("colors.fg") as string;
   const edgeColor = selected ? highlightedEdgeColor : defaultEdgeColor;
+  const edgeBorderRadius = parseInt(getToken("radii.lg") as string);
 
   const sourceNode = nodes.find((n) => n.id === source);
   const targetNode = nodes.find((n) => n.id === target);
@@ -179,7 +181,7 @@ export const CustomEdge = (props: EdgeProps) => {
     targetY: calculatedTargetY,
     sourcePosition: calculatedSourcePosition,
     targetPosition: calculatedTargetPosition,
-    borderRadius: 8,
+    borderRadius: edgeBorderRadius,
   });
 
   return (

@@ -76,11 +76,9 @@ export const ChatSection = ({ handleSelect }: ChatSectionProps) => {
     [],
   );
 
-  const lightColor = "#FFFFFF";
   const headerSx = {
-    height: "48px",
-    bg: "rasaNeutral.50",
-    px: "1.5rem",
+    height: "12",
+    px: "6",
     display: "flex",
     alignItems: "center",
   };
@@ -97,7 +95,7 @@ export const ChatSection = ({ handleSelect }: ChatSectionProps) => {
         />
       </ScrollFixedHeader>
 
-      <ScrollContent withSpacing={false} bg={lightColor} mb="1rem">
+      <ScrollContent withSpacing={false} bg="bg.panel" mb="4">
         <TryAssistantConversation
           replayConversation={replayConversationUntilEvent}
           conversationAssistant={{}}
@@ -112,9 +110,9 @@ export const ChatSection = ({ handleSelect }: ChatSectionProps) => {
         />
       </ScrollContent>
 
-      <ScrollFixedFooter>
+      <ScrollFixedFooter m="4">
         <OnboardingTooltip target="messageInput">
-          <Box>
+          <Box w="100%">
             <MessageInput
               ref={inputRef}
               onSubmit={handleMessageSubmit}

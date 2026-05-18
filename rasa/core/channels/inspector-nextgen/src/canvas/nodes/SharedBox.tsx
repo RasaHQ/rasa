@@ -2,9 +2,9 @@ import { type FlexProps, Flex } from "@chakra-ui/react";
 
 export const SharedBox = (props: FlexProps) => {
   const sx = {
-    bg: "#FFFFFF",
-    color: "#2C3951",
-    borderRadius: "1rem",
+    bg: "bg",
+    color: "fg",
+    borderRadius: "2xl",
     overflow: "hidden",
     height: "100%",
     alignItems: "center",

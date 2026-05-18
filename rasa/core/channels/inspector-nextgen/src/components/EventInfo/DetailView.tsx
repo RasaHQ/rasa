@@ -24,17 +24,15 @@ export function DetailView({
           <Flex
             justifyContent="space-between"
             alignItems="center"
-            height="3rem"
-            bg="rasaNeutral.50"
-            px="1.5rem"
+            height="12"
+            px="6"
           >
-            <Heading size="md">
+            <Heading textStyle="sm">
               {title}
             </Heading>
             <IconButton
               data-testid="event-details-close"
-              variant="solid"
-              colorPalette="light"
+              variant="ghost"
               size="sm"
               aria-label="Close"
               onClick={onClose}
@@ -44,7 +42,7 @@ export function DetailView({
           </Flex>
         </ScrollFixedHeader>
 
-        <ScrollContent withSpacing={false} css={{ px: "1.5rem", py: "0.5rem" }}>
+        <ScrollContent withSpacing={false} css={{ px: "6", py: "2" }}>
           {children}
         </ScrollContent>
       </ScrollContainer>
@@ -53,8 +51,8 @@ export function DetailView({
         bottom={0}
         left={0}
         right={0}
-        height="24px"
-        background="linear-gradient(to bottom, transparent, white)"
+        height="6"
+        background="linear-gradient(to bottom, transparent, var(--app-colors-bg))"
         pointerEvents="none"
         zIndex={1}
       />

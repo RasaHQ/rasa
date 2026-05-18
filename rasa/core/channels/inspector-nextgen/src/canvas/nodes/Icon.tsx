@@ -19,60 +19,49 @@ interface Props {
   node: FlowNode;
 }
 
-export const Icon = ({ node }: Props) => {
-  const type = node.type;
-  const bgColor = getBackgroundColor(node);
-  const color = getColor(type);
-  const containerSx = {
-    borderRadius: "0.5rem",
-    color: color[0],
-    bg: bgColor[0],
-    w: "1.875rem",
-    h: "1.875rem",
-    minWidth: "1.875rem",
-    justifyContent: "center",
-    alignItems: "center",
-  };
-  return (
-    <Flex css={containerSx}>
-      <IconComponent icon={getIcon(node)} size="lg" />
-    </Flex>
-  );
-};
-
-const getColor = (type: FlowNodeType | "invalid") => {
-  if (type === FlowNodeType.Start) {
-    return ["rasaCyan.800"];
-  }
-  return ["rasaNeutral.50"];
-};
-
-const getBackgroundColor = (node: FlowNode) => {
+const getColorPalette = (node: FlowNode): string => {
   switch (node.type) {
     case FlowNodeType.CollectInformation:
-      return ["rasaGreen.800"];
+      return "green";
     case FlowNodeType.Message:
-      return ["rasaBlue.900"];
+      return "blue";
     case FlowNodeType.CustomAction:
-      return ["rasaOrange.600"];
+      return "orange";
     case FlowNodeType.SetSlots:
     case FlowNodeType.Start:
-      return ["rasaCyan.800"];
+      return "cyan";
     case FlowNodeType.Condition:
     case FlowNodeType.Logic:
-      return ["rasaPink.900"];
+      return "pink";
     case undefined:
-      return ["rasaRed.800"];
+      return "red";
     case FlowNodeType.Call: {
-      if (node.callType === CallType.Flow) {
-        return ["rasawebDeepPurple.800"];
-      }
-      return ["rasawebLavender.700"];
+      if (node.callType === CallType.Flow) return "gray";
+      return "purple";
     }
     case FlowNodeType.Link:
     default:
-      return ["rasawebDeepPurple.800"];
+      return "gray";
   }
+};
+
+export const Icon = ({ node }: Props) => {
+  const colorPalette = getColorPalette(node);
+  return (
+    <Flex
+      colorPalette={colorPalette}
+      borderRadius="lg"
+      bg="colorPalette.solid"
+      color="colorPalette.contrast"
+      w="1.875rem"
+      h="1.875rem"
+      minWidth="1.875rem"
+      justifyContent="center"
+      alignItems="center"
+    >
+      <IconComponent icon={getIcon(node)} size="lg" />
+    </Flex>
+  );
 };
 
 const getIcon = (node: FlowNode) => {

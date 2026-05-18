@@ -6,22 +6,22 @@ export const StandaloneHeader = () => {
   const assistantId = useInspectorStore((s) => s.assistantId);
 
   const styles = {
-    height: "3rem",
-    bg: "rasaNeutral.50",
+    height: "12",
     boxShadow: "header",
     borderBottom: "1px solid",
-    borderColor: "rasaNeutral.400",
+    borderColor: "border.emphasized",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
     flexShrink: "0",
-    px: "1.5rem",
+    px: "6",
+    bg: "bg.panel",
   };
 
   return (
     <Flex css={styles}>
       {assistantId && (
-        <Text size="sm" position="absolute" left="1.5rem">
+        <Text textStyle="sm" position="absolute" left="6">
           {assistantId}
         </Text>
       )}

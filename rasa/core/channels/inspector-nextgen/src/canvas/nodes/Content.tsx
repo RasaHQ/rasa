@@ -12,7 +12,7 @@ export const Content = ({ node }: Props) => {
   const { data } = node;
   const containerSx = {
     flexGrow: 1,
-    px: "1rem",
+    px: "4",
     alignItems: "center",
     justifyContent: "flex-start",
     width: "100%",
@@ -21,7 +21,7 @@ export const Content = ({ node }: Props) => {
   };
 
   const textSx = {
-    ml: "0.75rem",
+    ml: "3",
     wordBreak: "break-word",
     display: "-webkit-box",
     "-webkit-line-clamp": "3",
@@ -32,7 +32,7 @@ export const Content = ({ node }: Props) => {
   return (
     <Flex css={containerSx}>
       <NodeIcon node={data} />
-      <Text size="xs" css={textSx}>
+      <Text textStyle="xs" css={textSx}>
         {extractNodeLabel(data)}
       </Text>
     </Flex>

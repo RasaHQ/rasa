@@ -1,4 +1,4 @@
-import { Box, ChakraProvider, Flex } from '@chakra-ui/react';
+import { Box, ChakraProvider, Flex, Theme } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from 'react';
 import { Background } from "./assets/images";
@@ -36,19 +36,21 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ChakraProvider value={system}>
-        <Flex direction="column" css={containerCss}>
-          <StandaloneHeader />
-          <Box flex={1} css={contentCss} px="2rem" py="1rem" position="relative">
-            <Inspector
-              projectUrl={projectUrl}
-              botDataEndpoint="/data"
-              onInspectModeChange={(inspect) => setContainerWidth(inspect ? "100%" : "1000px")}
-              singleSessionMode
-            />
-          </Box>
-        </Flex>
+        <Theme appearance="light">
+          <Flex direction="column" css={containerCss}>
+            <StandaloneHeader />
+            <Box flex={1} css={contentCss} px="8" py="4" position="relative">
+              <Inspector
+                projectUrl={projectUrl}
+                botDataEndpoint="/data"
+                onInspectModeChange={(inspect) => setContainerWidth(inspect ? "100%" : "1000px")}
+                singleSessionMode
+              />
+            </Box>
+          </Flex>
+        </Theme>
       </ChakraProvider>
-    </QueryClientProvider>
+    </QueryClientProvider >
   );
 };
 

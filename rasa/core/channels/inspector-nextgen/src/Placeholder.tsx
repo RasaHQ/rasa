@@ -1,4 +1,4 @@
-import { Center, Text, Box, Heading, Image } from "@chakra-ui/react";
+import { Center, EmptyState, Image, VStack } from "@chakra-ui/react";
 import {
   NoFlow,
   Mobile,
@@ -20,7 +20,6 @@ interface Props {
   shortLabel?: string;
   longLabel?: string;
   image?: PlaceholderImage;
-  title?: string;
   children?: React.ReactNode;
 }
 
@@ -29,31 +28,21 @@ export const NoData = ({
   longLabel = "We couldn't find any results to display.",
   image = PlaceholderImage.NoFlow,
   children,
-  ...props
 }: Props) => {
-  const boxSx = {
-    display: "grid",
-    rowGap: "0.5rem",
-    maxWidth: "21.25rem",
-    mb: "1rem",
-  };
-  const textColor = "rasaNeutral.700";
-
   return (
-    <Center height={"100%"} flexDirection="column" {...props}>
-      <Image src={images[image]} alt={shortLabel} height="14rem" mb={6} />
-      <Box css={boxSx}>
-        <Heading fontSize="1rem" textAlign="center">
-          {shortLabel}
-        </Heading>
-        {longLabel && (
-          <Text color={textColor} textAlign="center">
-            {longLabel}
-          </Text>
-        )}
-      </Box>
-      {children}
+    <Center height="100%">
+      <EmptyState.Root>
+        <EmptyState.Content>
+          <Image src={images[image]} alt={shortLabel} height="56" mb="4" />
+          <VStack gap="2" textAlign="center" maxW="21.25rem" mb="4">
+            <EmptyState.Title>{shortLabel}</EmptyState.Title>
+            {longLabel && (
+              <EmptyState.Description>{longLabel}</EmptyState.Description>
+            )}
+          </VStack>
+          {children}
+        </EmptyState.Content>
+      </EmptyState.Root>
     </Center>
   );
 };
-

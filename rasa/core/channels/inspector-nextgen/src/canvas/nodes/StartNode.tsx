@@ -7,20 +7,20 @@ export const StartNode = (props: NodeProps<FlowNode>) => {
   const { data, isConnectable, sourcePosition } = props;
 
   const sx = {
-    bg: "#2C9793",
-    color: "#FFFFFF",
-    borderRadius: "9999px",
+    bg: "teal.solid",
+    color: "fg.inverted",
+    borderRadius: "full",
     border: "none",
     borderColor: "transparent",
-    px: "1.5rem",
-    py: "0.5rem",
+    px: "6",
+    py: "2",
     pointerEvents: "all",
     height: "auto",
   };
 
   return (
     <>
-      <Text size="xs" tabIndex={0} css={sx} data-testid="node">
+      <Text textStyle="xs" tabIndex={0} css={sx} data-testid="node">
         {extractNodeLabel(data)}
       </Text>
       <Handle
