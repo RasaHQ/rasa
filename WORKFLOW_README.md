@@ -5,7 +5,7 @@
 ## Active Workflows
 
 ### Continuous Integration
-This is the main CI file, running on every pull request and pushes to `main` branch and all `release branches`.
+This CI setup is driven by `.github/workflows/ci-on-push.yml`, which invokes the reusable `.github/workflows/continous-integration.yml` workflow. It runs on pull requests, merge groups, and pushes to the `main` branch.
 It runs the following checks:
 - Build docker dev images for each pull request and push to aws
 - Check poetry lock is up to date
@@ -50,27 +50,26 @@ This workflow can be triggered manually/on-demand, and test results' notificatio
 found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
 
 ### Run Voice Integration Tests
-**File:** `.github/workflows/run_voice_channel_tests.yml`
+**File:** `.github/workflows/voice-integration-and-channel-tests.yml`
 
 Runs voice-related integration tests (ASR and TTS) when voice code or config changes are detected. Triggered on push to `main` or `[0-9]+.[0-9]+.x`, on pull requests, or manually via workflow dispatch.
 
 - **Path filter:** Runs only when `.github/change_filters.yml` reports voice-related file changes (`voice-files == 'true'`).
-- **Matrix:** Python 3.10, 3.11, 3.12, 3.13.
-- **Steps:** Checkout → prepare test env (test-prerequisites) → install deps (incl. `azure-cognitiveservices-speech`) → run `make test-voice-integration` with `CARTESIA_API_KEY`, `DEEPGRAM_API_KEY`, `AZURE_SPEECH_API_KEY`, and Azure region env set from secrets.
-- **Artifacts:** JUnit-style test results are uploaded per Python version.
+- **Matrix:** Uses a single default Python version (`3.10`) and a `channels` installation cache matrix.
+- **Steps:** Checkout → prepare test env (`test-prerequisites`) → install deps (including `azure-cognitiveservices-speech`) → run `make test-voice-integration`, plus dedicated voice channel replay tests (AudioCodes, Twilio, Jambonz, and Genesys).
 - **Notifications:** On failure, a Slack message is sent to `#release-assistant-atom-alerts`.
 
 ### Voice E2E CI
-**File:** `.github/workflows/voice_e2e_ci.yml`
+**File:** `.github/workflows/voice-e2e-ci.yml`
 
-End-to-end voice tests: train a Rasa model, run the server with voice channels, then run voice primitives, AudioCodes replay, and Twilio Media Stream replay tests. Triggered on push to `main` or `[0-9]+.[0-9]+.x`, on pull requests (excluding Dependabot), or manually via workflow dispatch.
+End-to-end voice tests: train a Rasa model, run the server with voice channels, then run voice primitives scenarios across multiple voice credential configurations. Triggered on push to `main` or `[0-9]+.[0-9]+.x`, on pull requests (excluding Dependabot), or manually via workflow dispatch.
 
 - **Path filter:** Runs when voice-related files or poetry dependency updates are detected.
 - **Jobs:**
   1. **check-voice-code-changes** – Uses path filter; outputs `voice-files` and `poetry-dependency-updates`.
-  2. **install-and-cache-rasa** – Installs Rasa (matrix: default, anonymisation, nlu, full), caches `.venv` by install type and `poetry.lock` hash.
-  3. **voice-e2e** – Checkout + checkout `calm-benchmarking-bot` → install deps (incl. `azure-cognitiveservices-speech`, `rasa-pro[channels]`) → train model → run Rasa server with credentials (websockets, audiocodes_stream) → run **voice primitives** test (`test_voice_primitives.py`) → run **AudioCodes replay** test (`test_audiocodes_replay.py`) → generate Twilio traffic file → run **Twilio Media Stream replay** test. Uses secrets for `OPENAI_API_KEY`, `CARTESIA_API_KEY`, `DEEPGRAM_API_KEY`, `RASA_PRO_LICENSE`, and calm-benchmarking-bot clone token.
-- **Matrix:** Single voice file and Python 3.10. AudioCodes and Twilio replay steps run only if the “Train model and run rasa server” step succeeded.
+  2. **install-and-cache-rasa** – Installs Rasa with `channels` installation and caches `.venv` by install type and `poetry.lock` hash.
+  3. **voice-e2e** – Checkout + checkout `calm-benchmarking-bot` → prepare env → train model and run server with selected credentials → run **voice primitives** test (`test_voice_primitives.py`). Uses secrets for `OPENAI_API_KEY`, `CARTESIA_API_KEY`, `DEEPGRAM_API_KEY`, `RIME_API_KEY`, `AZURE_SPEECH_API_KEY`, `RASA_PRO_LICENSE`, and calm-benchmarking-bot clone token.
+- **Matrix:** Python 3.10 with multiple credential files (`deepgram`, `rime`, `cartesia`, and `azure`).
 
 ### DM1/Tensorflow tests
 This workflow runs DM1 tests (that use Tensorflow), on:
@@ -211,13 +210,13 @@ CI maintenance workflow that works as follows:
 
 ## Actions
 In order to remove duplications in the CI workflow steps actions were packaged using [composite actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action).
-The current set of actions are as follows :
-- .actions/debug-broker-tests/action.yml - displays zookeeper and kafka logs when integration tests are run.
-- .actions/debug-metric-tests/action.yml - displays action-server, otlp-collector, prometheus and rasa-pro-assistent container logs when integration tests are run.
-- .actions/debug-tracing-tests/action.yml - displays otel-collector, jaegar, rasa-pro and action server container logs when integration tests are run.
-- .actions/pull-from-ecr/action.yml - configures AWS and logs in to ECR and pulls rasa-pro dev image.
-- .actions/setup-build-x/action.yml - sets up QEMU and docker buildx
-- .actions/test-prerequisites/action.yml - Setups python, reads poetry version, installs poetry, load cached venv and installs setuptool when running unit/integration tests.
+Some commonly used actions are:
+- `.github/actions/debug-broker-tests/action.yml` - displays zookeeper and kafka logs when integration tests are run.
+- `.github/actions/debug-metric-tests/action.yml` - displays action-server, otlp-collector, prometheus and rasa-pro-assistant container logs when integration tests are run.
+- `.github/actions/debug-tracing-tests/action.yml` - displays otel-collector, jaegar, rasa-pro and action server container logs when integration tests are run.
+- `.github/actions/pull-from-ecr/action.yml` - configures AWS and logs in to ECR and pulls rasa-pro dev image.
+- `.github/actions/setup-build-x/action.yml` - sets up QEMU and docker buildx.
+- `.github/actions/test-prerequisites/action.yml` - sets up Python, reads poetry version, installs poetry, loads cached venv and installs setuptools when running unit/integration tests.
 
 ## Glossary
 - workflow dispatch : Only workflow files that use the workflow_dispatch event trigger will have the option to run the workflow manually using the Run workflow button.

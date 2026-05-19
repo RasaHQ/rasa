@@ -35,7 +35,7 @@ List and get flows, slots, responses, and actions.
 
 Get official Rasa schemas for validation and code generation.
 
-- `get_flow_schema` - Flow YAML schema (flows.yml structure)
+- `get_flow_schema` - Flow JSON Schema (for flows.yml structure)
 - `get_domain_schema` - Domain YAML schema (slots, actions, responses structure within the domain files)
 - `get_e2e_schema` - Assistant E2E test YAML schema (test cases and steps)
 
