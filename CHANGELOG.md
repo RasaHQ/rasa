@@ -10,6 +10,64 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.16.8] - 2026-05-19
+                        
+Rasa Pro 3.16.8 (2026-05-19)                             
+### Bugfixes
+- [#5400](https://github.com/rasahq/rasa-private/issues/5400): Fixed `InvalidFlowIdException` and repeated error logs that occurred when a conversation tracker contained historical events referencing flows or slots that were subsequently removed from the model.
+
+
+## [3.16.7] - 2026-05-15
+                        
+Rasa Pro 3.16.7 (2026-05-15)                             
+### Bugfixes
+- [#5291](https://github.com/rasahq/rasa-private/issues/5291): Updated security-flagged dependencies:
+  - `litellm`: `1.82.4` → `1.84.0`
+  - `langchain`: `~0.3.27` → `~1.2.16`
+  - `langchain-community`: `~0.3.29` → `~0.4.1`
+  - `langchain-core`: `~0.3.81` → `~1.3.2`
+  - `langsmith`: `~0.6.3` → `~0.7.31`
+  - `langchain-qdrant`: `~0.2.1` → `~1.1.0`
+  - `langchain-openai`: transitive → `~1.2.1` (new direct pin)
+  - `langchain-text-splitters`: transitive → `~1.1.2` (new direct pin)
+- [#5372](https://github.com/rasahq/rasa-private/issues/5372): The `no_text_normalization` parameter is now correctly passed to the Rime TTS WebSocket connection, allowing users to skip text normalization to reduce latency.
+
+
+## [3.16.6] - 2026-05-12
+                        
+Rasa Pro 3.16.6 (2026-05-12)                             
+### Bugfixes
+- [#5015](https://github.com/rasahq/rasa-private/issues/5015): Fix bug when user's message during bot's speech is queued after bot is done speaking.
+  When interruptions are DISABLED, if the bot is speaking and the user talks over it, the bot should ignore that speech entirely.
+  When interruptions are ENABLED, the bot should only stop and listen if the user says enough words to qualify as an interruption (based on the min_words setting).
+- [#5221](https://github.com/rasahq/rasa-private/issues/5221): When interruptions are ENABLED, user message should be queued for processing only if it passes interruption criteria.
+
+  If interruptions are disabled, user message should be queued only if user speaks during collect step utterance.
+
+  Updated signature of following methods:
+  - send_start_marker: `send_start_marker(self, recipient_id: str)` => `send_start_marker(self, marker_input: MarkerInput)`
+  - send_intermediate_marker: `send_intermediate_marker(self, recipient_id: str)` => `send_intermediate_marker(self, marker_input: MarkerInput)`
+  - send_end_marker: `send_end_marker(self, recipient_id: str)` => `send_end_marker(self, marker_input: MarkerInput)`
+  - send_marker_message: `send_marker_message(self, recipient_id: str)` => `send_marker_message(self, marker_input: MarkerInput)`
+  - create_marker_message: create_marker_message(self, recipient_id: str) => `create_marker_message(self, marker_input: MarkerInput) -> MarkerMessageOutput`
+
+  where MarkerInput is a Pydantic-based class:
+  ```python
+  class MarkerInput(BaseModel):
+      recipient_id: str
+      marker_type: MarkerType
+      step_type: Optional[StepType] = None
+  ```
+- [#5286](https://github.com/rasahq/rasa-private/issues/5286): Remove the "hand over" command from the default GPT-5.1 prompt template. The command had already been removed from all other prompt templates in the 3.16.0 release.
+- [#5299](https://github.com/rasahq/rasa-private/issues/5299): Fixed a bug where sub-agent flows would end immediately after interruption resumption instead of re-invoking the agent.
+
+  When a flow containing a sub-agent call was interrupted (e.g., by a user digression) and then resumed via `pattern_continue_interrupted`, the agent frame's state remained `INTERRUPTED`. This caused the flow executor to skip the agent call and advance to END, triggering `pattern_completed` prematurely.
+
+  The agent frame state is now correctly reset to `WAITING_FOR_INPUT` during flow resumption, ensuring the sub-agent is re-invoked with full conversation history as expected.
+- [#5316](https://github.com/rasahq/rasa-private/issues/5316): Fixed MCP tracing attribute extraction for router-based model groups so tracing no longer crashes with `KeyError('provider')` when instrumenting ReAct sub-agent `send_message` calls.
+- [#5319](https://github.com/rasahq/rasa-private/issues/5319): When interruptions are enabled and bot is not speaking, user utterances should not be checked if they are passing min_words threshold.
+
+
 ## [3.16.5] - 2026-04-24
 
 Rasa Pro 3.16.5 (2026-04-24)
