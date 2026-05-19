@@ -10,6 +10,7 @@ from rasa.dialogue_understanding.commands.handle_code_change_command import (
 )
 from rasa.dialogue_understanding.patterns.code_change import FLOW_PATTERN_CODE_CHANGE_ID
 from rasa.dialogue_understanding.processor.command_processor import execute_commands
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     PatternFlowStackFrame,
     UserFlowStackFrame,
@@ -104,3 +105,37 @@ async def test_stack_cleaning_action(about_to_be_cleaned_tracker: DialogueStateT
     assert isinstance(bar_frame, UserFlowStackFrame)
     assert bar_frame.flow_id == "bar"
     assert bar_frame.step_id == ContinueFlowStep.continue_step_for_id(END_STEP)
+
+
+def test_run_command_returns_empty_when_active_frame_is_stale():
+    """run_command_on_tracker must return [] — not raise InvalidFlowIdException —
+    when the top UserFlowStackFrame references a flow removed from the model.
+
+    Regression guard for the frame.flow() → flow_by_id() hardening in
+    HandleCodeChangeCommand.run_command_on_tracker.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          foo:
+            name: foo
+            description: Flow with no translation.
+            steps:
+              - id: noop
+                noop: true
+                next: END
+        """
+    )
+    stale_frame = UserFlowStackFrame(
+        flow_id="removed_flow", step_id="1", frame_id="stale-1"
+    )
+    tracker = DialogueStateTracker.from_events("t", evts=[])
+    tracker.update_stack(DialogueStack(frames=[stale_frame]))
+
+    events = HandleCodeChangeCommand().run_command_on_tracker(
+        tracker=tracker,
+        all_flows=flows,
+        original_tracker=tracker,
+    )
+
+    assert events == []

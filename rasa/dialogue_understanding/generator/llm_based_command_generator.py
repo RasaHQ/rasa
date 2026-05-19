@@ -555,7 +555,10 @@ class LLMBasedCommandGenerator(
         if latest_user_frame is None:
             return False
 
-        active_flow = latest_user_frame.flow(flows)
+        active_flow = flows.flow_by_id(latest_user_frame.flow_id)
+        if active_flow is None:
+            return False
+
         active_step = active_flow.step_by_id(latest_user_frame.step_id)
 
         if not isinstance(active_step, CollectInformationFlowStep):

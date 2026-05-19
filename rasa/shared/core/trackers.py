@@ -817,6 +817,10 @@ class DialogueStateTracker:
         """Update the tracker based on a list of events."""
         applied_events = self.applied_events()
         for event in applied_events:
+            if isinstance(event, SlotSet) and event.key not in self.slots:
+                # Skip legacy slots removed from the domain
+                # rather than propagating an error for a historical artifact.
+                continue
             event.apply_to(self)
 
     def recreate_from_dialogue(self, dialogue: Dialogue) -> None:
@@ -1084,6 +1088,10 @@ class DialogueStateTracker:
         # Set conversation_started_timestamp on the first event
         if self.conversation_started_timestamp is None:
             self.conversation_started_timestamp = event.timestamp
+        if is_replay and isinstance(event, SlotSet) and event.key not in self.slots:
+            # Skip legacy slots removed from the domain
+            # rather than propagating an error for a historical artifact.
+            return
         event.apply_to(self)
 
     def update_with_events(
@@ -1409,9 +1417,13 @@ class DialogueStateTracker:
             # The stack just contains the current active frames and we are just
             # interested in the user flow stack frames.
             if isinstance(frame, UserFlowStackFrame):
-                active_flows.append(frame.flow(flows))
+                flow = flows.flow_by_id(frame.flow_id)
+                if flow is None:
+                    # Stale frame: keep scanning older frames.
+                    continue
+                active_flows.append(flow)
                 if frame.frame_type != FlowStackFrameType.CALL:
-                    # Iterate unitl we reach a frame that is not a call frame.
+                    # Iterate until we reach a frame that is not a call frame.
                     break
 
         return FlowsList(active_flows)

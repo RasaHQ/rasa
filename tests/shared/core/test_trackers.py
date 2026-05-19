@@ -977,6 +977,74 @@ def test_tracker_does_not_modify_slots(
     assert slot.value == initial_value
 
 
+def test_unknown_slot_skipped_via_from_events_during_replay(
+    caplog: pytest.LogCaptureFixture,
+):
+    """from_events() silently skips unknown SlotSet events during replay.
+
+    The guard in update(is_replay=True) must prevent apply_to() from being
+    called for unknown slot keys. The event must still appear in tracker.events
+    (appended before the guard) but must not affect tracker state.
+    """
+    known_slot = TextSlot("slot_a", mappings=[{}])
+    events = [
+        SlotSet("slot_a", "hello"),
+        SlotSet("legacy_slot_x", "value_x"),
+        SlotSet("legacy_slot_y", "value_y"),
+    ]
+
+    with caplog.at_level(logging.ERROR):
+        tracker = DialogueStateTracker.from_events(
+            sender_id="test-sender",
+            evts=events,
+            slots=[known_slot],
+        )
+
+    assert "Tried to set non existent slot" not in caplog.text
+
+    assert tracker.get_slot("slot_a") == "hello"
+    assert "legacy_slot_x" not in tracker.slots
+    assert "legacy_slot_y" not in tracker.slots
+
+
+def test_unknown_slot_skipped_silently_via_recreate_from_dialogue(
+    caplog: pytest.LogCaptureFixture,
+):
+    """recreate_from_dialogue() silently skips unknown SlotSet events.
+
+    recreate_from_dialogue() calls replay_events() which has its own guard —
+    separate from the one in update(). This test exercises that path directly
+    and is distinct from test_unknown_slot_skipped_silently_via_from_events.
+    """
+    from rasa.shared.core.conversation import Dialogue
+
+    known_slot = TextSlot("slot_a", mappings=[{}])
+    dialogue = Dialogue(
+        name="test-sender",
+        events=[SlotSet("slot_a", "hello"), SlotSet("legacy_slot_x", "v1")],
+    )
+    tracker = DialogueStateTracker("test-sender", [known_slot])
+
+    with caplog.at_level(logging.ERROR):
+        tracker.recreate_from_dialogue(dialogue)
+
+    assert "Tried to set non existent slot" not in caplog.text
+
+    assert tracker.get_slot("slot_a") == "hello"
+    assert "legacy_slot_x" not in tracker.slots
+
+
+def test_unknown_slot_live_update_still_logs_error(caplog: pytest.LogCaptureFixture):
+    """A live (non-replay) SlotSet for an unknown slot must still log ERROR."""
+    known_slot = TextSlot("slot_a", mappings=[{}])
+    tracker = DialogueStateTracker("test-sender", [known_slot])
+
+    with caplog.at_level(logging.ERROR):
+        tracker.update(SlotSet("nonexistent_slot", "value"))
+
+    assert "Tried to set non existent slot" in caplog.text
+
+
 @pytest.mark.parametrize(
     "events, expected_applied_events",
     [
@@ -3858,3 +3926,34 @@ def test_default_language_when_language_slot_explicitly_set_to_none():
     tracker.update(SlotSet("language", None))
     assert tracker.default_language.code == "en"
     assert tracker.default_language.is_default is True
+
+
+def test_get_active_flows_skips_stale_frame():
+    """get_active_flows() must not raise when a UserFlowStackFrame references a
+    flow that is no longer in the model.
+
+    Previously frame.flow(flows) raised InvalidFlowIdException for stale frames.
+    The fix uses flows.flow_by_id() and skips the frame silently.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          list_contacts:
+            description: list contacts
+            steps:
+            - id: "1"
+              action: action_listen
+        """
+    )
+
+    stale_frame = UserFlowStackFrame(
+        flow_id="add_contact", step_id="1", frame_id="stale-1"
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
+    )
+    tracker.update_stack(DialogueStack(frames=[stale_frame]))
+
+    active = tracker.get_active_flows(flows)
+
+    assert all(f.id != "add_contact" for f in active.underlying_flows)

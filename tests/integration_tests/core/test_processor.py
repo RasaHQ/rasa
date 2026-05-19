@@ -1,4 +1,5 @@
 import uuid
+from unittest import mock
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -17,6 +18,9 @@ from rasa.dialogue_understanding.commands import (
     StartFlowCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
+from rasa.dialogue_understanding.patterns.code_change import CodeChangeFlowStackFrame
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -28,6 +32,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     ConversationInactive,
     ConversationResumed,
+    DialogueStackUpdated,
     Event,
     SessionEnded,
     SessionStarted,
@@ -36,6 +41,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.data import TrainingType
 from rasa.shared.nlu.constants import METADATA_SESSION_ID
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import read_file
@@ -1124,3 +1130,83 @@ async def test_custom_action_returning_session_ended_cancels_timer(
 
     assert tracker.terminated is True
     assert await processor.timer_manager.get_timer(DEFAULT_SENDER_ID) is None
+
+
+async def test_handle_message_purges_stale_frames_end_to_end(
+    default_agent: Agent,
+):
+    """Integration: handle_message removes stale UserFlowStackFrames before
+    the LLM command generator runs.
+
+    Regression test for the bug where the first handle_message call after a flow
+    was removed from the model returned an empty bot response. The stale frame was
+    visible to the LLM command generator because the purge only ran later in
+    _run_prediction_loop, after commands had already been baked into parse_data.
+    """
+    processor = default_agent.processor
+    sender_id = uuid.uuid4().hex
+    flows = flows_from_str(
+        """
+        flows:
+          list_contacts:
+            description: list contacts
+            steps:
+            - id: "1"
+              action: action_listen
+        """
+    )
+
+    # Pre-seed the tracker store with a stale frame (flow removed from model).
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+    stale_frame = UserFlowStackFrame(
+        flow_id="add_contact", step_id="1", frame_id="stale-1"
+    )
+    tracker.update_stack(DialogueStack(frames=[stale_frame]))
+    await processor.tracker_store.save(tracker)
+
+    async def _pass_through_slots(output_channel, tracker, *args, **kwargs):
+        return tracker
+
+    with (
+        mock.patch.object(
+            processor,
+            "get_flows",
+            new_callable=AsyncMock,
+            return_value=flows,
+        ),
+        mock.patch.object(
+            processor.model_metadata,
+            "training_type",
+            TrainingType.CORE,
+        ),
+        mock.patch.object(processor, "is_calm_assistant", True),
+        mock.patch.object(
+            processor,
+            "run_action_extract_slots",
+            side_effect=_pass_through_slots,
+        ),
+        mock.patch.object(
+            processor,
+            "_run_prediction_loop",
+            new_callable=AsyncMock,
+        ),
+    ):
+        await processor.handle_message(
+            UserMessage("hi", CollectingOutputChannel(), sender_id)
+        )
+
+    saved = await processor.tracker_store.retrieve(sender_id)
+    assert saved is not None
+
+    flow_ids = [
+        f.flow_id for f in saved.stack.frames if isinstance(f, UserFlowStackFrame)
+    ]
+    assert "add_contact" not in flow_ids
+    # CodeChangeFlowStackFrame triggers pattern_code_change on the next turn,
+    # which sends utter_inform_code_change to notify the user of the reset.
+    assert isinstance(saved.stack.frames[-1], CodeChangeFlowStackFrame)
+
+    stack_events = [
+        e for e in saved.applied_events() if isinstance(e, DialogueStackUpdated)
+    ]
+    assert len(stack_events) >= 1

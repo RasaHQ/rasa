@@ -574,6 +574,15 @@ def test_merge_with_empty_other_domain(other: Optional[Domain]):
     assert merged.as_dict() == domain.as_dict()
 
 
+def test_merge_domain_dicts_handles_null_section() -> None:
+    combined = {"actions": ["action_one"], "version": "3.1"}
+    domain_with_null_actions = {"actions": None, "version": "3.1"}
+
+    result = Domain.merge_domain_dicts(domain_with_null_actions, combined)
+
+    assert result["actions"] == ["action_one"]
+
+
 def test_merge_domain_with_forms():
     test_yaml_1 = """
     slots:

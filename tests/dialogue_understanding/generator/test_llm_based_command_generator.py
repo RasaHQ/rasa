@@ -29,6 +29,8 @@ from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_ACTIVE_KEY,
     FLOW_RETRIEVAL_KEY,
 )
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -66,6 +68,10 @@ from rasa.shared.utils.constants import (
 )
 from rasa.shared.utils.llm import REASONING_EFFORT_CONFIG_KEY, LLMInput
 from tests.utilities import flows_from_str
+
+_prior_set_slot_for_collect_step = (
+    LLMBasedCommandGenerator._prior_commands_contain_set_slot_for_active_collect_step
+)
 
 TEST_BASE_CLASSES: List[type] = [
     LLMCommandGenerator,
@@ -1764,3 +1770,89 @@ class TestLLMBasedCommandGenerator:
         result = await generator.predict_commands(message, flows, tracker)
 
         assert result == [ChitChatAnswerCommand()]
+
+    def test_prior_commands_returns_false_when_stack_empty(self, flows: FlowsList):
+        """Returns False immediately when there is no active frame."""
+        tracker = DialogueStateTracker.from_events("t", evts=[])
+
+        result = _prior_set_slot_for_collect_step(
+            prior_commands=[SetSlotCommand(name="user_name", value="Alice")],
+            flows=flows,
+            tracker=tracker,
+        )
+
+        assert result is False
+
+    def test_prior_commands_returns_false_for_stale_frame(self, flows: FlowsList):
+        """Returns False when the active frame references a flow not in the model.
+
+        This exercises the flows.flow_by_id() guard introduced to handle stale
+        frames from historical events without raising InvalidFlowIdException.
+        """
+        stale_frame = UserFlowStackFrame(
+            flow_id="removed_flow", step_id="ask_name", frame_id="stale-1"
+        )
+        tracker = DialogueStateTracker.from_events("t", evts=[])
+        tracker.update_stack(DialogueStack(frames=[stale_frame]))
+
+        result = _prior_set_slot_for_collect_step(
+            prior_commands=[SetSlotCommand(name="user_name", value="Alice")],
+            flows=flows,
+            tracker=tracker,
+        )
+
+        assert result is False
+
+    def test_prior_commands_returns_false_when_step_not_collect(self, flows: FlowsList):
+        """Returns False when the current step is not a CollectInformationFlowStep."""
+        frame = UserFlowStackFrame(
+            flow_id="test_flow", step_id="first_step", frame_id="f-1"
+        )
+        tracker = DialogueStateTracker.from_events("t", evts=[])
+        tracker.update_stack(DialogueStack(frames=[frame]))
+
+        result = _prior_set_slot_for_collect_step(
+            prior_commands=[SetSlotCommand(name="test_slot", value="Alice")],
+            flows=flows,
+            tracker=tracker,
+        )
+
+        assert result is False
+
+    def test_prior_commands_returns_true_when_matching_set_slot_present(
+        self, flows_with_collect_steps: FlowsList
+    ):
+        """Returns True when prior_commands contain a SetSlotCommand for the
+        slot being collected at the current step."""
+        frame = UserFlowStackFrame(
+            flow_id="test_flow", step_id="first_step", frame_id="f-1"
+        )
+        tracker = DialogueStateTracker.from_events("t", evts=[])
+        tracker.update_stack(DialogueStack(frames=[frame]))
+
+        result = _prior_set_slot_for_collect_step(
+            prior_commands=[SetSlotCommand(name="test_slot", value="Alice")],
+            flows=flows_with_collect_steps,
+            tracker=tracker,
+        )
+
+        assert result is True
+
+    def test_prior_commands_returns_false_when_no_matching_set_slot(
+        self, flows_with_collect_steps: FlowsList
+    ):
+        """Returns False when prior_commands have no SetSlotCommand for the
+        slot being collected."""
+        frame = UserFlowStackFrame(
+            flow_id="test_flow", step_id="first_step", frame_id="f-1"
+        )
+        tracker = DialogueStateTracker.from_events("t", evts=[])
+        tracker.update_stack(DialogueStack(frames=[frame]))
+
+        result = _prior_set_slot_for_collect_step(
+            prior_commands=[SetSlotCommand(name="other_slot", value="x")],
+            flows=flows_with_collect_steps,
+            tracker=tracker,
+        )
+
+        assert result is False

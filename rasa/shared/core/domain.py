@@ -517,7 +517,9 @@ class Domain:
             )
 
             combined[key] = merge_func(
-                combined.get(key, default), domain_dict.get(key, default), override
+                combined.get(key) or default,
+                domain_dict.get(key) or default,
+                override,
             )
 
         if duplicates:

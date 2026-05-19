@@ -43,10 +43,16 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.commands.utils import (
     create_validate_frames_from_slot_set_events,
 )
+from rasa.dialogue_understanding.patterns.code_change import CodeChangeFlowStackFrame
 from rasa.dialogue_understanding.patterns.validate_slot import (
     ValidateSlotPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import BaseFlowStackFrame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    FlowStackFrameType,
+    UserFlowStackFrame,
+)
 from rasa.dialogue_understanding.utils import add_commands_to_message_parse_data
 from rasa.engine import loader
 from rasa.engine.constants import (
@@ -261,7 +267,14 @@ class MessageProcessor:
         # preprocess message if necessary
         await message.output_channel.notify_message_processing_started()
         self.time_turn_start = time.time()
-        tracker = await self.log_message(message, should_save_tracker=False)
+
+        flows = None
+        if self.is_calm_assistant:
+            flows = await self.get_flows()
+
+        tracker = await self.log_message(
+            message, should_save_tracker=False, flows=flows
+        )
 
         if self.model_metadata.training_type == TrainingType.NLU:
             await self.save_tracker(tracker)
@@ -276,7 +289,7 @@ class MessageProcessor:
 
         cancellation_token = self._active_cancellation_tokens.get(message.sender_id)
         await self._run_prediction_loop(
-            message.output_channel, tracker, cancellation_token
+            message.output_channel, tracker, cancellation_token, flows=flows
         )
 
         await self.save_tracker(tracker)
@@ -391,6 +404,7 @@ class MessageProcessor:
             )
             return None
 
+        self._purge_stale_user_flow_frames(tracker, await self.get_flows())
         prediction = await self._predict_next_with_tracker(tracker)
 
         scores = [
@@ -606,7 +620,10 @@ class MessageProcessor:
         return rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
 
     async def log_message(
-        self, message: UserMessage, should_save_tracker: bool = True
+        self,
+        message: UserMessage,
+        should_save_tracker: bool = True,
+        flows: Optional[FlowsList] = None,
     ) -> DialogueStateTracker:
         """Log `message` on tracker belonging to the message's conversation_id.
 
@@ -617,6 +634,15 @@ class MessageProcessor:
         tracker = await self.fetch_tracker_and_update_session(
             message.sender_id, message.output_channel, message.metadata
         )
+
+        # Purge stale frames before the command generator runs so it sees a
+        # clean stack. Without this, commands are baked into parse_data using the
+        # stale context, causing InvalidFlowIdException when the policy later
+        # tries to advance a flow that no longer exists in the model.
+        if self.is_calm_assistant:
+            if flows is None:
+                flows = await self.get_flows()
+            self._purge_stale_user_flow_frames(tracker, flows)
 
         await self._handle_message_with_tracker(message, tracker)
 
@@ -1365,14 +1391,82 @@ class MessageProcessor:
             and should_predict_another_action
         )
 
+    def _purge_stale_user_flow_frames(
+        self, tracker: DialogueStateTracker, flows: FlowsList
+    ) -> None:
+        """Remove stack frames that reference flows no longer in the model.
+
+        A historical DialogueStackUpdated event may have rehydrated a
+        UserFlowStackFrame for a flow that has since been removed. Each stale
+        UserFlowStackFrame is replaced with a single CodeChangeFlowStackFrame
+        (multiple stale frames still produce only one marker). Non-user-flow
+        frames in the stale zone are dropped; only INTERRUPT user frames above
+        a stale one are preserved so they can complete before pattern_code_change
+        notifies the user. CALL frames above are dropped as they are sub-tasks
+        of the stale flow whose result can never be used.
+        """
+        # An empty FlowsList means the flows_provider graph node hasn't run yet.
+        if flows.is_empty():
+            return
+
+        stack = tracker.stack
+        stale_ids = {
+            frame.flow_id
+            for frame in stack.frames
+            if isinstance(frame, UserFlowStackFrame)
+            and not flows.flow_by_id(frame.flow_id)
+        }
+        if not stale_ids:
+            return
+
+        # Replace stale frames with CodeChangeFlowStackFrame. Only INTERRUPT frames
+        # above a stale zone are kept; others are dropped because they are
+        # sub-tasks of the stale flow whose result can never be used.
+        clean_frames: List[BaseFlowStackFrame] = []
+        code_change_inserted = False
+        in_stale_zone = False
+        for frame in stack.frames:
+            if isinstance(frame, UserFlowStackFrame):
+                if frame.flow_id in stale_ids:
+                    in_stale_zone = True
+                    if not code_change_inserted:
+                        clean_frames.append(CodeChangeFlowStackFrame())
+                        code_change_inserted = True
+                else:
+                    if (
+                        not in_stale_zone
+                        or frame.frame_type == FlowStackFrameType.INTERRUPT
+                    ):
+                        in_stale_zone = False
+                        clean_frames.append(frame)
+            elif not in_stale_zone:
+                clean_frames.append(frame)
+
+        structlogger.warning(
+            "processor.stale_flow_frames_removed",
+            stale_flow_ids=list(stale_ids),
+            event_info=(
+                "The dialogue stack contains frames for flows that no longer exist "
+                "in the model. This can happen when a flow is removed from the model "
+                "after historical events were recorded for a sender. The stale frames "
+                "will be removed before processing continues. "
+            ),
+        )
+        tracker.update_stack(DialogueStack(frames=clean_frames))
+
     async def _run_prediction_loop(
         self,
         output_channel: OutputChannel,
         tracker: DialogueStateTracker,
         cancellation_token: Optional["CancellationToken"] = None,
+        flows: Optional[FlowsList] = None,
     ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
+
+        if flows is None:
+            flows = await self.get_flows()
+        self._purge_stale_user_flow_frames(tracker, flows)
 
         tracker = await self.run_command_processor(tracker)
         self.time_command_processor = time.time()

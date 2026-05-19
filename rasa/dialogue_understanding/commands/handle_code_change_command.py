@@ -52,7 +52,7 @@ class HandleCodeChangeCommand(Command):
 
         stack = tracker.stack
         user_frame = top_user_flow_frame(original_tracker.stack)
-        current_flow = user_frame.flow(all_flows) if user_frame else None
+        current_flow = all_flows.flow_by_id(user_frame.flow_id) if user_frame else None
 
         if not current_flow:
             structlogger.debug(

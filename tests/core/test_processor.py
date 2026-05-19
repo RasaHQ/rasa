@@ -62,6 +62,9 @@ from rasa.dialogue_understanding.commands import (
     StartFlowCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
+from rasa.dialogue_understanding.patterns.code_change import (
+    CodeChangeFlowStackFrame,
+)
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -75,6 +78,7 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     UserFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import ActionLimitReached
@@ -131,6 +135,7 @@ from rasa.shared.core.events import (
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot, SlotValidation, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.data import TrainingType
 from rasa.shared.nlu.constants import (
     COMMANDS,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
@@ -151,7 +156,7 @@ from tests.conftest import (
     with_session_id,
     with_session_ids,
 )
-from tests.utilities import filter_logs
+from tests.utilities import filter_logs, flows_from_str
 
 logger = logging.getLogger(__name__)
 
@@ -179,6 +184,28 @@ def patch_session_config_auto_start_expiry(
 @pytest.fixture(autouse=True)
 def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_processor")
+
+
+@pytest.fixture
+def flows() -> FlowsList:
+    return flows_from_str(
+        """
+        flows:
+          list_contacts:
+            description: list contacts
+            steps:
+            - id: "1"
+              action: action_listen
+        """
+    )
+
+
+def _tracker_with_stack_frames(*frames) -> DialogueStateTracker:
+    tracker = DialogueStateTracker.from_events(
+        "test-sender", evts=[ActionExecuted("action_listen")]
+    )
+    tracker.update_stack(DialogueStack(frames=list(frames)))
+    return tracker
 
 
 async def test_message_processor(
@@ -4430,3 +4457,200 @@ async def test_race_condition_timer_fires_during_termination(
     assert updated.terminated is True
     inactive_events = [e for e in updated.events if isinstance(e, ConversationInactive)]
     assert len(inactive_events) == 0
+
+
+def test_purge_removes_stale_frame_and_orphaned_pattern_frames_above_it(
+    flows: FlowsList,
+):
+    """Stale UserFlowStackFrame and non-UserFlow frames above it (e.g.
+    CollectInformationPatternFlowStackFrame) are removed; a CodeChangeFlowStackFrame
+    is inserted in their place so pattern_code_change can notify the user."""
+    stale = UserFlowStackFrame(flow_id="add_contact", step_id="1", frame_id="stale-1")
+    pattern = CollectInformationPatternFlowStackFrame(
+        collect="add_contact_handle", frame_id="p-1"
+    )
+    tracker = _tracker_with_stack_frames(stale, pattern)
+
+    MessageProcessor._purge_stale_user_flow_frames(None, tracker, flows)
+
+    remaining = tracker.stack.frames
+    assert len(remaining) == 1
+    assert isinstance(remaining[0], CodeChangeFlowStackFrame)
+
+
+def test_purge_keeps_frames_below_first_stale_user_frame(
+    flows: FlowsList,
+):
+    """A live UserFlowStackFrame below the stale one survives."""
+    live = UserFlowStackFrame(flow_id="list_contacts", step_id="1", frame_id="live-1")
+    stale = UserFlowStackFrame(flow_id="add_contact", step_id="1", frame_id="stale-1")
+    tracker = _tracker_with_stack_frames(live, stale)
+
+    MessageProcessor._purge_stale_user_flow_frames(None, tracker, flows)
+
+    flow_ids = [
+        f.flow_id for f in tracker.stack.frames if isinstance(f, UserFlowStackFrame)
+    ]
+    assert flow_ids == ["list_contacts"]
+    assert isinstance(tracker.stack.frames[-1], CodeChangeFlowStackFrame)
+
+
+def test_purge_keeps_interrupt_frame_above_stale_user_frame(
+    flows: FlowsList,
+):
+    """An INTERRUPT UserFlowStackFrame above a stale one is preserved so it can
+    complete before pattern_code_change notifies the user of the reset."""
+    stale = UserFlowStackFrame(flow_id="add_contact", step_id="1", frame_id="stale-1")
+    interrupt = UserFlowStackFrame(
+        flow_id="list_contacts",
+        step_id="1",
+        frame_id="interrupt-1",
+        frame_type=FlowStackFrameType.INTERRUPT,
+    )
+    tracker = _tracker_with_stack_frames(stale, interrupt)
+
+    MessageProcessor._purge_stale_user_flow_frames(None, tracker, flows)
+
+    frames = tracker.stack.frames
+    assert isinstance(frames[0], CodeChangeFlowStackFrame)
+    assert isinstance(frames[1], UserFlowStackFrame)
+    assert frames[1].flow_id == "list_contacts"
+
+
+@pytest.mark.parametrize(
+    "frame_type",
+    [FlowStackFrameType.CALL, FlowStackFrameType.REGULAR, FlowStackFrameType.LINK],
+)
+def test_purge_drops_non_interrupt_frame_above_stale_user_frame(
+    flows: FlowsList,
+    frame_type: FlowStackFrameType,
+):
+    """Non-INTERRUPT UserFlowStackFrames above a stale one are dropped."""
+    stale = UserFlowStackFrame(flow_id="add_contact", step_id="1", frame_id="stale-1")
+    above = UserFlowStackFrame(
+        flow_id="list_contacts",
+        step_id="1",
+        frame_id="above-1",
+        frame_type=frame_type,
+    )
+    tracker = _tracker_with_stack_frames(stale, above)
+
+    MessageProcessor._purge_stale_user_flow_frames(None, tracker, flows)
+
+    frames = tracker.stack.frames
+    assert len(frames) == 1
+    assert isinstance(frames[0], CodeChangeFlowStackFrame)
+
+
+def test_purge_is_noop_when_all_frames_are_live(flows: FlowsList):
+    """No DialogueStackUpdated event is emitted when no frames are stale."""
+    live = UserFlowStackFrame(flow_id="list_contacts", step_id="1", frame_id="live-1")
+    tracker = _tracker_with_stack_frames(live)
+    events_before = list(tracker.applied_events())
+
+    MessageProcessor._purge_stale_user_flow_frames(None, tracker, flows)
+
+    assert list(tracker.applied_events()) == events_before
+
+
+def test_purge_is_noop_when_flows_list_is_empty():
+    """Empty FlowsList (model not yet initialised) must not strip the stack.
+
+    Without this guard the first webhook call before the graph produces flows
+    would see every frame as stale and return an empty response.
+    """
+    stale = UserFlowStackFrame(flow_id="add_contact", step_id="1", frame_id="stale-1")
+    tracker = _tracker_with_stack_frames(stale)
+    events_before = list(tracker.applied_events())
+
+    MessageProcessor._purge_stale_user_flow_frames(None, tracker, FlowsList([]))
+
+    assert list(tracker.applied_events()) == events_before
+
+
+def test_purge_emits_warning_log_and_stack_updated_event(flows: FlowsList):
+    """Purge writes a structured warning and a DialogueStackUpdated event."""
+    stale = UserFlowStackFrame(flow_id="add_contact", step_id="1", frame_id="stale-1")
+    tracker = _tracker_with_stack_frames(stale)
+
+    with capture_logs() as logs:
+        MessageProcessor._purge_stale_user_flow_frames(None, tracker, flows)
+
+    warning_logs = [
+        log
+        for log in logs
+        if log.get("log_level") == "warning"
+        and "stale_flow_frames_removed" in log.get("event", "")
+    ]
+    assert len(warning_logs) == 1
+    assert "add_contact" in warning_logs[0]["stale_flow_ids"]
+
+    stack_events = [
+        e for e in tracker.applied_events() if isinstance(e, DialogueStackUpdated)
+    ]
+    assert len(stack_events) >= 1
+    assert isinstance(tracker.stack.frames[-1], CodeChangeFlowStackFrame)
+
+
+@pytest.mark.asyncio
+async def test_handle_message_calls_get_flows_exactly_once(flows: FlowsList):
+    """get_flows() is called once per handle_message turn and the result is
+    threaded into both log_message (early purge before the command generator) and
+    _run_prediction_loop (safety-net purge)."""
+    processor = object.__new__(MessageProcessor)
+
+    get_flows_mock = AsyncMock(return_value=flows)
+    tracker = DialogueStateTracker.from_events("t", evts=[])
+
+    processor.get_flows = get_flows_mock
+    processor.log_message = AsyncMock(return_value=tracker)
+    processor._run_prediction_loop = AsyncMock()
+    processor.run_action_extract_slots = AsyncMock(return_value=tracker)
+    processor.save_tracker = AsyncMock()
+    processor.trigger_anonymization = MagicMock()
+    processor._active_cancellation_tokens = {}
+    processor.model_metadata = MagicMock()
+    processor.model_metadata.training_type = TrainingType.CORE
+    processor.is_calm_assistant = True
+
+    message = UserMessage("hi", CollectingOutputChannel(), "sender")
+    message.output_channel.notify_message_processing_started = AsyncMock()
+    message.output_channel.notify_message_processing_completed = AsyncMock()
+
+    await processor.handle_message(message)
+
+    assert get_flows_mock.call_count == 1
+    _, log_kwargs = processor.log_message.call_args
+    assert log_kwargs.get("flows") is flows
+    _, loop_kwargs = processor._run_prediction_loop.call_args
+    assert loop_kwargs.get("flows") is flows
+
+
+@pytest.mark.asyncio
+async def test_predict_next_with_tracker_purges_stale_frames(flows: FlowsList):
+    """predict_next_with_tracker must run _purge_stale_user_flow_frames before
+    calling the graph, so callers like predict_next_for_sender_id and the
+    POST /predict endpoint are protected even when they bypass handle_message."""
+    processor = object.__new__(MessageProcessor)
+
+    processor.get_flows = AsyncMock(return_value=flows)
+    processor._purge_stale_user_flow_frames = MagicMock()
+    processor._predict_next_with_tracker = AsyncMock(
+        return_value=MagicMock(
+            probabilities=[1.0],
+            policy_name="FlowPolicy",
+            max_confidence=1.0,
+            max_confidence_index=0,
+        )
+    )
+    processor.model_metadata = MagicMock()
+    processor.model_metadata.training_type = TrainingType.CORE
+    processor.domain = MagicMock()
+    processor.domain.action_names_or_texts = ["action_listen"]
+
+    tracker = DialogueStateTracker.from_events("t", evts=[])
+
+    await processor.predict_next_with_tracker(tracker)
+
+    processor._purge_stale_user_flow_frames.assert_called_once_with(tracker, flows)
+    processor._predict_next_with_tracker.assert_awaited_once()
