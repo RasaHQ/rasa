@@ -5,6 +5,7 @@ from asyncio import AbstractEventLoop
 from typing import List, Optional, Text
 from urllib.parse import urlencode
 
+import structlog
 from sanic import Sanic
 
 from rasa import telemetry
@@ -23,6 +24,8 @@ from rasa.exceptions import ModelNotFound
 from rasa.model import get_local_model
 from rasa.shared.utils.cli import print_error
 from rasa.utils.cli import remove_argument_from_parser
+
+structlogger = structlog.get_logger()
 
 
 def add_subparser(
@@ -47,13 +50,16 @@ def add_subparser(
     inspect_parser.set_defaults(func=inspect)
     arguments.set_shell_arguments(inspect_parser)
 
-    # additional argument for voice
+    # additional argument for voice (only applicable with --legacy)
     inspect_parser.add_argument(
-        "--voice", help="Enable voice", action="store_true", default=False
+        "--voice",
+        help="Enable voice (only applicable with --legacy).",
+        action="store_true",
+        default=False,
     )
     inspect_parser.add_argument(
-        "--nextgen",
-        help="Serve the next-gen inspector UI.",
+        "--legacy",
+        help="Use the legacy inspector UI (socketio-based).",
         action="store_true",
         default=False,
     )
@@ -69,27 +75,27 @@ def add_subparser(
 
 async def open_inspector_in_browser(
     server_url: Text,
+    legacy: bool = False,
     voice: bool = False,
-    nextgen: bool = False,
     token: Optional[Text] = None,
 ) -> None:
     """Opens the rasa inspector in the default browser."""
     dev_port = os.environ.get("RASA_INSPECTOR_DEV_PORT")
-    query_params = {"projectUrl": server_url}
+    query_params: dict = {"projectUrl": server_url}
+    if token:
+        query_params["token"] = token
+    query_string = f"?{urlencode(query_params)}"
+
     if dev_port:
-        query_string = f"?{urlencode(query_params)}"
         webbrowser.open(f"http://localhost:{dev_port}{query_string}")
+    elif legacy and voice:
+        webbrowser.open(
+            f"{server_url}/webhooks/browser_audio/inspect.html{query_string}"
+        )
+    elif legacy:
+        webbrowser.open(f"{server_url}/webhooks/socketio/inspect.html{query_string}")
     else:
-        if voice:
-            channel = "browser_audio"
-        elif nextgen:
-            channel = "inspector"
-        else:
-            channel = "socketio"
-        if token:
-            query_params["token"] = token
-        query_string = f"?{urlencode(query_params)}"
-        webbrowser.open(f"{server_url}/webhooks/{channel}/inspect.html{query_string}")
+        webbrowser.open(f"{server_url}/webhooks/inspector/inspect.html{query_string}")
 
 
 def inspect(args: argparse.Namespace) -> None:
@@ -116,16 +122,24 @@ def inspect(args: argparse.Namespace) -> None:
         if server_url == "0.0.0.0" or server_url is None:
             server_url = constants.DEFAULT_SERVER_FORMAT.format("http", args.port)
         await open_inspector_in_browser(
-            server_url, args.voice, args.nextgen, args.auth_token
+            server_url, args.legacy, args.voice, args.auth_token
         )
 
     # the following arguments are not exposed to the user
-    if args.voice:
+    if args.voice and not args.legacy:
+        structlogger.warning(
+            "inspect.voice_requires_legacy",
+            event_info=(
+                "--voice has no effect without --legacy. "
+                "The default inspector already includes voice support."
+            ),
+        )
+    if args.voice and args.legacy:
         args.connector = "browser_audio"
-    elif args.nextgen:
-        args.connector = "inspector"
-    else:
+    elif args.legacy:
         args.connector = "socketio"
+    else:
+        args.connector = "inspector"
     args.enable_api = True
     args.inspect = True
     args.credentials = None

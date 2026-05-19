@@ -149,7 +149,7 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
         args.port = constants.DEFAULT_SERVER_PORT
         args.voice = False
         args.skip_yaml_validation = ["domain"]
-        args.nextgen = False
+        args.legacy = False
 
         inspect(args)
     else:

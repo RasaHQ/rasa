@@ -6,6 +6,7 @@ import rasa.core.run
 from rasa.core.agent import Agent
 from rasa.core.channels.development_inspector import (
     INSPECT_LEGACY_TEMPLATE_PATH,
+    INSPECT_NEXTGEN_TEMPLATE_PATH,
     DevelopmentInspectProxy,
 )
 from rasa.core.channels.rest import RestInput
@@ -22,6 +23,14 @@ from rasa.shared.core.events import (
 from rasa.shared.core.trackers import DialogueStateTracker
 
 ABSOLUTE_INSPECT_FOLDER_PATH = (
+    pathlib.Path(__file__).parent.parent.parent.parent
+    / "rasa"
+    / "core"
+    / "channels"
+    / INSPECT_NEXTGEN_TEMPLATE_PATH
+)
+
+ABSOLUTE_INSPECT_LEGACY_FOLDER_PATH = (
     pathlib.Path(__file__).parent.parent.parent.parent
     / "rasa"
     / "core"
@@ -49,6 +58,11 @@ def mock_tracker_stream():
 def test_inspect_html_path() -> None:
     channel = DevelopmentInspectProxy(RestInput.from_credentials({}))
     assert channel.inspect_html_path() == str(ABSOLUTE_INSPECT_FOLDER_PATH)
+
+
+def test_inspect_html_path_legacy() -> None:
+    channel = DevelopmentInspectProxy(RestInput.from_credentials({}), is_legacy=True)
+    assert channel.inspect_html_path() == str(ABSOLUTE_INSPECT_LEGACY_FOLDER_PATH)
 
 
 def test_blueprint_inspect() -> None:

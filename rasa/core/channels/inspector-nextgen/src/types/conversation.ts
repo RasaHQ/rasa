@@ -1,6 +1,6 @@
 import type { FlexProps } from "@chakra-ui/react";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import z from "zod";
+import { z } from "zod";
 
 export type InspectorEventType = ConversationEvent | StackEvent | Utterance;
 
@@ -260,6 +260,27 @@ export type TrackerResponseData = {
   slots: Record<string, SlotState>;
   stack: RawStack[];
 };
+
+const RawStackSchema = z.object({
+  frame_id: z.string(),
+  flow_id: z.string(),
+  step_id: z.string(),
+  collect: z.string().optional(),
+  utter: z.string().optional(),
+});
+
+const RawEventSchema = z
+  .looseObject({
+    event: z.string(),
+    timestamp: z.number(),
+  });
+
+export const TrackerResponseDataSchema = z.object({
+  sender_id: z.string(),
+  events: z.array(RawEventSchema).transform((events) => events as unknown as RawEvent[]),
+  slots: z.record(z.string(), z.unknown()),
+  stack: z.array(RawStackSchema),
+});
 
 export type MessageProps = FlexProps & {
   utterance: Omit<Utterance, "entities">;

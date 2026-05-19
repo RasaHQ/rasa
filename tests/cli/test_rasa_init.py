@@ -136,37 +136,44 @@ def test_train_data_non_default_template(
     assert (tmp_path / "domain").exists()
 
 
-def test_print_run_or_instructions_sets_required_inspect_attributes(
+def test_print_run_or_instructions_seeds_all_inspect_attributes(
     monkeypatch: MonkeyPatch,
 ):
-    """Test that print_run_or_instructions sets all attributes required by inspect().
+    """Ensure print_run_or_instructions seeds every attribute that inspect() reads.
 
-    This test uses a mock inspect() that accesses all the attributes that the real
-    inspect() function uses.
-    If any attribute is missing, this will raise AttributeError.
+    Invokes real inspect() with all I/O dependencies mocked. Any access to a
+    missing attribute on the Namespace will raise AttributeError and fail the
+    test loudly.
     """
     from unittest.mock import MagicMock
 
-    def mock_inspect_that_checks_attributes(args):
-        """Mock inspect that accesses all attributes the real inspect() uses."""
-        # These are all the attributes accessed in inspect() function
-        _ = args.voice
-        _ = args.nextgen
-        _ = args.port
-        _ = args.auth_token
-        _ = args.cors
-        _ = args.model
-        _ = args.endpoints
-        _ = args.sub_agents
+    monkeypatch.setattr("rasa.cli.inspect.CredentialsConfigPath.validate", lambda: None)
+    monkeypatch.setattr(
+        "rasa.cli.inspect.Configuration.initialise_endpoints", MagicMock()
+    )
+    monkeypatch.setattr(
+        "rasa.cli.inspect.Configuration.initialise_sub_agents", MagicMock()
+    )
+    monkeypatch.setattr(
+        "rasa.cli.validation.config_path_validation.get_validated_path",
+        lambda *args, **kwargs: "fake-model.tar.gz",
+    )
+    monkeypatch.setattr(
+        "rasa.cli.inspect.get_local_model",
+        lambda *args, **kwargs: "fake-model.tar.gz",
+    )
+    monkeypatch.setattr(
+        "rasa.cli.inspect.LocalModelStorage.metadata_from_archive",
+        lambda *args, **kwargs: MagicMock(assistant_id="test-id"),
+    )
+    monkeypatch.setattr("rasa.cli.inspect.telemetry.track_inspect_started", MagicMock())
+    monkeypatch.setattr("rasa.cli.run.run", MagicMock())
 
     def mock_confirm(*args, **kwargs):
         mock = MagicMock()
         mock.skip_if.return_value.ask.return_value = True
         return mock
 
-    monkeypatch.setattr(
-        "rasa.cli.scaffold.inspect", mock_inspect_that_checks_attributes
-    )
     monkeypatch.setattr("questionary.confirm", mock_confirm)
 
     args = argparse.Namespace(no_prompt=False, model="models/test.tar.gz")

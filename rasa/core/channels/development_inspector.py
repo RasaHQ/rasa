@@ -114,11 +114,13 @@ class DevelopmentInspectProxy(InputChannel):
         underlying: InputChannel,
         is_voice: bool = False,
         server_url: Optional[Text] = None,
+        is_legacy: bool = False,
     ) -> None:
         """Initializes the DevelopmentInspectProxy channel."""
         super().__init__()
         self.underlying = underlying
         self.is_voice = is_voice
+        self.is_legacy = is_legacy
         self.server_url = server_url if server_url and server_url != "0.0.0.0" else None
         self.processor: Optional[MessageProcessor] = None
         self.tracker_stream = TrackerStream(get_tracker=self.get_tracker_state)
@@ -149,10 +151,10 @@ class DevelopmentInspectProxy(InputChannel):
         """Returns the path to the inspect.html file."""
         import pkg_resources
 
-        if self.underlying.name() == "inspector":
-            path = INSPECT_NEXTGEN_TEMPLATE_PATH
-        else:
+        if self.is_legacy:
             path = INSPECT_LEGACY_TEMPLATE_PATH
+        else:
+            path = INSPECT_NEXTGEN_TEMPLATE_PATH
 
         return pkg_resources.resource_filename(__name__, path)
 
@@ -255,18 +257,30 @@ class DevelopmentInspectProxy(InputChannel):
                     _cancel_background_tasks_on_disconnect
                 )
 
-            inspect_path = app.url_for(f"{app.name}.{underlying_webhook.name}.inspect")
-
+            # allow server_url override (e.g. behind a proxy/tunnel),
+            # otherwise fall back to the server's serve_location with
+            # 0.0.0.0 replaced by localhost
             serve_location = self.server_url or app.serve_location.replace(
                 "0.0.0.0", "localhost"
             )
-            query_string = f"?{urlencode({'projectUrl': serve_location})}"
-            inspect_url = f"{serve_location}{inspect_path}{query_string}"
 
-            print_info(
-                f"Development inspector for channel {self.name()} is running. To "
-                f"inspect conversations, visit {inspect_url}"
-            )
+            if self.is_legacy:
+                inspect_path = app.url_for(
+                    f"{app.name}.{underlying_webhook.name}.inspect"
+                )
+                print_info(
+                    f"Development inspector for channel {self.name()} is running. To "
+                    f"inspect conversations, visit {serve_location}{inspect_path}"
+                )
+            else:
+                query_string = urlencode(
+                    {"projectUrl": serve_location, "channel": self.name()}
+                )
+                print_info(
+                    f"Development inspector for channel {self.name()} is running. To "
+                    f"inspect conversations, visit "
+                    f"{serve_location}/webhooks/{self.name()}/inspect.html?{query_string}"
+                )
 
         underlying_webhook.add_websocket_route(
             self.tracker_stream, "/tracker_stream", name="tracker_stream"

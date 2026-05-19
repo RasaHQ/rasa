@@ -2,7 +2,7 @@
 
 A rapid prototyping tool for enterprise developer personas working in Rasa Pro built with React + Typescript + Vite.
 
-Important: this project is deprecated in favor of the new inspector UI. This app will only be used when running `rasa run --inspect`, and mostly to monitor the external channels. The `rasa inspect` command will serve the new inspector.
+Important: this project is deprecated in favor of the new inspector UI. This app will only be used when running `rasa run --inspect --legacy`, and mostly to monitor the external channels. The `rasa inspect --legacy` command will serve the new inspector.
 
 Please refrain from making changes to this project unless you know what you're doing.
 

@@ -20,6 +20,7 @@ import {
   type ResponseData,
   type QuickReply,
   type Button,
+  type SlotState,
 } from "../types";
 import { isVoiceLatency } from "./latency";
 
@@ -183,7 +184,7 @@ export function extractSlotEventsForSession(
 
 export function formatSlots(
   slotEvents: ConversationEvent[]
-): { name: string; value: unknown, event: ConversationEvent }[] {
+): SlotState[] {
   const slotMap = new Map<string, { value: unknown, event: ConversationEvent }>();
 
   slotEvents.forEach((event) => {

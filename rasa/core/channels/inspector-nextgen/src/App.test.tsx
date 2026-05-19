@@ -32,7 +32,7 @@ vi.mock("./assets/images", () => ({
   Background: "mock-background.png",
 }));
 
-vi.mock("react-router", () => ({
+vi.mock("react-router-dom", () => ({
   useSearchParams: () => [{ get: () => null }],
 }));
 

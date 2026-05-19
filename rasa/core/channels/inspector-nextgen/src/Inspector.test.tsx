@@ -9,6 +9,12 @@ vi.mock("./hooks/useBotConnection", () => ({
     mockUseBotConnection(...args) as void,
 }));
 
+const mockUseTrackerConnection = vi.fn();
+vi.mock("./hooks/useTrackerConnection", () => ({
+  useTrackerConnection: (...args: unknown[]) =>
+    mockUseTrackerConnection(...args) as void,
+}));
+
 vi.mock("./hooks/useConversationData", () => ({
   useConversationData: vi.fn(),
 }));
@@ -162,6 +168,55 @@ describe("Inspector", () => {
     );
 
     expect(screen.getByTestId("try-assistant")).toBeInTheDocument();
+  });
+
+  describe("channel routing", () => {
+    it("enables useBotConnection and disables useTrackerConnection when no channel is provided", () => {
+      renderWithProviders(
+        <Inspector projectUrl="http://localhost:5005" botDataEndpoint="/data" />,
+      );
+
+      expect(mockUseBotConnection).toHaveBeenCalledWith(
+        expect.objectContaining({ enabled: true }),
+      );
+      expect(mockUseTrackerConnection).toHaveBeenCalledWith(
+        expect.objectContaining({ enabled: false, channel: "" }),
+      );
+    });
+
+    it("enables useTrackerConnection and disables useBotConnection when a non-inspector channel is provided", () => {
+      renderWithProviders(
+        <Inspector
+          projectUrl="http://localhost:5005"
+          botDataEndpoint="/data"
+          channel="rest"
+        />,
+      );
+
+      expect(mockUseTrackerConnection).toHaveBeenCalledWith(
+        expect.objectContaining({ enabled: true, channel: "rest" }),
+      );
+      expect(mockUseBotConnection).toHaveBeenCalledWith(
+        expect.objectContaining({ enabled: false }),
+      );
+    });
+
+    it("treats channel=inspector the same as no channel (uses useBotConnection)", () => {
+      renderWithProviders(
+        <Inspector
+          projectUrl="http://localhost:5005"
+          botDataEndpoint="/data"
+          channel="inspector"
+        />,
+      );
+
+      expect(mockUseBotConnection).toHaveBeenCalledWith(
+        expect.objectContaining({ enabled: true }),
+      );
+      expect(mockUseTrackerConnection).toHaveBeenCalledWith(
+        expect.objectContaining({ enabled: false, channel: "inspector" }),
+      );
+    });
   });
 
 });

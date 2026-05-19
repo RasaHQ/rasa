@@ -192,34 +192,81 @@ describe("useBotConnection", () => {
       onReconnectError: vi.fn(),
       useMemoryOnly: false,
     }));
-
+  
     act(() => {
       inspectorStore.state.setUrl("https://test.example.com");
     });
-
+  
     act(() => {
       lastSocket.handlers["connect"]?.();
     });
-
+  
     act(() => {
       lastSocket.handlers["tracker"]?.({
         sender_id: inspectorStore.state.sessionId,
-        events: [],
-        slots: [{ name: "some_slot", value: "some_value" }],
+        events: [{ event: "slot", name: "some_slot", value: "some_value", timestamp: 1 }],
+        slots: [],
         stack: [{ frame_id: "f1", flow_id: "my_flow", step_id: "s1", collect: undefined, utter: undefined }],
       });
     });
-
+  
     expect(inspectorStore.state.stack).toHaveLength(1);
     expect(inspectorStore.state.slots).toHaveLength(1);
-
+  
     act(() => {
       inspectorStore.state.startNewConversation();
     });
-
+  
     expect(inspectorStore.state.stack).toEqual([]);
     expect(inspectorStore.state.slots).toEqual([]);
     expect(inspectorStore.state.slotRelatedEvents).toEqual([]);
+  });
+
+  describe("enabled flag", () => {
+    it("does not open a socket.io connection when enabled is false", () => {
+      renderHook(() =>
+        useBotConnection({
+          projectId: "test-project",
+          onSessionStart: vi.fn(),
+          onReconnectError: vi.fn(),
+          useMemoryOnly: true,
+          enabled: false,
+        }),
+      );
+
+      act(() => {
+        inspectorStore.state.setUrl("https://test.example.com");
+      });
+
+      expect(mockIo).not.toHaveBeenCalled();
+    });
+
+    it("opens a socket.io connection when enabled flips from false to true", () => {
+      act(() => {
+        inspectorStore.setState((prev) => ({
+          ...prev,
+          projectUrl: "https://test.example.com",
+        }));
+      });
+
+      const { rerender } = renderHook(
+        ({ enabled }: { enabled: boolean }) =>
+          useBotConnection({
+            projectId: "test-project",
+            onSessionStart: vi.fn(),
+            onReconnectError: vi.fn(),
+            useMemoryOnly: true,
+            enabled,
+          }),
+        { initialProps: { enabled: false } },
+      );
+
+      expect(mockIo).not.toHaveBeenCalled();
+
+      rerender({ enabled: true });
+
+      expect(mockIo).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("session_start message behavior", () => {

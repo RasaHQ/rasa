@@ -6,6 +6,7 @@ import {
   render,
 } from "@testing-library/react";
 import React from "react";
+import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import { initInspectorStore, type InspectorStoreState } from "../store";
 
@@ -22,9 +23,11 @@ export function renderWithProviders(
 
   const Providers = ({ children }: { children: React.ReactNode }) => {
     return (
-      <QueryClientProvider client={queryClient}>
-        <ChakraProvider value={defaultSystem}>{children}</ChakraProvider>
-      </QueryClientProvider>
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <ChakraProvider value={defaultSystem}>{children}</ChakraProvider>
+        </QueryClientProvider>
+      </MemoryRouter>
     );
   };
 

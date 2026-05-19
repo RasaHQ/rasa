@@ -72,6 +72,15 @@ def add_inspect_argument(
         action="store_true",
         help="Run development inspector alongside the assistant.",
     )
+    parser.add_argument(
+        "--legacy",
+        action="store_true",
+        default=False,
+        help=(
+            "Use the legacy inspector UI (socketio-based). "
+            "Only applicable with --inspect."
+        ),
+    )
 
 
 def add_server_arguments(parser: argparse.ArgumentParser) -> None:

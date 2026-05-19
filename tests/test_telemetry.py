@@ -1694,7 +1694,7 @@ def test_track_rasa_inspect_telemetry(
     mock_track.assert_called_once_with(
         TELEMETRY_INSPECT_STARTED_EVENT,
         {
-            "type": "socketio",
+            "type": "inspector",
             "assistant_id": "unique_stack_assistant_test_name",
         },
     )

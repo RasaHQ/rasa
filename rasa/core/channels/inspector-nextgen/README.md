@@ -52,7 +52,7 @@ yarn dev
 In another terminal, start the Rasa Inspector server, specifying the port used by Vite:
 
 ```
-RASA_INSPECTOR_DEV_PORT=<port-of-the-served-vite-app> rasa inspect --nextgen
+RASA_INSPECTOR_DEV_PORT=<port-of-the-served-vite-app> rasa inspect
 ```
 
 Visit `http://localhost:<port-of-the-served-vite-app>/` for the Vite app, or use the Rasa Inspector at the link printed by the CLI. The Inspector frontend will live-reload on changes.
@@ -70,7 +70,7 @@ yarn build
 To serve the production Inspector, run:
 
 ```
-rasa inspect --nextgen
+rasa inspect
 ```
 
 This will serve the built frontend (`dist/index.html`).

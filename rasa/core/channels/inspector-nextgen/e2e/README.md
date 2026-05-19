@@ -4,7 +4,7 @@ This directory contains end-to-end tests for the Rasa development inspector UI u
 
 ## Default project
 
-Tests use the **finance** project at `rasa/cli/project_templates/finance`. The `yarn e2e` script starts `rasa inspect --nextgen` from that directory, runs the tests, then stops the server.
+Tests use the **finance** project at `rasa/cli/project_templates/finance`. The `yarn e2e` script starts `rasa inspect` from that directory, runs the tests, then stops the server.
 
 **One-time setup:** If the model has never been trained for the finance project, train it once before running the tests:
 

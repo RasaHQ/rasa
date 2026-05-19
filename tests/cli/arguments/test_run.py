@@ -252,3 +252,14 @@ def test_default_run_arguments(
     assert args.jwt_private_key is None
     assert args.skip_yaml_validation == []
     assert args.sub_agents == "sub_agents"
+    assert args.legacy is False
+
+
+def test_run_inspect_legacy_flag(
+    run_parser: argparse.ArgumentParser,
+) -> None:
+    """Tests that --legacy flag is parsed correctly for rasa run --inspect --legacy."""
+    args = run_parser.parse_args(["run", "--inspect", "--legacy"])
+
+    assert args.inspect is True
+    assert args.legacy is True

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { v4 as uuid } from "uuid";
 import { useBotConnection } from "./hooks/useBotConnection";
+import { useTrackerConnection } from "./hooks/useTrackerConnection";
 import { InspectorContextProvider } from "./InspectorContext";
 import {
   initInspectorStore,
@@ -9,6 +10,7 @@ import {
 } from "./store";
 import { Toaster } from "./Toaster";
 import { TryAssistant } from "./try-assistant/TryAssistant";
+import { INSPECTOR_CHANNEL_NAME } from "./constants";
 import type {
   ConversationEventAction,
   LogErrorFn,
@@ -38,6 +40,7 @@ type Props = {
   sessionId?: string;
   resetSession?: () => void;
   trackerEndpoint?: string;
+  channel?: string;
 };
 
 export const Inspector = ({
@@ -72,6 +75,7 @@ const InspectorContent = (
     onSessionStart,
     onReconnectError,
     onMessageSent,
+    channel,
   } = props;
 
   const initialized = useRef<boolean>(null);
@@ -88,6 +92,8 @@ const InspectorContent = (
     });
   }
 
+  const isTrackerMode = !!channel && channel !== INSPECTOR_CHANNEL_NAME;
+
   useBotConnection({
     projectId: projectId ?? uuid(),
     useMemoryOnly: singleSessionMode ?? false,
@@ -96,7 +102,10 @@ const InspectorContent = (
     onSessionStart,
     onReconnectError,
     onMessageSent,
+    enabled: !isTrackerMode,
   });
+
+  useTrackerConnection({ enabled: isTrackerMode, channel: channel ?? "" });
 
   useEffect(() => {
     const updates: Partial<InspectorStoreState> = {};

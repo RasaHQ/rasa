@@ -136,7 +136,7 @@ def test_inspect_initializes_sub_agents_with_custom_path(
         sub_agents=str(tmp_path / "custom_sub_agents"),
         model=str(tmp_path / "model.tar.gz"),
         voice=False,
-        nextgen=False,
+        legacy=False,
         port=5005,
         auth_token=None,
     )

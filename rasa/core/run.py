@@ -284,6 +284,7 @@ def serve_application(
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
     inspect: Optional[bool] = False,
     voice: Optional[bool] = False,
+    legacy: Optional[bool] = False,
     inspector_server_url: Optional[Text] = None,
 ) -> None:
     """Run the API entrypoint."""
@@ -295,7 +296,9 @@ def serve_application(
     if inspect:
         logger.info("Starting development inspector.")
         input_channels = [
-            DevelopmentInspectProxy(ic, voice, inspector_server_url)
+            DevelopmentInspectProxy(
+                ic, voice, server_url=inspector_server_url, is_legacy=bool(legacy)
+            )
             for ic in input_channels
         ]
 

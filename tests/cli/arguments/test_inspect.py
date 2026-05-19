@@ -30,4 +30,4 @@ def test_rasa_inspect_default_args(
     assert args.jwt_method == "HS256"
     assert args.jwt_private_key is None
     assert args.skip_yaml_validation == []
-    assert args.nextgen is False
+    assert args.legacy is False

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pytest import RunResult
 
-from rasa.cli.inspect import inspect
+from rasa.cli.inspect import inspect, open_inspector_in_browser
 from rasa.core import constants
 from rasa.core.config.credentials import CredentialsConfig
 from rasa.shared.core.domain import Domain
@@ -74,7 +74,7 @@ def test_inspect_invokes_cli_run_with_local_model(
     # Assert that the arguments are correctly passed to the `rasa run` command
     assert args.model == f"{trained_simple_project}/models"
     assert args.endpoints == f"{trained_simple_project}/endpoints.yml"
-    assert args.connector == "socketio"
+    assert args.connector == "inspector"
 
     mock_rasa_run.assert_called_once_with(**vars(args))
 
@@ -114,16 +114,16 @@ def test_cli_run_with_skip_yaml_validation(
     mock_rasa_run.assert_called_once_with(**vars(args))
 
 
-def test_inspect_nextgen_sets_inspector_connector(
+def test_inspect_legacy_sets_socketio_connector(
     inspect_parser: argparse.ArgumentParser,
     mock_rasa_run: MagicMock,
     trained_simple_project: Path,
 ) -> None:
-    """Tests whether `rasa inspect --nextgen` uses nextgen inspector channel."""
+    """Tests whether `rasa inspect --legacy` uses the legacy socketio channel."""
     args = inspect_parser.parse_args(
         [
             "inspect",
-            "--nextgen",
+            "--legacy",
             "--endpoints",
             f"{trained_simple_project}/endpoints.yml",
             "--model",
@@ -133,7 +133,7 @@ def test_inspect_nextgen_sets_inspector_connector(
 
     inspect(args)
 
-    assert args.connector == "inspector"
+    assert args.connector == "socketio"
     mock_rasa_run.assert_called_once_with(**vars(args))
 
 
@@ -177,7 +177,7 @@ def test_inspect_uses_server_url_from_credentials(
         asyncio.run(hook(None, None))
 
     mock_open.assert_called_once_with(
-        custom_server_url, args.voice, args.nextgen, args.auth_token
+        custom_server_url, args.legacy, args.voice, args.auth_token
     )
 
 
@@ -210,5 +210,115 @@ def test_inspect_falls_back_to_default_server_url_when_no_credentials(
 
     expected_url = constants.DEFAULT_SERVER_FORMAT.format("http", args.port)
     mock_open.assert_called_once_with(
-        expected_url, args.voice, args.nextgen, args.auth_token
+        expected_url, args.legacy, args.voice, args.auth_token
     )
+
+
+@pytest.mark.parametrize(
+    "legacy,voice,expected_path",
+    [
+        (False, False, "/webhooks/inspector/inspect.html"),
+        (True, False, "/webhooks/socketio/inspect.html"),
+        (True, True, "/webhooks/browser_audio/inspect.html"),
+    ],
+)
+def test_open_inspector_in_browser_url(
+    legacy: bool, voice: bool, expected_path: str
+) -> None:
+    """Tests that the browser is opened on the correct URL for each mode."""
+    server_url = "http://localhost:5005"
+
+    with patch("rasa.cli.inspect.webbrowser.open") as mock_open:
+        asyncio.run(open_inspector_in_browser(server_url, legacy=legacy, voice=voice))
+
+    mock_open.assert_called_once()
+    opened_url = mock_open.call_args[0][0]
+    assert opened_url.startswith(f"{server_url}{expected_path}")
+    assert "projectUrl=" in opened_url
+
+
+def test_open_inspector_in_browser_voice_without_legacy_uses_default_inspector() -> (
+    None
+):
+    """Tests that --voice without --legacy still opens the default inspector URL."""
+    with patch("rasa.cli.inspect.webbrowser.open") as mock_open:
+        asyncio.run(
+            open_inspector_in_browser("http://localhost:5005", legacy=False, voice=True)
+        )
+
+    opened_url = mock_open.call_args[0][0]
+    assert "/webhooks/inspector/inspect.html" in opened_url
+
+
+def test_open_inspector_in_browser_includes_token_when_provided() -> None:
+    """Tests that the token query param is appended when provided."""
+    with patch("rasa.cli.inspect.webbrowser.open") as mock_open:
+        asyncio.run(
+            open_inspector_in_browser("http://localhost:5005", token="secret-token")
+        )
+
+    opened_url = mock_open.call_args[0][0]
+    assert "token=secret-token" in opened_url
+
+
+def test_open_inspector_in_browser_uses_dev_port_when_env_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Tests that RASA_INSPECTOR_DEV_PORT redirects to the local dev server."""
+    monkeypatch.setenv("RASA_INSPECTOR_DEV_PORT", "5173")
+
+    with patch("rasa.cli.inspect.webbrowser.open") as mock_open:
+        asyncio.run(open_inspector_in_browser("http://localhost:5005"))
+
+    opened_url = mock_open.call_args[0][0]
+    assert opened_url.startswith("http://localhost:5173")
+    assert "projectUrl=" in opened_url
+
+
+def test_inspect_voice_with_legacy_sets_browser_audio_connector(
+    inspect_parser: argparse.ArgumentParser,
+    mock_rasa_run: MagicMock,
+    trained_simple_project: Path,
+) -> None:
+    """Tests that --voice --legacy uses the browser_audio connector."""
+    args = inspect_parser.parse_args(
+        [
+            "inspect",
+            "--legacy",
+            "--voice",
+            "--endpoints",
+            f"{trained_simple_project}/endpoints.yml",
+            "--model",
+            f"{trained_simple_project}/models",
+        ]
+    )
+
+    inspect(args)
+
+    assert args.connector == "browser_audio"
+    mock_rasa_run.assert_called_once_with(**vars(args))
+
+
+def test_inspect_voice_without_legacy_logs_warning(
+    inspect_parser: argparse.ArgumentParser,
+    mock_rasa_run: MagicMock,
+    trained_simple_project: Path,
+) -> None:
+    """Tests that --voice without --legacy logs a warning and falls back to the default inspector."""  # noqa: E501
+    args = inspect_parser.parse_args(
+        [
+            "inspect",
+            "--voice",
+            "--endpoints",
+            f"{trained_simple_project}/endpoints.yml",
+            "--model",
+            f"{trained_simple_project}/models",
+        ]
+    )
+
+    with patch("rasa.cli.inspect.structlogger.warning") as mock_warning:
+        inspect(args)
+
+    mock_warning.assert_called_once()
+    assert mock_warning.call_args[0][0] == "inspect.voice_requires_legacy"
+    assert args.connector == "inspector"

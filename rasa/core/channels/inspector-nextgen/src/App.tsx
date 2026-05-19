@@ -1,11 +1,11 @@
 import { Box, ChakraProvider, Flex, Theme } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Background } from "./assets/images";
 import { StandaloneHeader } from './components/StandaloneHeader';
 import { Inspector } from './Inspector';
 import { system } from './theme';
-import { useSearchParams } from "react-router";
 
 const App = () => {
   const [containerWidth, setContainerWidth] = useState("1000px");
@@ -32,6 +32,8 @@ const App = () => {
   // Breaks in dev mode as origin is Vite dev server e.g. http://localhost:5173.
   // Therefore in dev mode default to hardcoded http://localhost:5005.
   const projectUrl = searchParams.get("projectUrl") || (import.meta.env.DEV ? "http://localhost:5005" : globalThis.location.origin);
+  // If the channel is not provided, use the default channel "inspector"
+  const channel = searchParams.get('channel') ?? undefined;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -45,6 +47,7 @@ const App = () => {
                 botDataEndpoint="/data"
                 onInspectModeChange={(inspect) => setContainerWidth(inspect ? "100%" : "1000px")}
                 singleSessionMode
+                channel={channel}
               />
             </Box>
           </Flex>

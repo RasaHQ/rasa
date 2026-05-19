@@ -25,6 +25,7 @@ import {
   type VoiceLatency,
 } from "../types";
 import {
+  formatSlots,
   getSlotRelatedEvents,
   isUtterance,
   isVoiceLatency,
@@ -51,16 +52,6 @@ const REACT_APP_SESSION_HISTORY_KEY = "rasa_session_history";
 type ConversationHistory = Record<string, Conversation>;
 
 const SESSION_START_MESSAGE = "/session_start";
-
-function formatSlots(slots: { [key: string]: unknown }): SlotState[] {
-  if (!slots) {
-    return [];
-  }
-
-  return Object.entries(slots)
-    .filter((slotDuple) => slotDuple[1] != null)
-    .map((slotDuple) => ({ name: slotDuple[0], value: slotDuple[1] }));
-}
 
 const AGENT_INACTIVE_EVENTS = new Set([
   ConversationEventType.AgentCompleted,
@@ -130,6 +121,7 @@ export function useBotConnection({
   onSessionStart,
   onReconnectError,
   onMessageSent,
+  enabled = true,
 }: {
   projectId: string;
   useMemoryOnly?: boolean;
@@ -138,6 +130,7 @@ export function useBotConnection({
   onSessionStart?: (id: string) => void;
   onReconnectError?: (error: unknown) => void;
   onMessageSent?: (message: string) => void;
+  enabled?: boolean;
 }) {
   const { logError, showToast, socketReconnectAttempts, track } =
     useInspectorContext();
@@ -243,6 +236,7 @@ export function useBotConnection({
     socket.current?.removeAllListeners();
     socket.current?.io.removeAllListeners();
     socket.current?.disconnect();
+    socket.current = undefined;
   };
 
   const disableChat = useCallback(() => {
@@ -286,7 +280,7 @@ export function useBotConnection({
   }, [initialTrackerData]);
 
   useEffect(() => {
-    if (!voiceLatency) return;
+    if (!enabled || !voiceLatency) return;
 
     setConversation((currentConversations) => {
       const events = currentConversations.events;
@@ -308,9 +302,10 @@ export function useBotConnection({
       };
       return { ...currentConversations, events: next };
     });
-  }, [voiceLatency]);
+  }, [voiceLatency, enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     if (!socket.current && url) {
       const urlObject = new URL(url);
 
@@ -518,6 +513,7 @@ export function useBotConnection({
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [
+    enabled,
     url,
     sessionId,
     sendMessage,
@@ -534,7 +530,7 @@ export function useBotConnection({
       const events = mapRawEventsToConversationEvents(response.events);
       setSlotRelatedEvents(getSlotRelatedEvents(events));
 
-      setSlots(formatSlots(response.slots));
+      setSlots(formatSlots(getSlotRelatedEvents(events)));
       const convertedStack: Stack[] = response.stack.map(
         (item: RawStack) => ({
           frameId: item.frame_id,
@@ -691,7 +687,7 @@ export function useBotConnection({
   // before the browser paints, so children see real values on first paint.
   const initialSyncDone = useRef(false);
   useLayoutEffect(() => {
-    if (initialSyncDone.current) return;
+    if (!enabled || initialSyncDone.current) return;
     initialSyncDone.current = true;
     inspectorStore.setState((prev) => ({
       ...prev,
@@ -716,6 +712,7 @@ export function useBotConnection({
 
   // Ongoing sync: pushes updates whenever local state or actions change.
   useEffect(() => {
+    if (!enabled) return;
     inspectorStore.setState((prev) => ({
       ...prev,
       sessionId,
@@ -742,9 +739,10 @@ export function useBotConnection({
     replayingConversation,
     waitingForUserInput,
     onVoiceErrorRef,
-    setUrl,
     slots,
     slotRelatedEvents,
+    enabled,
+    setUrl,
     sendMessage,
     startNewConversation,
     replayConversation,
