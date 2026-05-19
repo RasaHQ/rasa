@@ -1,11 +1,15 @@
 import asyncio
+import io
+import json
 import os
 import shutil
 import subprocess
 import uuid
+import zipfile
 from http import HTTPStatus
 from pathlib import Path
-from typing import Text
+from typing import Dict, Text
+from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
@@ -204,6 +208,81 @@ async def test_get_training_not_found(client: SanicASGITestClient) -> None:
     assert response.json == {"message": "Training not found"}
 
 
+async def test_get_training_stream_terminal_state(
+    client: SanicASGITestClient,
+    training_id: str,
+) -> None:
+    done_session = MagicMock(spec=TrainingSession)
+    done_session.configure_mock(
+        training_id=training_id,
+        progress=100,
+        status=TrainingSessionStatus.DONE,
+        log_id="test_42",
+        process=MagicMock(spec=subprocess.Popen),
+    )
+    trainings[training_id] = done_session
+
+    _, response = await client.get(f"/training/{training_id}?stream_response=true")
+
+    assert response.status == 200
+    assert "text/event-stream" in response.headers.get("content-type", "")
+    events = [
+        json.loads(line[len("data: ") :])
+        for line in response.text.splitlines()
+        if line.startswith("data: ")
+    ]
+    assert len(events) == 1
+    assert events[0] == {
+        "training_id": training_id,
+        "status": "done",
+        "progress": 100,
+        "logs": None,
+    }
+
+
+async def test_get_training_stream_status_transition(
+    client: SanicASGITestClient,
+    training_id: str,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    session = MagicMock(spec=TrainingSession)
+    session.configure_mock(
+        training_id=training_id,
+        progress=50,
+        status=TrainingSessionStatus.RUNNING,
+        log_id="test_42",
+        process=MagicMock(spec=subprocess.Popen),
+    )
+    trainings[training_id] = session
+
+    async def advance_to_done(_delay: float) -> None:
+        session.status = TrainingSessionStatus.DONE
+        session.progress = 100
+
+    monkeypatch.setattr(asyncio, "sleep", advance_to_done)
+
+    _, response = await client.get(f"/training/{training_id}?stream_response=true")
+
+    assert response.status == 200
+    events = [
+        json.loads(line[len("data: ") :])
+        for line in response.text.splitlines()
+        if line.startswith("data: ")
+    ]
+    assert len(events) == 2
+    assert events[0] == {
+        "training_id": training_id,
+        "status": "running",
+        "progress": 50,
+    }
+    assert events[1] == {
+        "training_id": training_id,
+        "status": "done",
+        "progress": 100,
+        "logs": None,
+    }
+
+
 async def test_stop_training(
     client: SanicASGITestClient, training_id: str, training_session: MagicMock
 ) -> None:
@@ -217,6 +296,64 @@ async def test_stop_training_not_found(client: SanicASGITestClient) -> None:
     _, response = await client.delete("/training/non_existent_id")
     assert response.status == 404
     assert response.json == {"message": "Training session not found"}
+
+
+def _make_zip(files: Dict[str, bytes]) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        for name, content in files.items():
+            zf.writestr(name, content)
+    return buf.getvalue()
+
+
+async def test_start_training_multipart_missing_zip(
+    client: SanicASGITestClient, training_id: str
+) -> None:
+    _, response = await client.post(
+        "/training",
+        data={
+            "id": training_id,
+            "assistant_id": "assistant_1",
+            "client_id": "client_1",
+        },
+        files={"not_zip": ("dummy", b"dummy", "text/plain")},
+    )
+    assert response.status == 400
+    assert response.json == {"message": "zip file is required"}
+
+
+@mock.patch("rasa.model_manager.model_api.run_training")
+async def test_start_training_with_zip(
+    mock_run_training: mock.Mock,
+    client: SanicASGITestClient,
+    training_id: str,
+) -> None:
+    mock_session = MagicMock(spec=TrainingSession)
+    mock_session.configure_mock(
+        training_id=training_id,
+        model_name="test_model",
+        status=TrainingSessionStatus.RUNNING,
+        process=MagicMock(spec=subprocess.Popen),
+    )
+    mock_run_training.return_value = mock_session
+
+    zip_bytes = _make_zip({"config.yml": b"pipeline: []"})
+
+    _, response = await client.post(
+        "/training",
+        data={
+            "id": training_id,
+            "assistant_id": "assistant_1",
+            "client_id": "client_1",
+        },
+        files={"zip": ("archive.zip", zip_bytes, "application/zip")},
+    )
+    assert response.status == 200
+    assert response.json.get("training_id") == training_id
+    assert response.json.get("model_name") == "test_model"
+    _, call_kwargs = mock_run_training.call_args
+    assert call_kwargs["zip_bytes"] == zip_bytes
+    assert call_kwargs["encoded_training_data"] is None
 
 
 async def test_start_bot(
@@ -345,6 +482,122 @@ async def test_get_bot_not_found(client: SanicASGITestClient) -> None:
     _, response = await client.get("/bot/non_existent_id")
     assert response.status == 404
     assert response.json == {"message": "Bot not found"}
+
+
+async def test_get_bot_stream_terminal_running(
+    client: SanicASGITestClient,
+) -> None:
+    bot = MagicMock(spec=BotSession)
+    bot.configure_mock(
+        deployment_id="deployment_1",
+        status=BotSessionStatus.RUNNING,
+        url="http://localhost:8000",
+        internal_url="http://localhost:12345",
+        returncode=None,
+        log_id="test_42",
+        process=MagicMock(spec=subprocess.Popen, returncode=0),
+    )
+    running_bots["deployment_1"] = bot
+
+    _, response = await client.get("/bot/deployment_1?stream_response=true")
+
+    assert response.status == 200
+    assert "text/event-stream" in response.headers.get("content-type", "")
+    events = [
+        json.loads(line[len("data: ") :])
+        for line in response.text.splitlines()
+        if line.startswith("data: ")
+    ]
+    assert len(events) == 1
+    assert events[0] == {
+        "deployment_id": "deployment_1",
+        "status": "running",
+        "url": "http://localhost:8000",
+        "internal_url": "http://localhost:12345",
+        "returncode": None,
+        "logs": None,
+    }
+
+
+async def test_get_bot_stream_terminal_stopped(
+    client: SanicASGITestClient,
+) -> None:
+    bot = MagicMock(spec=BotSession)
+    bot.configure_mock(
+        deployment_id="deployment_1",
+        status=BotSessionStatus.STOPPED,
+        url="http://localhost:8000",
+        internal_url="http://localhost:12345",
+        returncode=1,
+        log_id="test_42",
+        process=MagicMock(spec=subprocess.Popen, returncode=1),
+    )
+    running_bots["deployment_1"] = bot
+
+    _, response = await client.get("/bot/deployment_1?stream_response=true")
+
+    assert response.status == 200
+    events = [
+        json.loads(line[len("data: ") :])
+        for line in response.text.splitlines()
+        if line.startswith("data: ")
+    ]
+    assert len(events) == 1
+    assert events[0] == {
+        "deployment_id": "deployment_1",
+        "status": "stopped",
+        "url": "http://localhost:8000",
+        "internal_url": "http://localhost:12345",
+        "returncode": 1,
+        "logs": None,
+    }
+
+
+async def test_get_bot_stream_status_transition(
+    client: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    bot = MagicMock(spec=BotSession)
+    bot.configure_mock(
+        deployment_id="deployment_1",
+        status=BotSessionStatus.QUEUED,
+        url="http://localhost:8000",
+        internal_url="http://localhost:12345",
+        returncode=None,
+        log_id="test_42",
+        process=MagicMock(spec=subprocess.Popen, returncode=0),
+    )
+    running_bots["deployment_1"] = bot
+
+    async def advance_to_running(_delay: float) -> None:
+        bot.status = BotSessionStatus.RUNNING
+
+    monkeypatch.setattr(asyncio, "sleep", advance_to_running)
+
+    _, response = await client.get("/bot/deployment_1?stream_response=true")
+
+    assert response.status == 200
+    events = [
+        json.loads(line[len("data: ") :])
+        for line in response.text.splitlines()
+        if line.startswith("data: ")
+    ]
+    assert len(events) == 2
+    assert events[0] == {
+        "deployment_id": "deployment_1",
+        "status": "queued",
+        "url": "http://localhost:8000",
+        "internal_url": "http://localhost:12345",
+        "returncode": None,
+    }
+    assert events[1] == {
+        "deployment_id": "deployment_1",
+        "status": "running",
+        "url": "http://localhost:8000",
+        "internal_url": "http://localhost:12345",
+        "returncode": None,
+        "logs": None,
+    }
 
 
 async def test_stop_bot(client: SanicASGITestClient) -> None:

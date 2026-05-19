@@ -1,6 +1,8 @@
+import io
 import os
 import shutil
 import subprocess
+import zipfile
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -21,7 +23,7 @@ from rasa.model_manager.warm_rasa_process import (
 )
 from rasa.model_training import generate_random_model_name
 from rasa.studio.prompts import handle_prompts
-from rasa.utils.io import subpath
+from rasa.utils.io import InvalidPathException, subpath
 
 structlogger = structlog.get_logger()
 
@@ -240,6 +242,42 @@ def write_training_data_to_files(
         handle_prompts(prompts, Path(training_base_path))
 
 
+def write_zip_to_training_dir(zip_bytes: bytes, training_base_path: str) -> None:
+    """Extract a ZIP archive into the training directory.
+
+    Git provider archives wrap all files under a top-level directory
+    (e.g. ``repo-main/config.yml``). That prefix is detected and stripped so
+    the training directory ends up with the repo layout directly.
+    """
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        names = zf.namelist()
+
+        prefix = ""
+        if names:
+            first_parts = names[0].split("/")
+            if len(first_parts) > 1:
+                candidate = first_parts[0] + "/"
+                if all(n.startswith(candidate) for n in names):
+                    prefix = candidate
+
+        for name in names:
+            relative = name[len(prefix) :]
+            if not relative or relative.endswith("/"):
+                continue
+            if relative.startswith(f"{RASA_DIR_NAME}/"):
+                continue
+            try:
+                target = subpath(training_base_path, relative)
+            except InvalidPathException:
+                structlogger.warning(
+                    "model_trainer.zip_path_traversal_attempt", entry=name
+                )
+                continue
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with zf.open(name) as src, open(target, "wb") as dst:
+                dst.write(src.read())
+
+
 def prepare_training_directory(
     training_base_path: str, assistant_id: str, encoded_training_data: Dict[str, Any]
 ) -> None:
@@ -260,10 +298,11 @@ def start_training_process(
     training_base_path: str,
 ) -> TrainingSession:
     model_name = generate_random_model_name()
-    # Start the training in a subprocess
-    # set the working directory to the training directory
-    # run the rasa train command as a subprocess, activating poetry before running
-    # pipe the stdout and stderr to the same file
+    domain_arg = (
+        "domain"
+        if os.path.isdir(os.path.join(training_base_path, "domain"))
+        else "domain.yml"
+    )
     arguments = [
         "train",
         "--debug",
@@ -272,7 +311,7 @@ def start_training_process(
         "--config",
         "config.yml",
         "--domain",
-        "domain.yml",
+        domain_arg,
         "--endpoints",
         "endpoints.yml",
         "--fixed-model-name",
@@ -323,12 +362,21 @@ def run_training(
     training_id: str,
     assistant_id: str,
     client_id: str,
-    encoded_training_data: Dict,
+    encoded_training_data: Optional[Dict] = None,
+    zip_bytes: Optional[bytes] = None,
 ) -> TrainingSession:
     """Run a training session."""
     training_base_path = train_path(training_id)
 
-    prepare_training_directory(training_base_path, assistant_id, encoded_training_data)
+    if zip_bytes is not None:
+        os.makedirs(training_base_path, exist_ok=True)
+        seed_training_directory_with_rasa_cache(training_base_path, assistant_id)
+        write_zip_to_training_dir(zip_bytes, training_base_path)
+    else:
+        prepare_training_directory(
+            training_base_path, assistant_id, encoded_training_data or {}
+        )
+
     return start_training_process(
         training_id=training_id,
         assistant_id=assistant_id,

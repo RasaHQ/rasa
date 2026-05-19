@@ -1,8 +1,9 @@
 import asyncio
+import json as json_stdlib
 import os
 from functools import wraps
 from http import HTTPStatus
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional
 
 import dotenv
 import psutil
@@ -11,7 +12,7 @@ from ruamel.yaml import YAMLError
 from sanic import Blueprint, Sanic, response
 from sanic.exceptions import NotFound
 from sanic.request import Request
-from sanic.response import json
+from sanic.response import ResponseStream, json
 from socketio import AsyncServer
 
 import rasa
@@ -297,17 +298,30 @@ def internal_blueprint() -> Blueprint:
     @limit_parallel_training_requests()
     @ensure_minimum_disk_space()
     async def start_training(request: Request) -> response.HTTPResponse:
-        """Start a new training session."""
-        data = request.json
-        training_id: Optional[str] = data.get("id")
-        assistant_id: Optional[str] = data.get("assistant_id")
-        client_id: Optional[str] = data.get("client_id")
-        encoded_training_data: Dict[str, str] = data.get("bot_config", {}).get(
-            "data", {}
-        )
+        """Start a new training session.
+
+        Accepts either ``multipart/form-data`` with a ``zip`` file field and
+        ``id`` / ``assistant_id`` / ``client_id`` form fields, or the JSON body
+        with a ``bot_config.data`` payload as base64-encoded files.
+        """
+        if request.content_type and "multipart/form-data" in request.content_type:
+            training_id = request.form.get("id")
+            assistant_id = request.form.get("assistant_id")
+            client_id = request.form.get("client_id")
+            zip_file = request.files.get("zip")
+            if not zip_file:
+                return json({"message": "zip file is required"}, status=400)
+            zip_bytes: Optional[bytes] = zip_file.body
+            encoded_training_data = None
+        else:
+            data = request.json
+            training_id = data.get("id")
+            assistant_id = data.get("assistant_id")
+            client_id = data.get("client_id")
+            encoded_training_data = data.get("bot_config", {}).get("data", {})
+            zip_bytes = None
 
         if training_id in trainings:
-            # fail, because there apparently is already a training with this id
             return json({"message": "Training with this id already exists"}, status=409)
 
         if not assistant_id:
@@ -324,6 +338,7 @@ def internal_blueprint() -> Blueprint:
                 assistant_id=assistant_id,
                 client_id=client_id,
                 encoded_training_data=encoded_training_data,
+                zip_bytes=zip_bytes,
             )
             trainings[training_id] = training_session
             return json(
@@ -335,9 +350,20 @@ def internal_blueprint() -> Blueprint:
             return json({"message": str(exc)}, status=500)
 
     @bp.get("/training/<training_id>")
-    async def get_training(request: Request, training_id: str) -> response.HTTPResponse:
-        """Return the status of a training session."""
-        if training := trainings.get(training_id):
+    async def get_training(
+        request: Request, training_id: str
+    ) -> ResponseStream | response.HTTPResponse:
+        """Return the status of a training session.
+
+        If ``stream_response=true`` is passed as a query parameter the response
+        is an SSE stream that emits an event on every status/progress change and
+        closes when the training reaches a terminal state.
+        """
+        training = trainings.get(training_id)
+        if training is None:
+            return json({"message": "Training not found"}, status=404)
+
+        if request.args.get("stream_response", "").lower() != "true":
             return json(
                 {
                     "training_id": training_id,
@@ -349,8 +375,45 @@ def internal_blueprint() -> Blueprint:
                     "logs": get_logs_content(training.log_id),
                 }
             )
-        else:
-            return json({"message": "Training not found"}, status=404)
+
+        terminal_statuses = {
+            TrainingSessionStatus.DONE,
+            TrainingSessionStatus.ERROR,
+            TrainingSessionStatus.STOPPED,
+        }
+
+        async def stream_training(resp: ResponseStream) -> None:
+            last_status: Optional[str] = None
+            last_progress: Optional[int] = None
+            keepalive_counter = 0
+
+            while True:
+                current_status = training.status
+                current_progress = training.progress
+                is_terminal = current_status in terminal_statuses
+
+                if current_status != last_status or current_progress != last_progress:
+                    payload: Dict[str, Any] = {
+                        "training_id": training_id,
+                        "status": current_status,
+                        "progress": current_progress,
+                    }
+                    if is_terminal:
+                        payload["logs"] = get_logs_content(training.log_id)
+                    await resp.write(f"data: {json_stdlib.dumps(payload)}\n\n")
+                    last_status = current_status
+                    last_progress = current_progress
+
+                if is_terminal:
+                    break
+
+                await asyncio.sleep(0.5)
+
+                keepalive_counter += 1
+                if keepalive_counter % 30 == 0:  # every ~15 s
+                    await resp.write(": keepalive\n\n")
+
+        return ResponseStream(stream_training, content_type="text/event-stream")
 
     @bp.delete("/training/<training_id>")
     async def stop_training(
@@ -415,26 +478,68 @@ def internal_blueprint() -> Blueprint:
             return json({"message": "Bot not found"}, status=404)
 
         terminate_bot(bot)
-
         return json(
             {"deployment_id": deployment_id, "status": bot.status, "url": bot.url}
         )
 
     @bp.get("/bot/<deployment_id>")
-    async def get_bot(request: Request, deployment_id: str) -> response.HTTPResponse:
+    async def get_bot(
+        request: Request, deployment_id: str
+    ) -> ResponseStream | response.HTTPResponse:
+        """Return the status of a bot deployment.
+
+        If ``stream_response=true`` is passed as a query parameter the response
+        is an SSE stream that emits an event on every status change and closes
+        when the bot reaches ``stopped``.
+        """
         bot = running_bots.get(deployment_id)
         if bot is None:
             return json({"message": "Bot not found"}, status=404)
 
-        return json(
-            {
-                "deployment_id": deployment_id,
-                "status": bot.status,
-                "returncode": bot.returncode,
-                "url": bot.url,
-                "logs": get_logs_content(bot.log_id),
-            }
-        )
+        if request.args.get("stream_response", "").lower() != "true":
+            return json(
+                {
+                    "deployment_id": deployment_id,
+                    "status": bot.status,
+                    "returncode": bot.returncode,
+                    "url": bot.url,
+                    "logs": get_logs_content(bot.log_id),
+                }
+            )
+
+        bot_terminal_statuses = {BotSessionStatus.RUNNING, BotSessionStatus.STOPPED}
+
+        async def stream_bot(resp: ResponseStream) -> None:
+            last_status: Optional[str] = None
+            keepalive_counter = 0
+
+            while True:
+                current_status = bot.status
+                is_terminal = current_status in bot_terminal_statuses
+
+                if current_status != last_status:
+                    payload: Dict[str, Any] = {
+                        "deployment_id": deployment_id,
+                        "status": current_status,
+                        "url": bot.url,
+                        "internal_url": bot.internal_url,
+                        "returncode": bot.returncode,
+                    }
+                    if is_terminal:
+                        payload["logs"] = get_logs_content(bot.log_id)
+                    await resp.write(f"data: {json_stdlib.dumps(payload)}\n\n")
+                    last_status = current_status
+
+                if is_terminal:
+                    break
+
+                await asyncio.sleep(0.5)
+
+                keepalive_counter += 1
+                if keepalive_counter % 30 == 0:  # every ~15 s
+                    await resp.write(": keepalive\n\n")
+
+        return ResponseStream(stream_bot, content_type="text/event-stream")
 
     @bp.get("/bot")
     async def list_bots(request: Request) -> response.HTTPResponse:
@@ -452,7 +557,7 @@ def internal_blueprint() -> Blueprint:
     @bp.route("/models/<model_name>", methods=["GET"])
     async def send_model(
         request: Request, model_name: str
-    ) -> Union[response.ResponseStream, response.HTTPResponse]:
+    ) -> response.ResponseStream | response.HTTPResponse:
         try:
             model_path = path_to_model(model_name)
 

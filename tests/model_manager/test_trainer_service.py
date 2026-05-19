@@ -1,6 +1,8 @@
 import base64
+import io
 import os
 import subprocess
+import zipfile
 from pathlib import Path
 from typing import Dict, Text
 from unittest import mock
@@ -22,6 +24,7 @@ from rasa.model_manager.trainer_service import (
     update_training_status,
     write_encoded_data_to_file,
     write_training_data_to_files,
+    write_zip_to_training_dir,
 )
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
@@ -38,6 +41,14 @@ from rasa.studio.prompts import (
 
 def _encode(text: str) -> str:
     return base64.b64encode(text.encode("utf-8")).decode("utf-8")
+
+
+def _make_zip(files: Dict[str, bytes], prefix: str = "") -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        for name, content in files.items():
+            zf.writestr(prefix + name, content)
+    return buf.getvalue()
 
 
 @pytest.fixture
@@ -350,3 +361,77 @@ def test_default_prompt_is_ignored(tmp_path: Path, monkeypatch: MonkeyPatch) -> 
     # 2. endpoints.yml is unmodified (still only contains "nlg:")
     endpoints_file = tmp_path / DEFAULT_ENDPOINTS_PATH
     assert endpoints_file.read_text(encoding="utf-8").strip() == "nlg:"
+
+
+def test_write_zip_to_training_dir_extracts_files(tmp_path: Path) -> None:
+    zip_bytes = _make_zip(
+        {"config.yml": b"pipeline: []", "data/flows.yml": b"flows data"}
+    )
+    write_zip_to_training_dir(zip_bytes, str(tmp_path))
+    assert (tmp_path / "config.yml").read_bytes() == b"pipeline: []"
+    assert (tmp_path / "data" / "flows.yml").read_bytes() == b"flows data"
+
+
+def test_write_zip_to_training_dir_strips_git_prefix(tmp_path: Path) -> None:
+    zip_bytes = _make_zip(
+        {"config.yml": b"pipeline: []", "data/flows.yml": b"flows"},
+        prefix="repo-main/",
+    )
+    write_zip_to_training_dir(zip_bytes, str(tmp_path))
+    assert (tmp_path / "config.yml").read_bytes() == b"pipeline: []"
+    assert (tmp_path / "data" / "flows.yml").read_bytes() == b"flows"
+    assert not (tmp_path / "repo-main").exists()
+
+
+def test_write_zip_to_training_dir_skips_rasa_dir(tmp_path: Path) -> None:
+    zip_bytes = _make_zip({"config.yml": b"data", ".rasa/cache.bin": b"cache"})
+    write_zip_to_training_dir(zip_bytes, str(tmp_path))
+    assert (tmp_path / "config.yml").exists()
+    assert not (tmp_path / ".rasa").exists()
+
+
+def test_write_zip_to_training_dir_skips_directory_entries(tmp_path: Path) -> None:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("data/", "")  # explicit directory entry
+        zf.writestr("config.yml", "ok")
+        zf.writestr("data/flows.yml", "flows")
+    write_zip_to_training_dir(buf.getvalue(), str(tmp_path))
+    assert not (tmp_path / "data").is_file()
+    assert (tmp_path / "config.yml").read_bytes() == b"ok"
+    assert (tmp_path / "data" / "flows.yml").read_bytes() == b"flows"
+
+
+def test_write_zip_to_training_dir_blocks_path_traversal(tmp_path: Path) -> None:
+    training_dir = tmp_path / "training"
+    training_dir.mkdir()
+    zip_bytes = _make_zip({"config.yml": b"safe", "../evil.txt": b"pwned"})
+    write_zip_to_training_dir(zip_bytes, str(training_dir))
+    assert (training_dir / "config.yml").read_bytes() == b"safe"
+    assert not (tmp_path / "evil.txt").exists()
+
+
+@mock.patch("rasa.model_manager.trainer_service.start_rasa_process")
+def test_run_training_with_zip_bytes(
+    mock_start: mock.Mock, tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        rasa.model_manager.config, "SERVER_BASE_WORKING_DIRECTORY", str(tmp_path)
+    )
+    mock_warm = mock.Mock()
+    mock_warm.process = mock.Mock(spec=subprocess.Popen)
+    mock_warm.process.pid = 12345
+    mock_warm.log_id = "test_log"
+    mock_start.return_value = mock_warm
+
+    zip_bytes = _make_zip(
+        {"config.yml": b"pipeline: []", "domain.yml": b"version: '3.1'"}
+    )
+    session = run_training(
+        "zip_train_id", "assistant_1", "client_1", zip_bytes=zip_bytes
+    )
+
+    training_path = Path(train_path("zip_train_id"))
+    assert (training_path / "config.yml").read_bytes() == b"pipeline: []"
+    assert (training_path / "domain.yml").read_bytes() == b"version: '3.1'"
+    assert session.status == "running"
