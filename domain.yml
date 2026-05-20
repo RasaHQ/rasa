@@ -1,0 +1,46 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - mood_great
+  - mood_unhappy
+  - bot_challenge
+  - give_name
+slots:
+  user_name:         # This is the "bucket" in the bot's memory
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text     # AUTOMATION: This captures everything you type
+        intent: give_name   # ...but only when you are introducing yourself
+
+responses:
+  utter_greet:
+  - text: "System online. Streaming conversation tracking inputs directly."
+
+  # Add this so the bot can actually use the name it stored
+  utter_greet_with_name:
+  - text: "Nice to meet you, {user_name}!"
+
+  utter_cheer_up:
+  - text: "Here is something to cheer you up:"
+    image: "https://i.imgur.com/nGF1K8f.jpg"
+
+  utter_did_that_help:
+  - text: "Did that help you?"
+
+  utter_happy:
+  - text: "Great, carry on!"
+
+  utter_goodbye:
+  - text: "Session terminated. Clearing cache."
+
+  utter_iamabot:
+  - text: "I am a bot, powered by Rasa."
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

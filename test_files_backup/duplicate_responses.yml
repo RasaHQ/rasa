@@ -19,5 +19,4 @@ responses:
     - text: goodbye :(
   utter_default:
     - text: default message
-  utter_greet:
-      - text: hey there!
+  
