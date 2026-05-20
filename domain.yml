@@ -19,7 +19,7 @@ slots:
 
 responses:
   utter_greet:
-  - text: "Hey! How are you?"
+  - text: "System online. Streaming conversation tracking inputs directly."
 
   # Add this so the bot can actually use the name it stored
   utter_greet_with_name:
@@ -36,7 +36,7 @@ responses:
   - text: "Great, carry on!"
 
   utter_goodbye:
-  - text: "Bye"
+  - text: "Session terminated. Clearing cache."
 
   utter_iamabot:
   - text: "I am a bot, powered by Rasa."

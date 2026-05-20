@@ -1,0 +1,8 @@
+version: "3.1"
+stories:
+  - story: capture session state path
+    steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: give_name
+      - action: utter_greet_with_name
