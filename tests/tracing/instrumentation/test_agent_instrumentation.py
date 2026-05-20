@@ -212,16 +212,19 @@ async def test_tracing_agent_internal_state_transitions(
         state=AgentState.WAITING_FOR_INPUT,
     )
 
-    # Change state to INTERRUPTED
+    # Digression: WAITING_FOR_INPUT -> INTERRUPTED
     agent_frame.state = AgentState.INTERRUPTED
 
-    # Change state back to WAITING_FOR_INPUT
+    # Resume: INTERRUPTED -> RESUMING (set by resume_flow)
+    agent_frame.state = AgentState.RESUMING
+
+    # Agent yields again: RESUMING -> WAITING_FOR_INPUT
     agent_frame.state = AgentState.WAITING_FOR_INPUT
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
 
-    assert num_captured_spans >= 2
+    assert num_captured_spans >= 3
 
     # Find agent internal state transition spans
     state_transition_spans = [
@@ -229,7 +232,7 @@ async def test_tracing_agent_internal_state_transitions(
         for span in captured_spans
         if span.name == "AgentStackFrame.state_transition"
     ]
-    assert len(state_transition_spans) >= 2
+    assert len(state_transition_spans) >= 3
 
     # Check first transition: WAITING_FOR_INPUT -> INTERRUPTED
     interrupted_span = next(
@@ -249,12 +252,30 @@ async def test_tracing_agent_internal_state_transitions(
     assert interrupted_span.attributes["from_state"] == "waiting_for_input"
     assert interrupted_span.attributes["to_state"] == "interrupted"
 
-    # Check second transition: INTERRUPTED -> WAITING_FOR_INPUT
-    resumed_span = next(
+    # Check second transition: INTERRUPTED -> RESUMING
+    resuming_span = next(
         (
             span
             for span in state_transition_spans
             if span.attributes["from_state"] == "interrupted"
+            and span.attributes["to_state"] == "resuming"
+        ),
+        None,
+    )
+    assert resuming_span is not None
+    assert resuming_span.attributes is not None
+    assert resuming_span.attributes["agent_id"] == "test_agent"
+    assert resuming_span.attributes["flow_id"] == "test_flow"
+    assert resuming_span.attributes["step_id"] == "test_step"
+    assert resuming_span.attributes["from_state"] == "interrupted"
+    assert resuming_span.attributes["to_state"] == "resuming"
+
+    # Check third transition: RESUMING -> WAITING_FOR_INPUT
+    resumed_span = next(
+        (
+            span
+            for span in state_transition_spans
+            if span.attributes["from_state"] == "resuming"
             and span.attributes["to_state"] == "waiting_for_input"
         ),
         None,
@@ -264,7 +285,7 @@ async def test_tracing_agent_internal_state_transitions(
     assert resumed_span.attributes["agent_id"] == "test_agent"
     assert resumed_span.attributes["flow_id"] == "test_flow"
     assert resumed_span.attributes["step_id"] == "test_step"
-    assert resumed_span.attributes["from_state"] == "interrupted"
+    assert resumed_span.attributes["from_state"] == "resuming"
     assert resumed_span.attributes["to_state"] == "waiting_for_input"
 
 

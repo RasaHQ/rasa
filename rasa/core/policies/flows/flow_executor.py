@@ -173,14 +173,16 @@ def select_next_step_id(
     """
     if not ignore_agent_on_stack:
         # If the current step calls an agent and the top frame is an active
-        # (waiting) agent, return the current step id to loop back to the agent.
-        # Interrupted frames must not trigger this; navigation follows links
-        # forward (e.g. ContinueFlowStep after resuming the parent flow).
+        # agent (either waiting for input, or mid-resume), return the current
+        # step id to loop back to the agent. INTERRUPTED frames must not
+        # trigger this; navigation follows links forward (e.g. ContinueFlowStep
+        # after resuming the parent flow).
         top_stack_frame = tracker.stack.top()
         if (
             top_stack_frame
             and isinstance(top_stack_frame, AgentStackFrame)
-            and top_stack_frame.state == AgentState.WAITING_FOR_INPUT
+            and top_stack_frame.state
+            in (AgentState.WAITING_FOR_INPUT, AgentState.RESUMING)
         ):
             return current.id
 
@@ -318,6 +320,11 @@ def _restore_suspended_agent_frame_if_any(
     interrupted agent. Matches on (flow_id, step_id, agent_id) so the same agent
     called from different flows or multiple times in one flow restores the correct
     frame. Mutates stack and the frame's suspended_agent_frames list.
+
+    The restored frame is transitioned to ``RESUMING`` so the next ``run_agent``
+    cycle takes the resume branch and attaches ``resumed_after_interruption=True``
+    to the agent input — matching the contract of ``resume_flow()``. Storage
+    format on the suspended entry (still ``interrupted``) is left untouched.
     """
     for frame in stack.frames:
         if not isinstance(frame, UserFlowStackFrame):
@@ -332,7 +339,9 @@ def _restore_suspended_agent_frame_if_any(
                 and entry.get("agent_id") == agent_id
             ):
                 suspended.pop(i)
-                stack.push(AgentStackFrame.from_dict(entry))
+                restored = AgentStackFrame.from_dict(entry)
+                restored.state = AgentState.RESUMING
+                stack.push(restored)
                 return
 
 

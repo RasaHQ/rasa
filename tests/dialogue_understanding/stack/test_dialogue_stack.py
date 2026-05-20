@@ -5,6 +5,8 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentStackFrame,
+    AgentState,
     UserFlowStackFrame,
 )
 
@@ -425,3 +427,87 @@ def test_stack_update_from_existing_stack():
             flow_id="foo", step_id="second_step", frame_id="some-frame-id"
         )
     ]
+
+
+# ============================================================
+# find_active_agent_frame / find_active_agent_stack_frame_for_flow
+# ============================================================
+
+
+def test_find_active_agent_frame_returns_waiting_for_input_frame():
+    """WAITING_FOR_INPUT is the normal active state."""
+    frame = AgentStackFrame(
+        frame_id="f1",
+        flow_id="flow1",
+        agent_id="agent1",
+        state=AgentState.WAITING_FOR_INPUT,
+    )
+    stack = DialogueStack(frames=[frame])
+    assert stack.find_active_agent_frame() == frame
+
+
+def test_find_active_agent_frame_returns_resuming_frame():
+    """RESUMING is a transient active state set by resume_flow() before the next
+    run_agent() cycle. The frame is still logically active: it must be interruptible,
+    cancellable, and eligible for ContinueAgentCommand routing.
+    """
+    frame = AgentStackFrame(
+        frame_id="f1",
+        flow_id="flow1",
+        agent_id="agent1",
+        state=AgentState.RESUMING,
+    )
+    stack = DialogueStack(frames=[frame])
+    assert stack.find_active_agent_frame() == frame
+
+
+def test_find_active_agent_frame_does_not_return_interrupted_frame():
+    """INTERRUPTED frames are not active until resumed or cancelled."""
+    frame = AgentStackFrame(
+        frame_id="f1",
+        flow_id="flow1",
+        agent_id="agent1",
+        state=AgentState.INTERRUPTED,
+    )
+    stack = DialogueStack(frames=[frame])
+    assert stack.find_active_agent_frame() is None
+
+
+def test_agent_is_active_true_for_resuming():
+    """agent_is_active() must be True when the frame is in RESUMING state so that
+    ContinueAgentCommand is not incorrectly dropped by the command processor.
+    """
+    frame = AgentStackFrame(
+        frame_id="f1",
+        flow_id="flow1",
+        agent_id="agent1",
+        state=AgentState.RESUMING,
+    )
+    stack = DialogueStack(frames=[frame])
+    assert stack.agent_is_active() is True
+
+
+def test_find_active_agent_stack_frame_for_flow_returns_resuming_frame():
+    """find_active_agent_stack_frame_for_flow treats RESUMING as active for a
+    specific flow (used by cancel_flow_command and get_active_agent_info).
+    """
+    frame = AgentStackFrame(
+        frame_id="f1",
+        flow_id="my_flow",
+        agent_id="agent1",
+        state=AgentState.RESUMING,
+    )
+    stack = DialogueStack(frames=[frame])
+    assert stack.find_active_agent_stack_frame_for_flow("my_flow") == frame
+
+
+def test_find_active_agent_stack_frame_for_flow_ignores_interrupted_frame():
+    """INTERRUPTED frames for the given flow are not returned."""
+    frame = AgentStackFrame(
+        frame_id="f1",
+        flow_id="my_flow",
+        agent_id="agent1",
+        state=AgentState.INTERRUPTED,
+    )
+    stack = DialogueStack(frames=[frame])
+    assert stack.find_active_agent_stack_frame_for_flow("my_flow") is None

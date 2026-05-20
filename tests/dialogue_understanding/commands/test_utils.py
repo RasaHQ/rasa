@@ -691,13 +691,19 @@ def test_remove_pattern_completed_frames_no_completed_pattern():
     assert len(events) == 0
 
 
-def test_resume_flow_resets_agent_state_to_waiting_for_input():
-    """Test that resume_flow resets an interrupted agent frame to WAITING_FOR_INPUT.
+def test_resume_flow_transitions_agent_state_to_resuming():
+    """Test that resume_flow transitions an interrupted agent frame to RESUMING.
 
-    This is a regression test for ENG-2769: when a flow containing a sub-agent is
-    interrupted and then resumed, the agent frame must transition from INTERRUPTED
-    to WAITING_FOR_INPUT so that select_next_step_id loops back to the agent call
-    step instead of advancing to END.
+    Regression test for the ENG-2713 / ENG-2769 conflict: when a flow containing
+    a sub-agent is interrupted and then resumed, the agent frame must transition
+    from INTERRUPTED to RESUMING. The RESUMING state both:
+    - signals select_next_step_id to loop back to the agent call step (so the
+      flow doesn't advance to END prematurely), and
+    - signals run_agent to re-invoke the agent with the
+      `resumed_after_interruption=True` metadata.
+
+    The accompanying `AgentResumed` event is emitted later by `run_agent`
+    (single canonical emitter), not by `resume_flow` itself.
     """
     from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
         FlowStackFrameType,
@@ -734,14 +740,12 @@ def test_resume_flow_resets_agent_state_to_waiting_for_input():
     # Resume the main flow (which contains the interrupted agent)
     events = resume_flow("main_flow", tracker, stack)
 
-    # Check that the agent frame state was reset to WAITING_FOR_INPUT
-    assert agent_frame.state == AgentState.WAITING_FOR_INPUT
+    # Check that the agent frame state was transitioned to RESUMING
+    assert agent_frame.state == AgentState.RESUMING
 
-    # Check that AgentResumed event was created
-    agent_resumed_events = [e for e in events if isinstance(e, AgentResumed)]
-    assert len(agent_resumed_events) == 1
-    assert agent_resumed_events[0].agent_id == "test_agent"
-    assert agent_resumed_events[0].flow_id == "main_flow"
+    # `AgentResumed` is no longer emitted here — `run_agent` is the single
+    # canonical emitter so the event surfaces exactly once per resume cycle.
+    assert not any(isinstance(e, AgentResumed) for e in events)
 
     # Check that FlowResumed event was created
     flow_resumed_events = [e for e in events if isinstance(e, FlowResumed)]
@@ -798,7 +802,14 @@ def test_resume_flow_without_agent():
 
 
 def test_resume_flow_agent_already_waiting_for_input():
-    """Test that resume_flow handles agent frames already in WAITING_FOR_INPUT state."""
+    """Test that resume_flow transitions a waiting agent frame to RESUMING.
+
+    Even when the agent frame is already on top in WAITING_FOR_INPUT, resuming
+    explicitly flips it to RESUMING so the next run_agent invocation can attach
+    `resumed_after_interruption=True` metadata. This is unusual in practice
+    (resume_flow is normally only called after a digression interrupted the
+    agent) but the contract must remain explicit.
+    """
     from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
         FlowStackFrameType,
     )
@@ -833,10 +844,8 @@ def test_resume_flow_agent_already_waiting_for_input():
     # Resume the main flow
     events = resume_flow("main_flow", tracker, stack)
 
-    # Check that the agent frame state remains WAITING_FOR_INPUT (idempotent)
-    assert agent_frame.state == AgentState.WAITING_FOR_INPUT
+    # Check that the agent frame is now RESUMING (explicit resume contract)
+    assert agent_frame.state == AgentState.RESUMING
 
-    # Check that AgentResumed event was still created
-    agent_resumed_events = [e for e in events if isinstance(e, AgentResumed)]
-    assert len(agent_resumed_events) == 1
-    assert agent_resumed_events[0].agent_id == "test_agent"
+    # `AgentResumed` is not emitted by resume_flow; run_agent is the sole emitter.
+    assert not any(isinstance(e, AgentResumed) for e in events)

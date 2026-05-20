@@ -232,8 +232,11 @@ class DialogueStack:
         return stack_frames
 
     def find_active_agent_frame(self) -> Optional[AgentStackFrame]:
+        # An agent frame is considered active when it is waiting for user input
+        # or mid-resume. INTERRUPTED frames are not active.
         stack_frames = self._find_agent_frame_by_predicate(
-            lambda frame: frame.state == AgentState.WAITING_FOR_INPUT
+            lambda frame: frame.state
+            in (AgentState.WAITING_FOR_INPUT, AgentState.RESUMING)
         )
         if stack_frames:
             return stack_frames[0]
@@ -265,7 +268,10 @@ class DialogueStack:
         """Get the agent stack frame of a specific flow."""
         stack_frames = self.find_agent_stack_frames_for_flow(flow_id)
         for stack_frame in stack_frames:
-            if stack_frame.state == AgentState.WAITING_FOR_INPUT:
+            if stack_frame.state in (
+                AgentState.WAITING_FOR_INPUT,
+                AgentState.RESUMING,
+            ):
                 return stack_frame
         return None
 

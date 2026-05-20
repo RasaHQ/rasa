@@ -18,7 +18,6 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
 from rasa.shared.constants import ACTION_ASK_PREFIX, UTTER_ASK_PREFIX
 from rasa.shared.core.events import (
-    AgentResumed,
     Event,
     FlowCompleted,
     FlowResumed,
@@ -196,18 +195,23 @@ def resume_flow(
     # on the stack
     stack.move_frames_to_top(frames_to_resume)
 
-    # create agent resumed events if the agent frame is now on top of the stack
+    # Mark the agent frame, if any, as RESUMING so that the next executor cycle
+    # loops back to the agent call step and `run_agent` re-invokes the agent with
+    # `resumed_after_interruption=True` metadata. RESUMING is a transient state:
+    # `run_agent` clears it in the same processing turn (typically to
+    # WAITING_FOR_INPUT once the agent yields again).
+    #
+    # Note: `AgentResumed` is intentionally NOT emitted here. `run_agent` is the
+    # single canonical emitter — it observes the RESUMING state and emits the
+    # event at the moment the agent is actually re-invoked. This also covers the
+    # correction/restart restore path (see `_restore_suspended_agent_frame_if_any`)
+    # which does not go through `resume_flow`.
     agent_stack_frame = next(
         (frame for frame in frames_to_resume if isinstance(frame, AgentStackFrame)),
         None,
     )
     if agent_stack_frame:
-        agent_id = agent_stack_frame.agent_id
-        # Reset state to WAITING_FOR_INPUT so select_next_step_id loops back to the
-        # agent call step. Without this, INTERRUPTED frames would skip the agent and
-        # advance to END, causing pattern_completed to fire prematurely.
-        agent_stack_frame.state = AgentState.WAITING_FOR_INPUT
-        applied_events.append(AgentResumed(agent_id, agent_stack_frame.flow_id))
+        agent_stack_frame.state = AgentState.RESUMING
 
     # Create flow interruption and resumption events
     applied_events.extend(

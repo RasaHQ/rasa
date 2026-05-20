@@ -214,7 +214,9 @@ function renderStepSequence(
     }
 
     if (step.call) {
-      const isAgentWaitingOnInput = !!currentStack?.agent_id && currentStack?.state === 'waiting_for_input'
+      const isAgentWaitingOnInput =
+        !!currentStack?.agent_id &&
+        (currentStack?.state === 'waiting_for_input' || currentStack?.state === 'resuming')
       mermaidTextFragment += `${mermaidId}["${encodeDoubleQuotes(
         stepId,
       )} 🤖"]:::callstep\n`

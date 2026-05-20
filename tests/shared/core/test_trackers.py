@@ -2850,12 +2850,20 @@ def _agent_frame(
     )
 
 
+# Parametric fixtures shared by `test_find_active_agent_frame`,
+# `test_agent_is_active`, and `test_get_active_agent_id`. Each tuple is
+# `(frames_factory, expected_id, expected_state)` where `expected_state` is the
+# active state the lookup should return (or `None` when no agent is active).
+# Keeping `expected_state` explicit per-case makes each fixture self-documenting
+# and lets `test_find_active_agent_frame` assert it strictly without losing the
+# negative ("no active agent") cases.
 agent_parameters = [
     # 0) completely empty stack
-    pytest.param(lambda: [], None, id="empty_stack"),
+    pytest.param(lambda: [], None, None, id="empty_stack"),
     # 1) no agent frames
     pytest.param(
         lambda: [UserFlowStackFrame() for _ in range(5)],
+        None,
         None,
         id="dialogue_frames_only",
     ),
@@ -2877,6 +2885,7 @@ agent_parameters = [
             UserFlowStackFrame(),
         ],
         None,
+        None,
         id="agent_frames_but_none_active",
     ),
     # 3) exactly one active agent around the middle
@@ -2897,6 +2906,7 @@ agent_parameters = [
             UserFlowStackFrame(),
         ],
         "active_agent",
+        AgentState.WAITING_FOR_INPUT,
         id="single_active_agent_mixed_with_dialogue_frames",
     ),
     # 4) active agent is the first element
@@ -2910,6 +2920,7 @@ agent_parameters = [
             *[UserFlowStackFrame() for _ in range(3)],
         ],
         "active_agent",
+        AgentState.WAITING_FOR_INPUT,
         id="active_agent_first",
     ),
     # 5) active agent is the last element
@@ -2923,15 +2934,54 @@ agent_parameters = [
             ),
         ],
         "active_agent",
+        AgentState.WAITING_FOR_INPUT,
         id="active_agent_last",
+    ),
+    # 6) active agent in RESUMING state (transient state set by resume_flow()
+    #    or _restore_suspended_agent_frame_if_any() — still counts as active)
+    pytest.param(
+        lambda: [
+            UserFlowStackFrame(),
+            _agent_frame(
+                frame_id="active_agent_frame",
+                agent_id="active_agent",
+                state=AgentState.RESUMING,
+            ),
+        ],
+        "active_agent",
+        AgentState.RESUMING,
+        id="resuming_agent_is_active",
+    ),
+    # 7) mixed states: an INTERRUPTED frame and a RESUMING frame.
+    #    Only RESUMING is active; the lookup must skip the INTERRUPTED one.
+    pytest.param(
+        lambda: [
+            _agent_frame(
+                frame_id="inactive_agent_frame",
+                agent_id="inactive_agent",
+                state=AgentState.INTERRUPTED,
+            ),
+            UserFlowStackFrame(),
+            _agent_frame(
+                frame_id="active_agent_frame",
+                agent_id="active_agent",
+                state=AgentState.RESUMING,
+            ),
+        ],
+        "active_agent",
+        AgentState.RESUMING,
+        id="resuming_active_among_interrupted",
     ),
 ]
 
 
-@pytest.mark.parametrize("frames_factory, expected_id", agent_parameters)
+@pytest.mark.parametrize(
+    "frames_factory, expected_id, expected_state", agent_parameters
+)
 def test_find_active_agent_frame(
     frames_factory: Callable[[], List[DialogueStackFrame]],
     expected_id: Optional[str],
+    expected_state: Optional[AgentState],
 ):
     tracker = get_tracker([])
     tracker.update_stack(DialogueStack(frames_factory()))
@@ -2942,12 +2992,19 @@ def test_find_active_agent_frame(
         assert frame is None
     else:
         assert frame.agent_id == expected_id
-        assert frame.state is AgentState.WAITING_FOR_INPUT
+        # Strict per-case assertion: the fixture declares the exact state it
+        # expects the lookup to return. WAITING_FOR_INPUT and RESUMING are both
+        # valid active states; each case is explicit about which one applies.
+        assert frame.state == expected_state
 
 
-@pytest.mark.parametrize("frames_factory, expected_id", agent_parameters)
+@pytest.mark.parametrize(
+    "frames_factory, expected_id, expected_state", agent_parameters
+)
 def test_agent_is_active(
-    frames_factory: Callable[[], List[DialogueStackFrame]], expected_id: Optional[str]
+    frames_factory: Callable[[], List[DialogueStackFrame]],
+    expected_id: Optional[str],
+    expected_state: Optional[AgentState],
 ):
     tracker = get_tracker([])
     tracker.update_stack(DialogueStack(frames_factory()))
@@ -2955,8 +3012,10 @@ def test_agent_is_active(
     assert tracker.stack.agent_is_active() is (expected_id is not None)
 
 
-@pytest.mark.parametrize("frames_factory, expected_id", agent_parameters)
-def test_get_active_agent_id(frames_factory, expected_id):
+@pytest.mark.parametrize(
+    "frames_factory, expected_id, expected_state", agent_parameters
+)
+def test_get_active_agent_id(frames_factory, expected_id, expected_state):
     tracker = get_tracker([])
     tracker.update_stack(DialogueStack(frames_factory()))
 
@@ -3093,7 +3152,7 @@ def test_find_agent_frame_by_predicate(
 
 
 @pytest.mark.parametrize(
-    "frames_factory, flow_id, expected_frame",
+    "frames_factory, flow_id, expected_frame, expected_state",
     [
         # Test finding active agent frame for specific flow
         pytest.param(
@@ -3119,6 +3178,7 @@ def test_find_agent_frame_by_predicate(
             ],
             "flow1",
             "agent1",  # Should return the first active frame for flow1
+            AgentState.WAITING_FOR_INPUT,
             id="find_active_frame_for_flow1",
         ),
         # Test finding active agent frame for flow with multiple active frames
@@ -3139,6 +3199,7 @@ def test_find_agent_frame_by_predicate(
             ],
             "flow1",
             "agent2",  # Should return the most recent active frame
+            AgentState.WAITING_FOR_INPUT,
             id="find_most_recent_active_frame",
         ),
         # Test finding active agent frame for flow with no active frames
@@ -3159,6 +3220,7 @@ def test_find_agent_frame_by_predicate(
             ],
             "flow1",
             None,  # No active frames for this flow
+            None,
             id="no_active_frames_for_flow",
         ),
         # Test finding active agent frame for nonexistent flow
@@ -3173,6 +3235,7 @@ def test_find_agent_frame_by_predicate(
             ],
             "nonexistent_flow",
             None,
+            None,
             id="nonexistent_flow",
         ),
         # Test with empty stack
@@ -3180,7 +3243,24 @@ def test_find_agent_frame_by_predicate(
             lambda: [],
             "flow1",
             None,
+            None,
             id="empty_stack",
+        ),
+        # RESUMING is a valid "active" state for the per-flow lookup too
+        # (regression guard for the ENG-2781 contract).
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.RESUMING,
+                    flow_id="flow1",
+                ),
+            ],
+            "flow1",
+            "agent1",
+            AgentState.RESUMING,
+            id="find_resuming_frame_for_flow",
         ),
     ],
 )
@@ -3188,6 +3268,7 @@ def test_find_active_agent_stack_frame_for_flow(
     frames_factory: Callable[[], List[DialogueStackFrame]],
     flow_id: str,
     expected_frame: Optional[str],
+    expected_state: Optional[AgentState],
 ):
     """Test the find_active_agent_stack_frame_for_flow method."""
     tracker = get_tracker([])
@@ -3200,7 +3281,8 @@ def test_find_active_agent_stack_frame_for_flow(
     else:
         assert frame.agent_id == expected_frame
         assert frame.flow_id == flow_id
-        assert frame.state == AgentState.WAITING_FOR_INPUT
+        # Strict per-case assertion on the returned active state.
+        assert frame.state == expected_state
 
 
 @pytest.mark.parametrize(

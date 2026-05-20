@@ -182,10 +182,12 @@ class RestartAgentCommand(Command):
         )
 
     def update_agent_stack_frames_on_stack(self, stack: DialogueStack) -> None:
+        # Convert any "active" agent frames (waiting for input or mid-resume)
+        # to INTERRUPTED. A restart must always supersede an in-flight resume.
         for frame in stack.frames:
-            if (
-                isinstance(frame, AgentStackFrame)
-                and frame.state == AgentState.WAITING_FOR_INPUT
+            if isinstance(frame, AgentStackFrame) and frame.state in (
+                AgentState.WAITING_FOR_INPUT,
+                AgentState.RESUMING,
             ):
                 frame.state = AgentState.INTERRUPTED
 

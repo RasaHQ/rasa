@@ -205,6 +205,13 @@ class UserFlowStackFrame(BaseFlowStackFrame):
 class AgentState(str, Enum):
     INTERRUPTED = "interrupted"
     WAITING_FOR_INPUT = "waiting_for_input"
+    # Transient state set by `resume_flow()` (and by
+    # `_restore_suspended_agent_frame_if_any` on the correction/restart path) when
+    # an interrupted agent is reordered back to the top of the stack. Signals
+    # `run_agent` to re-invoke the agent with `resumed_after_interruption=True`;
+    # cleared in the same cycle to WAITING_FOR_INPUT (agent yielded) or by
+    # removing the frame (agent completed)
+    RESUMING = "resuming"
 
     @staticmethod
     def from_str(state: Optional[str]) -> AgentState:
@@ -212,6 +219,8 @@ class AgentState(str, Enum):
             return AgentState.WAITING_FOR_INPUT
         elif state == AgentState.INTERRUPTED.value:
             return AgentState.INTERRUPTED
+        elif state == AgentState.RESUMING.value:
+            return AgentState.RESUMING
         else:
             raise InvalidAgentState(state)
 

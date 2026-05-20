@@ -264,7 +264,7 @@ async def run_agent(
     if (
         agent_stack_frame
         and agent_stack_frame == stack.top()
-        and agent_stack_frame.state == AgentState.INTERRUPTED
+        and agent_stack_frame.state == AgentState.RESUMING
     ):
         structlogger.debug(
             "flow.step.run_agent.resuming_interrupted_agent",

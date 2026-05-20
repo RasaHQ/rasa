@@ -177,6 +177,24 @@ def test_update_agent_stack_frames_on_stack(agent_id: str):
     assert frame2.state == AgentState.INTERRUPTED
 
 
+def test_update_agent_stack_frames_on_stack_flips_resuming_frame(agent_id: str):
+    """A restart must supersede an in-flight resume: RESUMING -> INTERRUPTED."""
+    cmd = RestartAgentCommand(agent_id)
+    waiting_frame = AgentStackFrame(
+        "f1", "flow1", agent_id, AgentState.WAITING_FOR_INPUT
+    )
+    resuming_frame = AgentStackFrame("f2", "flow2", agent_id, AgentState.RESUMING)
+    already_interrupted = AgentStackFrame(
+        "f3", "flow3", agent_id, AgentState.INTERRUPTED
+    )
+    stack = MagicMock()
+    stack.frames = [waiting_frame, resuming_frame, already_interrupted]
+    cmd.update_agent_stack_frames_on_stack(stack)
+    assert waiting_frame.state == AgentState.INTERRUPTED
+    assert resuming_frame.state == AgentState.INTERRUPTED
+    assert already_interrupted.state == AgentState.INTERRUPTED
+
+
 def test_get_agent_flow(agent_id: str):
     cmd = RestartAgentCommand(agent_id)
     flow_id = "flow_abc"

@@ -523,6 +523,37 @@ def test_select_next_step_id_follows_links_when_interrupted_agent_stack_frame_on
     assert result == "next_after_call"
 
 
+def test_select_next_step_id_returns_current_id_when_resuming_agent_on_top():
+    """Top AgentStackFrame in RESUMING state loops back to the current step.
+
+    ENG-2769: After resume_flow() marks the agent frame as RESUMING, the next
+    iteration of the executor must loop back to the agent call step so
+    run_agent re-invokes the agent with the resume metadata.
+    """
+    agent_stack_frame = AgentStackFrame(
+        frame_id="agent-frame-id",
+        state=AgentState.RESUMING,
+        agent_id="agent-1",
+        flow_id="flow-1",
+    )
+    step = FlowStep(
+        custom_id="my_step_id",
+        idx=0,
+        description=None,
+        metadata={},
+        next=FlowStepLinks(
+            links=[StaticFlowStepLink(target_step_id="next_after_call")]
+        ),
+        flow_id="my_flow",
+    )
+    stack = DialogueStack(frames=[agent_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+
+    result = select_next_step_id(step, stack.current_context(), tracker)
+    assert result == "my_step_id"
+
+
 def test_select_next_step_id_ignore_agent_on_stack_returns_next_step():
     """ENG-2669: With ignore_agent_on_stack=True, returns next step not current."""
     agent_frame = AgentStackFrame(
@@ -624,7 +655,11 @@ def test_get_next_step_id_after_agent_matches_step_id_when_agent_called_twice():
 
 
 def test_restore_suspended_agent_frame_if_any_pushes_and_removes_from_list():
-    """ENG-2669: Restoring a suspended agent frame pushes it and removes from list."""
+    """ENG-2669: Restoring a suspended agent frame pushes it and removes from list.
+
+    The restored frame is transitioned to RESUMING so the next run_agent cycle
+    takes the resume branch (ENG-2781).
+    """
     agent_b_frame = AgentStackFrame(
         flow_id="my_flow",
         step_id="call_b",
@@ -644,8 +679,44 @@ def test_restore_suspended_agent_frame_if_any_pushes_and_removes_from_list():
     top = stack.top()
     assert isinstance(top, AgentStackFrame)
     assert top.agent_id == "agent_b"
-    assert top.state == AgentState.INTERRUPTED
+    assert top.state == AgentState.RESUMING
     assert user_flow.suspended_agent_frames == []
+
+
+def test_restore_suspended_agent_frame_if_any_keeps_storage_state_unchanged():
+    """The serialized entry on the suspended list keeps its 'interrupted' state.
+
+    Only the runtime AgentStackFrame pushed onto the stack flips to RESUMING.
+    Storage format remains identical so old trackers continue to round-trip.
+    """
+    agent_b_frame = AgentStackFrame(
+        flow_id="my_flow",
+        step_id="call_b",
+        agent_id="agent_b",
+        state=AgentState.INTERRUPTED,
+        frame_id="agent-b-frame",
+    )
+    other_entry_kept = AgentStackFrame(
+        flow_id="my_flow",
+        step_id="other_call",
+        agent_id="agent_c",
+        state=AgentState.INTERRUPTED,
+        frame_id="agent-c-frame",
+    )
+    user_flow = UserFlowStackFrame(
+        flow_id="my_flow",
+        step_id="step_between",
+        frame_id="user-flow-id",
+        suspended_agent_frames=[
+            agent_b_frame.as_dict(),
+            other_entry_kept.as_dict(),
+        ],
+    )
+    stack = DialogueStack(frames=[user_flow])
+    _restore_suspended_agent_frame_if_any(stack, "my_flow", "call_b", "agent_b")
+    # The non-matching entry is still stored with its original 'interrupted' state.
+    assert len(user_flow.suspended_agent_frames) == 1
+    assert user_flow.suspended_agent_frames[0].get("state") == "interrupted"
 
 
 def test_restore_suspended_agent_frame_if_any_matches_step_id():

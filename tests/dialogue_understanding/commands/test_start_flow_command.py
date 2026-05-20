@@ -826,11 +826,11 @@ def test_run_start_flow_resume_existing_flow_with_agent():
     resume_command = StartFlowCommand(flow="car_research")
     events = resume_command.run_command_on_tracker(tracker, all_flows, tracker)
 
-    # Assert AgentResumed and FlowResumed are present for the correct agent/flow
-    assert any(
-        isinstance(event, AgentResumed) and event.agent_id == "car-research"
-        for event in events
-    )
+    # `AgentResumed` is not emitted at command-processing time — `run_agent`
+    # is the single canonical emitter. The contract here is that the stack is
+    # reordered and the agent frame is left in RESUMING, which is what the
+    # next executor cycle observes to take the resume branch.
+    assert not any(isinstance(event, AgentResumed) for event in events)
     assert any(
         isinstance(event, FlowResumed) and event.flow_id == "car_research"
         for event in events
@@ -840,6 +840,14 @@ def test_run_start_flow_resume_existing_flow_with_agent():
         isinstance(event, FlowInterrupted) and event.flow_id == "other_flow"
         for event in events
     )
+    # The agent frame must be left in RESUMING so the next run_agent() cycle
+    # takes the resume branch and attaches resumed_after_interruption=True.
+    stack_event = next(e for e in events if isinstance(e, DialogueStackUpdated))
+    updated_stack = tracker.stack.update_from_patch(stack_event.update)
+    agent_frame = next(
+        f for f in updated_stack.frames if isinstance(f, AgentStackFrame)
+    )
+    assert agent_frame.state == AgentState.RESUMING
 
 
 def test_to_dsl_default():
@@ -1027,21 +1035,27 @@ def test_start_flow_resumes_same_flow_and_removes_continue_interrupted_frames():
     # WHEN: starting the same flow that's already on top
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
 
-    # Should return flow completion for the pattern and proper flow/agent resume events.
-    assert len(events) == 4
+    # Should return the pattern completion, the flow resume, and a stack update.
+    # `AgentResumed` is no longer emitted at this command-processing stage; it
+    # is emitted later by `run_agent` (the single canonical emitter).
+    assert len(events) == 3
     assert isinstance(events[0], FlowCompleted)
-    assert isinstance(events[1], AgentResumed)
-    assert isinstance(events[2], FlowResumed)
-    assert isinstance(events[3], DialogueStackUpdated)
+    assert isinstance(events[1], FlowResumed)
+    assert isinstance(events[2], DialogueStackUpdated)
+    assert not any(isinstance(e, AgentResumed) for e in events)
 
-    dialogue_stack_event = events[3]
+    dialogue_stack_event = events[2]
     updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
     assert len(updated_stack.frames) == 2
     assert updated_stack.frames[0] == user_stack_frame
     resumed_agent_frame = updated_stack.top()
     assert isinstance(resumed_agent_frame, AgentStackFrame)
     assert resumed_agent_frame.agent_id == "foo-agent"
-    assert resumed_agent_frame.state == AgentState.WAITING_FOR_INPUT
+    # resume_flow() transitions the interrupted agent frame to RESUMING. The next
+    # run_agent() cycle takes the resume branch (attaching
+    # `resumed_after_interruption=True` metadata, emitting `AgentResumed`) and
+    # then clears the state to WAITING_FOR_INPUT once the agent yields again.
+    assert resumed_agent_frame.state == AgentState.RESUMING
 
 
 def test_start_flow_resumes_flow_and_removes_continue_interrupted_frames():

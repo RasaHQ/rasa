@@ -54,7 +54,7 @@ export interface Stack {
   ended: boolean
   type: "flow" | "agent"
   agent_id?: string
-  state?: "waiting_for_input" | "interrupted"
+  state?: "waiting_for_input" | "interrupted" | "resuming"
 }
 
 export interface RasaLatency {

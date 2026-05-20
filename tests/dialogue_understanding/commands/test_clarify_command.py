@@ -247,16 +247,31 @@ def test_regex_pattern_v3_command_syntax():
     CommandSyntaxManager.reset_syntax_version()
 
 
-def test_run_command_on_tracker_interrupts_agent_and_adds_event():
+@pytest.mark.parametrize(
+    "initial_state",
+    [AgentState.WAITING_FOR_INPUT, AgentState.RESUMING],
+    ids=["from_waiting_for_input", "from_resuming"],
+)
+def test_run_command_on_tracker_interrupts_agent_and_adds_event(
+    initial_state: AgentState,
+) -> None:
+    """ClarifyCommand must interrupt any active top agent frame.
+
+    Both WAITING_FOR_INPUT and RESUMING are "active" states (RESUMING can
+    survive across an unexpected turn boundary, after which a new
+    ClarifyCommand may fire). In both cases the frame must be demoted to
+    INTERRUPTED and an `AgentInterrupted` event emitted.
+    """
     tracker = DialogueStateTracker.from_events("test", evts=[])
 
     agent_frame = AgentStackFrame(
         frame_id="agent-frame",
-        state=AgentState.WAITING_FOR_INPUT,
+        state=initial_state,
         agent_id="car-research",
         flow_id="car_research",
     )
     tracker.update_stack(DialogueStack(frames=[agent_frame]))
+    stack_before = tracker.stack
 
     all_flows = flows_from_str(
         """
@@ -278,14 +293,20 @@ def test_run_command_on_tracker_interrupts_agent_and_adds_event():
     command = ClarifyCommand(options=["flow-a", "flow-b"])
     events = command.run_command_on_tracker(tracker, all_flows, original_tracker)
 
-    # Check that an AgentInterrupted event is created
+    # An AgentInterrupted event must be emitted for the demoted agent.
     assert any(
         isinstance(e, AgentInterrupted)
         and e.agent_id == "car-research"
         and e.flow_id == "car_research"
         for e in events
-        if isinstance(e, AgentInterrupted)
     )
+    # The frame on the stack must now be INTERRUPTED regardless of its prior state.
+    stack_update = next(e for e in events if isinstance(e, DialogueStackUpdated))
+    updated_stack = stack_before.update_from_patch(stack_update.update)
+    updated_agent_frame = next(
+        f for f in updated_stack.frames if isinstance(f, AgentStackFrame)
+    )
+    assert updated_agent_frame.state == AgentState.INTERRUPTED
 
 
 def test_run_command_handles_empty_clarification_options():

@@ -23,7 +23,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
 )
-from rasa.shared.core.events import FlowCancelled, SlotSet
+from rasa.shared.core.events import AgentResumed, FlowCancelled, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -736,3 +736,71 @@ class TestIntegration:
         # Deserialized type
         restored_frame = ContinueInterruptedPatternFlowStackFrame.from_dict(frame_dict)
         assert restored_frame.type() == FLOW_PATTERN_CONTINUE_INTERRUPTED
+
+    @pytest.mark.asyncio
+    async def test_continue_interrupted_yes_resumes_interrupted_agent(self):
+        """Regression: continue-interrupted "Yes" transitions agent to RESUMING.
+
+        After a KB-style digression interrupts a sub-agent and the user
+        answers "Yes" to the continue-interrupted pattern, the agent frame
+        must move from INTERRUPTED to RESUMING. When the agent frame is
+        later popped to the top of the stack and `run_agent()` runs,
+        RESUMING is what triggers attaching the
+        `resumed_after_interruption=True` metadata so the sub-agent can
+        pick up where it left off.
+
+        The accompanying `AgentResumed` event is emitted later by
+        `run_agent` (single canonical emitter) — not at this command-
+        processing stage.
+        """
+        # Build a realistic stack: user flow with an INTERRUPTED agent below
+        # the pattern_continue_interrupted frame the user is responding to.
+        user_flow_frame = UserFlowStackFrame(
+            flow_id="my_flow",
+            step_id="call-research-agent",
+            frame_id="user-frame-id",
+            frame_type=FlowStackFrameType.REGULAR,
+        )
+        agent_frame = AgentStackFrame(
+            frame_id="agent-frame-id",
+            state=AgentState.INTERRUPTED,
+            agent_id="car-research",
+            flow_id="my_flow",
+            step_id="call-research-agent",
+            metadata={"agent_response": "What is your budget?"},
+        )
+        pattern_frame = ContinueInterruptedPatternFlowStackFrame(
+            frame_id="pattern-frame-id",
+            interrupted_flow_ids=["my_flow"],
+            interrupted_flow_names=["my_flow"],
+            multiple_flows_interrupted=False,
+        )
+        stack = DialogueStack(frames=[user_flow_frame, agent_frame, pattern_frame])
+        tracker = DialogueStateTracker.from_events("test_sender", [])
+        tracker.update_stack(stack)
+
+        output_channel = MagicMock()
+        nlg = MagicMock()
+        domain = MagicMock()
+
+        action = ActionContinueInterruptedFlow()
+        events = await action.run(output_channel, nlg, tracker, domain)
+
+        # `AgentResumed` is NOT emitted here. `run_agent` is the single
+        # canonical emitter and surfaces the event once the agent is actually
+        # re-invoked (observed via the post-resume RESUMING state below).
+        assert not any(isinstance(e, AgentResumed) for e in events)
+
+        # Apply the events to the tracker so we can inspect the resulting stack.
+        # tracker.stack returns a copy each call; we need to see the post-resume
+        # state of the agent frame to confirm the RESUMING transition.
+        for event in events:
+            tracker.update(event)
+        post_resume_agent_frame = next(
+            frame
+            for frame in tracker.stack.frames
+            if isinstance(frame, AgentStackFrame)
+        )
+        # Agent frame should now be in RESUMING state so that the next
+        # run_agent() invocation takes the resume branch.
+        assert post_resume_agent_frame.state == AgentState.RESUMING

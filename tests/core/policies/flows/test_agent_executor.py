@@ -57,6 +57,9 @@ from rasa.core.policies.flows.agent_executor import (
     remove_agent_stack_frame,
     run_agent,
 )
+from rasa.core.policies.flows.flow_executor import (
+    _restore_suspended_agent_frame_if_any,
+)
 from rasa.core.policies.flows.flow_step_result import (
     ContinueFlowWithNextStep,
     PauseFlowReturnPrediction,
@@ -241,7 +244,7 @@ async def test_run_agent_continue_interrupted_agent(
     monkeypatch: MonkeyPatch,
     mock_available_agents: MagicMock,
 ) -> None:
-    """When agent is INTERRUPTED, we reinvoke the agent with resume metadata."""
+    """When agent is RESUMING, we reinvoke the agent with resume metadata."""
     flows = flows_from_str(
         """
         flows:
@@ -259,7 +262,7 @@ async def test_run_agent_continue_interrupted_agent(
     agent_message = "What is your budget for the car?"
     agent_stack_frame = AgentStackFrame(
         frame_id="agent-frame-id",
-        state=AgentState.INTERRUPTED,
+        state=AgentState.RESUMING,
         agent_id="car-research",
         flow_id="my_flow",
         metadata={AGENT_METADATA_AGENT_RESPONSE_KEY: agent_message},
@@ -286,11 +289,15 @@ async def test_run_agent_continue_interrupted_agent(
         flows=flows,
     )
 
-    # Agent was reinvoked; AgentResumed in events (no AgentStarted when resuming)
-    assert any(
-        isinstance(e, AgentResumed) and e.agent_id == "car-research"
+    # Agent was reinvoked; exactly one AgentResumed in events (no AgentStarted
+    # when resuming). The count==1 contract locks in that `run_agent` is the
+    # single canonical emitter and never double-emits within one invocation.
+    agent_resumed_events = [
+        e
         for e in flow_step_result.events
-    )
+        if isinstance(e, AgentResumed) and e.agent_id == "car-research"
+    ]
+    assert len(agent_resumed_events) == 1
     assert not any(isinstance(e, AgentStarted) for e in flow_step_result.events)
     assert mock_run_agent.call_count == 1
     # Verify that the agent was called with the correct resume metadata
@@ -379,7 +386,7 @@ async def test_run_agent_resumed(
     agent_stack_frame = AgentStackFrame(
         flow_id="my_flow",
         agent_id="car-research",
-        state=AgentState.INTERRUPTED,
+        state=AgentState.RESUMING,
         metadata={"agent_response": "Please provide more info"},
     )
     stack = DialogueStack(frames=[user_stack_frame, agent_stack_frame])
@@ -403,10 +410,14 @@ async def test_run_agent_resumed(
         flows=flows,
     )
 
-    assert any(
-        isinstance(e, AgentResumed) and e.agent_id == "car-research"
+    # Exactly one AgentResumed — locks in that `run_agent` is the single
+    # canonical emitter and never double-emits within one invocation.
+    agent_resumed_events = [
+        e
         for e in flow_step_result.events
-    )
+        if isinstance(e, AgentResumed) and e.agent_id == "car-research"
+    ]
+    assert len(agent_resumed_events) == 1
     # AgentStarted is only emitted when starting the agent, not when resuming
     assert not any(isinstance(e, AgentStarted) for e in flow_step_result.events)
     assert mock_run_agent.call_count == 1
@@ -417,6 +428,243 @@ async def test_run_agent_resumed(
     assert metadata.get(AGENT_METADATA_AGENT_RESPONSE_KEY) == "Please provide more info"
     assert isinstance(stack.frames[-1], AgentStackFrame)
     assert isinstance(flow_step_result, PauseFlowReturnPrediction)
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_run_agent_resumed_agent_completes_immediately(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """A RESUMING agent that returns COMPLETED on re-invocation must be removed.
+
+    Guards against the RESUMING entry point leaving the frame stuck on the stack
+    when the resumed agent completes immediately (rather than yielding for more
+    input). `_handle_agent_completed` removes the frame unconditionally, but
+    this regression test pins down the contract for the resume branch.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    agent_stack_frame = AgentStackFrame(
+        flow_id="my_flow",
+        agent_id="car-research",
+        state=AgentState.RESUMING,
+        metadata={AGENT_METADATA_AGENT_RESPONSE_KEY: "Please provide more info"},
+    )
+    stack = DialogueStack(frames=[user_stack_frame, agent_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    mock_run_agent.return_value = AgentOutput(
+        id="car-research",
+        status=AgentStatus.COMPLETED,
+        response_message=None,
+        events=[],
+    )
+
+    flow_step_result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    # The resume path was taken (single AgentResumed, resume metadata attached).
+    agent_resumed_events = [
+        e
+        for e in flow_step_result.events
+        if isinstance(e, AgentResumed) and e.agent_id == "car-research"
+    ]
+    assert len(agent_resumed_events) == 1
+    metadata = mock_run_agent.call_args.kwargs["context"].metadata
+    assert metadata.get("resumed_after_interruption") is True
+
+    # The agent completed immediately — the frame must NOT remain on the stack
+    # in RESUMING (or any other state). `_handle_agent_completed` removes it.
+    remaining_agent_frames = [f for f in stack.frames if isinstance(f, AgentStackFrame)]
+    assert remaining_agent_frames == []
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_run_agent_emits_agent_resumed_for_restored_suspended_frame(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """Path B end-to-end: correction/restart restores a suspended agent → resume.
+
+    When a correction or restart rewinds the stack, interrupted agent frames
+    are parked in `UserFlowStackFrame.suspended_agent_frames`. The executor
+    later calls `_restore_suspended_agent_frame_if_any` to push the frame
+    back onto the stack as the agent's call step is approached. The restored
+    frame must end up in `RESUMING` so that `run_agent`:
+      1. attaches `resumed_after_interruption=True` to the agent input, and
+      2. emits exactly one `AgentResumed` event (the single canonical
+         emission site after we dropped emission from `resume_flow`).
+
+    This is the only path that does not go through `resume_flow`, so it
+    needs its own end-to-end coverage to avoid relying on transitivity.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+
+    # Build a stack as it would look right after a correction/restart rewind:
+    # a UserFlowStackFrame with the previously interrupted agent stored in
+    # `suspended_agent_frames`, ready to be restored at the call step.
+    suspended_agent_frame = AgentStackFrame(
+        frame_id="agent-frame-id",
+        flow_id="my_flow",
+        step_id="my-call-step",
+        agent_id="car-research",
+        state=AgentState.INTERRUPTED,
+        metadata={AGENT_METADATA_AGENT_RESPONSE_KEY: "Please provide more info"},
+    )
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow",
+        step_id="my-call-step",
+        frame_id="some-frame-id",
+        suspended_agent_frames=[suspended_agent_frame.as_dict()],
+    )
+    stack = DialogueStack(frames=[user_stack_frame])
+
+    # Restore the suspended agent frame onto the stack. This is what the
+    # flow executor does when it reaches the agent's call step after a rewind.
+    _restore_suspended_agent_frame_if_any(
+        stack, "my_flow", "my-call-step", "car-research"
+    )
+
+    # Sanity: the restored frame must be flipped to RESUMING so run_agent
+    # takes the resume branch. (Verified in detail in test_flow_executor.py;
+    # asserted here too so the integration contract is self-contained.)
+    restored_frame = stack.top()
+    assert isinstance(restored_frame, AgentStackFrame)
+    assert restored_frame.state == AgentState.RESUMING
+
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    mock_run_agent.return_value = AgentOutput(
+        id="car-research",
+        status=AgentStatus.INPUT_REQUIRED,
+        response_message="Please provide more info",
+    )
+
+    flow_step_result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    # Exactly one AgentResumed — confirms run_agent emits via the RESUMING
+    # branch for the restored frame just as it does for the resume_flow path.
+    agent_resumed_events = [
+        e
+        for e in flow_step_result.events
+        if isinstance(e, AgentResumed) and e.agent_id == "car-research"
+    ]
+    assert len(agent_resumed_events) == 1
+    # No AgentStarted: this is a resume, not a fresh start.
+    assert not any(isinstance(e, AgentStarted) for e in flow_step_result.events)
+
+    # The sub-agent must receive the resume metadata so it can re-render the
+    # "Resume after interruption" block in its prompt template.
+    metadata = mock_run_agent.call_args.kwargs["context"].metadata
+    assert metadata.get("resumed_after_interruption") is True
+    assert metadata.get(AGENT_METADATA_AGENT_RESPONSE_KEY) == "Please provide more info"
+
+
+@pytest.mark.asyncio
+@patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
+async def test_run_agent_with_interrupted_state_does_not_take_resume_branch(
+    mock_run_agent: AsyncMock,
+    monkeypatch: MonkeyPatch,
+    mock_available_agents: MagicMock,
+) -> None:
+    """A stale INTERRUPTED frame on top must not trigger the resume branch.
+
+    Only the transient RESUMING state set by `resume_flow()` should attach
+    `resumed_after_interruption=True` metadata. A regular INTERRUPTED frame
+    (e.g. when the parent flow advances forward via ContinueFlowStep) must take
+    the normal "start" branch instead.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+    user_stack_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    agent_stack_frame = AgentStackFrame(
+        flow_id="my_flow",
+        agent_id="car-research",
+        state=AgentState.INTERRUPTED,
+        metadata={"agent_response": "old message"},
+    )
+    stack = DialogueStack(frames=[user_stack_frame, agent_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    step = flow.step_by_id("my-call-step")
+
+    mock_run_agent.return_value = AgentOutput(
+        id="car-research",
+        status=AgentStatus.INPUT_REQUIRED,
+        response_message="Please provide more info",
+    )
+
+    flow_step_result = await run_agent(
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
+    )
+
+    # Not the resume branch: AgentStarted is emitted, not AgentResumed.
+    assert any(
+        isinstance(e, AgentStarted) and e.agent_id == "car-research"
+        for e in flow_step_result.events
+    )
+    assert not any(isinstance(e, AgentResumed) for e in flow_step_result.events)
+    metadata = mock_run_agent.call_args.kwargs["context"].metadata
+    assert metadata.get("resumed_after_interruption") is not True
 
 
 @pytest.mark.asyncio
@@ -3069,8 +3317,9 @@ async def test_agent_resumed_after_interruption_re_invokes_agent(
 
     When a flow containing a sub-agent is interrupted by a digression and then
     resumed, the agent must be re-invoked with full conversation history, not
-    skipped. This requires the agent frame state to be reset from INTERRUPTED
-    to WAITING_FOR_INPUT during resume_flow().
+    skipped. This requires the agent frame state to be transitioned from
+    INTERRUPTED to RESUMING during resume_flow(), which signals select_next
+    to loop back to the call step and run_agent to take the resume branch.
     """
     from rasa.dialogue_understanding.commands.utils import resume_flow
 
@@ -3134,15 +3383,19 @@ async def test_agent_resumed_after_interruption_re_invokes_agent(
     # Now resume the main_flow (this is what happens after pattern_continue_interrupted)
     events = resume_flow("main_flow", tracker, stack)
 
-    # Verify agent state was reset to WAITING_FOR_INPUT
-    assert agent_frame.state == AgentState.WAITING_FOR_INPUT
+    # Verify agent state was transitioned to RESUMING
+    assert agent_frame.state == AgentState.RESUMING
 
-    # Verify AgentResumed event was created
-    agent_resumed_events = [e for e in events if isinstance(e, AgentResumed)]
-    assert len(agent_resumed_events) == 1
-    assert agent_resumed_events[0].agent_id == "test-agent"
+    # `AgentResumed` is no longer emitted at this command-processing stage;
+    # `run_agent` is the single canonical emitter (asserted below).
+    assert not any(isinstance(e, AgentResumed) for e in events)
 
-    # Now call run_agent to verify it gets invoked (not skipped)
+    # Sync the tracker's underlying stack with the mutated stack so run_agent
+    # observes the RESUMING state via tracker.stack.find_agent_stack_frame_by_agent.
+    tracker.update_stack(stack)
+
+    # Now call run_agent to verify it gets invoked (not skipped) and that the
+    # resume branch attaches the resumed_after_interruption metadata.
     flow = flows.flow_by_id("main_flow")
     step = flow.step_by_id("call_agent_step")
     result = await run_agent(
@@ -3157,6 +3410,23 @@ async def test_agent_resumed_after_interruption_re_invokes_agent(
     # Verify run_agent was called (agent was re-invoked)
     assert mock_run_agent.called
     assert isinstance(result, PauseFlowReturnPrediction)
+    # The resume branch must attach resume metadata so the sub-agent knows it
+    # is resuming after an interruption.
+    context = mock_run_agent.call_args.kwargs["context"]
+    assert context.metadata.get("resumed_after_interruption") is True
+    # `run_agent` is the canonical emitter of `AgentResumed`. Combined with the
+    # negative assertion on `resume_flow` events above, this locks the "exactly
+    # one `AgentResumed` per resume across the whole turn" contract — preventing
+    # any future double-emission regression.
+    run_agent_resumed = [
+        e
+        for e in result.events
+        if isinstance(e, AgentResumed) and e.agent_id == "test-agent"
+    ]
+    assert len(run_agent_resumed) == 1
+    # _handle_agent_paused_for_user_input transitions the frame from RESUMING
+    # to WAITING_FOR_INPUT once the agent yields again.
+    assert agent_frame.state == AgentState.WAITING_FOR_INPUT
 
 
 @pytest.mark.asyncio
