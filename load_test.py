@@ -21,7 +21,7 @@ async def send_message(session, user_id):
         return None
 
 async def main():
-    print(f"🚀 Launching {TOTAL_REQUESTS} simultaneous requests straight to the C++ Tracker Store...")
+    print(f" Launching {TOTAL_REQUESTS} simultaneous requests straight to the C++ Tracker Store...")
     
     async with aiohttp.ClientSession() as session:
         start_time = time.time()
