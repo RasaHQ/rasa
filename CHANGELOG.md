@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.16.9] - 2026-05-20
+                        
+Rasa Pro 3.16.9 (2026-05-20)                             
+### Bugfixes
+- [#5402](https://github.com/rasahq/rasa-private/issues/5402): Fix an interrupted sub-agent not being properly resumed after the user answers "Yes" to `pattern_continue_interrupted`. This is fixed by introducing a transient `RESUMING` agent state that sits between `INTERRUPTED` and `WAITING_FOR_INPUT`: `resume_flow()` now sets the agent frame to `RESUMING` instead of directly to `WAITING_FOR_INPUT`; `run_agent()` detects this and re-invokes the agent with `resumed_after_interruption=True`.
+
+
 ## [3.16.8] - 2026-05-19
                         
 Rasa Pro 3.16.8 (2026-05-19)                             
