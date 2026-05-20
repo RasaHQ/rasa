@@ -115,6 +115,10 @@ export default [
       "**/*.ts",
       "**/*.tsx",
     ],
+    ignores: [
+      "e2e/**/*.ts",
+      "e2e/**/*.tsx",
+    ],
     plugins: {
       react,
       "react-hooks": fixupPluginRules(reactHooks),
@@ -166,12 +170,20 @@ export default [
         {
           patterns: [
             {
-              group: ["../actions/*", "!../actions/index"],
-              message: "Import actions only from the index.ts barrel file.",
+              group: ["../actions/ui/*"],
+              message: "Import UI actions only from @e2e/ui-actions.",
             },
             {
               group: ["../flows/*", "!../flows/index"],
               message: "Import flows only from the index.ts barrel file.",
+            },
+            {
+              group: ["@e2e/ui-actions/*"],
+              message: "Import UI actions only from @e2e/ui-actions.",
+            },
+            {
+              group: ["@e2e/flows/*"],
+              message: "Import flows only from @e2e/flows.",
             },
           ],
         },

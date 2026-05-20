@@ -1,49 +1,47 @@
-import { test } from "@playwright/test";
-import * as flows from "../flows/index";
-import * as actions from "../actions/index";
+import { expect, test } from "@e2e/fixtures";
+import * as flows from "@e2e/flows";
+import * as ui from "@e2e/ui-actions";
 
 test.describe("Download popover", () => {
-  test.beforeEach(async ({ page }) => {
-    await flows.inspector.navigateToInspectPageAndAssert(page);
+  test("Download button is visible on the page", async ({ inspectorPage }) => {
+    await ui.downloads.assertions(inspectorPage).buttonIsVisible();
   });
 
-  test("Download button is visible on the page", async ({ page }) => {
-    await actions.inspector.assertions(page).assertDownloadButtonVisible();
-  });
-
-  test("Download button is enabled after session start", async ({ page }) => {
-    await flows.inspector.assertDownloadButtonEnabled(page);
+  test("Download button is enabled after session start", async ({
+    inspectorPage,
+  }) => {
+    await ui.downloads.assertions(inspectorPage).buttonIsEnabled();
   });
 
   test("Clicking download button opens popover with E2E and Conversation options", async ({
-    page,
+    inspectorPage,
   }) => {
-    await flows.inspector.openDownloadPopoverAndAssert(page);
+    await flows.downloads.openDownloadPopoverAndAssert(inspectorPage);
   });
 
-  test("Download E2E tests triggers a file download", async ({ page }) => {
-    await flows.inspector.openDownloadPopoverAndAssert(page);
-
-    const downloadPromise = page.waitForEvent("download");
-    await actions.inspector.actions(page).clickDownloadE2e();
-    const download = await downloadPromise;
+  test("Download E2E tests triggers a file download", async ({
+    inspectorPage,
+  }) => {
+    await flows.downloads.openDownloadPopoverAndAssert(inspectorPage);
+    const download = await flows.downloads.downloadE2eFile(inspectorPage);
 
     await test.step("Assert downloaded file is a YAML file", () => {
       const filename = download.suggestedFilename();
-      test.expect(filename).toMatch(/^e2e-test-.*\.yml$/);
+      expect(filename).toMatch(/^e2e-test-.*\.yml$/);
     });
   });
 
-  test("Download Conversation triggers a file download", async ({ page }) => {
-    await flows.inspector.openDownloadPopoverAndAssert(page);
-
-    const downloadPromise = page.waitForEvent("download");
-    await actions.inspector.actions(page).clickDownloadConversation();
-    const download = await downloadPromise;
+  test("Download Conversation triggers a file download", async ({
+    inspectorPage,
+  }) => {
+    await flows.downloads.openDownloadPopoverAndAssert(inspectorPage);
+    const download = await flows.downloads.downloadConversationFile(
+      inspectorPage,
+    );
 
     await test.step("Assert downloaded file is a JSON file", () => {
       const filename = download.suggestedFilename();
-      test.expect(filename).toMatch(/^conversation-.*\.json$/);
+      expect(filename).toMatch(/^conversation-.*\.json$/);
     });
   });
 });

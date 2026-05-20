@@ -1,6 +1,8 @@
 # E2E Testing for Rasa Inspector
 
-This directory contains end-to-end tests for the Rasa development inspector UI using Playwright. The tests target the inspector served by the Rasa server at `http://localhost:5005/webhooks/inspector/inspect.html`.
+End-to-end tests for the Rasa development inspector UI using Playwright. Tests target the inspector served by the Rasa server at `http://localhost:5005/webhooks/inspector/inspect.html`.
+
+For test authoring conventions, read [CLAUDE.md](CLAUDE.md). For worked examples, see [docs/authoring-tests.md](docs/authoring-tests.md).
 
 ## Default project
 
@@ -17,8 +19,15 @@ rasa train
 
 - Node.js (v18 or higher)
 - Yarn package manager
-- Rasa installed and on your `PATH` (e.g. via the repo’s virtualenv)
+- Rasa on `PATH` via `source <repo-root>/.venv/bin/activate` (see **Environment** below)
 - Finance project model trained (see above)
+- Voice API keys and voice configuration only if you want to run `tests/voice.test.ts` successfully. Without them the app shows `Voice isn't set up yet`.
+
+## Environment
+
+**CI** uses [`.github/actions/inspector-e2e-tests/action.yml`](../../../../../.github/actions/inspector-e2e-tests/action.yml): `source .venv/bin/activate` at the repo root, train finance, start `rasa inspect --port 5005`, then Playwright in Docker.
+
+**Local / agents:** From repo root run `make install`, then `source .venv/bin/activate` before `yarn e2e` in this directory (`rasa` must be on `PATH`). If the inspector is already on port 5005, use `yarn e2e:only`.
 
 ## Setup
 
@@ -36,9 +45,9 @@ rasa train
 
 3. **Optional:** Set `BASE_URL` to override the server URL (e.g. if the Rasa server runs on a different host or port).
 
-## Running Tests
+4. **Optional (agents / interactive debug):** Install [Playwright CLI](.claude/skills/playwright-cli/references/cli-installation.md) globally (`npm install -g @playwright/cli`). Do not add `@playwright/cli` to this package. See [`.claude/skills/playwright-cli/SKILL.md`](.claude/skills/playwright-cli/SKILL.md).
 
-### Basic Commands
+## Running tests
 
 ```bash
 # Run all tests (starts Rasa inspector from finance project, then runs tests)
@@ -53,39 +62,33 @@ yarn e2e:watch
 # Run tests in debug mode (opens browser)
 yarn e2e:debug
 
+# Repeat a test 10× to reproduce a flake (server already running)
+yarn e2e:repeat tests/home.test.ts
+
 # Run a specific test file (with server already running)
-yarn e2e:only tests/inspect-page.test.ts
+yarn e2e:only tests/home.test.ts
 
 # Run tests in headed mode (visible browser)
 yarn e2e --headed
 ```
 
-### Test Reports
+## Reports
 
 ```bash
-# View HTML report
 yarn report
 ```
 
-## Test Structure
+## Layout
 
 ```
 e2e/
-├── actions/           # Page object actions and locators
-│   ├── inspector.actions.ts
-│   └── index.ts
-├── flows/             # Test flows and user journeys
-│   ├── inspector.flow.ts
-│   └── index.ts
-├── tests/             # Test specifications
-│   └── inspect-page.test.ts
-├── config.ts          # Test configuration (BASE_URL, CI)
+├── actions/ui/    # UI triads (getLocators, actions, assertions)
+├── fixtures/      # Playwright test harness and setup options
+├── flows/         # Multi-step user journeys
+├── tests/         # Test specifications (*.test.ts)
+├── config.ts
 ├── playwright.config.ts
 └── package.json
 ```
 
-### Key Concepts
-
-- **Actions**: Reusable page interactions and assertions (e.g. navigate to inspect page, assert page loaded).
-- **Flows**: Complete user journeys combining multiple actions.
-- **Tests**: Test specifications that use flows and actions.
+See [CLAUDE.md](CLAUDE.md) for layers, imports, flows, shared UI surfaces, and authoring rules.

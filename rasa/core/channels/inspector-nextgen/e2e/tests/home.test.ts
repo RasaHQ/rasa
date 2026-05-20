@@ -1,36 +1,46 @@
-import { test } from "@playwright/test";
-import * as flows from "../flows/index";
-import * as actions from "../actions/index";
+import { test } from "@e2e/fixtures";
+import * as flows from "@e2e/flows";
+import * as ui from "@e2e/ui-actions";
 
 test.describe("Inspector Landing page", () => {
-  test.beforeEach(async ({ page }) => {
-    await flows.inspector.navigateToInspectPageAndAssert(page);
-  });
-
   test("Inspect toggle on shows flow panel, off hides canvas", async ({
-    page,
+    inspectorPage,
   }) => {
-    await flows.inspector.toggleInspectOnAndAssertFlowPanel(page);
-    await flows.inspector.toggleInspectOffAndAssertCanvasHidden(page);
+    await flows.shell.openInspectModeAndAssertCanvas(inspectorPage);
+    await flows.shell.closeInspectModeAndAssertCanvasHidden(inspectorPage);
   });
 
-  test("Restart conversation resets conversation area", async ({ page }) => {
-    const message = "Hi there!";
-    await flows.inspector.sendMessageAndAssert(page, message);
-    await flows.inspector.restartConversationAndAssert(page);
-    await actions.inspector.assertions(page).assertUserMessageCount(0);
+  test("Restart conversation clears user messages", async ({
+    inspectorPage,
+  }) => {
+    await flows.chat.sendMessageAndAssert(inspectorPage, "Hi there!");
+    await flows.shell.restartConversationAndAssertReset(inspectorPage);
   });
 
   test("Send message with Enter key adds user message and clears input", async ({
-    page,
+    inspectorPage,
   }) => {
-    await flows.inspector.sendMessageWithEnterAndAssert(page, "Hello");
-    await actions.inspector.assertions(page).assertUserMessageCount(1);
+    await flows.chat.sendMessageWithEnterAndAssert(inspectorPage, "Hello");
   });
 
-  test("URL with token=None loads without error", async ({ page }) => {
-    await flows.inspector.navigateToInspectPageAndAssert(page, {
-      query: "?token=None",
+  test.describe("open: false", () => {
+    test.use({ inspectorOptions: { open: false } });
+
+    test("loads when navigating manually", async ({ inspectorPage }) => {
+      await ui.inspectorShell.actions(inspectorPage).navigateToInspectPage();
+      await flows.shell.assertLandingShellReady(inspectorPage);
+    });
+  });
+
+  test.describe("URL with token=None", () => {
+    test.use({
+      inspectorOptions: {
+        query: "?token=None",
+      },
+    });
+
+    test("loads without error", async ({ inspectorPage }) => {
+      await flows.shell.assertLandingShellReady(inspectorPage);
     });
   });
 });

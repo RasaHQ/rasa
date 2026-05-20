@@ -4,6 +4,12 @@
     "useDefineForClassFields": true,
     "lib": ["ES2020", "dom"],
     "module": "ESNext",
+    "baseUrl": ".",
+    "paths": {
+      "@e2e/fixtures": ["fixtures"],
+      "@e2e/flows": ["flows"],
+      "@e2e/ui-actions": ["actions/ui"]
+    },
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

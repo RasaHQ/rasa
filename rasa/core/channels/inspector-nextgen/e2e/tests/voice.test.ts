@@ -1,24 +1,27 @@
-import { test } from "@playwright/test";
-import * as flows from "../flows/index";
+import { test } from "@e2e/fixtures";
+import * as flows from "@e2e/flows";
+import * as ui from "@e2e/ui-actions";
 
 test.describe("Voice functionality", () => {
-  test.beforeEach(async ({ page }) => {
-    await flows.inspector.navigateToInspectPageAndAssert(page);
-  });
-
   test("Voice and send button toggle based on input text", async ({
-    page,
+    inspectorPage,
   }) => {
-    await flows.inspector.assertVoiceButtonVisibleOnLoad(page);
-    await flows.inspector.typeTextAndAssertSendButtonVisible(page, "Hello");
-    await flows.inspector.clearTextAndAssertVoiceButtonVisible(page);
+    await ui.voiceControls.assertions(inspectorPage).voiceStartButtonIsVisible();
+    await ui.voiceControls
+      .assertions(inspectorPage)
+      .sendMessageButtonIsHidden();
+    await flows.voice.typeTextAndAssertSendButtonVisible(
+      inspectorPage,
+      "Hello",
+    );
+    await flows.voice.clearTextAndAssertVoiceButtonVisible(inspectorPage);
   });
 
   test("Voice call workflow: start, verify active state, stop", async ({
-    page,
+    inspectorPage,
   }) => {
-    await flows.inspector.startVoiceCallAndAssertActive(page);
-    await flows.inspector.assertVoiceTimerIncremented(page);
-    await flows.inspector.stopVoiceCallAndAssertInactive(page);
+    await flows.voice.startVoiceCallAndAssertActive(inspectorPage);
+    await ui.voiceControls.assertions(inspectorPage).timerHasIncremented();
+    await flows.voice.stopVoiceCallAndAssertInactive(inspectorPage);
   });
 });

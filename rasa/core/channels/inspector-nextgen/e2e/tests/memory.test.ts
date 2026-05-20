@@ -1,72 +1,106 @@
-import { test } from "@playwright/test";
-import * as flows from "../flows/index";
-import * as actions from "../actions/index";
+import { test } from "@e2e/fixtures";
+import * as flows from "@e2e/flows";
+import * as ui from "@e2e/ui-actions";
 
 test.describe("Memory view", () => {
-  test.beforeEach(async ({ page }) => {
-    await flows.inspector.navigateToInspectPageAndAssert(page);
-    await flows.inspector.toggleInspectOnAndAssertFlowPanel(page);
+  test.use({
+    inspectorOptions: {
+      inspectMode: true,
+    },
   });
 
   test("Switching to Memory view shows collected slots", async ({
-    page,
+    inspectorPage,
   }) => {
-    await flows.inspector.switchToMemoryView(page);
-    await flows.inspector.assertCollectedSlotsVisible(page);
+    await ui.viewMenu.actions(inspectorPage).switchToMemory();
+    await ui.memoryPanel.assertions(inspectorPage).panelIsVisible();
 
-    await test.step("Assert System slot \"flow_hashes\" is collected", async () => {
-      await flows.inspector.assertCollectedSystemSlotsVisible(page);
-      await flows.inspector.assertCollectedSlotVisible(page, "System", "flow_hashes");
+    await test.step('Assert System slot "flow_hashes" is collected', async () => {
+      await ui.memoryPanel.assertions(inspectorPage).sectionIsVisible("System");
+      await ui.memoryPanel
+        .assertions(inspectorPage)
+        .slotIsVisible("System", "flow_hashes");
     });
 
-    await test.step("Assert click \"flow_hashes\" opens event details", async () => {
-      await flows.inspector.clickCollectedSlot(page, "System", "flow_hashes");
-      await flows.inspector.assertSlotEventVisible(page, "flow_hashes");
+    await test.step('Assert click "flow_hashes" opens event details', async () => {
+      await flows.inspectPanel.clickCollectedSlot(
+        inspectorPage,
+        "System",
+        "flow_hashes",
+      );
+      await ui.eventDetails.assertions(inspectorPage).panelIsVisible("Slot event");
+      await ui.eventDetails
+        .assertions(inspectorPage)
+        .slotOrFlowNameIsVisible("flow_hashes");
+      await ui.eventDetails.assertions(inspectorPage).slotValueIsVisible();
     });
 
     await test.step("Assert click x closes event details", async () => {
-      await flows.inspector.closeEventDetailsAndAssertHidden(page);
-      await flows.inspector.assertCollectedSlotsVisible(page);
+      await flows.chat.closeEventDetailsAndAssertHidden(inspectorPage);
+      await ui.memoryPanel.assertions(inspectorPage).panelIsVisible();
     });
   });
 
   test("Slots are collected from session and current flow", async ({
-    page,
+    inspectorPage,
   }) => {
-    await flows.inspector.sendMessageAndAssert(page, "Add @tester");
-    await actions.inspector.assertions(page).assertBotMessageCount(2);
-    await flows.inspector.switchToMemoryView(page);
-    await flows.inspector.assertCollectedSlotsVisible(page);
+    await flows.chat.sendMessageAndAssertBotReplies(
+      inspectorPage,
+      "Add @tester",
+      { expectedBotMessageCount: 2 },
+    );
+    await ui.viewMenu.actions(inspectorPage).switchToMemory();
+    await ui.memoryPanel.assertions(inspectorPage).panelIsVisible();
 
-    await test.step("Assert Session slot \"contact handle\" is collected", async () => {
-      await flows.inspector.assertCollectedSessionSlotsVisible(page);
-      await flows.inspector.assertCollectedSlotVisible(page, "Session", "add_contact_handle", "@tester");
+    await test.step('Assert Session slot "contact handle" is collected', async () => {
+      await ui.memoryPanel
+        .assertions(inspectorPage)
+        .sectionIsVisible("Session");
+      await ui.memoryPanel
+        .assertions(inspectorPage)
+        .slotIsVisible("Session", "add_contact_handle", "@tester");
     });
 
-    await flows.inspector.sendMessageAndAssert(page, "Tester A");
-    await actions.inspector.assertions(page).assertBotMessageCount(2);
+    await flows.chat.sendMessageAndAssert(inspectorPage, "Tester A");
+    await ui.conversationLog.assertions(inspectorPage).botMessageCountIs(2);
 
-    await test.step("Assert Current flow slot \"contact name\" is collected", async () => {
-      await flows.inspector.assertCollectedCurrentFlowSlotsVisible(page);
-      await flows.inspector.assertCollectedSlotVisible(page, "Current flow", "add_contact_name", "Tester A");
+    await test.step('Assert Current flow slot "contact name" is collected', async () => {
+      await ui.memoryPanel
+        .assertions(inspectorPage)
+        .sectionIsVisible("Current flow");
+      await ui.memoryPanel
+        .assertions(inspectorPage)
+        .slotIsVisible("Current flow", "add_contact_name", "Tester A");
     });
 
-    await test.step("Assert click \"contact name\" opens event details", async () => {
-      await flows.inspector.clickCollectedSlot(page, "Current flow", "add_contact_name");
-      await flows.inspector.assertSlotEventVisible(page, "add_contact_name");
+    await test.step('Assert click "contact name" opens event details', async () => {
+      await flows.inspectPanel.clickCollectedSlot(
+        inspectorPage,
+        "Current flow",
+        "add_contact_name",
+      );
+      await ui.eventDetails.assertions(inspectorPage).panelIsVisible("Slot event");
+      await ui.eventDetails
+        .assertions(inspectorPage)
+        .slotOrFlowNameIsVisible("add_contact_name");
+      await ui.eventDetails.assertions(inspectorPage).slotValueIsVisible();
     });
 
     await test.step("Assert click x closes event details", async () => {
-      await flows.inspector.closeEventDetailsAndAssertHidden(page);
-      await flows.inspector.assertCollectedSlotsVisible(page);
+      await flows.chat.closeEventDetailsAndAssertHidden(inspectorPage);
+      await ui.memoryPanel.assertions(inspectorPage).panelIsVisible();
     });
 
-    await flows.inspector.sendMessageAndAssert(page, "Yes");
-    await actions.inspector.assertions(page).assertBotMessageCount(5);
+    await flows.chat.sendMessageAndAssert(inspectorPage, "Yes");
+    await ui.conversationLog.assertions(inspectorPage).botMessageCountIs(5);
 
     await test.step("Assert slots are cleared on flow completion", async () => {
-      await flows.inspector.assertCollectedSlotNotVisible(page, "Session", "add_contact_handle");
-      await flows.inspector.assertCollectedSlotNotVisible(page, "Current flow", "add_contact_name");
+      await ui.memoryPanel
+        .assertions(inspectorPage)
+        .slotIsHidden("Session", "add_contact_handle");
+      await ui.memoryPanel
+        .assertions(inspectorPage)
+        .slotIsHidden("Current flow", "add_contact_name");
     });
   });
 });

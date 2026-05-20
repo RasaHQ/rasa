@@ -1,78 +1,81 @@
-import { test } from "@playwright/test";
-import * as flows from "../flows/index";
-import * as actions from "../actions/index";
+import { test } from "@e2e/fixtures";
+import * as flows from "@e2e/flows";
+import * as ui from "@e2e/ui-actions";
 
-test.describe("Inspector Landing page", () => {
-  test.beforeEach(async ({ page }) => {
-    await flows.inspector.navigateToInspectPageAndAssert(page);
+const initialConversationEvents = [
+  "action_session_start",
+  "Waiting for user input",
+  "System flow pattern_session_start started",
+  "System flow pattern_session_start completed",
+  "Flow welcome started",
+  "Flow welcome completed",
+];
+
+const postBalanceConversationEvents = [
+  "Flow check_balance started",
+  "Slot current_balance set",
+  "utter_current_balance",
+  "Flow check_balance completed",
+  "System flow pattern_completed started",
+  "Slot continue_conversation is cleared",
+  "utter_ask_continue_conversation",
+];
+
+const greetingFlowNodes = ["Start", "utter_greeting"];
+const patternCompletedFlowNodes = ["Start", "utter_can_do_something_else"];
+
+test.describe("Inspector events", () => {
+  test.use({
+    inspectorOptions: {
+      inspectMode: true,
+    },
   });
 
-  test("Flow events are visible in the inspector mode", async ({ page }) => {
-    await flows.inspector.toggleInspectOnAndAssertFlowPanel(page);
+  test("Flow events are visible in inspect mode", async ({ inspectorPage }) => {
+    await ui.inspectorCanvas
+      .assertions(inspectorPage)
+      .canvasWithNodesIsVisible();
 
-    await test.step("Assert active flow node", async () => {
-      await flows.inspector.assertActiveFlowName(page, "say hello");
-      await flows.inspector.assertFlowNodeVisible(page, "Start");
-      await flows.inspector.assertFlowNodeVisible(page, "utter_greeting");
+    await test.step("Assert the initial finance demo flow state", async () => {
+      await ui.inspectorCanvas
+        .assertions(inspectorPage)
+        .activeFlowNameIsVisible("say hello");
+
+      for (const nodeName of greetingFlowNodes) {
+        await ui.inspectorCanvas
+          .assertions(inspectorPage)
+          .flowNodeIsVisible(nodeName);
+      }
+
+      for (const eventName of initialConversationEvents) {
+        await ui.conversationLog
+          .assertions(inspectorPage)
+          .conversationEventIsVisible(eventName);
+      }
     });
 
-    await test.step("Assert conversation event", async () => {
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "action_session_start",
-      );
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "Waiting for user input",
-      );
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "System flow pattern_session_start started",
-      );
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "System flow pattern_session_start completed",
-      );
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "Flow welcome started",
-      );
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "Flow welcome completed",
-      );
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "Waiting for user input",
-      );
-    });
+    await flows.chat.sendMessageAndAssertBotReplies(
+      inspectorPage,
+      "What's my balance?",
+      { expectedBotMessageCount: 3 },
+    );
 
-    await flows.inspector.sendMessageAndAssert(page, "What's my balance?");
-    await actions.inspector.assertions(page).assertBotMessageCount(3);
+    await test.step("Assert balance check and pattern completed flow state", async () => {
+      for (const eventName of postBalanceConversationEvents) {
+        await ui.conversationLog
+          .assertions(inspectorPage)
+          .conversationEventIsVisible(eventName);
+      }
 
-    await test.step("Assert flow nodes are visible", async () => {
-      await flows.inspector.assertActiveFlowName(page, "pattern completed");
-      await flows.inspector.assertFlowNodeVisible(page, "Start");
-      await flows.inspector.assertFlowNodeVisible(page, "if...");
-      await flows.inspector.assertFlowNodeVisible(page, "utter_closing_words");
-    });
-    await test.step("Assert conversation events are visible", async () => {
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "Flow check_balance started",
-      );
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "Slot current_balance set",
-      );
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "utter_current_balance",
-      );
-      await flows.inspector.assertConversationEventVisible(
-        page,
-        "Flow check_balance completed",
-      );
+      await ui.inspectorCanvas
+        .assertions(inspectorPage)
+        .activeFlowNameIsVisible("pattern completed");
+
+      for (const nodeName of patternCompletedFlowNodes) {
+        await ui.inspectorCanvas
+          .assertions(inspectorPage)
+          .flowNodeIsVisible(nodeName);
+      }
     });
   });
 });
