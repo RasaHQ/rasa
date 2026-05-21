@@ -338,7 +338,7 @@ async def test_processor_handle_message_calm_corrections_for_NLU_slots(
     response_texts = [
         "How many pizzas would you like to order?",
         "What is the delivery address?",
-        "Ok, I am updating pizza to margherita respectively.",
+        "Ok, I am updating pizza to margherita.",
     ]
 
     expected_commands = [
