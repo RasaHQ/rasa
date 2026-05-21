@@ -27,8 +27,8 @@ class ExperimentConfig(BaseModel):
     name: str
     description: str
     dataset_name: str
-    task: Literal["classification", "retrieval"] = Field(
-        description="Available: classification, retrieval"
+    task: Literal["classification", "retrieval", "tool_call"] = Field(
+        description="Available: classification, retrieval, tool_call"
     )
     results_dir: str
     formats: List[Literal["langfuse", "yaml"]] = Field(

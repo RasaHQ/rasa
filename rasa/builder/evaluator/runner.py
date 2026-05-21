@@ -54,8 +54,12 @@ def _build_evaluator_registry() -> Dict[AvailableTasks, EvaluatorEntry]:
     from rasa.builder.evaluator.evaluators.retrieval.evaluator import (
         RetrievalEvaluator,
     )
+    from rasa.builder.evaluator.evaluators.tool_call.evaluator import (
+        ToolCallEvaluator,
+    )
     from rasa.builder.evaluator.tasks.classifier_task import ClassifierTask
     from rasa.builder.evaluator.tasks.retrieval_task import RetrievalTask
+    from rasa.builder.evaluator.tasks.tool_call_task import ToolCallTask
 
     return {
         AvailableTasks.CLASSIFICATION: EvaluatorEntry(
@@ -66,6 +70,11 @@ def _build_evaluator_registry() -> Dict[AvailableTasks, EvaluatorEntry]:
         AvailableTasks.RETRIEVAL: EvaluatorEntry(
             task_cls=RetrievalTask,
             eval_cls=RetrievalEvaluator,
+            level=AvailableLevels.RUN,
+        ),
+        AvailableTasks.TOOL_CALL: EvaluatorEntry(
+            task_cls=ToolCallTask,
+            eval_cls=ToolCallEvaluator,
             level=AvailableLevels.RUN,
         ),
     }

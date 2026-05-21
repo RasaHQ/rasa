@@ -52,7 +52,7 @@ in `configs/models.py`:
 |----------------|---------------------------------------------------|
 | `name`         | Experiment name (shown in Langfuse)               |
 | `description`  | Human-readable description                        |
-| `task`         | Task type (available: `classification`, `retrieval`) |
+| `task`         | Task type (available: `classification`, `retrieval`, `tool_call`) |
 | `dataset_name` | Langfuse dataset to evaluate against              |
 | `results_dir`  | Local directory for exported results              |
 | `formats`      | Output formats: `langfuse`, `yaml`                |
@@ -195,6 +195,29 @@ python -m rasa.builder.evaluator.run_experiment \
     --config rasa/builder/evaluator/configs/test_retrieval.yaml
 ```
 
+### Tool Call
+
+Evaluates copilot tool-call behaviour by running live queries through
+`AgentCopilot` and comparing the tools actually invoked against a ground-truth
+list. Reports set-based precision and unclamped efficiency (over- and
+under-calling both penalised) with per-category breakdowns.
+
+| Property    | Value                                                        |
+|-------------|--------------------------------------------------------------|
+| Config      | `configs/test_tool_call.yaml`                                |
+| Task        | `ToolCallTask` (`tasks/tool_call_task.py`)                   |
+| Evaluator   | `ToolCallEvaluator` (`evaluators/tool_call/`)                |
+| Level       | `run` (batch metrics after all items)                        |
+| Dataset     | `tool-call-eval`                                             |
+| Metrics     | mean precision, mean efficiency, mean efficiency abs error, error rate, no-tools-called rate, latency (mean/p50/p95), per-category breakdown |
+
+**Run:**
+
+```bash
+python -m rasa.builder.evaluator.run_experiment \
+    --config rasa/builder/evaluator/configs/test_tool_call.yaml
+```
+
 ## Dataset generation
 
 Before running an experiment you need a labeled dataset in Langfuse. The
@@ -309,3 +332,4 @@ Task-specific artifacts are also written alongside YAML:
 |------------------------------------------|------------------|--------------------------------------|
 | `<timestamp>_misclassifications.csv`     | `classification` | Misclassified items (input, predicted, expected) |
 | `<timestamp>_bias_report.csv`            | `retrieval`      | Top over-retrieved URLs with bias scores |
+| `<timestamp>_tool_call_examples.jsonl`   | `tool_call`      | Per-query record with query, expected_tools, called_tools, precision, efficiency |

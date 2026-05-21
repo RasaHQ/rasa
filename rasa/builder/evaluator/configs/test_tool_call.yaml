@@ -1,0 +1,8 @@
+name: "tool-call-eval"
+description: "Copilot tool-call precision evaluation"
+task: "tool_call"
+dataset_name: "tool-call-eval"
+results_dir: "eval_results/tool_call"
+formats:
+  - "langfuse"
+  - "yaml"

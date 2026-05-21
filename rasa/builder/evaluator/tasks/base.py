@@ -15,6 +15,7 @@ class AvailableTasks(str, Enum):
 
     CLASSIFICATION = "classification"
     RETRIEVAL = "retrieval"
+    TOOL_CALL = "tool_call"
 
 
 class ClassifierTaskResult(BaseModel):
@@ -43,6 +44,22 @@ class RetrievalTaskResult(BaseModel):
     query: str = ""
     retrieved_urls: List[str] = []
     retrieved_titles: List[str] = []
+    latency_ms: float = 0.0
+    error: Optional[str] = None
+
+
+class ToolCallTaskResult(BaseModel):
+    """Result from a tool call task.
+
+    Attributes:
+        query: The query that was executed.
+        called_tools: Ordered list of tool names invoked by the copilot.
+        latency_ms: Wall-clock time of the copilot call.
+        error: Populated if the copilot call failed.
+    """
+
+    query: str = ""
+    called_tools: List[str] = []
     latency_ms: float = 0.0
     error: Optional[str] = None
 
