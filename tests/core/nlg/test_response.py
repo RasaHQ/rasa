@@ -791,3 +791,40 @@ async def test_nlg_response_with_unknown_var_jinja_template():
         "",
     )
     assert r.get("text") == "Do you want to update the ?"
+
+
+async def test_utter_corrected_previous_input_explicitly_pairs_slots_pf_995() -> None:
+    """utter_corrected_previous_input must bind each slot to its value explicitly.
+
+    The current template joins keys and values as two independent lists, which
+    gives the LLM rephraser no positional anchor — it swaps the pair associations.
+    The template must iterate over .items() so each name is bound to its value.
+    PF-995 (BofA-TraderDesk).
+    """
+    import importlib_resources
+
+    patterns_yaml_path = str(
+        importlib_resources.files("rasa.dialogue_understanding.patterns").joinpath(
+            "default_flows_for_patterns.yml"
+        )
+    )
+    domain = Domain.from_path(patterns_yaml_path)
+    t = TemplatedNaturalLanguageGenerator(domain.responses)
+    r = t.generate_from_slots(
+        "utter_corrected_previous_input",
+        {"gtt_counterparty": "BOM", "gtt_booking_entity": "101"},
+        {
+            "frame_id": "test-frame",
+            "corrected_slots": {
+                "gtt_counterparty": {"value": "101", "filled_by": "llm"},
+                "gtt_booking_entity": {"value": "BOM", "filled_by": "llm"},
+            },
+            "new_slot_values": ["101", "BOM"],
+        },
+        "",
+    )
+    text = r.get("text") or ""
+    # Each slot must appear paired with its own value so the LLM rephraser
+    # cannot swap them.
+    assert "gtt_counterparty to 101" in text
+    assert "gtt_booking_entity to BOM" in text

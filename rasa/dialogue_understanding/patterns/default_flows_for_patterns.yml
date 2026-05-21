@@ -78,7 +78,7 @@ responses:
         rephrase: True
 
   utter_corrected_previous_input:
-    - text: "Ok, I am updating {{ context.corrected_slots.keys()|join(', ') }} to {{ context.new_slot_values | join(', ') }} respectively."
+    - text: "Ok, I am updating {% for name, val in context.corrected_slots.items() %}{{ name }} to {{ val.value }}{% if not loop.last %}, and {% endif %}{% endfor %}."
       metadata:
         rephrase: True
         template: jinja
@@ -251,7 +251,7 @@ flows:
       - id: action_clarify_flows
         action: action_clarify_flows
       - action: utter_clarification_options_rasa
-  
+
   pattern_code_change:
     description: Conversation repair flow for cleaning the stack after an assistant update
     name: pattern code change
