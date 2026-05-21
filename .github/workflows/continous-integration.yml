@@ -2982,7 +2982,7 @@ jobs:
 
       - name: Install Hugging Face CLI
         run: |
-          curl -LsSf https://hf.co/cli/install.sh | bash
+          pip install -U huggingface_hub==1.15.0
           # Verify installation
           hf --help
         shell: bash
