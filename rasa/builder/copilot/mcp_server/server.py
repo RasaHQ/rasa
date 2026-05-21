@@ -67,6 +67,9 @@ from rasa.builder.copilot.mcp_server.models import (
     TrainingResponse,
     ValidationResponse,
 )
+from rasa.builder.telemetry.segment_integration.mcp_tool_instrumentation import (
+    instrument_mcp_tools,
+)
 from rasa.shared.exceptions import RasaException
 
 # NO heavy imports at module level - keep startup fast!
@@ -133,10 +136,12 @@ def _load_instructions() -> str:
 
 
 # Initialize FastMCP server with metadata and configuration
+_MCP_SERVER_NAME = "rasa-MCP-tools"
 mcp = FastMCP(
-    name="rasa-copilot",
+    name=_MCP_SERVER_NAME,
     instructions=_load_instructions(),
 )
+instrument_mcp_tools(mcp, mcp_server=_MCP_SERVER_NAME)
 
 
 @mcp.custom_route("/health", methods=["GET"])  # type: ignore[misc]

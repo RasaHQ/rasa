@@ -1,61 +1,25 @@
-import datetime as dt
-import os
-import uuid
+"""Segment telemetry for the Rasa Copilot conversation flow.
+
+Emits ``copilot_user_message`` and ``copilot_bot_message`` events for each
+turn handled by the copilot endpoint.
+"""
+
 from typing import Any, Iterable, Optional, Sequence
 
 import structlog
 
-from rasa import telemetry
 from rasa.builder.copilot import BaseCopilotResponseHandler
-from rasa.builder.copilot.constants import COPILOT_SEGMENT_WRITE_KEY_ENV_VAR
-from rasa.builder.copilot.models import (
-    EventContent,
-)
+from rasa.builder.copilot.models import EventContent
 from rasa.builder.document_retrieval.models import Document
-from rasa.telemetry import (
-    SEGMENT_TRACK_ENDPOINT,
-    segment_request_payload,
-    send_segment_request,
-    with_default_context_fields,
+from rasa.builder.telemetry.segment_integration.segment_compat import track
+from rasa.builder.telemetry.segment_integration.shared import (
+    COPILOT_BOT_MESSAGE_EVENT,
+    COPILOT_USER_MESSAGE_EVENT,
+    new_message_id,
+    now_iso,
 )
 
 structlogger = structlog.get_logger()
-
-COPILOT_USER_MESSAGE_EVENT = "copilot_user_message"
-COPILOT_BOT_MESSAGE_EVENT = "copilot_bot_message"
-
-COPILOT_SEGMENT_WRITE_KEY = os.getenv(COPILOT_SEGMENT_WRITE_KEY_ENV_VAR)
-if _SEGMENT_ON := bool(COPILOT_SEGMENT_WRITE_KEY):
-    structlogger.info("builder.telemetry.enabled")
-else:
-    structlogger.warning("builder.telemetry.disabled")
-
-
-def _track(event: str, user_id: str, properties: dict) -> None:
-    """Track an event with Segment.
-
-    Args:
-        event: The name of the event to track.
-        user_id: The ID of the user associated with the event.
-        properties: Additional properties to include with the event.
-
-    Raises:
-        Exception: If tracking fails, an exception is logged.
-    """
-    if not _SEGMENT_ON or not telemetry.is_telemetry_enabled():
-        structlogger.debug("builder.telemetry._track.disabled")
-        return
-    structlogger.debug("builder.telemetry._track.enabled")
-
-    try:
-        payload = segment_request_payload(
-            user_id, event, properties, context=with_default_context_fields()
-        )
-        structlogger.debug("builder.telemetry._track.sending", payload=payload)
-
-        send_segment_request(SEGMENT_TRACK_ENDPOINT, payload, COPILOT_SEGMENT_WRITE_KEY)
-    except Exception as e:  # skipcq:PYL-W0703
-        structlogger.warning("builder.telemetry.track_failed", error=str(e))
 
 
 class CopilotSegmentTelemetry:
@@ -78,14 +42,14 @@ class CopilotSegmentTelemetry:
             text: The text of the user message.
         """
         structlogger.debug("builder.telemetry.log_user_turn", text=text)
-        _track(
+        track(
             COPILOT_USER_MESSAGE_EVENT,
             self._user_id,
             {
                 "project_id": self._project_id,
-                "message_id": uuid.uuid4().hex,
+                "message_id": new_message_id(),
                 "text": text,
-                "timestamp": dt.datetime.utcnow().isoformat(),
+                "timestamp": now_iso(),
             },
         )
 
@@ -131,7 +95,7 @@ class CopilotSegmentTelemetry:
         # log the system_message so it's visible in Grafana.
         telemetry_data = {
             "project_id": self._project_id,
-            "message_id": uuid.uuid4().hex,
+            "message_id": new_message_id(),
             "text": text,
             "prompt_version": self._prompt_version,
             "source_urls": list(source_urls),
@@ -145,7 +109,7 @@ class CopilotSegmentTelemetry:
             "chat_history": chat_history,
             "last_user_message": last_user_message,
             "tracker_event_attachments": tracker_event_attachments,
-            "timestamp": dt.datetime.utcnow().isoformat(),
+            "timestamp": now_iso(),
         }
 
         # Log all telemetry data plus system_message for debugging
@@ -155,7 +119,7 @@ class CopilotSegmentTelemetry:
 
         structlogger.info("builder.telemetry.copilot_turn", **log_data)
 
-        _track(
+        track(
             COPILOT_BOT_MESSAGE_EVENT,
             self._user_id,
             telemetry_data,

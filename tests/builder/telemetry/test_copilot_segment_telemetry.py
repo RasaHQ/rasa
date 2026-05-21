@@ -9,10 +9,12 @@ from pydantic import BaseModel
 
 from rasa.builder.config import OPENAI_MODEL
 from rasa.builder.copilot.models import EventContent, ResponseCategory
-from rasa.builder.telemetry.copilot_segment_telemetry import (
+from rasa.builder.telemetry.segment_integration.copilot_segment_telemetry import (
+    CopilotSegmentTelemetry,
+)
+from rasa.builder.telemetry.segment_integration.shared import (
     COPILOT_BOT_MESSAGE_EVENT,
     COPILOT_USER_MESSAGE_EVENT,
-    CopilotSegmentTelemetry,
 )
 
 
@@ -31,7 +33,8 @@ def telemetry_events(monkeypatch) -> tuple[CopilotSegmentTelemetry, list[Tracked
         events.append(TrackedEvent(event=event, user_id=user_id, properties=properties))
 
     monkeypatch.setattr(
-        "rasa.builder.telemetry.copilot_segment_telemetry._track", fake_track
+        "rasa.builder.telemetry.segment_integration.copilot_segment_telemetry.track",
+        fake_track,
     )
     telemetry = CopilotSegmentTelemetry(project_id="proj-123", user_id="user-xyz")
     return telemetry, events
