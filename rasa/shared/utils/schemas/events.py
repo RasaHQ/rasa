@@ -127,6 +127,8 @@ RESTARTED = {"properties": {"event": {"const": "restart"}}}
 ACTION_REVERTED = {"properties": {"event": {"const": "undo"}}}
 USER_UTTERANCE_REVERTED = {"properties": {"event": {"const": "rewind"}}}
 BOT_UTTERED = {"properties": {"event": {"const": "bot"}}}
+TTS_FINISHED = {"properties": {"event": {"const": "tts_finished"}}}
+BOT_TURN_ENDED = {"properties": {"event": {"const": "bot_turn_ended"}}}
 SESSION_STARTED = {"properties": {"event": {"const": "session_started"}}}
 SESSION_ENDED = {"properties": {"event": {"const": "session_ended"}}}
 AGENT_UTTERED = {"properties": {"event": {"const": "agent"}}}
@@ -261,6 +263,8 @@ EVENT_SCHEMA = {
         ACTION_REVERTED,
         USER_UTTERANCE_REVERTED,
         BOT_UTTERED,
+        TTS_FINISHED,
+        BOT_TURN_ENDED,
         SESSION_STARTED,
         AGENT_UTTERED,
         FLOW_STARTED,

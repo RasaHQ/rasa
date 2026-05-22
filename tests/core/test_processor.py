@@ -39,6 +39,7 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
+    OutputDeliveryResult,
     UserMessage,
 )
 from rasa.core.config.available_endpoints import AvailableEndpoints
@@ -117,6 +118,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
     ActiveLoop,
+    BotTurnEnded,
     BotUttered,
     ConversationInactive,
     DefinePrevUserUtteredFeaturization,
@@ -130,6 +132,7 @@ from rasa.shared.core.events import (
     SessionEnded,
     SessionStarted,
     SlotSet,
+    TTSFinished,
     UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
@@ -1609,7 +1612,50 @@ async def test_action_send_text_metadata(default_processor: MessageProcessor):
     assert applied_events[1].metadata == metadata
 
 
-async def test_bot_uttered_includes_execution_times_when_turn_timestamps_set(
+async def test_output_delivery_events_are_added_to_tracker(
+    default_processor: MessageProcessor,
+) -> None:
+    class DeliveryEventOutputChannel(CollectingOutputChannel):
+        async def send_response(
+            self, recipient_id: Text, message: dict[Text, Any]
+        ) -> OutputDeliveryResult:
+            await super().send_response(recipient_id, message)
+            return OutputDeliveryResult(
+                events=[
+                    TTSFinished(
+                        metadata={
+                            "tts_time_to_first_token_ms": 10.0,
+                            "tts_total_time_ms": 25.0,
+                        }
+                    )
+                ]
+            )
+
+    tracker = DialogueStateTracker.from_events(
+        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
+    )
+    domain = Domain.empty()
+
+    await default_processor._run_action(
+        ActionSendText(),
+        tracker,
+        DeliveryEventOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        PolicyPrediction(
+            [],
+            "some policy",
+            action_metadata={"message": {"text": "foobar"}},
+        ),
+    )
+
+    tts_finished_events = [e for e in tracker.events if isinstance(e, TTSFinished)]
+
+    assert len(tts_finished_events) == 1
+    assert tts_finished_events[0].metadata["tts_time_to_first_token_ms"] == 10.0
+    assert tts_finished_events[0].metadata["tts_total_time_ms"] == 25.0
+
+
+async def test_bot_turn_ended_includes_execution_times_when_turn_timestamps_set(
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
 ) -> None:
@@ -1620,104 +1666,40 @@ async def test_bot_uttered_includes_execution_times_when_turn_timestamps_set(
     )
     monkeypatch.setattr("rasa.core.processor.time.time", lambda: 1005.0)
 
-    tracker = DialogueStateTracker.from_events(
-        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
-    )
-    domain = Domain.empty()
-    metadata = {"message": {"text": "foobar"}}
+    event = default_processor._bot_turn_ended_event()
 
-    await default_processor._run_action(
-        ActionSendText(),
-        tracker,
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        PolicyPrediction([], "some policy", action_metadata=metadata),
-    )
-
-    bot_events = [e for e in tracker.events if isinstance(e, BotUttered)]
-    assert len(bot_events) == 1
-    assert bot_events[0].metadata[ACTION_METADATA_EXECUTION_TIME] == {
+    assert isinstance(event, BotTurnEnded)
+    assert event.metadata[ACTION_METADATA_EXECUTION_TIME] == {
         "command_processor": 2000.0,
         "prediction_loop": 3000.0,
     }
 
 
-async def test_bot_uttered_skips_execution_times_if_already_present(
+async def test_handle_message_adds_bot_turn_ended_event(
+    default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
-    monkeypatch: MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(default_processor, "time_turn_start", 1000.0, raising=False)
-    monkeypatch.setattr(
-        default_processor, "time_command_processor", 1002.0, raising=False
-    )
-    monkeypatch.setattr("rasa.core.processor.time.time", lambda: 1005.0)
+    sender_id = uuid.uuid4().hex
 
-    tracker = DialogueStateTracker.from_events(
-        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
-    )
-    domain = Domain.empty()
-    custom_times = {"command_processor": 1.0, "prediction_loop": 2.0}
-    metadata = {"message": {"text": "foobar"}}
-
-    original_run = ActionSendText.run
-
-    async def run_with_custom_bot_metadata(
-        self: ActionSendText, *args: Any, **kwargs: Any
-    ) -> List[Event]:
-        events = await original_run(self, *args, **kwargs)
-        for e in events:
-            if isinstance(e, BotUttered):
-                e.metadata = {
-                    **dict(e.metadata),
-                    ACTION_METADATA_EXECUTION_TIME: custom_times,
-                }
-        return events
-
-    monkeypatch.setattr(ActionSendText, "run", run_with_custom_bot_metadata)
-
-    await default_processor._run_action(
-        ActionSendText(),
-        tracker,
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        PolicyPrediction([], "some policy", action_metadata=metadata),
+    await default_processor.handle_message(
+        UserMessage('/greet{"name":"Core"}', default_channel, sender_id)
     )
 
-    bot_events = [e for e in tracker.events if isinstance(e, BotUttered)]
-    assert len(bot_events) == 1
-    assert bot_events[0].metadata[ACTION_METADATA_EXECUTION_TIME] == custom_times
+    tracker = await default_processor.tracker_store.get_or_create_full_tracker(
+        sender_id
+    )
+    bot_turn_ended_events = [e for e in tracker.events if isinstance(e, BotTurnEnded)]
+
+    assert len(bot_turn_ended_events) == 1
+    assert ACTION_METADATA_EXECUTION_TIME in bot_turn_ended_events[0].metadata
 
 
-async def test_bot_uttered_execution_times_does_not_add_extra_metadata_keys(
+async def test_bot_turn_ended_has_no_latency_metadata_without_turn_timestamps(
     default_processor: MessageProcessor,
-    monkeypatch: MonkeyPatch,
 ) -> None:
-    """Verify that attaching execution_times only adds that one key.
+    event = default_processor._bot_turn_ended_event()
 
-    A spread-based implementation (``{**dict(event.metadata), ...}``) would
-    surface any "hidden" attributes (e.g. active_flow, step_id) that exist on
-    the metadata object but are not part of the original dict, unintentionally
-    changing the event's serialised form.
-    """
-    monkeypatch.setattr(default_processor, "time_turn_start", 1000.0, raising=False)
-    monkeypatch.setattr(
-        default_processor, "time_command_processor", 1002.0, raising=False
-    )
-    monkeypatch.setattr("rasa.core.processor.time.time", lambda: 1005.0)
-
-    original_metadata = {"utter_action": "utter_greet", "active_flow": None}
-    bot_event = BotUttered("hello", metadata=original_metadata)
-
-    default_processor._attach_execution_times_to_bot_events([bot_event])
-
-    expected_keys = set(original_metadata.keys()) | {ACTION_METADATA_EXECUTION_TIME}
-    assert set(bot_event.metadata.keys()) == expected_keys
-    assert bot_event.metadata[ACTION_METADATA_EXECUTION_TIME] == {
-        "command_processor": 2000.0,
-        "prediction_loop": 3000.0,
-    }
-    assert bot_event.metadata["utter_action"] == "utter_greet"
-    assert bot_event.metadata["active_flow"] is None
+    assert event is None
 
 
 async def test_run_action_waits_for_after_action_executed_awaitables(

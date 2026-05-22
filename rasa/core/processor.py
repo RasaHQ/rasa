@@ -106,6 +106,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
+    BotTurnEnded,
     BotUttered,
     ConversationInactive,
     Event,
@@ -302,6 +303,9 @@ class MessageProcessor:
         await self._run_prediction_loop(
             message.output_channel, tracker, cancellation_token, flows=flows
         )
+        bot_turn_ended_event = self._bot_turn_ended_event()
+        if bot_turn_ended_event:
+            tracker.update(bot_turn_ended_event, self.domain)
 
         await self.save_tracker(tracker)
 
@@ -493,9 +497,11 @@ class MessageProcessor:
             output_channel, self.nlg, tracker, self.domain, metadata
         )
 
-        await self._send_bot_messages(extraction_events, tracker, output_channel)
+        delivery_events = await self._send_bot_messages(
+            extraction_events, tracker, output_channel
+        )
 
-        tracker.update_with_events(extraction_events)
+        tracker.update_with_events(extraction_events + delivery_events)
 
         structlogger.debug(
             "processor.extract.slots",
@@ -1671,7 +1677,8 @@ class MessageProcessor:
         """Attach tracker, send bot messages, schedule and cancel reminders."""
         if output_channel:
             output_channel.attach_tracker_state(tracker)
-        await self._send_bot_messages(events, tracker, output_channel)
+        delivery_events = await self._send_bot_messages(events, tracker, output_channel)
+        tracker.update_with_events(delivery_events)
         await self._schedule_reminders(events, tracker, output_channel)
         await self._cancel_reminders(events, tracker)
         await self._handle_session_timer_events(events, tracker)
@@ -1680,14 +1687,24 @@ class MessageProcessor:
     async def _send_bot_messages(
         events: List[Event],
         tracker: DialogueStateTracker,
-        output_channel: OutputChannel,
-    ) -> None:
+        output_channel: Optional[OutputChannel],
+    ) -> List[Event]:
         """Send all the bot messages that are logged in the events array."""
+        delivery_events: List[Event] = []
+        if output_channel is None:
+            return delivery_events
+
         for e in events:
             if not isinstance(e, BotUttered):
                 continue
 
-            await output_channel.send_response(tracker.sender_id, e.message())
+            delivery_result = await output_channel.send_response(
+                tracker.sender_id, e.message()
+            )
+            if delivery_result:
+                delivery_events.extend(delivery_result.events)
+
+        return delivery_events
 
     async def _schedule_reminders(
         self,
@@ -2047,33 +2064,12 @@ class MessageProcessor:
             "prediction_loop": execution_time_prediction_loop,
         }
 
-    def _attach_execution_times_to_action_listen(
-        self, action: Action, prediction: PolicyPrediction
-    ) -> None:
-        """Adds execution times to the ActionExecuted event metadata."""
-        if not action.name() == ACTION_LISTEN_NAME:
-            return
-
+    def _bot_turn_ended_event(self) -> Optional[BotTurnEnded]:
+        """Create a bot turn ended event with latency metadata when available."""
         execution_times = self._compute_execution_times_ms()
         if execution_times is None:
-            return
-
-        if prediction.action_metadata is None:
-            prediction.action_metadata = {}
-
-        prediction.action_metadata[ACTION_METADATA_EXECUTION_TIME] = execution_times
-
-    def _attach_execution_times_to_bot_events(self, events: List[Event]) -> None:
-        """Merge turn execution times into ``BotUttered`` metadata when absent."""
-        execution_times = self._compute_execution_times_ms()
-        if execution_times is None:
-            return
-        for event in events:
-            if not isinstance(event, BotUttered):
-                continue
-            if ACTION_METADATA_EXECUTION_TIME in event.metadata:
-                continue
-            event.metadata[ACTION_METADATA_EXECUTION_TIME] = execution_times
+            return None
+        return BotTurnEnded(metadata={ACTION_METADATA_EXECUTION_TIME: execution_times})
 
     def _log_action_and_events_on_tracker(
         self,
@@ -2101,7 +2097,6 @@ class MessageProcessor:
             action_name=action.name(),
             rasa_events=copy.deepcopy(events),
         )
-        self._attach_execution_times_to_bot_events(events)
         tracker.update_with_events(events)
 
     def _log_action_prediction_on_tracker(
@@ -2120,8 +2115,6 @@ class MessageProcessor:
         )
         tracker.update_with_events(prediction.events)
 
-        # log the action and its produced events
-        self._attach_execution_times_to_action_listen(action, prediction)
         tracker.update(
             action.event_for_successful_execution(
                 prediction, was_successful, error_message

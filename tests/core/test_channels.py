@@ -21,6 +21,7 @@ from rasa.core import utils
 from rasa.core.channels import RasaChatInput, console
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
+    OutputDeliveryResult,
     UserMessage,
     requires_basic_auth,
 )
@@ -30,6 +31,7 @@ from rasa.core.channels.rasa_chat import (
     JWT_USERNAME_KEY,
 )
 from rasa.core.channels.telegram import TelegramOutput
+from rasa.shared.core.events import TTSFinished
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
 
@@ -60,7 +62,11 @@ async def test_send_response(default_channel, default_tracker):
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }
 
-    await default_channel.send_response(default_tracker.sender_id, text_only_message)
+    result = await default_channel.send_response(
+        default_tracker.sender_id, text_only_message
+    )
+    assert isinstance(result, OutputDeliveryResult)
+    assert not result
     await default_channel.send_response(
         default_tracker.sender_id, multiline_text_message
     )
@@ -103,6 +109,20 @@ async def test_send_response(default_channel, default_tracker):
         "recipient_id": "my-sender",
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }
+
+
+def test_output_delivery_result_extend() -> None:
+    result = OutputDeliveryResult()
+    event = TTSFinished(metadata={"tts_total_time_ms": 123.0})
+
+    result.extend(None)
+    assert not result
+
+    result.extend(OutputDeliveryResult(events=[event], failed=True))
+
+    assert result
+    assert result.events == [event]
+    assert result.failed is True
 
 
 async def test_collecting_output_channel_streaming_no_errors():

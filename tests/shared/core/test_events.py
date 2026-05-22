@@ -42,6 +42,7 @@ from rasa.shared.core.events import (
     AgentStarted,
     AgentUttered,
     AllSlotsReset,
+    BotTurnEnded,
     BotUttered,
     ConversationInactive,
     ConversationPaused,
@@ -69,6 +70,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     SlotSet,
     StoryExported,
+    TTSFinished,
     UserBargeIn,
     UserUtteranceReverted,
     UserUttered,
@@ -157,6 +159,8 @@ from tests.utilities import filter_logs
             AgentCompleted("my_other_agent", "my_other_flow"),
         ),
         (UserBargeIn(), UserBargeIn(metadata={"source": "voice"})),
+        (TTSFinished(), TTSFinished(metadata={"tts_total_time_ms": 12.0})),
+        (BotTurnEnded(), BotTurnEnded(metadata={"execution_times": {}})),
     ],
 )
 def test_event_has_proper_implementation(one_event, another_event):
@@ -215,6 +219,8 @@ def test_event_has_proper_implementation(one_event, another_event):
         AgentCancelled("my_agent", "my_flow"),
         AgentCompleted("my_agent", "my_flow"),
         UserBargeIn(),
+        TTSFinished(metadata={"tts_total_time_ms": 12.0}),
+        BotTurnEnded(metadata={"execution_times": {}}),
     ],
 )
 def test_dict_serialisation(one_event):
@@ -952,6 +958,8 @@ tested_events = [
     ),
     SessionStarted(),
     UserBargeIn(),
+    TTSFinished(metadata={"tts_total_time_ms": 12.0}),
+    BotTurnEnded(metadata={"execution_times": {}}),
     ActionExecuted(action_name="action_listen"),
     AgentUttered(),
     EndToEndUserUtterance(),

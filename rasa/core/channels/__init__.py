@@ -3,6 +3,7 @@ from typing import Text, Dict, List, Type, Optional
 
 from rasa.core.channels.channel import (  # noqa: F401
     InputChannel,
+    OutputDeliveryResult,
     OutputChannel,
     UserMessage,
     CollectingOutputChannel,

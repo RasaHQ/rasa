@@ -5,6 +5,7 @@ import json
 import logging
 import uuid
 from base64 import b64encode
+from dataclasses import dataclass, field
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -41,6 +42,7 @@ except ImportError:
 if TYPE_CHECKING:
     from rasa.core.agent import Agent
     from rasa.engine.storage.storage import ModelMetadata
+    from rasa.shared.core.events import Event
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +102,26 @@ class UserMessage:
 
 
 OnNewMessageType = Callable[[UserMessage], Awaitable[Any]]
+
+
+@dataclass
+class OutputDeliveryResult:
+    """Result returned by output channels after delivering a bot response."""
+
+    events: List["Event"] = field(default_factory=list)
+    failed: bool = False
+
+    def __bool__(self) -> bool:
+        """Return whether the result contains any delivery signal."""
+        return self.failed or bool(self.events)
+
+    def extend(self, other: Optional["OutputDeliveryResult"]) -> None:
+        """Merge another delivery result into this result."""
+        if not other:
+            return
+
+        self.events.extend(other.events)
+        self.failed = self.failed or other.failed
 
 
 class RuntimeAgent:
@@ -385,43 +407,67 @@ class OutputChannel:
         self,
         recipient_id: Text,
         message: Dict[Text, Any],
-    ) -> None:
+    ) -> OutputDeliveryResult:
         """Send a message to the client."""
+        delivery_result = OutputDeliveryResult()
+
         if message.get("quick_replies"):
-            await self.send_quick_replies(
-                recipient_id,
-                message.pop("text"),
-                message.pop("quick_replies"),
-                **message,
+            delivery_result.extend(
+                await self.send_quick_replies(
+                    recipient_id,
+                    message.pop("text"),
+                    message.pop("quick_replies"),
+                    **message,
+                )
             )
         elif message.get("buttons"):
-            await self.send_text_with_buttons(
-                recipient_id, message.pop("text"), message.pop("buttons"), **message
+            delivery_result.extend(
+                await self.send_text_with_buttons(
+                    recipient_id, message.pop("text"), message.pop("buttons"), **message
+                )
             )
         elif message.get("text"):
-            await self.send_text_message(recipient_id, message.pop("text"), **message)
+            delivery_result.extend(
+                await self.send_text_message(
+                    recipient_id, message.pop("text"), **message
+                )
+            )
 
         if message.get("custom"):
-            await self.send_custom_json(recipient_id, message.pop("custom"), **message)
+            delivery_result.extend(
+                await self.send_custom_json(
+                    recipient_id, message.pop("custom"), **message
+                )
+            )
 
         # if there is an image we handle it separately as an attachment
         if message.get("image"):
-            await self.send_image_url(recipient_id, message.pop("image"), **message)
+            delivery_result.extend(
+                await self.send_image_url(recipient_id, message.pop("image"), **message)
+            )
 
         if message.get("attachment"):
-            await self.send_attachment(
-                recipient_id, message.pop("attachment"), **message
+            delivery_result.extend(
+                await self.send_attachment(
+                    recipient_id, message.pop("attachment"), **message
+                )
             )
 
         if message.get("elements"):
-            await self.send_elements(recipient_id, message.pop("elements"), **message)
+            delivery_result.extend(
+                await self.send_elements(
+                    recipient_id, message.pop("elements"), **message
+                )
+            )
+
+        return delivery_result
 
     async def send_text_message(
         self,
         recipient_id: Text,
         text: Text,
         **kwargs: Any,
-    ) -> None:
+    ) -> Optional[OutputDeliveryResult]:
         """Send a message through this channel."""
         raise NotImplementedError(
             "Output channel needs to implement a send message for simple texts."
@@ -429,15 +475,15 @@ class OutputChannel:
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
-    ) -> None:
+    ) -> Optional[OutputDeliveryResult]:
         """Sends an image. Default will just post the url as a string."""
-        await self.send_text_message(recipient_id, f"Image: {image}")
+        return await self.send_text_message(recipient_id, f"Image: {image}")
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Text, **kwargs: Any
-    ) -> None:
+    ) -> Optional[OutputDeliveryResult]:
         """Sends an attachment. Default will just post as a string."""
-        await self.send_text_message(recipient_id, f"Attachment: {attachment}")
+        return await self.send_text_message(recipient_id, f"Attachment: {attachment}")
 
     async def send_text_with_buttons(
         self,
@@ -445,15 +491,19 @@ class OutputChannel:
         text: Text,
         buttons: List[Dict[Text, Any]],
         **kwargs: Any,
-    ) -> None:
+    ) -> OutputDeliveryResult:
         """Sends buttons to the output.
 
         Default implementation will just post the buttons as a string.
         """
-        await self.send_text_message(recipient_id, text)
+        delivery_result = OutputDeliveryResult()
+        delivery_result.extend(await self.send_text_message(recipient_id, text))
         for idx, button in enumerate(buttons):
             button_msg = cli_utils.button_to_string(button, idx)
-            await self.send_text_message(recipient_id, button_msg)
+            delivery_result.extend(
+                await self.send_text_message(recipient_id, button_msg)
+            )
+        return delivery_result
 
     async def send_text_with_buttons_concise(
         self,
@@ -461,7 +511,7 @@ class OutputChannel:
         text: str,
         buttons: List[Dict[str, Any]],
         **kwargs: Any,
-    ) -> None:
+    ) -> Optional[OutputDeliveryResult]:
         """Sends buttons in a concise format, useful for voice channels."""
         if text.strip()[-1] not in {".", "!", "?", ":"}:
             text += "."
@@ -470,7 +520,7 @@ class OutputChannel:
             text += button["title"]
             if idx != len(buttons) - 1:
                 text += ", "
-        await self.send_text_message(recipient_id, text)
+        return await self.send_text_message(recipient_id, text)
 
     async def send_quick_replies(
         self,
@@ -478,36 +528,40 @@ class OutputChannel:
         text: Text,
         quick_replies: List[Dict[Text, Any]],
         **kwargs: Any,
-    ) -> None:
+    ) -> Optional[OutputDeliveryResult]:
         """Sends quick replies to the output.
 
         Default implementation will just send as buttons.
         """
-        await self.send_text_with_buttons(recipient_id, text, quick_replies)
+        return await self.send_text_with_buttons(recipient_id, text, quick_replies)
 
     async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
-    ) -> None:
+    ) -> OutputDeliveryResult:
         """Sends elements to the output.
 
         Default implementation will just post the elements as a string.
         """
+        delivery_result = OutputDeliveryResult()
         for element in elements:
             element_msg = "{title} : {subtitle}".format(
                 title=element.get("title", ""), subtitle=element.get("subtitle", "")
             )
-            await self.send_text_with_buttons(
-                recipient_id, element_msg, element.get("buttons", [])
+            delivery_result.extend(
+                await self.send_text_with_buttons(
+                    recipient_id, element_msg, element.get("buttons", [])
+                )
             )
+        return delivery_result
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
-    ) -> None:
+    ) -> Optional[OutputDeliveryResult]:
         """Sends json dict to the output channel.
 
         Default implementation will just post the json contents as a string.
         """
-        await self.send_text_message(recipient_id, json.dumps(json_message))
+        return await self.send_text_message(recipient_id, json.dumps(json_message))
 
     async def hangup(self, recipient_id: Text, **kwargs: Any) -> None:
         """Indicate that the conversation should be ended."""

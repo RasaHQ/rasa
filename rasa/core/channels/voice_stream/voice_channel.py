@@ -25,6 +25,7 @@ from sanic.exceptions import WebsocketClosed
 from rasa.core.channels.channel import (
     InputChannel,
     OutputChannel,
+    OutputDeliveryResult,
     RuntimeAgent,
 )
 from rasa.core.channels.conversation_queue.events import (
@@ -83,6 +84,7 @@ from rasa.core.policies.flows.constants import COLLECT_STEP_TYPE, STEP_TYPE_META
 from rasa.hooks import hookimpl
 from rasa.plugin import plugin_manager
 from rasa.shared.core.constants import LANGUAGE_SLOT, SILENCE_TIMEOUT_SLOT
+from rasa.shared.core.events import TTSFinished
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.utils.common import (
     class_from_module_path,
@@ -99,6 +101,8 @@ logger = structlog.get_logger(__name__)
 # define constants for the voice channel
 DEFAULT_MIN_DELAY_BETWEEN_BOT_MESSAGES_SECONDS = 1
 DEFAULT_MIN_DELAY_AFTER_FILLER_BOT_MESSAGES_SECONDS = 2
+TTS_TIME_TO_FIRST_TOKEN_MS = "tts_time_to_first_token_ms"
+TTS_TOTAL_TIME_MS = "tts_total_time_ms"
 
 
 @dataclass
@@ -656,15 +660,27 @@ class VoiceOutputChannel(OutputChannel):
         self._last_bot_message_end_time = time.monotonic()
         logger.debug("voice_channel.end_streaming_response")
 
+    def _tts_finished_delivery_result(self) -> OutputDeliveryResult:
+        """Build a delivery result with the latest TTS latency measurements."""
+        metadata = {
+            key: value
+            for key, value in {
+                TTS_TIME_TO_FIRST_TOKEN_MS: call_state.tts_first_byte_latency_ms,
+                TTS_TOTAL_TIME_MS: call_state.tts_complete_latency_ms,
+            }.items()
+            if value is not None
+        }
+        return OutputDeliveryResult(events=[TTSFinished(metadata=metadata)])
+
     async def send_text_message(
         self, recipient_id: str, text: str, **kwargs: Any
-    ) -> None:
+    ) -> OutputDeliveryResult:
         if (
             self._is_duplicate_of_last_streamed_response(text)
             or self.stream_interrupted
         ):
             logger.debug("voice_channel.skip_non_streaming_response")
-            return
+            return OutputDeliveryResult()
 
         await self._apply_min_delay_between_messages(recipient_id)
         self._track_rasa_processing_latency()
@@ -715,6 +731,7 @@ class VoiceOutputChannel(OutputChannel):
         )
 
         self._last_bot_message_end_time = time.monotonic()
+        return self._tts_finished_delivery_result()
 
     async def send_audio_bytes(
         self, recipient_id: str, audio_bytes: RasaAudioBytes

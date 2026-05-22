@@ -1106,6 +1106,48 @@ class UserBargeIn(SkipEventInMDStoryMixin):
         return self.__members() == other.__members()
 
 
+class TTSFinished(SkipEventInMDStoryMixin):
+    """Record that text-to-speech delivery finished for a bot response."""
+
+    type_name = "tts_finished"
+
+    def __members(self) -> Tuple[Text]:
+        metadata = {k: v for k, v in self.metadata.items() if v is not None}
+        return (jsonpickle.encode(metadata),)
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(self.__members())
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, TTSFinished):
+            return NotImplemented
+
+        return self.__members() == other.__members()
+
+
+class BotTurnEnded(SkipEventInMDStoryMixin):
+    """Record that the bot completed its turn."""
+
+    type_name = "bot_turn_ended"
+
+    def __members(self) -> Tuple[Text]:
+        metadata = {k: v for k, v in self.metadata.items() if v is not None}
+        return (jsonpickle.encode(metadata),)
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(self.__members())
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, BotTurnEnded):
+            return NotImplemented
+
+        return self.__members() == other.__members()
+
+
 class SlotSet(Event):
     """The user has specified their preference for the value of a `slot`.
 
