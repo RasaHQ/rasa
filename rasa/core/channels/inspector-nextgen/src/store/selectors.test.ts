@@ -40,7 +40,6 @@ function makeState(
     sendMessage: noop,
     startNewConversation: noop,
     replayConversation: noop,
-    setUrl: noop,
     startVoiceStreaming: asyncNoop,
     stopVoiceStreaming: asyncNoop,
     onVoiceErrorRef: { current: null },

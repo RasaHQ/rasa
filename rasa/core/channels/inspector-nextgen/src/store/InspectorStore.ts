@@ -46,7 +46,6 @@ export type InspectorStoreState = {
   sendMessage: (message: string) => void;
   startNewConversation: () => void;
   replayConversation: (events: UnionEventType[]) => void;
-  setUrl: (url: string) => void;
   startVoiceStreaming: () => Promise<void>;
   stopVoiceStreaming: () => Promise<void>;
   onVoiceErrorRef: RefObject<VoiceErrorHandler>;
@@ -90,7 +89,6 @@ export function createInspectorStore(
     sendMessage: noop,
     startNewConversation: noop,
     replayConversation: noop,
-    setUrl: noop,
     startVoiceStreaming: asyncNoop,
     stopVoiceStreaming: asyncNoop,
     onVoiceErrorRef: { current: null },

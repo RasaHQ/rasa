@@ -105,7 +105,7 @@ describe("useBotConnection", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    initInspectorStore();
+    initInspectorStore({ projectUrl: "http://example.com" });
     mockGetConversationHistory.mockResolvedValue(null);
     (useParams as MockedUseParams).mockReturnValue({
       projectId: "test-project",
@@ -192,15 +192,11 @@ describe("useBotConnection", () => {
       onReconnectError: vi.fn(),
       useMemoryOnly: false,
     }));
-  
-    act(() => {
-      inspectorStore.state.setUrl("https://test.example.com");
-    });
-  
+
     act(() => {
       lastSocket.handlers["connect"]?.();
     });
-  
+
     act(() => {
       lastSocket.handlers["tracker"]?.({
         sender_id: inspectorStore.state.sessionId,
@@ -209,14 +205,14 @@ describe("useBotConnection", () => {
         stack: [{ frame_id: "f1", flow_id: "my_flow", step_id: "s1", collect: undefined, utter: undefined }],
       });
     });
-  
+
     expect(inspectorStore.state.stack).toHaveLength(1);
     expect(inspectorStore.state.slots).toHaveLength(1);
-  
+
     act(() => {
       inspectorStore.state.startNewConversation();
     });
-  
+
     expect(inspectorStore.state.stack).toEqual([]);
     expect(inspectorStore.state.slots).toEqual([]);
     expect(inspectorStore.state.slotRelatedEvents).toEqual([]);
@@ -233,10 +229,6 @@ describe("useBotConnection", () => {
           enabled: false,
         }),
       );
-
-      act(() => {
-        inspectorStore.state.setUrl("https://test.example.com");
-      });
 
       expect(mockIo).not.toHaveBeenCalled();
     });
@@ -281,10 +273,6 @@ describe("useBotConnection", () => {
       );
 
       act(() => {
-        inspectorStore.state.setUrl("https://test.example.com");
-      });
-
-      act(() => {
         lastSocket.handlers["connect"]?.();
       });
 
@@ -307,10 +295,6 @@ describe("useBotConnection", () => {
           useMemoryOnly: true,
         }),
       );
-
-      act(() => {
-        inspectorStore.state.setUrl("https://test.example.com");
-      });
 
       let voicePromise: Promise<void>;
       act(() => {
@@ -347,10 +331,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => {
-        inspectorStore.state.setUrl("https://test.example.com");
-      });
-
       const handler = vi.fn();
       inspectorStore.state.onVoiceErrorRef.current = handler;
 
@@ -376,10 +356,6 @@ describe("useBotConnection", () => {
           useMemoryOnly: true,
         }),
       );
-
-      act(() => {
-        inspectorStore.state.setUrl("https://test.example.com");
-      });
 
       expect(inspectorStore.state.onVoiceErrorRef.current).toBeNull();
 
@@ -415,7 +391,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
@@ -437,7 +412,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
@@ -460,7 +434,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
@@ -482,7 +455,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
@@ -505,7 +477,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
@@ -529,7 +500,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
@@ -552,7 +522,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => inspectorStore.state.setUrl("https://test.example.com"));
       act(() => lastSocket.handlers["connect"]?.());
 
       act(() =>
@@ -575,10 +544,6 @@ describe("useBotConnection", () => {
           useMemoryOnly: true,
         }),
       );
-
-      act(() => {
-        inspectorStore.state.setUrl("https://test.example.com");
-      });
 
       let voicePromise: Promise<void>;
       act(() => {
@@ -621,10 +586,6 @@ describe("useBotConnection", () => {
       );
 
       act(() => {
-        inspectorStore.state.setUrl("https://test.example.com");
-      });
-
-      act(() => {
         lastSocket.handlers["connect"]?.();
       });
 
@@ -663,10 +624,6 @@ describe("useBotConnection", () => {
         useMemoryOnly: false,
       }));
 
-      act(() => {
-        inspectorStore.state.setUrl("https://test.example.com");
-      });
-
       let voicePromise: Promise<void>;
       act(() => {
         voicePromise = inspectorStore.state.startVoiceStreaming();
@@ -685,10 +642,6 @@ describe("useBotConnection", () => {
         onReconnectError: vi.fn(),
         useMemoryOnly: false,
       }));
-
-      act(() => {
-        inspectorStore.state.setUrl("https://test.example.com");
-      });
 
       let voicePromise: Promise<void>;
       act(() => {
@@ -724,10 +677,6 @@ describe("useBotConnection", () => {
         onReconnectError: vi.fn(),
         useMemoryOnly: false,
       }));
-
-      act(() => {
-        inspectorStore.state.setUrl("https://test.example.com");
-      });
 
       let voicePromise: Promise<void>;
       act(() => {
@@ -778,7 +727,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => { inspectorStore.state.setUrl("https://test.example.com"); });
       act(() => { lastSocket.handlers["connect"]?.(); });
       act(() => { lastSocket.handlers["session_confirm"]?.(); });
 
@@ -799,7 +747,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => { inspectorStore.state.setUrl("https://test.example.com"); });
       act(() => { lastSocket.handlers["connect"]?.(); });
       act(() => { lastSocket.handlers["session_confirm"]?.(); });
 
@@ -820,7 +767,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => { inspectorStore.state.setUrl("https://test.example.com"); });
       act(() => { lastSocket.handlers["connect"]?.(); });
       act(() => { lastSocket.handlers["session_confirm"]?.(); });
 
@@ -846,7 +792,6 @@ describe("useBotConnection", () => {
         }),
       );
 
-      act(() => { inspectorStore.state.setUrl("https://test.example.com"); });
       act(() => { lastSocket.handlers["connect"]?.(); });
 
       await act(async () => {

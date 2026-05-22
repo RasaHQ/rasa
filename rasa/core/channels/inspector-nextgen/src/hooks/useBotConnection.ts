@@ -188,18 +188,11 @@ export function useBotConnection({
   });
   const activeModalityRef = useRef<"text" | "voice">("text");
   const [sessionId, setSessionId] = useState(externalSessionId || uuid());
-  const [url, setUrl] = useState("");
   const [, setError] = useState<ModelServiceError | RasaProError | undefined>(
     undefined,
   );
   const onVoiceErrorRef = useRef<((err: RasaProError) => void) | null>(null);
-  const { projectUrl, trackerEndpoint } = useInspectorStore((s) => ({ projectUrl: s.projectUrl, trackerEndpoint: s.trackerEndpoint }));
-
-  useEffect(() => {
-    if (projectUrl) {
-      setUrl(projectUrl);
-    }
-  }, [projectUrl]);
+  const { projectUrl: url, trackerEndpoint } = useInspectorStore((s) => ({ projectUrl: s.projectUrl, trackerEndpoint: s.trackerEndpoint }));
 
   const socket = useRef<Socket>(undefined);
   const sampleRateRef = useRef<number>(48000);
@@ -282,6 +275,8 @@ export function useBotConnection({
   useEffect(() => {
     if (!enabled || !voiceLatency) return;
 
+    // TODO: fix
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
     setConversation((currentConversations) => {
       const events = currentConversations.events;
       let lastBotIndex = -1;
@@ -303,6 +298,48 @@ export function useBotConnection({
       return { ...currentConversations, events: next };
     });
   }, [voiceLatency, enabled]);
+
+  const handleTrackerResponse = useCallback((response: TrackerResponseData) => {
+    if (!response) return;
+
+    const shouldProcessResponse = response.sender_id === sessionId;
+    if (shouldProcessResponse) {
+      const events = mapRawEventsToConversationEvents(response.events);
+      setSlotRelatedEvents(getSlotRelatedEvents(events));
+
+      setSlots(formatSlots(getSlotRelatedEvents(events)));
+      const convertedStack: Stack[] = response.stack.map(
+        (item: RawStack) => ({
+          frameId: item.frame_id,
+          flowId: item.flow_id,
+          stepId: item.step_id,
+          collect: item.collect,
+          utter: item.utter,
+          ended: false,
+        }),
+      );
+      if (convertedStack.length > 0) {
+        setStack(convertedStack);
+      }
+      const startDate = events?.[0]?.timestamp;
+      setConversation((conv) => {
+        const newEvents =
+          activeModalityRef.current === "voice"
+            ? preserveVoiceLatencyOnBotUtterances(conv.events, events)
+            : events;
+        return {
+          ...conv,
+          events: newEvents,
+          totalNumberOfUserMessages: newEvents.filter(
+            (event: UnionEventType) => isUtterance(event),
+          ).length,
+          startDate: startDate ? new Date(startDate).toISOString() : conv.startDate,
+        };
+      });
+      setReplayingConversation(false);
+      setWaitingForUserInput(isWaitingForUserInput(events));
+    }
+  }, [sessionId]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -403,7 +440,7 @@ export function useBotConnection({
                 startDate: new Date().toISOString(),
               });
             } else if (externalSessionId && trackerEndpoint) {
-              getConversationHistory({ projectUrl, trackerEndpoint })
+              getConversationHistory({ projectUrl: url, trackerEndpoint })
                 .then((trackerResult) =>
                   handleTrackerResponse(trackerResult)
                 )
@@ -522,48 +559,6 @@ export function useBotConnection({
     socketReconnectAttempts,
   ]);
 
-  const handleTrackerResponse = useCallback((response: TrackerResponseData) => {
-    if (!response) return;
-
-    const shouldProcessResponse = response.sender_id === sessionId;
-    if (shouldProcessResponse) {
-      const events = mapRawEventsToConversationEvents(response.events);
-      setSlotRelatedEvents(getSlotRelatedEvents(events));
-
-      setSlots(formatSlots(getSlotRelatedEvents(events)));
-      const convertedStack: Stack[] = response.stack.map(
-        (item: RawStack) => ({
-          frameId: item.frame_id,
-          flowId: item.flow_id,
-          stepId: item.step_id,
-          collect: item.collect,
-          utter: item.utter,
-          ended: false,
-        }),
-      );
-      if (convertedStack.length > 0) {
-        setStack(convertedStack);
-      }
-      const startDate = events?.[0]?.timestamp;
-      setConversation((conv) => {
-        const newEvents =
-          activeModalityRef.current === "voice"
-            ? preserveVoiceLatencyOnBotUtterances(conv.events, events)
-            : events;
-        return {
-          ...conv,
-          events: newEvents,
-          totalNumberOfUserMessages: newEvents.filter(
-            (event: UnionEventType) => isUtterance(event),
-          ).length,
-          startDate: startDate ? new Date(startDate).toISOString() : conv.startDate,
-        };
-      });
-      setReplayingConversation(false);
-      setWaitingForUserInput(isWaitingForUserInput(events));
-    }
-  }, [sessionId]);
-
   const startNewConversation = useCallback((): string => {
     setInputDisabled(true);
     cleanup();
@@ -681,8 +676,6 @@ export function useBotConnection({
 
   // --- Sync state and actions to the store ---
 
-  const setUrlAction = useCallback((newUrl: string) => setUrl(newUrl), []);
-
   // Initial sync via layout effect: runs synchronously after render but
   // before the browser paints, so children see real values on first paint.
   const initialSyncDone = useRef(false);
@@ -702,7 +695,6 @@ export function useBotConnection({
       sendMessage,
       startNewConversation,
       replayConversation,
-      setUrl: setUrlAction,
       startVoiceStreaming,
       stopVoiceStreaming,
       onVoiceErrorRef,
@@ -726,7 +718,6 @@ export function useBotConnection({
       sendMessage,
       startNewConversation,
       replayConversation,
-      setUrl: setUrlAction,
       startVoiceStreaming,
       stopVoiceStreaming,
       onVoiceErrorRef,
@@ -742,11 +733,9 @@ export function useBotConnection({
     slots,
     slotRelatedEvents,
     enabled,
-    setUrl,
     sendMessage,
     startNewConversation,
     replayConversation,
-    setUrlAction,
     startVoiceStreaming,
     stopVoiceStreaming,
   ]);

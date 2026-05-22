@@ -43,6 +43,7 @@ export const sendMessageAndAssert = async (page: Page, message: string) => {
   await test.step("Send message", async () => {
     await ui.inspectorShell.actions(page).sendMessage(message);
   });
+
   await test.step("Assert user message in chat and input cleared", async () => {
     await ui.conversationLog.assertions(page).userMessageIsVisible(message);
     await ui.inspectorShell.assertions(page).inputIsCleared();
@@ -58,6 +59,7 @@ export const sendMessageAndAssertBotReplies = async (
     .getLocators(page)
     .botMessages.count();
   await sendMessageAndAssert(page, message);
+
   await test.step("Assert bot response appears in chat", async () => {
     const assertions = ui.conversationLog.assertions(page);
     if (options?.expectedBotMessageCount === undefined) {
@@ -75,9 +77,11 @@ export const sendMessageWithEnterAndAssert = async (
   const userCountBefore = await ui.conversationLog
     .getLocators(page)
     .userMessages.count();
+
   await test.step("Send message with Enter", async () => {
     await ui.inspectorShell.actions(page).sendMessageWithEnter(message);
   });
+
   await test.step("Assert user message in chat and input cleared", async () => {
     await ui.conversationLog.assertions(page).userMessageIsVisible(message);
     await ui.inspectorShell.assertions(page).inputIsCleared();
@@ -96,6 +100,7 @@ export const openConversationEventDetailsAndAssert = async (
       expectations.eventName,
     );
   });
+
   await test.step(
     `Assert event details panel shows "${expectations.panelTitle}"`,
     async () => {
@@ -113,6 +118,7 @@ export const openBotMessageDetailsAndAssert = async (
   await test.step(`Click bot message at index ${index}`, async () => {
     await ui.conversationLog.actions(page).clickBotMessage(index);
   });
+
   await test.step("Assert bot message details panel", async () => {
     await assertEventDetailsState(page, {
       panelTitle: "Agent response details",
@@ -130,6 +136,7 @@ export const openUserMessageDetailsAndAssert = async (
   await test.step(`Click user message at index ${index}`, async () => {
     await ui.conversationLog.actions(page).clickUserMessage(index);
   });
+
   await test.step("Assert user message details panel", async () => {
     await assertEventDetailsState(page, {
       panelTitle: "User message details",
@@ -142,6 +149,7 @@ export const closeEventDetailsAndAssertHidden = async (page: Page) => {
   await test.step("Close event details panel", async () => {
     await ui.eventDetails.actions(page).close();
   });
+
   await test.step("Assert event details panel is hidden", async () => {
     await ui.eventDetails.assertions(page).panelIsHidden();
   });
@@ -149,6 +157,7 @@ export const closeEventDetailsAndAssertHidden = async (page: Page) => {
 
 export const closeEventDetailsAndAssertCanvasRestored = async (page: Page) => {
   await closeEventDetailsAndAssertHidden(page);
+
   await test.step("Assert flow canvas is restored", async () => {
     await ui.inspectorCanvas.assertions(page).flowCanvasIsVisible();
   });
@@ -161,6 +170,7 @@ export const deselectConversationEventAndAssertCanvasRestored = async (
   await test.step(`Click selected event "${eventName}" again`, async () => {
     await ui.conversationLog.actions(page).clickConversationEvent(eventName);
   });
+
   await test.step("Assert event details closes and canvas is restored", async () => {
     await ui.eventDetails.assertions(page).panelIsHidden();
     await ui.inspectorCanvas.assertions(page).flowCanvasIsVisible();
@@ -174,6 +184,7 @@ export const clickBotMessageAndAssertNoEventDetails = async (
   await test.step(`Click bot message at index ${index}`, async () => {
     await ui.conversationLog.actions(page).clickBotMessage(index);
   });
+
   await test.step("Assert event details panel stays hidden", async () => {
     await ui.eventDetails.assertions(page).panelIsHidden();
   });

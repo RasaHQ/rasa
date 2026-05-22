@@ -6,6 +6,7 @@ export const openDownloadPopoverAndAssert = async (page: Page) => {
   await test.step("Open download popover", async () => {
     await ui.downloads.actions(page).openPopover();
   });
+
   await test.step("Assert download options visible", async () => {
     await ui.downloads.assertions(page).popoverIsVisible();
   });

@@ -77,7 +77,7 @@ vi.mock("../../../ButtonLink", () => ({
     to: string;
     [key: string]: unknown;
   }) => (
-    <a href={to} {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
+    <a href={to} {...props}>
       {children}
     </a>
   ),

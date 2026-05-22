@@ -13,9 +13,9 @@
     "report": "playwright show-report"
   },
   "devDependencies": {
-    "@playwright/test": "1.58.2",
-    "@types/node": "24.0.10",
-    "dd-trace": "5.98.0",
-    "start-server-and-test": "2.1.4"
+    "@playwright/test": "1.60.0",
+    "@types/node": "24.12.4",
+    "dd-trace": "5.103.0",
+    "start-server-and-test": "2.1.5"
   }
 }

@@ -35,13 +35,12 @@ describe("createInspectorStore", () => {
 
   it("default actions are safe to call (noops)", () => {
     const store = createInspectorStore();
-    const { sendMessage, startNewConversation, replayConversation, setUrl } =
+    const { sendMessage, startNewConversation, replayConversation } =
       store.state;
 
     expect(() => sendMessage("hello")).not.toThrow();
     expect(() => startNewConversation()).not.toThrow();
     expect(() => replayConversation([])).not.toThrow();
-    expect(() => setUrl("http://example.com")).not.toThrow();
   });
 
   it("default async actions resolve without error", async () => {

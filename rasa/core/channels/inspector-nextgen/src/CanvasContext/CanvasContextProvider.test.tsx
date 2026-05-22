@@ -57,10 +57,10 @@ type CanvasEdge = {
 };
 
 const makeStartNode = (id: string): FlowNode =>
-  ({ id, label: id, type: FlowNodeType.Start, metadata: { x: 0, y: 0 } }) as FlowNode;
+  ({ id, label: id, type: FlowNodeType.Start, metadata: { x: 0, y: 0 } });
 
 const makeMessageNode = (id: string): FlowNode =>
-  ({ id, label: id, type: FlowNodeType.Message, metadata: { x: 0, y: 0 } }) as FlowNode;
+  ({ id, label: id, type: FlowNodeType.Message, metadata: { x: 0, y: 0 } });
 
 const makeEdge = (
   sourceId: string,
