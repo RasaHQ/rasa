@@ -4344,3 +4344,82 @@ def test_validate_single_template_error_details(
         assert kwargs["template_line"] == 5
         assert "unexpected end of template" in kwargs["error"].lower()
         assert kwargs["template_file"] == str(template_file)
+
+
+def test_call_step_to_subagent_does_not_raise_eng_2726() -> None:
+    """FlowsList.validate() must not raise when a call step targets a subagent
+    whose name is not yet in available_agents (e.g. when endpoints aren't loaded).
+
+    Regression: validate_call_steps() checked is_calling_agent() against the
+    runtime Configuration, which holds an empty agents dict during
+    'rasa data validate'. Any call target not matching a known flow was therefore
+    rejected with UnresolvedCallStepException even for valid subagent calls.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          main_flow:
+            description: A flow that delegates to a subagent.
+            steps:
+              - id: delegate
+                call: my_subagent
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    # Must return True (no validation errors) without raising ValueError
+    assert validator.verify_flows_steps_against_domain()
+
+
+def test_call_step_to_subagent_with_exit_if_does_not_raise_eng_2726() -> None:
+    """validate_call_steps() must not raise for a subagent call with exit_if
+    when no agent config is loaded.
+
+    Regression: the exit_if guard also used _is_step_calling_agent, which
+    returns False with empty agents, causing a RasaException even for valid
+    subagent call steps that include exit_if.
+    """
+    flows = flows_from_str(
+        """
+        flows:
+          main_flow:
+            description: A flow that delegates to a subagent with exit_if.
+            steps:
+              - id: delegate
+                call: my_subagent
+                exit_if:
+                  - slots.done
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    assert validator.verify_flows_steps_against_domain()
+
+
+def test_call_step_to_known_flow_with_exit_if_still_raises_eng_2726() -> None:
+    """exit_if on a call targeting a known local flow must still raise even when
+    no agent config is loaded.
+
+    Regression guard: the exit_if fix must not over-generalise and silently
+    allow exit_if on flow calls just because the agents dict is empty.
+    """
+    from rasa.shared.exceptions import RasaException
+
+    # flows_from_str calls flows.validate() internally, which is where we expect
+    # the exception to surface for this invalid configuration.
+    with pytest.raises(RasaException, match="exit_if"):
+        flows_from_str(
+            """
+            flows:
+              sub_flow:
+                description: A local sub-flow.
+                steps:
+                  - id: noop
+                    action: action_listen
+              main_flow:
+                description: A flow calling a local flow with exit_if (invalid).
+                steps:
+                  - id: delegate
+                    call: sub_flow
+                    exit_if:
+                      - slots.done
+            """
+        )

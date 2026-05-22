@@ -6,8 +6,10 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Iterator, List, Optional, Set, Text, Tuple
 
+import structlog
 from jinja2 import Template
 
+from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX,
     RASA_PATTERN_CHITCHAT,
@@ -42,6 +44,8 @@ from rasa.shared.core.flows.utils import (
     warn_deprecated_collect_step_config,
 )
 from rasa.shared.exceptions import RasaException
+
+structlogger = structlog.get_logger()
 
 if typing.TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
@@ -706,15 +710,39 @@ def validate_call_steps(flows: "FlowsList") -> None:
                 and flows.flow_by_id(step.call) is None
                 and not _is_step_calling_mcp_tool
             ):
-                raise UnresolvedCallStepException(step.call, flow.id, step.id)
+                if Configuration.get_instance().available_agents.agents:
+                    raise UnresolvedCallStepException(step.call, flow.id, step.id)
+                else:
+                    # No agent config loaded (e.g. rasa data validate without
+                    # --endpoints). Cannot statically distinguish a subagent
+                    # call from a typo; warn instead of raising.
+                    structlogger.warning(
+                        "validate_call_steps.unresolved_target",
+                        step_id=step.id,
+                        flow_id=flow.id,
+                        target=step.call,
+                        event_info=(
+                            f"Cannot resolve call target '{step.call}' in flow "
+                            f"'{flow.id}'. If this is a subagent or MCP tool call, "
+                            f"re-run with --endpoints to validate it."
+                        ),
+                    )
 
             if step.exit_if and not _is_step_calling_agent:
-                # exit_if is only allowed for call steps that call an agent
-                raise RasaException(
-                    f"Call step '{step.id}' in flow '{flow.id}' has an 'exit_if' "
-                    f"condition, but it is not calling an agent. "
-                    f"'exit_if' is only allowed for call steps that call an agent."
+                # exit_if is only allowed for agent calls. Allow when the target
+                # could be an agent: not a known local flow, not an MCP tool,
+                # and agents are not configured (target may be a subagent).
+                _target_could_be_agent = (
+                    flows.flow_by_id(step.call) is None
+                    and not _is_step_calling_mcp_tool
+                    and not bool(Configuration.get_instance().available_agents.agents)
                 )
+                if not _target_could_be_agent:
+                    raise RasaException(
+                        f"Call step '{step.id}' in flow '{flow.id}' has an 'exit_if' "
+                        f"condition, but it is not calling an agent. "
+                        f"'exit_if' is only allowed for call steps that call an agent."
+                    )
 
 
 def validate_mcp_server_references(flows: "FlowsList") -> None:
