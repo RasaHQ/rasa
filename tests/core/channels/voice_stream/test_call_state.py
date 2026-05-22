@@ -3,7 +3,11 @@ from typing import Any, Dict, Optional
 
 import pytest
 
-from rasa.core.channels.voice_stream.asr.asr_event import UserSilence
+from rasa.core.channels.conversation_queue.events import (
+    SilenceDetectedInputEvent,
+    VoiceInputEvent,
+)
+from rasa.core.channels.conversation_queue.queue import InMemoryConversationQueue
 from rasa.core.channels.voice_stream.call_state import (
     BotIsSpeaking,
     BotStoppedSpeaking,
@@ -23,7 +27,6 @@ def call_state_instance() -> CallState:
     """Return a CallState with fresh queues."""
     return CallState(
         internal_queue=asyncio.Queue(),
-        asr_event_queue=asyncio.Queue(),
     )
 
 
@@ -52,18 +55,22 @@ def test_call_state_default_values(call_state_instance: CallState) -> None:
     assert call_state_instance.tts_complete_latency_ms is None
 
 
-async def test_monitor_silence_timeout_puts_user_silence_on_asr_queue(
+async def test_monitor_silence_timeout_puts_silence_event_on_input_queue(
     call_state_instance: CallState,
 ) -> None:
-    """monitor_silence_timeout puts a UserSilence event on the ASR queue after
+    """monitor_silence_timeout puts a silence event on the input queue after
     the timeout elapses."""
     call_state_instance.silence_timeout = 0.01
+    input_queue = InMemoryConversationQueue[VoiceInputEvent](
+        conversation_id="test",
+        input_channel="test_channel",
+    )
+    call_state_instance.input_queue = input_queue
 
     await call_state_instance.monitor_silence_timeout()
 
-    assert call_state_instance.asr_event_queue.qsize() == 1
-    event = await call_state_instance.asr_event_queue.get()
-    assert isinstance(event, UserSilence)
+    events = await input_queue.drain()
+    assert events == [SilenceDetectedInputEvent()]
 
 
 async def test_monitor_silence_timeout_does_nothing_when_timeout_is_none(
@@ -75,7 +82,7 @@ async def test_monitor_silence_timeout_does_nothing_when_timeout_is_none(
 
     await call_state_instance.monitor_silence_timeout()
 
-    assert call_state_instance.asr_event_queue.qsize() == 0
+    assert call_state_instance.input_queue is None
 
 
 async def test_monitor_silence_timeout_does_nothing_when_timeout_is_zero(
@@ -86,7 +93,7 @@ async def test_monitor_silence_timeout_does_nothing_when_timeout_is_zero(
 
     await call_state_instance.monitor_silence_timeout()
 
-    assert call_state_instance.asr_event_queue.qsize() == 0
+    assert call_state_instance.input_queue is None
 
 
 async def test_start_silence_monitoring_creates_watcher_task(

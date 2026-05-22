@@ -137,3 +137,5 @@ scripts/use-venv.sh
 .claude/skills/
 .cursor/skills/
 .github/skills/
+.codex/
+uv.lock

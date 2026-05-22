@@ -1085,6 +1085,27 @@ class BotUttered(SkipEventInMDStoryMixin):
             raise ValueError(f"Failed to parse bot uttered event. {e}")
 
 
+class UserBargeIn(SkipEventInMDStoryMixin):
+    """Record that the user barged in on the bot while it was speaking."""
+
+    type_name = "user_barge_in"
+
+    def __members(self) -> Tuple[Text]:
+        metadata = {k: v for k, v in self.metadata.items() if v is not None}
+        return (jsonpickle.encode(metadata),)
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(self.__members())
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, UserBargeIn):
+            return NotImplemented
+
+        return self.__members() == other.__members()
+
+
 class SlotSet(Event):
     """The user has specified their preference for the value of a `slot`.
 

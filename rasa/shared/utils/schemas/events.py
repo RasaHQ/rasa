@@ -214,6 +214,8 @@ DIALOGUE_STACK_UPDATED = {
 }
 ROUTING_SESSION_ENDED = {"properties": {"event": {"const": "routing_session_ended"}}}
 
+USER_BARGE_IN = {"properties": {"event": {"const": "user_barge_in"}}}
+
 ERROR_HANDLED = {"properties": {"event": {"const": "error"}}}
 SESSION_PAUSED = {
     "properties": {
@@ -274,6 +276,7 @@ EVENT_SCHEMA = {
         AGENT_CANCELLED,
         DIALOGUE_STACK_UPDATED,
         ROUTING_SESSION_ENDED,
+        USER_BARGE_IN,
         SESSION_ENDED,
         ERROR_HANDLED,
         SESSION_PAUSED,

@@ -6,7 +6,16 @@ import os
 import uuid
 from asyncio import AbstractEventLoop, CancelledError
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Text, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Union,
+)
 
 import aiohttp
 from aiohttp import ClientError
@@ -46,6 +55,11 @@ from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from rasa.core.channels.conversation_queue.events import InputEvent
+    from rasa.core.channels.conversation_queue.queue import ConversationQueue
+    from rasa.engine.storage.storage import ModelMetadata
 
 
 async def load_from_server(agent: Agent, model_server: EndpointConfig) -> Agent:
@@ -461,6 +475,11 @@ class Agent:
         return self.processor.model_metadata.model_id if self.processor else None
 
     @property
+    def model_metadata(self) -> Optional["ModelMetadata"]:
+        """Returns metadata for the currently loaded model."""
+        return self.processor.model_metadata if self.processor else None
+
+    @property
     def model_name(self) -> Optional[Text]:
         """Returns the model name from processor's model_path."""
         return self.processor.model_path.name if self.processor else None
@@ -543,6 +562,38 @@ class Agent:
                 )
         finally:
             self.processor.unregister_cancellation_token(message.sender_id)  # type: ignore[union-attr]
+
+    async def handle_conversation(
+        self,
+        input_queue: ConversationQueue[InputEvent],
+        output_channel: OutputChannel,
+    ) -> None:
+        """Drive a voice conversation for its full duration.
+
+        Registers a cancellation token and delegates to `MessageProcessor`. No lock is
+        held at the agent layer, but the per-turn lock is acquired inside the processor
+        so it is never held for the duration of the call.
+
+        Args:
+            input_queue: Queue of ``InputEvent``s pushed by the voice channel.
+            output_channel: Output channel for bot responses.
+        """
+        if not self.is_ready():
+            logger.warning("Ignoring conversation as there is no agent to handle it.")
+            return
+
+        from rasa.agents.core.cancellation import CancellationToken
+
+        token = CancellationToken()
+        processor = self.processor
+        assert processor is not None
+        try:
+            processor.register_cancellation_token(input_queue.conversation_id, token)
+            await processor.handle_voice_conversation(
+                input_queue, output_channel, input_queue.conversation_id
+            )
+        finally:
+            processor.unregister_cancellation_token(input_queue.conversation_id)
 
     def cancel_background_tasks(self, sender_id: Text) -> bool:
         """Cancel any in-flight background tasks for a conversation.

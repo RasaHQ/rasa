@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import hmac
 import json
-from typing import Any, Awaitable, Callable, Dict, Optional, Text, Union
+from typing import Any, Dict, Optional, Text, Union
 
 import structlog
 from sanic import (  # type: ignore[attr-defined]
@@ -14,7 +14,7 @@ from sanic import (  # type: ignore[attr-defined]
     response,
 )
 
-from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import RuntimeAgent
 from rasa.core.channels.voice_ready.audiocodes import map_call_params
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audio_bytes import L16_24KHZ, RasaAudioBytes
@@ -313,12 +313,9 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
 
         return hmac.compare_digest(str(self.token), str(token))
 
-    def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
-    ) -> Blueprint:
+    def conversation_blueprint(self, agent: RuntimeAgent) -> Blueprint:
         """Defines a Sanic blueprint."""
         blueprint = Blueprint("audiocodes_stream", __name__)
-        self._register_listeners(blueprint)
 
         @blueprint.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
@@ -338,7 +335,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
                 "audiocodes_stream.receive", event_info="Started websocket connection"
             )
             try:
-                await self.run_audio_streaming(on_new_message, ws)
+                await self.run_audio_streaming(agent, ws)
             except Exception as e:
                 logger.exception(
                     "audiocodes_stream.receive",

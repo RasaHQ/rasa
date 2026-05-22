@@ -33,7 +33,6 @@ def setup_call_state():
     _call_state.set(
         CallState(
             internal_queue=asyncio.Queue(),
-            asr_event_queue=asyncio.Queue(),
         )
     )
     yield
@@ -42,7 +41,6 @@ def setup_call_state():
         _call_state.set(
             CallState(
                 internal_queue=asyncio.Queue(),
-                asr_event_queue=asyncio.Queue(),
             )
         )
     except Exception:

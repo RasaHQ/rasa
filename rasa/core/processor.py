@@ -26,6 +26,15 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
+from rasa.core.channels.conversation_queue.events import (
+    BargeInInputEvent,
+    InputEvent,
+    SessionEndedInputEvent,
+    SilenceDetectedInputEvent,
+)
+from rasa.core.channels.conversation_queue.utils import (
+    coalesce_final_transcripts,
+)
 from rasa.core.constants import KEY_IS_CALM_SYSTEM, KEY_IS_COEXISTENCE_ASSISTANT
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.core.lock_store import LockStore
@@ -105,6 +114,7 @@ from rasa.shared.core.events import (
     SessionEnded,
     SessionStarted,
     SlotSet,
+    UserBargeIn,
     UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
@@ -129,6 +139,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from rasa.agents.core.cancellation import CancellationToken
+    from rasa.core.channels.conversation_queue.queue import ConversationQueue
     from rasa.core.config.available_endpoints import AvailableEndpoints
     from rasa.core.timer_managers.timer_manager import SessionTimerManager
     from rasa.privacy.privacy_manager import BackgroundPrivacyManager
@@ -302,6 +313,137 @@ class MessageProcessor:
             return message.output_channel.messages
 
         return None
+
+    async def handle_voice_conversation(
+        self,
+        input_queue: "ConversationQueue[InputEvent]",
+        output_channel: OutputChannel,
+        sender_id: str,
+    ) -> None:
+        """Drive a voice conversation for its full duration.
+
+        Manages the full call lifecycle. From the first event through transcripts and
+        other events, until a `SessionEndedInputEvent` signals the call has ended.
+        Each iteration awaits `input_queue.get_batch()` (blocking until at least one
+        event, then draining any further events already queued), then processes the
+        whole batch under a per-turn lock.
+
+        The lock is acquired per turn, not for the duration of the call, so it never
+        risks expiring on long calls.
+
+        Args:
+            input_queue: Queue of `InputEvent`s pushed by the voice channel.
+            output_channel: Output channel for bot responses.
+            sender_id: The conversation / sender ID.
+        """
+        structlogger.info(
+            "processor.handle_voice_conversation.start",
+            sender_id=sender_id,
+        )
+        while True:
+            events = await input_queue.get_batch()
+
+            structlogger.debug(
+                "processor.handle_voice_conversation.events",
+                num_events=len(events),
+                sender_id=sender_id,
+            )
+
+            # Detect session end before acquiring the lock so the signal is never
+            # lost, even if processing the events raises an exception.
+            session_ended = any(isinstance(e, SessionEndedInputEvent) for e in events)
+
+            async with self.lock_store.lock(sender_id):
+                try:
+                    await self._handle_drained_events(
+                        events,
+                        output_channel,
+                        sender_id,
+                        input_queue.input_channel,
+                    )
+                except Exception as e:
+                    # TODO: Decide what the agent should say or do when a turn fails
+                    #       (e.g. send a fallback response or terminate the call
+                    #       gracefully).
+
+                    structlogger.error(
+                        "processor.handle_voice_conversation.turn_failed",
+                        event_info="An exception occurred processing a voice turn.",
+                        sender_id=sender_id,
+                        error=repr(e),
+                    )
+                    raise
+
+            if session_ended:
+                structlogger.info(
+                    "processor.handle_voice_conversation.session_ended",
+                    sender_id=sender_id,
+                )
+                return
+
+    async def _handle_drained_events(
+        self,
+        events: List[InputEvent],
+        output_channel: OutputChannel,
+        sender_id: str,
+        input_channel: str,
+    ) -> None:
+        """Route a batch of content `InputEvent`s inside a held conversation lock.
+
+        The caller MUST already hold the conversation lock for `sender_id` (acquired
+        once per turn in `handle_voice_conversation`). The lock is not re-entrant, so
+        this method must not re-acquire it.
+
+        Args:
+            events: Content events for this turn.
+            output_channel: Output channel for bot responses.
+            sender_id: The conversation / sender ID.
+            input_channel: The original input channel name for generated messages.
+        """
+        # Coalesce consecutive FinalTranscriptInputEvent events into one per run.
+        events = coalesce_final_transcripts(events)
+
+        for event in events:
+            # Re-fetch the tracker each iteration: `handle_message` reloads and saves
+            # its own tracker via the tracker store, so a reference held across
+            # iterations goes stale after a turn that calls it. This means that saving a
+            # stale tracker via `record_event_on_tracker` would overwrite the events
+            # `handle_message` just persisted.
+            tracker = await self.get_tracker(sender_id)
+
+            structlogger.debug(
+                "processor.handle_voice_conversation.event",
+                event_info=f"Handling event: {event}",
+                sender_id=sender_id,
+                event_type=type(event).__name__,
+            )
+            if isinstance(event, BargeInInputEvent):
+                await self.record_event_on_tracker(tracker, UserBargeIn())
+                structlogger.info(
+                    "processor.handle_voice_conversation.user_barge_in",
+                    sender_id=sender_id,
+                )
+                # No UserMessage to dispatch; tracker already updated
+                continue
+            elif isinstance(event, SilenceDetectedInputEvent):
+                structlogger.info(
+                    "processor.handle_voice_conversation.silence_detected",
+                    sender_id=sender_id,
+                )
+
+            message = event.to_user_message(
+                output_channel,
+                sender_id,
+                input_channel,
+            )
+            if message is not None:
+                await self.handle_message(message)
+            else:
+                structlogger.warning(
+                    "processor.handle_voice_conversation.unhandled_event",
+                    sender_id=sender_id,
+                    event_type=type(event).__name__,
+                )
 
     def trigger_anonymization(self, tracker: DialogueStateTracker) -> None:
         if self.privacy_manager is None:
@@ -2027,6 +2169,18 @@ class MessageProcessor:
             tracker: Tracker to be saved.
         """
         await self.tracker_store.save(tracker)
+
+    async def record_event_on_tracker(
+        self, tracker: DialogueStateTracker, event: Event
+    ) -> None:
+        """Record a tracker event and persist the updated tracker.
+
+        Args:
+            tracker: Tracker to update and save.
+            event: Event to record on the tracker.
+        """
+        tracker.update(event, self.domain)
+        await self.save_tracker(tracker)
 
     async def _predict_next_with_tracker(
         self,

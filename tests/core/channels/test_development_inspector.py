@@ -1,9 +1,13 @@
 import pathlib
+from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
+from sanic import Blueprint
 
 import rasa.core.run
 from rasa.core.agent import Agent
+from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.development_inspector import (
     INSPECT_LEGACY_TEMPLATE_PATH,
     INSPECT_NEXTGEN_TEMPLATE_PATH,
@@ -41,6 +45,21 @@ ABSOLUTE_INSPECT_LEGACY_FOLDER_PATH = (
 ABSOLUTE_INSPECT_TEMPLATE_PATH = ABSOLUTE_INSPECT_FOLDER_PATH / "index.html"
 
 
+class RecordingRuntimeAgentInputChannel(InputChannel):
+    """Input channel that records the object passed to conversation_blueprint."""
+
+    def __init__(self) -> None:
+        self.received_agent: Any = None
+
+    @classmethod
+    def name(cls) -> str:
+        return "recording_conversation"
+
+    def conversation_blueprint(self, agent: Any) -> Blueprint:
+        self.received_agent = agent
+        return Blueprint(self.name())
+
+
 @pytest.fixture
 def mock_tracker_stream():
     """Fixture that provides a mock tracker stream for testing."""
@@ -76,6 +95,16 @@ def test_blueprint_inspect() -> None:
     # binary comparison to be platform-agnostic
     with open(ABSOLUTE_INSPECT_TEMPLATE_PATH, mode="rb") as handle:
         assert res.body == handle.read()
+
+
+def test_blueprint_passes_agent_to_conversation_channel() -> None:
+    underlying = RecordingRuntimeAgentInputChannel()
+    inspector = DevelopmentInspectProxy(underlying)
+    agent = MagicMock()
+
+    inspector.conversation_blueprint(agent)
+
+    assert underlying.received_agent is agent
 
 
 async def test_on_tracker_updated(

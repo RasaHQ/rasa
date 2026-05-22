@@ -4,7 +4,7 @@ import audioop
 import base64
 import json
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import structlog
 from pydantic import BaseModel
@@ -16,7 +16,7 @@ from sanic import (  # type: ignore[attr-defined]
     response,
 )
 
-from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import RuntimeAgent
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audio_bytes import (
     L16_24KHZ,
@@ -290,12 +290,12 @@ class BrowserAudioInputChannel(VoiceInputChannel):
             tts_cache=self.tts_cache,
         )
 
-    def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+    def conversation_blueprint(
+        self,
+        agent: RuntimeAgent,
     ) -> Blueprint:
         """Defines a Sanic blueprint."""
         blueprint = Blueprint("browser_audio", __name__)
-        self._register_listeners(blueprint)
 
         @blueprint.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
@@ -304,13 +304,19 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         @blueprint.route("/supported_languages", methods=["GET"])
         async def supported_languages(_: Request) -> HTTPResponse:
             """Return supported languages from the loaded model for voice UI."""
-            languages = [self.language] + self.additional_languages
-            return response.json({"languages": languages})
+            model_metadata = agent.model_metadata
+            language = model_metadata.language if model_metadata else "en"
+            additional_languages = (
+                model_metadata.additional_languages if model_metadata else []
+            )
+            return response.json(
+                {"languages": [language or "en"] + (additional_languages or [])}
+            )
 
         @blueprint.websocket("/websocket")  # type: ignore
         async def handle_message(request: Request, ws: Websocket) -> None:
             try:
-                await self.run_audio_streaming(on_new_message, ws, request=request)
+                await self.run_audio_streaming(agent, ws, request=request)
             except Exception as e:
                 logger.error("browser_audio.handle_message.error", error=e)
             finally:

@@ -24,6 +24,7 @@ import rasa.utils.endpoints
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     InputChannel,
+    OnNewMessageType,
     UserMessage,
 )
 
@@ -176,9 +177,7 @@ class RestInput(InputChannel):
 
             return response.json(collector.messages)
 
-    def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[None]]
-    ) -> Blueprint:
+    def blueprint(self, on_new_message: OnNewMessageType) -> Blueprint:
         """Groups the collection of endpoints used by rest channel."""
         module_type = inspect.getmodule(self)
         if module_type is not None:

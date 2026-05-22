@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import logging
@@ -13,8 +14,14 @@ from twilio.twiml.voice_response import VoiceResponse
 
 from rasa import server
 from rasa.core.agent import Agent
-from rasa.core.channels import TwilioMediaStreamsInputChannel, UserMessage, channel
+from rasa.core.channels import TwilioMediaStreamsInputChannel, channel
 from rasa.core.channels.channel import BASIC_AUTH_SCHEME
+from rasa.core.channels.conversation_queue.events import (
+    SessionEndedInputEvent,
+    SessionStartedInputEvent,
+    VoiceInputEvent,
+)
+from rasa.core.channels.conversation_queue.queue import InMemoryConversationQueue
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.call_state import (
     BotIsSpeaking,
@@ -610,22 +617,15 @@ def test_channel_name():
 async def test_start_session(
     input_channel: TwilioMediaStreamsInputChannel, call_parameters: CallParameters
 ):
-    websocket = AsyncMock()
-    on_new_message = AsyncMock()
-    tts_engine = AsyncMock()
-    await input_channel.start_session(
-        websocket, on_new_message, tts_engine, call_parameters
+    input_queue = InMemoryConversationQueue[VoiceInputEvent](
+        conversation_id=input_channel.get_sender_id(call_parameters),
+        input_channel=input_channel.name(),
     )
 
-    on_new_message.assert_called_once()
-    call_args = on_new_message.call_args
-    user_message = call_args[0][0]
-    assert isinstance(user_message, UserMessage)
-    assert user_message.text == "/session_start"
-    assert user_message.sender_id == call_parameters.stream_id
-    assert isinstance(user_message.output_channel, TwilioMediaStreamsOutputChannel)
-    assert user_message.input_channel == input_channel.name()
-    assert user_message.metadata == asdict(call_parameters)
+    await input_channel.start_session(input_queue, call_parameters)
+
+    events = await input_queue.drain()
+    assert events == [SessionStartedInputEvent(metadata=asdict(call_parameters))]
 
 
 async def test_collect_call_parameters(input_channel: TwilioMediaStreamsInputChannel):
@@ -657,6 +657,61 @@ async def test_map_media_input_message(
     )
     action = await input_channel.map_input_message(media_messages[0], websocket)
     assert isinstance(action, NewAudioAction)
+
+
+async def test_run_audio_streaming(
+    input_channel: TwilioMediaStreamsInputChannel,
+    twilio_call_parameters: CallParameters,
+    twilio_input_stream: List[str],
+    monkeypatch: MonkeyPatch,
+):
+    asr_mock = AsyncMock()
+    asr_mock.send_audio_chunks = AsyncMock()
+    tts_mock = AsyncMock()
+
+    websocket = AsyncMock()
+
+    async def wrapped(messages: List[Any]):
+        for message in messages:
+            yield message
+
+    websocket.__aiter__.side_effect = lambda: wrapped(twilio_input_stream)
+
+    input_channel._get_asr_and_tts_engines = MagicMock(
+        return_value=(asr_mock, tts_mock)
+    )
+
+    async def wait_forever(*args: Any, **kwargs: Any) -> None:
+        await asyncio.Event().wait()
+
+    input_channel.receive_asr_events = AsyncMock(side_effect=wait_forever)
+    input_channel.asr_keep_alive_task = AsyncMock(side_effect=wait_forever)
+
+    agent = MagicMock()
+    agent.model_metadata = None
+    agent.handle_conversation = AsyncMock()
+    await input_channel.run_audio_streaming(agent, websocket)
+
+    agent.handle_conversation.assert_called_once()
+    input_queue = agent.handle_conversation.call_args.args[0]
+    output_channel = agent.handle_conversation.call_args.args[1]
+    assert input_queue.input_channel == input_channel.name()
+    assert isinstance(output_channel, TwilioMediaStreamsOutputChannel)
+
+    events = await input_queue.drain()
+    assert events == [
+        SessionStartedInputEvent(metadata=asdict(twilio_call_parameters)),
+        SessionEndedInputEvent(),
+    ]
+
+    # Should be called when websocket has audio data
+
+    mapped_message = await input_channel.map_input_message(
+        twilio_input_stream[1], websocket
+    )
+    assert isinstance(mapped_message, NewAudioAction)
+
+    asr_mock.send_audio_chunks.assert_awaited_once_with(mapped_message.audio_bytes)
 
 
 USERNAME = 0

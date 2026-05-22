@@ -28,7 +28,11 @@ from sanic import (  # type: ignore[attr-defined]
 from sanic.request import Request
 from socketio import AsyncServer
 
-from rasa.core.channels.channel import InputChannel, OutputChannel
+from rasa.core.channels.channel import (
+    InputChannel,
+    OutputChannel,
+    RuntimeAgent,
+)
 from rasa.shared.core.trackers import EventVerbosity
 from rasa.shared.utils.cli import print_info
 
@@ -221,14 +225,23 @@ class DevelopmentInspectProxy(InputChannel):
         """Serves the inspect.html file."""
         return await response.file(self.inspect_html_path() + "/index.html")
 
-    def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
-    ) -> "Blueprint":
+    def conversation_blueprint(self, agent: RuntimeAgent) -> "Blueprint":
         """Defines a Sanic blueprint."""
         self.sio_server = AsyncServer(async_mode="sanic", cors_allowed_origins=[])
-        underlying_webhook: Blueprint = self.underlying.blueprint(
-            partial(self.on_message_proxy, on_new_message)
+
+        async def on_new_message(message: "UserMessage") -> None:
+            await agent.handle_message(message)
+
+        underlying_webhook = self.underlying.conversation_blueprint(agent) or (
+            self.underlying.blueprint(partial(self.on_message_proxy, on_new_message))
         )
+
+        if underlying_webhook is None:
+            raise NotImplementedError(
+                f"{self.underlying.__class__.__name__} needs to provide blueprint() "
+                f"or conversation_blueprint()."
+            )
+
         underlying_webhook.static("/assets", self.inspect_html_path() + "/assets")
 
         @underlying_webhook.route("/inspect.html", methods=["GET"], name="inspect")

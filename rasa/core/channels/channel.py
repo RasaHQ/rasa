@@ -7,6 +7,7 @@ import uuid
 from base64 import b64encode
 from functools import wraps
 from typing import (
+    TYPE_CHECKING,
     Any,
     Awaitable,
     Callable,
@@ -36,6 +37,10 @@ try:
     from urlparse import urljoin
 except ImportError:
     from urllib.parse import urljoin
+
+if TYPE_CHECKING:
+    from rasa.core.agent import Agent
+    from rasa.engine.storage.storage import ModelMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +102,36 @@ class UserMessage:
 OnNewMessageType = Callable[[UserMessage], Awaitable[Any]]
 
 
+class RuntimeAgent:
+    """Accesses the runtime agent through the Sanic app context."""
+
+    def __init__(self, app: Sanic) -> None:
+        self._app = app
+
+    @property
+    def agent(self) -> "Agent":
+        """Return the currently loaded agent."""
+        agent = getattr(self._app.ctx, "agent", None)
+        if agent is None:
+            raise RasaException("Agent is not initialized.")
+        return agent
+
+    @property
+    def model_metadata(self) -> Optional["ModelMetadata"]:
+        """Return model metadata from the currently loaded agent."""
+        return self.agent.model_metadata
+
+    async def handle_conversation(
+        self, input_queue: Any, output_channel: "OutputChannel"
+    ) -> None:
+        """Delegate queued conversation handling to the currently loaded agent."""
+        await self.agent.handle_conversation(input_queue, output_channel)
+
+    async def handle_message(self, message: UserMessage) -> None:
+        """Delegate message handling to the currently loaded agent."""
+        await self.agent.handle_message(message)
+
+
 def register(
     input_channels: List[InputChannel], app: Sanic, route: Optional[Text]
 ) -> None:
@@ -110,7 +145,17 @@ def register(
             p = urljoin(route, channel.url_prefix())
         else:
             p = None
-        app.blueprint(channel.blueprint(handler), url_prefix=p)
+
+        blueprint = channel.conversation_blueprint(RuntimeAgent(app)) or (
+            channel.blueprint(handler)
+        )
+        if blueprint is None:
+            raise NotImplementedError(
+                f"{channel.__class__.__name__} needs to provide blueprint() "
+                f"or conversation_blueprint()."
+            )
+
+        app.blueprint(blueprint, url_prefix=p)
 
     app.ctx.input_channels = input_channels
 
@@ -130,13 +175,21 @@ class InputChannel:
     def url_prefix(self) -> Text:
         return self.name()
 
-    def blueprint(self, on_new_message: OnNewMessageType) -> Blueprint:
-        """Defines a Sanic blueprint.
+    def blueprint(self, on_new_message: OnNewMessageType) -> Optional[Blueprint]:
+        """Defines a Sanic blueprint for callback-based message handling.
 
         The blueprint will be attached to a running sanic server and handle
         incoming routes it registered for.
         """
-        raise NotImplementedError("Component listener needs to provide blueprint.")
+        return None
+
+    def conversation_blueprint(self, agent: "RuntimeAgent") -> Optional[Blueprint]:
+        """Defines a Sanic blueprint that receives the runtime agent directly.
+
+        Conversation-based channels can override this instead of ``blueprint()`` when
+        they need to spawn async tasks that process events from an input queue.
+        """
+        return None
 
     @classmethod
     def raise_missing_credentials_exception(cls) -> NoReturn:

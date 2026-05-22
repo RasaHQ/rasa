@@ -532,6 +532,21 @@ def test_should_handle_message_returns_true_for_active_tracker():
     assert MessageProcessor._should_handle_message(tracker) is True
 
 
+@pytest.mark.asyncio
+async def test_record_event_on_tracker_updates_and_saves_tracker() -> None:
+    """record_event_on_tracker updates the tracker and persists it."""
+    processor = MagicMock(spec=MessageProcessor)
+    processor.domain = MagicMock()
+    processor.save_tracker = AsyncMock()
+    tracker = MagicMock()
+    event = UserUttered("hello")
+
+    await MessageProcessor.record_event_on_tracker(processor, tracker, event)
+
+    tracker.update.assert_called_once_with(event, processor.domain)
+    processor.save_tracker.assert_awaited_once_with(tracker)
+
+
 async def test_reminder_aborted(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):

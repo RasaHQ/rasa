@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Literal, Optional, Text, Union
+from typing import Any, Dict, Literal, Optional, Text, Union
 
 import structlog
 from pydantic import BaseModel, Field
@@ -14,7 +14,8 @@ from sanic import (  # type: ignore[attr-defined]
     response,
 )
 
-from rasa.core.channels import UserMessage, requires_basic_auth
+from rasa.core.channels import requires_basic_auth
+from rasa.core.channels.channel import RuntimeAgent
 from rasa.core.channels.voice_ready.utils import (
     CallParameters,
     validate_username_password_credentials,
@@ -261,11 +262,8 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         logger.debug("jambonz.interrupt_playback")
         await ws.send(json.dumps({"type": "killAudio"}))
 
-    def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
-    ) -> Blueprint:
+    def conversation_blueprint(self, agent: RuntimeAgent) -> Blueprint:
         blueprint = Blueprint("jambonz_stream", __name__)
-        self._register_listeners(blueprint)
 
         @blueprint.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
@@ -304,7 +302,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         @blueprint.websocket("/websocket", subprotocols=["audio.jambonz.org"])  # type: ignore[misc]
         async def handle_message(request: Request, ws: Websocket) -> None:
             try:
-                await self.run_audio_streaming(on_new_message, ws)
+                await self.run_audio_streaming(agent, ws)
             except Exception as e:
                 logger.error("jambonz.handle_message.error", error=e)
 

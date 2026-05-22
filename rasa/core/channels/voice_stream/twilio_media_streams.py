@@ -4,10 +4,7 @@ import base64
 import json
 import uuid
 from typing import (
-    TYPE_CHECKING,
     Any,
-    Awaitable,
-    Callable,
     Dict,
     Literal,
     Optional,
@@ -28,8 +25,8 @@ from sanic import (  # type: ignore[attr-defined]
 # Import twilio at module level to raise error if not installed
 from twilio.twiml.voice_response import VoiceResponse
 
-from rasa.core.channels import UserMessage
 from rasa.core.channels.channel import (
+    RuntimeAgent,
     create_auth_requested_response_provider,
     requires_basic_auth,
 )
@@ -59,9 +56,6 @@ from rasa.core.channels.voice_stream.voice_channel import (
     VoiceInputChannel,
     VoiceOutputChannel,
 )
-
-if TYPE_CHECKING:
-    from twilio.twiml.voice_response import VoiceResponse
 
 logger = structlog.get_logger(__name__)
 
@@ -301,12 +295,9 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
             )
         )
 
-    def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
-    ) -> Blueprint:
+    def conversation_blueprint(self, agent: RuntimeAgent) -> Blueprint:
         """Defines a Sanic blueprint for the voice input channel."""
         blueprint = Blueprint("twilio_media_streams", __name__)
-        self._register_listeners(blueprint)
 
         @blueprint.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
@@ -333,7 +324,7 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         @blueprint.websocket("/websocket")  # type: ignore
         async def handle_message(request: Request, ws: Websocket) -> None:
             logger.debug("twilio_media_streams.handle_message")
-            await self.run_audio_streaming(on_new_message, ws)
+            await self.run_audio_streaming(agent, ws)
 
         return blueprint
 

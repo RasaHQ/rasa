@@ -10,7 +10,6 @@ from typing import (
     Any,
     AsyncIterator,
     Awaitable,
-    Callable,
     Dict,
     List,
     Optional,
@@ -20,14 +19,26 @@ from typing import (
 
 import structlog
 from pydantic import BaseModel
-from sanic import Blueprint, Websocket  # type: ignore
+from sanic import Websocket  # type: ignore
 from sanic.exceptions import WebsocketClosed
 
-from rasa.core.channels import InputChannel, OutputChannel, UserMessage
-from rasa.core.channels.constants import (
-    USER_CONVERSATION_SESSION_END,
-    USER_CONVERSATION_SESSION_START,
-    USER_CONVERSATION_SILENCE_TIMEOUT,
+from rasa.core.channels.channel import (
+    InputChannel,
+    OutputChannel,
+    RuntimeAgent,
+)
+from rasa.core.channels.conversation_queue.events import (
+    BargeInInputEvent,
+    DTMFInputEvent,
+    FinalTranscriptInputEvent,
+    SessionEndedInputEvent,
+    SessionStartedInputEvent,
+    SilenceDetectedInputEvent,
+    VoiceInputEvent,
+)
+from rasa.core.channels.conversation_queue.queue import (
+    ConversationQueue,
+    InMemoryConversationQueue,
 )
 from rasa.core.channels.voice_ready.utils import (
     CallParameters,
@@ -80,7 +91,7 @@ from rasa.shared.utils.common import (
 from rasa.utils.io import remove_emojis
 
 if TYPE_CHECKING:
-    from rasa.core.agent import Agent
+    from rasa.engine.storage.storage import ModelMetadata
     from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = structlog.get_logger(__name__)
@@ -828,7 +839,6 @@ class VoiceInputChannel(InputChannel):
         if self.requires_voice_license:
             validate_voice_license_scope()
 
-        self.agent: Optional[Agent] = None
         self.audio_format = MULAW_8KHZ
         self.server_url = server_url
         self.asr_config = asr_config
@@ -850,14 +860,6 @@ class VoiceInputChannel(InputChannel):
             tts_config=self.tts_config,
             interruption_config=self.interruption_config,
         )
-
-    def _register_listeners(self, bp: Blueprint) -> None:
-        """Attach shared listeners to a blueprint."""
-
-        @bp.listener("after_server_start")  # type: ignore[misc]
-        async def after_server_start(app: Any, loop: Any) -> None:
-            if hasattr(app.ctx, "agent"):
-                self.agent = app.ctx.agent
 
     def get_sender_id(self, call_parameters: CallParameters) -> str:
         """Get the sender ID for the channel."""
@@ -900,22 +902,14 @@ class VoiceInputChannel(InputChannel):
 
     async def start_session(
         self,
-        channel_websocket: Websocket,
-        on_new_message: Callable[[UserMessage], Awaitable[Any]],
-        tts_engine: TTSEngine,
+        input_queue: ConversationQueue[VoiceInputEvent],
         call_parameters: CallParameters,
     ) -> None:
-        output_channel = self.create_output_channel(channel_websocket, tts_engine)
-        sender_id = self.get_sender_id(call_parameters)
-        message = UserMessage(
-            text=USER_CONVERSATION_SESSION_START,
-            output_channel=output_channel,
-            sender_id=sender_id,
-            input_channel=self.name(),
+        """Start a voice session by enqueuing a SessionStartedInputEvent."""
+        event = SessionStartedInputEvent(
             metadata=asdict(call_parameters),
         )
-        await on_new_message(message)
-        await output_channel.send_turn_end_marker(sender_id)
+        await input_queue.put(event)
 
     async def map_input_message(
         self,
@@ -926,10 +920,10 @@ class VoiceInputChannel(InputChannel):
         raise NotImplementedError
 
     def should_interrupt(self, e: ASREvent) -> bool:
-        """Determine if the current ASR event should interrupt playback.
+        """Determine if the current ASR event should interrupt bot playback.
 
-        Returns True if the bot response is interruptible
-        and if the user spoke more than 3 words.
+        Returns True only when the bot is currently speaking, the bot response
+        is interruptible, and the user spoke enough words.
 
         Arguments:
             e: The ASR event to evaluate.
@@ -937,8 +931,12 @@ class VoiceInputChannel(InputChannel):
         Returns:
             True if the event should interrupt playback, False otherwise.
         """
+        if not call_state.is_bot_speaking:
+            return False
 
-        # Did the user speak more than 3 words?
+        if not call_state.is_interruptable():
+            return False
+
         min_words = self.interruption_config.min_words
         if isinstance(e, (NewTranscript, UserIsSpeaking)):
             translator = str.maketrans("", "", string.punctuation)
@@ -961,53 +959,46 @@ class VoiceInputChannel(InputChannel):
         self,
         asr_engine: ASREngine,
         tts_engine: TTSEngine,
-        asr_event_queue: asyncio.Queue,
         ws: Websocket,
         call_parameters: CallParameters,
+        input_queue: ConversationQueue[VoiceInputEvent],
     ) -> None:
+        """Route ASR events as user input or barge-ins.
+
+        While the bot is speaking and the current response allows interruption, ASR
+        events are treated as possible barge-ins. A barge-in is only accepted when
+        `should_interrupt()` sees enough spoken words. Shorter speech is ignored so
+        partial words, backchannels, or background audio do not become user turns.
+
+        If interruption handling is not active, ASR events are normal input and are
+        passed to `handle_asr_event()`, which applies turn-specific checks such as
+        accepting input during collect turns.
+        """
         async for event in asr_engine.stream_asr_events():
-            is_interruptable = call_state.is_interruptable()
+            should_interrupt = self.should_interrupt(event)
             logger.debug(
                 "voice_channel.receive_asr_events",
                 ev=event,
-                is_interruptable=is_interruptable,
+                should_interrupt=should_interrupt,
             )
 
-            if is_interruptable:
-                if not call_state.is_bot_speaking:
-                    await asr_event_queue.put(event)
-                elif should_interrupt := self.should_interrupt(event):
-                    logger.debug(
-                        "voice_channel.asr_event_should_interrupt",
-                        ev=event,
-                        should_interrupt=should_interrupt,
-                    )
-                    if should_interrupt:
-                        await asr_event_queue.put(event)
-                        call_state.stop_silence_monitoring()
-                        await tts_engine.stop_streaming()
-                        await self.interrupt_playback(ws, call_parameters)
-            else:
-                await asr_event_queue.put(event)
+            if (
+                call_state.is_interruptable()
+                and call_state.is_bot_speaking
+                and not should_interrupt
+            ):
+                continue
 
-    async def handle_asr_events(
-        self,
-        asr_event_queue: asyncio.Queue,
-        ws: Websocket,
-        on_new_message: Callable[[UserMessage], Awaitable[Any]],
-        tts_engine: TTSEngine,
-        call_parameters: CallParameters,
-        asr_engine: ASREngine,
-    ) -> None:
-        while True:
-            event = await asr_event_queue.get()
+            if should_interrupt:
+                call_state.stop_silence_monitoring()
+                await tts_engine.stop_streaming()
+                await self.interrupt_playback(ws, call_parameters)
+                await input_queue.put(BargeInInputEvent())
+
             await self.handle_asr_event(
                 event,
-                ws,
-                on_new_message,
-                tts_engine,
+                input_queue,
                 call_parameters,
-                asr_engine,
             )
 
     async def asr_keep_alive_task(self, asr_engine: ASREngine) -> None:
@@ -1016,83 +1007,93 @@ class VoiceInputChannel(InputChannel):
             await asyncio.sleep(interval)
             await asr_engine.send_keep_alive()
 
-    @property
-    def additional_languages(self) -> List[str]:
-        if (
-            self.agent
-            and self.agent.processor
-            and self.agent.processor.model_metadata
-            and self.agent.processor.model_metadata.additional_languages
-        ):
-            return self.agent.processor.model_metadata.additional_languages or []
-        return []
-
-    @property
-    def language(self) -> str:
-        if (
-            self.agent
-            and self.agent.processor
-            and self.agent.processor.model_metadata
-            and self.agent.processor.model_metadata.language
-        ):
-            return self.agent.processor.model_metadata.language
-        return "en"
-
-    def _initialize_call_state(self) -> None:
+    def _initialize_call_state(self, model_metadata: Optional["ModelMetadata"]) -> None:
         call_state_ = CallState(
             internal_queue=asyncio.Queue(),
-            asr_event_queue=asyncio.Queue(),
             interruption_config=self.interruption_config,
         )
         call_state_.start_state_monitoring()
-        call_state_.current_language = self.language
+        call_state_.current_language = (
+            model_metadata.language
+            if model_metadata and model_metadata.language
+            else "en"
+        )
         _call_state.set(call_state_)
 
-    def _get_asr_and_tts_engines(self) -> Tuple[ASREngine, TTSEngine]:
+    def _get_asr_and_tts_engines(
+        self, model_metadata: Optional["ModelMetadata"]
+    ) -> Tuple[ASREngine, TTSEngine]:
+        language = (
+            model_metadata.language
+            if model_metadata and model_metadata.language
+            else "en"
+        )
+        additional_languages = (
+            model_metadata.additional_languages if model_metadata else None
+        )
         asr_engine = asr_engine_from_config(
             asr_config=self.asr_config,
             format=self.audio_format,
-            language=self.language,
-            additional_languages=self.additional_languages,
+            language=language,
+            additional_languages=additional_languages,
         )
         tts_engine = tts_engine_from_config(
             tts_config=self.tts_config,
             format=self.audio_format,
-            language=self.language,
-            additional_languages=self.additional_languages,
+            language=language,
+            additional_languages=additional_languages,
         )
         return asr_engine, tts_engine
 
     async def run_audio_streaming(
         self,
-        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        agent: RuntimeAgent,
         channel_websocket: Websocket,
         request: Optional[Any] = None,
     ) -> None:
         """Pipe input audio to ASR and consume ASR events simultaneously."""
-        self._initialize_call_state()
+        model_metadata = agent.model_metadata
+        self._initialize_call_state(model_metadata)
 
         call_parameters = await self.collect_call_parameters(channel_websocket, request)
         if call_parameters is None:
             raise ValueError("Failed to extract call parameters for call.")
 
         # Initialize ASR and TTS based on config
-        asr_engine, tts_engine = self._get_asr_and_tts_engines()
+        asr_engine, tts_engine = self._get_asr_and_tts_engines(model_metadata)
 
         # Connect both ASR and TTS at the beginning
         await asr_engine.connect()
         await tts_engine.connect()
 
         sender_id = self.get_sender_id(call_parameters)
+
+        # Create input queue for this conversation
+        input_queue: ConversationQueue[VoiceInputEvent] = InMemoryConversationQueue[
+            VoiceInputEvent
+        ](conversation_id=sender_id, input_channel=self.name(), maxsize=50)
+        call_state.input_queue = input_queue
+        logger.info(
+            "voice_channel.input_queue_created",
+            conversation_id=sender_id,
+            call_id=call_parameters.call_id,
+        )
+
+        output_channel = self.create_output_channel(channel_websocket, tts_engine)
         language_plugin = VoiceLanguageChangePlugin(sender_id, asr_engine, tts_engine)
         tasks: List[asyncio.Task[Any]] = []
 
         try:
             language_plugin.register_hook()
 
-            await self.start_session(
-                channel_websocket, on_new_message, tts_engine, call_parameters
+            # Start the agent conversation handler
+            agent_task = asyncio.create_task(
+                agent.handle_conversation(input_queue, output_channel)
             )
+            tasks.append(agent_task)
+
+            # Send session start event
+            await self.start_session(input_queue, call_parameters)
 
             async def consume_audio_bytes() -> None:
                 is_disconnected = False
@@ -1108,9 +1109,7 @@ class VoiceInputChannel(InputChannel):
                             )
                         if isinstance(channel_action, DTMFInputAction):
                             await self.gather_dtmf_input(
-                                channel_websocket,
-                                tts_engine,
-                                on_new_message,
+                                input_queue,
                                 call_parameters,
                                 channel_action,
                             )
@@ -1118,9 +1117,7 @@ class VoiceInputChannel(InputChannel):
                             # end stream event came from the other side
                             is_disconnected = True
                             await self.handle_disconnect(
-                                channel_websocket,
-                                on_new_message,
-                                tts_engine,
+                                input_queue,
                                 call_parameters,
                             )
                             break
@@ -1139,35 +1136,27 @@ class VoiceInputChannel(InputChannel):
                     if not is_disconnected:
                         # Avoid double disconnect handling
                         await self.handle_disconnect(
-                            channel_websocket,
-                            on_new_message,
-                            tts_engine,
+                            input_queue,
                             call_parameters,
                         )
 
-            tasks = [
-                asyncio.create_task(consume_audio_bytes()),
-                asyncio.create_task(
-                    self.receive_asr_events(
-                        asr_engine,
-                        tts_engine,
-                        call_state.asr_event_queue,
-                        channel_websocket,
-                        call_parameters,
-                    )
-                ),
-                asyncio.create_task(
-                    self.handle_asr_events(
-                        call_state.asr_event_queue,
-                        channel_websocket,
-                        on_new_message,
-                        tts_engine,
-                        call_parameters,
-                        asr_engine,
-                    )
-                ),
-                asyncio.create_task(self.asr_keep_alive_task(asr_engine)),
-            ]
+            # Extend (not reassign) so agent_task stays in `tasks` for
+            # asyncio.wait and finally-block cancellation.
+            tasks.extend(
+                [
+                    asyncio.create_task(consume_audio_bytes()),
+                    asyncio.create_task(
+                        self.receive_asr_events(
+                            asr_engine,
+                            tts_engine,
+                            channel_websocket,
+                            call_parameters,
+                            input_queue,
+                        )
+                    ),
+                    asyncio.create_task(self.asr_keep_alive_task(asr_engine)),
+                ]
+            )
             await asyncio.wait(
                 tasks,
                 return_when=asyncio.FIRST_COMPLETED,
@@ -1209,11 +1198,8 @@ class VoiceInputChannel(InputChannel):
     async def handle_asr_event(
         self,
         asr_event: ASREvent,
-        voice_websocket: Websocket,
-        on_new_message: Callable[[UserMessage], Awaitable[Any]],
-        tts_engine: TTSEngine,
+        input_queue: ConversationQueue[VoiceInputEvent],
         call_parameters: CallParameters,
-        asr_engine: ASREngine,
     ) -> None:
         """Handle a new event from the ASR system."""
         if isinstance(asr_event, NewTranscript) and asr_event.text:
@@ -1235,49 +1221,33 @@ class VoiceInputChannel(InputChannel):
                 return
 
             if not call_state.can_queue_user_message():
-                logger.debug(
-                    "VoiceInputChannel.handle_asr_event.ignoring_user_message",
-                    interruptions_enabled=call_state.is_interruptable(),
-                    current_bot_utterance_type=call_state.current_bot_utterance_type,
+                logger.info(
+                    "VoiceInputChannel.handle_asr_event.ignoring_audio_during_regular_utterance",
+                    conversation_id=input_queue.conversation_id,
+                    transcript=asr_event.text,
                 )
                 call_state.current_bot_utterance_type = None
                 return
-            logger.debug(
-                "VoiceInputChannel.handle_asr_event.queueing_user_message",
-            )
 
-            output_channel = self.create_output_channel(voice_websocket, tts_engine)
-            sender_id = self.get_sender_id(call_parameters)
-            message = UserMessage(
+            # Enqueue FinalTranscriptInputEvent
+            event: VoiceInputEvent = FinalTranscriptInputEvent(
                 text=asr_event.text,
-                output_channel=output_channel,
-                sender_id=sender_id,
-                input_channel=self.name(),
                 metadata=asdict(call_parameters),
             )
-            await on_new_message(message)
-            await output_channel.send_turn_end_marker(sender_id)
+            await input_queue.put(event)
+            call_state.current_bot_utterance_type = None
         elif isinstance(asr_event, UserIsSpeaking):
             if not call_state.is_user_speaking:
                 call_state.user_speech_start_time = time.time()
             await call_state.enqueue_event(UserIsSpeakingCallStateMessage())
         elif isinstance(asr_event, UserSilence):
             call_state.dtmf_buffer = ""
-            output_channel = self.create_output_channel(voice_websocket, tts_engine)
-            message = UserMessage(
-                text=USER_CONVERSATION_SILENCE_TIMEOUT,
-                output_channel=output_channel,
-                sender_id=self.get_sender_id(call_parameters),
-                input_channel=self.name(),
-                metadata=asdict(call_parameters),
-            )
-            await on_new_message(message)
+            event = SilenceDetectedInputEvent(metadata=asdict(call_parameters))
+            await input_queue.put(event)
 
     async def gather_dtmf_input(
         self,
-        channel_websocket: Websocket,
-        tts_engine: TTSEngine,
-        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        input_queue: ConversationQueue[VoiceInputEvent],
         call_parameters: CallParameters,
         dtmf_action: DTMFInputAction,
     ) -> None:
@@ -1295,9 +1265,7 @@ class VoiceInputChannel(InputChannel):
         config = call_state.dtmf_config
         if config.length and len(call_state.dtmf_buffer) >= config.length:
             await self.submit_dtmf_input(
-                channel_websocket,
-                tts_engine,
-                on_new_message,
+                input_queue,
                 call_parameters,
                 call_state.dtmf_buffer,
             )
@@ -1305,45 +1273,30 @@ class VoiceInputChannel(InputChannel):
             # remove the finish key from the buffer
             dtmf_input = call_state.dtmf_buffer[:-1]
             await self.submit_dtmf_input(
-                channel_websocket,
-                tts_engine,
-                on_new_message,
+                input_queue,
                 call_parameters,
                 dtmf_input,
             )
 
     async def submit_dtmf_input(
         self,
-        channel_websocket: Websocket,
-        tts_engine: TTSEngine,
-        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        input_queue: ConversationQueue[VoiceInputEvent],
         call_parameters: CallParameters,
         dtmf_input: str,
     ) -> None:
+        """Submit collected DTMF input to the queue."""
         call_state.is_collecting_dtmf = False
         call_state.dtmf_buffer = ""
-        output_channel = self.create_output_channel(channel_websocket, tts_engine)
-        message = UserMessage(
-            text=dtmf_input,
-            output_channel=output_channel,
-            sender_id=self.get_sender_id(call_parameters),
-            input_channel=self.name(),
-        )
-        await on_new_message(message)
+
+        # Enqueue DTMFInputEvent
+        event = DTMFInputEvent(text=dtmf_input)
+        await input_queue.put(event)
 
     async def handle_disconnect(
         self,
-        channel_websocket: Websocket,
-        on_new_message: Callable[[UserMessage], Awaitable[Any]],
-        tts_engine: TTSEngine,
+        input_queue: ConversationQueue[VoiceInputEvent],
         call_parameters: CallParameters,
     ) -> None:
         """Handle disconnection from the channel."""
-        output_channel = self.create_output_channel(channel_websocket, tts_engine)
-        message = UserMessage(
-            text=USER_CONVERSATION_SESSION_END,
-            output_channel=output_channel,
-            sender_id=self.get_sender_id(call_parameters),
-            input_channel=self.name(),
-        )
-        await on_new_message(message)
+        event = SessionEndedInputEvent()
+        await input_queue.put(event)

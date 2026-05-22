@@ -385,7 +385,7 @@ async def test_blueprint_health_endpoint(input_channel: JambonzStreamInputChanne
     from sanic import Sanic
 
     app = Sanic("test_app")
-    blueprint = input_channel.blueprint(AsyncMock())
+    blueprint = input_channel.conversation_blueprint(AsyncMock())
     app.blueprint(blueprint)
     routes = [route.uri for route in blueprint.routes]
     prefix = "/rasa.core.channels.voice_stream.jambonz"

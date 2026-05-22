@@ -1,5 +1,6 @@
 import base64
 import json
+from types import SimpleNamespace
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
@@ -551,11 +552,33 @@ async def test_blueprint_health_endpoint(input_channel: BrowserAudioInputChannel
     from sanic import Sanic
 
     app = Sanic("test_app")
-    blueprint = input_channel.blueprint(AsyncMock())
+    blueprint = input_channel.conversation_blueprint(AsyncMock())
     app.blueprint(blueprint)
     routes = [route.uri for route in blueprint.routes]
     prefix = "/rasa.core.channels.voice_stream.browser_audio"
     assert f"{prefix}/websocket" in routes
+
+
+@pytest.mark.asyncio
+async def test_supported_languages_uses_agent_model_metadata(
+    input_channel: BrowserAudioInputChannel,
+):
+    from sanic import Sanic
+
+    model_metadata = SimpleNamespace(
+        language="de",
+        additional_languages=["fr", "it"],
+    )
+    agent = SimpleNamespace(model_metadata=model_metadata)
+    app = Sanic("test_supported_languages_app")
+    app.blueprint(input_channel.conversation_blueprint(agent))
+
+    _, response = await app.asgi_client.get(
+        "/rasa.core.channels.voice_stream.browser_audio/supported_languages"
+    )
+
+    assert response.status == 200
+    assert response.json == {"languages": ["de", "fr", "it"]}
 
 
 def test_from_credentials_success():

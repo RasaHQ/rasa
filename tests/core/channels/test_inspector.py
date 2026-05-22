@@ -58,7 +58,6 @@ def setup_call_state():
 
     state = CallState(
         internal_queue=asyncio.Queue(),
-        asr_event_queue=asyncio.Queue(),
     )
     token = _call_state.set(state)
     yield state
@@ -341,6 +340,7 @@ async def test_handle_voice_streaming_emits_voice_error_on_exception(
     """Test that _handle_voice_streaming emits voice_error when streaming fails."""
     sid = "test_sid"
     ws_adapter = AsyncMock()
+    agent = AsyncMock()
     inspector_input.active_connections[sid] = ws_adapter
 
     error = RuntimeError("Missing environment variable for ASR Engine")
@@ -350,9 +350,10 @@ async def test_handle_voice_streaming_emits_voice_error_on_exception(
         "run_audio_streaming",
         new_callable=AsyncMock,
         side_effect=error,
-    ):
-        await inspector_input._handle_voice_streaming(AsyncMock(), ws_adapter, sid)
+    ) as run_audio_streaming:
+        await inspector_input._handle_voice_streaming(agent, ws_adapter, sid)
 
+    run_audio_streaming.assert_called_once_with(agent, ws_adapter)
     inspector_input.sio_server.emit.assert_called_once_with(
         "voice_error",
         {
@@ -371,10 +372,14 @@ async def test_handle_voice_streaming_no_emit_on_success(
     """Test that _handle_voice_streaming does not emit voice_error on success."""
     sid = "test_sid"
     ws_adapter = AsyncMock()
+    agent = AsyncMock()
 
-    with patch.object(inspector_input, "run_audio_streaming", new_callable=AsyncMock):
-        await inspector_input._handle_voice_streaming(AsyncMock(), ws_adapter, sid)
+    with patch.object(
+        inspector_input, "run_audio_streaming", new_callable=AsyncMock
+    ) as run_audio_streaming:
+        await inspector_input._handle_voice_streaming(agent, ws_adapter, sid)
 
+    run_audio_streaming.assert_called_once_with(agent, ws_adapter)
     inspector_input.sio_server.emit.assert_not_called()
 
 

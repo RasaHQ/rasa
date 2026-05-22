@@ -11,7 +11,11 @@ import structlog
 from pydantic import BaseModel
 from werkzeug.local import LocalProxy
 
-from rasa.core.channels.voice_stream.asr.asr_event import UserSilence
+from rasa.core.channels.conversation_queue.events import (
+    SilenceDetectedInputEvent,
+    VoiceInputEvent,
+)
+from rasa.core.channels.conversation_queue.queue import ConversationQueue
 from rasa.shared.core.flows.steps.collect import DTMFConfig
 
 logger = structlog.get_logger(__name__)
@@ -101,7 +105,7 @@ class Marker(BaseModel):
 @dataclass
 class CallState:
     internal_queue: asyncio.Queue
-    asr_event_queue: asyncio.Queue
+    input_queue: Optional[ConversationQueue[VoiceInputEvent]] = None
     is_user_speaking: bool = False
     is_bot_speaking: bool = False
     is_rasa_listening: bool = False
@@ -168,7 +172,14 @@ class CallState:
             return
         logger.debug("voice_channel.silence_timeout_watch_started", timeout=timeout)
         await asyncio.sleep(timeout)
-        await self.asr_event_queue.put(UserSilence())
+        self.dtmf_buffer = ""
+        if self.input_queue is None:
+            logger.warning(
+                "voice_channel.silence_timeout_triggered_without_input_queue",
+                timeout=timeout,
+            )
+            return
+        await self.input_queue.put(SilenceDetectedInputEvent())
         logger.debug("voice_channel.silence_timeout_triggered", timeout=timeout)
 
     def start_silence_monitoring(self) -> None:

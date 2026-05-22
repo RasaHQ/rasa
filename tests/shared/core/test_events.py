@@ -69,6 +69,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     SlotSet,
     StoryExported,
+    UserBargeIn,
     UserUtteranceReverted,
     UserUttered,
     format_message,
@@ -155,6 +156,7 @@ from tests.utilities import filter_logs
             AgentCompleted("my_agent", "my_flow"),
             AgentCompleted("my_other_agent", "my_other_flow"),
         ),
+        (UserBargeIn(), UserBargeIn(metadata={"source": "voice"})),
     ],
 )
 def test_event_has_proper_implementation(one_event, another_event):
@@ -212,6 +214,7 @@ def test_event_has_proper_implementation(one_event, another_event):
         AgentResumed("my_agent", "my_flow"),
         AgentCancelled("my_agent", "my_flow"),
         AgentCompleted("my_agent", "my_flow"),
+        UserBargeIn(),
     ],
 )
 def test_dict_serialisation(one_event):
@@ -233,6 +236,11 @@ def test_json_parse_restarted():
 def test_json_parse_session_started():
     evt = {"event": "session_started"}
     assert Event.from_parameters(evt) == SessionStarted()
+
+
+def test_json_parse_user_barge_in() -> None:
+    evt = {"event": "user_barge_in", "timestamp": 1.0}
+    assert Event.from_parameters(evt) == UserBargeIn(timestamp=1.0)
 
 
 def test_json_parse_reset():
@@ -943,6 +951,7 @@ tested_events = [
         },
     ),
     SessionStarted(),
+    UserBargeIn(),
     ActionExecuted(action_name="action_listen"),
     AgentUttered(),
     EndToEndUserUtterance(),
@@ -1552,3 +1561,35 @@ def test_agent_cancelled_with_reason() -> None:
     """Test that agent cancelled event can be created with reason."""
     event = AgentCancelled("test_agent", "test_flow", reason="user_cancelled")
     assert event.reason == "user_cancelled"
+
+
+# Voice Tracker Events Tests
+@pytest.mark.parametrize(
+    "event,expected_dict",
+    [
+        (
+            UserBargeIn(timestamp=1.0, metadata={"source": "voice"}),
+            {
+                "event": "user_barge_in",
+                "timestamp": 1.0,
+                "metadata": {"source": "voice"},
+            },
+        ),
+    ],
+)
+def test_voice_tracker_events_dict_serialization(
+    event: Event, expected_dict: Dict[str, Any]
+) -> None:
+    """Test that voice tracker events can be serialized to dictionary."""
+    assert event.as_dict() == expected_dict
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        UserBargeIn(),
+    ],
+)
+def test_voice_tracker_events_skip_in_md_story(event: Event) -> None:
+    """Test that voice tracker events are skipped in markdown story format."""
+    assert event.as_story_string() is None

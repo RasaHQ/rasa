@@ -4,7 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
-from typing import Any, Awaitable, Callable, Dict, Optional, Text, Union
+from typing import Any, Dict, Optional, Text, Union
 
 import structlog
 from sanic import (  # type: ignore[attr-defined]
@@ -15,7 +15,7 @@ from sanic import (  # type: ignore[attr-defined]
     response,
 )
 
-from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import RuntimeAgent
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import (
@@ -418,12 +418,9 @@ class GenesysInputChannel(VoiceInputChannel):
             return False
         return True
 
-    def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
-    ) -> Blueprint:
+    def conversation_blueprint(self, agent: RuntimeAgent) -> Blueprint:
         """Defines a Sanic blueprint for the voice input channel."""
         blueprint = Blueprint("genesys", __name__)
-        self._register_listeners(blueprint)
 
         @blueprint.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
@@ -459,7 +456,7 @@ class GenesysInputChannel(VoiceInputChannel):
             # process audio streaming
             logger.info("genesys.receive", message="Starting audio streaming")
             try:
-                await self.run_audio_streaming(on_new_message, ws)
+                await self.run_audio_streaming(agent, ws)
             except Exception as e:
                 logger.exception(
                     "genesys.receive",

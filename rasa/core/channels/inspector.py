@@ -23,7 +23,7 @@ from typing import (
 import structlog
 from pydantic import BaseModel
 
-from rasa.core.channels import UserMessage
+from rasa.core.channels import RuntimeAgent, UserMessage
 from rasa.core.channels.socketio import SocketBlueprint, SocketIOInput, SocketIOOutput
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audio_bytes import (
@@ -64,6 +64,7 @@ if TYPE_CHECKING:
     from sanic import Sanic, Websocket  # type: ignore[attr-defined]
     from socketio import AsyncServer
 
+    from rasa.core.agent import Agent
     from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -233,7 +234,6 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
         **kwargs: Any,
     ) -> None:
         """Creates a `InspectorInputChannel` object."""
-        from rasa.core.agent import Agent
 
         self.agent: Optional[Agent] = None
 
@@ -545,7 +545,7 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
         self,
         session_id: str,
         sid: str,
-        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        agent: "Agent",
     ) -> None:
         """Create SocketIO WebSocket Adaptor & start async task for voice streaming."""
         if sid in self.active_connections:
@@ -569,21 +569,19 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
         self.active_connections[sid] = ws_adapter
 
         # Start voice streaming in an async task
-        task = asyncio.create_task(
-            self._handle_voice_streaming(on_new_message, ws_adapter, sid)
-        )
+        task = asyncio.create_task(self._handle_voice_streaming(agent, ws_adapter, sid))
         self.background_tasks[sid] = task
         task.add_done_callback(lambda _: self._cleanup_tasks_for_sid(sid))
 
     async def _handle_voice_streaming(
         self,
-        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        agent: "Agent",
         ws_adapter: "Websocket",
         sid: str,
     ) -> None:
         """Handle voice streaming for a Socket.IO connection."""
         try:
-            await self.run_audio_streaming(on_new_message, ws_adapter)
+            await self.run_audio_streaming(agent, ws_adapter)
         except Exception as e:
             structlogger.exception(
                 "inspector.voice_streaming.error",
@@ -623,9 +621,10 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
                     pass
         self.background_tasks.clear()
 
-    def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
-    ) -> SocketBlueprint:
+    def conversation_blueprint(self, agent: RuntimeAgent) -> SocketBlueprint:
+        async def on_new_message(message: UserMessage) -> None:
+            await agent.handle_message(message)
+
         socket_blueprint = super().blueprint(
             partial(self.on_message_proxy, on_new_message)
         )
@@ -664,7 +663,7 @@ class InspectorInputChannel(SocketIOInput, VoiceInputChannel):
 
             # start a voice session if requested
             if data and data.get("is_voice", False):
-                self._start_voice_session(data["session_id"], sid, on_new_message)
+                self._start_voice_session(data["session_id"], sid, agent)
 
         @self.sio_server.on(self.user_message_evt, namespace=self.namespace)
         async def handle_message(sid: Text, data: Dict) -> None:
