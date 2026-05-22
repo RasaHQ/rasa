@@ -1,3 +1,5 @@
+import asyncio
+import logging
 import textwrap
 from pathlib import Path
 
@@ -8,6 +10,34 @@ from prompt_toolkit.validation import ValidationError
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
+from rasa.shared.utils.io import suppress_logs
+
+
+@pytest.mark.asyncio
+async def test_suppress_logs_is_async_safe_eng_2744() -> None:
+    """Concurrent @suppress_logs calls must not permanently raise the root logger level.
+
+    Race: Task B enters async_wrapper while Task A is suspended inside it.
+    Root is at WARNING (set by A). B captures WARNING as its "original", then A
+    restores INFO, then B restores WARNING — leaving the process stuck at WARNING.
+    """
+    root = logging.getLogger()
+    original_level = logging.INFO
+    root.setLevel(original_level)
+
+    @suppress_logs(log_level=logging.WARNING)
+    async def slow_llm_call() -> None:
+        # Yield once to let the other task enter async_wrapper before we exit.
+        await asyncio.sleep(0)
+
+    # Task B enters while Task A is suspended mid-wrapper — guaranteed by sleep(0).
+    await asyncio.gather(slow_llm_call(), slow_llm_call())
+
+    assert root.getEffectiveLevel() == original_level, (
+        f"Root logger stuck at {logging.getLevelName(root.getEffectiveLevel())} "
+        f"instead of {logging.getLevelName(original_level)} after concurrent "
+        f"suppress_logs calls — ENG-2744"
+    )
 
 
 @pytest.mark.parametrize("actual_path", ["", "file.json", "file"])

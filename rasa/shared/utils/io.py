@@ -1,4 +1,5 @@
 import asyncio
+import contextvars
 import errno
 import glob
 import json
@@ -431,6 +432,33 @@ def file_as_bytes(file_path: Text) -> bytes:
 
 F = TypeVar("F", bound=Callable[..., Any])
 
+# Per-task suppression level: set inside async_wrapper, read by the patched
+# isEnabledFor. Each asyncio.Task copies the parent context, so one task's
+# ContextVar.set() is invisible to sibling tasks — avoiding the global-mutation
+# race in ENG-2744.
+_suppress_log_level: contextvars.ContextVar[Optional[int]] = contextvars.ContextVar(
+    "_suppress_log_level", default=None
+)
+
+
+def _install_suppress_log_patch() -> None:
+    """Patch logging.Logger.isEnabledFor once to honour _suppress_log_level."""
+    if hasattr(logging.Logger, "_original_is_enabled_for"):
+        return
+    original = logging.Logger.isEnabledFor
+    logging.Logger._original_is_enabled_for = original  # type: ignore[attr-defined]
+
+    def _is_enabled_for(self: logging.Logger, level: int) -> bool:
+        suppress = _suppress_log_level.get()
+        if suppress is not None and level < suppress:
+            return False
+        return original(self, level)
+
+    logging.Logger.isEnabledFor = _is_enabled_for  # type: ignore[method-assign]
+
+
+_install_suppress_log_patch()
+
 
 def suppress_logs(log_level: int = logging.WARNING) -> Callable[[F], F]:
     """Decorator to suppress logs during the execution of a function.
@@ -445,15 +473,13 @@ def suppress_logs(log_level: int = logging.WARNING) -> Callable[[F], F]:
     def decorator(func: F) -> F:
         @wraps(func)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
-            # Store the original logging level and set the new level.
-            original_logging_level = logging.getLogger().getEffectiveLevel()
-            logging.getLogger().setLevel(log_level)
+            # Use a ContextVar so each asyncio.Task sees its own suppression
+            # window; concurrent tasks cannot corrupt each other's log level.
+            token = _suppress_log_level.set(log_level)
             try:
-                # Execute the async function.
                 result = await func(*args, **kwargs)
             finally:
-                # Reset the logging level to the original level.
-                logging.getLogger().setLevel(original_logging_level)
+                _suppress_log_level.reset(token)
             return result
 
         @wraps(func)
