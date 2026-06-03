@@ -29,6 +29,10 @@ def chat(
         endpoints: Path to a yaml with the action server is custom actions are defined.
         agent: Rasa Core agent (used if no Rasa model given).
     """
+    
+    from rasa.core.utils import AvailableEndpoints
+    _endpoints = AvailableEndpoints.read_endpoints(endpoints)
+    
     if model_path:
         agent = asyncio.run(
             rasa.core.agent.load_agent(model_path=model_path, endpoints=endpoints)
