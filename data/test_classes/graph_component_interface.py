@@ -99,3 +99,12 @@ class GraphComponent(ABC):
     def required_packages() -> List[Text]:
         """Any extra python dependencies required for this component to run."""
         return []
+
+    @classmethod
+    def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
+        """Adds additional data to the fingerprint calculation.
+
+        This is useful if a component uses external data that is not provided
+        by the graph.
+        """
+        return None

@@ -443,7 +443,7 @@ def _check_messages_contain_attribute_which_is_key_attribute(messages: List[Mess
     for message in messages:
         assert len(message.data) == 1
         assert (
-            list(message.data.keys())[0]
+            list(message.data.keys())[0]  # noqa: RUF015
             in MessageContainerForCoreFeaturization.KEY_ATTRIBUTES
         )
 

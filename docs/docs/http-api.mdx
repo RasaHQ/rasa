@@ -66,6 +66,18 @@ rasa run \
     --auth-token thisismysecret
 ```
 
+You can also use environment variable `AUTH_TOKEN` to set the auth token:
+```
+AUTH_TOKEN=thisismysecret
+```
+
+:::tip Security best practice
+
+We recommend that you use environment variables to store
+and share sensitive information such as tokens and secrets
+when deploying Rasa as Docker container as they will not be stored in your shell history.
+:::
+
 Any clients sending requests to the server must pass the token
 as a query parameter, or the request will be rejected. For example, to fetch a tracker from the server:
 
@@ -85,6 +97,18 @@ rasa run \
     --jwt-secret thisismysecret
 ```
 
+You can also use environment variable `JWT_SECRET` to set the JWT secret:
+```
+JWT_SECRET=thisismysecret
+```
+
+:::tip Security best practice
+
+We recommend that you use environment variables to store
+and share sensitive information such as tokens and secrets
+when deploying Rasa as Docker container as they will not be stored in your shell history.
+:::
+
 If you want to sign a JWT token with asymmetric algorithms, you can specify the JWT private key to the `--jwt-private-key`
 CLI argument. You must pass the public key to the `--jwt-secret` argument, and also specify the algorithm to the
 `--jwt-method` argument:
@@ -96,6 +120,20 @@ rasa run \
     --jwt-private-key <private_key> \
     --jwt-method RS512
 ```
+
+You can also use environment variables to configure JWT:
+```
+JWT_SECRET=<public_key>
+JWT_PRIVATE_KEY=<private_key>
+JWT_METHOD=RS512
+```
+
+:::tip Security best practice
+
+We recommend that you use environment variables to store
+and share sensitive information such as tokens and secrets
+when deploying Rasa as Docker container as they will not be stored in your shell history.
+:::
 
 Client requests to the server will need to contain a valid JWT token in
 the `Authorization` header that is signed using this secret

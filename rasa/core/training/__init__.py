@@ -41,8 +41,7 @@ def load_data(
     debug_plots: bool = False,
     exclusion_percentage: Optional[int] = None,
 ) -> List["TrackerWithCachedStates"]:
-    """
-    Load training data from a resource.
+    """Load training data from a resource.
 
     Args:
         resource_name: resource to load the data from. either a path or an importer

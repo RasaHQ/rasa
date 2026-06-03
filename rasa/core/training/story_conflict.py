@@ -29,13 +29,11 @@ class StoryConflict:
     """
 
     def __init__(self, sliced_states: List[State]) -> None:
-        """
-        Creates a `StoryConflict` from a given state.
+        """Creates a `StoryConflict` from a given state.
 
         Args:
             sliced_states: The (sliced) dialogue state at which the conflict occurs.
         """
-
         self._sliced_states = sliced_states
         # A list of actions that all follow from the same state.
         self._conflicting_actions: DefaultDict[Text, List[Text]] = defaultdict(
@@ -346,7 +344,6 @@ def _get_previous_event(
     Returns:
         Tuple of (type, name) strings of the prior event.
     """
-
     previous_event_type = None
     previous_event_name = None
 

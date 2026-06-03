@@ -735,3 +735,15 @@ def test_split_sessions(tmp_path):
     sessions = Marker._split_sessions(events)
     assert len(sessions) == 1
     assert len(sessions[0][0]) == len(events)
+
+
+def test_condition_marker_with_description():
+    marker = SlotSetMarker("s1", description="This is a description")
+    assert marker.description == "This is a description"
+
+
+def test_operator_marker_with_description():
+    marker = AndMarker(
+        markers=[SlotSetMarker("s1")], description="This is a description"
+    )
+    assert marker.description == "This is a description"

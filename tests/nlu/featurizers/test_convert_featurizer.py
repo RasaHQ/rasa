@@ -52,7 +52,6 @@ def test_convert_featurizer_process(
     monkeypatch: MonkeyPatch,
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
-
     monkeypatch.setattr(
         ConveRTFeaturizer, "_validate_model_url", lambda _: RESTRICTED_ACCESS_URL
     )
@@ -93,7 +92,6 @@ def test_convert_featurizer_train(
     load: bool,
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
-
     monkeypatch.setattr(ConveRTFeaturizer, "_validate_model_url", lambda _: None)
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -162,7 +160,6 @@ def test_convert_featurizer_tokens_to_text(
     monkeypatch: MonkeyPatch,
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
-
     monkeypatch.setattr(ConveRTFeaturizer, "_validate_model_url", lambda _: None)
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -203,7 +200,6 @@ def test_convert_featurizer_token_edge_cases(
     monkeypatch: MonkeyPatch,
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
-
     monkeypatch.setattr(ConveRTFeaturizer, "_validate_model_url", lambda _: None)
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -232,7 +228,6 @@ def test_convert_featurizer_number_of_sub_tokens(
     monkeypatch: MonkeyPatch,
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
-
     monkeypatch.setattr(ConveRTFeaturizer, "_validate_model_url", lambda _: None)
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -269,7 +264,6 @@ def test_raise_invalid_urls(
     model_url: Optional[Text],
     exception_phrase: Text,
 ):
-
     component_config = {FEATURIZER_CLASS_ALIAS: "alias", "model_url": model_url}
     with pytest.raises(RasaException) as excinfo:
         _ = create_or_load_convert_featurizer(component_config)
@@ -282,7 +276,6 @@ def test_raise_wrong_model_directory(
     create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     tmp_path: Path,
 ):
-
     component_config = {FEATURIZER_CLASS_ALIAS: "alias", "model_url": str(tmp_path)}
 
     with pytest.raises(RasaException) as excinfo:
@@ -296,7 +289,6 @@ def test_raise_wrong_model_file(
     create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     tmp_path: Path,
 ):
-
     # create a dummy file
     temp_file = os.path.join(tmp_path, "saved_model.pb")
     f = open(temp_file, "wb")
@@ -313,7 +305,6 @@ def test_raise_wrong_model_file(
 def test_raise_invalid_path(
     create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer]
 ):
-
     component_config = {FEATURIZER_CLASS_ALIAS: "alias", "model_url": "saved_model.pb"}
 
     with pytest.raises(RasaException) as excinfo:

@@ -47,12 +47,14 @@ logger = logging.getLogger(__name__)
 class MarkerRegistry:
     """Keeps track of tags that can be used to configure markers."""
 
-    all_tags: Set[Text] = set()
-    condition_tag_to_marker_class: Dict[Text, Type[ConditionMarker]] = {}
-    operator_tag_to_marker_class: Dict[Text, Type[OperatorMarker]] = {}
-    marker_class_to_tag: Dict[Type[Marker], Text] = {}
-    negated_tag_to_tag: Dict[Text, Text] = {}
-    tag_to_negated_tag: Dict[Text, Text] = {}
+    all_tags: Set[Text] = set()  # noqa: RUF012
+    condition_tag_to_marker_class: Dict[
+        Text, Type[ConditionMarker]
+    ] = {}  # noqa: RUF012
+    operator_tag_to_marker_class: Dict[Text, Type[OperatorMarker]] = {}  # noqa: RUF012
+    marker_class_to_tag: Dict[Type[Marker], Text] = {}  # noqa: RUF012
+    negated_tag_to_tag: Dict[Text, Text] = {}  # noqa: RUF012
+    tag_to_negated_tag: Dict[Text, Text] = {}  # noqa: RUF012
 
     @classmethod
     def register_builtin_markers(cls) -> None:
@@ -161,7 +163,12 @@ class Marker(ABC):
     # from a dictionary of configs. For more details, see `from_config_dict`.
     ANY_MARKER = "<any_marker>"
 
-    def __init__(self, name: Optional[Text] = None, negated: bool = False) -> None:
+    def __init__(
+        self,
+        name: Optional[Text] = None,
+        negated: bool = False,
+        description: Optional[Text] = None,
+    ) -> None:
         """Instantiates a marker.
 
         Args:
@@ -169,6 +176,9 @@ class Marker(ABC):
                 conversion of this marker
             negated: whether this marker should be negated (i.e. a negated marker
                 applies if and only if the non-negated marker does not apply)
+            description: an optional description of the marker. It is not used
+                internally but can be used to document the marker.
+
         Raises:
             `InvalidMarkerConfig` if the chosen *name* of the marker is the tag of
             a predefined marker.
@@ -187,6 +197,7 @@ class Marker(ABC):
         # for 2 reasons: testing and the fact that the `MarkerRegistry`+`from_config`
         # won't allow to create a negated marker if there is no negated tag.
         self.negated: bool = negated
+        self.description = description
 
     def __str__(self) -> Text:
         return self.name or repr(self)
@@ -442,7 +453,7 @@ class Marker(ABC):
                     # printed when we run rasa evaluate with --debug flag
                     raise InvalidMarkerConfig(
                         f"Could not load marker {marker_name} from {yaml_file}. "
-                        f"Reason: {str(e)}. "
+                        f"Reason: {e!s}. "
                     )
                 loaded_markers.append(marker)
 
@@ -549,7 +560,7 @@ class Marker(ABC):
         # register all configurable markers.
         MarkerRegistry.register_builtin_markers()
 
-        if not isinstance(config, dict) or len(config) != 1:
+        if not isinstance(config, dict) or len(config) not in [1, 2]:
             raise InvalidMarkerConfig(
                 "To configure a marker, please define a dictionary that maps a "
                 "single operator tag or a single condition tag to the "
@@ -558,17 +569,24 @@ class Marker(ABC):
                 f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
             )
 
+        description = config.pop("description", None)
         tag = next(iter(config))
         sub_marker_config = config[tag]
 
         tag, _ = MarkerRegistry.get_non_negated_tag(tag_or_negated_tag=tag)
         if tag in MarkerRegistry.operator_tag_to_marker_class:
             return OperatorMarker.from_tag_and_sub_config(
-                tag=tag, sub_config=sub_marker_config, name=name
+                tag=tag,
+                sub_config=sub_marker_config,
+                name=name,
+                description=description,
             )
         elif tag in MarkerRegistry.condition_tag_to_marker_class:
             return ConditionMarker.from_tag_and_sub_config(
-                tag=tag, sub_config=sub_marker_config, name=name
+                tag=tag,
+                sub_config=sub_marker_config,
+                name=name,
+                description=description,
             )
 
         raise InvalidMarkerConfig(
@@ -685,7 +703,11 @@ class OperatorMarker(Marker, ABC):
     """Combines several markers into one."""
 
     def __init__(
-        self, markers: List[Marker], negated: bool = False, name: Optional[Text] = None
+        self,
+        markers: List[Marker],
+        negated: bool = False,
+        name: Optional[Text] = None,
+        description: Optional[Text] = None,
     ) -> None:
         """Instantiates a marker.
 
@@ -695,11 +717,14 @@ class OperatorMarker(Marker, ABC):
                 applies if and only if the non-negated marker does not apply)
             name: a custom name that can be used to replace the default string
                 conversion of this marker
+            description: an optional description of the marker. It is not used
+                internally but can be used to document the marker.
+
         Raises:
             `InvalidMarkerConfig` if the given number of sub-markers does not match
             the expected number of sub-markers
         """
-        super().__init__(name=name, negated=negated)
+        super().__init__(name=name, negated=negated, description=description)
         self.sub_markers: List[Marker] = markers
         expected_num = self.expected_number_of_sub_markers()
         if expected_num is not None and len(markers) != expected_num:
@@ -770,7 +795,10 @@ class OperatorMarker(Marker, ABC):
 
     @staticmethod
     def from_tag_and_sub_config(
-        tag: Text, sub_config: Any, name: Optional[Text] = None
+        tag: Text,
+        sub_config: Any,
+        name: Optional[Text] = None,
+        description: Optional[Text] = None,
     ) -> OperatorMarker:
         """Creates an operator marker from the given config.
 
@@ -781,6 +809,7 @@ class OperatorMarker(Marker, ABC):
             tag: the tag identifying an operator
             sub_config: a list of marker configs
             name: an optional custom name to be attached to the resulting marker
+            description: an optional description of the marker
         Returns:
            the configured operator marker
         Raises:
@@ -804,7 +833,7 @@ class OperatorMarker(Marker, ABC):
                 # printed when we run rasa evaluate with --debug flag
                 raise InvalidMarkerConfig(
                     f"Could not create sub-marker for operator '{tag}' from "
-                    f"{sub_marker_config}. Reason: {str(e)}"
+                    f"{sub_marker_config}. Reason: {e!s}"
                 )
             collected_sub_markers.append(sub_marker)
         try:
@@ -814,9 +843,10 @@ class OperatorMarker(Marker, ABC):
             # printed when we run rasa evaluate with --debug flag
             raise InvalidMarkerConfig(
                 f"Could not create operator '{tag}' with sub-markers "
-                f"{collected_sub_markers}. Reason: {str(e)}"
+                f"{collected_sub_markers}. Reason: {e!s}"
             )
         marker.name = name
+        marker.description = description
         return marker
 
 
@@ -824,7 +854,11 @@ class ConditionMarker(Marker, ABC):
     """A marker that does not contain any sub-markers."""
 
     def __init__(
-        self, text: Text, negated: bool = False, name: Optional[Text] = None
+        self,
+        text: Text,
+        negated: bool = False,
+        name: Optional[Text] = None,
+        description: Optional[Text] = None,
     ) -> None:
         """Instantiates an atomic marker.
 
@@ -834,9 +868,12 @@ class ConditionMarker(Marker, ABC):
                 applies if and only if the non-negated marker does not apply)
             name: a custom name that can be used to replace the default string
                 conversion of this marker
+            description: an optional description of the marker. It is not used
+                internally but can be used to document the marker.
         """
         super().__init__(name=name, negated=negated)
         self.text = text
+        self.description = description
 
     def _to_str_with(self, tag: Text) -> Text:
         return f"({tag}: {self.text})"
@@ -855,7 +892,10 @@ class ConditionMarker(Marker, ABC):
 
     @staticmethod
     def from_tag_and_sub_config(
-        tag: Text, sub_config: Any, name: Optional[Text] = None
+        tag: Text,
+        sub_config: Any,
+        name: Optional[Text] = None,
+        description: Optional[Text] = None,
     ) -> ConditionMarker:
         """Creates an atomic marker from the given config.
 
@@ -881,4 +921,5 @@ class ConditionMarker(Marker, ABC):
             )
         marker = marker_class(sub_config, negated=is_negation)
         marker.name = name
+        marker.description = description
         return marker

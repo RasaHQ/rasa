@@ -1943,3 +1943,205 @@ async def test_form_validation_happens_once(caplog: LogCaptureFixture):
             )
             == 1
         )
+
+
+async def test_form_validation_happens_at_form_activation(caplog: LogCaptureFixture):
+    """Test if form validation happens at form activation.
+
+    The particular case is when a non-required slot for the form is also filled
+    at form activation.
+
+    Fixes the bug in https://rasahq.atlassian.net/browse/ATO-1104.
+    """
+    form = "help_form"
+    action_server = EndpointConfig(ACTION_SERVER_URL)
+    form_action = FormAction(form, action_server)
+
+    entity_a = "device"
+    entity_b = "account_type"
+    entity_b_value = "bronze"
+
+    context_slot = "device_type"
+    required_slot = "send_sms"
+    global_slot = "membership"
+
+    domain = textwrap.dedent(
+        f"""
+    intents:
+    - start_form
+    entities:
+    - {entity_a}
+    - {entity_b}
+    slots:
+      {context_slot}:
+        type: categorical
+        influence_conversation: false
+        initial_value: "mobile"
+        values:
+        - mobile
+        - desktop
+        - other
+        mappings:
+        - type: from_entity
+          entity: {entity_a}
+      {required_slot}:
+        type: float
+        influence_conversation: false
+        mappings:
+        - type: custom
+      {global_slot}:
+        type: text
+        influence_conversation: false
+        mappings:
+          - type: from_entity
+            entity: {entity_b}
+    forms:
+      {form}:
+        {REQUIRED_SLOTS_KEY}:
+        - {required_slot}
+    responses:
+      utter_ask_{required_slot}:
+      - text: "Would you like to receive an SMS?"
+    actions:
+      - validate_{form}
+    """
+    )
+    domain = Domain.from_yaml(domain)
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test",
+        evts=[
+            UserUttered(
+                "Can you help me with my bronze account ",
+                intent={"name": "start_form", "confidence": 1.0},
+                entities=[{"entity": entity_b, "value": entity_b_value}],
+            ),
+        ],
+    )
+
+    # Mock the custom validation action to update form required_slots to empty list
+    form_validation_events = [
+        {
+            "event": "slot",
+            "timestamp": None,
+            "name": "requested_slot",
+            "value": None,
+        }
+    ]
+    with aioresponses() as mocked, caplog.at_level(logging.DEBUG):
+        mocked.post(
+            ACTION_SERVER_URL,
+            payload={"events": form_validation_events},
+        )
+        events = await form_action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert (
+            sum(
+                [
+                    1
+                    for message in caplog.messages
+                    if f"Calling action endpoint to run action 'validate_{form}'."
+                    in message
+                ]
+            )
+            == 1
+        )
+
+        assert events == [
+            ActiveLoop(form),
+            SlotSet(REQUESTED_SLOT, None),
+            SlotSet(global_slot, entity_b_value),
+            ActiveLoop(None),
+        ]
+
+
+async def test_form_validation_happens_at_form_activation_with_empty_required_slots(
+    caplog: LogCaptureFixture,
+):
+    """Test if required_slots get updated dynamically at form activation.
+
+    The particular case is when a form has an empty required_slots list.
+    """
+    form = "booking_form"
+    action_server = EndpointConfig(ACTION_SERVER_URL)
+    form_action = FormAction(form, action_server)
+
+    dynamic_slot = "customer_name"
+    bot_utterance = "What is your name?"
+
+    domain = textwrap.dedent(
+        f"""
+    intents:
+    - start_form
+
+    slots:
+      {dynamic_slot}:
+        type: text
+        influence_conversation: false
+        mappings:
+        - type: custom
+
+    forms:
+      {form}:
+        {REQUIRED_SLOTS_KEY}: []
+    responses:
+      utter_ask_{dynamic_slot}:
+      - text: "{bot_utterance}"
+    actions:
+      - validate_{form}
+    """
+    )
+    domain = Domain.from_yaml(domain)
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test",
+        evts=[
+            UserUttered(
+                "I'd like to make a booking. ",
+                intent={"name": "start_form", "confidence": 1.0},
+            ),
+        ],
+    )
+
+    # Mock the custom validation action to update form required_slots
+    form_validation_events = [
+        {
+            "event": "slot",
+            "timestamp": None,
+            "name": "requested_slot",
+            "value": dynamic_slot,
+        }
+    ]
+    with aioresponses() as mocked, caplog.at_level(logging.DEBUG):
+        mocked.post(
+            ACTION_SERVER_URL,
+            payload={"events": form_validation_events},
+        )
+        events = await form_action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert (
+            sum(
+                [
+                    1
+                    for message in caplog.messages
+                    if f"Calling action endpoint to run action 'validate_{form}'."
+                    in message
+                ]
+            )
+            == 1
+        )
+
+        assert len(events) == 3
+
+        assert events[0] == ActiveLoop(form)
+        assert events[1] == SlotSet(REQUESTED_SLOT, dynamic_slot)
+        assert isinstance(events[2], BotUttered) is True
+        assert events[2].text == bot_utterance

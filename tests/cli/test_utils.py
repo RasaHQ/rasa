@@ -30,6 +30,7 @@ from rasa.shared.constants import (
 import rasa.shared.utils.io
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from tests.cli.conftest import RASA_EXE
+from tests.conftest import AsyncMock
 
 
 @contextlib.contextmanager
@@ -318,7 +319,7 @@ def test_validate_assistant_id_in_config(config_file: Text) -> None:
     copy_config_data = copy.deepcopy(rasa.shared.utils.io.read_yaml_file(config_file))
 
     warning_message = (
-        f"The config file '{str(config_file)}' is missing a "
+        f"The config file '{config_file!s}' is missing a "
         f"unique value for the '{ASSISTANT_ID_KEY}' mandatory key."
     )
     with pytest.warns(UserWarning, match=warning_message):
@@ -633,3 +634,18 @@ def test_validate_assistant_id_in_config_preserves_comment() -> None:
 
     # reset input files to original state
     rasa.shared.utils.io.write_yaml(original_config_data, config_file, True)
+
+
+@pytest.mark.parametrize(
+    "text_input, button",
+    [
+        ("hi this is test text\n", "hi this is test text"),
+        ("hi this is test text (/button_one)", "/button_one"),
+        ("hi this is test text (and something) (/button_one)", "/button_one"),
+    ],
+)
+async def test_payload_from_button_question(text_input: str, button: str) -> None:
+    question = AsyncMock()
+    question.ask_async.return_value = text_input
+    result = await rasa.cli.utils.payload_from_button_question(question)
+    assert result == button

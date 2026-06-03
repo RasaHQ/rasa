@@ -90,7 +90,7 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
 
     CONFIG_FEATURES = "features"
 
-    function_dict: Dict[Text, Callable[[CRFToken], Any]] = {
+    function_dict: Dict[Text, Callable[[CRFToken], Any]] = {  # noqa: RUF012
         CRFEntityExtractorOptions.LOW: lambda crf_token: crf_token.text.lower(),
         CRFEntityExtractorOptions.TITLE: lambda crf_token: crf_token.text.istitle(),
         CRFEntityExtractorOptions.PREFIX5: lambda crf_token: crf_token.text[:5],

@@ -53,7 +53,6 @@ def _allocate_gpu_memory(
         logical_memory: Absolute amount of memory to be allocated to the new logical
             device.
     """
-
     from tensorflow import config as tf_config
 
     try:
@@ -84,7 +83,6 @@ def _parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
         Parsed configuration as a dictionary with GPU IDs as keys and requested memory
         as the value.
     """
-
     # gpu_config is of format "gpu_id_1:gpu_id_1_memory, gpu_id_2: gpu_id_2_memory"
     # Parse it and store in a dictionary
     parsed_gpu_config: Dict[int, int] = {}

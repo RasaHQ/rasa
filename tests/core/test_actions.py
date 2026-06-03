@@ -21,6 +21,7 @@ from rasa.core.actions.action import (
     ActionRestart,
     ActionBotResponse,
     ActionRetrieveResponse,
+    ActionSendText,
     RemoteAction,
     ActionSessionStart,
     ActionEndToEndResponse,
@@ -28,6 +29,7 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
+from rasa.core.channels.slack import SlackBot
 from rasa.core.constants import COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.constants import (
@@ -83,6 +85,7 @@ from rasa.shared.core.constants import (
     ACTION_TWO_STAGE_FALLBACK_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
     RULE_SNIPPET_ACTION_NAME,
+    ACTION_SEND_TEXT_NAME,
     ACTIVE_LOOP,
     FOLLOWUP_ACTION,
     REQUESTED_SLOT,
@@ -137,7 +140,7 @@ def test_domain_action_instantiation():
         for action_name in domain.action_names_or_texts
     ]
 
-    assert len(instantiated_actions) == 16
+    assert len(instantiated_actions) == 17
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -149,11 +152,12 @@ def test_domain_action_instantiation():
     assert instantiated_actions[8].name() == ACTION_TWO_STAGE_FALLBACK_NAME
     assert instantiated_actions[9].name() == ACTION_UNLIKELY_INTENT_NAME
     assert instantiated_actions[10].name() == ACTION_BACK_NAME
-    assert instantiated_actions[11].name() == RULE_SNIPPET_ACTION_NAME
-    assert instantiated_actions[12].name() == ACTION_EXTRACT_SLOTS
-    assert instantiated_actions[13].name() == "my_module.ActionTest"
-    assert instantiated_actions[14].name() == "utter_test"
-    assert instantiated_actions[15].name() == "utter_chitchat"
+    assert instantiated_actions[11].name() == ACTION_SEND_TEXT_NAME
+    assert instantiated_actions[12].name() == RULE_SNIPPET_ACTION_NAME
+    assert instantiated_actions[13].name() == ACTION_EXTRACT_SLOTS
+    assert instantiated_actions[14].name() == "my_module.ActionTest"
+    assert instantiated_actions[15].name() == "utter_test"
+    assert instantiated_actions[16].name() == "utter_chitchat"
 
 
 @pytest.mark.parametrize(
@@ -783,7 +787,6 @@ async def test_response_invalid_response(
 
 
 async def test_response_channel_specific(default_nlg, default_tracker, domain: Domain):
-    from rasa.core.channels.slack import SlackBot
 
     output_channel = SlackBot("DummyToken", "General")
 
@@ -795,6 +798,45 @@ async def test_response_channel_specific(default_nlg, default_tracker, domain: D
         BotUttered(
             "you're talking to me on slack!",
             metadata={"channel": "slack", "utter_action": "utter_channel"},
+        )
+    ]
+
+
+@pytest.fixture
+def domain_with_response_ids() -> Domain:
+    domain_yaml = """
+    responses:
+        utter_one_id:
+            - text: test
+              id: '1'
+        utter_multiple_ids:
+            - text: test
+              id: '2'
+            - text: test
+              id: '3'
+        utter_no_id:
+            - text: test
+    """
+    domain = Domain.from_yaml(domain_yaml)
+    return domain
+
+
+async def test_response_with_response_id(
+    default_channel, domain_with_response_ids: Domain
+) -> None:
+    nlg = TemplatedNaturalLanguageGenerator(domain_with_response_ids.responses)
+
+    events = await ActionBotResponse("utter_one_id").run(
+        default_channel,
+        nlg,
+        DialogueStateTracker("response_id", slots=[]),
+        domain_with_response_ids,
+    )
+
+    assert events == [
+        BotUttered(
+            "test",
+            metadata={"id": "1", "utter_action": "utter_one_id"},
         )
     ]
 
@@ -1722,7 +1764,6 @@ async def test_action_extract_slots_from_entity(
     expected_slot_events: List[SlotSet],
 ):
     """Test extraction of a slot value from entity with the different restrictions."""
-
     form_name = "some form"
     form = FormAction(form_name, None)
 
@@ -2883,3 +2924,121 @@ async def test_action_extract_slots_allows_slotset_for_same_value(
         )
         assert len(caplog_info_records) == 0
         assert events == [SlotSet("custom_slot_a", "test_A")]
+
+
+async def test_action_extract_slots_active_loop_none_in_mapping_condition():
+    entity = "name"
+    entity_value = "Julia"
+    slot = "user_name"
+
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        intents:
+        - greet
+
+        entities:
+        - {entity}
+
+        slots:
+          {slot}:
+            type: text
+            mappings:
+            - type: from_entity
+              entity: {entity}
+              conditions:
+              - active_loop: null
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    initial_events = [
+        UserUttered(
+            "Hi, I'm Julia.",
+            intent={"name": "greet"},
+            entities=[{"entity": entity, "value": entity_value}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=initial_events)
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == [SlotSet(slot, entity_value)]
+
+
+async def test_action_extract_slots_active_loop_none_does_not_set_slot_in_form():
+    entity = "name"
+    entity_value = "Julia"
+    slot = "user_name"
+
+    domain_yaml = textwrap.dedent(
+        f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+            intents:
+            - greet
+
+            entities:
+            - {entity}
+
+            slots:
+              {slot}:
+                type: text
+                mappings:
+                - type: from_entity
+                  entity: {entity}
+                  conditions:
+                  - active_loop: null
+
+            forms:
+              my_form:
+                required_slots: []
+            """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    initial_events = [
+        ActiveLoop("my_form"),
+        UserUttered(
+            "Hi, I'm Julia.",
+            intent={"name": "greet"},
+            entities=[{"entity": entity, "value": entity_value}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=initial_events)
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == []
+
+
+async def test_action_send_text(
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
+):
+    metadata = {"message": {"text": "foobar"}}
+    events = await ActionSendText().run(
+        default_channel, template_nlg, template_sender_tracker, domain, metadata
+    )
+
+    assert events == [BotUttered("foobar")]
+
+
+async def test_action_send_text_handles_missing_metadata(
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
+):
+    events = await ActionSendText().run(
+        default_channel, template_nlg, template_sender_tracker, domain
+    )
+
+    assert events == [BotUttered("")]

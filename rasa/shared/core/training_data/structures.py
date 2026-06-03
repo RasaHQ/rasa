@@ -378,7 +378,9 @@ class RuleStep(StoryStep):
 
 class Story:
     def __init__(
-        self, story_steps: List[StoryStep] = None, story_name: Optional[Text] = None
+        self,
+        story_steps: Optional[List[StoryStep]] = None,
+        story_name: Optional[Text] = None,
     ) -> None:
         self.story_steps = story_steps if story_steps else []
         self.story_name = story_name

@@ -1,0 +1,330 @@
+---
+id: llm-intentless
+sidebar_label: Intentless Dialogues with LLMs
+title: Intentless Policy - LLMs for intentless dialogues
+abstract: |
+  The intentless policy uses large language models to drive a conversation
+  forward without relying on intent predictions.
+---
+
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
+import intentlessPolicyInteraction from "./intentless-policy-interaction.png";
+import intentlessMeaningCompounds from "./intentless-meaning-compounds.png";
+
+<RasaProLabel />
+
+<RasaLabsLabel />
+
+<RasaLabsBanner version="3.7.0b1" />
+
+The new intentless policy leverages large language models (LLMs) to complement
+existing rasa components and make it easier:
+
+- to build assistants without needing to define a lot of intent examples
+- to handle conversations where messages
+  [don't fit into intents](https://rasa.com/blog/were-a-step-closer-to-getting-rid-of-intents/)
+  and conversation context is necessary to choose a course of action.
+
+Using the `IntentlessPolicy`, a 
+question-answering bot can already understanding many different ways 
+that users could phrase their questions - even across a series of user messages:
+
+<Image
+  img={intentlessMeaningCompounds}
+  caption="Example of a question-answering experience"
+  alt=""
+/>
+
+This only requires appropriate responses to be defined in the domain file.
+
+To eliminate hallucinations, the policy only chooses which response from 
+your domain file to send. It does not generate new text. 
+
+In addition, you can control the LLM by:
+- providing example conversations (end-to-end stories) which will be used in the prompt.
+- setting the confidence threshold to determine when the intentless policy should kick in.
+
+[This repository](https://github.com/RasaHQ/starter-pack-intentless-policy) contains a starter pack with a bot that uses the
+`IntentlessPolicy`. It's a good starting point for trying out the policy and for
+extending it.
+
+## Demo
+
+[Webinar demo](https://hubs.ly/Q01CLhyG0) showing that this policy can already
+handle some advanced linguistic phenomena out of the box.
+
+The examples in the webinar recording are also part of the end-to-end tests
+defined in the [example repository](https://github.com/RasaHQ/starter-pack-intentless-policy) in (`tests/e2e_test_stories.yml`).
+
+## Adding the Intentless Policy to your bot
+
+The `IntentlessPolicy` is part of the `rasa_plus` package. To add it to your
+bot, add it to your `config.yml`:
+
+```yaml-rasa title="config.yml"
+policies:
+  # ... any other policies you have
+  - name: rasa_plus.ml.IntentlessPolicy
+```
+
+## Customization
+
+### Combining with NLU predictions
+The intentless policy can be combined with NLU components which predict 
+intents. This is useful if you want to use the intentless policy for
+some parts of your bot, but still want to use the traditional NLU components for
+other intents. 
+
+The `nlu_abstention_threshold` can be set to a value between 0 and 1. If 
+the NLU prediction confidence is below this threshold, the intentless policy 
+will be used if it's confidence is higher than the NLU prediction. Above the 
+threshold, the NLU prediction will always be used.
+
+The following example shows the default configuration in the `config.yml`:
+
+```yaml-rasa title="config.yml"
+policies:
+  # ... any other policies you have
+  - name: rasa_plus.ml.IntentlessPolicy
+    nlu_abstention_threshold: 0.9
+```
+
+If unset, `nlu_abstention_threshold` defaults to `0.9`.
+
+### LLM / Embeddings configuration
+
+You can customize the openai models used for generation and embedding.
+
+#### Embedding Model
+By default, OpenAI will be used for embeddings. You can configure the
+`embeddings.model_name` property in the `config.yml` file to change the used
+embedding model:
+
+```yaml-rasa title="config.yml"
+policies:
+  # ... any other policies you have
+  - name: rasa_plus.ml.IntentlessPolicy
+    embeddings: 
+      model_name: text-embedding-ada-002
+```
+
+Defaults to `text-embedding-ada-002`. The model name needs to be set to an
+[available embedding model.](https://platform.openai.com/docs/models/embeddings).
+
+#### LLM Model
+
+By default, OpenAI is used for LLM generation. You can configure the
+`llm.model_name` property in the `config.yml` file to specify which
+OpenAI model to use:
+
+```yaml-rasa title="config.yml"
+policies:
+  # ... any other policies you have
+  - name: rasa_plus.ml.IntentlessPolicy
+    llm: 
+      model_name: text-davinci-003
+```
+Defaults to `text-davinci-003`. The model name needs to be set to an
+available GPT-3 LLM model.
+
+If you want to use Azure OpenAI Service, you can configure the necessary
+parameters as described in the
+[Azure OpenAI Service](./llm-setup.mdx#additional-configuration-for-azure-openai-service)
+section.
+
+#### Other LLMs / Embeddings
+
+By default, OpenAI is used as the underlying LLM and embedding provider. 
+
+The used LLM provider and embeddings provider can be configured in the
+`config.yml` file to use another provider, e.g. `cohere`: 
+
+```yaml-rasa title="config.yml"
+policies:
+  # ... any other policies you have
+  - name: rasa_plus.ml.IntentlessPolicy
+    llm: 
+      type: "cohere"
+    embeddings:
+      type: "cohere"
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](./llm-setup.mdx#other-llms--embeddings).
+
+### Other Policies
+
+For any rule-based policies in your pipeline, set
+`use_nlu_confidence_as_score: True`. Otherwise, the rule-based policies will
+always make predictions with confidence value 1.0, ignoring any uncertainty from
+the NLU prediction:
+
+```yaml-rasa title="config.yml"
+policies:
+  - name: MemoizationPolicy
+    max_history: 5
+    use_nlu_confidence_as_score: True
+  - name: RulePolicy
+    use_nlu_confidence_as_score: True
+  - name: rasa_plus.ml.IntentlessPolicy
+```
+
+This is important because the intentless policy kicks in only if the other
+policies are uncertain:
+
+- If there is a high-confidence NLU prediction and a matching story/rule, the
+  `RulePolicy` or `MemoizationPolicy` will be used.
+
+- If there is a high-confidence NLU prediction but no matching story/ rule, the
+  `IntentlessPolicy` will kick in.
+
+- If the NLU prediction has low confidence, the `IntentlessPolicy` will kick in.
+
+- If the `IntentlessPolicy` prediction has low confidence, the `RulePolicy` will
+  trigger fallback based on the `core_fallback_threshold`.
+
+<Image
+  img={intentlessPolicyInteraction}
+  caption="When does the intentless policy predict"
+  alt=""
+/>
+
+**What about TED?**
+
+There is no reason why you can't also have TED in your configuration. However,
+
+- TED frequently makes predictions with very high confidence values (~0.99) so
+  will often override what the `IntentlessPolicy` is doing.
+- TED and the `IntentlessPolicy` are trying to solve similar problems, so your
+  system is easier to reason about if you just use one or the other.
+
+## Steering the Intentless Policy
+
+The first step to steering the intentless policy is adding and editing responses
+in the domain file. Any response in the domain file can be chosen as an response
+by the intentless policy. This whitelisting ensures that your assistant can
+never utter any inappropriate responses.
+
+```yaml-rasa title="domain.yml"
+utter_faq_4:
+  - text:
+      We currently offer 24 currencies, including USD, EUR, GBP, JPY, CAD, AUD,
+      and more!
+utter_faq_5:
+  - text:
+      Absolutely! We offer a feature that allows you to set up automatic
+      transfers to your account while you're away. Would you like to learn more
+      about this feature?
+utter_faq_6:
+  - text:
+      You can contact our customer service team to have your PIN unblocked. You
+      can reach them by calling our toll-free number at 1-800-555-1234.
+```
+
+Beyond having the `utter_` prefix, the naming of the utterances is not relevant.
+
+The second step is to add
+[end-to-end stories](../training-data-format.mdx#end-to-end-training)
+to `data/e2e_stories.yml`. These stories teach the LLM about your domain, so it
+can figure out when to say what.
+
+```yaml title="data/e2e_stories.yml"
+- story: currencies
+  steps:
+    - user: How many different currencies can I hold money in?
+    - action: utter_faq_4
+
+- story: automatic transfers travel
+  steps:
+    - user: Can I add money automatically to my account while traveling?
+    - action: utter_faq_5
+
+- story: user gives a reason why they can't visit the branch
+  steps:
+    - user: I'd like to add my wife to my credit card
+    - action: utter_faq_10
+    - user: I've got a broken leg
+    - action: utter_faq_11
+```
+
+The stories and utterances in combination are used to steer the LLM. The
+difference here to the existing policies is, that you don't need to add a lot of
+intent examples to get this system going.
+
+## Testing
+
+The policy is a usual Rasa Policy and can be tested in the same way as any other
+policy.
+
+### Testing interactively
+Once trained, you can test your assistant interactively by running the following
+command:
+
+```bash
+rasa shell
+```
+
+If a flow you'd like to implement doesn't already work out of the box, you can
+add try to change the examples for the intentless policy. Don't forget that you
+can also add and edit the traditional Rasa primitives like intents, entities,
+slots, rules, etc. as you normally would. The `IntentlessPolicy` will kick in
+only when the traditional primitives have low confidence.
+
+### End-to-End stories
+
+As part of the beta, we're also releasing a beta version of a new End-To-End
+testing framework. The `rasa test e2e` command allows you to test your bot
+end-to-end, i.e. from the user's perspective. You can use it to test your bot in
+a variety of ways, including testing the `IntentlessPolicy`.
+
+To use the new testing framework, you need to define a set of test cases in a
+test folder, e.g. `tests/e2e_test_stories.yml`. The test cases are defined in a
+similar format as stories are, but contain the user's messages and the bot's
+responses. Here's an example:
+
+```yaml title="tests/e2e_test_stories.yml"
+test_cases:
+  - test_case: transfer charge
+    steps:
+      - user: how can I send money without getting charged?
+      - utter: utter_faq_0
+      - user: not zelle. a normal transfer
+      - utter: utter_faq_7
+```
+
+**Please ensure all your test stories have unique names!** After setting the
+beta feature flag for E2E testing in your current shell with
+`export RASA_PRO_BETA_E2E=true`, you can run the tests with
+`rasa test e2e -f tests/e2e_test_stories.yml`
+
+## Security Considerations
+
+The intentless policy uses the OpenAI API to create responses. 
+This means that your users conversations are sent to OpenAI's servers.
+
+The response generated by OpenAI is not send back to the bot's user. However, 
+the user can craft messages that will misslead the intentless policy. These
+cases are handled gracefully and fallbacks are triggered.
+
+The prompt used for classification won't be exposed to the user using prompt
+injection. This is because the generated response from the LLM is mapped to
+one of the existing responses from the domain, 
+preventing any leakage of the prompt to the user.
+
+More detailed information can be found in Rasa's webinar on
+[LLM Security in the Enterprise](https://info.rasa.com/webinars/llm-security-in-the-enterprise-replay).
+
+## FAQ
+
+### What about entities?
+
+Entities are currently not handled by the intentless policy. They have to still
+be dealt with using the traditional NLU approaches and slots.
+
+### What about custom actions?
+
+At this point, the intentless policy can only predict utterances but not custom
+actions. Triggering custom actions needs to be done by traditional policies,
+such as the rule- or memoization policy.

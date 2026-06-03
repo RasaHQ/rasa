@@ -89,3 +89,10 @@ nlu:
       - are you a human?
       - am I talking to a bot?
       - am I talking to a human?
+
+  - intent: block
+    examples: |
+      - block my [checking](account_type) account
+      - i want to block my [savings](account_type) account
+      - i need to block an account
+      - i need to block my [credit](account_type) card

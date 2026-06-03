@@ -1,5 +1,4 @@
-"""
-This module regroups custom validation functions, and it is
+"""This module regroups custom validation functions, and it is
 loaded as an extension of the pykwalify library:
 
 https://pykwalify.readthedocs.io/en/latest/extensions.html#extensions

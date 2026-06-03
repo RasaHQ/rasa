@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 async def scheduler() -> AsyncIOScheduler:
     """Thread global scheduler to handle all recurring tasks.
 
-    If no scheduler exists yet, this will instantiate one."""
-
+    If no scheduler exists yet, this will instantiate one.
+    """
     global __scheduler
 
     if not __scheduler:
@@ -54,8 +54,8 @@ async def scheduler() -> AsyncIOScheduler:
 def kill_scheduler() -> None:
     """Terminate the scheduler if started.
 
-    Another call to `scheduler` will create a new scheduler."""
-
+    Another call to `scheduler` will create a new scheduler.
+    """
     global __scheduler
 
     if __scheduler:

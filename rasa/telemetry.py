@@ -26,6 +26,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.plugin import plugin_manager
 from rasa.shared.constants import DOCS_URL_TELEMETRY
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
@@ -401,6 +402,11 @@ def _send_event(
         logger.debug("Skipping request to external service: telemetry key not set.")
         return
 
+    if "license_hash" not in context:
+        # only send telemetry data for customers
+        logger.debug("Skipping telemetry reporting: no license hash found.")
+        return
+
     headers = segment_request_header(write_key)
 
     resp = requests.post(
@@ -490,6 +496,9 @@ def _default_context_fields() -> Dict[Text, Any]:
             "cpu": multiprocessing.cpu_count(),
             "docker": _is_docker(),
         }
+        license_hash = plugin_manager().hook.get_license_hash()
+        if license_hash:
+            TELEMETRY_CONTEXT["license_hash"] = license_hash
 
     # avoid returning the cached dict --> caller could modify the dictionary...
     # usually we would use `lru_cache`, but that doesn't return a dict copy and

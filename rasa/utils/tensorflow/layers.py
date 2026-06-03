@@ -1,7 +1,6 @@
 import logging
 from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 # TODO: The following is not (yet) available via tf.keras
 from keras.utils.control_flow_util import smart_cond
@@ -21,13 +20,13 @@ from rasa.core.constants import DIALOGUE
 from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME, ACTION_TEXT
 
+from rasa.utils.tensorflow.metrics import F1Score
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 import rasa.utils.tensorflow.layers_utils as layers_utils
+from rasa.utils.tensorflow.crf import crf_log_likelihood
 
 logger = logging.getLogger(__name__)
 
-# https://github.com/tensorflow/addons#gpu-and-cpu-custom-ops-1
-tfa.options.TF_ADDONS_PY_OPS = True
 
 POSSIBLE_ATTRIBUTES = [
     TEXT,
@@ -68,7 +67,6 @@ class SparseDropout(tf.keras.layers.Dropout):
         Raises:
             A ValueError if inputs is not a sparse tensor
         """
-
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
 
@@ -511,7 +509,6 @@ class InputMask(tf.keras.layers.Layer):
         Returns:
             A tuple of masked inputs and boolean mask.
         """
-
         if training is None:
             training = K.learning_phase()
 
@@ -590,7 +587,7 @@ class CRF(tf.keras.layers.Layer):
         self.num_tags = num_tags
         self.scale_loss = scale_loss
         self.transition_regularizer = tf.keras.regularizers.l2(reg_lambda)
-        self.f1_score_metric = tfa.metrics.F1Score(
+        self.f1_score_metric = F1Score(
             num_classes=num_tags - 1,  # `0` prediction is not a prediction
             average="micro",
         )
@@ -652,8 +649,7 @@ class CRF(tf.keras.layers.Layer):
             Negative mean log-likelihood of all examples,
             given the sequence of tag indices.
         """
-
-        log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
+        log_likelihood, _ = crf_log_likelihood(
             logits, tag_indices, sequence_lengths, self.transition_params
         )
         loss = -log_likelihood
@@ -665,8 +661,7 @@ class CRF(tf.keras.layers.Layer):
     def f1_score(
         self, tag_ids: tf.Tensor, pred_ids: tf.Tensor, mask: tf.Tensor
     ) -> tf.Tensor:
-        """Calculates f1 score for train predictions"""
-
+        """Calculates f1 score for train predictions."""
         mask_bool = tf.cast(mask[:, :, 0], tf.bool)
 
         # pick only non padding values and flatten sequences
@@ -951,7 +946,6 @@ class SingleLabelDotProductLoss(DotProductLoss):
         all_labels: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Sample negative examples."""
-
         pos_inputs_embed = tf.expand_dims(inputs_embed, axis=-2)
         pos_labels_embed = tf.expand_dims(labels_embed, axis=-2)
 
@@ -981,7 +975,6 @@ class SingleLabelDotProductLoss(DotProductLoss):
         mask: Optional[tf.Tensor],
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Define similarity."""
-
         # calculate similarity with several
         # embedded actions for the loss
         neg_inf = tf.constant(-1e9)
@@ -1025,7 +1018,6 @@ class SingleLabelDotProductLoss(DotProductLoss):
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
         """Define max margin loss."""
-
         # loss for maximizing similarity with correct action
         loss = tf.maximum(0.0, self.mu_pos - tf.squeeze(sim_pos, axis=-1))
 

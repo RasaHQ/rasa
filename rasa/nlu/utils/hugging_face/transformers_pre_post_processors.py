@@ -57,7 +57,6 @@ def gpt_tokens_pre_processor(token_ids: List[int]) -> List[int]:
     Returns:
         List of token ids augmented with special tokens.
     """
-
     return token_ids
 
 
@@ -212,7 +211,6 @@ def roberta_embeddings_post_processor(
     Returns:
         sentence level embedding and post-processed sequence level embedding
     """
-
     post_processed_embedding = sequence_embeddings[1:-1]
     sentence_embedding = np.mean(post_processed_embedding, axis=0)
 
@@ -222,7 +220,7 @@ def roberta_embeddings_post_processor(
 def xlm_embeddings_post_processor(
     sequence_embeddings: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Post process embeddings from XLM models
+    """Post process embeddings from XLM models.
 
     by taking a mean over sequence embeddings and returning that as sentence
     representation. Remove first and last time steps

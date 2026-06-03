@@ -61,7 +61,8 @@ class RasaYAMLReader(TrainingDataReader):
     def validate(self, string: Text) -> None:
         """Check if the string adheres to the NLU yaml data schema.
 
-        If the string is not in the right format, an exception will be raised."""
+        If the string is not in the right format, an exception will be raised.
+        """
         try:
             validation.validate_yaml_schema(string, NLU_SCHEMA_FILE)
         except YamlException as e:

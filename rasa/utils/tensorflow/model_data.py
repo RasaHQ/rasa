@@ -270,8 +270,7 @@ class RasaModelData:
         label_sub_key: Optional[Text] = None,
         data: Optional[Data] = None,
     ) -> None:
-        """
-        Initializes the RasaModelData object.
+        """Initializes the RasaModelData object.
 
         Args:
             label_key: the key of a label used for balancing, etc.
@@ -400,7 +399,6 @@ class RasaModelData:
 
     def is_empty(self) -> bool:
         """Checks if data is set."""
-
         return not self.data
 
     def number_of_examples(self, data: Optional[Data] = None) -> int:

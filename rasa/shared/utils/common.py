@@ -67,7 +67,7 @@ def module_path_from_instance(inst: Any) -> Text:
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     """Sorts a list of dictionaries by their first key."""
-    return sorted(dicts, key=lambda d: list(d.keys())[0])
+    return sorted(dicts, key=lambda d: next(iter(d.keys())))
 
 
 def lazy_property(function: Callable) -> Any:
@@ -172,7 +172,6 @@ def minimal_kwargs(
         Subset of kwargs which are accepted by `func`.
 
     """
-
     excluded_keys = excluded_keys or []
 
     possible_arguments = arguments_of(func)
@@ -186,7 +185,6 @@ def minimal_kwargs(
 
 def mark_as_experimental_feature(feature_name: Text) -> None:
     """Warns users that they are using an experimental feature."""
-
     logger.warning(
         f"The {feature_name} is currently experimental and might change or be "
         "removed in the future 🔬 Please share your feedback on it in the "

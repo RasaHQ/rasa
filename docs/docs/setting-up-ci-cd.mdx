@@ -68,7 +68,6 @@ jobs:
       - name: Rasa Train and Test GitHub Action
         uses: RasaHQ/rasa-train-test-gha@main
         with:
-          requirements_file: requirements.txt
           data_validate: true
           rasa_train: true
           cross_validation: true
@@ -131,11 +130,10 @@ deploy your updated action server, so that the new model won't e.g. call
 actions that don't exist in the pre-update action server.
 :::
 
-
 ### Deploying Your Action Server
 
 You can automate
-[building and uploading a new image for your action server](https://rasa.com/docs/action-server/deploy-action-server#building-an-action-server-image)
+[building and uploading a new image for your action server](./deploy/deploy-action-server.mdx#building-an-action-server-image)
 to an image repository for each
 update to your action code. As noted above, be careful with
 automatically deploying a new image tag to production if the action server

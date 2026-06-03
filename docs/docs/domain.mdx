@@ -700,6 +700,11 @@ To apply a slot mapping only within the context of a form, specify
 the name of the form in the `conditions` key of a slot mapping. Conditions list the form name(s)
 for which the mapping is applicable in the `active_loop` key.
 
+:::info New in 3.6
+Slot mappings can now specify `null` as the value of `active_loop` to indicate that the slot should only be filled when
+no form is active. Note that `requested_slot` cannot be used in conjunction with `active_loop: null`.
+:::
+
 Conditions can also include the name of the `requested_slot`. If `requested_slot` is not mentioned,
 then the slot will be set if relevant information is extracted, regardless of which slot is being
 requested by the form.

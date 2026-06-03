@@ -35,6 +35,7 @@ def aws_endpoint_url() -> Text:
 def create_user_with_access_key_and_attached_policy(region_name: Text) -> Any:
     """Create a user and an access key for them."""
     client = boto3.client("iam", region_name=region_name)
+    # deepcode ignore NoHardcodedCredentials/test: Test credential
     client.create_user(UserName="test_user")
 
     policy_document = {

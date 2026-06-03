@@ -50,7 +50,7 @@ module.exports = {
       }
     ]
   },
-  title: 'Rasa & Rasa Pro Documentation',
+  title: 'Rasa Documentation',
   url: SITE_URL,
   baseUrl: BASE_URL,
   favicon: '/img/favicon.ico',
@@ -58,8 +58,8 @@ module.exports = {
   projectName: 'rasa',
   themeConfig: {
     announcementBar: {
-      id: 'rasa_sdk_change', // Any value that will identify this message.
-      content: '<strong>Rasa SDK<strong> documentation has been moved to a <a href="https://rasa.com/docs/rasa/action-server/">section</a> of <strong>Rasa Open Source</strong>.',
+      id: 'rasa_oss_docs_change', // Any value that will identify this message.
+      content: 'Want to try CALM? We just announced the <a href="https://rasa.com/docs/rasa-pro/developer-edition">Rasa Pro Developer Edition</a>.',
       backgroundColor: '#6200F5', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
@@ -76,15 +76,27 @@ module.exports = {
       title: 'Rasa',
       items: [
         {
-          label: 'Rasa',
-          to: path.join('/', BASE_URL),
-          position: 'left',
+          target: "_self",
+          label: "Rasa Pro",
+          position: "left",
+          href: `${SITE_URL}/docs/rasa-pro/`,
         },
         {
-          target: '_self',
-          label: 'Rasa X/Enterprise',
-          position: 'left',
-          href: `${SWAP_URL}/docs/rasa-enterprise/`,
+          target: "_self",
+          label: "Rasa Studio",
+          position: "left",
+          href: `${SITE_URL}/docs/studio/`,
+        },
+        {
+          label: "Rasa Open Source",
+          position: "left",
+          to: path.join("/", BASE_URL),
+        },
+        {
+          target: "_self",
+          label: "Rasa X/Enterprise",
+          position: "left",
+          href: `${SITE_URL}/docs/rasa-enterprise/`,
         },
         {
           href: 'https://github.com/rasahq/rasa',

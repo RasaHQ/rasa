@@ -1,0 +1,23 @@
+[build-system]
+requires = [ "poetry-core>=1.0.4",]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = [ "py37", "py38", "py39", "py310",]
+exclude = "((.eggs | .git | .pytest_cache | build | dist))"
+
+[tool.poetry]
+name = "rasa"
+version = "3.7.1rc1"
+description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
+authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
+maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
+homepage = "https://rasa.com"
+repository = "https://github.com/rasahq/rasa"
+documentation = "https://rasa.com/docs"
+classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Topic :: Software Development :: Libraries",]
+keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
+include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys",]
+readme = "README.md"
+license = "Apache-2.0"

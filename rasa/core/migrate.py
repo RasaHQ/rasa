@@ -387,9 +387,9 @@ def migrate_domain_format(
         _write_final_domain(domain_path, new_forms, new_slots, out_path)
 
         rasa.shared.utils.cli.print_success(
-            f"Your domain file '{str(domain_path)}' was successfully migrated! "
-            f"The migrated version is now '{str(out_path)}'. "
-            f"The original domain file is backed-up at '{str(backup_location)}'."
+            f"Your domain file '{domain_path!s}' was successfully migrated! "
+            f"The migrated version is now '{out_path!s}'. "
+            f"The original domain file is backed-up at '{backup_location!s}'."
         )
 
     except Exception as e:

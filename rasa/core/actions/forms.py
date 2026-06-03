@@ -1,6 +1,8 @@
+import copy
 from typing import Text, List, Optional, Union, Any, Dict, Set
 import itertools
 import logging
+import structlog
 import json
 
 from rasa.core.actions import action
@@ -31,6 +33,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class FormAction(LoopAction):
@@ -254,7 +257,9 @@ class FormAction(LoopAction):
             Otherwise, returns empty list since the extracted slots already have
             corresponding `SlotSet` events in the tracker.
         """
-        logger.debug(f"Validating extracted slots: {slot_candidates}")
+        structlogger.debug(
+            "forms.slots.validate", slot_candidates=copy.deepcopy(slot_candidates)
+        )
         events: List[Union[SlotSet, Event]] = [
             SlotSet(slot_name, value) for slot_name, value in slot_candidates.items()
         ]
@@ -538,7 +543,10 @@ class FormAction(LoopAction):
         )
 
         if needs_validation:
-            logger.debug(f"Validating user input '{tracker.latest_message}'.")
+            structlogger.debug(
+                "forms.validation.required",
+                tracker_latest_message=copy.deepcopy(tracker.latest_message),
+            )
             return await self.validate(tracker, domain, output_channel, nlg)
         else:
             # Needed to determine which slots to request although there are no slots
@@ -605,9 +613,24 @@ class FormAction(LoopAction):
 
         if not prefilled_slots:
             logger.debug("No pre-filled required slots to validate.")
-            return [e for e in extraction_events if isinstance(e, SlotSet)]
+        else:
+            structlogger.debug(
+                "forms.validate.prefilled_slots",
+                prefilled_slots=copy.deepcopy(prefilled_slots),
+            )
 
-        logger.debug(f"Validating pre-filled required slots: {prefilled_slots}")
+        validate_name = f"validate_{self.name()}"
+
+        if validate_name not in domain.action_names_or_texts:
+            logger.debug(
+                f"There is no validation action '{validate_name}' "
+                f"to execute at form activation."
+            )
+            return [event for event in extraction_events if isinstance(event, SlotSet)]
+
+        logger.debug(
+            f"Executing validation action '{validate_name}' at form activation."
+        )
 
         validated_events = await self.validate_slots(
             prefilled_slots, tracker, domain, output_channel, nlg

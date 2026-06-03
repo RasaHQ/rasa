@@ -85,9 +85,9 @@ def rank_and_mask(
 
 
 def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """
-    If SIMILARITY_TYPE is set to 'auto', update the SIMILARITY_TYPE depending
+    """If SIMILARITY_TYPE is set to 'auto', update the SIMILARITY_TYPE depending
     on the LOSS_TYPE.
+
     Args:
         config: model configuration
 
@@ -150,15 +150,13 @@ def align_token_features(
 
 
 def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """
-    If EVAL_NUM_EPOCHS is set to -1, evaluate at the end of the training.
+    """If EVAL_NUM_EPOCHS is set to -1, evaluate at the end of the training.
 
     Args:
         config: model configuration
 
     Returns: updated model configuration
     """
-
     if config[EVAL_NUM_EPOCHS] == -1:
         config[EVAL_NUM_EPOCHS] = config[EPOCHS]
     elif config[EVAL_NUM_EPOCHS] < 1:
@@ -174,23 +172,22 @@ def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
 
 
 def load_tf_hub_model(model_url: Text) -> Any:
-    """Load model from cache if possible, otherwise from TFHub"""
-
-    import tensorflow_hub as tfhub
+    """Load model from cache if possible, otherwise from TFHub."""
+    import os
+    from tensorflow_hub.module_v2 import load as tfhub_load
 
     # needed to load the ConveRT model
     # noinspection PyUnresolvedReferences
     import tensorflow_text  # noqa: F401
-    import os
 
     # required to take care of cases when other files are already
     # stored in the default TFHUB_CACHE_DIR
     try:
-        return tfhub.load(model_url)
+        return tfhub_load(model_url)
     except OSError:
         directory = io_utils.create_temporary_directory()
         os.environ["TFHUB_CACHE_DIR"] = directory
-        return tfhub.load(model_url)
+        return tfhub_load(model_url)
 
 
 def _replace_deprecated_option(

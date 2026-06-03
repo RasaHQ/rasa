@@ -209,6 +209,20 @@ def test_data_validate_not_used_warning(
         assert warning in str(result.stderr)
 
 
+def test_data_validate_failed_to_load_domain(
+    run_in_simple_project_with_no_domain: Callable[..., RunResult]
+):
+    result = run_in_simple_project_with_no_domain(
+        "data",
+        "validate",
+        "--domain",
+        "not-existing-domain.yml",
+    )
+
+    assert "The path 'not-existing-domain.yml' does not exist." in str(result.outlines)
+    assert result.ret == 1
+
+
 def test_data_split_stories(run_in_simple_project: Callable[..., RunResult]):
     stories_yml = (
         "stories:\n"

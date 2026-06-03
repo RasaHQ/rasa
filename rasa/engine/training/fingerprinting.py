@@ -50,6 +50,10 @@ def calculate_fingerprint_key(
         "dependency_versions": dependency_versions,
     }
 
+    fingerprint_addon = graph_component_class.fingerprint_addon(config)
+    if fingerprint_addon is not None:
+        fingerprint_data["addon"] = fingerprint_addon
+
     fingerprint_key = rasa.shared.utils.io.deep_container_fingerprint(fingerprint_data)
 
     logger.debug(

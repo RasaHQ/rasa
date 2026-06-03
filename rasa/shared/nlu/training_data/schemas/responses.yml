@@ -12,6 +12,9 @@ schema;responses:
         required: True
         allowempty: False
         mapping:
+          id:
+            type: "str"
+            required: False
           text:
             type: "str"
           image:

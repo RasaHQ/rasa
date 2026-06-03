@@ -1,6 +1,8 @@
 from __future__ import annotations
+import copy
 import functools
 import logging
+import structlog
 from typing import Any, List, DefaultDict, Dict, Text, Optional, Set, Tuple, cast
 
 from tqdm import tqdm
@@ -55,6 +57,7 @@ import rasa.core.test
 from rasa.core.training.training import create_action_fingerprints, ActionFingerprint
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 # These are Rasa Open Source default actions and overrule everything at any time.
@@ -1020,7 +1023,9 @@ class RulePolicy(MemoizationPolicy):
         )
 
         current_states = self.format_tracker_states(states)
-        logger.debug(f"Current tracker state:{current_states}")
+        structlogger.debug(
+            "rule_policy.actions.find", current_states=copy.deepcopy(current_states)
+        )
 
         # Tracks if we are returning after an unhappy loop path. If this becomes `True`
         # the policy returns an event which notifies the loop action that it

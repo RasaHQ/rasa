@@ -573,7 +573,6 @@ class TrainingDataGenerator:
         max_number_of_trackers: int,
     ) -> List[TrackerWithCachedStates]:
         """Subsample the list of trackers to retrieve a random subset."""
-
         # if flows get very long and have a lot of forks we
         # get into trouble by collecting too many trackers
         # hence the sub sampling
@@ -585,7 +584,7 @@ class TrainingDataGenerator:
             return incoming_trackers
 
     def _find_start_checkpoint_name(self, end_name: Text) -> Text:
-        """Find start checkpoint name given end checkpoint name of a cycle"""
+        """Find start checkpoint name given end checkpoint name of a cycle."""
         return self.story_graph.story_end_checkpoints.get(end_name, end_name)
 
     @staticmethod
@@ -595,9 +594,8 @@ class TrainingDataGenerator:
         used_checkpoints: Set[Text],
     ) -> Set[Text]:
         """Add unused end checkpoints
-        if they were never encountered as start checkpoints
+        if they were never encountered as start checkpoints.
         """
-
         return unused_checkpoints.union(
             {
                 start_name
@@ -611,7 +609,8 @@ class TrainingDataGenerator:
         active_trackers: TrackerLookupDict, unused_checkpoints: Set[Text]
     ) -> TrackerLookupDict:
         """Filter active trackers that ended with unused checkpoint
-        or are parts of loops."""
+        or are parts of loops.
+        """
         next_active_trackers = defaultdict(list)
 
         for start_name in unused_checkpoints:
@@ -667,8 +666,8 @@ class TrainingDataGenerator:
 
         The trackers that reached the steps starting checkpoint will
         be used to process the events. Collects and returns training
-        data while processing the story step."""
-
+        data while processing the story step.
+        """
         events = step.explicit_events(self.domain)
 
         trackers = []
@@ -739,8 +738,8 @@ class TrainingDataGenerator:
         we only need to keep one. Because as we continue processing
         events and story steps, all trackers that created the
         same featurization once will do so in the future (as we
-        feed the same events to all trackers)."""
-
+        feed the same events to all trackers).
+        """
         step_hashed_featurizations = set()
 
         # collected trackers that created different featurizations
@@ -780,8 +779,8 @@ class TrainingDataGenerator:
         self, trackers: List[TrackerWithCachedStates]
     ) -> List[TrackerWithCachedStates]:
         """Removes trackers that reached story end and
-        created equal featurizations."""
-
+        created equal featurizations.
+        """
         # collected trackers that created different featurizations
         unique_trackers = []  # for all steps
 
@@ -811,8 +810,8 @@ class TrainingDataGenerator:
         contain action listen events (they are added when a
         story gets converted to a dialogue) we need to apply a
         small trick to avoid marking actions occurring after
-        an action listen as unpredictable."""
-
+        an action listen as unpredictable.
+        """
         for step in self.story_graph.story_steps:
             # TODO: this does not work if a step is the conversational start
             #       as well as an intermediary part of a conversation.
@@ -840,8 +839,8 @@ class TrainingDataGenerator:
         """Warns about unused story blocks.
 
         Unused steps are ones having a start or end checkpoint
-        that no one provided."""
-
+        that no one provided.
+        """
         if STORY_START in unused_checkpoints:
             rasa.shared.utils.io.raise_warning(
                 "There is no starting story block "

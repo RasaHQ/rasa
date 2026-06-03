@@ -130,7 +130,6 @@ class EntityExtractorMixin(abc.ABC):
         `extractor` set to something other than
         self.name (e.g. 'CRFEntityExtractor') are removed.
         """
-
         filtered = []
         for message in entity_examples:
             entities = []
@@ -157,7 +156,7 @@ class EntityExtractorMixin(abc.ABC):
         text: Text,
         tokens: List[Token],
         tags: Dict[Text, List[Text]],
-        split_entities_config: Dict[Text, bool] = None,
+        split_entities_config: Optional[Dict[Text, bool]] = None,
         confidences: Optional[Dict[Text, List[float]]] = None,
     ) -> List[Dict[Text, Any]]:
         """Convert predictions into entities.

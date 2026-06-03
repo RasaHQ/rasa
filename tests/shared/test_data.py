@@ -81,7 +81,7 @@ def test_get_core_nlu_files(project):
         [data_dir], YAMLStoryReader.is_stories_file
     )
     assert len(nlu_files) == 1
-    assert list(nlu_files)[0].endswith("nlu.yml")
+    assert list(nlu_files)[0].endswith("nlu.yml")  # noqa: RUF015
 
     assert len(core_files) == 2
     assert any(file.endswith("stories.yml") for file in core_files)

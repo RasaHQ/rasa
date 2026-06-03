@@ -24,6 +24,7 @@ def nlg_app(base_url="/"):
             "type": "object",
             "properties": {
                 "response": {"type": "string"},
+                "id": {"type": ["string", "null"]},
                 "arguments": {"type": "object"},
                 "tracker": {
                     "type": "object",
@@ -272,7 +273,7 @@ def test_nlg_fill_response_text_and_custom(
         "text": str(text_slot_value),
         "custom": {
             "field": str(cust_slot_value),
-            "properties": {"field_prefixed": f"prefix_{str(cust_slot_value)}"},
+            "properties": {"field_prefixed": f"prefix_{cust_slot_value!s}"},
         },
     }
 

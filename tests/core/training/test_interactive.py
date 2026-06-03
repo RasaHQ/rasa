@@ -54,6 +54,38 @@ def mock_file_importer(
     )
 
 
+@pytest.mark.parametrize(
+    "domain_file, expected_intents",
+    [
+        (
+            "data/test_domains/default_unfeaturized_entities.yml",
+            [
+                "greet",
+                "default",
+                "goodbye",
+                "thank",
+                "ask",
+                "why",
+                "pure_intent",
+            ],
+        ),
+        (
+            "data/test_domains/default.yml",
+            [
+                "greet",
+                "default",
+                "goodbye",
+            ],
+        ),
+    ],
+)
+def test_intent_names_from_domain(domain_file, expected_intents):
+    test_domain = Domain.load(domain_file)
+
+    intents = interactive.intent_names_from_domain(test_domain.as_dict())
+    assert set(intents) == set(expected_intents)
+
+
 async def test_send_message(mock_endpoint: EndpointConfig):
     sender_id = uuid.uuid4().hex
 

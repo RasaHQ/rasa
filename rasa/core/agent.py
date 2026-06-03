@@ -14,7 +14,6 @@ from rasa.core import jobs
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
-from rasa.plugin import plugin_manager
 from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -113,59 +112,53 @@ async def _pull_model_and_fingerprint(
 
     logger.debug(f"Requesting model from server {model_server.url}...")
 
-    async with model_server.session() as session:
-        try:
-            params = model_server.combine_parameters()
-            async with session.request(
-                "GET",
-                model_server.url,
-                timeout=DEFAULT_REQUEST_TIMEOUT,
-                headers=headers,
-                params=params,
-            ) as resp:
-
-                if resp.status in [204, 304]:
-                    logger.debug(
-                        "Model server returned {} status code, "
-                        "indicating that no new model is available. "
-                        "Current fingerprint: {}"
-                        "".format(resp.status, fingerprint)
-                    )
-                    return None
-                elif resp.status == 404:
-                    logger.debug(
-                        "Model server could not find a model at the requested "
-                        "endpoint '{}'. It's possible that no model has been "
-                        "trained, or that the requested tag hasn't been "
-                        "assigned.".format(model_server.url)
-                    )
-                    return None
-                elif resp.status != 200:
-                    logger.debug(
-                        "Tried to fetch model from server, but server response "
-                        "status code is {}. We'll retry later..."
-                        "".format(resp.status)
-                    )
-                    return None
-
-                model_path = Path(model_directory) / resp.headers.get(
-                    "filename", "model.tar.gz"
+    try:
+        params = model_server.combine_parameters()
+        async with model_server.session.request(
+            "GET",
+            model_server.url,
+            timeout=DEFAULT_REQUEST_TIMEOUT,
+            headers=headers,
+            params=params,
+        ) as resp:
+            if resp.status in [204, 304]:
+                logger.debug(
+                    "Model server returned {} status code, "
+                    "indicating that no new model is available. "
+                    "Current fingerprint: {}"
+                    "".format(resp.status, fingerprint)
                 )
-                with open(model_path, "wb") as file:
-                    file.write(await resp.read())
-
-                logger.debug("Saved model to '{}'".format(os.path.abspath(model_path)))
-
-                # return the new fingerprint
-                return resp.headers.get("ETag")
-
-        except aiohttp.ClientError as e:
-            logger.debug(
-                "Tried to fetch model from server, but "
-                "couldn't reach server. We'll retry later... "
-                "Error: {}.".format(e)
+                return None
+            elif resp.status == 404:
+                logger.debug(
+                    "Model server could not find a model at the requested "
+                    "endpoint '{}'. It's possible that no model has been "
+                    "trained, or that the requested tag hasn't been "
+                    "assigned.".format(model_server.url)
+                )
+                return None
+            elif resp.status != 200:
+                logger.debug(
+                    "Tried to fetch model from server, but server response "
+                    "status code is {}. We'll retry later..."
+                    "".format(resp.status)
+                )
+                return None
+            model_path = Path(model_directory) / resp.headers.get(
+                "filename", "model.tar.gz"
             )
-            return None
+            with open(model_path, "wb") as file:
+                file.write(await resp.read())
+            logger.debug("Saved model to '{}'".format(os.path.abspath(model_path)))
+            # return the new fingerprint
+            return resp.headers.get("ETag")
+    except aiohttp.ClientError as e:
+        logger.debug(
+            "Tried to fetch model from server, but "
+            "couldn't reach server. We'll retry later... "
+            "Error: {}.".format(e)
+        )
+        return None
 
 
 async def _run_model_pulling_worker(model_server: EndpointConfig, agent: Agent) -> None:
@@ -220,7 +213,6 @@ async def load_agent(
     generator = None
     action_endpoint = None
     http_interpreter = None
-    anonymization_pipeline = None
 
     if endpoints:
         broker = await EventBroker.create(endpoints.event_broker, loop=loop)
@@ -234,11 +226,6 @@ async def load_agent(
         if endpoints.nlu:
             http_interpreter = RasaNLUHttpInterpreter(endpoints.nlu)
 
-        anonymization_pipeline = plugin_manager().hook.create_anonymization_pipeline(
-            anonymization_rules=endpoints.anonymization_rules,
-            event_broker_config=endpoints.event_broker,
-        )
-
     agent = Agent(
         generator=generator,
         tracker_store=tracker_store,
@@ -247,7 +234,6 @@ async def load_agent(
         model_server=model_server,
         remote_storage=remote_storage,
         http_interpreter=http_interpreter,
-        anonymization_pipeline=anonymization_pipeline,
     )
 
     try:
@@ -309,7 +295,6 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
-        anonymization_pipeline: Optional[Any] = None,
     ):
         """Initializes an `Agent`."""
         self.domain = domain
@@ -324,7 +309,6 @@ class Agent:
         self._set_fingerprint(fingerprint)
         self.model_server = model_server
         self.remote_storage = remote_storage
-        self.anonymization_pipeline = anonymization_pipeline
 
     @classmethod
     def load(
@@ -366,7 +350,6 @@ class Agent:
             action_endpoint=self.action_endpoint,
             generator=self.nlg,
             http_interpreter=self.http_interpreter,
-            anonymization_pipeline=self.anonymization_pipeline,
         )
         self.domain = self.processor.domain
 

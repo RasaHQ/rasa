@@ -177,7 +177,7 @@ def test_create_train_data_unfeaturized_entities():
 def test_domain_from_template(domain: Domain):
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
-    assert len(domain.action_names_or_texts) == 18
+    assert len(domain.action_names_or_texts) == 19
 
 
 def test_avoid_action_repetition(domain: Domain):
@@ -1977,6 +1977,33 @@ def test_domain_slots_for_entities_with_mapping_conditions_no_slot_set():
     assert len(events) == 0
 
 
+def test_domain_slots_for_entities_with_mapping_conditions_no_active_loop():
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            entities:
+            - city
+            slots:
+              location:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: city
+                  conditions:
+                  - active_loop: null
+            forms:
+              booking_form:
+                required_slots:
+                  - location
+            """
+        )
+    )
+    events = domain.slots_for_entities([{"entity": "city", "value": "Berlin"}])
+    assert events == [SlotSet("location", "Berlin")]
+
+
 def test_domain_slots_for_entities_sets_valid_slot():
     domain = Domain.from_yaml(
         textwrap.dedent(
@@ -2283,3 +2310,73 @@ def test_merge_yaml_domains_loads_actions_which_explicitly_need_domain():
     assert sorted(domain._actions_which_explicitly_need_domain) == sorted(
         expected_actions_that_need_domain
     )
+
+
+@pytest.mark.parametrize(
+    "domain_yaml, expected",
+    [
+        (
+            """
+            responses:
+                utter_greet:
+                - text: hey there!
+                  id: '1233'
+                - text: hey ho!
+                  id: '1234'
+            """,
+            {
+                "utter_greet": [
+                    {
+                        "text": "hey there!",
+                        "id": "1233",
+                    },
+                    {
+                        "text": "hey ho!",
+                        "id": "1234",
+                    },
+                ],
+            },
+        ),
+        (
+            """
+            responses:
+                utter_greet:
+                - text: hey there!
+                - text: hey ho!
+                  id: '1234'
+            """,
+            {
+                "utter_greet": [
+                    {
+                        "text": "hey there!",
+                    },
+                    {
+                        "text": "hey ho!",
+                        "id": "1234",
+                    },
+                ],
+            },
+        ),
+        (
+            """
+            responses:
+                utter_greet:
+                - text: hey there!
+                - text: hey ho!
+            """,
+            {
+                "utter_greet": [
+                    {
+                        "text": "hey there!",
+                    },
+                    {
+                        "text": "hey ho!",
+                    },
+                ],
+            },
+        ),
+    ],
+)
+def test_domain_responses_with_ids_are_loaded(domain_yaml, expected) -> None:
+    domain = Domain.from_yaml(domain_yaml)
+    assert domain.responses == expected

@@ -1,0 +1,97 @@
+---
+id: realtime-markers
+sidebar_label: Real-Time Markers
+title: Real-Time Analysis of Markers
+hide_table_of_contents: false
+---
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaProBanner from "@theme/RasaProBanner";
+import { Grid } from "@theme/Grid";
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+:::info New in 3.6
+
+Process markers real-time from Rasa
+Assistants to track metrics like solution and abandonment rates,
+add metatags to conversations,
+or filter conversations for Conversation Driven Development
+
+:::
+
+In Rasa Pro, [Markers](../../markers.mdx) are a powerful feature that allows
+you to track and extract custom conversational events. With the Analytics
+Data Pipeline, you can now process these markers in real-time, enabling
+you to gain valuable insights and enhance the performance of your Rasa
+Assistant. In this guide, we'll explore how to leverage real-time
+analysis of markers to track solution and abandonment rates in your conversations.
+
+<img alt="flow of information with realtime markers" src={useBaseUrl("/img/analytics/realtime-markers.png")} />
+
+## Defining Markers
+
+Please consult the [Markers](../../markers.mdx/#defining-markers) section of Rasa documentation
+for details about defining markers.
+
+## Enable Real-time Processing
+
+To enable real-time analysis of markers in your Rasa project, you need to
+upload the markers to Analytics Data Pipeline with the `rasa markers upload`
+command. This command validates the marker YAML against the domain file to
+make sure all the slots, intents and actions referred in the file also exist
+in the domain and uploads the marker configuration YAML to the
+Analytics Data Pipeline (where they're persisted in a database) and exits.
+To get started, make sure you have the latest
+version of Rasa installed. Then, open your command line
+interface and navigate to your Rasa project directory. Run the following command:
+
+```
+rasa markers upload --config=<path-to-config-file> -d=<path-to-domain-file> -rasa-pro-services-url=<url>
+```
+
+By default, this command validates the marker configuration file against
+your bot's domain.yml file. To specify a different domain file, use the
+optional `-d` argument.
+
+This command should be run whenever there is a change in the marker
+configuration file. The changes might include addition of new markers,
+changing an existing marker or removing an existing marker.
+
+:::note
+
+This command **uploads** the marker configurations to the data pipeline. The pipeline assumes the configuration
+file is the source of truth and only processes the markers defined in it. If you remove a marker from this file,
+and run this command, then the processing for that marker is stopped.
+
+:::
+
+### Configuring the CLI command
+
+Visit our [CLI page](./command-line-interface.mdx#rasa-marker-upload)
+for more information about the command line arguments available.
+
+## How are Markers processed?
+
+The markers YAML file describes the pattern of events for marker extraction.
+Once the YAML files are uploaded, the patterns to be used for marker extraction are
+stored in the `rasa_patterns` table. As the Kafka Consumer starts receiving events
+from the Rasa Assistant, it starts analyzing them for markers. The Pipeline
+processes all the events from the Kafka Event Broker and identifies points of
+interest in the conversation that match the marker. The extracted markers are then stored
+in the `rasa_marker` table.
+
+The evaluation of Markers in the Pipeline is similar to the `rasa evaluate markers`
+command which can be used to process Markers from the conversations in Tracker Store.
+Read more about it [here](../../markers.mdx/#extracting-markers)
+
+Extracted markers are added to the `rasa_markers` table in the database
+immediately once they are processed. Each row in this table contains
+the foreign key identifiers for the pattern, session, sender and
+last event when marker was extracted along with `num_preceding_user_turns`
+which tracks the number of turns preceding the event at which the marker applied.
+Check out the [Data Structure Reference](data-structure-reference.mdx/#rasa-markers) page for the
+database schema of relevant tables.

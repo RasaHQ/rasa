@@ -1,3 +1,5 @@
+# file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests. # noqa: E501
+
 import logging
 import warnings
 from collections import deque
@@ -144,6 +146,7 @@ def test_tracker_store_endpoint_config_loading(endpoints_path: Text):
             "url": "localhost",
             "port": 6379,
             "db": 0,
+            "username": "username",
             "password": "password",
             "timeout": 30000,
             "use_ssl": True,
@@ -163,6 +166,7 @@ def test_create_tracker_store_from_endpoint_config(
         host="localhost",
         port=6379,
         db=0,
+        username="username",
         password="password",
         record_exp=3000,
         use_ssl=True,
@@ -397,6 +401,7 @@ def test_sql_tracker_store_logs_do_not_show_password(caplog: LogCaptureFixture):
     port = 9901
     db = "some-database"
     username = "db-user"
+    # deepcode ignore NoHardcodedPasswords/test: Test credential
     password = "some-password"
 
     with caplog.at_level(logging.DEBUG):

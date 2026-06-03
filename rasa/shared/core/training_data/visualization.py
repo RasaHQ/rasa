@@ -52,10 +52,10 @@ class UserMessageGenerator:
     def _create_reverse_mapping(
         data: "TrainingData",
     ) -> Dict[Dict[Text, Any], List["Message"]]:
-        """Create a mapping from intent to messages
+        """Create a mapping from intent to messages.
 
-        This allows a faster intent lookup."""
-
+        This allows a faster intent lookup.
+        """
         d = defaultdict(list)
         for example in data.training_examples:
             if example.get(INTENT, {}) is not None:
@@ -95,8 +95,8 @@ def _fingerprint_node(
     remember max history number of nodes we have visited. Hence, if we randomly
     walk on our directed graph, always only remembering the last `max_history`
     nodes we have visited, we can never remember if we have visited node A or
-    node B if both have the same fingerprint."""
-
+    node B if both have the same fingerprint.
+    """
     # the candidate list contains all node paths that haven't been
     # extended till `max_history` length yet.
     candidates: Deque = deque()
@@ -140,8 +140,8 @@ def _outgoing_edges_are_similar(
     it doesn't matter if you are in a or b.
 
     As your path will be the same because the outgoing edges will lead you to
-    the same nodes anyways."""
-
+    the same nodes anyways.
+    """
     ignored = {node_b, node_a}
     a_edges = {
         (target, k)
@@ -177,8 +177,8 @@ def _add_edge(
     **kwargs: Any,
 ) -> None:
     """Adds an edge to the graph if the edge is not already present. Uses the
-    label as the key."""
-
+    label as the key.
+    """
     if key is None:
         key = EDGE_NONE_LABEL
 
@@ -197,8 +197,8 @@ def _transfer_style(
 ) -> Dict[Text, Any]:
     """Copy over class names from source to target for all special classes.
 
-    Used if a node is highlighted and merged with another node."""
-
+    Used if a node is highlighted and merged with another node.
+    """
     clazzes = source.get("class", "")
 
     special_classes = {"dashed", "active"}
@@ -216,7 +216,6 @@ def _transfer_style(
 
 def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) -> None:
     """Searches for equivalent nodes in the graph and merges them."""
-
     changed = True
     # every node merge changes the graph and can trigger previously
     # impossible node merges - we need to repeat until
@@ -364,7 +363,6 @@ def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> in
 
 def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> None:
     """Add the standard nodes we need."""
-
     graph.add_node(
         START_NODE_ID,
         label="START",
@@ -386,7 +384,6 @@ def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> No
 
 def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
     """Create a graph and adds the default nodes."""
-
     import networkx as nx
 
     graph = nx.MultiDiGraph()
@@ -402,7 +399,6 @@ def _add_message_edge(
     is_current: bool,
 ) -> None:
     """Create an edge based on the user message."""
-
     if message:
         message_key = message.get("intent", {}).get("name", None)
         message_label = message.get("text", None)
@@ -530,20 +526,19 @@ def _remove_auxiliary_nodes(
     graph: "networkx.MultiDiGraph", special_node_idx: int
 ) -> None:
     """Remove any temporary or unused nodes."""
-
     graph.remove_node(TMP_NODE_ID)
 
-    if not len(list(graph.predecessors(END_NODE_ID))):
+    if not graph.predecessors(END_NODE_ID):
         graph.remove_node(END_NODE_ID)
 
     # remove duplicated "..." nodes after merging
-    ps = set()
+    predecessors_seen = set()
     for i in range(special_node_idx + 1, TMP_NODE_ID):
-        for pred in list(graph.predecessors(i)):
-            if pred in ps:
+        predecessors = graph.predecessors(i)
+        for pred in predecessors:
+            if pred in predecessors_seen:
                 graph.remove_node(i)
-            else:
-                ps.add(pred)
+        predecessors_seen.update(predecessors)
 
 
 def visualize_stories(

@@ -7,7 +7,7 @@ set -euo pipefail
 # Compare against `main` if no branch was provided
 BRANCH="${1:-main}"
 # Diff of committed changes (shows only changes introduced by your branch
-FILES_WITH_DIFF=`git diff $BRANCH...HEAD --name-only -- rasa | grep -e '\.py$' | xargs echo -n`
+FILES_WITH_DIFF=`git diff $BRANCH...HEAD --name-only -- rasa/**/*.py | xargs echo -n`
 
 if [ ! -z "$FILES_WITH_DIFF" ]
 then

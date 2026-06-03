@@ -2,6 +2,7 @@ import asyncio
 import os
 import json
 import logging
+import structlog
 import threading
 from asyncio import AbstractEventLoop
 from typing import Any, Text, List, Optional, Union, Dict, TYPE_CHECKING
@@ -17,6 +18,7 @@ if TYPE_CHECKING:
     from confluent_kafka import KafkaError, Producer, Message
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class KafkaEventBroker(EventBroker):
@@ -61,13 +63,17 @@ class KafkaEventBroker(EventBroker):
                 SCRAM-SHA-512. Default: `PLAIN`
             ssl_cafile: Optional filename of ca file to use in certificate
                 verification.
-            ssl_certfile: Optional filename of file in pem format containing
+
+            ssl_certfile : Optional filename of file in pem format containing
                 the client certificate, as well as any ca certificates needed to
                 establish the certificate's authenticity.
-            ssl_keyfile: Optional filename containing the client private key.
-            ssl_check_hostname: Flag to configure whether ssl handshake
+
+            ssl_keyfile : Optional filename containing the client private key.
+
+            ssl_check_hostname : Flag to configure whether ssl handshake
                 should verify that the certificate matches the broker's hostname.
-            security_protocol: Protocol used to communicate with brokers.
+
+            security_protocol : Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
         """
         self.producer: Optional[Producer] = None
@@ -237,9 +243,14 @@ class KafkaEventBroker(EventBroker):
                 )
             ]
 
-        logger.debug(
-            f"Calling kafka send({self.topic}, value={event},"
-            f" key={partition_key!s}, headers={headers})"
+        reduced_event = rasa.shared.core.events.remove_parse_data(event)
+        structlogger.debug(
+            "kafka.publish.event",
+            event_info="Logging a reduced version of the Kafka event",
+            topic=self.topic,
+            rasa_event=reduced_event,
+            partition_key=partition_key,
+            headers=headers,
         )
 
         serialized_event = json.dumps(event).encode(DEFAULT_ENCODING)

@@ -1,0 +1,292 @@
+---
+id: pii-management
+sidebar_label: PII Management
+title: PII Management
+hide_table_of_contents: false
+---
+import RasaProLabel from "@theme/RasaProLabel";
+
+import RasaProBanner from "@theme/RasaProBanner";
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+:::info New in 3.6
+
+You can now anonymize personally identifiable information (PII) data in your logs and events streamed via Kafka event
+broker only. Continue reading to learn how to enable the anonymization of PII data.
+
+:::
+
+Management of sensitive customer data collected by assistants is a critical requirement for complying with regulations
+and managing the data securely while making it available for analysis.
+Rasa Pro 3.6 introduces the ability to anonymize PII data in your logs and events streamed via the Kafka event broker.
+
+Note that the Tracker Store continues to store conversation data which is not anonymized. This is required so that we
+retain a source of truth of pristine data for non-repudiation purposes. Learn how to secure your Tracker Store
+using [Vault secrets manager](./secrets-managers.mdx) to protect the source of truth with rotating credentials.
+
+In addition, because the tracker store data plays a vital role in the assistant's dialogue management at inference time,
+anonymizing data in flight could have undesirable consequences for the assistant's dialogue management action predictions.
+
+## Architecture Overview
+
+The anonymization of the Rasa event is run through an anonymization pipeline at the end of the dialogue management
+action prediction and execution. Note that the processing done by the anonymization pipeline is scheduled as a background
+task and does not affect the assistant's response time.
+
+The anonymization steps are as follows:
+1. The Rasa agent invokes the anonymization pipeline during each user message handling.
+2. The anonymization pipeline runs through a sequence of anonymization rules that are applied to the new events.
+3. The pipeline publishes the anonymized events to the Kafka topic that is mapped to the anonymization rule list in
+`endpoints.yml`.
+4. The tracker store saves the original events that are not anonymized.
+
+### Supported Rasa Events
+
+The Rasa events that are anonymized include the following:
+- `user`
+- `bot`
+- `slot`
+- `entities`
+
+### Supported PII entity types
+
+The anonymization pipeline uses [Microsoft Presidio](https://microsoft.github.io/presidio/text_anonymization/) as both entity recognizer and
+anonymizer. Presidio is an open-source library that supports a wide range of entity types and anonymization methods.
+
+You can specify any of the out-of-the-box [supported Presidio entity types](https://microsoft.github.io/presidio/supported_entities/) in the anonymization rules.
+Note that it is currently not possible to add custom entity types for the Rasa Pro anonymization pipeline.
+
+## How to write anonymization rules
+
+You can now write anonymization rules in `endpoints.yml` to explicitly declare which Presidio entities should be anonymized.
+The anonymization pipeline is configurable via the `anonymization` section in the `endpoints.yml` file.
+This section must have the structure given in the following example:
+
+```yaml
+anonymization:
+  metadata:
+    language: en
+    model_name: en_core_web_lg
+    model_provider: spacy
+  rule_lists:
+    - id: rules_1
+      rules:
+        - entity: PERSON
+          substitution: text
+          value: John Doe
+        - entity: LOCATION
+          substitution: faker
+        - entity: CREDIT_CARD
+          substitution: faker
+        - entity: IBAN_CODE
+          substitution: faker
+    - id: rules_2
+      rules:
+        - entity: CREDIT_CARD
+          substitution: mask
+        - entity: IBAN_CODE
+          substitution: mask
+```
+
+### How to populate the metadata section
+
+The metadata section contains the following fields: `language`, `model_name`, and `model_provider`.
+
+The `language` field specifies the language code of the text to be anonymized. Note that you can only specify one language
+per anonymization pipeline, therefore the capability is currently not able to handle language switching by end users.
+
+The `model_name` and `model_provider` fields specify the name and provider of the Presidio model to be used for
+anonymization. The available model providers are `spacy`, `stanza` and `transformers`.
+
+If you want to use `spacy`, we strongly recommend to use the available large models, such as `en_core_web_lg` or `es_core_news_lg`.
+This is to ensure more accurate entity recognition.
+
+:::caution
+When using large models, you must ensure that your Rasa Pro environment has enough memory to load the model.
+
+:::
+
+If you opt for using the `transformers` model provider, you must specify two model names in the `model_name` field:
+the HuggingFace model name and the spaCy model name, where the spaCy model would wrap the transformers NER model.
+For example:
+
+```yaml
+anonymization:
+  metadata:
+    language: en
+    model_name:
+       spacy: en_core_web_lg
+       transformers: dslim/bert-base-NER
+    model_provider: transformers
+```
+#### How to install the language  model
+
+You must install the model you declare to the `model_name` field in your Rasa Pro environment.
+For example, if you declare `model_name: en_core_web_lg`, you must install the spaCy `en_core_web_lg` model in your Rasa Pro environment.
+You can follow model installation instructions for spaCy and stanza models in the [Presidio official documentation](https://microsoft.github.io/presidio/analyzer/nlp_engines/spacy_stanza/).
+
+In the case of the `transformers` model provider, you must install _both_  models that you declare in the `model_name` field
+in your Rasa Pro environment. For example, if you declare `transformers: dslim/bert-base-NER` in `endpoints.yml`, you must
+install the `dslim/bert-base-NER` model in your Rasa Pro environment. You can find model download instructions for
+`HuggingFace` in the [Presidio official documentation](https://microsoft.github.io/presidio/analyzer/nlp_engines/transformers/).
+
+:::note
+Not all languages have a pre-trained language model available. If you want to use a language that does not have
+a pre-trained language model available, you must train your own [spaCy](https://spacy.io/usage/training), [stanza](https://stanfordnlp.github.io/stanza/training.html)
+or [huggingface](https://huggingface.co/docs/transformers/training) model and install it in your Rasa Pro environment.
+:::
+
+### How to populate the rule_lists section
+
+The `rule_lists` section contains a list of anonymization rule lists. Each rule list must have a unique `id` of type
+string and a list of `rules`. Each rule must have an `entity` field and a `substitution` field. The `entity` field
+specifies the Presidio entity type to be anonymized and must be in uppercase. Note that regular expressions are currently
+not supported for identifying entities.
+
+The `substitution` field specifies the anonymization method to be used. Currently, the
+following anonymization methods are supported: `text`, `mask`, and `faker`:
+- The `text` anonymization method replaces the original entity value with the value specified in the `value` field.
+In the following example, the `PERSON` entity value will be replaced with `John Doe`.
+```yaml
+anonymization:
+  metadata:
+    language: en
+    model_name: en_core_web_lg
+    model_provider: spacy
+  rule_lists:
+    - id: rules_1
+      rules:
+        - entity: PERSON
+          substitution: text
+          value: John Doe
+```
+- The `mask` anonymization method replaces the original entity value with a mask of the same length using the character '*'.
+For example, if the original entity value is `John Doe`, the anonymized value will be `********`.
+```yaml
+anonymization:
+  metadata:
+    language: en
+    model_name: en_core_web_lg
+    model_provider: spacy
+  rule_lists:
+    - id: rules_1
+      rules:
+        - entity: PERSON
+          substitution: mask
+```
+
+- The `faker` anonymization method replaces the original entity value with a fake value generated by the [Faker](https://faker.readthedocs.io/en/stable/) library.
+For example, if the original entity value is `John Doe`, the anonymized value will be replaced with a fake name generated by the Faker library.
+```yaml
+anonymization:
+  metadata:
+    language: en
+    model_name: en_core_web_lg
+    model_provider: spacy
+  rule_lists:
+    - id: rules_1
+      rules:
+        - entity: PERSON
+          substitution: faker
+```
+
+If no substitution method is specified, the default substitution method is `mask`.
+
+The `value` field is only required for the `text` anonymization method. It specifies the text to be used as the anonymized value.
+If the `value` field is not specified, the original entity value to be anonymized will be replaced with the entity type
+name between brackets. For example, if the `value` field is not specified for the `PERSON` entity type, the anonymized
+value will be `<PERSON>`.
+
+The `faker` anonymization method uses the [Faker](https://faker.readthedocs.io/en/stable/) library to generate fake data.
+By default, the `faker` anonymization method will generate fake data in English unless a localized Presidio
+entity type is used. For example, if you use the `faker` substitution method for the `ES_NIF` entity type, the generated
+fake data will match the format of a Spanish NIF.
+
+The `faker` substitution method does not support the following Presidio entity types:
+- `CRYPTO`, `NRP`, `MEDICAL_LICENSE`
+- `US_BANK_NUMBER`, `US_DRIVER_LICENSE`
+- `UK_NHS`
+- `IT_FISCAL_CODE`, `IT_DRIVER_LICENSE`, `IT_PASSPORT`, `IT_IDENTITY_CARD`
+- `SG_NRIC_FIN`
+- `AU_ABN`, `AU_ACN`, `AU_TFN`, `AU_MEDICARE`
+
+If any of the above entities is used together with the `faker` substitution method, the anonymization pipeline will default
+to the `mask` substitution method.
+
+## How to update the Kafka event broker configuration
+
+The anonymization pipeline uses Kafka to publish the anonymized events to the Kafka topic that is mapped to the
+anonymization rule list. You can configure the Kafka event broker in the `endpoints.yml` file. The Kafka event broker
+must contain the `anonymization_topics` section, which must have the following structure:
+
+```yaml
+event_broker:
+  type: kafka
+  partition_by_sender: True
+  security_protocol: PLAINTEXT
+  url: localhost
+  anonymization_topics:
+    - name: topic_1
+      anonymization_rules: rules_1
+    - name: topic_2
+      anonymization_rules: rules_2
+  client_id: kafka-python-rasa
+```
+
+The `anonymization_topics` section contains a list of Kafka topics to which the anonymized events will be published.
+Each Kafka topic must have a `name` field and an `anonymization_rules` field. The `name` field specifies the name of the
+Kafka topic. The `anonymization_rules` field specifies the `id` of the anonymization rule list to be used for the Kafka topic.
+
+### Streaming anonymized events to Rasa X/Enterprise with Kafka
+
+Streaming anonymized events to Rasa X/Enterprise is only supported for Rasa X/Enterprise versions `1.3.0` and above.
+In addition, you must use the Kafka event broker, other event broker types are not supported.
+
+You can stream anonymized events to Rasa X/Enterprise via Kafka by adding the `rasa_x_consumer: true` key-value pair to
+the `anonymization_topics` section:
+
+```yaml
+event_broker:
+  type: kafka
+  partition_by_sender: True
+  url: localhost
+  anonymization_topics:
+    - name: topic_1
+      anonymization_rules: rules_1
+      rasa_x_consumer: true
+    - name: topic_2
+      anonymization_rules: rules_2
+```
+
+If multiple Kafka anonymization topics contain the `rasa_x_consumer` key-value pair, the anonymized events will be streamed
+to the Kafka topic that is mapped to the first topic in the `anonymization_topics` list that contains the `rasa_x_consumer`
+key-value pair.
+
+Note that the `rasa_x_consumer` key-value pair is optional. If it is not specified, the anonymized events will be published
+to the Kafka topic, but they will not be streamed to Rasa X/Enterprise.
+
+## How to enable anonymization of PII in logs
+
+You can enable anonymization of PII in logs by filling the `logger` section in the `endpoints.yml` file.
+The `logger` section must have the following structure:
+
+```yaml
+logger:
+  formatter:
+    anonymization_rules: rules_1
+```
+
+The `anonymization_rules` field specifies the `id` of the anonymization rule list to be used for the logs.
+
+:::caution
+We strongly recommend to run with log level INFO in production.
+Running with log level DEBUG will increase the assistant's response latency because of processing delays.
+:::
+
+Note that running `rasa shell` in debug mode with a Kafka event broker might result in logs related to the event publishing
+to be printed to console **after** the bot message. This behaviour is expected because the event anonymization and publishing
+is done asynchronously as a background task, so it will complete after the assistant has already predicted and executed the
+bot response.

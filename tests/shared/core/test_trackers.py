@@ -328,6 +328,54 @@ def test_get_latest_entity_values(
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
 
+async def test_has_action_after_latest_user_message_handles_no_user_message(
+    domain: Domain,
+):
+    tracker = DialogueStateTracker("default", domain.slots)
+    assert len(tracker.events) == 0
+    assert tracker.has_action_after_latest_user_message() is False
+
+
+async def test_has_action_after_latest_user_message(domain: Domain):
+    tracker = DialogueStateTracker("default", domain.slots)
+    # the retrieved tracker should be empty
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
+    tracker.update(UserUttered("/greet", intent))
+
+    assert tracker.has_action_after_latest_user_message() is False
+
+    tracker.update(ActionExecuted("utter_greet"))
+    assert tracker.has_action_after_latest_user_message() is True
+    tracker.update(ActionExecuted("action_listen"))
+    assert tracker.has_action_after_latest_user_message() is True
+    tracker.update(UserUttered("/goodbye", intent))
+    assert tracker.has_action_after_latest_user_message() is False
+
+
+async def test_has_bot_message_after_latest_user_message_handles_no_user_message(
+    domain: Domain,
+):
+    tracker = DialogueStateTracker("default", domain.slots)
+    assert len(tracker.events) == 0
+    assert tracker.has_bot_message_after_latest_user_message() is False
+
+
+async def test_has_bot_message_after_latest_user_message(domain: Domain):
+    tracker = DialogueStateTracker("default", domain.slots)
+    # the retrieved tracker should be empty
+    intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
+    tracker.update(UserUttered("/greet", intent))
+
+    assert tracker.has_bot_message_after_latest_user_message() is False
+
+    tracker.update(BotUttered("Hi!"))
+    assert tracker.has_bot_message_after_latest_user_message() is True
+    tracker.update(ActionExecuted("action_listen"))
+    assert tracker.has_bot_message_after_latest_user_message() is True
+    tracker.update(UserUttered("/goodbye", intent))
+    assert tracker.has_bot_message_after_latest_user_message() is False
+
+
 async def test_tracker_update_slots_with_entity(domain: Domain):
     tracker = DialogueStateTracker("default", domain.slots)
 

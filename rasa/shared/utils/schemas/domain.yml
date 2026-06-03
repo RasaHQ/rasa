@@ -44,7 +44,7 @@ mapping:
               send_domain:
                 type: "bool"
   responses:
-    # see utils/schemas/responses.yml
+    # see shared/nlu/training_data/schemas/responses.yml
     include: responses
 
   slots:
@@ -106,7 +106,7 @@ mapping:
                         mapping:
                           active_loop:
                             type: "str"
-                            required: True
+                            nullable: True
                           requested_slot:
                             type: "str"
   forms:

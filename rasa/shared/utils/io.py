@@ -273,6 +273,7 @@ def get_list_fingerprint(
 
 def get_text_hash(text: Text, encoding: Text = DEFAULT_ENCODING) -> Text:
     """Calculate the md5 hash for a text."""
+    # deepcode ignore InsecureHash: Not used for a cryptographic purpose
     return md5(text.encode(encoding)).hexdigest()  # nosec
 
 

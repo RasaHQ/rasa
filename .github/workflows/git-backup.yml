@@ -1,0 +1,39 @@
+name: Backup Rasa repo to S3
+on:
+  schedule:
+    # Run cron job at 7AM Monday to Sunday.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          fetch-depth: 0
+    
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 #v3.0.1
+        with:
+          role-to-assume: ${{ secrets.GIT_BACKUP_ROLE_ARN }}
+          aws-region: ${{ secrets.GIT_BACKUP_REGION }}
+    
+      # Determine the date in the right format for us to tag the image.
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+  
+      - name: Create Git bundle
+        run: git bundle create --progress rasa-${{ steps.date.outputs.date }}.bundle --all
+
+      - name: Verify Git bundle
+        run: git bundle verify rasa-${{ steps.date.outputs.date }}.bundle
+
+      - name: Upload bundle to S3
+        run: aws s3 cp rasa-${{ steps.date.outputs.date }}.bundle s3://${{ secrets.GIT_BACKUP_BUCKET }}/rasa/

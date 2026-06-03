@@ -99,7 +99,6 @@ class Validator:
         self, ignore_warnings: bool = True
     ) -> bool:
         """Checks if there is no duplicated example in different intents."""
-
         everything_is_alright = True
 
         duplication_hash = defaultdict(set)
@@ -124,8 +123,8 @@ class Validator:
         """Checks intents used in stories.
 
         Verifies if the intents used in the stories are valid, and whether
-        all valid intents are used in the stories."""
-
+        all valid intents are used in the stories.
+        """
         everything_is_alright = self.verify_intents(ignore_warnings=ignore_warnings)
 
         stories_intents = {
@@ -297,7 +296,6 @@ class Validator:
             `False` is a conflict was found and `ignore_warnings` is `False`.
             `True` otherwise.
         """
-
         logger.info("Story structure validation...")
 
         trackers = TrainingDataGenerator(
@@ -322,7 +320,6 @@ class Validator:
 
     def verify_nlu(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
-
         logger.info("Validating intents...")
         intents_are_valid = self.verify_intents_in_stories(ignore_warnings)
 

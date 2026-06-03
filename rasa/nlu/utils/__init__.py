@@ -10,7 +10,6 @@ def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
 
 def write_to_file(filename: Text, text: Any) -> None:
     """Write a text to a file."""
-
     rasa.shared.utils.io.write_text_file(str(text), filename)
 
 
