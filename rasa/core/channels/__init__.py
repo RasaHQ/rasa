@@ -20,6 +20,7 @@ from rasa.core.channels.rest import RestInput
 from rasa.core.channels.rocketchat import RocketChatInput
 from rasa.core.channels.slack import SlackInput
 from rasa.core.channels.telegram import TelegramInput
+from rasa.core.channels.telnyx import TelnyxInput
 from rasa.core.channels.twilio import TwilioInput
 from rasa.core.channels.twilio_voice import TwilioVoiceInput
 from rasa.core.channels.webexteams import WebexTeamsInput
@@ -31,6 +32,7 @@ input_channel_classes: List[Type[InputChannel]] = [
     SlackInput,
     TelegramInput,
     MattermostInput,
+    TelnyxInput,
     TwilioInput,
     TwilioVoiceInput,
     RasaChatInput,

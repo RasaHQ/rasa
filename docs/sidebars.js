@@ -154,6 +154,7 @@ module.exports = {
                 "connectors/facebook-messenger",
                 "connectors/slack",
                 "connectors/telegram",
+                "connectors/telnyx",
                 "connectors/twilio",
                 "connectors/hangouts",
                 "connectors/microsoft-bot-framework",
