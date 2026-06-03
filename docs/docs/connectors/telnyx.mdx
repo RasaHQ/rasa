@@ -1,0 +1,68 @@
+---
+id: telnyx
+sidebar_label: Telnyx
+title: Telnyx
+description: Deploy a Rasa assistant through SMS or MMS via the Telnyx connector
+---
+
+You can use the Telnyx connector to deploy an assistant that is available over SMS
+or MMS.
+
+## Getting Credentials
+
+You need a Telnyx account, a Telnyx API key, and a Telnyx phone number that is
+configured for messaging.
+
+1. Create a Telnyx API key in the Telnyx Mission Control Portal.
+2. Buy or select a messaging-capable Telnyx phone number.
+3. Assign the phone number to a Messaging Profile.
+4. Configure the Messaging Profile inbound webhook URL to point to your Rasa
+   server. The webhook URL should be
+   `https://<host>:<port>/webhooks/telnyx/webhook`, replacing the host and port
+   with the values from your running Rasa server.
+
+For more information, see the Telnyx documentation for
+[receiving messages](https://developers.telnyx.com/docs/messaging/messages/receive-message)
+and [sending messages](https://developers.telnyx.com/api-reference/messages/send-a-message).
+
+## Running on Telnyx
+
+Add the Telnyx credentials to your `credentials.yml`:
+
+```yaml-rasa
+telnyx:
+  api_key: "KEY..."
+  from_number: "+15551234567"
+```
+
+Restart your Rasa server to make the Telnyx webhook endpoint available.
+
+The Telnyx connector listens for `message.received` webhook events and passes the
+message text to your assistant. Bot responses are sent back to the user through
+the Telnyx Messages API.
+
+## Sending MMS
+
+The connector sends response images as MMS messages by passing image URLs to
+Telnyx as `media_urls`. Your image URL must be reachable by Telnyx.
+
+```yaml-rasa title="domain.yml"
+responses:
+  utter_show_image:
+    - text: "Here is the image."
+      image: "https://example.com/image.png"
+```
+
+## Custom Payloads
+
+You can send Telnyx-specific message payloads through a custom response. The
+connector fills in `from` and `to` if they are not included.
+
+```yaml-rasa title="domain.yml"
+responses:
+  utter_custom_telnyx_message:
+    - custom:
+        text: "Choose an option"
+        media_urls:
+          - "https://example.com/options.png"
+```
