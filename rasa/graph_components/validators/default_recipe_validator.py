@@ -7,21 +7,24 @@ from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, Sch
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
-from rasa.nlu.extractors.crf_entity_extractor import (
-    CRFEntityExtractor,
-    CRFEntityExtractorOptions,
-)
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.policies.ted_policy import TEDPolicy
+
+# The TensorFlow / MITIE / scikit-learn-crfsuite / spaCy backed components have been
+# removed from this Python 3.12/3.13 build. They can no longer appear in a config,
+# so the validation checks that referenced them below are inert (kept as ``None``
+# sentinels to preserve the surrounding validation logic).
+MitieEntityExtractor = None
+CRFEntityExtractor = None
+CRFEntityExtractorOptions = None
+DIETClassifier = None
+ResponseSelector = None
+TEDPolicy = None
 from rasa.core.constants import POLICY_PRIORITY
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.constants import (
@@ -45,9 +48,16 @@ import rasa.shared.utils.io
 
 
 # TODO: Can we replace this with the registered types from the regitry?
-TRAINABLE_EXTRACTORS = [MitieEntityExtractor, CRFEntityExtractor, DIETClassifier]
+# Only include extractors whose optional dependency is installed.
+TRAINABLE_EXTRACTORS = [
+    extractor
+    for extractor in (MitieEntityExtractor, CRFEntityExtractor, DIETClassifier)
+    if extractor is not None
+]
 # TODO: replace these once the Recipe is merged (used in tests)
-POLICY_CLASSSES = {TEDPolicy, MemoizationPolicy, RulePolicy}
+POLICY_CLASSSES = {MemoizationPolicy, RulePolicy}
+if TEDPolicy is not None:
+    POLICY_CLASSSES.add(TEDPolicy)
 
 
 def _types_to_str(types: Iterable[Type]) -> Text:
@@ -140,7 +150,7 @@ class DefaultV1RecipeValidator(GraphComponent):
                 f"selector, but your NLU configuration does not include a response "
                 f"selector component. "
                 f"To train a model on your response selector data, add a "
-                f"'{ResponseSelector.__name__}' to your configuration.",
+                f"'ResponseSelector' to your configuration.",
                 docs=DOCS_URL_COMPONENTS,
             )
 
@@ -163,11 +173,11 @@ class DefaultV1RecipeValidator(GraphComponent):
                 rasa.shared.utils.io.raise_warning(
                     f"You have defined training data with entities that "
                     f"have roles/groups, but your NLU configuration does not "
-                    f"include a '{DIETClassifier.__name__}' "
-                    f"or a '{CRFEntityExtractor.__name__}'. "
+                    f"include a 'DIETClassifier' "
+                    f"or a 'CRFEntityExtractor'. "
                     f"To train entities that have roles/groups, "
-                    f"add either '{DIETClassifier.__name__}' "
-                    f"or '{CRFEntityExtractor.__name__}' to your "
+                    f"add either 'DIETClassifier' "
+                    f"or 'CRFEntityExtractor' to your "
                     f"configuration.",
                     docs=DOCS_URL_COMPONENTS,
                 )
@@ -209,8 +219,8 @@ class DefaultV1RecipeValidator(GraphComponent):
                     f"that uses the features created from the lookup table. "
                     f"To make use of the features that are created with the "
                     f"help of the lookup tables, "
-                    f"add a '{DIETClassifier.__name__}' or a "
-                    f"'{CRFEntityExtractor.__name__}' "
+                    f"add a 'DIETClassifier' or a "
+                    f"'CRFEntityExtractor' "
                     f"with the 'pattern' feature "
                     f"to your configuration.",
                     docs=DOCS_URL_COMPONENTS,
@@ -233,11 +243,11 @@ class DefaultV1RecipeValidator(GraphComponent):
                     rasa.shared.utils.io.raise_warning(
                         f"You have defined training data consisting of "
                         f"lookup tables, but your NLU configuration's "
-                        f"'{CRFEntityExtractor.__name__}' "
+                        f"'CRFEntityExtractor' "
                         f"does not include the "
                         f"'pattern' feature. To featurize lookup tables, "
                         f"add the 'pattern' feature to the "
-                        f"'{CRFEntityExtractor.__name__}' "
+                        f"'CRFEntityExtractor' "
                         "in your configuration.",
                         docs=DOCS_URL_COMPONENTS,
                     )

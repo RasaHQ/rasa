@@ -20,7 +20,6 @@ from rasa.nlu.constants import (
 )
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.exceptions import RasaException, FileIOException
 from rasa.shared.nlu.constants import TEXT, INTENT, INTENT_RESPONSE_KEY, ACTION_NAME
@@ -600,7 +599,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
             return [], []
 
     def train(
-        self, training_data: TrainingData, model: Optional[SpacyModel] = None
+        self, training_data: TrainingData, model: Optional[Any] = None
     ) -> Resource:
         """Trains the featurizer.
 

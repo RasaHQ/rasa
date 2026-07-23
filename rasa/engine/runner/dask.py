@@ -115,4 +115,13 @@ class DaskGraphRunner(GraphRunner):
                     f"that none of the input names passed to the `run` method are the "
                     f"same as node names in the graph schema."
                 )
-            graph[input_name] = (input_name, input_value)
+            # Downstream nodes expect each input as a ``(node_name, value)`` tuple
+            # (see ``GraphNode.__call__``). This used to be written as the literal
+            # ``(input_name, input_value)``, but dask >= 2024 reads the leading
+            # string as a self-referential task key and raises a false
+            # "Cycle detected" from ``dask.order``. Wrap it in a zero-argument task
+            # that *returns* the ``(name, value)`` tuple: no dependencies, no cycle,
+            # and the same value downstream nodes consume.
+            graph[input_name] = (
+                lambda name=input_name, value=input_value: (name, value),
+            )

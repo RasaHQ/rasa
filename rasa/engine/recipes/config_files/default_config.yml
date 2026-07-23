@@ -8,6 +8,11 @@ assistant_id: placeholder_default
 
 # Configuration for the Rasa NLU components.
 # https://rasa.com/docs/rasa/components
+#
+# NOTE: This is the Python 3.12/3.13 build. TensorFlow- and ML-backed components
+# (DIETClassifier, ResponseSelector, TEDPolicy, UnexpecTEDIntentPolicy, etc.) have
+# been removed and are not part of the default pipeline. This default suits
+# rule-based assistants using direct intent triggering and rules.
 language: en
 
 pipeline:
@@ -19,13 +24,7 @@ pipeline:
     analyzer: "char_wb"
     min_ngram: 1
     max_ngram: 4
-  - name: DIETClassifier
-    epochs: 100
-    constrain_similarities: true
   - name: EntitySynonymMapper
-  - name: ResponseSelector
-    epochs: 100
-    constrain_similarities: true
   - name: FallbackClassifier
     threshold: 0.3
     ambiguity_threshold: 0.1
@@ -35,10 +34,3 @@ pipeline:
 policies:
   - name: MemoizationPolicy
   - name: RulePolicy
-  - name: UnexpecTEDIntentPolicy
-    max_history: 5
-    epochs: 100
-  - name: TEDPolicy
-    max_history: 5
-    epochs: 100
-    constrain_similarities: true

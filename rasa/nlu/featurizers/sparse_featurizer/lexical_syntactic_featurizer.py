@@ -26,7 +26,10 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
-from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY, SpacyTokenizer
+# POS features come from a spaCy tokenizer, which is not part of this
+# Python 3.12/3.13 build. The token-data key is kept so any pre-tagged tokens are
+# still honoured; without a POS-tagging tokenizer these features are simply empty.
+POS_TAG_KEY = "pos"
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.exceptions import InvalidConfigException
@@ -273,7 +276,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
                 f"Expected training data to include tokens with part-of-speech tags"
                 f"because the given configuration includes part-of-speech features "
                 f"`pos` and/or `pos2`. "
-                f"Please add a {SpacyTokenizer.__name__} to your "
+                f"Please add a part-of-speech-tagging tokenizer to your "
                 f"configuration if you want to use the part-of-speech-features in the"
                 f"{self.__class__.__name__}. "
                 f"Continuing without the part-of-speech-features."

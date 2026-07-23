@@ -10,7 +10,6 @@ from rasa.utils.log_utils import configure_structlog
 
 import rasa.telemetry
 import rasa.utils.io
-import rasa.utils.tensorflow.environment as tf_env
 from rasa import version
 from rasa.cli import (
     data,
@@ -104,9 +103,6 @@ def main() -> None:
     configure_logging_and_warnings(
         log_level, logging_config_file, warn_only_once=True, filter_repeated_logs=True
     )
-
-    tf_env.setup_tf_environment()
-    tf_env.check_deterministic_ops()
 
     # insert current path in syspath so custom modules are found
     sys.path.insert(1, os.getcwd())

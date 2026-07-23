@@ -3,7 +3,7 @@ import os
 from typing import Text, Dict, List, Optional, Any
 
 from packaging import version
-from packaging.version import LegacyVersion
+from packaging.version import InvalidVersion
 from pykwalify.errors import SchemaError
 
 from ruamel.yaml.constructor import DuplicateKeyError
@@ -246,11 +246,10 @@ def validate_training_data_format_version(
     try:
         if isinstance(version_value, str):
             version_value = version_value.strip("\"'")
+        # packaging >= 22 raises InvalidVersion for non-PEP440 strings instead of
+        # returning a LegacyVersion; that is handled in the except block below.
         parsed_version = version.parse(version_value)
         latest_version = version.parse(LATEST_TRAINING_DATA_FORMAT_VERSION)
-
-        if isinstance(parsed_version, LegacyVersion):
-            raise TypeError
 
         if parsed_version < latest_version:
             rasa.shared.utils.io.raise_warning(
@@ -268,7 +267,7 @@ def validate_training_data_format_version(
 
             return True
 
-    except TypeError:
+    except (TypeError, InvalidVersion):
         rasa.shared.utils.io.raise_warning(
             f"Training data file {filename} must specify "
             f"'{KEY_TRAINING_DATA_FORMAT_VERSION}' as string, for example:\n"

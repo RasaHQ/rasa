@@ -28,8 +28,14 @@ from rasa.utils.tensorflow.constants import (
     TOLERANCE,
     CHECKPOINT_MODEL,
 )
-from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
-from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
+# The TensorFlow training callback / data generator have been removed from this
+# Python 3.12/3.13 build. The helper functions below that referenced them
+# (create_data_generators, create_common_callbacks, load_tf_hub_model) were only
+# ever called by the removed ML components; they are retained as inert code with
+# these None sentinels so the rest of train_utils stays importable.
+RasaTrainingLogger = None
+RasaModelCheckpoint = None
+RasaBatchDataGenerator = None
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.exceptions import InvalidConfigException
