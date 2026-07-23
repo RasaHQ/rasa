@@ -28,8 +28,18 @@ from rasa.utils.tensorflow.constants import (
     TOLERANCE,
     CHECKPOINT_MODEL,
 )
-from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
-from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+# callback and data_generator import TensorFlow at module load. Guard them so
+# train_utils stays importable on a rule-based (no-TensorFlow) install; the names
+# are only used inside model-training code paths that require TensorFlow anyway.
+if TENSORFLOW_AVAILABLE:
+    from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
+    from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
+else:
+    RasaTrainingLogger = None
+    RasaModelCheckpoint = None
+    RasaBatchDataGenerator = None
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.exceptions import InvalidConfigException

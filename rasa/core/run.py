@@ -265,13 +265,27 @@ def serve_application(
         log_file, use_syslog, syslog_address, syslog_port, syslog_protocol
     )
 
-    app.run(
-        host=interface,
-        port=port,
-        ssl=ssl_context,
-        backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
-        workers=number_of_workers,
-    )
+    # sanic >= 22 defaults to a multiprocess worker manager that re-imports the app
+    # by name in each worker process. A programmatically-created app (as rasa builds
+    # here) is not importable that way and the workers fail to find it under the
+    # 'spawn' start method (macOS, and Python 3.14+). For the common single-worker
+    # case, run in single-process mode, which avoids the worker manager entirely.
+    if number_of_workers > 1:
+        app.run(
+            host=interface,
+            port=port,
+            ssl=ssl_context,
+            backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
+            workers=number_of_workers,
+        )
+    else:
+        app.run(
+            host=interface,
+            port=port,
+            ssl=ssl_context,
+            backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
+            single_process=True,
+        )
 
 
 # noinspection PyUnusedLocal

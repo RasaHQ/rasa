@@ -3,7 +3,7 @@ import functools
 import importlib
 import inspect
 import logging
-from typing import Text, Dict, Optional, Any, List, Callable, Collection, Type
+from typing import Text, Dict, Optional, Any, List, Callable, Collection, Tuple, Type
 
 from rasa.shared.exceptions import RasaException
 
@@ -49,6 +49,31 @@ def class_from_module_path(
             f"but for {module_path} we got a {type(klass)}."
         )
     return klass
+
+
+def conditional_import(module_name: Text, class_name: Text) -> Tuple[Any, bool]:
+    """Conditionally import a class, returning a ``(class, is_available)`` tuple.
+
+    Used to keep optional dependencies (TensorFlow, spaCy, MITIE, jieba,
+    scikit-learn-crfsuite, skops, ...) out of the default import path. If the
+    optional dependency backing ``module_name`` is not installed, importing the
+    module raises ``ImportError`` and this returns ``(None, False)`` instead of
+    propagating the error.
+
+    Args:
+        module_name: The module path to import from.
+        class_name: The class name to import.
+
+    Returns:
+        A tuple of ``(class, is_available)`` where ``class`` is the imported class
+        or ``None`` if the import failed, and ``is_available`` indicates whether the
+        import was successful.
+    """
+    try:
+        module = __import__(module_name, fromlist=[class_name])
+        return getattr(module, class_name), True
+    except ImportError:
+        return None, False
 
 
 def all_subclasses(cls: Any) -> List[Any]:

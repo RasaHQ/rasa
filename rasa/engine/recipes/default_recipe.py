@@ -47,6 +47,7 @@ from rasa.graph_components.providers.training_tracker_provider import (
 )
 import rasa.shared.constants
 from rasa.shared.exceptions import RasaException, InvalidConfigException
+from rasa.exceptions import MissingDependencyException
 from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.shared.data import TrainingType
 
@@ -162,10 +163,34 @@ class DefaultV1Recipe(Recipe):
     @classmethod
     def _from_registry(cls, name: Text) -> RegisteredComponent:
         # Importing all the default Rasa components will automatically register them
-        from rasa.engine.recipes.default_components import DEFAULT_COMPONENTS  # noqa
+        from rasa.engine.recipes.default_components import (  # noqa
+            DEFAULT_COMPONENTS,
+            _CONDITIONAL_COMPONENTS,
+        )
 
         if name in cls._registered_components:
             return cls._registered_components[name]
+
+        # If the requested component is one of the optional, extra-gated components
+        # (TensorFlow / spaCy / MITIE / jieba / skops / scikit-learn-crfsuite) but is
+        # not registered, then its optional dependency is not installed. Detect this
+        # before attempting to import the module path so the user gets an actionable
+        # error instead of a raw `ImportError`.
+        simple_name = name.rpartition(".")[2]
+        gated_component_names = {
+            class_name for _, class_name in _CONDITIONAL_COMPONENTS
+        }
+        if (
+            simple_name in gated_component_names
+            and simple_name not in cls._registered_components
+        ):
+            raise MissingDependencyException(
+                f"The '{simple_name}' component requires additional dependencies "
+                f"which are not installed. These are optional and are not available "
+                f"on Python 3.12+ (TensorFlow is not supported there). Please install "
+                f"the required extra on a supported Python version by running: "
+                f"pip install 'rasa[full]'"
+            )
 
         if "." in name:
             clazz = class_from_module_path(name)

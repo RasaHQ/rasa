@@ -11,6 +11,7 @@ from rasa.utils.log_utils import configure_structlog
 import rasa.telemetry
 import rasa.utils.io
 import rasa.utils.tensorflow.environment as tf_env
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
 from rasa import version
 from rasa.cli import (
     data,
@@ -105,8 +106,11 @@ def main() -> None:
         log_level, logging_config_file, warn_only_once=True, filter_repeated_logs=True
     )
 
-    tf_env.setup_tf_environment()
-    tf_env.check_deterministic_ops()
+    # TensorFlow is optional (not installed for rule-based use / on Python 3.12+).
+    # Only configure the TF environment when it is actually available.
+    if TENSORFLOW_AVAILABLE:
+        tf_env.setup_tf_environment()
+        tf_env.check_deterministic_ops()
 
     # insert current path in syspath so custom modules are found
     sys.path.insert(1, os.getcwd())
