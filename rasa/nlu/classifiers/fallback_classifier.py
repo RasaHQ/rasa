@@ -21,8 +21,14 @@ from rasa.shared.nlu.constants import (
     PREDICTED_CONFIDENCE_KEY,
 )
 
+from rasa.nlu.selectors.response_selector import (
+    RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
+)
+
 THRESHOLD_KEY = "threshold"
 AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"
+RETRIEVAL_THRESHOLD_KEY = "retrieval_threshold"
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +56,7 @@ class FallbackClassifier(GraphComponent, IntentClassifier):
             # than `AMBIGUITY_THRESHOLD_KEY`,
             # then `FALLBACK_INTENT_NAME` is predicted.
             AMBIGUITY_THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+            RETRIEVAL_THRESHOLD_KEY: 0.0,
         }
 
     def __init__(self, config: Dict[Text, Any]) -> None:
@@ -97,14 +104,7 @@ class FallbackClassifier(GraphComponent, IntentClassifier):
         return messages
 
     def _should_fallback(self, message: Message) -> bool:
-        """Check if the fallback intent should be predicted.
-
-        Args:
-            message: The current message and its intent predictions.
-
-        Returns:
-            `True` if the fallback intent should be predicted.
-        """
+        """Check if the fallback intent should be predicted."""
         intent_name = message.data[INTENT].get(INTENT_NAME_KEY)
         below_threshold, nlu_confidence = self._nlu_confidence_below_threshold(message)
 
@@ -127,7 +127,53 @@ class FallbackClassifier(GraphComponent, IntentClassifier):
             )
             return True
 
+        retrieval_below_threshold, retrieval_confidence = (
+            self._retrieval_confidence_below_threshold(message, intent_name)
+        )
+        if retrieval_below_threshold:
+            logger.debug(
+                f"ResponseSelector confidence {retrieval_confidence} for "
+                f"retrieval intent '{intent_name}' is lower than retrieval "
+                f"threshold {self.component_config[RETRIEVAL_THRESHOLD_KEY]:.2f}. "
+                f"Predicting intent '{DEFAULT_NLU_FALLBACK_INTENT_NAME}' instead of "
+                f"'{intent_name}'."
+            )
+            return True
+
         return False
+
+    def _retrieval_confidence_below_threshold(
+        self, message: Message, intent_name: Text
+    ) -> Tuple[bool, float]:
+        """Check ResponseSelector's confidence for the chosen retrieval intent.
+
+        This only matters when `intent_name` is itself a retrieval intent
+        (e.g. "chitchat") — ResponseSelector cannot abstain, so it always
+        returns *some* sub-intent with *some* confidence. Low confidence
+        there means it picked the "least bad" match, not a real one.
+        """
+        retrieval_threshold = self.component_config[RETRIEVAL_THRESHOLD_KEY]
+        if retrieval_threshold <= 0:
+            # disabled by default — fully backward compatible
+            return False, 1.0
+
+        selector_data = message.data.get(RESPONSE_SELECTOR_PROPERTY_NAME)
+        if not selector_data:
+            return False, 1.0
+
+        # keyed by retrieval_intent name (e.g. "chitchat"); Rasa also stores
+        # a "default" alias when there's only one retrieval intent configured
+        entry = selector_data.get(intent_name) or selector_data.get("default")
+        if not entry:
+            return False, 1.0
+
+        confidence = entry.get(RESPONSE_SELECTOR_PREDICTION_KEY, {}).get(
+            PREDICTED_CONFIDENCE_KEY
+        )
+        if confidence is None:
+            return False, 1.0
+
+        return confidence < retrieval_threshold, confidence
 
     def _nlu_confidence_below_threshold(self, message: Message) -> Tuple[bool, float]:
         nlu_confidence = message.data[INTENT].get(PREDICTED_CONFIDENCE_KEY)
