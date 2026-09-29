@@ -1,0 +1,42 @@
+version: "3.1"
+rules:
+  - rule: Saludar
+    steps:
+      - intent: greet
+      - action: utter_greet
+  - rule: Despedirse
+    steps:
+      - intent: goodbye
+      - action: utter_goodbye
+  - rule: Agradecer
+    steps:
+      - intent: thank_you
+      - action: utter_thank_you
+  - rule: Confirmar
+    steps:
+      - intent: affirm
+      - action: utter_affirm
+  - rule: Rechazar
+    steps:
+      - intent: deny
+      - action: utter_deny
+  - rule: Identificar a Sara
+    steps:
+      - intent: bot_challenge
+      - action: utter_bot_challenge
+  - rule: Explicar capacidades
+    steps:
+      - intent: ask_capabilities
+      - action: utter_capabilities
+  - rule: Responder a estado de ánimo positivo
+    steps:
+      - intent: mood_great
+      - action: utter_mood_great
+  - rule: Responder a estado de ánimo difícil
+    steps:
+      - intent: mood_unhappy
+      - action: utter_mood_unhappy
+  - rule: Responder cuando no entiende
+    steps:
+      - intent: nlu_fallback
+      - action: utter_default

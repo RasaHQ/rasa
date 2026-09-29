@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: sara-rasa
+    runtime: docker
+    plan: free
+    region: ohio
+    dockerfilePath: ./examples/omnistudio_assistant/Dockerfile
+    dockerContext: ./examples/omnistudio_assistant
+    envVars:
+      - key: RASA_AUTH_TOKEN
+        sync: false

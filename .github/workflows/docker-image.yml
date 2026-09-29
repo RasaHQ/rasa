@@ -1,0 +1,45 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "3.6.x" ]
+  pull_request:
+    branches: [ "3.6.x" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read Poetry version
+        run: echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> "$GITHUB_ENV"
+
+      - name: Build base image
+        run: docker build --file docker/Dockerfile.base --tag rasa/rasa:base-localdev .
+
+      - name: Build Poetry base image
+        run: >-
+          docker build --file docker/Dockerfile.base-poetry
+          --build-arg IMAGE_BASE_NAME=rasa/rasa
+          --build-arg BASE_IMAGE_HASH=localdev
+          --build-arg POETRY_VERSION="$POETRY_VERSION"
+          --tag "rasa/rasa:base-poetry-$POETRY_VERSION" .
+
+      - name: Build builder base image
+        run: >-
+          docker build --file docker/Dockerfile.base-builder
+          --build-arg IMAGE_BASE_NAME=rasa/rasa
+          --build-arg POETRY_VERSION="$POETRY_VERSION"
+          --tag rasa/rasa:base-builder-localdev .
+
+      - name: Build Rasa image
+        run: >-
+          docker build --file Dockerfile
+          --build-arg IMAGE_BASE_NAME=rasa/rasa
+          --build-arg BASE_IMAGE_HASH=localdev
+          --build-arg BASE_BUILDER_IMAGE_HASH=localdev
+          --tag rasa/rasa:ci .

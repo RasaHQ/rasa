@@ -1,0 +1,20 @@
+{
+    "workbench.editor.markdownDefaultEditorInAgentsWindow": true,
+    "editor.suggest.snippetsPreventQuickSuggestions": true,
+    "workbench.quickOpen.preserveInput": true,
+    "workbench.view.showQuietly": {
+        "workbench.panel.output": true
+    },
+    "workbench.editor.enablePreviewFromQuickOpen": true,
+    "search.quickAccess.preserveInput": true,
+    "search.quickOpen.includeSymbols": true,
+    "githubPullRequests.experimental.useQuickChat": true,
+    "githubPullRequests.quickDiff": true,
+    "chat.agent.sandbox.retryWithAllowNetworkRequests": true,
+    "githubPullRequests.defaultDeletionMethod.selectWorktree": true,
+    "githubPullRequests.deleteBranchAfterMerge": true,
+    "githubPullRequests.devMode": true,
+    "workbench.editor.autoLockGroups": {
+        "agentSessionsWelcomePage": true
+    }
+}

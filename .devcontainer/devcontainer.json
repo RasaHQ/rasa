@@ -25,7 +25,8 @@
     // Add the IDs of extensions you want installed when the container is created.
     "extensions": [
         "ms-python.python",
-        "ms-python.vscode-pylance"
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-azure-github-copilot"
     ],
     // memory is required for frontend build...fails for machines with less than 10g
     // "hostRequirements": {

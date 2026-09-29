@@ -1,0 +1,43 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - thank_you
+  - bot_challenge
+  - ask_capabilities
+  - mood_great
+  - mood_unhappy
+  - nlu_fallback
+
+responses:
+  utter_greet:
+    - text: "Hola, soy Sara. ¿En qué te puedo ayudar?"
+  utter_goodbye:
+    - text: "¡Hasta luego! Cuando quieras, seguimos."
+  utter_thank_you:
+    - text: "Con gusto."
+  utter_affirm:
+    - text: "Entendido."
+  utter_deny:
+    - text: "Está bien. Cuéntame qué necesitas."
+  utter_bot_challenge:
+    - text: "Soy Sara, el asistente de OmniStudio. Rasa responde primero y Felo puede apoyar cuando se activa el fallback."
+  utter_capabilities:
+    - text: "Puedo responder algunas solicitudes directamente con Rasa. Si Rasa no reconoce algo, Felo puede intentar ayudar. También puedes pedirme búsquedas web; algunas funciones siguen en desarrollo."
+  utter_mood_great:
+    - text: "¡Qué bueno! ¿Qué te gustaría hacer ahora?"
+  utter_mood_unhappy:
+    - text: "Lo siento. Si quieres, cuéntame un poco más y te escucho."
+  utter_default:
+    - text: "Todavía no sé responder eso."
+      custom:
+        sara_fallback: true
+
+actions: []
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

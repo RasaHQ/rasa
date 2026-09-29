@@ -1,0 +1,3 @@
+google-auth>=2.40,<3
+PyJWT>=2.4,<3
+ddgs==9.16.0

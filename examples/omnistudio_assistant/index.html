@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1120">
+  <link rel="icon" href="data:,">
+  <title>Asistente de OmniStudio</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #080d1b; color: #f8fafc; display: grid; place-items: center; padding: 16px; }
+    .app { width: min(100%, 760px); height: min(900px, calc(100vh - 32px)); min-height: 560px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #26334d; border-radius: 24px; background: #10182a; box-shadow: 0 24px 80px #0008; }
+    header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #26324b; background: #121c31; }
+    .avatar { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg,#818cf8,#c084fc); font-weight: 800; font-size: 20px; }
+    .brand { flex: 1; min-width: 0; } .brand strong { display: block; font-size: 16px; } .brand span { color: #a5b4fc; font-size: 12px; }
+    .status { color: #cbd5e1; font-size: 11px; }
+    #account { display: none; align-items: center; gap: 10px; min-width: 0; }
+    #accountEmail { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #cbd5e1; font-size: 12px; }
+    .smallButton { border: 1px solid #475569; border-radius: 10px; background: transparent; color: #e2e8f0; padding: 8px 10px; cursor: pointer; }
+    #authPanel { margin: auto; width: min(100% - 32px, 390px); padding: 24px; border: 1px solid #33415e; border-radius: 18px; background: #151f33; }
+    #authPanel h1 { margin: 0 0 8px; font-size: 22px; } #authPanel p { color: #aab7ce; line-height: 1.5; font-size: 13px; }
+    .googleButton, .primaryButton { width: 100%; border: 0; border-radius: 12px; padding: 12px 14px; background: #6366f1; color: white; font-size: 14px; font-weight: 650; cursor: pointer; }
+    .googleButton { margin: 6px 0 16px; background: #f8fafc; color: #182033; }
+    .googleMark { display: inline-grid; place-items: center; margin-right: 7px; width: 20px; height: 20px; border-radius: 50%; background: conic-gradient(#4285f4 0 25%,#34a853 25% 50%,#fbbc05 50% 75%,#ea4335 75%); color: white; font-size: 11px; font-weight: 800; }
+    label { display: block; margin: 10px 0 6px; color: #cbd5e1; font-size: 12px; }
+    input { width: 100%; border: 1px solid #37445e; outline: 0; border-radius: 11px; padding: 12px; background: #0d1526; color: white; font-size: 14px; }
+    input:focus { border-color: #818cf8; }
+    #authError, #chatError { min-height: 18px; color: #fca5a5; font-size: 12px; line-height: 1.45; }
+    #messages { display: none; flex: 1; overflow: auto; flex-direction: column; gap: 14px; padding: 20px; }
+    .msg { max-width: 84%; padding: 12px 14px; border-radius: 17px; line-height: 1.5; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .bot { align-self: flex-start; background: #202b42; border-bottom-left-radius: 5px; }
+    .user { align-self: flex-end; background: #5557d9; border-bottom-right-radius: 5px; }
+    .time { display: block; margin-top: 6px; opacity: .62; font-size: 10px; text-align: right; }
+    .messageActions { display: flex; justify-content: flex-end; margin-top: 7px; }
+    .saveNoteButton { border: 1px solid #5964d9; border-radius: 8px; background: #252e50; color: #dbeafe; padding: 5px 8px; font-size: 10px; cursor: pointer; }
+    .saveNoteButton:disabled { opacity: .6; cursor: default; }
+    #composer { display: none; align-items: center; gap: 8px; padding: 12px; border-top: 1px solid #26324b; background: #121c31; }
+    #messageInput { flex: 1; min-width: 0; }
+    .toolButton { flex: 0 0 auto; width: 42px; height: 42px; border: 1px solid #475569; border-radius: 12px; background: #17243a; color: #e2e8f0; font-size: 18px; cursor: pointer; }
+    .toolButton.active { border-color: #a5b4fc; background: #393c85; color: white; }
+    .toolButton:disabled { opacity: .55; cursor: wait; }
+    #sendButton { width: 48px; border: 0; border-radius: 12px; background: #6366f1; color: white; font-size: 20px; cursor: pointer; }
+    #sendButton:disabled { opacity: .55; cursor: wait; }
+    footer { padding: 0 16px 12px; background: #121c31; text-align: center; color: #8492aa; font-size: 10px; }
+    #notesToolbar { display: none; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid #26324b; background: #10182a; }
+    #notesButton { border: 1px solid #5964d9; border-radius: 10px; background: #242d53; color: #eef2ff; padding: 8px 12px; font-size: 12px; font-weight: 650; cursor: pointer; }
+    #notesSyncStatus { color: #aab7ce; font-size: 11px; }
+    .notesOverlay { display: none; position: fixed; inset: 0; z-index: 20; place-items: center; padding: 16px; background: #050914dc; }
+    .notesOverlay.open { display: grid; }
+    .notesCard { width: min(100%, 650px); max-height: min(82vh, 760px); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #34415d; border-radius: 20px; background: #111a2c; box-shadow: 0 24px 80px #000a; }
+    .notesHeader { display: flex; align-items: flex-start; gap: 16px; padding: 18px 20px; border-bottom: 1px solid #26324b; }
+    .notesHeaderText { flex: 1; min-width: 0; }
+    .notesHeader h2 { margin: 0 0 6px; font-size: 18px; }
+    .notesHeader p { margin: 0; color: #aab7ce; font-size: 12px; line-height: 1.5; }
+    #notesStatus { margin: 0; padding: 12px 20px 6px; color: #b9c5da; font-size: 12px; }
+    #notesList { overflow: auto; padding: 10px 16px 18px; }
+    .noteRow { display: flex; align-items: flex-start; gap: 12px; margin: 8px 0; padding: 13px; border: 1px solid #2c3a55; border-radius: 13px; background: #151f33; }
+    .noteContent { flex: 1; min-width: 0; }
+    .noteText { margin: 0; color: #f1f5f9; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .noteDate { display: block; margin-top: 8px; color: #8fa0ba; font-size: 10px; }
+    .deleteNoteButton { flex: 0 0 auto; border: 1px solid #7f3c50; border-radius: 9px; background: #3b1c2a; color: #fecdd3; padding: 7px 9px; font-size: 11px; cursor: pointer; }
+    .deleteNoteButton:disabled { opacity: .55; cursor: wait; }
+    .emptyNotes { padding: 24px 12px; color: #aab7ce; text-align: center; font-size: 13px; line-height: 1.5; }
+    @media (max-width: 520px) { body { padding: 0; } .app { width: 100%; height: 100dvh; min-height: 0; border-radius: 0; border: 0; } header { padding: 13px; } #accountEmail { max-width: 105px; } #messages { padding: 16px 12px; } #composer { gap: 6px; padding: 8px; } .toolButton { width: 38px; height: 40px; } #sendButton { width: 42px; } #notesToolbar { padding: 8px 12px; } .notesOverlay { padding: 0; } .notesCard { width: 100%; height: 100dvh; max-height: none; border-radius: 0; border: 0; } .notesHeader { padding: 16px 14px; } #notesStatus { padding: 10px 14px 4px; } #notesList { padding: 8px 10px 16px; } .noteRow { gap: 8px; padding: 11px; } }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Chat web de Sara">
+    <header>
+      <div class="avatar" aria-hidden="true">S</div>
+      <div class="brand"><strong>Sara</strong><span>Asistente de OmniStudio · Rasa + Cloudflare + Groq AI + DuckDuckGo Search</span></div>
+      <div class="status" id="connectionStatus">Conectando…</div>
+      <div id="account"><span id="accountEmail"></span><button id="clearHistoryButton" class="smallButton" type="button">Borrar historial</button><button id="signOutButton" class="smallButton" type="button">Salir</button></div>
+    </header>
+
+    <section id="notesToolbar" aria-label="Aprendizaje del asistente">
+      <button id="notesButton" type="button" aria-haspopup="dialog">Ver mis notas</button>
+      <span id="notesSyncStatus" role="status">La biblioteca se sincroniza en tiempo real.</span>
+    </section>
+
+    <div id="notesOverlay" class="notesOverlay" role="dialog" aria-modal="true" aria-labelledby="notesTitle" aria-hidden="true">
+      <section class="notesCard">
+        <div class="notesHeader">
+          <div class="notesHeaderText">
+            <h2 id="notesTitle">Aprendizaje del asistente</h2>
+            <p>Tus notas aprobadas son privadas de esta cuenta. La lista se actualiza en tiempo real con OmniStudio si ambas sesiones usan la misma cuenta de Firebase.</p>
+          </div>
+          <button id="closeNotesButton" class="smallButton" type="button">Cerrar</button>
+        </div>
+        <p id="notesStatus" role="status">Cargando notas…</p>
+        <div id="notesList" aria-live="polite"></div>
+      </section>
+    </div>
+
+    <section id="authPanel" aria-labelledby="authTitle">
+      <h1 id="authTitle">Inicia sesión</h1>
+      <p>Usa la cuenta de Firebase que ya tienes en OmniStudio. Tus mensajes y respuestas se guardan en tu historial privado de Firebase RTDB, separado por cuenta.</p>
+      <button id="googleButton" class="googleButton" type="button"><span class="googleMark" aria-hidden="true">G</span>Continuar con Google</button>
+      <form id="emailForm">
+        <label for="email">Correo</label>
+        <input id="email" type="email" autocomplete="username" required>
+        <label for="password">Contraseña</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <div style="height:12px"></div>
+        <button class="primaryButton" type="submit">Entrar con correo</button>
+      </form>
+      <div id="authError" role="status"></div>
+    </section>
+
+    <section id="messages" aria-live="polite"></section>
+    <form id="composer">
+      <button id="imageButton" class="toolButton" type="button" title="Analizar imagen" aria-label="Adjuntar imagen">🖼️</button>
+      <input id="imageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+      <button id="audioButton" class="toolButton" type="button" title="Transcribir o traducir audio" aria-label="Adjuntar audio">🎙️</button>
+      <input id="audioInput" type="file" accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac" hidden>
+      <button id="codeButton" class="toolButton" type="button" title="Activar ayuda con código" aria-label="Modo código">&lt;/&gt;</button>
+      <button id="toolsButton" class="toolButton" type="button" title="Usar calculadora o búsqueda web" aria-label="Herramientas seguras">🧰</button>
+      <input id="messageInput" maxlength="4000" autocomplete="off" placeholder="Escribe un mensaje…" aria-label="Mensaje">
+      <button id="sendButton" type="submit" aria-label="Enviar mensaje">➤</button>
+    </form>
+    <div id="chatError" role="status"></div>
+    <footer>Imágenes y audios se envían a Groq y no se guardan. Herramientas: cálculo y búsqueda web; acciones externas requieren confirmación. Aprendizaje solo con tu permiso.</footer>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import {
+      getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword,
+      onAuthStateChanged, signOut, setPersistence, browserSessionPersistence
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import {
+      getDatabase, ref, push, get, query, orderByChild, limitToLast, remove, onValue, set
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCdATx7UVnbN7FiIoyXyvNnplq2hoSt_BQ",
+      authDomain: "omnistudio-caaf5.firebaseapp.com",
+      databaseURL: "https://omnistudio-caaf5-default-rtdb.firebaseio.com",
+      projectId: "omnistudio-caaf5",
+      storageBucket: "omnistudio-caaf5.firebasestorage.app",
+      messagingSenderId: "611449222458",
+      appId: "1:611449222458:web:52bfed9bb25629a3794c03"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    const HISTORY_LIMIT = 100;
+    const MAX_NOTE_ENTRIES = 100;
+    const MAX_NOTE_CHARS = 2000;
+    const persistenceReady = setPersistence(auth, browserSessionPersistence).catch(() => {});
+    const provider = new GoogleAuthProvider();
+    const authPanel = document.getElementById('authPanel');
+    const authError = document.getElementById('authError');
+    const chatError = document.getElementById('chatError');
+    const messages = document.getElementById('messages');
+    const composer = document.getElementById('composer');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const account = document.getElementById('account');
+    const clearHistoryButton = document.getElementById('clearHistoryButton');
+    const notesToolbar = document.getElementById('notesToolbar');
+    const notesButton = document.getElementById('notesButton');
+    const notesOverlay = document.getElementById('notesOverlay');
+    const closeNotesButton = document.getElementById('closeNotesButton');
+    const notesStatus = document.getElementById('notesStatus');
+    const notesSyncStatus = document.getElementById('notesSyncStatus');
+    const notesList = document.getElementById('notesList');
+    const imageButton = document.getElementById('imageButton');
+    const imageInput = document.getElementById('imageInput');
+    const audioButton = document.getElementById('audioButton');
+    const audioInput = document.getElementById('audioInput');
+    const codeButton = document.getElementById('codeButton');
+    const toolsButton = document.getElementById('toolsButton');
+    let codeMode = false;
+    let toolMode = false;
+    let stopNotesListener = null;
+    let activeNotesUid = '';
+
+    function authErrorText(code) {
+      if (code === 'auth/popup-blocked') return 'El navegador bloqueó la ventana. Permite la ventana emergente e inténtalo otra vez.';
+      if (code === 'auth/popup-closed-by-user') return 'Se cerró la ventana de inicio de sesión.';
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') return 'El correo o la contraseña no coinciden.';
+      if (code === 'auth/unauthorized-domain') return 'Este dominio aún no está autorizado en Firebase Authentication.';
+      return 'No se pudo iniciar sesión. Revisa la conexión e inténtalo de nuevo.';
+    }
+
+    document.getElementById('googleButton').addEventListener('click', async () => {
+      authError.textContent = '';
+      try { await persistenceReady; await signInWithPopup(auth, provider); }
+      catch (error) { authError.textContent = authErrorText(error.code); }
+    });
+
+    document.getElementById('emailForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      authError.textContent = '';
+      try {
+        await persistenceReady;
+        await signInWithEmailAndPassword(auth, document.getElementById('email').value.trim(), document.getElementById('password').value);
+      } catch (error) { authError.textContent = authErrorText(error.code); }
+    });
+
+    document.getElementById('signOutButton').addEventListener('click', () => signOut(auth));
+
+    function addMessage(text, kind, timestamp = Date.now()) {
+      const bubble = document.createElement('div');
+      bubble.className = `msg ${kind}`;
+      bubble.textContent = text;
+      const time = document.createElement('span');
+      time.className = 'time';
+      time.textContent = new Date(timestamp).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+      bubble.appendChild(time);
+      const actions = document.createElement('div');
+      actions.className = 'messageActions';
+      const saveButton = document.createElement('button');
+      saveButton.className = 'saveNoteButton';
+      saveButton.type = 'button';
+      saveButton.textContent = 'Guardar como nota';
+      saveButton.addEventListener('click', () => saveMessageAsNote(text, saveButton));
+      actions.appendChild(saveButton);
+      bubble.appendChild(actions);
+      messages.appendChild(bubble);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function saveHistoryEntry(user, role, text) {
+      await push(ref(db, `sara_chat_history/${user.uid}`), {
+        uid: user.uid,
+        role,
+        text: text.slice(0, 4000),
+        createdAt: Date.now()
+      });
+    }
+
+    async function saveMessageAsNote(text, button) {
+      const user = auth.currentUser;
+      const cleanText = typeof text === 'string' ? text.trim() : '';
+      if (!user || !cleanText) {
+        chatError.textContent = 'Inicia sesión para guardar notas del asistente.';
+        return;
+      }
+      const noteText = cleanText.slice(0, MAX_NOTE_CHARS);
+      const consentText = cleanText.length > MAX_NOTE_CHARS
+        ? '¿Guardar este mensaje en Aprendizaje del asistente? Solo se guardarán los primeros 2.000 caracteres.'
+        : '¿Guardar este mensaje en Aprendizaje del asistente?';
+      if (!confirm(consentText)) return;
+
+      button.disabled = true;
+      chatError.textContent = '';
+      try {
+        const notesRef = ref(db, `sara_knowledge/${user.uid}`);
+        const snapshot = await get(notesRef);
+        if (auth.currentUser?.uid !== user.uid) throw new Error('session_changed');
+        const raw = snapshot.val();
+        const existing = Object.values(raw && typeof raw === 'object' ? raw : {})
+          .filter(note => note && typeof note.text === 'string' && (!note.ownerUid || note.ownerUid === user.uid));
+        if (existing.some(note => note.text.trim().toLowerCase() === noteText.toLowerCase())) {
+          button.textContent = 'Ya guardada';
+          chatError.textContent = 'Esa nota ya está guardada.';
+          return;
+        }
+        if (existing.length >= MAX_NOTE_ENTRIES) {
+          button.disabled = false;
+          chatError.textContent = 'La biblioteca tiene 100 notas. Borra una antes de guardar otra.';
+          return;
+        }
+        const noteRef = push(notesRef);
+        await set(noteRef, {
+          id: noteRef.key,
+          ownerUid: user.uid,
+          text: noteText,
+          createdAt: Date.now()
+        });
+        button.textContent = 'Guardada';
+        chatError.textContent = '';
+      } catch {
+        button.disabled = false;
+        chatError.textContent = 'No se pudo guardar la nota en Firebase. Inténtalo otra vez.';
+      }
+    }
+
+    async function loadHistory(user) {
+      const historyQuery = query(
+        ref(db, `sara_chat_history/${user.uid}`),
+        orderByChild('createdAt'),
+        limitToLast(HISTORY_LIMIT)
+      );
+      const snapshot = await get(historyQuery);
+      const entries = snapshot.val();
+      if (!entries) return false;
+      const ordered = Object.values(entries)
+        .filter(entry => entry && typeof entry.text === 'string' && Number.isFinite(entry.createdAt))
+        .sort((a, b) => a.createdAt - b.createdAt);
+      ordered.forEach(entry => addMessage(entry.text, entry.role === 'user' ? 'user' : 'bot', entry.createdAt));
+      return ordered.length > 0;
+    }
+
+    function closeNotesPanel() {
+      notesOverlay.classList.remove('open');
+      notesOverlay.setAttribute('aria-hidden', 'true');
+      notesButton.focus();
+    }
+
+    notesButton.addEventListener('click', () => {
+      if (!auth.currentUser) return;
+      notesOverlay.classList.add('open');
+      notesOverlay.setAttribute('aria-hidden', 'false');
+      closeNotesButton.focus();
+    });
+    closeNotesButton.addEventListener('click', closeNotesPanel);
+    notesOverlay.addEventListener('click', event => {
+      if (event.target === notesOverlay) closeNotesPanel();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && notesOverlay.classList.contains('open')) closeNotesPanel();
+    });
+
+    function renderKnowledgeNotes(user, entries) {
+      notesList.replaceChildren();
+      if (auth.currentUser?.uid !== user.uid) return;
+      if (!entries.length) {
+        const empty = document.createElement('div');
+        empty.className = 'emptyNotes';
+        empty.textContent = 'No hay notas guardadas en esta cuenta. Si OmniStudio sí muestra notas, puede que las sesiones web y móvil usen identidades de Firebase distintas aunque tengan el mismo correo.';
+        notesList.appendChild(empty);
+        return;
+      }
+      entries.forEach(entry => {
+        const row = document.createElement('article');
+        row.className = 'noteRow';
+        const content = document.createElement('div');
+        content.className = 'noteContent';
+        const text = document.createElement('p');
+        text.className = 'noteText';
+        text.textContent = entry.text;
+        content.appendChild(text);
+        if (entry.createdAt > 0 && entry.createdAt < 8640000000000000) {
+          const savedAt = new Date(entry.createdAt);
+          if (!Number.isNaN(savedAt.getTime())) {
+            const date = document.createElement('time');
+            date.className = 'noteDate';
+            date.dateTime = savedAt.toISOString();
+            date.textContent = `Guardada ${savedAt.toLocaleString('es-CR', { dateStyle: 'medium', timeStyle: 'short' })}`;
+            content.appendChild(date);
+          }
+        }
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'deleteNoteButton';
+        deleteButton.type = 'button';
+        deleteButton.textContent = 'Borrar';
+        deleteButton.setAttribute('aria-label', 'Borrar esta nota');
+        deleteButton.addEventListener('click', async () => {
+          const activeUser = auth.currentUser;
+          if (!activeUser || activeUser.uid !== user.uid || !confirm('¿Borrar esta nota de Aprendizaje del asistente? Se eliminará también de la biblioteca sincronizada en OmniStudio.')) return;
+          deleteButton.disabled = true;
+          try {
+            await remove(ref(db, `sara_knowledge/${user.uid}/${entry.id}`));
+          } catch {
+            notesStatus.textContent = 'No se pudo borrar la nota. Revisa tu conexión e inténtalo otra vez.';
+            deleteButton.disabled = false;
+          }
+        });
+        row.append(content, deleteButton);
+        notesList.appendChild(row);
+      });
+    }
+
+    function subscribeToKnowledgeNotes(user) {
+      if (stopNotesListener) stopNotesListener();
+      stopNotesListener = null;
+      activeNotesUid = user.uid;
+      notesStatus.textContent = 'Sincronizando tus notas…';
+      notesSyncStatus.textContent = 'Conectando con la biblioteca…';
+      stopNotesListener = onValue(ref(db, `sara_knowledge/${user.uid}`), snapshot => {
+        if (auth.currentUser?.uid !== user.uid) return;
+        const raw = snapshot.val();
+        const entries = Object.entries(raw && typeof raw === 'object' ? raw : {})
+          .map(([id, note]) => ({
+            id,
+            text: note && typeof note.text === 'string' ? note.text.trim() : '',
+            ownerUid: note && note.ownerUid,
+            createdAt: note && Number.isFinite(note.createdAt) ? note.createdAt : 0
+          }))
+          .filter(note => note.text && (!note.ownerUid || note.ownerUid === user.uid))
+          .sort((a, b) => b.createdAt - a.createdAt);
+        const countLabel = `${entries.length} ${entries.length === 1 ? 'nota' : 'notas'}`;
+        notesStatus.textContent = entries.length ? `${countLabel} · sincronización en tiempo real activa` : 'No hay notas guardadas en esta cuenta.';
+        notesSyncStatus.textContent = `${countLabel} · sincronización en tiempo real`;
+        renderKnowledgeNotes(user, entries);
+      }, () => {
+        if (auth.currentUser?.uid !== user.uid) return;
+        notesStatus.textContent = 'No se pudieron cargar las notas de esta cuenta.';
+        notesSyncStatus.textContent = 'Sin sincronización';
+        notesList.replaceChildren();
+      });
+    }
+
+    clearHistoryButton.addEventListener('click', async () => {
+      const user = auth.currentUser;
+      if (!user || !confirm('¿Borrar todo tu historial de chat con Sara?')) return;
+      clearHistoryButton.disabled = true;
+      try {
+        await remove(ref(db, `sara_chat_history/${user.uid}`));
+        messages.replaceChildren();
+        addMessage('Historial borrado. Puedes empezar una conversación nueva.', 'bot');
+        chatError.textContent = '';
+      } catch {
+        chatError.textContent = 'No se pudo borrar el historial. Inténtalo de nuevo.';
+      } finally {
+        clearHistoryButton.disabled = false;
+      }
+    });
+
+    onAuthStateChanged(auth, async user => {
+      const loggedIn = Boolean(user);
+      authPanel.style.display = loggedIn ? 'none' : 'block';
+      messages.style.display = loggedIn ? 'flex' : 'none';
+      composer.style.display = loggedIn ? 'flex' : 'none';
+      account.style.display = loggedIn ? 'flex' : 'none';
+      notesToolbar.style.display = loggedIn ? 'flex' : 'none';
+      connectionStatus.textContent = loggedIn ? 'Sesión lista' : 'Acceso protegido';
+      document.getElementById('accountEmail').textContent = user?.email || 'Sesión activa';
+      if (loggedIn) {
+        if (activeNotesUid !== user.uid) subscribeToKnowledgeNotes(user);
+        messages.replaceChildren();
+        chatError.textContent = '';
+        try {
+          const loaded = await loadHistory(user);
+          if (!loaded) addMessage('Hola, soy Sara. Rasa responde primero; Cloudflare atiende el fallback. Puedes adjuntar imágenes o audios y activar ayuda con código.', 'bot');
+        } catch {
+          addMessage('Hola, soy Sara. Rasa responde primero; Cloudflare atiende el fallback. Puedes adjuntar imágenes o audios y activar ayuda con código.', 'bot');
+          chatError.textContent = 'No se pudo cargar el historial. Puedes seguir chateando, pero quizá no se sincronice.';
+        }
+      } else {
+        if (stopNotesListener) stopNotesListener();
+        stopNotesListener = null;
+        activeNotesUid = '';
+        notesOverlay.classList.remove('open');
+        notesOverlay.setAttribute('aria-hidden', 'true');
+        notesList.replaceChildren();
+        notesStatus.textContent = 'Inicia sesión para ver tus notas.';
+        notesSyncStatus.textContent = 'Biblioteca privada';
+        messages.replaceChildren();
+      }
+    });
+
+    function readFileAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = String(reader.result || '');
+          const comma = dataUrl.indexOf(',');
+          if (comma < 0) reject(new Error('No se pudo leer el archivo.'));
+          else resolve(dataUrl.slice(comma + 1));
+        };
+        reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function setFeatureBusy(busy) {
+      sendButton.disabled = busy;
+      imageButton.disabled = busy;
+      audioButton.disabled = busy;
+      codeButton.disabled = busy;
+      toolsButton.disabled = busy;
+    }
+
+    async function sendGroqFeature(path, payload, userText) {
+      const user = auth.currentUser;
+      if (!user || sendButton.disabled) return;
+      chatError.textContent = '';
+      addMessage(userText, 'user');
+      setFeatureBusy(true);
+      let historySaveFailed = false;
+      try { await saveHistoryEntry(user, 'user', userText); } catch { historySaveFailed = true; }
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch(path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          if (response.status === 401) throw new Error('La sesión venció. Sal y vuelve a iniciar sesión.');
+          if (response.status === 413) throw new Error('El archivo supera el tamaño permitido.');
+          if (response.status === 429) throw new Error('Llegaste al límite temporal de solicitudes. Inténtalo más tarde.');
+          if (response.status === 503) throw new Error('La función de Groq no está disponible.');
+          throw new Error('No se pudo procesar el archivo o la solicitud con Groq.');
+        }
+        if (typeof data.text !== 'string' || !data.text.trim()) throw new Error('Groq no devolvió texto esta vez.');
+        addMessage(data.text.trim(), 'bot');
+        try { await saveHistoryEntry(user, 'assistant', data.text.trim()); } catch { historySaveFailed = true; }
+        if (historySaveFailed) chatError.textContent = 'La respuesta llegó, pero no se pudo guardar todo el historial.';
+      } catch (error) {
+        chatError.textContent = error.message || 'No se pudo conectar con Groq.';
+      } finally {
+        setFeatureBusy(false);
+        messageInput.focus();
+      }
+    }
+
+    imageButton.addEventListener('click', () => imageInput.click());
+    imageInput.addEventListener('change', async () => {
+      const files = Array.from(imageInput.files || []);
+      imageInput.value = '';
+      if (!files.length) return;
+      if (files.length > 3 || files.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type))) {
+        chatError.textContent = 'Adjunta de 1 a 3 imágenes JPG, PNG o WebP.';
+        return;
+      }
+      if (files.some(file => file.size > 3 * 1024 * 1024) || files.reduce((sum, file) => sum + file.size, 0) > 6 * 1024 * 1024) {
+        chatError.textContent = 'Cada imagen puede pesar hasta 3 MB; el total, hasta 6 MB.';
+        return;
+      }
+      const prompt = messageInput.value.trim() || 'Describe la imagen y extrae el texto visible con claridad.';
+      messageInput.value = '';
+      try {
+        const images = await Promise.all(files.map(async file => ({
+          data: await readFileAsBase64(file), mimeType: file.type, name: file.name
+        })));
+        await sendGroqFeature('/api/rasa/groq/vision', { prompt, images }, `🖼️ ${files.map(file => file.name).join(', ')}\nSolicitud: ${prompt}`);
+      } catch (error) { chatError.textContent = error.message || 'No se pudo leer la imagen.'; }
+    });
+
+    audioButton.addEventListener('click', () => audioInput.click());
+    audioInput.addEventListener('change', async () => {
+      const file = audioInput.files && audioInput.files[0];
+      audioInput.value = '';
+      if (!file) return;
+      if (file.size > 6 * 1024 * 1024) {
+        chatError.textContent = 'El audio puede pesar hasta 6 MB.';
+        return;
+      }
+      const translate = window.confirm('¿Quieres transcribir y traducir el audio al español? Acepta para traducir; cancela para transcribirlo en su idioma.');
+      const mode = translate ? 'translate_es' : 'transcribe';
+      const userText = `🎙️ ${file.name} · ${translate ? 'traducir al español' : 'transcribir'}`;
+      try {
+        const audioData = await readFileAsBase64(file);
+        await sendGroqFeature('/api/rasa/groq/audio', {
+          audioData, mimeType: file.type, fileName: file.name, mode
+        }, userText);
+      } catch (error) { chatError.textContent = error.message || 'No se pudo leer el audio.'; }
+    });
+
+    codeButton.addEventListener('click', () => {
+      codeMode = !codeMode;
+      if (codeMode) toolMode = false;
+      codeButton.classList.toggle('active', codeMode);
+      toolsButton.classList.toggle('active', toolMode);
+      codeButton.title = codeMode ? 'Desactivar ayuda con código' : 'Activar ayuda con código';
+      toolsButton.title = toolMode ? 'Desactivar herramientas seguras' : 'Usar calculadora o búsqueda web';
+      messageInput.placeholder = codeMode ? 'Describe el código o el error…' : (toolMode ? 'Pregunta para calcular o buscar…' : 'Escribe un mensaje…');
+    });
+
+    toolsButton.addEventListener('click', () => {
+      toolMode = !toolMode;
+      if (toolMode) codeMode = false;
+      toolsButton.classList.toggle('active', toolMode);
+      codeButton.classList.toggle('active', codeMode);
+      codeButton.title = codeMode ? 'Desactivar ayuda con código' : 'Activar ayuda con código';
+      toolsButton.title = toolMode ? 'Desactivar herramientas seguras' : 'Usar calculadora o búsqueda web';
+      messageInput.placeholder = toolMode ? 'Pregunta para calcular o buscar…' : (codeMode ? 'Describe el código o el error…' : 'Escribe un mensaje…');
+    });
+
+    composer.addEventListener('submit', async event => {
+      event.preventDefault();
+      const text = messageInput.value.trim();
+      const user = auth.currentUser;
+      if (!text || !user || sendButton.disabled) return;
+      messageInput.value = '';
+      chatError.textContent = '';
+      const sendAsCode = codeMode;
+      const sendWithTools = toolMode;
+      addMessage(text, 'user');
+      setFeatureBusy(true);
+      let historySaveFailed = false;
+      try { await saveHistoryEntry(user, 'user', text); }
+      catch { historySaveFailed = true; }
+      try {
+        const token = await user.getIdToken();
+        const featurePath = sendAsCode ? '/api/rasa/groq/code' : (sendWithTools ? '/api/rasa/groq/tools' : '/webhooks/rest/webhook');
+        const response = await fetch(featurePath, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify((sendAsCode || sendWithTools) ? { text } : { message: text })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          if (response.status === 401) throw new Error('La sesión venció. Sal y vuelve a iniciar sesión.');
+          if ((sendAsCode || sendWithTools) && response.status === 429) throw new Error('Llegaste al límite temporal de Groq. Inténtalo más tarde.');
+          if ((sendAsCode || sendWithTools) && response.status === 503) throw new Error('La función de Groq no está configurada o no está disponible.');
+          if (!sendAsCode && !sendWithTools && response.status === 503) throw new Error('Sara todavía está iniciando. Inténtalo en un momento.');
+          if ((sendAsCode || sendWithTools) && response.status === 502) {
+            const groqErrors = {
+              groq_auth_failed: 'Groq rechazó la clave configurada. Revisaré la autenticación sin mostrar el secreto.',
+              groq_provider_error: 'Groq rechazó el modelo o la solicitud. Revisaré la configuración.',
+              groq_unavailable: 'No se pudo conectar con Groq; intenta de nuevo más tarde.',
+              groq_empty_response: 'Groq respondió, pero no devolvió texto.',
+              groq_invalid_response: 'Groq devolvió una respuesta que Sara no pudo leer.',
+              tool_call_limit_reached: 'Sara alcanzó el límite de pasos de herramientas.'
+            };
+            throw new Error(groqErrors[data.error] || 'Groq devolvió un error al procesar la solicitud.');
+          }
+          throw new Error((sendAsCode || sendWithTools) ? 'No se pudo procesar la solicitud con Groq.' : 'No se pudo enviar el mensaje. Inténtalo otra vez.');
+        }
+        const replies = (sendAsCode || sendWithTools) ? [{ text: data.text }] : (Array.isArray(data) ? data : []);
+        const texts = replies.map(item => item && typeof item.text === 'string' ? item.text.trim() : '').filter(Boolean);
+        if (texts.length) {
+          for (const textReply of texts) {
+            addMessage(textReply, 'bot');
+            try { await saveHistoryEntry(user, 'assistant', textReply); }
+            catch { historySaveFailed = true; }
+          }
+        } else {
+          addMessage('Sara no devolvió texto esta vez. Puedes intentar de nuevo.', 'bot');
+        }
+        if (historySaveFailed) chatError.textContent = 'Sara respondió, pero no se pudo guardar todo el historial.';
+      } catch (error) {
+        chatError.textContent = error.message || 'No se pudo conectar con Sara.';
+      } finally {
+        setFeatureBusy(false);
+        messageInput.focus();
+      }
+    });
+
+  </script>
+</body>
+</html>
+
