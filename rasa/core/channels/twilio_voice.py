@@ -1,6 +1,8 @@
+import logging
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
+from twilio.request_validator import RequestValidator
 from twilio.twiml.voice_response import VoiceResponse, Gather
 from typing import Text, Callable, Awaitable, List, Any, Dict, Optional
 
@@ -13,6 +15,8 @@ from rasa.core.channels.channel import (
     CollectingOutputChannel,
     UserMessage,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class TwilioVoiceInput(InputChannel):
@@ -110,6 +114,7 @@ class TwilioVoiceInput(InputChannel):
             credentials.get("speech_timeout", "5"),
             credentials.get("speech_model", "default"),
             credentials.get("enhanced", "false"),
+            credentials.get("auth_token"),
         )
 
     def __init__(
@@ -120,6 +125,7 @@ class TwilioVoiceInput(InputChannel):
         speech_timeout: Text = "5",
         speech_model: Text = "default",
         enhanced: Text = "false",
+        auth_token: Optional[Text] = None,
     ) -> None:
         """Creates a connection to Twilio voice.
 
@@ -130,6 +136,8 @@ class TwilioVoiceInput(InputChannel):
             speech_timeout: how long to pause when user finished speaking.
             speech_model: type of transcription model to use from Twilio.
             enhanced: toggle to use Twilio's premium speech transcription model.
+            auth_token: your Twilio account's auth token, used to validate that
+                incoming webhook requests actually originate from Twilio.
         """
         self.initial_prompt = initial_prompt
         self.reprompt_fallback_phrase = reprompt_fallback_phrase
@@ -137,8 +145,27 @@ class TwilioVoiceInput(InputChannel):
         self.speech_timeout = speech_timeout
         self.speech_model = speech_model
         self.enhanced = enhanced
+        self.auth_token = auth_token
 
         self._validate_configuration()
+
+    def is_request_from_twilio_authentic(self, request: Request) -> bool:
+        """Validate the request signature against Twilio's own auth token.
+
+        See https://www.twilio.com/docs/usage/webhooks/webhooks-security.
+        """
+        if not self.auth_token:
+            logger.warning(
+                "Twilio Voice channel is not configured with an `auth_token`, "
+                "cannot validate that incoming requests originate from Twilio."
+            )
+            return False
+
+        signature = request.headers.get("X-Twilio-Signature", "")
+        validator = RequestValidator(self.auth_token)
+        url = request.headers.get("X-Original-Url", request.url)
+        params = {key: values[0] for key, values in request.form.items()}
+        return validator.validate(url, params, signature)
 
     def _validate_configuration(self) -> None:
         """Checks that the user configurations are valid."""
@@ -231,6 +258,12 @@ class TwilioVoiceInput(InputChannel):
 
         @twilio_voice_webhook.route("/webhook", methods=["POST"])
         async def receive(request: Request) -> HTTPResponse:
+            if not self.is_request_from_twilio_authentic(request):
+                logger.warning(
+                    "Rejecting request without a valid X-Twilio-Signature header"
+                )
+                return response.text("", status=401)
+
             sender_id = request.form.get("From")
             text = request.form.get("SpeechResult")
             input_channel = self.name()

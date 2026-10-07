@@ -1,3 +1,4 @@
+import hmac
 import json
 
 import logging
@@ -125,9 +126,20 @@ class MattermostInput(InputChannel):
 
         token = credentials.get("token")
 
-        return cls(credentials.get("url"), token, credentials.get("webhook_url"))
+        return cls(
+            credentials.get("url"),
+            token,
+            credentials.get("webhook_url"),
+            credentials.get("webhook_token"),
+        )
 
-    def __init__(self, url: Text, token: Text, webhook_url: Text) -> None:
+    def __init__(
+        self,
+        url: Text,
+        token: Text,
+        webhook_url: Text,
+        webhook_token: Optional[Text] = None,
+    ) -> None:
         """Create a Mattermost input channel.
         Needs a couple of settings to properly authenticate and validate
         messages.
@@ -139,10 +151,29 @@ class MattermostInput(InputChannel):
             webhook_url: The mattermost callback url as specified
                 in the outgoing webhooks in mattermost example
                 https://mysite.example.com/webhooks/mattermost/webhook
+            webhook_token: the token Mattermost generates for the outgoing
+                webhook and sends in every request's `token` field, used to
+                verify a request actually originates from your Mattermost
+                server. See https://developers.mattermost.com/integrate/webhooks/outgoing/
         """
         self.url = url
         self.token = token
         self.webhook_url = webhook_url
+        self.webhook_token = webhook_token
+
+    def is_request_from_mattermost_authentic(self, output: Dict[Text, Any]) -> bool:
+        """Validate the request's `token` field against the configured webhook token."""
+        if not self.webhook_token:
+            logger.warning(
+                "Mattermost channel is not configured with a `webhook_token`, "
+                "cannot validate that incoming requests originate from Mattermost."
+            )
+            return False
+
+        request_token = output.get("token", "")
+        if not isinstance(request_token, str):
+            return False
+        return hmac.compare_digest(request_token, self.webhook_token)
 
     async def message_with_trigger_word(
         self,
@@ -214,6 +245,10 @@ class MattermostInput(InputChannel):
 
             if not output:
                 return response.text("")
+
+            if not self.is_request_from_mattermost_authentic(output):
+                logger.warning("Rejecting request with an invalid or missing token")
+                return response.text("", status=401)
 
             metadata = self.get_metadata(request)
             # handle normal message with trigger_word
