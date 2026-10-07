@@ -2,6 +2,7 @@ import logging
 
 import pytest
 from http import HTTPStatus
+from twilio.request_validator import RequestValidator
 
 from rasa import server
 from rasa.core.agent import Agent
@@ -12,6 +13,62 @@ from rasa.core.channels.twilio_voice import TwilioVoiceCollectingOutputChannel
 from typing import Text, Any, Dict, Type
 
 logger = logging.getLogger(__name__)
+
+TEST_AUTH_TOKEN = "test_auth_token_for_rasa_tests"
+TEST_WEBHOOK_URL = "https://example.com/webhooks/twilio_voice/webhook"
+
+
+def _signed_twilio_voice_headers(body: Dict[Text, Text]) -> Dict[Text, Text]:
+    """Build headers carrying a valid Twilio signature for `body`."""
+    validator = RequestValidator(TEST_AUTH_TOKEN)
+    signature = validator.compute_signature(TEST_WEBHOOK_URL, body)
+    return {
+        "Content-type": "application/x-www-form-urlencoded",
+        "X-Original-Url": TEST_WEBHOOK_URL,
+        "X-Twilio-Signature": signature,
+    }
+
+
+def test_twilio_voice_rejects_unsigned_request():
+    tv = TwilioVoiceInput(
+        initial_prompt="hello",
+        reprompt_fallback_phrase="i didn't get that",
+        assistant_voice="woman",
+        auth_token=TEST_AUTH_TOKEN,
+    )
+
+    class _FakeRequest:
+        def __init__(self, headers, form, url):
+            self.headers = headers
+            self.form = form
+            self.url = url
+
+    forged = _FakeRequest(
+        headers={"X-Twilio-Signature": "forged-signature"},
+        form={"From": ["attacker"], "Body": ["forged"]},
+        url=TEST_WEBHOOK_URL,
+    )
+    assert tv.is_request_from_twilio_authentic(forged) is False
+
+    missing = _FakeRequest(
+        headers={}, form={"From": ["attacker"]}, url=TEST_WEBHOOK_URL
+    )
+    assert tv.is_request_from_twilio_authentic(missing) is False
+
+
+def test_twilio_voice_rejects_when_auth_token_not_configured():
+    tv = TwilioVoiceInput(
+        initial_prompt="hello",
+        reprompt_fallback_phrase="i didn't get that",
+        assistant_voice="woman",
+    )
+
+    class _FakeRequest:
+        headers: Dict[Text, Text] = {}
+        form: Dict[Text, Any] = {}
+        url = TEST_WEBHOOK_URL
+
+    assert tv.is_request_from_twilio_authentic(_FakeRequest()) is False
 
 
 async def test_twilio_voice_twiml_response_text():
@@ -233,6 +290,7 @@ async def test_twilio_receive_answer(stack_agent: Agent):
         "speech_timeout": "5",
         "assistant_voice": "woman",
         "enhanced": "false",
+        "auth_token": TEST_AUTH_TOKEN,
     }
 
     tv = TwilioVoiceInput(**inputs)
@@ -243,7 +301,7 @@ async def test_twilio_receive_answer(stack_agent: Agent):
     body = {"From": "Tobias", "CallStatus": "ringing"}
     _, response = await client.post(
         "/webhooks/twilio_voice/webhook",
-        headers={"Content-type": "application/x-www-form-urlencoded"},
+        headers=_signed_twilio_voice_headers(body),
         data=body,
     )
     assert response.status == HTTPStatus.OK
@@ -266,6 +324,7 @@ async def test_twilio_receive_no_response(stack_agent: Agent):
         "speech_timeout": "5",
         "assistant_voice": "woman",
         "enhanced": "false",
+        "auth_token": TEST_AUTH_TOKEN,
     }
 
     tv = TwilioVoiceInput(**inputs)
@@ -276,7 +335,7 @@ async def test_twilio_receive_no_response(stack_agent: Agent):
     body = {"From": "Matthew", "CallStatus": "ringing"}
     _, response = await client.post(
         "/webhooks/twilio_voice/webhook",
-        headers={"Content-type": "application/x-www-form-urlencoded"},
+        headers=_signed_twilio_voice_headers(body),
         data=body,
     )
     assert response.status == HTTPStatus.OK
@@ -285,7 +344,7 @@ async def test_twilio_receive_no_response(stack_agent: Agent):
     body = {"From": "Matthew", "CallStatus": "answered"}
     _, response = await client.post(
         "/webhooks/twilio_voice/webhook",
-        headers={"Content-type": "application/x-www-form-urlencoded"},
+        headers=_signed_twilio_voice_headers(body),
         data=body,
     )
 
@@ -308,6 +367,7 @@ async def test_twilio_receive_no_previous_response(stack_agent: Agent):
         "speech_timeout": "5",
         "assistant_voice": "woman",
         "enhanced": "false",
+        "auth_token": TEST_AUTH_TOKEN,
     }
 
     tv = TwilioVoiceInput(**inputs)
@@ -318,7 +378,7 @@ async def test_twilio_receive_no_previous_response(stack_agent: Agent):
     body = {"From": "Ray", "CallStatus": "answered"}
     _, response = await client.post(
         "/webhooks/twilio_voice/webhook",
-        headers={"Content-type": "application/x-www-form-urlencoded"},
+        headers=_signed_twilio_voice_headers(body),
         data=body,
     )
 

@@ -3,6 +3,7 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from twilio.base.exceptions import TwilioRestException
+from twilio.request_validator import RequestValidator
 from twilio.rest import Client
 from typing import Dict, Text, Any, Callable, Awaitable, Optional, TYPE_CHECKING
 
@@ -105,6 +106,26 @@ class TwilioInput(InputChannel):
         """Check if the users message is a location."""
         return request.form.get("Latitude") and request.form.get("Longitude")
 
+    def is_request_from_twilio_authentic(self, request: Request) -> bool:
+        """Validate the request signature against Twilio's own auth token.
+
+        See https://www.twilio.com/docs/usage/webhooks/webhooks-security.
+        """
+        if not self.auth_token:
+            logger.warning(
+                "Twilio channel is not configured with an `auth_token`, "
+                "cannot validate that incoming requests originate from Twilio."
+            )
+            return False
+
+        signature = request.headers.get("X-Twilio-Signature", "")
+        validator = RequestValidator(self.auth_token)
+        # Twilio computes the signature over the full external URL it called,
+        # not whatever `request.url` resolves to behind a proxy.
+        url = request.headers.get("X-Original-Url", request.url)
+        params = {key: values[0] for key, values in request.form.items()}
+        return validator.validate(url, params, signature)
+
     def __init__(
         self,
         account_sid: Optional[Text],
@@ -128,6 +149,12 @@ class TwilioInput(InputChannel):
 
         @twilio_webhook.route("/webhook", methods=["POST"])
         async def message(request: Request) -> HTTPResponse:
+            if not self.is_request_from_twilio_authentic(request):
+                logger.warning(
+                    "Rejecting request without a valid X-Twilio-Signature header"
+                )
+                return response.text("", status=401)
+
             sender = request.form.get("From", None)
             text = request.form.get("Body", None)
             out_channel = self.get_output_channel()

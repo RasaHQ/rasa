@@ -1,3 +1,4 @@
+import hmac
 import logging
 from sanic import Blueprint, response
 from sanic.request import Request
@@ -112,13 +113,41 @@ class RocketChatInput(InputChannel):
             credentials.get("user"),
             credentials.get("password"),
             credentials.get("server_url"),
+            credentials.get("webhook_token"),
         )
 
-    def __init__(self, user: Text, password: Text, server_url: Text) -> None:
+    def __init__(
+        self,
+        user: Text,
+        password: Text,
+        server_url: Text,
+        webhook_token: Optional[Text] = None,
+    ) -> None:
 
         self.user = user
         self.password = password
         self.server_url = server_url
+        self.webhook_token = webhook_token
+
+    def is_request_from_rocketchat_authentic(self, output: Dict[Text, Any]) -> bool:
+        """Validate the request's `token` field against the configured webhook token.
+
+        RocketChat's outgoing integrations send a per-integration `token` in
+        every request's body; see
+        https://docs.rocket.chat/use-rocket.chat/workspace-administration/integrations#outgoing-webhook-script
+        """
+        if not self.webhook_token:
+            logger.warning(
+                "RocketChat channel is not configured with a `webhook_token`, "
+                "cannot validate that incoming requests originate from your "
+                "RocketChat server."
+            )
+            return False
+
+        request_token = output.get("token", "")
+        if not isinstance(request_token, str):
+            return False
+        return hmac.compare_digest(request_token, self.webhook_token)
 
     async def send_message(
         self,
@@ -154,6 +183,12 @@ class RocketChatInput(InputChannel):
             output = request.json
             metadata = self.get_metadata(request)
             if output:
+                if not self.is_request_from_rocketchat_authentic(output):
+                    logger.warning(
+                        "Rejecting request with an invalid or missing token"
+                    )
+                    return response.text("", status=401)
+
                 if "visitor" not in output:
                     sender_name = output.get("user_name", None)
                     text = output.get("text", None)
