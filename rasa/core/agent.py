@@ -147,9 +147,19 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
 
-                model_path = Path(model_directory) / resp.headers.get(
-                    "filename", "model.tar.gz"
-                )
+                # The model server is a configured, potentially remote endpoint;
+                # its response `filename` header must not be trusted as a path
+                # component. `Path(model_directory) / header` silently discards
+                # `model_directory` entirely if the header is an absolute path,
+                # and `../` segments escape it even when relative, so take only
+                # the header's basename and re-verify containment before opening.
+                requested_name = resp.headers.get("filename", "model.tar.gz")
+                model_path = (Path(model_directory) / Path(requested_name).name).resolve()
+                if model_path.parent != Path(model_directory).resolve():
+                    raise ValueError(
+                        f"Model server returned an invalid filename "
+                        f"'{requested_name}'."
+                    )
                 with open(model_path, "wb") as file:
                     file.write(await resp.read())
 
