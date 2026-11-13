@@ -262,6 +262,22 @@ def test_mongo_tracker_store_raise_exception(domain: Domain, monkeypatch: Monkey
     assert "not authorized on logs to execute command." in str(error.value)
 
 
+def test_mongo_tracker_store_sends_driver_info(
+    domain: Domain, monkeypatch: MonkeyPatch
+):
+    from pymongo.driver_info import DriverInfo
+    from rasa.version import __version__
+
+    client_mock = Mock()
+    monkeypatch.setattr("pymongo.MongoClient", client_mock)
+    monkeypatch.setattr("pymongo.database.Database", MagicMock())
+
+    rasa.core.tracker_store.MongoTrackerStore(domain)
+
+    driver = client_mock.call_args.kwargs["driver"]
+    assert driver == DriverInfo(name="Rasa", version=__version__)
+
+
 class HostExampleTrackerStore(RedisTrackerStore):
     pass
 
