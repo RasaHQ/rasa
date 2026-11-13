@@ -30,6 +30,7 @@ import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.version import __version__ as rasa_version
 from rasa.plugin import plugin_manager
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
@@ -759,6 +760,10 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
         return sender_ids
 
 
+# Name reported to MongoDB as part of the connection handshake metadata.
+MONGODB_DRIVER_NAME = "Rasa"
+
+
 class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
     """Stores conversation history in Mongo.
 
@@ -780,6 +785,7 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
     ) -> None:
         from pymongo.database import Database
         from pymongo import MongoClient
+        from pymongo.driver_info import DriverInfo
 
         self.client: MongoClient = MongoClient(
             host,
@@ -788,6 +794,10 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
             authSource=auth_source,
             # delay connect until process forking is done
             connect=False,
+            # Identify Rasa in the MongoDB handshake (`client.driver` metadata),
+            # see https://github.com/mongodb/specifications/blob/master/source/
+            # mongodb-handshake/handshake.md
+            driver=DriverInfo(name=MONGODB_DRIVER_NAME, version=rasa_version),
         )
 
         self.db = Database(self.client, db)
